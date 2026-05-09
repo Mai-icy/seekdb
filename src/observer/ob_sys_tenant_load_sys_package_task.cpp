@@ -142,10 +142,8 @@ void ObSysTenantLoadSysPackageTask::runTimerTask()
     LOG_WARN("task not inited", KR(ret), K_(inited));
   } else if (GCTX.is_standby_cluster()) {
     LOG_INFO("standby cluster skip loading sys package");
-    usleep(60 * 1000 * 1000); // 1minute
   } else if (GCTX.sys_package_ready_) {
     LOG_INFO("sys package already loaded");
-    usleep(60 * 1000 * 1000); // 1minute
   } else if (OB_FAIL(do_sys_tenant_load_sys_package_())) {
     fail_count_++;
     if (fail_count_ >= 5) {
