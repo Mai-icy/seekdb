@@ -248,7 +248,7 @@ private:
   const ObGlobalContext &gctx_;
   ObSchemaReleaseTimeTask schema_release_task_;
   TelemetryTask telemetry_task_;
-  // Schema refresh trigger is now managed by MTL framework
+  share::schema::ObStandbySchemaRefreshTrigger standby_schema_refresh_trigger_;
   bool need_bootstrap_;
 };
 

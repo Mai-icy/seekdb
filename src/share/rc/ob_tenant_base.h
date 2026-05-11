@@ -222,7 +222,6 @@ class ObChangeStreamMgr;
 namespace schema
 {
   class ObTenantSchemaService;
-  class ObStandbySchemaRefreshTrigger;
 }
 namespace detector
 {
@@ -327,7 +326,6 @@ using ObTableScanIteratorObjPool = common::ObServerObjectPool<oceanbase::storage
       sql::ObDataAccessService*,                     \
       sql::ObDASIDService*,                          \
       share::schema::ObTenantSchemaService*,         \
-      share::schema::ObStandbySchemaRefreshTrigger*, \
       storage::ObTenantFreezer*,                     \
       storage::checkpoint::ObCheckPointService *,    \
       storage::checkpoint::ObTabletGCService *,      \

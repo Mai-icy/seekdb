@@ -39,10 +39,6 @@
 #include "ob_log_monitor.h"
 #include "cdcservice/ob_cdc_service.h"
 
-#ifdef OB_BUILD_SHARED_STORAGE
-#include "log/ob_shared_log_service.h"
-#endif
-
 namespace oceanbase
 {
 namespace common
@@ -90,9 +86,6 @@ class ObLocalityManager;
 
 namespace logservice
 {
-#ifdef OB_BUILD_SHARED_STORAGE
-class ObSharedLogGarbageCollector;
-#endif
 class ObLogRestoreService;  // Forward declaration
 
 class ObLogService
@@ -225,18 +218,9 @@ public:
   palf::PalfEnv *get_palf_env() { return palf_env_; }
   ObLogReplayService *get_log_replay_service()  { return &replay_service_; }
   ObLogRestoreService *get_log_restore_service() { return &restore_service_; }
-#ifdef OB_BUILD_SHARED_STORAGE
-  ObSharedLogService *get_shared_log_service() {return &shared_log_service_;}
-#endif
   ObLogApplyService *get_log_apply_service()  { return &apply_service_; }
   obrpc::ObLogServiceRpcProxy *get_rpc_proxy() { return &rpc_proxy_; }
   ObLogFlashbackService *get_flashback_service() { return &flashback_service_; }
-#ifdef OB_BUILD_SHARED_STORAGE
-  // ============================= shared log start ====================================
-  ObSharedLogGarbageCollector *get_shared_log_gc() { return shared_log_service_.get_shared_log_gc(); }
-  ObLogExternalStorageHandler *get_log_ext_handler() {return shared_log_service_.get_log_ext_handler();}
-  // ============================= shared log end ====================================
-#endif
   // Get restore net driver for standby log sync
   // Returns the net driver from restore service if available
   class ObLogRestoreNetDriver;
@@ -275,11 +259,6 @@ private:
   ObLocationAdapter location_adapter_;
   ObLSAdapter ls_adapter_;
   obrpc::ObLogServiceRpcProxy rpc_proxy_;
-#ifdef OB_BUILD_SHARED_STORAGE
-  // ========================== shared log start =================================
-  ObSharedLogService shared_log_service_;
-  // ========================== shared log end ===================================
-#endif
   ObLogFlashbackService flashback_service_;
   ObLogMonitor monitor_;
   ObSpinLock update_palf_opts_lock_;
