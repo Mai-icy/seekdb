@@ -17,7 +17,7 @@
 #ifndef OCEANBASE_SHARE_SCHEMA_OB_STANDBY_SCHEMA_REFRESH_TRIGGER_H_
 #define OCEANBASE_SHARE_SCHEMA_OB_STANDBY_SCHEMA_REFRESH_TRIGGER_H_
 
-#include "rootserver/ob_tenant_thread_helper.h"
+#include "lib/task/ob_timer.h"
 
 namespace oceanbase
 {
@@ -26,24 +26,26 @@ namespace share
 namespace schema
 {
 
-class ObStandbySchemaRefreshTrigger : public rootserver::ObTenantThreadHelper
+class ObStandbySchemaRefreshTrigger : public common::ObTimerTask
 {
 public:
-  ObStandbySchemaRefreshTrigger() : is_inited_(false) {}
+  ObStandbySchemaRefreshTrigger() : is_inited_(false), is_scheduled_(false) {}
   virtual ~ObStandbySchemaRefreshTrigger() {}
 
   int init();
+  int stop();
+  int wait();
   void destroy();
-  virtual void do_work() override;
-
-  DEFINE_MTL_FUNC(ObStandbySchemaRefreshTrigger)
+  virtual void runTimerTask() override;
 
 private:
+  int schedule_();
   int check_inner_stat_();
   int submit_tenant_refresh_schema_task_();
   static const int64_t DEFAULT_IDLE_TIME = 1000 * 1000;  // 1s
 
   bool is_inited_;
+  bool is_scheduled_;
 };
 
 } // namespace schema

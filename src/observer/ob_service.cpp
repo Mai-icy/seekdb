@@ -149,7 +149,10 @@ ObService::ObService(const ObGlobalContext &gctx)
     : inited_(false),
     stopped_(false),
     schema_updater_(),
-    gctx_(gctx), schema_release_task_(), telemetry_task_(false),
+    gctx_(gctx),
+    schema_release_task_(),
+    telemetry_task_(false),
+    standby_schema_refresh_trigger_(),
     need_bootstrap_(false)
 {
 }
@@ -201,6 +204,8 @@ int ObService::init(common::ObMySQLProxy &sql_proxy,
     FLOG_WARN("init tsc timestamp failed", KR(ret));
   } else if (OB_FAIL(schema_release_task_.init(schema_updater_, lib::TGDefIDs::ServerGTimer))) {
     FLOG_WARN("init schema release task failed", KR(ret));
+  } else if (OB_FAIL(standby_schema_refresh_trigger_.init())) {
+    FLOG_WARN("init standby schema refresh trigger failed", KR(ret));
   } else {
     need_bootstrap_ = need_bootstrap;
     inited_ = true;
@@ -324,7 +329,7 @@ void ObService::stop()
     TENANT_EVENT_INSTANCE.stop();
     FLOG_INFO("tenant event instance stopped");
 
-    // Schema refresh trigger is now managed by MTL framework
+    standby_schema_refresh_trigger_.stop();
   }
   FLOG_INFO("[OBSERVICE_NOTICE] observice finish stop", K_(stopped));
 }
@@ -355,7 +360,7 @@ void ObService::wait()
     TENANT_EVENT_INSTANCE.wait();
     FLOG_INFO("wait tenant event instance success");
 
-    // Schema refresh trigger is now managed by MTL framework
+    (void) standby_schema_refresh_trigger_.wait();
   }
   FLOG_INFO("[OBSERVICE_NOTICE] wait ob_service end");
 }
@@ -388,7 +393,7 @@ int ObService::destroy()
     DEALOCK_EVENT_INSTANCE.destroy();
     FLOG_INFO("deadlock event service destroyed");
 
-    // Schema refresh trigger is now managed by MTL framework
+    standby_schema_refresh_trigger_.destroy();
     // restore_net_driver_ is now managed by ObLogRestoreService, no need to destroy here
   }
   FLOG_INFO("[OBSERVICE_NOTICE] destroy ob_service end", KR(ret));

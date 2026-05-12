@@ -3050,6 +3050,13 @@ int ObPluginVectorIndexAdaptor::complete_index_mem_data_incremental(ObVectorQuer
   }
 
   if (OB_SUCC(ret)) {
+    // Per-call short-lived arena for scan resources (table_param, scan_param,
+    // scan iterator internals). Avoids page fragmentation on the adapter's
+    // long-lived ObFIFOAllocator (tagged VecIdxSrv) under high-frequency
+    // async query path. Must outlive revert_scan_iter() below; declared at the
+    // very top of this scope so it covers the iterator lifecycle.
+    // Declared before the malloc hook guard so its chunks keep their own tag.
+    ObArenaAllocator tmp_allocator("VecIdxQryScan", OB_MALLOC_NORMAL_BLOCK_SIZE, tenant_id_);
     lib::ObMallocHookAttrGuard malloc_guard(lib::ObMemAttr(tenant_id_, "VIBitmapADPK"));
     const SCN last_dml_scn = OB_NOT_NULL(incr_data_) ? incr_data_->last_dml_scn_ : SCN();
     // 1. Read lock and copy out vbitmap_data_ (scn + bitmap) first, use copy for all subsequent ops
@@ -3078,14 +3085,14 @@ int ObPluginVectorIndexAdaptor::complete_index_mem_data_incremental(ObVectorQuer
       dbitmap = nullptr;
     } else if (OB_NOT_NULL(ibitmap) && OB_NOT_NULL(dbitmap)) {
       storage::ObTableScanParam scan_param;
-      schema::ObTableParam table_param(*allocator_);
+      schema::ObTableParam table_param(tmp_allocator);
       // Read index_id_table using copied base_scn (thread-safe)
       if (OB_FAIL(ObPluginVectorIndexUtils::read_local_tablet(ls_id,
                                                               this,
                                                               query_scn,
                                                               INDEX_TYPE_VEC_INDEX_ID_LOCAL,
-                                                              *allocator_,
-                                                              *allocator_,
+                                                              tmp_allocator,
+                                                              tmp_allocator,
                                                               scan_param,
                                                               table_param,
                                                               incr_iter,

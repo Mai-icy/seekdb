@@ -235,18 +235,15 @@ int ObIvfAsyncTaskExector::LoadTaskCallback::operator()(ObIvfAuxTableInfoEntry &
 
 bool ObIvfAsyncTaskExector::check_operation_allow()
 {
-  int ret = OB_SUCCESS;
-  bool bret = true;
-  bool is_active_time = true;
-
-  if (ObVecIndexAsyncTaskUtil::in_active_time(tenant_id_, is_active_time)) {
-    bret = false;
-    LOG_WARN("fail to get active time");
-  } else if (!is_active_time) {
-    bret = false;
-    LOG_INFO("skip this round, not in active time.");
-  }
-  return bret;
+  // NOTE: vector_index_optimize_duty_time (in_active_time) only constrains the
+  // creation of AUTO-triggered per-tablet IVF maintenance tasks (i.e. load_task()).
+  // It must NOT block:
+  //   - loading existing MANUAL tasks from the inner table (load_task_from_inner_table)
+  //   - executing already-loaded tasks (start_task)
+  //   - cleaning up finished/stale task contexts (clear_old_task_ctx_if_need)
+  // Otherwise dbms_vector.rebuild_index and the auto-registered <vidx>_rebuild
+  // sched job would be silently blocked outside the duty window.
+  return true;
 }
 
 int ObIvfAsyncTaskExector::check_and_set_thread_pool()
@@ -500,10 +497,20 @@ int ObIvfAsyncTaskExector::load_task(uint64_t &task_trace_base_num)
   int ret = OB_SUCCESS;
   ObPluginVectorIndexMgr *index_ls_mgr = nullptr;
   ObSchemaGetterGuard schema_guard;
+  bool is_active_time = true;
   if (IS_NOT_INIT) {
     ret = OB_NOT_INIT;
     LOG_WARN("vector async task not init", KR(ret));
   } else if (!check_operation_allow()) {                 // skip
+  // vector_index_optimize_duty_time only constrains AUTO-triggered per-tablet
+  // IVF maintenance task creation here. MANUAL tasks (dbms_vector.rebuild_index
+  // and the auto-registered <vidx>_rebuild sched job) go through a separate
+  // path (ObVecTaskManager::create_task) and must not be blocked by it.
+  } else if (OB_FAIL(ObVecIndexAsyncTaskUtil::in_active_time(tenant_id_, is_active_time))) {
+    LOG_WARN("fail to get active time", KR(ret), K_(tenant_id));
+  } else if (!is_active_time) {
+    LOG_INFO("skip auto-create per-tablet ivf maintenance tasks, not in active time",
+             K_(tenant_id), K(ls_->get_ls_id()));
   } else if (OB_FAIL(get_index_ls_mgr(index_ls_mgr))) {  // skip
     LOG_WARN("fail to get index ls mgr", K(ret), K(tenant_id_), K(ls_->get_ls_id()));
   } else if (OB_ISNULL(ls_)) {
