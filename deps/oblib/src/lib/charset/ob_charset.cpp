@@ -780,7 +780,9 @@ char* ObCharset::lltostr(int64_t val, char *dst, int radix, int upcase)
   //use dst(start) and pret(end) to locate string, please.
   char buffer[MAX_BUFFER_SIZE];
   char *p = NULL;
+#ifndef _WIN32
   long int new_val = 0;
+#endif
   char *dig_vec= upcase ? DIG_VEC_UPPER : DIG_VEC_LOWER;
   uint64_t uval= (uint64_t) val;
   char *pret = NULL;
@@ -800,6 +802,18 @@ char* ObCharset::lltostr(int64_t val, char *dst, int radix, int upcase)
     LOG_WARN("invalid radix", K(ret), K(radix));
   }
 
+  if (OB_SUCC(ret)) {
+    p = &buffer[sizeof(buffer)-1];
+    *p = '\0';
+#ifdef _WIN32
+    // Windows uses LLP64, where long is 32-bit.  Keep the unsigned value in
+    // fixed-width arithmetic so positive-radix conversion preserves uint64
+    // semantics for negative inputs.
+    do {
+      *--p = dig_vec[uval % static_cast<uint64_t>(radix)];
+      uval /= static_cast<uint64_t>(radix);
+    } while (uval != 0);
+#else
   /*
     The slightly contorted code which follows is due to the fact that
     few machines directly support unsigned long / and %.  Certainly
@@ -812,9 +826,6 @@ char* ObCharset::lltostr(int64_t val, char *dst, int radix, int upcase)
     sensitive to minor details of style.  This works on a VAX, that's
     all I claim for it.
   */
-  if (OB_SUCC(ret)) {
-    p = &buffer[sizeof(buffer)-1];
-    *p = '\0';
     new_val= uval / (uint64_t) radix;
     *--p = dig_vec[(unsigned char) (uval- (uint64_t) new_val*(uint64_t) radix)];
     val = new_val;
@@ -825,6 +836,7 @@ char* ObCharset::lltostr(int64_t val, char *dst, int radix, int upcase)
       *--p = dig_vec[res.rem];
       val= res.quot;
     }
+#endif
     while ((*dst++ = *p++) != 0) ;
     pret = dst - 1;
   }
