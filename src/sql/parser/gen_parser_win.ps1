@@ -215,7 +215,11 @@ function Generate-Parser {
         "{",
         "`tswitch(type){"
     )
-    $caseLines = Get-Content $obItemTypeH -Raw | Select-String -Pattern '(?m)^\s*(T_[_A-Z1-9]+)\s*[=0-9]*,' -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { "`tcase " + $_.Groups[1].Value + " : return `"" + $_.Groups[1].Value + "`";" }
+    $obItemContent = Get-Content $obItemTypeH -Raw
+    # Strip C-style /* ... */ block comments and // line comments so commented-out enums are not generated
+    $obItemContent = [regex]::Replace($obItemContent, '(?s)/\*.*?\*/', '')
+    $obItemContent = [regex]::Replace($obItemContent, '(?m)//[^\r\n]*', '')
+    $caseLines = [regex]::Matches($obItemContent, '(?m)^\s*(T_[_A-Z1-9]+)[ \t=0-9]*,') | ForEach-Object { "`tcase " + $_.Groups[1].Value + " : return `"" + $_.Groups[1].Value + "`";" }
     $lines += $caseLines
     $lines += "`tdefault:return `"Unknown`";", "`t}", "}"
     $lines | Set-Content $typeNameC -Encoding UTF8
