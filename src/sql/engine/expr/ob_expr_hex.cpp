@@ -199,7 +199,7 @@ int ObExprHex::eval_hex(const ObExpr &expr, ObEvalCtx &ctx, ObDatum &expr_datum)
         ret = OB_ALLOCATE_MEMORY_FAILED;
         LOG_WARN("get memory failed", K(ret));
       } else {
-        const int len = snprintf(buf, max_len, "%lX", val);
+        const int len = snprintf(buf, max_len, "%llX", static_cast<unsigned long long>(val));
         if (len < 0 || len > max_len) {
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("snprintf failed", K(ret), K(len));
