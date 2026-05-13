@@ -675,9 +675,21 @@ int ObIODeviceLocalFileOp::lseek(
   if (OB_UNLIKELY(!fd.is_normal_file())) {
     ret = OB_INVALID_ARGUMENT;
     SHARE_LOG(WARN, "invalid args, not normal file", K(ret), K(fd));
-  } else if (-1 == (result_offset = ::lseek(static_cast<int32_t>(fd.second_id_), offset, whence))) {
-    ret = convert_sys_errno();
-    SHARE_LOG(WARN, "fail to lseek", K(ret), K(fd), K(offset), K(errno), KERRMSG);
+  } else {
+    // MSVCRT's ::lseek (mapped to _lseek) takes/returns 32-bit `long`, so any
+    // offset >= 2GB silently overflows. Use the 64-bit variant on Windows so
+    // sstable / blockfile / meta IO can grow past the 2 GiB boundary.
+#ifdef _WIN32
+    const int64_t sys_off = ::_lseeki64(static_cast<int32_t>(fd.second_id_), offset, whence);
+#else
+    const int64_t sys_off = ::lseek(static_cast<int32_t>(fd.second_id_), offset, whence);
+#endif
+    if (-1 == sys_off) {
+      ret = convert_sys_errno();
+      SHARE_LOG(WARN, "fail to lseek", K(ret), K(fd), K(offset), K(errno), KERRMSG);
+    } else {
+      result_offset = sys_off;
+    }
   }
   return ret;
 }
@@ -738,8 +750,16 @@ int ObIODeviceLocalFileOp::stat(const char *pathname, ObIODFileStat &statbuf)
     ret = OB_INVALID_ARGUMENT;
     SHARE_LOG(WARN, "invalid argument", K(ret), KP(pathname));
   } else {
+    // MSVCRT's default `struct stat::st_size` is 32-bit `_off_t`; querying any
+    // file larger than 2 GiB silently truncates the size. Use `_stat64` so
+    // sstable / blockfile beyond 2 GiB still reports the correct size.
+#ifdef _WIN32
+    struct _stat64 buf;
+    if (0 != ::_stat64(pathname, &buf)) {
+#else
     struct stat buf;
     if (0 != ::stat(pathname, &buf)) {
+#endif
       ret = convert_sys_errno();
       SHARE_LOG(WARN, "Fail to stat file, ", K(ret), K(pathname), K(errno), KERRMSG);
     } else {
@@ -786,8 +806,16 @@ int ObIODeviceLocalFileOp::fstat(const ObIOFd &fd, ObIODFileStat &statbuf)
     ret = OB_INVALID_ARGUMENT;
     SHARE_LOG(WARN, "invalid args, not normal file", K(ret), K(fd));
   } else {
+    // MSVCRT's default `struct stat::st_size` is 32-bit `_off_t`; querying any
+    // file larger than 2 GiB silently truncates the size. Use `_fstat64` so
+    // sstable / blockfile beyond 2 GiB still reports the correct size.
+#ifdef _WIN32
+    struct _stat64 buf;
+    if (0 != ::_fstat64(static_cast<int32_t>(fd.second_id_), &buf)) {
+#else
     struct stat buf;
     if (0 != ::fstat(static_cast<int32_t>(fd.second_id_), &buf)) {
+#endif
       ret = convert_sys_errno();
       SHARE_LOG(WARN, "Fail to stat file, ", K(ret), K(fd), K(errno), KERRMSG);
     } else {

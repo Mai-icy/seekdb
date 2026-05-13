@@ -56,7 +56,9 @@ static int unlinkat(int dir_fd, const char *path, int flag) {
   if (flag) { return ::_rmdir(p); }
   return ::_unlink(p);
 }
-static int fallocate(int fd, int, off_t, off_t len) {
+// MSVCRT typedefs `off_t` as 32-bit `long`. Use int64_t explicitly so log
+// block file sizes can exceed 2 GiB on Windows.
+static int fallocate(int fd, int, int64_t, int64_t len) {
   return ::_chsize_s(fd, len);
 }
 #endif
