@@ -22,12 +22,29 @@ using namespace oceanbase::common;
 
 namespace oceanbase {
 namespace sql {
+// IPv4 / IPv6 textual length limits used by IS_IPV4 / INET_ATON / INET6_ATON etc.
+//
+// Do NOT use the system macros INET_ADDRSTRLEN / INET6_ADDRSTRLEN for these bounds.
+// The macros are platform-dependent and will produce different SQL semantics on
+// different OSes:
+//   - Linux / POSIX <netinet/in.h>:  INET_ADDRSTRLEN == 16,  INET6_ADDRSTRLEN == 46
+//   - Windows / Winsock2 <ws2ipdef.h>: INET_ADDRSTRLEN == 22, INET6_ADDRSTRLEN == 65
+// Concretely, this once caused IS_IPV4("255.255.255.0000") to return 1 on Windows
+// while returning 0 on Linux, and could overflow stack buffers sized to the Linux
+// value when running on Windows.
+//
+// "255.255.255.255"                                       length 15
+// "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"         length 45 (longest IPv6 form)
+static const int OB_IPV4_STR_MIN_LEN = 7;
+static const int OB_IPV4_STR_MAX_LEN = 15;
+static const int OB_IPV6_STR_MIN_LEN = 2;
+static const int OB_IPV6_STR_MAX_LEN = 45;
+
 int ObExprInetCommon::str_to_ipv4(int len, const char *str, bool& is_ip_format_invalid, in_addr* ipv4addr)
 {
   is_ip_format_invalid = false;
   int ret = OB_SUCCESS;
-  //Shortest IPv4 address："x.x.x.x"，length:7
-  if (7 > len || INET_ADDRSTRLEN - 1 < len) {
+  if (OB_IPV4_STR_MIN_LEN > len || OB_IPV4_STR_MAX_LEN < len) {
     is_ip_format_invalid = true;
     LOG_WARN("ip format invalid, too short or too long", K(len));
   } else if (OB_UNLIKELY(OB_UNLIKELY(OB_ISNULL(str) || OB_ISNULL(ipv4addr)))) {
@@ -78,6 +95,14 @@ int ObExprInetCommon::str_to_ipv4(int len, const char *str, bool& is_ip_format_i
     } else if ('.' == c) { // IP number can't end on '.'
       is_ip_format_invalid = true;
       LOG_WARN("ip format invalid, end with '.'");
+    } else if (3 < numcnt) {
+      // Each dotted group must contain 1~3 digits. The in-loop check on '.' only
+      // covers the first three groups; the last group's digit count is only
+      // validated here. Without this check, inputs like '1.2.3.0000' (length 10,
+      // not blocked by the length upper bound) would be accepted on every
+      // platform.
+      is_ip_format_invalid = true;
+      LOG_WARN("ip format invalid, last group has too many digits", K(numcnt));
     } else {
       byte_addr[3] = (unsigned char) byte;
     }
@@ -90,9 +115,8 @@ int ObExprInetCommon::str_to_ipv6(int len, const char *str, bool& is_ip_format_i
 {
   int ret = OB_SUCCESS;
   is_ip_format_invalid = false;
-  //Ipv6 length of mysql support: 2~39
-  //Shortest IPv6 address："::"，length:2
-  if (2 > len || INET6_ADDRSTRLEN - 1 < len) {
+  // Use the platform-independent constants (see comment at the top of this file).
+  if (OB_IPV6_STR_MIN_LEN > len || OB_IPV6_STR_MAX_LEN < len) {
     is_ip_format_invalid = true;
     LOG_WARN("ip format invalid, too short or too long", K(len));
   } else if (OB_UNLIKELY(OB_ISNULL(str) || OB_ISNULL(ipv6addr))) {
@@ -624,7 +648,7 @@ int ObExprInet6Aton::inet6_aton(const ObString& ip, bool& is_ip_format_invalid, 
   is_ip_format_invalid = false;
   int ret = OB_SUCCESS;
   char buf[MAX_IP_ADDR_LENGTH];
-  if (INET6_ADDRSTRLEN - 1 < ip.length()) {
+  if (OB_IPV6_STR_MAX_LEN < ip.length()) {
     is_ip_format_invalid = true;
     LOG_WARN("ip format invalid", K(ip));
   } else {
@@ -673,10 +697,15 @@ ObExprIsIpv4::~ObExprIsIpv4()
 template <typename T>
 int ObExprIsIpv4::is_ipv4(T& result, const ObString& text)
 {
-  char buf[16];
+  // buf size = max textual IPv4 length + 1 for the trailing '\0'.
+  // Previously this was sized at 16 (Linux INET_ADDRSTRLEN) while the length
+  // check below used the platform-dependent INET_ADDRSTRLEN macro, which is 22
+  // on Windows. That combination would let a 16~21 char string pass the length
+  // check and then write past the end of `buf` when appending the '\0'.
+  char buf[OB_IPV4_STR_MAX_LEN + 1];
   int ipv4_ret = 1;
   int ret = OB_SUCCESS;
-  if (INET_ADDRSTRLEN - 1 < text.length()) {
+  if (OB_IPV4_STR_MAX_LEN < text.length()) {
     ipv4_ret = 0;
   } else {
     MEMCPY(buf, text.ptr(), text.length());

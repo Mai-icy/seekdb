@@ -83,9 +83,14 @@ public:
   union {
     int32_t flag_;
     struct {
-      ObTableHasBackupFlag::FLAG has_backup_flag_ : SF_BIT_HAS_BACKUP;
-      ObTableHasLocalFlag::FLAG has_local_flag_   : SF_BIT_HAS_LOCAL;
-      int64_t reserved_: SF_BIT_RESERVED;
+      // NOTE: use unsigned bit-fields here. MSVC treats enum / int bit-fields as
+      // signed by default, so a 1-bit signed field can only hold 0 and -1, which
+      // makes writing values like ObTableHasLocalFlag::NO_LOCAL (1) read back as
+      // -1 and break is_valid() on Windows. Using uint32_t guarantees portable
+      // unsigned semantics across GCC/MSVC.
+      uint32_t has_backup_flag_ : SF_BIT_HAS_BACKUP;
+      uint32_t has_local_flag_  : SF_BIT_HAS_LOCAL;
+      uint32_t reserved_        : SF_BIT_RESERVED;
     };
   };
 };
@@ -141,8 +146,10 @@ private:
     int32_t flag_;
     struct {;
       FLAG shared_flag_ : SF_BIT_IS_SHARED;
-      int32_t is_split_sstable_: SF_BIT_IS_SPLIT_SSTABLE;
-      int32_t reserved_: SF_BIT_RESERVED;
+      // NOTE: same as ObTableBackupFlag, use unsigned bit-fields so that 1-bit
+      // fields can correctly hold the value 1 on MSVC.
+      uint32_t is_split_sstable_: SF_BIT_IS_SPLIT_SSTABLE;
+      uint32_t reserved_        : SF_BIT_RESERVED;
     };
   };
 };

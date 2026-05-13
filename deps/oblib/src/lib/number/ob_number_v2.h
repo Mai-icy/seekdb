@@ -1901,16 +1901,15 @@ int ObNumber::from_integer_(const IntegerT value, IAllocator &allocator) {
     Desc desc;
     uint64_t abs_val = 0;
 
-    if (std::is_signed<IntegerT>::value) { // If it is a signed integer, call abs
-  #ifdef __clang__
-  #pragma clang diagnostic push
-  #pragma clang diagnostic ignored "-Wabsolute-value"
-  #endif
-      abs_val = (uint64_t)std::labs(value);
-  #ifdef __clang__
-  #pragma clang diagnostic pop
-  #endif
-
+    if (std::is_signed<IntegerT>::value) { // If it is a signed integer, take abs value.
+      // Note: use unsigned modular arithmetic to compute the absolute value so that
+      // it works correctly for the full range of int64_t (including INT64_MIN) and
+      // is portable across LP64 / LLP64 platforms. std::labs takes a `long`, which is
+      // 32-bit on Windows (LLP64) and would silently truncate int64_t values.
+      abs_val = static_cast<uint64_t>(value);
+      if (value < 0) {
+        abs_val = 0ULL - abs_val;
+      }
     } else { // otherwise directly assign
       abs_val = value;
     }

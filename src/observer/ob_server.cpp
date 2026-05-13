@@ -18,6 +18,10 @@
 
 #ifndef _WIN32
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/file.h>
+#else
+#include <windows.h>
 #endif
 #include "observer/ob_server.h"
 #include "lib/alloc/memory_dump.h"
@@ -205,6 +209,7 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
   int ret = OB_SUCCESS;
   init_arches();
   scramble_rand_.init(static_cast<uint64_t>(start_time_), static_cast<uint64_t>(start_time_ / 2));
+  embedded_ = opts.embedded_;
 
   if (OB_SUCC(ret) && OB_FAIL(init_config(opts))) {
     LOG_ERROR("init config failed", KR(ret));
@@ -846,12 +851,7 @@ int ObServer::start(bool embed_mode)
     } else {
       FLOG_INFO("success to start ts mgr");
     }
-    if (embed_mode) {
-    } else if (FAILEDx(net_frame_.start())) {
-      LOG_ERROR("fail to start net frame", KR(ret));
-    } else {
-      FLOG_INFO("success to start net frame");
-    }
+
 
     // Services are registered once; start() is triggered by reload_config().
     grpc_server_.register_service(&storage_grpc_service_impl_);
@@ -1069,6 +1069,13 @@ int ObServer::start(bool embed_mode)
             "refresh_schema_cost_us", schema_refreshed_ts - start_ts,
             "replay_log_cost_us", ObTimeUtility::current_time() - schema_refreshed_ts);
       }
+    }
+
+    if (embed_mode) {
+    } else if (FAILEDx(net_frame_.start())) {
+      LOG_ERROR("fail to start net frame", KR(ret));
+    } else {
+      FLOG_INFO("success to start net frame");
     }
 
   int64_t start_service_time = ObTimeUtility::current_time();
@@ -1483,6 +1490,59 @@ int ObServer::stop()
   return ret;
 }
 
+int ObServer::wait_client_exit()
+{
+  int ret = OB_SUCCESS;
+  if (embedded_) {
+#ifdef _WIN32
+    HANDLE clients_h = CreateFileA(
+        "run\\seekdb.clients",
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        OPEN_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+    if (clients_h == INVALID_HANDLE_VALUE) {
+      ret = OB_ERROR;
+      stop_ = true;
+      LOG_ERROR("failed to open seekdb.clients", "last_error", (int)GetLastError());
+    } else {
+      for (;;) {
+        ::Sleep(5000);
+        OVERLAPPED ov = {};
+        if (LockFileEx(clients_h,
+                       LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY,
+                       0, MAXDWORD, MAXDWORD, &ov)) {
+          FLOG_INFO("no clients remaining, shutting down");
+          break;
+        }
+      }
+      CloseHandle(clients_h);
+      stop_ = true;
+    }
+#else
+    int clients_fd = ::open("./run/seekdb.clients", O_CREAT | O_RDWR, 0644);
+    if (clients_fd < 0) {
+      ret = OB_ERROR;
+      stop_ = true;
+      LOG_ERROR("failed to open seekdb.clients", K(errno));
+    } else {
+      for (;;) {
+        ::sleep(5);
+        if (flock(clients_fd, LOCK_EX | LOCK_NB) == 0) {
+          FLOG_INFO("no clients remaining, shutting down");
+          break;
+        }
+      }
+      ::close(clients_fd);
+      stop_ = true;
+    }
+#endif
+  }
+  return ret;
+}
+
 int ObServer::wait()
 {
   int ret = OB_SUCCESS;
@@ -1491,8 +1551,10 @@ int ObServer::wait()
   LOG_DBA_INFO_V2(OB_SERVER_WAIT_BEGIN, "observer process wait begin.");
   // wait for stop flag
 
+  ret = wait_client_exit();
+
   FLOG_INFO("begin to wait observer setted to stop");
-  while (!stop_) {
+  while (OB_SUCC(ret) && !stop_) {
     common::ObBKGDSessInActiveGuard inactive_guard;
     SLEEP(3);
   }

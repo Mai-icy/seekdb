@@ -247,6 +247,7 @@ public:
   share::ObLocationService &get_location_service() { return location_service_; }
 private:
   int stop();
+  int wait_client_exit();
 
 private:
   ObServer();
@@ -333,6 +334,7 @@ private:
   bool stop_;
   volatile bool has_stopped_;
   bool has_destroy_;
+  bool embedded_ = false;
   // The network framework in OceanBase is all defined at ObServerNetworkFrame.
   ObSrvNetworkFrame net_frame_;
   obrpc::ObBatchRpc batch_rpc_;

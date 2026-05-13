@@ -38,9 +38,9 @@ obdevtools-bison-2.4.1-20251219.tar.gz
 obdevtools-flex-2.5.35-20251219.tar.gz
 
 [tools-deps]
-obshell-4.4.0.0-20260120.tgz
+obshell-4.4.1.1-20260325.tgz
 
 [test-utils]
 obclient-2.2.13-1.darwin.arm64.tar.gz
 libobclient-2.2.13-1.darwin.arm64.tar.gz
-ob-deploy-2.7.0.1772075635-macos-arm64.tar.gz
+ob-deploy-2.7.0.1774323865-macos-arm64.tar.gz

@@ -131,7 +131,7 @@ bool ObAdminServerExecutor::parse_command(int argc, char *argv[])
     ssl_cfg_mode_ = 1;
   } 
   if (sock_path_.size() > 0) {
-    if (sock_path_.size() >= UNIX_PATH_MAX) {
+    if (sock_path_.size() >= UNIX_PATH_MAX_) {
       cerr << "The unix_domain_socket_path is too long! (No more than 15 characters)" << endl;
       ret = false;
     } else {
