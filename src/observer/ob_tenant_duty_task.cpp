@@ -66,10 +66,6 @@ void ObTenantDutyTask::update_all_tenants()
       LOG_WARN("update tenant ctx throttle fail", K(ret));
       ret = OB_SUCCESS;
     }
-    if (OB_FAIL(update_tenant_rpc_percentage(ids[i]))) {
-      LOG_WARN("update tenant rpc percentage fail", K(ret));
-      ret = OB_SUCCESS;
-    }
   }
 }
 
@@ -139,8 +135,7 @@ int ObTenantDutyTask::update_tenant_ctx_memory_throttle(uint64_t tenant_id)
       }
       for (int i = 0; i < ObCtxIds::MAX_CTX_ID; i++) {
         if (ObCtxIds::WORK_AREA == i ||
-            ObCtxIds::META_OBJ_CTX_ID == i ||
-            ObCtxIds::DO_NOT_USE_ME == i) {
+            ObCtxIds::META_OBJ_CTX_ID == i) {
           // use sql_work_area
           continue;
         }
@@ -230,24 +225,6 @@ int ObTenantDutyTask::update_tenant_wa_percentage(uint64_t tenant_id)
                  K(ret));
        }
      }
-  }
-  return ret;
-}
-
-int ObTenantDutyTask::update_tenant_rpc_percentage(uint64_t tenant_id)
-{
-  int ret = OB_SUCCESS;
-  omt::ObTenantConfigGuard tenant_config(TENANT_CONF(tenant_id));
-  if (!tenant_config.is_valid()) {
-    // do nothing
-  } else {
-    int64_t rpc_pct_lmt = tenant_config->rpc_memory_limit_percentage;
-    if (0 == rpc_pct_lmt) {
-      rpc_pct_lmt = 100;
-    }
-    if (OB_FAIL(set_rpc_limit(tenant_id, rpc_pct_lmt))) {
-      LOG_WARN("failed to set tenant rpc ctx limit", K(ret), K(tenant_id), K(rpc_pct_lmt));
-    }
   }
   return ret;
 }

@@ -222,7 +222,7 @@ int ObKVCacheStore::init(ObKVCacheInstMap &insts,
     max_mb_num_ = compute_mb_handle_num(max_cache_size, block_size);
     if (NULL == (mb_handles_ = static_cast<ObKVMemBlockHandle*>(
                             buf = ob_malloc((sizeof(ObKVMemBlockHandle) + sizeof(ObKVMemBlockHandle*)) * max_mb_num_,
-                                ObMemAttr(OB_SERVER_TENANT_ID, "CACHE_MB_HANDLE", ObCtxIds::UNEXPECTED_IN_500))))) {
+                                ObMemAttr(OB_SERVER_TENANT_ID, "CACHE_MB_HANDLE", ObCtxIds::DEFAULT_CTX_ID))))) {
       ret = OB_ALLOCATE_MEMORY_FAILED;
       COMMON_LOG(ERROR, "Fail to allocate memory for mb_handles_, ", K_(max_mb_num), K(ret));
     } else if (FALSE_IT(mb_handles = mb_handles_)) {

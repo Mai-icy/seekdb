@@ -41,23 +41,17 @@ public:
   {
 #define PARALLEL_DEF(name, parallel) ctx_attr_[ObCtxIds::name].parallel_ = parallel;
     PARALLEL_DEF(DEFAULT_CTX_ID, 32)
-    PARALLEL_DEF(LIBEASY, 32)
     PARALLEL_DEF(PLAN_CACHE_CTX_ID, 4)
     PARALLEL_DEF(LOGGER_CTX_ID, 4)
 #undef CTX_PARALLEL_DEF
 
 #define ENABLE_DIRTY_LIST_DEF(name) ctx_attr_[ObCtxIds::name].enable_dirty_list_ = true;
-    ENABLE_DIRTY_LIST_DEF(LIBEASY)
     ENABLE_DIRTY_LIST_DEF(LOGGER_CTX_ID)
 #undef ENABLE_DIRTY_LIST_DEF
 
 #define ENABLE_NO_LOG_DEF(name) ctx_attr_[ObCtxIds::name].enable_no_log_ = true;
     ENABLE_NO_LOG_DEF(LOGGER_CTX_ID)
 #undef ENABLE_NO_LOG_DEF
-
-#define DISABLE_SYNC_WASH_DEF(name) ctx_attr_[ObCtxIds::name].disable_sync_wash_ = true;
-    DISABLE_SYNC_WASH_DEF(MERGE_RESERVE_CTX_ID)
-#undef DISABLE_SYNC_WASH_DEF
   }
   static ObCtxAttrCenter &instance();
   ObCtxAttr attr_of_ctx(int64_t ctx_id) const

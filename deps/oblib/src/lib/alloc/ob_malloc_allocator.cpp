@@ -133,8 +133,6 @@ int ObMallocAllocator::create_tenant_allocator(uint64_t tenant_id, void *buf,
         ObTenantCtxAllocatorV2(tenant_id, ctx_id, &tmp_allocator[ctx_id]);
     if (OB_FAIL(ctx_allocator[ctx_id].set_tenant_memory_mgr())) {
         LOG_ERROR("set_tenant_memory_mgr failed", K(ret));
-    } else if (ObCtxIds::DO_NOT_USE_ME == ctx_id) {
-      ctx_allocator[ctx_id].set_limit(256L<<20);
     }
     new (ctx_allocator[ctx_id].get_allocator())
           ObTenantCtxAllocator(ctx_allocator[ctx_id], tenant_id, ctx_id);

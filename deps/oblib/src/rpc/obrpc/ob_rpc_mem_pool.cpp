@@ -45,8 +45,8 @@ static void* rpc_mem_pool_direct_alloc(int64_t tenant_id, const char* label, int
   if (OB_INVALID_TENANT_ID == tenant_id) {
     tenant_id = OB_SERVER_TENANT_ID;
   }
-  ObMemAttr attr(tenant_id, label, common::ObCtxIds::RPC_CTX_ID);
-  lib::ObTenantCtxAllocatorGuard allocator = lib::ObMallocAllocator::get_instance()->get_tenant_ctx_allocator(tenant_id, common::ObCtxIds::RPC_CTX_ID);
+  ObMemAttr attr(tenant_id, label, common::ObCtxIds::DEFAULT_CTX_ID);
+  lib::ObTenantCtxAllocatorGuard allocator = lib::ObMallocAllocator::get_instance()->get_tenant_ctx_allocator(tenant_id, common::ObCtxIds::DEFAULT_CTX_ID);
   if (OB_ISNULL(allocator)) {
     attr.tenant_id_ = OB_SERVER_TENANT_ID;
   }
