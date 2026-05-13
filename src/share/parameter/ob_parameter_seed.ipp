@@ -2309,7 +2309,7 @@ DEF_PARAM(_enable_auth_switch, BOOL, OB_CLUSTER_PARAMETER, "True",
          "Control whether to use auth_switch.",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
-DEF_PARAM(_enable_malloc_v2, BOOL, OB_CLUSTER_PARAMETER, "True",
+DEF_PARAM(_enable_malloc_v2, BOOL, OB_CLUSTER_PARAMETER, "False",
          "Enable or disable ob_malloc_v2.",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
