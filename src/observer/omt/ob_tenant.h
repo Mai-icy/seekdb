@@ -38,7 +38,7 @@
 #include "lib/utility/ob_query_rate_limiter.h"
 #include "share/resource_manager/ob_cgroup_ctrl.h"
 #include "observer/omt/ob_tenant_meta.h"
-#include "observer/omt/ob_adaptive_worker_pool.h"
+#include "lib/thread/ob_adaptive_worker_pool.h"
 #include "lib/lock/ob_tc_rwlock.h"      // TCRWLock
 
 struct lua_State;
@@ -211,7 +211,7 @@ typedef common::ObDList<WorkerNode> WorkerList;
 // Except for get_new_request wakeup_paused_worker recv_request, all
 // other functions aren't thread safe.
 class ObTenant : public share::ObTenantBase,
-                 public ObAdaptiveWorkerPool<ObTenant>
+                 public lib::ObAdaptiveWorkerPool<ObTenant>
 {
   friend class observer::ObAllVirtualDumpTenantInfo;
   friend int ::select_dump_tenant_info(lua_State*);
