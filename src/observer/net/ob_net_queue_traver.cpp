@@ -22,34 +22,18 @@ namespace rpc
 int ObNetQueueTraver::traverse_one_tenant(oceanbase::omt::ObTenant *tenant_ptr, ObINetTraverProcess &process)
 {
   int ret = OB_SUCCESS;
-  // traverse all tenant queue, types are as follow:
-  // 1、tenant req queue, multi_level_queue
-  // 2、group req queue, multi_level_queue
-  oceanbase::omt::ObResourceGroupNode *iter = nullptr;
-  oceanbase::omt::ObResourceGroup *group = nullptr;
   int32_t group_id = 0;  // default group id for mysql request without resource_mgr is 0.
   if (OB_ISNULL(tenant_ptr)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_ERROR("tenant_ptr is nullptr", K(ret));
-  } else if (OB_FAIL(traverse_one_tenant_queue(tenant_ptr->get_req_queue(), tenant_ptr->get_multi_level_queue(), group_id, process))) {  // 1、tenant req queue
+  } else if (OB_FAIL(traverse_one_tenant_queue(tenant_ptr->get_req_queue(), group_id, process))) {
     LOG_ERROR("traverse tenant's req queue failed", K(ret));
-  } else {
-    oceanbase::omt::GroupMap& group_map = tenant_ptr->get_group_map();
-    // 2、group req queue
-    while (OB_NOT_NULL(iter = group_map.quick_next(iter))) {
-      group = static_cast<oceanbase::omt::ObResourceGroup *>(iter);
-      group_id = group->get_group_id();
-      if (OB_FAIL(traverse_one_tenant_group_queue(group->get_req_queue(), group->get_multi_level_queue(), group_id, process))) {
-        LOG_ERROR("traverse tenant's group queue failed", K(ret));
-      }
-    }  // group_map
   }
   return ret;
 }
-int ObNetQueueTraver::traverse_one_tenant_queue(oceanbase::omt::ReqQueue &tenant_req_queue, oceanbase::omt::ObMultiLevelQueue *tenant_multi_level_queue, int32_t group_id, ObINetTraverProcess &process)
+int ObNetQueueTraver::traverse_one_tenant_queue(oceanbase::omt::ReqQueue &tenant_req_queue, int32_t group_id, ObINetTraverProcess &process)
 {
   int ret = OB_SUCCESS;
-  // normal queue
   int64_t prio_cnt = tenant_req_queue.get_prio_cnt();
   for (int64_t i = 0; OB_SUCC(ret) && i < tenant_req_queue.get_queue_num(); i++) {
     for (int64_t j = 0; OB_SUCC(ret) && j < prio_cnt; j++) {
@@ -62,75 +46,8 @@ int ObNetQueueTraver::traverse_one_tenant_queue(oceanbase::omt::ReqQueue &tenant
       }
     }
   }
-  // multi level queue
-  if (OB_ISNULL(tenant_multi_level_queue)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_ERROR("tenant_req_queue is nullptr", K(ret));
-  } else {
-    for (int64_t i = 0; OB_SUCC(ret) && i < MULTI_LEVEL_QUEUE_SIZE; i++) {
-      common::ObPriorityQueue<1>* pq = tenant_multi_level_queue->get_pq_queue(i);
-      if (OB_ISNULL(pq)) {
-        ret = OB_NULL_CHECK_ERROR;
-        LOG_ERROR("pq is nullptr", K(ret));
-      } else {
-        int64_t multi_prio_cnt = pq->get_prio_cnt();
-        for (int64_t j = 0; OB_SUCC(ret) && j < multi_prio_cnt; j++) {
-          ObLinkQueue *link_queue = pq->get_queue(j);
-          if (OB_ISNULL(link_queue)) {
-            ret = OB_NULL_CHECK_ERROR;
-            LOG_ERROR("link_queue is nullptr", K(ret));
-          } else if (OB_FAIL(traverse_one_tenant_one_link_queue(link_queue, group_id, process))) {
-            LOG_ERROR("traverse one tenant one queue failed", K(ret));
-          }
-        }
-      }
-    }
-  }
   return ret;
 }
-int ObNetQueueTraver::traverse_one_tenant_group_queue(TenantReqQueue &tenant_group_queue, oceanbase::omt::ObMultiLevelQueue *tenant_multi_level_queue, int32_t group_id, ObINetTraverProcess &process)
-{
-  int ret = OB_SUCCESS;
-  // normal queue
-  int64_t prio_cnt = tenant_group_queue.get_prio_cnt();
-  for (int64_t i = 0; OB_SUCC(ret) && i < tenant_group_queue.get_queue_num(); i++) {
-    for (int64_t j = 0; OB_SUCC(ret) && j < prio_cnt; j++) {
-      ObLinkQueue *link_queue = tenant_group_queue.get_queue(i, j);
-      if (OB_ISNULL(link_queue)) {
-        ret = OB_NULL_CHECK_ERROR;
-        LOG_ERROR("link_queue is nullptr", K(ret));
-      } else if (OB_FAIL(traverse_one_tenant_one_link_queue(link_queue, group_id, process))) {
-        LOG_ERROR("traverse one tenant one queue failed", K(ret));
-      }
-    }
-  }
-  // multi level queue
-  if (OB_ISNULL(tenant_multi_level_queue)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_ERROR("tenant_req_queue is nullptr", K(ret));
-  } else {
-    for (int64_t i = 0; OB_SUCC(ret) && i < MULTI_LEVEL_QUEUE_SIZE; i++) {
-      common::ObPriorityQueue<1>* pq = tenant_multi_level_queue->get_pq_queue(i);
-      if (OB_ISNULL(pq)) {
-        ret = OB_NULL_CHECK_ERROR;
-        LOG_ERROR("pq is nullptr", K(ret));
-      } else {
-        int64_t multi_prio_cnt = pq->get_prio_cnt();
-        for (int64_t j = 0; OB_SUCC(ret) && j < multi_prio_cnt; j++) {
-          ObLinkQueue *link_queue = pq->get_queue(j);
-          if (OB_ISNULL(link_queue)) {
-            ret = OB_NULL_CHECK_ERROR;
-            LOG_ERROR("link_queue is nullptr", K(ret));
-          } else if (OB_FAIL(traverse_one_tenant_one_link_queue(link_queue, group_id, process))) {
-            LOG_ERROR("traverse one tenant one queue failed", K(ret));
-          }
-        }
-      }
-    }
-  }
-  return ret;
-}
-
 int ObNetQueueTraver::traverse_one_tenant_one_link_queue(ObLinkQueue *link_queue, int32_t group_id, ObINetTraverProcess &process)
 {
   int ret = OB_SUCCESS;
@@ -198,7 +115,7 @@ int ObNetTraverProcessAutoDiag::get_trav_req_info(ObRequest *cur, ObNetQueueTraR
       const obrpc::ObRpcPacket &pkt = static_cast<const obrpc::ObRpcPacket &>(cur->get_packet());
       tmp_info.tenant_id_ = pkt.get_tenant_id();
       tmp_info.pcode_ = static_cast<int32_t>(pkt.get_pcode());
-      tmp_info.req_level_ = min(pkt.get_request_level(), omt::MAX_REQUEST_LEVEL - 1);
+      tmp_info.req_level_ = pkt.get_request_level();
       tmp_info.priority_ = pkt.get_priority();
     } else if (ObRequest::OB_MYSQL == cur->get_type()) {
       void *sess = SQL_REQ_OP.get_sql_session(cur);

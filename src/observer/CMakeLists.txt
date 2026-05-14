@@ -113,7 +113,6 @@ ob_set_subtarget(ob_server net
 )
 
 ob_set_subtarget(ob_server omt
-  omt/ob_multi_level_queue.cpp
   omt/ob_multi_tenant.cpp
   omt/ob_retry_queue.cpp
   omt/ob_tenant.cpp
