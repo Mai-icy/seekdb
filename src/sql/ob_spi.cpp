@@ -4786,7 +4786,7 @@ int ObSPIService::spi_destruct_obj(ObPLExecCtx *ctx,
 int ObSPIService::spi_interface_impl(pl::ObPLExecCtx *ctx, const char *interface_name)
 {
   int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(nullptr == interface_name || nullptr == ctx)) {
+  if (OB_ISNULL(interface_name)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("Argument passed in is NULL", K(ctx), K(interface_name), K(ret));
   } else if (OB_ISNULL(ctx->exec_ctx_)

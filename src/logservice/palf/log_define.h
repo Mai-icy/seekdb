@@ -82,6 +82,7 @@ constexpr offset_t MAX_LOG_HEADER_SIZE = 4 * 1024;
 constexpr offset_t MAX_INFO_BLOCK_SIZE = 4 * 1024;
 constexpr offset_t MAX_META_ENTRY_SIZE = 4 * 1024;
 constexpr offset_t MAX_LOG_BODY_SIZE = 3 * 1024 * 1024 + 512 * 1024;                 // The max size of one log body is 3.5MB.
+
 constexpr offset_t MAX_NORMAL_LOG_BODY_SIZE = 2 * 1024 * 1024 + 16 * 1024;
 const int64_t PALF_PHY_BLOCK_SIZE = 1 << 26;                                        // 64MB
 const int64_t PALF_BLOCK_SIZE = PALF_PHY_BLOCK_SIZE - MAX_INFO_BLOCK_SIZE;          // log block size is 64M-MAX_INFO_BLOCK_SIZE by default.
@@ -108,8 +109,12 @@ typedef common::ObFixedArray<LogWriteBuf *, ObIAllocator> LogWriteBufArray;
 // ==================== block and log end ===========================
 
 // ====================== Consensus begin ===========================
-constexpr int64_t LEADER_DEFAULT_GROUP_BUFFER_SIZE = 1 << 23;                           // leader's group buffer size is 8MB
 // follower's group buffer size is as same as leader's.
+#ifdef OB_BUILD_EMBED_MODE
+constexpr int64_t LEADER_DEFAULT_GROUP_BUFFER_SIZE = 1 << 22;
+#else
+constexpr int64_t LEADER_DEFAULT_GROUP_BUFFER_SIZE = 1 << 23;                           // leader's group buffer size is 8MB
+#endif
 constexpr int64_t FOLLOWER_DEFAULT_GROUP_BUFFER_SIZE = LEADER_DEFAULT_GROUP_BUFFER_SIZE + 0L;
 const int64_t PALF_STAT_PRINT_INTERVAL_US = 1 * 1000 * 1000L;
 // The advance delay threshold for match lsn is 1s.

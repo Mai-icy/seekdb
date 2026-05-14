@@ -52,18 +52,14 @@ private:
 private:
   enum CACHE_COLUMN
   {
-        CACHE_NAME = common::OB_APP_MIN_COLUMN_ID,
+    CACHE_NAME = common::OB_APP_MIN_COLUMN_ID,
     CACHE_ID,
-    PRIORITY,
     CACHE_SIZE,
-    CACHE_STORE_SIZE,
-    CACHE_MAP_SIZE,
     KV_CNT,
     HIT_RATIO,
     TOTAL_PUT_CNT,
     TOTAL_HIT_CNT,
-    TOTAL_MISS_CNT,
-    HOLD_SIZE
+    TOTAL_MISS_CNT
   };
   common::ObAddr *addr_;
   common::ObString ipstr_;

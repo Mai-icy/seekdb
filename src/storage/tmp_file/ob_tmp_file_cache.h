@@ -107,7 +107,7 @@ class ObTmpBlockCache final : public common::ObKVCache<ObTmpBlockCacheKey, ObTmp
 public:
   typedef common::ObKVCache<ObTmpBlockCacheKey, ObTmpBlockCacheValue> BasePageCache;
   static ObTmpBlockCache &get_instance();
-  int init(const char *cache_name, const int64_t priority);
+  int init(const char *cache_name);
   void destroy();
   int get_block(const ObTmpBlockCacheKey &key, ObTmpBlockValueHandle &handle);
   int put_block(ObKVCacheInstHandle &inst_handle,
@@ -221,7 +221,7 @@ class ObTmpPageCache final : public common::ObKVCache<ObTmpPageCacheKey, ObTmpPa
 public:
   typedef common::ObKVCache<ObTmpPageCacheKey, ObTmpPageCacheValue> BasePageCache;
   static ObTmpPageCache &get_instance();
-  int init(const char *cache_name, const int64_t priority);
+  int init(const char *cache_name);
   // only read disk pages
   int direct_read(ObTmpPageCacheReadInfo &read_info,
                   common::ObIAllocator &callback_allocator);

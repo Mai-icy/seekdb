@@ -16,6 +16,8 @@
 
 #include "ob_admin_object_storage_driver_quality.h"
 
+#include <malloc.h>
+
 using namespace oceanbase::share;
 using namespace oceanbase::common;
 

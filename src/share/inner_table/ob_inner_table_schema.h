@@ -687,7 +687,6 @@ public:
   static int all_virtual_scheduler_job_run_detail_v2_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_spatial_reference_systems_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_log_transport_dest_stat_schema(share::schema::ObTableSchema &table_schema);
-  static int all_virtual_ss_local_cache_info_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_kv_group_commit_status_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_vector_index_info_schema(share::schema::ObTableSchema &table_schema);
   static int all_virtual_pkg_type_schema(share::schema::ObTableSchema &table_schema);
@@ -1101,8 +1100,6 @@ public:
   static int cdb_ob_table_space_usage_schema(share::schema::ObTableSchema &table_schema);
   static int gv_ob_log_transport_dest_stat_schema(share::schema::ObTableSchema &table_schema);
   static int v_ob_log_transport_dest_stat_schema(share::schema::ObTableSchema &table_schema);
-  static int gv_ob_ss_local_cache_schema(share::schema::ObTableSchema &table_schema);
-  static int v_ob_ss_local_cache_schema(share::schema::ObTableSchema &table_schema);
   static int gv_ob_kv_group_commit_status_schema(share::schema::ObTableSchema &table_schema);
   static int v_ob_kv_group_commit_status_schema(share::schema::ObTableSchema &table_schema);
   static int innodb_sys_fields_schema(share::schema::ObTableSchema &table_schema);
@@ -2140,7 +2137,6 @@ const schema_create_func virtual_table_schema_creators [] = {
   ObInnerTableSchema::all_virtual_scheduler_job_run_detail_v2_schema,
   ObInnerTableSchema::all_virtual_spatial_reference_systems_schema,
   ObInnerTableSchema::all_virtual_log_transport_dest_stat_schema,
-  ObInnerTableSchema::all_virtual_ss_local_cache_info_schema,
   ObInnerTableSchema::all_virtual_kv_group_commit_status_schema,
   ObInnerTableSchema::all_virtual_vector_index_info_schema,
   ObInnerTableSchema::all_virtual_pkg_type_schema,
@@ -2565,8 +2561,6 @@ const schema_create_func sys_view_schema_creators [] = {
   ObInnerTableSchema::cdb_ob_table_space_usage_schema,
   ObInnerTableSchema::gv_ob_log_transport_dest_stat_schema,
   ObInnerTableSchema::v_ob_log_transport_dest_stat_schema,
-  ObInnerTableSchema::gv_ob_ss_local_cache_schema,
-  ObInnerTableSchema::v_ob_ss_local_cache_schema,
   ObInnerTableSchema::gv_ob_kv_group_commit_status_schema,
   ObInnerTableSchema::v_ob_kv_group_commit_status_schema,
   ObInnerTableSchema::innodb_sys_fields_schema,
@@ -3062,7 +3056,6 @@ const uint64_t tenant_space_tables [] = {
   OB_ALL_VIRTUAL_GROUP_IO_STAT_TID,
   OB_ALL_VIRTUAL_NIC_INFO_TID,
   OB_ALL_VIRTUAL_LOG_TRANSPORT_DEST_STAT_TID,
-  OB_ALL_VIRTUAL_SS_LOCAL_CACHE_INFO_TID,
   OB_ALL_VIRTUAL_KV_GROUP_COMMIT_STATUS_TID,
   OB_ALL_VIRTUAL_VECTOR_INDEX_INFO_TID,
   OB_ALL_VIRTUAL_KV_CLIENT_INFO_TID,
@@ -3384,8 +3377,6 @@ const uint64_t tenant_space_tables [] = {
   OB_DBA_OB_TABLE_SPACE_USAGE_TID,
   OB_GV_OB_LOG_TRANSPORT_DEST_STAT_TID,
   OB_V_OB_LOG_TRANSPORT_DEST_STAT_TID,
-  OB_GV_OB_SS_LOCAL_CACHE_TID,
-  OB_V_OB_SS_LOCAL_CACHE_TID,
   OB_GV_OB_KV_GROUP_COMMIT_STATUS_TID,
   OB_V_OB_KV_GROUP_COMMIT_STATUS_TID,
   OB_INNODB_SYS_FIELDS_TID,
@@ -4227,7 +4218,6 @@ const char* const tenant_space_table_names [] = {
   OB_ALL_VIRTUAL_GROUP_IO_STAT_TNAME,
   OB_ALL_VIRTUAL_NIC_INFO_TNAME,
   OB_ALL_VIRTUAL_LOG_TRANSPORT_DEST_STAT_TNAME,
-  OB_ALL_VIRTUAL_SS_LOCAL_CACHE_INFO_TNAME,
   OB_ALL_VIRTUAL_KV_GROUP_COMMIT_STATUS_TNAME,
   OB_ALL_VIRTUAL_VECTOR_INDEX_INFO_TNAME,
   OB_ALL_VIRTUAL_KV_CLIENT_INFO_TNAME,
@@ -4549,8 +4539,6 @@ const char* const tenant_space_table_names [] = {
   OB_DBA_OB_TABLE_SPACE_USAGE_TNAME,
   OB_GV_OB_LOG_TRANSPORT_DEST_STAT_TNAME,
   OB_V_OB_LOG_TRANSPORT_DEST_STAT_TNAME,
-  OB_GV_OB_SS_LOCAL_CACHE_TNAME,
-  OB_V_OB_SS_LOCAL_CACHE_TNAME,
   OB_GV_OB_KV_GROUP_COMMIT_STATUS_TNAME,
   OB_V_OB_KV_GROUP_COMMIT_STATUS_TNAME,
   OB_INNODB_SYS_FIELDS_TNAME,
@@ -6673,11 +6661,11 @@ static inline int get_sys_table_lob_aux_schema(const uint64_t tid,
 
 const int64_t OB_CORE_TABLE_COUNT = 4;
 const int64_t OB_SYS_TABLE_COUNT = 178;
-const int64_t OB_VIRTUAL_TABLE_COUNT = 383;
-const int64_t OB_SYS_VIEW_COUNT = 418;
-const int64_t OB_SYS_TENANT_TABLE_COUNT = 984;
+const int64_t OB_VIRTUAL_TABLE_COUNT = 382;
+const int64_t OB_SYS_VIEW_COUNT = 416;
+const int64_t OB_SYS_TENANT_TABLE_COUNT = 981;
 const int64_t OB_CORE_SCHEMA_VERSION = 1;
-const int64_t OB_BOOTSTRAP_SCHEMA_VERSION = 987;
+const int64_t OB_BOOTSTRAP_SCHEMA_VERSION = 984;
 
 } // end namespace share
 } // end namespace oceanbase

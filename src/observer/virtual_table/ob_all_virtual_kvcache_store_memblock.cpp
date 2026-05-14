@@ -113,15 +113,6 @@ int ObAllVirtualKVCacheStoreMemblock::process_row(const ObKVCacheStoreMemblockIn
     for (int64_t cell_idx = 0 ; OB_SUCC(ret) && cell_idx < output_column_ids_.count() ; ++cell_idx) {
       uint64_t col_id = output_column_ids_.at(cell_idx);
       switch (col_id) {
-        case CACHE_ID : {
-          cur_row_.cells_[cell_idx].set_int(info.cache_id_);
-          break;
-        }
-        case CACHE_NAME : {
-          cur_row_.cells_[cell_idx].set_varchar(info.cache_name_);
-          cur_row_.cells_[cell_idx].set_collation_type(ObCharset::get_default_collation(ObCharset::get_default_charset()));
-          break;
-        }
         case MEMBLOCK_PTR : {
           cur_row_.cells_[cell_idx].set_varchar(info.memblock_ptr_);
           cur_row_.cells_[cell_idx].set_collation_type(ObCharset::get_default_collation(ObCharset::get_default_charset()));
@@ -149,10 +140,6 @@ int ObAllVirtualKVCacheStoreMemblock::process_row(const ObKVCacheStoreMemblockIn
         }
         case RECENT_GET_CNT : {
           cur_row_.cells_[cell_idx].set_int(info.recent_get_cnt_);
-          break;
-        }
-        case PRIORITY : {
-          cur_row_.cells_[cell_idx].set_int(info.priority_);
           break;
         }
         case SCORE : {

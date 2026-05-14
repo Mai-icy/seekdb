@@ -432,12 +432,11 @@ int ObSchemaCache::init()
 {
   int ret = OB_SUCCESS;
   // TODO, configurable
-  const int64_t priority = 1001;
-  if (OB_FAIL(cache_.init(OB_SCHEMA_CACHE_NAME, priority))) {
+  if (OB_FAIL(cache_.init(OB_SCHEMA_CACHE_NAME))) {
     LOG_WARN("init schema cache failed", KR(ret));
-  } else if (OB_FAIL(history_cache_.init(OB_SCHEMA_HISTORY_CACHE_NAME, priority))) {
+  } else if (OB_FAIL(history_cache_.init(OB_SCHEMA_HISTORY_CACHE_NAME))) {
     LOG_WARN("init schema history cache failed", K(ret));
-  } else if (OB_FAIL(tablet_cache_.init(OB_TABLET_TABLE_CACHE_NAME, priority))) {
+  } else if (OB_FAIL(tablet_cache_.init(OB_TABLET_TABLE_CACHE_NAME))) {
     LOG_WARN("init tablet-table cache failed", KR(ret));
   } else if (OB_FAIL(sys_cache_.create(OB_SCHEMA_CACHE_SYS_CACHE_MAP_BUCKET_NUM,
                                        SET_USE_500(ObModIds::OB_SCHEMA_CACHE_SYS_CACHE_MAP)))) {

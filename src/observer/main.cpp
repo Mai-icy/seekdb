@@ -589,35 +589,6 @@ int inner_main(int argc, char *argv[])
 #endif
   ObStackHeaderGuard stack_header_guard;
   int64_t memory_used = get_virtual_memory_used();
-#if !defined(OB_USE_ASAN) && !defined(_WIN32)
-  /**
-    signal handler stack
-   */
-  void *ptr = malloc(SIG_STACK_SIZE);
-  abort_unless(ptr != nullptr);
-  stack_t nss;
-  stack_t oss;
-  bzero(&nss, sizeof(nss));
-  bzero(&oss, sizeof(oss));
-  nss.ss_sp = ptr;
-  nss.ss_size = SIG_STACK_SIZE;
-#ifdef __APPLE__
-  // On macOS, sigaltstack might fail or behave differently
-  // Just try to set it but don't abort if it fails
-  int sigaltstack_ret = sigaltstack(&nss, &oss);
-  if (0 == sigaltstack_ret) {
-    DEFER(sigaltstack(&oss, nullptr));
-  } else {
-    // sigaltstack failed, but continue anyway
-    free(ptr);
-    ptr = nullptr;
-  }
-#else
-  abort_unless(0 == sigaltstack(&nss, &oss));
-  DEFER(sigaltstack(&oss, nullptr));
-#endif
-  ::oceanbase::common::g_redirect_handler = true;
-#endif
 
   // Fake routines for current thread.
 
@@ -631,8 +602,9 @@ int inner_main(int argc, char *argv[])
   const char *const PID_FILE_NAME             = "run/seekdb.pid";
   int               ret                       = OB_SUCCESS;
 
-  MPRINT("Starting seekdb (%s %s %s) source revision %s.",
-    OB_OCEANBASE_NAME, OB_SEEKDB_NAME, PACKAGE_VERSION, build_version());
+  const char *embed_mode = is_embed_mode() ? "embed " : "";
+  MPRINT("Starting seekdb (%s %s %s%s) source revision %s.",
+    OB_OCEANBASE_NAME, OB_SEEKDB_NAME, embed_mode, PACKAGE_VERSION, build_version());
 
 #ifndef _WIN32
   // change signal mask first (POSIX only).

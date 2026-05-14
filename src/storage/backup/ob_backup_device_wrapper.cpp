@@ -292,7 +292,9 @@ int ObBackupWrapperIODevice::parse_storage_device_type_(
   } else if (storage_type_prefix.prefix_match(OB_FILE_PREFIX)) {
     device_type = OB_STORAGE_FILE;
   } else if (storage_type_prefix.prefix_match(OB_S3_PREFIX)) {
-    device_type = OB_STORAGE_S3;
+    ret = OB_NOT_SUPPORTED;
+    LOG_USER_ERROR(OB_NOT_SUPPORTED, "S3 storage");
+    LOG_WARN("S3 storage is not supported", K(ret), K(storage_type_prefix));
   } else if (storage_type_prefix.prefix_match(OB_AZBLOB_PREFIX)) {
     device_type = OB_STORAGE_AZBLOB;
   } else if (storage_type_prefix.prefix_match(OB_OSS_PREFIX)) {

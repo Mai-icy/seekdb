@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef OB_BUILD_EMBED_MODE
 #define USING_LOG_PREFIX SQL_ENG
 
 #include "ob_arrow_basic.h"
@@ -250,3 +251,4 @@ arrow::Result<int64_t> ObParquetOutputStream::Tell() const
 
 } // end of oceanbase namespace
 } // end of oceanbase namespace
+#endif // !OB_BUILD_EMBED_MODE

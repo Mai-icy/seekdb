@@ -459,6 +459,11 @@ public:
   inline int add_out_arg(int64_t i) { return out_args_.add_member(i); }
   inline ObFuncPtr get_action() const { return action_; }
   inline void set_action(ObFuncPtr action) { action_ = action; }
+  inline const common::ObString &get_interface_name() const { return interface_name_; }
+  int set_interface_name(const ObString &interface_name)
+  {
+    return ob_write_string(get_allocator(), interface_name, interface_name_);
+  }
 
   inline bool is_debug_mode() const { return !get_debug_info().empty(); }
 
@@ -556,6 +561,7 @@ private:
   common::ObString package_name_;
   common::ObString database_name_;
   common::ObString priv_user_;
+  common::ObString interface_name_;
   bool has_parallel_affect_factor_;
 
   DISALLOW_COPY_AND_ASSIGN(ObPLFunction);
@@ -1240,6 +1246,7 @@ public:
   static int insert_error_msg(int errcode);
 
   static int simple_execute(ObPLExecCtx *ctx, int64_t argc, int64_t *argv);
+  static int interface_execute(ObPLExecCtx *ctx, int64_t argc, int64_t *argv);
   
   static int check_trigger_arg(ParamStore &params, const ObPLFunction &func, ObPLContext &pl_ctx, ObExecContext &ctx);
 

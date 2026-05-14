@@ -157,11 +157,11 @@ int ObTruncateInfoCacheValue::deep_copy(char *buf, const int64_t buf_len, ObIKVC
 /*
 * ObTruncateInfoKVCache
 * */
-int ObTruncateInfoKVCache::init(const char *cache_name, const int64_t priority)
+int ObTruncateInfoKVCache::init(const char *cache_name)
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL((ObKVCache<ObTruncateInfoCacheKey, ObTruncateInfoCacheValue>::init(cache_name,  priority)))) {
-    LOG_WARN("fail to init truncate info kv cache", K(ret), K(priority));
+  if (OB_FAIL((ObKVCache<ObTruncateInfoCacheKey, ObTruncateInfoCacheValue>::init(cache_name)))) {
+    LOG_WARN("fail to init truncate info kv cache", K(ret));
   }
   return ret;
 }

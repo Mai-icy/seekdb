@@ -100,11 +100,6 @@ int init_io_device(const char *test_name,
     storage_env.clog_dir_ = clog_dir;
 
     storage_env.bf_cache_miss_count_threshold_ = 10000;
-    storage_env.bf_cache_priority_ = 1;
-    storage_env.index_block_cache_priority_ = 10;
-    storage_env.user_block_cache_priority_ = 1;
-    storage_env.user_row_cache_priority_ = 1;
-    storage_env.fuse_row_cache_priority_ = 1;
     storage_env.storage_meta_cache_priority_ = 10;
     storage_env.ethernet_speed_ = 1000000;
     storage_env.redundancy_level_ = ObStorageEnv::NORMAL_REDUNDANCY;

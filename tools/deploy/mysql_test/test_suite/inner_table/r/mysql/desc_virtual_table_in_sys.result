@@ -381,16 +381,12 @@ desc oceanbase.__all_virtual_kvcache_info;
 Field	Type	Null	Key	Default	Extra
 cache_name	varchar(128)	NO		NULL	
 cache_id	bigint(20)	NO		NULL	
-priority	bigint(20)	NO		NULL	
 cache_size	bigint(20)	NO		NULL	
-cache_store_size	bigint(20)	NO		NULL	
-cache_map_size	bigint(20)	NO		NULL	
 kv_cnt	bigint(20)	NO		NULL	
 hit_ratio	decimal(38,3)	NO		NULL	
 total_put_cnt	bigint(20)	NO		NULL	
 total_hit_cnt	bigint(20)	NO		NULL	
 total_miss_cnt	bigint(20)	NO		NULL	
-hold_size	bigint(20)	NO		NULL	
 select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_kvcache_info;
 IF(count(*) >= 0, 1, 0)
 1
@@ -5158,8 +5154,6 @@ IF(count(*) >= 0, 1, 0)
 select /*+QUERY_TIMEOUT(60000000)*/ * from oceanbase.__all_virtual_storage_meta_memory_status limit 1;
 desc oceanbase.__all_virtual_kvcache_store_memblock;
 Field	Type	Null	Key	Default	Extra
-cache_id	bigint(20)	NO		NULL	
-cache_name	varchar(128)	NO		NULL	
 memblock_ptr	varchar(32)	NO		NULL	
 ref_count	bigint(20)	NO		NULL	
 status	bigint(20)	NO		NULL	
@@ -5167,8 +5161,7 @@ policy	bigint(20)	NO		NULL
 kv_cnt	bigint(20)	NO		NULL	
 get_cnt	bigint(20)	NO		NULL	
 recent_get_cnt	bigint(20)	NO		NULL	
-priority	bigint(20)	NO		NULL	
-score	decimal(38,3)	NO		NULL	
+score	decimal(38,6)	NO		NULL
 align_size	bigint(20)	NO		NULL	
 select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_kvcache_store_memblock;
 IF(count(*) >= 0, 1, 0)
@@ -6681,23 +6674,6 @@ select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all
 IF(count(*) >= 0, 1, 0)
 1
 select /*+QUERY_TIMEOUT(60000000)*/ * from oceanbase.__all_virtual_log_transport_dest_stat limit 1;
-desc oceanbase.__all_virtual_ss_local_cache_info;
-Field	Type	Null	Key	Default	Extra
-cache_name	varchar(128)	NO		NULL	
-priority	bigint(20)	NO		NULL	
-hit_ratio	decimal(38,3)	NO		NULL	
-total_hit_cnt	bigint(20)	NO		NULL	
-total_hit_bytes	bigint(20)	NO		NULL	
-total_miss_cnt	bigint(20)	NO		NULL	
-total_miss_bytes	bigint(20)	NO		NULL	
-hold_size	bigint(20)	NO		NULL	
-alloc_disk_size	bigint(20)	NO		NULL	
-used_disk_size	bigint(20)	NO		NULL	
-used_mem_size	bigint(20)	NO		NULL	
-select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_ss_local_cache_info;
-IF(count(*) >= 0, 1, 0)
-1
-select /*+QUERY_TIMEOUT(60000000)*/ * from oceanbase.__all_virtual_ss_local_cache_info limit 1;
 desc oceanbase.__all_virtual_kv_group_commit_status;
 Field	Type	Null	Key	Default	Extra
 group_type	varchar(32)	NO		NULL	

@@ -77,6 +77,8 @@ int check_files_map_validity(const hash::ObHashMap<ObString, int64_t> &files_to_
 int record_failed_files_idx(const hash::ObHashMap<ObString, int64_t> &files_to_delete,
                             ObIArray<int64_t> &failed_files_idx);
 int ob_set_field(const char *value, char *field, const uint32_t field_length);
+int reject_s3_storage(const char *op_name);
+int reject_s3_storage(const char *op_name, const common::ObString &uri);
 
 struct ObStorageObjectMetaBase
 {

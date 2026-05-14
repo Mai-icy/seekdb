@@ -265,6 +265,7 @@ int64_t ObCsvFileWriter::get_curr_bytes_exclude_curr_line()
   return curr_bytes_exclude_curr_line;
 }
 
+#ifndef OB_BUILD_EMBED_MODE
 int ObParquetFileWriter::open_parquet_file_writer(ObArrowMemPool &arrow_alloc,
                                                   const int64_t &row_group_size,
                                                   const int64_t &compress_type_index,
@@ -565,6 +566,7 @@ int ObParquetFileWriter::close_file()
   return ret;
 }
 
+#endif // !OB_BUILD_EMBED_MODE
 
 
 }

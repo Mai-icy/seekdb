@@ -20,9 +20,11 @@
 #include "share/backup/ob_backup_io_adapter.h"
 #include "share/external_table/ob_external_table_utils.h"
 #include "share/ob_device_manager.h"
+#ifndef OB_BUILD_EMBED_MODE
 #include "sql/engine/table/ob_parquet_table_row_iter.h"
-#include "sql/engine/cmd/ob_load_data_file_reader.h"
 #include "sql/engine/table/ob_orc_table_row_iter.h"
+#endif
+#include "sql/engine/cmd/ob_load_data_file_reader.h"
 #include "sql/engine/table/ob_csv_table_row_iter.h"
 #include "sql/engine/expr/ob_expr_regexp_context.h"
 #include "share/config/ob_server_config.h"

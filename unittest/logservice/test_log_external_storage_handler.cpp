@@ -24,6 +24,7 @@
 #undef private
 #include "share/ob_device_manager.h"
 #include <gtest/gtest.h>
+#include <thread>
 
 namespace oceanbase
 {

@@ -65,9 +65,8 @@ class ObKVCache : public ObIKVCache<Key, Value>
 public:
   ObKVCache();
   virtual ~ObKVCache();
-  int init(const char *cache_name, const int64_t priority = 1, const int64_t mem_limit_pct = 100);
+  int init(const char *cache_name, const int64_t mem_limit_pct = 100);
   void destroy();
-  int set_priority(const int64_t priority);
   int set_mem_limit_pct(const int64_t mem_limit_pct);
   virtual int put(const Key &key, const Value &value, bool overwrite = true);
   virtual int put_and_fetch(
@@ -113,10 +112,9 @@ public:
   void stop();
   void wait();
   void destroy();
-  void reload_priority();
   int reload_wash_interval();
   int get_suitable_bucket_num(int64_t& bucket_num);
-  int get_cache_inst_info(const uint64_t tenant_id, ObIArray<ObKVCacheInstHandle> &inst_handles);
+  int get_cache_inst_info(ObIArray<ObKVCacheInstHandle> &inst_handles);
   int get_memblock_info(const uint64_t tenant_id, ObIArray<ObKVCacheStoreMemblockInfo> &memblock_infos);
   void print_all_cache_info();
   int erase_cache();
@@ -124,9 +122,6 @@ public:
   int sync_flush_tenant(const uint64_t tenant_id);
   int erase_cache(const uint64_t tenant_id, const char *cache_name);
   int erase_cache(const char *cache_name);
-
-  int set_hold_size(const uint64_t tenant_id, const char *cache_name, const int64_t hold_size);
-  int get_hold_size(const uint64_t tenant_id, const char *cache_name, int64_t &hold_size);
 
   int get_washable_size(const uint64_t tenant_id, int64_t &washable_size);
 
@@ -147,9 +142,8 @@ private:
   friend class HazptrHolder;
   ObKVGlobalCache();
   virtual ~ObKVGlobalCache();
-  int register_cache(const char *cache_name, const int64_t priority, const int64_t mem_limit_pct, int64_t &cache_id);
+  int register_cache(const char *cache_name, const int64_t mem_limit_pct, int64_t &cache_id);
   void deregister_cache(const int64_t cache_id);
-  int set_priority(const int64_t cache_id, const int64_t priority);
   int set_mem_limit_pct(const int64_t cache_id, const int64_t mem_limit_pct);
   int put(
     const int64_t cache_id,
@@ -174,14 +168,7 @@ private:
       ObKVCachePair *&kvpair,
       HazptrHolder &hazptr_holder,
       ObKVCacheInstHandle &inst_handle);
-  // int alloc(
-  //     ObWorkingSet *working_set,
-  //     const uint64_t tenant_id,
-  //     const int64_t key_size,
-  //     const int64_t value_size,
-  //     ObKVCachePair *&kvpair,
-  //     HazptrHolder &hazptr_holder,
-  //     ObKVCacheInstHandle &inst_handle);
+
   int alloc(
       ObIKVCacheStore &store,
       const int64_t cache_id,
@@ -292,9 +279,9 @@ public:
   inline ObKVMemBlockHandle* get_mb_handle() const { return hazptr_holder_.get_mb_handle(); }
   inline void set_hazptr_holder(HazptrHolder& hazptr_holder) { this->hazptr_holder_.move_from(hazptr_holder); }
   bool need_trace() const;
-  storage::ObStorageCheckID get_check_id() const { return static_cast<storage::ObStorageCheckID>(get_mb_handle()->inst_->cache_id_); }
+  storage::ObStorageCheckID get_check_id() const { return static_cast<storage::ObStorageCheckID>(0); }
   TO_STRING_KV(K_(hazptr_holder));
-  
+
 private:
   template<class Key, class Value> friend class ObIKVCache;
   template<class Key, class Value> friend class ObKVCache;
@@ -375,20 +362,20 @@ ObKVCache<Key, Value>::~ObKVCache()
 }
 
 template <class Key, class Value>
-int ObKVCache<Key, Value>::init(const char *cache_name, const int64_t priority, const int64_t mem_limit_pct)
+int ObKVCache<Key, Value>::init(const char *cache_name, const int64_t mem_limit_pct)
 {
   int ret = OB_SUCCESS;
   if (OB_UNLIKELY(inited_)) {
     ret = OB_INIT_TWICE;
     COMMON_LOG(WARN, "The ObKVCache has been inited, ", K(ret));
   } else if (OB_UNLIKELY(NULL == cache_name)
-      || OB_UNLIKELY(priority <= 0 || mem_limit_pct <= 0 || mem_limit_pct > 100)) {
+      || OB_UNLIKELY(mem_limit_pct <= 0 || mem_limit_pct > 100)) {
     ret = OB_INVALID_ARGUMENT;
-    COMMON_LOG(WARN, "Invalid argument, ", KP(cache_name), K(priority), K(ret));
-  } else if (OB_FAIL(ObKVGlobalCache::get_instance().register_cache(cache_name, priority, mem_limit_pct, cache_id_))) {
+    COMMON_LOG(WARN, "Invalid argument, ", KP(cache_name), K(ret));
+  } else if (OB_FAIL(ObKVGlobalCache::get_instance().register_cache(cache_name, mem_limit_pct, cache_id_))) {
     COMMON_LOG(WARN, "Fail to register cache, ", K(ret));
   } else {
-    COMMON_LOG(INFO, "Succ to register cache", K(cache_name), K(priority), K_(cache_id));
+    COMMON_LOG(INFO, "Succ to register cache", K(cache_name), K_(cache_id));
     inited_ = true;
   }
   return ret;
@@ -404,51 +391,16 @@ void ObKVCache<Key, Value>::destroy()
 }
 
 template <class Key, class Value>
-int ObKVCache<Key, Value>::set_priority(const int64_t priority)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(!inited_)) {
-    ret = OB_NOT_INIT;
-    COMMON_LOG(WARN, "The ObKVCache has not been inited, ", K(ret));
-  } else if (OB_UNLIKELY(priority <= 0)) {
-    ret = OB_INVALID_ARGUMENT;
-    COMMON_LOG(WARN, "Invalid argument, ", K(priority), K(ret));
-  } else if (OB_FAIL(ObKVGlobalCache::get_instance().set_priority(cache_id_, priority))) {
-    COMMON_LOG(WARN, "Fail to set priority, ", K(ret));
-  }
-  return ret;
-}
-
-template <class Key, class Value>
-int ObKVCache<Key, Value>::set_mem_limit_pct(const int64_t mem_limit_pct)
-{
-  int ret = OB_SUCCESS;
-
-  if (OB_UNLIKELY(!inited_)) {
-    ret = OB_NOT_INIT;
-    COMMON_LOG(WARN, "The ObKVCache has not been inited, ", K(ret));
-  } else if (OB_UNLIKELY(mem_limit_pct <= 0 || mem_limit_pct > 100)) {
-    ret = OB_INVALID_ARGUMENT;
-    COMMON_LOG(WARN, "Invalid argument, ", K(mem_limit_pct), K(ret));
-  } else if (OB_FAIL(ObKVGlobalCache::get_instance().set_mem_limit_pct(cache_id_, mem_limit_pct))) {
-    COMMON_LOG(WARN, "Fail to set mem_limit_pct, ", K(ret));
-  }
-
-  return ret;
-}
-
-template <class Key, class Value>
 int64_t ObKVCache<Key, Value>::size(const uint64_t tenant_id) const
 {
   int64_t size = 0;
   if (OB_LIKELY(inited_)) {
     int ret = OB_SUCCESS;
-    ObKVCacheInstKey inst_key(cache_id_, tenant_id);
+    ObKVCacheInstKey inst_key(cache_id_);
     ObKVCacheInstHandle inst_handle;
     if (OB_SUCC(ObKVGlobalCache::get_instance().insts_.get_cache_inst(inst_key, inst_handle))) {
       if (NULL != inst_handle.get_inst()) {
         size += inst_handle.get_inst()->status_.store_size_;
-        size += inst_handle.get_inst()->node_allocator_.allocated();
       }
     }
   }
@@ -461,7 +413,7 @@ int64_t ObKVCache<Key, Value>::count(const uint64_t tenant_id) const
   int64_t count = 0;
   if (OB_LIKELY(inited_)) {
     int ret = OB_SUCCESS;
-    ObKVCacheInstKey inst_key(cache_id_, tenant_id);
+    ObKVCacheInstKey inst_key(cache_id_);
     ObKVCacheInstHandle inst_handle;
     if (OB_SUCC(ObKVGlobalCache::get_instance().insts_.get_cache_inst(inst_key, inst_handle))) {
       if (NULL != inst_handle.get_inst()) {
@@ -478,7 +430,7 @@ int64_t ObKVCache<Key, Value>::get_hit_cnt(const uint64_t tenant_id) const
   int64_t hit_cnt = 0;
   if (OB_LIKELY(inited_)) {
     int ret = OB_SUCCESS;
-    ObKVCacheInstKey inst_key(cache_id_, tenant_id);
+    ObKVCacheInstKey inst_key(cache_id_);
     ObKVCacheInstHandle inst_handle;
     if (OB_SUCC(ObKVGlobalCache::get_instance().insts_.get_cache_inst(inst_key, inst_handle))) {
       if (NULL != inst_handle.get_inst()) {
@@ -495,7 +447,7 @@ int64_t ObKVCache<Key, Value>::get_miss_cnt(const uint64_t tenant_id) const
   int64_t miss_cnt = 0;
   if (OB_LIKELY(inited_)) {
     int ret = OB_SUCCESS;
-    ObKVCacheInstKey inst_key(cache_id_, tenant_id);
+    ObKVCacheInstKey inst_key(cache_id_);
     ObKVCacheInstHandle inst_handle;
     if (OB_SUCC(ObKVGlobalCache::get_instance().insts_.get_cache_inst(inst_key, inst_handle))) {
       if (NULL != inst_handle.get_inst()) {
@@ -636,7 +588,7 @@ int64_t ObKVCache<Key, Value>::store_size(const uint64_t tenant_id) const
   int64_t store_size = 0;
   if (OB_LIKELY(inited_)) {
     int ret = OB_SUCCESS;
-    ObKVCacheInstKey inst_key(cache_id_, tenant_id);
+    ObKVCacheInstKey inst_key(cache_id_);
     ObKVCacheInstHandle inst_handle;
     if (OB_SUCC(ObKVGlobalCache::get_instance().insts_.get_cache_inst(inst_key, inst_handle))) {
       if (NULL != inst_handle.get_inst()) {

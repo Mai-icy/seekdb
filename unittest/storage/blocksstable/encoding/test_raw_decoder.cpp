@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <chrono>
+
 #define USING_LOG_PREFIX STORAGE
 
 #define protected public

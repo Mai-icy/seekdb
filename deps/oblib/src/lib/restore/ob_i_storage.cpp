@@ -149,7 +149,7 @@ int get_storage_prefix_from_path(const common::ObString &uri, const char *&prefi
 {
   int ret = OB_SUCCESS;
   if (uri.prefix_match(OB_S3_PREFIX)) {
-    prefix = OB_S3_PREFIX;
+    ret = reject_s3_storage("get storage prefix", uri);
   } else if (uri.prefix_match(OB_FILE_PREFIX)) {
     prefix = OB_FILE_PREFIX;
   } else if (uri.prefix_match(OB_AZBLOB_PREFIX)) {
@@ -372,6 +372,21 @@ int ob_set_field(const char *value, char *field, const uint32_t field_length)
   return ret;
 }
 
+int reject_s3_storage(const char *op_name)
+{
+  int ret = OB_NOT_SUPPORTED;
+  LOG_USER_ERROR(OB_NOT_SUPPORTED, "S3 storage");
+  STORAGE_LOG(WARN, "S3 storage is not supported", KR(ret), KCSTRING(op_name));
+  return ret;
+}
+
+int reject_s3_storage(const char *op_name, const common::ObString &uri)
+{
+  int ret = OB_NOT_SUPPORTED;
+  LOG_USER_ERROR(OB_NOT_SUPPORTED, "S3 storage");
+  STORAGE_LOG(WARN, "S3 storage is not supported", KR(ret), KCSTRING(op_name), K(uri));
+  return ret;
+}
 /*--------------------------------ObAppendableFragmentMeta--------------------------------*/
 OB_SERIALIZE_MEMBER(ObAppendableFragmentMeta, start_, end_);
 
@@ -825,19 +840,15 @@ int ObStoragePartInfoHandler::add_part_info(
 
 static lib::ObMemAttr get_mem_attr_from_storage_info(const ObObjectStorageInfo *storage_info)
 {
-  static lib::ObMemAttr s3_attr;
   static lib::ObMemAttr nfs_attr;
   static lib::ObMemAttr default_attr;
-  s3_attr.label_ = "S3_SDK";
   nfs_attr.label_ = "NFS_SDK";
   default_attr.label_ = "OBJECT_STORAGE";
 
   lib::ObMemAttr ret_attr = default_attr;
   if (OB_NOT_NULL(storage_info) && storage_info->is_valid()) {
     const ObStorageType type = storage_info->get_type();
-    if (OB_STORAGE_S3 == type) {
-      ret_attr = s3_attr;
-    } else if (OB_STORAGE_FILE == type) {
+    if (OB_STORAGE_FILE == type) {
       ret_attr = nfs_attr;
     }
   }

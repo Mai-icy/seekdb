@@ -4269,6 +4269,21 @@ int ObPL::simple_execute(ObPLExecCtx *ctx, int64_t argc, int64_t *argv)
   return ret;
 }
 
+int ObPL::interface_execute(ObPLExecCtx *ctx, int64_t argc, int64_t *argv)
+{
+  int ret = OB_SUCCESS;
+  UNUSED(argc);
+  UNUSED(argv);
+  ObPLFunction *func = NULL;
+  ObSqlString interface_name;
+  CK (OB_NOT_NULL(ctx));
+  CK (OB_NOT_NULL(func = ctx->func_));
+  CK (!func->get_interface_name().empty());
+  OZ (interface_name.assign(func->get_interface_name()));
+  OZ (ObSPIService::spi_interface_impl(ctx, interface_name.string().ptr()));
+  return ret;
+}
+
 int ObPLExecState::check_pl_execute_priv(ObSchemaGetterGuard &guard,
                                           const uint64_t tenant_id,
                                           const uint64_t user_id,

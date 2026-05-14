@@ -124,9 +124,8 @@ int ObBackupMetaKVCache::init()
 {
   int ret = OB_SUCCESS;
   const char *cache_name = "BACKUP_META_CACHE";
-  const int64_t priority = 1;
-  if (OB_SUCCESS != (ret = ObKVCache<ObBackupMetaCacheKey, ObBackupMetaCacheValue>::init(cache_name, priority))) {
-    LOG_WARN("failed to init ObKVCache", K(ret), K(cache_name), K(priority));
+  if (OB_SUCCESS != (ret = ObKVCache<ObBackupMetaCacheKey, ObBackupMetaCacheValue>::init(cache_name))) {
+    LOG_WARN("failed to init ObKVCache", K(ret), K(cache_name));
   } else {
     is_inited_ = true;
   }

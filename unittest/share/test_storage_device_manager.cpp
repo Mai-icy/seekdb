@@ -196,7 +196,7 @@ TEST_F(TestDeviceManager, test_device_manager)
  //MAX_DEVICE_INSTANCE different deivce
   for (int i = 0; i < max_dev_num; i++ ) {
     ObObjectStorageInfo tmp_storage_info;
-    tmp_storage_info.device_type_ = ObStorageType::OB_STORAGE_S3;
+    tmp_storage_info.device_type_ = ObStorageType::OB_STORAGE_AZBLOB;
     ASSERT_EQ(OB_SUCCESS, databuff_printf(tmp_storage_info.access_id_,
                                           sizeof(tmp_storage_info.access_id_),
                                           "%d", i));
@@ -214,7 +214,7 @@ TEST_F(TestDeviceManager, test_device_manager)
    
   //exceed MAX_DEVICE_INSTANCE device, should fail
   ObObjectStorageInfo max_storage_info;
-  max_storage_info.device_type_ = ObStorageType::OB_STORAGE_S3;
+  max_storage_info.device_type_ = ObStorageType::OB_STORAGE_AZBLOB;
   ASSERT_EQ(OB_SUCCESS, databuff_printf(max_storage_info.access_id_,
                                         sizeof(max_storage_info.access_id_),
                                         "%d", max_dev_num));
@@ -225,7 +225,7 @@ TEST_F(TestDeviceManager, test_device_manager)
   ASSERT_EQ(OB_SUCCESS, manager.release_device(device_handle[0]));
   //get this device again
   ObObjectStorageInfo min_storage_info;
-  min_storage_info.device_type_ = ObStorageType::OB_STORAGE_S3;
+  min_storage_info.device_type_ = ObStorageType::OB_STORAGE_AZBLOB;
   ASSERT_EQ(OB_SUCCESS, databuff_printf(max_storage_info.access_id_,
                                         sizeof(max_storage_info.access_id_),
                                         "%d", 0));
@@ -256,7 +256,7 @@ TEST_F(TestDeviceManager, test_device_manager)
     }
     
     ObObjectStorageInfo tmp_storage_info;
-    tmp_storage_info.device_type_ = ObStorageType::OB_STORAGE_S3;
+    tmp_storage_info.device_type_ = ObStorageType::OB_STORAGE_AZBLOB;
     ASSERT_EQ(OB_SUCCESS, databuff_printf(tmp_storage_info.access_id_,
                                           sizeof(tmp_storage_info.access_id_),
                                           "%lu", storage_id));
@@ -275,7 +275,7 @@ TEST_F(TestDeviceManager, test_device_manager)
   ObStorageIdMod default_storage_id_mod;
   for (int i = 0; i < max_dev_num / 2; i++) {
     ObObjectStorageInfo tmp_storage_info;
-    tmp_storage_info.device_type_ = ObStorageType::OB_STORAGE_S3;
+    tmp_storage_info.device_type_ = ObStorageType::OB_STORAGE_AZBLOB;
     ASSERT_EQ(OB_SUCCESS, databuff_printf(tmp_storage_info.access_id_,
                                           sizeof(tmp_storage_info.access_id_),
                                           "%d", i));
@@ -295,7 +295,7 @@ TEST_F(TestDeviceManager, test_device_manager)
   {
     ObStorageIdMod default_storage_id_mod;
     ObObjectStorageInfo tmp_storage_info;
-    tmp_storage_info.device_type_ = ObStorageType::OB_STORAGE_S3;
+    tmp_storage_info.device_type_ = ObStorageType::OB_STORAGE_AZBLOB;
     ASSERT_EQ(OB_SUCCESS, databuff_printf(tmp_storage_info.access_id_,
                                           sizeof(tmp_storage_info.access_id_),
                                           "%d", 0));

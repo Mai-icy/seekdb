@@ -15,6 +15,7 @@
  */
 
 #define USING_LOG_PREFIX STORAGE
+#include <thread>
 
 #define ASSERT_OK(x) ASSERT_EQ(OB_SUCCESS, (x))
 #include <gtest/gtest.h>

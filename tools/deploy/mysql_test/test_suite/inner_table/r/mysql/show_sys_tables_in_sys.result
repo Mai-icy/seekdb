@@ -3264,21 +3264,17 @@ id	field	type	length	precision	nullable
 25	immediate_misses	5	0	20	0
 26	spin_gets	5	0	20	0
 27	wait_time	5	0	20	0
-table oceanbase.__all_virtual_kvcache_info column_count 12 table_id 11008
+table oceanbase.__all_virtual_kvcache_info column_count 8 table_id 11008
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_virtual_column where tenant_id=1 and table_id=11008 order by column_id;
 id	field	type	length	precision	nullable
 16	cache_name	22	128	-1	0
 17	cache_id	5	0	20	0
-18	priority	5	0	20	0
-19	cache_size	5	0	20	0
-20	cache_store_size	5	0	20	0
-21	cache_map_size	5	0	20	0
-22	kv_cnt	5	0	20	0
-23	hit_ratio	15	0	38	0
-24	total_put_cnt	5	0	20	0
-25	total_hit_cnt	5	0	20	0
-26	total_miss_cnt	5	0	20	0
-27	hold_size	5	0	20	0
+18	cache_size	5	0	20	0
+19	kv_cnt	5	0	20	0
+20	hit_ratio	15	0	38	0
+21	total_put_cnt	5	0	20	0
+22	total_hit_cnt	5	0	20	0
+23	total_miss_cnt	5	0	20	0
 table oceanbase.__all_virtual_data_type_class column_count 2 table_id 11009
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_virtual_column where tenant_id=1 and table_id=11009 order by column_id;
 id	field	type	length	precision	nullable
@@ -7435,21 +7431,18 @@ id	field	type	length	precision	nullable
 19	used_obj_cnt	5	0	20	0
 20	free_obj_cnt	5	0	20	0
 21	each_obj_size	5	0	20	0
-table oceanbase.__all_virtual_kvcache_store_memblock column_count 12 table_id 12319
+table oceanbase.__all_virtual_kvcache_store_memblock column_count 9 table_id 12319
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_virtual_column where tenant_id=1 and table_id=12319 order by column_id;
 id	field	type	length	precision	nullable
-16	cache_id	5	0	20	0
-17	cache_name	22	128	-1	0
-18	memblock_ptr	22	32	-1	0
-19	ref_count	5	0	20	0
-20	status	5	0	20	0
-21	policy	5	0	20	0
-22	kv_cnt	5	0	20	0
-23	get_cnt	5	0	20	0
-24	recent_get_cnt	5	0	20	0
-25	priority	5	0	20	0
-26	score	15	0	38	0
-27	align_size	5	0	20	0
+16	memblock_ptr	22	32	-1	0
+17	ref_count	5	0	20	0
+18	status	5	0	20	0
+19	policy	5	0	20	0
+20	kv_cnt	5	0	20	0
+21	get_cnt	5	0	20	0
+22	recent_get_cnt	5	0	20	0
+23	score	15	0	38	0
+24	align_size	5	0	20	0
 table oceanbase.__all_virtual_mock_fk_parent_table column_count 7 table_id 12320
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_virtual_column where tenant_id=1 and table_id=12320 order by column_id;
 id	field	type	length	precision	nullable
@@ -8714,20 +8707,6 @@ id	field	type	length	precision	nullable
 29	avg_request_read_log_time	5	0	20	0
 30	avg_request_read_log_size	5	0	20	0
 31	avg_log_transport_bandwidth	5	0	20	0
-table oceanbase.__all_virtual_ss_local_cache_info column_count 11 table_id 12492
-select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_virtual_column where tenant_id=1 and table_id=12492 order by column_id;
-id	field	type	length	precision	nullable
-16	cache_name	22	128	-1	0
-17	priority	5	0	20	0
-18	hit_ratio	15	0	38	0
-19	total_hit_cnt	5	0	20	0
-20	total_hit_bytes	5	0	20	0
-21	total_miss_cnt	5	0	20	0
-22	total_miss_bytes	5	0	20	0
-23	hold_size	5	0	20	0
-24	alloc_disk_size	5	0	20	0
-25	used_disk_size	5	0	20	0
-26	used_mem_size	5	0	20	0
 table oceanbase.__all_virtual_kv_group_commit_status column_count 7 table_id 12493
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_virtual_column where tenant_id=1 and table_id=12493 order by column_id;
 id	field	type	length	precision	nullable

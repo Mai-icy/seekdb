@@ -639,10 +639,8 @@ int ObLogArchiveDestConfigParser::check_before_update_inner_config(obrpc::ObSrvR
   } else {
     omt::ObTenantConfigGuard tenant_config(TENANT_CONF(tenant_id_));
     const int64_t lag_target = tenant_config.is_valid() ? tenant_config->archive_lag_target : 0L;
-    if (backup_dest.is_storage_type_s3() && MIN_LAG_TARGET_FOR_S3 > lag_target) {
-      ret = OB_OP_NOT_ALLOW;
-      LOG_USER_ERROR(OB_OP_NOT_ALLOW, "archive_lag_target is smaller than 60s, set log_archive_dest to S3 is");
-    } else if (OB_FAIL(dest_mgr.init(tenant_id_, dest_type, backup_dest_, trans))) {
+    UNUSED(lag_target);
+    if (OB_FAIL(dest_mgr.init(tenant_id_, dest_type, backup_dest_, trans))) {
       LOG_WARN("fail to update archive dest config", K(ret), K_(tenant_id));
     } else if (OB_FAIL(dest_mgr.check_dest_validity(rpc_proxy, false/*need_format_file*/))) {
       if (OB_OBJECT_STORAGE_OBJECT_LOCKED_BY_WORM == ret) {

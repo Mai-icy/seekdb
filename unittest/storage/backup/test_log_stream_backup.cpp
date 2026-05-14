@@ -580,8 +580,7 @@ TEST_F(TestLogStreamBackup, test_backup_index_cache)
   int ret = OB_SUCCESS;
   ObBackupIndexKVCache index_cache;
   const char *cache_name = "backup_index_kv_cache";
-  const int64_t priority = 1;
-  ret = index_cache.init(cache_name, priority);
+  ret = index_cache.init(cache_name);
   ASSERT_EQ(OB_SUCCESS, ret);
   ObBackupIndexCacheKey cache_key;
   ObBackupRestoreMode mode = BACKUP_MODE;
@@ -611,8 +610,7 @@ TEST_F(TestLogStreamBackup, test_backup_index_store)
   int ret = OB_SUCCESS;
   ObBackupIndexKVCache kv_cache;
   const char *cache_name = "kv_cache";
-  const int64_t priority = 1;
-  ret = kv_cache.init(cache_name, priority);
+  ret = kv_cache.init(cache_name);
   ASSERT_EQ(OB_SUCCESS, ret);
   ObBackupRestoreMode mode = RESTORE_MODE;
   ObBackupMacroBlockIndexStore macro_index_store;
@@ -792,8 +790,7 @@ TEST_F(TestLogStreamBackup, test_macro_range_index_iterator)
 
   ObBackupIndexKVCache kv_cache;
   const char *cache_name = "kv_cache";
-  const int64_t priority = 1;
-  ret = kv_cache.init(cache_name, priority);
+  ret = kv_cache.init(cache_name);
   ASSERT_EQ(OB_SUCCESS, ret);
   ObBackupRestoreMode mode = RESTORE_MODE;
   ObBackupMacroBlockIndexStore macro_index_store;

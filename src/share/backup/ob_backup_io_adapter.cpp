@@ -1181,7 +1181,7 @@ int get_real_file_path(const common::ObString &uri, char *buf, const int64_t buf
   const char* prefix = NULL;
 
   if (OB_STORAGE_S3 == device_type) {
-    prefix = OB_S3_PREFIX;
+    ret = reject_s3_storage("get file path", uri);
   } else if (OB_STORAGE_FILE == device_type) {
     prefix = OB_FILE_PREFIX;
   } else if (OB_STORAGE_AZBLOB == device_type) {

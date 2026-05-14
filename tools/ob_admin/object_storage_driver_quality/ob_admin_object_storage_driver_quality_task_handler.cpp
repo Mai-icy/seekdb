@@ -307,18 +307,12 @@ bool OSDQTaskHandler::check_parallel_write_result_(
           K(op_type1), K(ret1), K(op_type2), K(ret2));
     }
   } else {
-    // in this case, at least one operation is append write
-    if (storage_info_->get_type() == ObStorageType::OB_STORAGE_S3) {
-      if (OB_UNLIKELY(ret1 != OB_SUCCESS || ret2 != OB_SUCCESS)) {
-        bool_ret = false;
-        ret = OB_ERR_UNEXPECTED;
-        OB_LOG(WARN, "parallel append write should succeed when storage type is s3", KR(ret),
-          K(op_type1), K(ret1), K(op_type2), K(ret2));
-      } 
-    } else {
+    // Parallel append checks were S3-specific and should now fail consistently.
+    if (OB_UNLIKELY(ret1 == OB_SUCCESS && ret2 == OB_SUCCESS)) {
       bool_ret = false;
       ret = OB_ERR_UNEXPECTED;
-      OB_LOG(WARN, "error storage type", KR(ret), KPC(storage_info_)); 
+      OB_LOG(WARN, "parallel append write unexpectedly succeeded after S3 removal",
+          KR(ret), K(op_type1), K(ret1), K(op_type2), K(ret2), KPC(storage_info_));
     }
   }
   return bool_ret;

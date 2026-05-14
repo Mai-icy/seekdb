@@ -415,7 +415,7 @@ int ObAllVirtualResMgrSysStat::get_cache_size_(const int64_t tenant_id, ObStatEv
 {
   int ret = OB_SUCCESS;
   ObArray<ObKVCacheInstHandle> inst_handles;
-  if (OB_FAIL(ObKVGlobalCache::get_instance().get_cache_inst_info(tenant_id, inst_handles))) {
+  if (OB_FAIL(ObKVGlobalCache::get_instance().get_cache_inst_info(inst_handles))) {
     SERVER_LOG(WARN, "Fail to get tenant cache infos, ", K(ret));
   } else {
     ObKVCacheInst * inst = NULL;
@@ -426,25 +426,25 @@ int ObAllVirtualResMgrSysStat::get_cache_size_(const int64_t tenant_id, ObStatEv
         SERVER_LOG(WARN, "ObKVCacheInstHandle with NULL ObKVCacheInst", K(ret));
       } else if (0 == STRNCMP(inst->status_.config_->cache_name_, "opt_table_stat_cache", MAX_CACHE_NAME_LENGTH)) {
         stat_events.get(ObStatEventIds::OPT_TAB_STAT_CACHE_SIZE - ObStatEventIds::STAT_EVENT_ADD_END -1)->stat_value_
-            = inst->status_.map_size_ + inst->status_.store_size_;
+            = inst->status_.store_size_;
       } else if (0 == STRNCMP(inst->status_.config_->cache_name_, "opt_column_stat_cache", MAX_CACHE_NAME_LENGTH)) {
         stat_events.get(ObStatEventIds::OPT_TAB_COL_STAT_CACHE_SIZE - ObStatEventIds::STAT_EVENT_ADD_END -1)->stat_value_
-            = inst->status_.map_size_ + inst->status_.store_size_;
+            = inst->status_.store_size_;
       } else if (0 == STRNCMP(inst->status_.config_->cache_name_, "tablet_ls_cache", MAX_CACHE_NAME_LENGTH)) {
         stat_events.get(ObStatEventIds::TABLET_LS_CACHE_SIZE - ObStatEventIds::STAT_EVENT_ADD_END -1)->stat_value_
-            = inst->status_.map_size_ + inst->status_.store_size_;
+            = inst->status_.store_size_;
       } else if (0 == STRNCMP(inst->status_.config_->cache_name_, "index_block_cache", MAX_CACHE_NAME_LENGTH)) {
         stat_events.get(ObStatEventIds::INDEX_BLOCK_CACHE_SIZE - ObStatEventIds::STAT_EVENT_ADD_END -1)->stat_value_
-            = inst->status_.map_size_ + inst->status_.store_size_;
+            = inst->status_.store_size_;
       } else if (0 == STRNCMP(inst->status_.config_->cache_name_, "user_block_cache", MAX_CACHE_NAME_LENGTH)) {
         stat_events.get(ObStatEventIds::USER_BLOCK_CACHE_SIZE - ObStatEventIds::STAT_EVENT_ADD_END -1)->stat_value_
-            = inst->status_.map_size_ + inst->status_.store_size_;
+            = inst->status_.store_size_;
       } else if (0 == STRNCMP(inst->status_.config_->cache_name_, "user_row_cache", MAX_CACHE_NAME_LENGTH)) {
         stat_events.get(ObStatEventIds::USER_ROW_CACHE_SIZE - ObStatEventIds::STAT_EVENT_ADD_END -1)->stat_value_
-            = inst->status_.map_size_ + inst->status_.store_size_;
+            = inst->status_.store_size_;
       } else if (0 == STRNCMP(inst->status_.config_->cache_name_, "bf_cache", MAX_CACHE_NAME_LENGTH)) {
         stat_events.get(ObStatEventIds::BLOOM_FILTER_CACHE_SIZE - ObStatEventIds::STAT_EVENT_ADD_END -1)->stat_value_
-            = inst->status_.map_size_ + inst->status_.store_size_;
+            = inst->status_.store_size_;
       } else {
         //do nothing
       }

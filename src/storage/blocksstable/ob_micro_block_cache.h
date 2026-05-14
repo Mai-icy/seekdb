@@ -475,7 +475,7 @@ class ObDataMicroBlockCache
 public:
   ObDataMicroBlockCache() {}
   virtual ~ObDataMicroBlockCache() {}
-  int init(const char *cache_name, const int64_t priority = 1);
+  int init(const char *cache_name);
   virtual void destroy() override;
   using ObIMicroBlockCache::prefetch;
   int prefetch_multi_block(
@@ -533,7 +533,7 @@ class ObIndexMicroBlockCache : public ObDataMicroBlockCache
 public:
   ObIndexMicroBlockCache();
   virtual ~ObIndexMicroBlockCache();
-  int init(const char *cache_name, const int64_t priority = 10);
+  int init(const char *cache_name);
   int load_block(
       const ObMicroBlockId &micro_block_id,
       const ObMicroBlockDesMeta &des_meta,

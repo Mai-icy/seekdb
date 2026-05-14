@@ -18,13 +18,14 @@
 #define SRC_SQL_ENGINE_BASIC_OB_SELECT_INTO_OP_H_
 
 #include "sql/engine/ob_operator.h"
+#ifndef OB_BUILD_EMBED_MODE
 #include "sql/engine/basic/ob_arrow_basic.h"
+#include <parquet/api/writer.h>
+#endif
 #include "lib/file/ob_file.h"
 #include "share/backup/ob_backup_struct.h"
 #include "sql/engine/table/ob_external_table_access_service.h"
 #include "sql/engine/cmd/ob_load_data_parser.h"
-
-#include <parquet/api/writer.h>
 #include "sql/engine/basic/ob_select_into_basic.h"
 #include "sql/engine/basic/ob_external_file_writer.h"
 #include "sql/resolver/dml/ob_select_stmt.h"
@@ -150,9 +151,12 @@ public:
       is_odps_cpp_table_(false),
       is_odps_java_table_(false),
       block_id_(0),
-      need_commit_(true),
+      need_commit_(true)
+#ifndef OB_BUILD_EMBED_MODE
+      ,
       arrow_alloc_(),
       parquet_writer_schema_(nullptr)
+#endif
   {
   }
 
@@ -294,6 +298,7 @@ private:
   int64_t get_shared_buf_len() { return shared_buf_len_; }
 
   // methods for handling parquet
+#ifndef OB_BUILD_EMBED_MODE
   int init_parquet_env();
   int get_parquet_logical_type(
       std::shared_ptr<const parquet::LogicalType> &logical_type,
@@ -321,6 +326,11 @@ private:
                                  const ObDatumMeta &datum_meta,
                                  int parquet_decimal_length,
                                  uint8_t* parquet_flba_ptr);
+  int oracle_timestamp_to_int96(const common::ObIVector* expr_vector,
+                                int64_t row_idx,
+                                const ObDatumMeta &datum_meta,
+                                parquet::Int96 &res);
+#endif // OB_BUILD_EMBED_MODE
   int calc_byte_array(const common::ObIVector* expr_vector,
                       int row_idx,
                       const ObDatumMeta &datum_meta,
@@ -328,10 +338,6 @@ private:
                       ObIAllocator &allocator,
                       char* &buf,
                       uint32_t &res_len);
-  int oracle_timestamp_to_int96(const common::ObIVector* expr_vector,
-                                int64_t row_idx,
-                                const ObDatumMeta &datum_meta,
-                                parquet::Int96 &res);
   int get_data_from_expr_vector(const common::ObIVector* expr_vector,
                                 int row_idx,
                                 ObObjType type,
@@ -381,8 +387,10 @@ private:
   uint32_t block_id_;
   bool need_commit_;
   // Handle parquet variables
+#ifndef OB_BUILD_EMBED_MODE
   ObArrowMemPool arrow_alloc_;
   std::shared_ptr<parquet::schema::GroupNode> parquet_writer_schema_;
+#endif
   static const int64_t SHARED_BUFFER_SIZE = 2LL * 1024 * 1024;
   static const int64_t MAX_OSS_FILE_SIZE = 5LL * 1024 * 1024 * 1024;
   static const int32_t ODPS_DATE_MIN_VAL = -719162; // '0001-1-1'

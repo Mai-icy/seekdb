@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <chrono>
+
 #define protected public
 #define private public
 #include "ob_row_generate.h"

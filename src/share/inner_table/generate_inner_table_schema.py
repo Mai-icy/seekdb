@@ -1,16 +1,16 @@
-#!/bin/env python2
+#!/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright 2014 - 2018 Alibaba Inc. All Rights Reserved.
 # Author:
 #  config file is ob_inner_table_schema_def.py
-#  shell> python2.6 generate_inner_table_schema.py
+#  shell> python3 generate_inner_table_schema.py
 #
 
 import copy
 from collections import OrderedDict
 from ob_inner_table_init_data import *
-import StringIO
+import io
 import re
 import os
 import glob
@@ -382,7 +382,7 @@ def print_timestamp_column(column_name, rowkey_id, index_id, part_key_pos, colum
 
   if is_hidden == 'true' or is_storing_column == 'true':
     if column_id != 0:
-      if column_scale > 0 :
+      if int(column_scale) > 0 :
         line = """
   if (OB_SUCC(ret)) {{
     ObObj gmt_default;
@@ -431,7 +431,7 @@ def print_timestamp_column(column_name, rowkey_id, index_id, part_key_pos, colum
 """
       cpp_f.write(line.format(column_name, column_id, rowkey_id, index_id, part_key_pos, column_type, column_collation_type, column_length, column_precision, column_scale, is_nullable, is_autoincrement, is_on_update_for_timestamp,is_hidden, is_storing_column))
     else:
-      if column_scale > 0 :
+      if int(column_scale) > 0 :
         line = """
   if (OB_SUCC(ret)) {{
     ObObj gmt_default;
@@ -481,7 +481,7 @@ def print_timestamp_column(column_name, rowkey_id, index_id, part_key_pos, colum
       cpp_f.write(line.format(column_name, rowkey_id, index_id, part_key_pos, column_type, column_collation_type, column_length, column_precision, column_scale, is_nullable, is_autoincrement, is_on_update_for_timestamp, is_hidden, is_storing_column))
   else:
     if column_id != 0:
-      if column_scale > 0 :
+      if int(column_scale) > 0 :
         line = """
   if (OB_SUCC(ret)) {{
     ObObj gmt_default;
@@ -526,7 +526,7 @@ def print_timestamp_column(column_name, rowkey_id, index_id, part_key_pos, colum
 """
       cpp_f.write(line.format(column_name, column_id, rowkey_id, index_id, part_key_pos, column_type, column_collation_type, column_length, column_precision, column_scale, is_nullable, is_autoincrement, is_on_update_for_timestamp))
     else:
-      if column_scale > 0 :
+      if int(column_scale) > 0 :
         line = """
   if (OB_SUCC(ret)) {{
     ObObj gmt_default;
@@ -722,7 +722,7 @@ def add_column(column, rowkey_id, index_id, part_key_pos, column_id=0, is_hidden
   if len(column) >= 6:
     is_on_update_for_timestamp = column[5]
 
-  print column_name, rowkey_id, index_id, part_key_pos, column_type, column_length, is_nullable, is_autoincrement, default_value # remove
+  print(column_name, rowkey_id, index_id, part_key_pos, column_type, column_length, is_nullable, is_autoincrement, default_value) # remove
   if column_name.find("[discard]") == 0:
     print_discard_column(column_name)
   elif column_type == 'ObTimestampType':
@@ -734,7 +734,7 @@ def add_column(column, rowkey_id, index_id, part_key_pos, column_id=0, is_hidden
 
 def no_direct_access(keywords):
   global restrict_access_virtual_tables
-  tid = table_name2tid(keywords['table_name'] + (keywords.has_key('name_postfix') and keywords['name_postfix'] or ''))
+  tid = table_name2tid(keywords['table_name'] + ('name_postfix' in keywords and keywords['name_postfix'] or ''))
   if tid not in restrict_access_virtual_tables:
     restrict_access_virtual_tables.append(tid)
   return keywords
@@ -940,7 +940,7 @@ def calculate_rowkey_column_num(keywords):
 
 def check_fileds(fields, keywords):
   for field in fields:
-    if field not in keywords and not keywords.has_key('index_name'):
+    if field not in keywords and 'index_name' not in keywords:
       if not field in index_only_fields:
         raise IOError("no field {0} found in def_table_schema, table_name={1}".format(field, keywords["table_name"]))
 
@@ -948,7 +948,7 @@ def check_fileds(fields, keywords):
                         'self_tid', 'mapping_tid', 'real_vt', 'meta_record_in_sys',
                         'is_core_related')
   for kw in keywords:
-    if not kw.startswith("base_table_name") and kw not in fields and not keywords.has_key('index_name') and kw not in non_field_keywords and keywords['table_type'] != 'AUX_LOB_META' and keywords['table_type'] != 'AUX_LOB_PIECE':
+    if not kw.startswith("base_table_name") and kw not in fields and 'index_name' not in keywords and kw not in non_field_keywords and keywords['table_type'] != 'AUX_LOB_META' and keywords['table_type'] != 'AUX_LOB_PIECE':
       raise IOError("unknown field {0} found in def_table_schema, table_name={1}".format(kw, keywords["table_name"]))
 
 def fill_default_values(default_filed_values, keywords, missing_fields, index_value=('', [])):
@@ -958,7 +958,7 @@ def fill_default_values(default_filed_values, keywords, missing_fields, index_va
         if index_value[0] != '':
           keywords[key] = default_filed_values[key]
       elif key == 'data_table_id':
-        tid = table_name2tid(keywords['table_name'] + (keywords.has_key('name_postfix') and keywords['name_postfix'] or ''))
+        tid = table_name2tid(keywords['table_name'] + ('name_postfix' in keywords and keywords['name_postfix'] or ''))
         add_field(field, tid)
       else:
         keywords[key] = default_filed_values[key]
@@ -986,7 +986,7 @@ def copy_keywords(keywords):
   else:
     keywords["base_table_name2"] = ''
 
-  print "copy_keywords in: table_id=", tid, ",  table_name=" + tname, ", base_table_name=" + base_tname, ", base_table_name1=" + base_tname1, ", base_table_name2=" + base_tname2
+  print("copy_keywords in: table_id=", tid, ",  table_name=" + tname, ", base_table_name=" + base_tname, ", base_table_name1=" + base_tname1, ", base_table_name2=" + base_tname2)
   # Default base_table_name equals its table name
   # base_table_name[1,2] records the original base table name in the scenario of multi-layer schema nested definitions
   # For example: schema of table number 15118, which nestedly defines two layers of base tables:
@@ -1003,11 +1003,11 @@ def copy_keywords(keywords):
     base_tname2 = tname;
     keywords["base_table_name2"] = tname;
   elif base_tname1 != '' and base_tname2 != '' and tname != base_tname and tname != base_tname1 and tname != base_tname2:
-    print "ERROR: should not be here. need design new base_table_name"
+    print("ERROR: should not be here. need design new base_table_name")
   # Execute copy
   new_keywords = copy.deepcopy(keywords)
 
-  print "copy_keywords out: table_id=", tid, ",  table_name=" + tname, ", base_table_name=" + base_tname, ", base_table_name1=" + base_tname1, ", base_table_name2=" + base_tname2
+  print("copy_keywords out: table_id=", tid, ",  table_name=" + tname, ", base_table_name=" + base_tname, ", base_table_name1=" + base_tname1, ", base_table_name2=" + base_tname2)
 
   return new_keywords
 
@@ -1095,15 +1095,15 @@ def gen_iterate_core_inner_table_def(table_id, table_name, table_type, keywords)
   new_keywords["table_type"] = table_type
   new_keywords["gm_columns"] = []
 
-  if new_keywords.has_key('partition_expr'):
+  if 'partition_expr' in new_keywords:
     del new_keywords["partition_expr"]
-  if new_keywords.has_key('partition_columns'):
+  if 'partition_columns' in new_keywords:
     del new_keywords["partition_columns"]
-  if new_keywords.has_key('index'):
+  if 'index' in new_keywords:
     del new_keywords["index"]
 
   # ensure tenant_id is prefix of primary key for iterate core inner table
-  new_keywords['normal_columns'] = filter(lambda x: x[0] != 'tenant_id', new_keywords['normal_columns'])
+  new_keywords['normal_columns'] = [x for x in new_keywords['normal_columns'] if x[0] != 'tenant_id']
   ten_idx = [i for i, x in enumerate(new_keywords['rowkey_columns']) if x[0] == 'tenant_id']
   if ten_idx:
     if ten_idx[0] != 0:
@@ -1139,8 +1139,8 @@ def replace_agent_table_columns_def(columns):
     columns[i] = column[0:3] # ignore default value
 
 def __gen_oracle_vt_base_on_mysql(table_id, keywords, table_name_suffix):
-  in_tenant_space = keywords.has_key('in_tenant_space') and keywords['in_tenant_space']
-  is_cluster_private = keywords.has_key('is_cluster_private') and keywords['is_cluster_private']
+  in_tenant_space = 'in_tenant_space' in keywords and keywords['in_tenant_space']
+  is_cluster_private = 'is_cluster_private' in keywords and keywords['is_cluster_private']
   if in_tenant_space and is_cluster_private:
     raise Exception("real table must be not cluster_private")
   new_keywords = copy_keywords(keywords)
@@ -1162,9 +1162,9 @@ def __gen_oracle_vt_base_on_mysql(table_id, keywords, table_name_suffix):
   for column in new_keywords["gm_columns"]:
     new_keywords["normal_columns"].append([column.upper(), "otimestamp"])
   new_keywords["gm_columns"] = []
-  if new_keywords.has_key('index'):
+  if 'index' in new_keywords:
     new_idx = {}
-    for (k, v) in new_keywords['index'].iteritems():
+    for (k, v) in new_keywords['index'].items():
       v['index_columns'] = [ c.upper() for c in v['index_columns'] ]
       new_idx[k] = v
     new_keywords['index'] = new_idx
@@ -1185,7 +1185,7 @@ def gen_sys_agent_virtual_table_def(table_id, keywords):
   return new_keywords
 
 def __gen_mysql_vt(table_id, keywords, table_name_suffix):
-  if keywords.has_key('in_tenant_space') and keywords['in_tenant_space']:
+  if 'in_tenant_space' in keywords and keywords['in_tenant_space']:
     raise Exception("base table should not in_tenant_space")
   elif 'SYSTEM_TABLE' != keywords['table_type'] and 'VIRTUAL_TABLE' != keywords['table_type']:
     raise Exception("unsupported table type", keywords['table_type'])
@@ -1219,7 +1219,7 @@ def gen_agent_virtual_table_def(table_id, keywords):
   new_keywords = __gen_oracle_vt_base_on_mysql(table_id, keywords, "_AGENT")
   new_keywords["partition_expr"] = []
   new_keywords["partition_columns"] = []
-  if new_keywords.has_key('vtable_route_policy'):
+  if 'vtable_route_policy' in new_keywords:
     del(new_keywords["vtable_route_policy"])
   all_agent_virtual_tables.append(new_keywords)
   return new_keywords
@@ -1233,7 +1233,7 @@ def gen_oracle_mapping_virtual_table_base_def(table_id, keywords, real_table):
 
   new_keywords["name_postfix"] = "_ORA"
   new_keywords["partition_expr"] = []
-  if new_keywords.has_key("partition_columns"):
+  if "partition_columns" in new_keywords:
     new_keywords["partition_columns"] = [ c.upper() for c in new_keywords["partition_columns"] ]
 
   if True == real_table :
@@ -1250,16 +1250,16 @@ def gen_oracle_mapping_virtual_table_def(table_id, keywords):
   return gen_oracle_mapping_virtual_table_base_def(table_id, keywords, False)
 
 def gen_oracle_mapping_real_virtual_table_def(table_id, keywords):
-  in_tenant_space = keywords.has_key('in_tenant_space') and keywords['in_tenant_space']
+  in_tenant_space = 'in_tenant_space' in keywords and keywords['in_tenant_space']
   if False == in_tenant_space:
     raise Exception("real table must be tenant space", keywords['rowkey_columns'])
-  is_cluster_private = keywords.has_key('is_cluster_private') and keywords['is_cluster_private']
+  is_cluster_private = 'is_cluster_private' in keywords and keywords['is_cluster_private']
   if True == is_cluster_private:
     raise Exception("real table must be not cluster_private")
   new_keywords = gen_oracle_mapping_virtual_table_base_def(table_id, keywords, True)
 
   ## check tenant_id must be first key, if has tenant_id
-  if new_keywords.has_key('rowkey_columns') and new_keywords['rowkey_columns']:
+  if 'rowkey_columns' in new_keywords and new_keywords['rowkey_columns']:
     key_tenant_id = -1
     nth_key = 0
     for key in new_keywords['rowkey_columns']:
@@ -1284,7 +1284,7 @@ def generate_cluster_private_table(f):
   all_tables.sort(key = lambda x: x['table_name'])
   cluster_private_switch = '\n'
   for kw in all_tables:
-    if kw.has_key('index_name'):
+    if 'index_name' in kw:
       cluster_private_switch += 'case ' + table_name2index_tid(kw['table_name'] + kw['name_postfix'], kw['index_name']) + ':\n'
     else:
       cluster_private_switch += 'case ' + table_name2tid(kw['table_name'] + kw['name_postfix']) + ':\n'
@@ -2256,7 +2256,7 @@ def generate_sys_index_table_misc_data(f):
 
   data_table_dict = {}
   for kw in sys_index_tables:
-    if not data_table_dict.has_key(kw['table_name']):
+    if kw['table_name'] not in data_table_dict:
       data_table_dict[kw['table_name']] = []
     data_table_dict[kw['table_name']].append(kw)
 
@@ -2266,12 +2266,12 @@ def generate_sys_index_table_misc_data(f):
   f.write('\n\n#ifdef SYS_INDEX_TABLE_ID_SWITCH\n' + sys_index_table_id_switch + '\n#endif\n')
 
   sys_index_data_table_id_switch = '\n'
-  for data_table_name in data_table_dict.keys():
+  for data_table_name in list(data_table_dict.keys()):
     sys_index_data_table_id_switch += 'case ' + table_name2tid(data_table_name) + ':\n'
   f.write('\n\n#ifdef SYS_INDEX_DATA_TABLE_ID_SWITCH\n' + sys_index_data_table_id_switch + '\n#endif\n')
 
   sys_index_data_table_id_to_index_ids_switch = '\n'
-  for data_table_name, sys_indexs in data_table_dict.items():
+  for data_table_name, sys_indexs in list(data_table_dict.items()):
     sys_index_data_table_id_to_index_ids_switch += 'case ' + table_name2tid(data_table_name) + ': {\n'
     for kw in sys_indexs:
       sys_index_data_table_id_to_index_ids_switch += '  if (FAILEDx(index_tids.push_back(' + table_name2index_tid(kw['table_name'], kw['index_name']) +  '))) {\n'
@@ -2282,7 +2282,7 @@ def generate_sys_index_table_misc_data(f):
   f.write('\n\n#ifdef SYS_INDEX_DATA_TABLE_ID_TO_INDEX_IDS_SWITCH\n' + sys_index_data_table_id_to_index_ids_switch + '\n#endif\n')
 
   sys_index_data_table_id_to_index_schema_switch = '\n'
-  for data_table_name, sys_indexs in data_table_dict.items():
+  for data_table_name, sys_indexs in list(data_table_dict.items()):
     sys_index_data_table_id_to_index_schema_switch += 'case ' + table_name2tid(data_table_name) + ': {\n'
     for kw in sys_indexs:
       method_name = kw['table_name'].replace('$', '_').strip('_').lower() + '_' + kw['index_name'].lower() + '_schema'
@@ -2328,10 +2328,10 @@ def generate_virtual_agent_misc_data(f):
     tid = table_name2tid(kw['table_name'])
     base_kw = kw['base_def_keywords']
     base_tid = table_name2tid(base_kw['table_name'])
-    in_tenant_space = base_kw.has_key('in_tenant_space') and base_kw['in_tenant_space']
-    only_sys = all_only_sys_table_name.has_key(base_kw['table_name']) and all_only_sys_table_name[base_kw['table_name']] and "OB_SYS_DATABASE_ID" != kw['database_id']
+    in_tenant_space = 'in_tenant_space' in base_kw and base_kw['in_tenant_space']
+    only_sys = base_kw['table_name'] in all_only_sys_table_name and all_only_sys_table_name[base_kw['table_name']] and "OB_SYS_DATABASE_ID" != kw['database_id']
     mysql_compat_agent_table_name = base_kw['table_name']
-    mysql_compat_agent = (mysql_compat_agent_tables.has_key(mysql_compat_agent_table_name) 
+    mysql_compat_agent = (mysql_compat_agent_table_name in mysql_compat_agent_tables
                           and mysql_compat_agent_tables[mysql_compat_agent_table_name] 
                           and "OB_SYS_DATABASE_ID" == kw['database_id'])
     iter_init += """
@@ -2365,7 +2365,7 @@ def def_sys_index_table(index_name, index_table_id, index_columns, index_using_t
 
   kw = copy_keywords(keywords)
 
-  if kw.has_key('index'):
+  if 'index' in kw:
     raise Exception("should not have index", kw['table_name'])
   if not is_sys_table(kw['table_id']):
     raise Exception("only support sys table", kw['table_name'])
@@ -2376,7 +2376,7 @@ def def_sys_index_table(index_name, index_table_id, index_columns, index_using_t
 
   index_def = ''
   cpp_f_tmp = cpp_f
-  cpp_f = StringIO.StringIO()
+  cpp_f = io.StringIO()
   kw['index_name'] = index_name
   kw['index_columns'] = index_columns
   kw['index_table_id'] = index_table_id
@@ -2404,7 +2404,7 @@ def def_agent_index_table(index_name, index_table_id, index_columns, index_using
   kw = copy_keywords(keywords)
 
   index_kw = copy_keywords(all_def_keywords[real_table_name + '_' + real_index_name])
-  if kw.has_key('index'):
+  if 'index' in kw:
     raise Exception("should not have index", kw['table_name'])
   if not kw['real_vt']:
     raise Exception("only support oracle mapping table", kw['table_name'])
@@ -2424,7 +2424,7 @@ def def_agent_index_table(index_name, index_table_id, index_columns, index_using
 
   index_def = ''
   cpp_f_tmp = cpp_f
-  cpp_f = StringIO.StringIO()
+  cpp_f = io.StringIO()
   kw['index_name'] = index_name
   kw['index_columns'] = index_columns
   kw['index_table_id'] = index_table_id
@@ -2467,17 +2467,17 @@ def gen_iterate_private_virtual_table_def(
   # 3. rowkey columns should start with `tenant_id`
   if 'SYSTEM_TABLE' != kw['table_type']:
     raise Exception("unsupported table type", kw['table_type'])
-  elif not kw.has_key('in_tenant_space') or not kw['in_tenant_space']:
+  elif 'in_tenant_space' not in kw or not kw['in_tenant_space']:
     raise Exception("base table should be in_tenant_space")
-  elif not kw.has_key('is_cluster_private') or not kw['is_cluster_private']:
+  elif 'is_cluster_private' not in kw or not kw['is_cluster_private']:
     raise Exception("base table should be cluster private")
   else:
     ten_idx = [i for i, x in enumerate(kw['rowkey_columns']) if x[0] == 'tenant_id']
     if not ten_idx or ten_idx[0] != 0:
       raise Exception("tenant_id must be prefix of primary key", kw['rowkey_columns'])
 
-  if kw.has_key('index'):
-    for (k, v ) in kw['index'].iteritems():
+  if 'index' in kw:
+    for (k, v ) in kw['index'].items():
       if v['index_columns'].find('tenant_id') >= 0:
         raise Exception("tenant_id must not exist in index", k, v, kw['table_name'])
       v['index_columns'].insert(0, 'tenant_id')
@@ -2490,7 +2490,7 @@ def gen_iterate_private_virtual_table_def(
   kw['partition_columns'] = []
   kw['partition_expr'] = []
 
-  if kw.has_key('gm_columns'):
+  if 'gm_columns' in kw:
     for x in reversed(kw['gm_columns']):
       kw['normal_columns'].insert(0, (x, 'timestamp'))
     kw['gm_columns'] = []
@@ -2601,11 +2601,11 @@ def gen_sqlite_virtual_table_def(table_id, table_name, keywords):
   kw['table_name'] = table_name
 
   # Remove internal fields, these should not be passed to def_table_schema()
-  if kw.has_key('_sqlite_columns'):
+  if '_sqlite_columns' in kw:
     del kw['_sqlite_columns']
-  if kw.has_key('_sqlite_primary_key'):
+  if '_sqlite_primary_key' in kw:
     del kw['_sqlite_primary_key']
-  if kw.has_key('sqlite_db_pool'):
+  if 'sqlite_db_pool' in kw:
     del kw['sqlite_db_pool']
 
   # Convert to virtual table type
@@ -2622,7 +2622,7 @@ def gen_sqlite_virtual_table_def(table_id, table_name, keywords):
   # because def_table_schema handles rowkey_columns and normal_columns separately
   # If columns in rowkey_columns are already in normal_columns, remove them from normal_columns to avoid duplication
   # Refer to gen_iterate_virtual_table_def approach
-  if kw.has_key('rowkey_columns') and kw['rowkey_columns']:
+  if 'rowkey_columns' in kw and kw['rowkey_columns']:
     rowkey_column_names = [col[0] for col in kw['rowkey_columns']]
     # Remove columns in rowkey_columns from normal_columns to avoid duplication
     kw['normal_columns'] = [col for col in kw.get('normal_columns', []) if col[0] not in rowkey_column_names]
@@ -2706,9 +2706,9 @@ def gen_iterate_virtual_table_def(table_id, table_name, keywords, in_tenant_spac
 
   if 'SYSTEM_TABLE' != kw['table_type']:
     raise Exception("unsupported table type", kw['table_type'])
-  elif not kw.has_key('in_tenant_space') or not kw['in_tenant_space']:
+  elif 'in_tenant_space' not in kw or not kw['in_tenant_space']:
     raise Exception("base table should be in_tenant_space")
-  elif kw.has_key('is_cluster_private') and kw['is_cluster_private']:
+  elif 'is_cluster_private' in kw and kw['is_cluster_private']:
     raise Exception("base table should be not cluster private")
   kw['table_type'] = 'VIRTUAL_TABLE'
   kw['index_using_type'] = 'USING_BTREE'
@@ -2717,7 +2717,7 @@ def gen_iterate_virtual_table_def(table_id, table_name, keywords, in_tenant_spac
   kw['partition_expr'] = []
 
   # check and add tenant_id in primary key and index.
-  kw['normal_columns'] = filter(lambda x: x[0] != 'tenant_id', kw['normal_columns'])
+  kw['normal_columns'] = [x for x in kw['normal_columns'] if x[0] != 'tenant_id']
   ten_idx = [i for i, x in enumerate(kw['rowkey_columns']) if x[0] == 'tenant_id']
   if ten_idx:
     if ten_idx[0] != 0:
@@ -2725,14 +2725,14 @@ def gen_iterate_virtual_table_def(table_id, table_name, keywords, in_tenant_spac
   else:
     kw['rowkey_columns'].insert(0, ('tenant_id', 'int', 'false'))
 
-  if kw.has_key('index'):
-    for (k, v ) in kw['index'].iteritems():
+  if 'index' in kw:
+    for (k, v ) in kw['index'].items():
       if v['index_columns'].find('tenant_id') >= 0:
         raise Exception("tenant_id must not exist in index", k, v, kw['table_name'])
       v['index_columns'].insert(0, 'tenant_id')
       v['index_using_type'] = 'USING_BTREE'
 
-  if kw.has_key('gm_columns'):
+  if 'gm_columns' in kw:
     for x in reversed(kw['gm_columns']):
       kw['normal_columns'].insert(0, (x, 'timestamp'))
     kw['gm_columns'] = []
@@ -2792,11 +2792,11 @@ def get_column_def_enum(**keywords):
   normal_columns = keywords['normal_columns']
   rowkey_columns = keywords['rowkey_columns']
 
-  columns.extend(map(lambda x : x[0], rowkey_columns))
-  columns.extend(map(lambda x : x[0], normal_columns))
+  columns.extend([x[0] for x in rowkey_columns])
+  columns.extend([x[0] for x in normal_columns])
 
   table_name = keywords['table_name'] + keywords['name_postfix']
-  t = map(lambda x : x.upper().replace('#', '_'), columns)
+  t = [x.upper().replace('#', '_') for x in columns]
   if len(t) > 0 and 'enable_column_def_enum' in keywords and keywords['enable_column_def_enum']:
     t[0] = '%s = common::OB_APP_MIN_COLUMN_ID' % t[0]
     content = '''
@@ -2811,7 +2811,7 @@ struct %s {
 def kw2schema_version(kw):
   tid = kw['table_id']
   name_postfix = "_ORACLE" if (is_ora_sys_view(tid) or is_ora_virtual_table(tid)) else ""
-  if kw.has_key('index_columns'):
+  if 'index_columns' in kw:
     return "OB_IDX_" + str(kw['table_id']) + '_' + kw['index_name'].upper() + name_postfix + "_SCHEMA_VERSION"
   else:
     return "OB_" + kw['table_name'].replace('$', '_').upper().strip('_') + name_postfix + "_SCHEMA_VERSION"
@@ -2833,7 +2833,7 @@ def table_name2index_tname(table_name, idx_name):
 
 def kw2tid(kw):
   name_postfix = kw['name_postfix'] if 'name_postfix' in kw else ""
-  if kw.has_key('index_columns'):
+  if 'index_columns' in kw:
     return table_name2index_tid(kw['table_name']+ name_postfix, kw['index_name'])
   else:
     return table_name2tid(kw['table_name']+ name_postfix)
@@ -2846,18 +2846,18 @@ def check_split_file(tid):
   global __def_cnt
   global cpp_f
   #sometimes cpp_f may modify to STRINGIO object
-  if isinstance(cpp_f, file) or cpp_f == None:
-    print "current schema cnt => %d" % __def_cnt
-    range_idx = tid / __split_size
+  if (isinstance(cpp_f, io.IOBase) and not isinstance(cpp_f, io.StringIO)) or cpp_f == None:
+    print("current schema cnt => %d" % __def_cnt)
+    range_idx = tid // __split_size
     if range_idx > __current_range_idx:
       if cpp_f != None:
         end_generate_cpp()
       fname = "ob_inner_table_schema.%d_%d.cpp" % (range_idx * __split_size + 1, (range_idx + 1) * __split_size)
-      print "generate new file with name %s" % fname
+      print("generate new file with name %s" % fname)
       start_generate_cpp(fname)
       __current_range_idx = range_idx
     elif range_idx < __current_range_idx:
-      print "unexcept table id seq"
+      print("unexcept table id seq")
       sys.exit(1)
     __def_cnt += 1
 
@@ -2894,7 +2894,7 @@ def def_table_schema(**keywords):
   global lob_aux_data_def
   global lob_aux_meta_def
 
-  if not keywords.has_key('index_name'):
+  if 'index_name' not in keywords:
     if 'name_postfix' in keywords:
       all_def_keywords[keywords['table_name'] + keywords['name_postfix']] = copy_keywords(keywords)
     else:
@@ -2914,24 +2914,24 @@ def def_table_schema(**keywords):
 
   ##virtual table will set index_using_type to USING_HASH by default
   if is_virtual_table(keywords['table_id']):
-    if not keywords.has_key('index_using_type'):
+    if 'index_using_type' not in keywords:
       keywords['index_using_type'] = 'USING_HASH'
 
   if not is_mysql_virtual_table(tid) and not is_ora_virtual_table(tid):
-    if keywords.has_key('partition_expr') and 0 != len(keywords['partition_expr']):
+    if 'partition_expr' in keywords and 0 != len(keywords['partition_expr']):
       raise Exception("partition_expr only works for virtual table after 4.0", tid)
-    elif keywords.has_key('partition_columns') and 0 != len(keywords['partition_columns']):
+    elif 'partition_columns' in keywords and 0 != len(keywords['partition_columns']):
       raise Exception("partition_columns only works for virtual table after 4.0", tid)
 
   if not is_mysql_virtual_table(tid) and not is_ora_virtual_table(tid):
-    if keywords.has_key('partition_expr') and 0 != len(keywords['partition_expr']):
+    if 'partition_expr' in keywords and 0 != len(keywords['partition_expr']):
       raise Exception("partition_expr only works for virtual table after 4.0", tid)
-    elif keywords.has_key('partition_columns') and 0 != len(keywords['partition_columns']):
+    elif 'partition_columns' in keywords and 0 != len(keywords['partition_columns']):
       raise Exception("partition_columns only works for virtual table after 4.0", tid)
   if is_sys_view(tid):
     pattern = re.compile(r'^\s*SELECT\s+\*', re.IGNORECASE)
-    if keywords.has_key('view_definition') and 0 != len(keywords['view_definition']) and pattern.match(keywords['view_definition'].upper().replace("\n", " ")):
-      print(keywords['view_definition'])
+    if 'view_definition' in keywords and 0 != len(keywords['view_definition']) and pattern.match(keywords['view_definition'].upper().replace("\n", " ")):
+      print((keywords['view_definition']))
       raise Exception("The system view definition cannot start with select *. Please specify the column name explicitly, ", tid)
 
   fill_default_values(default_filed_values, keywords, missing_fields)
@@ -2939,10 +2939,10 @@ def def_table_schema(**keywords):
 
   get_column_def_enum(**keywords)
 
-  if keywords.has_key('index_name'):
+  if 'index_name' in keywords:
     print_method_start(keywords['table_name'] + keywords['name_postfix'] + '_' + keywords['index_name'])
     if True == is_ora_virtual_table(int(keywords['table_id'])):
-      if keywords.has_key('real_vt') and True == keywords['real_vt']:
+      if 'real_vt' in keywords and True == keywords['real_vt']:
         index_name_ids.append([keywords['index_name'], int(keywords['index_table_id']), keywords['table_name'] + keywords['name_postfix'], keywords['tenant_id'], keywords['table_id'], keywords['base_table_name'], keywords['base_table_name1']])
       else:
         index_name_ids.append([keywords['index_name'], int(ora_virtual_index_table_id), keywords['table_name'] + keywords['name_postfix'], keywords['tenant_id'], keywords['table_id'], keywords['base_table_name'], keywords['base_table_name1']])
@@ -2951,7 +2951,7 @@ def def_table_schema(**keywords):
       index_name_ids.append([keywords['index_name'], int(ob_virtual_index_table_id), keywords['table_name'] + keywords['name_postfix'], keywords['tenant_id'], keywords['table_id'], keywords['base_table_name'], keywords['base_table_name1']])
       ob_virtual_index_table_id -= 1
     elif True == is_sys_table(int(keywords['table_id'])):
-      if not keywords.has_key('index_table_id'):
+      if 'index_table_id' not in keywords:
         raise Exception("must specific index_table_id", int(keywords['table_id']))
       index_name_ids.append([keywords['index_name'], int(keywords['index_table_id']), keywords['table_name'] + keywords['name_postfix'], keywords['tenant_id'], keywords['table_id'], keywords['base_table_name'], keywords['base_table_name1']])
   else:
@@ -2961,16 +2961,16 @@ def def_table_schema(**keywords):
 
     table_name_ids.append((keywords['table_name'], int(keywords['table_id']), keywords['base_table_name'], keywords['base_table_name1'], keywords['base_table_name2']))
 
-  if keywords.has_key('is_core_related') and keywords['is_core_related']:
+  if 'is_core_related' in keywords and keywords['is_core_related']:
     core_related_tables.append(int(keywords['table_id']))
 
-  print "\table_id=",  keywords['table_id'], ", table_name=" + keywords['table_name'], ", base_table_name=", keywords['base_table_name'], ", base_table_name1=" + keywords['base_table_name1'], ", base_table_name2=" + keywords['base_table_name2']
+  print("\table_id=",  keywords['table_id'], ", table_name=" + keywords['table_name'], ", base_table_name=", keywords['base_table_name'], ", base_table_name1=" + keywords['base_table_name1'], ", base_table_name2=" + keywords['base_table_name2'])
 
-  print "\nSTART TO GENERATE: " + keywords['table_name']+ keywords['name_postfix']
+  print("\nSTART TO GENERATE: " + keywords['table_name']+ keywords['name_postfix'])
   if True == is_ora_virtual_table(int(keywords['table_id'])):
     column_collation = 'CS_TYPE_UTF8MB4_BIN'
     is_oracle_sys_table = True
-  if keywords.has_key('index_name'):
+  if 'index_name' in keywords:
     local_fields = fields + index_only_fields
   elif is_lob_table(keywords['table_id']):
     local_fields = fields + lob_fields
@@ -2985,7 +2985,7 @@ def def_table_schema(**keywords):
     cols = keywords['partition_columns']
 
     # vtable with definition of partition_colums must be distributed
-    if not keywords.has_key('vtable_route_policy') or 'distributed' != keywords['vtable_route_policy'].lower():
+    if 'vtable_route_policy' not in keywords or 'distributed' != keywords['vtable_route_policy'].lower():
       raise Exception("vtable route policy must be distributed", keywords['table_name'])
 
     if len(cols) != 2:
@@ -3004,15 +3004,15 @@ def def_table_schema(**keywords):
       keywords['partition_expr'] = ['list', ', '.join(cols)]
 
   # owner must be defined
-  if not keywords.has_key('owner') or 0 == len(keywords['owner'].strip()):
+  if 'owner' not in keywords or 0 == len(keywords['owner'].strip()):
     raise Exception('owner must be specified')
 
   # vtable_route_policy' value must be valid
-  if keywords.has_key('vtable_route_policy'):
+  if 'vtable_route_policy' in keywords:
     route_policy = keywords['vtable_route_policy'].lower()
 
     tid_str = ""
-    if keywords.has_key('index_columns'):
+    if 'index_columns' in keywords:
       tid_str = table_name2index_tid(keywords['table_name']+ keywords['name_postfix'], keywords['index_name'])
     else:
       tid_str = table_name2tid(keywords['table_name']+ keywords['name_postfix'])
@@ -3023,15 +3023,15 @@ def def_table_schema(**keywords):
       raise Exception("vtabl route policy is only work for virtual table", tid)
     else:
       if 'local' == route_policy or 'only_rs' == route_policy:
-        if keywords.has_key('partition_columns') and 0 != len(keywords['partition_columns']):
+        if 'partition_columns' in keywords and 0 != len(keywords['partition_columns']):
           raise Exception("partition columns is not valid for local/only_rs virtual table", keywords.get('partition_columns', []))
         if 'only_rs' == route_policy:
           only_rs_vtables.append(tid_str)
       else:
         # distributed
-        if not keywords.has_key('partition_columns') or 2 != len(keywords['partition_columns']):
+        if 'partition_columns' not in keywords or 2 != len(keywords['partition_columns']):
           raise Exception("partition columns is not valid for distributed virtual table", keywords.get('partition_columns', []))
-        if keywords.has_key('in_tenant_space') and keywords['in_tenant_space']:
+        if 'in_tenant_space' in keywords and keywords['in_tenant_space']:
           tenant_distributed_vtables.append(tid_str)
         else:
           cluster_distributed_vtables.append(tid_str)
@@ -3046,28 +3046,28 @@ def def_table_schema(**keywords):
   for field in local_fields :
     value = keywords[field]
     if field == 'gm_columns':
-      if keywords.has_key('index_table_id'):
+      if 'index_table_id' in keywords:
         for column_name in value:
           print_discard_column(column_name)
       else:
         add_gm_columns(value)
     elif field == 'rowkey_columns':
-      if not keywords.has_key('index_name'):
-        if keywords.has_key('partition_columns'):
+      if 'index_name' not in keywords:
+        if 'partition_columns' in keywords:
           add_rowkey_columns(value, keywords['partition_columns'])
         else:
           add_rowkey_columns(value)
     elif field == 'normal_columns':
-      if not keywords.has_key('index_name'):
+      if 'index_name' not in keywords:
         if keywords['table_type'] != 'TABLE_TYPE_VIEW':
-          if keywords.has_key('partition_columns'):
+          if 'partition_columns' in keywords:
             add_normal_columns(value, keywords['partition_columns'])
           else:
             add_normal_columns(value)
     elif field == 'partition_columns':
       continue;
     elif field == 'table_id':
-      if keywords.has_key('index_columns'):
+      if 'index_columns' in keywords:
         tid = table_name2index_tid(keywords['table_name']+ keywords['name_postfix'], keywords['index_name'])
       else:
         tid = table_name2tid(keywords['table_name']+ keywords['name_postfix'])
@@ -3076,7 +3076,7 @@ def def_table_schema(**keywords):
       database_id = value
       add_field(field, database_id)
     elif field == 'table_name':
-      if keywords.has_key('index_name') :
+      if 'index_name' in keywords :
         add_char_field(field, table_name2index_tname(keywords['table_name'] + keywords['name_postfix'], keywords['index_name']))
       else:
         if keywords["name_postfix"] != '_ORA':
@@ -3089,7 +3089,7 @@ def def_table_schema(**keywords):
       add_char_field(field, '"{0}"'.format(value))
     elif field == 'in_tenant_space':
       if keywords[field]:
-        if keywords.has_key('index_name') :
+        if 'index_name' in keywords :
           tenant_space_tables.append(table_name2index_tid(keywords['table_name']+ keywords['name_postfix'], keywords['index_name']))
           tenant_space_table_names.append(table_name2index_tname(keywords['table_name'] + keywords['name_postfix'], keywords['index_name']))
         else:
@@ -3107,16 +3107,16 @@ def def_table_schema(**keywords):
         cpp_f_tmp = cpp_f
         index_idx = 0
         del keywords['index']
-        if keywords.has_key('index_using_type'):
+        if 'index_using_type' in keywords:
             dt_using_type = keywords['index_using_type']
-        for k, v in value.items():
-          cpp_f = StringIO.StringIO()
+        for k, v in list(value.items()):
+          cpp_f = io.StringIO()
           index_idx += 1
           keywords['index_name'] = k
           keywords['index_columns'] = v['index_columns']
-          if v.has_key('index_table_id'):
+          if 'index_table_id' in v:
               keywords['index_table_id'] = v['index_table_id']
-          if v.has_key('index_using_type'):
+          if 'index_using_type' in v:
               keywords['index_using_type'] = v['index_using_type']
           keywords['table_type'] = 'USER_INDEX'
           keywords['index_status'] = 'INDEX_STATUS_AVAILABLE'
@@ -3145,7 +3145,7 @@ def def_table_schema(**keywords):
                    'is_cluster_private', 'is_real_virtual_table',
                    'owner', 'vtable_route_policy'):
       # do nothing
-      print "skip"
+      print("skip")
     else:
       add_field(field, value)
 
@@ -3153,9 +3153,9 @@ def def_table_schema(**keywords):
   if keywords['table_type'] == 'SYSTEM_TABLE' and int(keywords['table_id']) > 1:
     is_in_tenant_space = False
     cluster_private = False
-    if keywords.has_key('in_tenant_space'):
+    if 'in_tenant_space' in keywords:
       is_in_tenant_space = keywords['in_tenant_space']
-    if keywords.has_key('is_cluster_private'):
+    if 'is_cluster_private' in keywords:
       cluster_private = keywords['is_cluster_private']
     meta_tid = int(keywords['table_id']) + base_lob_meta_table_id
     lob_aux_ids.append([keywords['table_id'], keywords['table_name'], meta_tid, 'AUX_LOB_META', lob_aux_meta_def, is_in_tenant_space, cluster_private])
@@ -3166,38 +3166,38 @@ def def_table_schema(**keywords):
     ptid = table_name2tid(keywords['table_name'] + '_aux_lob_piece')
     add_field('aux_lob_piece_tid', ptid)
   
-  if keywords.has_key("index_name") and not type(keywords['index']) == dict:
+  if "index_name" in keywords and not type(keywords['index']) == dict:
     add_index_method_end(max_used_column_idx)
   else:
     add_method_end()
 
-  if keywords.has_key('is_cluster_private') and keywords['is_cluster_private'] \
-     and keywords.has_key('in_tenant_space') and keywords['in_tenant_space'] \
+  if 'is_cluster_private' in keywords and keywords['is_cluster_private'] \
+     and 'in_tenant_space' in keywords and keywords['in_tenant_space'] \
      and (is_sys_table(table_id) or is_sys_index_table(table_id) or is_lob_table(table_id)):
-    if is_sys_table(table_id) and not keywords.has_key('meta_record_in_sys'):
+    if is_sys_table(table_id) and 'meta_record_in_sys' not in keywords:
       raise Exception("meta_record_in_sys must be defined when is_cluster_private = true")
     kw = copy_keywords(keywords)
     cluster_private_tables.append(kw)
 
-  if keywords.has_key('index_name'):
+  if 'index_name' in keywords:
     del keywords['index_name']
-  if keywords.has_key('index_columns'):
+  if 'index_columns' in keywords:
     del keywords['index_columns']
-  if keywords.has_key('index_status'):
+  if 'index_status' in keywords:
     del keywords['index_status']
-  if keywords.has_key('data_table_id'):
+  if 'data_table_id' in keywords:
     del keywords['data_table_id']
-  if keywords.has_key('index_type'):
+  if 'index_type' in keywords:
     del keywords['index_type']
-  if keywords.has_key('is_cluster_private'):
+  if 'is_cluster_private' in keywords:
     del keywords['is_cluster_private']
   for index_def in index_defs:
     cpp_f.write(index_def)
 
 def clean_files(globstr):
-  print "clean files by glob [%s]" % globstr
+  print("clean files by glob [%s]" % globstr)
   for f in glob.glob(os.path.join('.', globstr)):
-      print "remove  %s ..." % f
+      print("remove  %s ..." % f)
       os.remove(f)
 
 def start_generate_cpp(cpp_file_name):
@@ -3677,7 +3677,7 @@ static inline bool is_restrict_access_virtual_table(const uint64_t tid)
   h_f.write("  schema_create_func lob_piece_func_;\n")
   h_f.write("};\n\n")
   h_f.write("LOBMapping const lob_aux_table_mappings [] = {\n")
-  for i in xrange(0, len(lob_aux_ids), 2):
+  for i in range(0, len(lob_aux_ids), 2):
     meta_info = lob_aux_ids[i]
     piece_info = lob_aux_ids[i + 1]
     dtid = table_name2tid(meta_info[1])
@@ -3795,9 +3795,9 @@ namespace share
     cpp_f.write("   {\n")
     cpp_f.write("   int64_t idx = {0} - start_idx;\n".format(tmp_kw["self_tid"]))
     cpp_f.write("   VTMapping &tmp_vt_mapping = vt_mappings[idx];\n")
-    if tmp_kw.has_key("mapping_tid") and tmp_kw["mapping_tid"]:
+    if "mapping_tid" in tmp_kw and tmp_kw["mapping_tid"]:
       cpp_f.write("   tmp_vt_mapping.mapping_tid_ = {0};\n".format(tmp_kw["mapping_tid"]))
-    if tmp_kw.has_key("real_vt") and tmp_kw["real_vt"]:
+    if "real_vt" in tmp_kw and tmp_kw["real_vt"]:
       is_real_vt = "true"
       cpp_f.write("   tmp_vt_mapping.is_real_vt_ = {0};\n".format(is_real_vt))
     #if tmp_kw.has_key("columns_with_tenant_id") and tmp_kw["columns_with_tenant_id"]:
@@ -3878,7 +3878,7 @@ if __name__ == "__main__":
   ora_virtual_index_table_id = max_ora_virtual_table_id - 1
 
   clean_files("ob_inner_table_schema.*")
-  execfile("ob_inner_table_schema_def.py")
+  exec(compile(open("ob_inner_table_schema_def.py", "rb").read(), "ob_inner_table_schema_def.py", 'exec'))
   def_all_lob_aux_table()
   end_generate_cpp()
 
@@ -3907,4 +3907,4 @@ if __name__ == "__main__":
   # Generate SQLite virtual table C++ files
   generate_sqlite_virtual_table_cpp_files()
 
-  print "\nSuccess\n"
+  print("\nSuccess\n")

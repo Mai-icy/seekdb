@@ -455,11 +455,11 @@ int ObStorageMetaHandle::wait()
   return ret;
 }
 
-int ObStorageMetaCache::init(const char *cache_name, const int64_t priority)
+int ObStorageMetaCache::init(const char *cache_name)
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL((common::ObKVCache<ObStorageMetaKey, ObStorageMetaValue>::init(cache_name,  priority)))) {
-    LOG_WARN("fail to init storage meta kv cache", K(ret), K(priority));
+  if (OB_FAIL((common::ObKVCache<ObStorageMetaKey, ObStorageMetaValue>::init(cache_name)))) {
+    LOG_WARN("fail to init storage meta kv cache", K(ret));
   }
   return ret;
 }

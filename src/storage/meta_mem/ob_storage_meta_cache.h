@@ -208,7 +208,7 @@ public:
 public:
   ObStorageMetaCache();
   virtual ~ObStorageMetaCache();
-  int init(const char *cache_name, const int64_t priority);
+  int init(const char *cache_name);
   void destory();
   int get_meta(
       const ObStorageMetaValue::MetaType type,

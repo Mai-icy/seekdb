@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <chrono>
+
 #define private public
 #include "storage/tx/ob_id_service.h"
 #undef private

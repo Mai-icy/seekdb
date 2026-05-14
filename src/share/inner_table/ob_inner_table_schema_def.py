@@ -5158,16 +5158,12 @@ def_table_schema(
   normal_columns = [
   ('cache_name', 'varchar:OB_MAX_KVCACHE_NAME_LENGTH', 'false'),
   ('cache_id', 'int', 'false'),
-  ('priority', 'int', 'false'),
   ('cache_size', 'int', 'false'),
-  ('cache_store_size', 'int', 'false'),
-  ('cache_map_size', 'int', 'false'),
   ('kv_cnt', 'int', 'false'),
   ('hit_ratio', 'number:38:3', 'false'),
   ('total_put_cnt', 'int', 'false'),
   ('total_hit_cnt', 'int', 'false'),
-  ('total_miss_cnt', 'int', 'false'),
-  ('hold_size', 'int', 'false')
+  ('total_miss_cnt', 'int', 'false')
   ],
   vtable_route_policy = 'local',)
 
@@ -8995,8 +8991,6 @@ def_table_schema(
   rowkey_columns = [
   ],
   normal_columns = [
-    ('cache_id', 'int'),
-    ('cache_name', 'varchar:OB_MAX_KVCACHE_NAME_LENGTH'),
     ('memblock_ptr', 'varchar:32'),
     ('ref_count', 'int'),
     ('status', 'int'),
@@ -9004,8 +8998,7 @@ def_table_schema(
     ('kv_cnt', 'int'),
     ('get_cnt', 'int'),
     ('recent_get_cnt', 'int'),
-    ('priority', 'int'),
-    ('score', 'number:38:3'),
+    ('score', 'number:38:6'),
     ('align_size', 'int')
   ],
   vtable_route_policy = 'local',)
@@ -10306,28 +10299,7 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-def_table_schema(
-  owner             = 'donglou.zl',
-  table_name        = '__all_virtual_ss_local_cache_info',
-  table_id          = '12492',
-  table_type        = 'VIRTUAL_TABLE',
-  in_tenant_space   = True,
-  gm_columns        = [],
-  rowkey_columns    = [],
-  normal_columns    = [
-    ('cache_name', 'varchar:128'),
-    ('priority', 'bigint'),
-    ('hit_ratio', 'number:38:3'),
-    ('total_hit_cnt', 'bigint'),
-    ('total_hit_bytes', 'bigint'),
-    ('total_miss_cnt', 'bigint'),
-    ('total_miss_bytes', 'bigint'),
-    ('hold_size', 'bigint'),
-    ('alloc_disk_size', 'bigint'),
-    ('used_disk_size', 'bigint'),
-    ('used_mem_size', 'bigint')
-  ],  vtable_route_policy = 'local'
-  )
+# 12492: __all_virtual_ss_local_cache_info abandoned
 
 def_table_schema(
   owner      = 'wuguangxin.wgx',
@@ -18662,7 +18634,6 @@ def_table_schema(
   view_definition = """
 SELECT
   CACHE_NAME,
-  PRIORITY,
   CACHE_SIZE,
   HIT_RATIO,
   TOTAL_PUT_CNT,
@@ -18684,7 +18655,6 @@ def_table_schema(
   view_definition = """
     SELECT
     CACHE_NAME,
-    PRIORITY,
     CACHE_SIZE,
     HIT_RATIO,
     TOTAL_PUT_CNT,
@@ -27767,54 +27737,8 @@ def_table_schema(
 """.replace("\n", " ")
 )
 
-def_table_schema(
-  owner           = 'donglou.zl',
-  table_name      = 'GV$OB_SS_LOCAL_CACHE',
-  table_id        = '21599',
-  table_type      = 'SYSTEM_VIEW',
-  rowkey_columns  = [],
-  normal_columns  = [],
-  gm_columns      = [],
-  in_tenant_space = True,
-  view_definition = """
-  SELECT
-    CACHE_NAME,
-    PRIORITY,
-    HIT_RATIO,
-    TOTAL_HIT_CNT,
-    TOTAL_MISS_CNT,
-    HOLD_SIZE,
-    ALLOC_DISK_SIZE,
-    USED_DISK_SIZE,
-    USED_MEM_SIZE
-  FROM oceanbase.__all_virtual_ss_local_cache_info
-  """.replace("\n", " ")
-)
-
-def_table_schema(
-  owner           = 'donglou.zl',
-  table_name      = 'V$OB_SS_LOCAL_CACHE',
-  table_id        = '21600',
-  table_type      = 'SYSTEM_VIEW',
-  rowkey_columns  = [],
-  normal_columns  = [],
-  gm_columns      = [],
-  in_tenant_space = True,
-  view_definition = """
-  SELECT
-    CACHE_NAME,
-    PRIORITY,
-    HIT_RATIO,
-    TOTAL_HIT_CNT,
-    TOTAL_MISS_CNT,
-    HOLD_SIZE,
-    ALLOC_DISK_SIZE,
-    USED_DISK_SIZE,
-    USED_MEM_SIZE
-  FROM oceanbase.GV$OB_SS_LOCAL_CACHE
-
-  """.replace("\n", " ")
-)
+# 21599: GV$OB_SS_LOCAL_CACHE abandoned
+# 21600: V$OB_SS_LOCAL_CACHE abandoned
 
 def_table_schema(
   owner = 'wuguangxin.wgx',

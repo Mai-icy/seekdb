@@ -87,7 +87,6 @@ int ObPointerSwizzleNode::access_mem_ptr(blocksstable::ObMicroBlockBufferHandle 
     ObStorageLeakChecker::get_instance().handle_hold(&handle.handle_);
     ++tmp_ps_node.mb_handle_->recent_get_cnt_;
     ATOMIC_AAF(&tmp_ps_node.mb_handle_->get_cnt_, 1);
-    tmp_ps_node.mb_handle_->inst_->status_.total_hit_cnt_.inc();
     handle.set_micro_block(reinterpret_cast<const blocksstable::ObMicroBlockCacheValue*>(tmp_ps_node.value_));
     COMMON_LOG(DEBUG, "access the memory successfully which the swizzling pointer points to", KPC(this));
   }

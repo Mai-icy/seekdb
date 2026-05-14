@@ -23,6 +23,7 @@
 #ifndef _WIN32
 #include <setjmp.h>
 #endif
+#include <utility>
 #include "lib/signal/ob_signal_struct.h"
 #include "lib/thread/thread_mgr.h"
 #include "lib/container/ob_vector.h"
@@ -46,36 +47,105 @@ RLOCAL(sigjmp_buf, jmp);
 
 static void dump_handler(int sig, siginfo_t *s, void *p)
 {
-  if (SIGSEGV == sig || SIGABRT == sig) {
-    siglongjmp(jmp, 1);
-  } else {
-    ob_signal_handler(sig, s, p);
-  }
+  siglongjmp(jmp, 1);
 }
-#endif
 
-template<typename Function>
-void do_with_segv_catch(Function &&func, bool &has_segv, decltype(func()) &ret)
+class DumpSignalGuard final
 {
-  has_segv = false;
-#ifndef _WIN32
-  signal_handler_t handler_bak = get_signal_handler();
-  int js = sigsetjmp(jmp, 1);
-  if (0 == js) {
-    get_signal_handler() = dump_handler;
-    ret = func();
-  } else if (1 == js) {
-    has_segv = true;
-  } else {
-    LOG_ERROR_RET(OB_ERR_UNEXPECTED, "unexpected error!!!", K(js));
-    ob_abort();
+public:
+  DumpSignalGuard()
+  {
+    install_dump_signal_handler();
   }
-  get_signal_handler() = handler_bak;
-#else
-  ret = func();
-#endif
-}
 
+  ~DumpSignalGuard()
+  {
+    restore_dump_signal_handler();
+  }
+
+public:
+
+  template<typename Function>
+  void do_with_segv_catch(Function &&func, bool &has_segv, decltype(func()) &ret)
+  {
+    has_segv = false;
+    if (installed_) {
+      has_segv = false;
+      int js = sigsetjmp(jmp, 1);
+      if (0 == js) {
+        ret = func();
+      } else if (1 == js) {
+        has_segv = true;
+      } else {
+        LOG_ERROR_RET(OB_ERR_UNEXPECTED, "unexpected error!!!", K(js));
+        ob_abort();
+      }
+    } else {
+      ret = func();
+    }
+  }
+
+private:
+  void install_dump_signal_handler()
+  {
+    int ret = OB_SUCCESS;
+    struct sigaction sa_new;
+    sa_new.sa_flags = SA_SIGINFO;
+    sa_new.sa_sigaction = dump_handler;
+    sigemptyset(&sa_new.sa_mask);
+    installed_ = true;
+    int i = 0;
+    for (i = 0; OB_SUCC(ret) && i < ARRAYSIZEOF(signals_); i++) {
+      if (sigaction(signals_[i], &sa_new, &sa_old_[i]) != 0) {
+        ret = OB_ERR_SYS;
+        LOG_WARN_RET(ret, "failed to install signal handler", K(errno));
+      }
+    }
+    if (OB_SUCC(ret)) {
+      installed_ = true;
+    } else {
+      installed_ = false;
+      for (int j = 0; j < i; j++) {
+        if (sigaction(signals_[j], &sa_old_[j], nullptr) != 0) {
+          LOG_WARN_RET(OB_ERR_SYS, "failed to restore signal handler", K(errno));
+        }
+      }
+    }
+  }
+
+  void restore_dump_signal_handler()
+  {
+    if (installed_) {
+      for (int i = 0; i < ARRAYSIZEOF(signals_); i++) {
+        if (sigaction(signals_[i], &sa_old_[i], nullptr) != 0) {
+          LOG_WARN_RET(OB_ERR_SYS, "failed to restore signal handler", K(errno));
+        }
+      }
+      installed_ = false;
+    }
+  }
+private:
+  static constexpr int signals_[] = {SIGSEGV, SIGABRT};
+  struct sigaction sa_old_[ARRAYSIZEOF(signals_)];
+  bool installed_ = false;
+};
+
+#else // _WIN32
+
+class DumpSignalGuard final
+{
+public:
+  DumpSignalGuard() = default;
+  ~DumpSignalGuard() = default;
+
+  template<typename Function>
+  void do_with_segv_catch(Function &&func, bool &has_segv, decltype(func()) &ret)
+  {
+    has_segv = false;
+    ret = func();
+  }
+};
+#endif // _WIN32
 
 ObMemoryDump::ObMemoryDump()
   : task_mutex_(ObLatchIds::ALLOC_MEM_DUMP_TASK_LOCK),
@@ -324,7 +394,8 @@ AChunk *ObMemoryDump::find_chunk(void *ptr)
       return ret;
   };
   bool has_segv = false;
-  do_with_segv_catch(func, has_segv, ret);
+  DumpSignalGuard guard;
+  guard.do_with_segv_catch(func, has_segv, ret);
   if (has_segv) {
     LOG_INFO("restore from sigsegv, let's goon~");
   }
@@ -552,6 +623,7 @@ void ObMemoryDump::handle(void *task)
         auto &w_stat = w_stat_;
         auto &lmap = lmap_;
         lmap.clear();
+        DumpSignalGuard guard;
         for (int i = 0; OB_SUCC(ret) && i < chunk_cnt; i++) {
           AChunk *chunk = chunks_[i];
           auto func = [&, chunk] {
@@ -584,7 +656,7 @@ void ObMemoryDump::handle(void *task)
               return ret;
           };
           bool has_segv = false;
-          do_with_segv_catch(func, has_segv, ret);
+          guard.do_with_segv_catch(func, has_segv, ret);
           if (has_segv) {
             LOG_INFO("restore from sigsegv, let's goon~");
             segv_cnt++;
@@ -714,6 +786,7 @@ void ObMemoryDump::handle(void *task)
       // sort chunk
       lib::ob_sort(chunks_, chunks_ + cnt);
       // iter chunk
+      DumpSignalGuard guard;
       for (int i = 0; OB_SUCC(ret) && i < cnt; i++) {
         AChunk *chunk = chunks_[i];
         char *print_buf = print_buf_; // for lambda capture
@@ -736,7 +809,7 @@ void ObMemoryDump::handle(void *task)
             return OB_SUCCESS;
         };
         bool has_segv = false;
-        do_with_segv_catch(func, has_segv, ret);
+        guard.do_with_segv_catch(func, has_segv, ret);
         if (has_segv) {
           LOG_INFO("restore from sigsegv, let's goon~");
           continue;

@@ -33,7 +33,9 @@
 #include "observer/ob_rpc_extra_payload.h"
 #include "observer/ob_server_options.h"
 #include "observer/omt/ob_tenant_timezone_mgr.h"
+#ifndef OB_BUILD_EMBED_MODE
 #include "observer/table/ob_table_rpc_processor.h"
+#endif
 #include "share/allocator/ob_tenant_mutil_allocator_mgr.h"
 #include "share/object_storage/ob_device_connectivity.h"
 #include "share/ob_bg_thread_monitor.h"
@@ -271,8 +273,10 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
       LOG_ERROR("init retry ctrl failed", KR(ret));
     } else if (OB_FAIL(ObMdsEventBuffer::init())) {
       LOG_WARN("init MDS event buffer failed", KR(ret));
+#ifndef OB_BUILD_EMBED_MODE
     } else if (OB_FAIL(ObTableApiProcessorBase::init_session())) {
       LOG_ERROR("init static session failed", KR(ret));
+#endif
     } else if (OB_FAIL(init_loaddata_global_stat())) {
       LOG_ERROR("init global load data stat map failed", KR(ret));
     } else if (OB_FAIL(init_pre_setting())) {
@@ -403,9 +407,9 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
     if (OB_FAIL(init_tx_data_cache())) {
       LOG_ERROR("init tx data cache failed", KR(ret));
     } else if (!GCTX.is_shared_storage_mode() &&
-               OB_FAIL(tmp_file::ObTmpBlockCache::get_instance().init("tmp_block_cache", 1))) {
+               OB_FAIL(tmp_file::ObTmpBlockCache::get_instance().init("tmp_block_cache"))) {
       LOG_ERROR("init tmp block cache failed", KR(ret));
-    } else if (OB_FAIL(tmp_file::ObTmpPageCache::get_instance().init("tmp_page_cache", 1))) {
+    } else if (OB_FAIL(tmp_file::ObTmpPageCache::get_instance().init("tmp_page_cache"))) {
       LOG_ERROR("init tmp page cache failed", KR(ret));
     } else if (OB_FAIL(init_log_kv_cache())) {
       LOG_ERROR("init log kv cache failed", KR(ret));
@@ -2146,7 +2150,7 @@ int ObServer::init_pre_setting()
     ob_set_reserved_memory(reserved_memory);
   }
   if (OB_SUCC(ret)) {
-    const int64_t default_stack_size = 1L << 19; // 512KB
+    const int64_t default_stack_size = 1L << 18; // 512KB
     const int64_t stack_size = std::max(static_cast<int64_t>(default_stack_size), static_cast<int64_t>(GCONF.stack_size));
     LOG_INFO("set stack_size", K(stack_size));
     global_thread_stack_size = stack_size - SIG_STACK_SIZE - ACHUNK_PRESERVE_SIZE;
@@ -2229,12 +2233,6 @@ int ObServer::init_io()
         storage_env_.clog_dir_ = OB_FILE_SYSTEM_ROUTER.get_clog_dir();
 
         // cache
-        storage_env_.index_block_cache_priority_ = config_.index_block_cache_priority;
-        storage_env_.user_block_cache_priority_ = config_.user_block_cache_priority;
-        storage_env_.user_row_cache_priority_ = config_.user_row_cache_priority;
-        storage_env_.fuse_row_cache_priority_ = config_.fuse_row_cache_priority;
-        storage_env_.bf_cache_priority_ = config_.bf_cache_priority;
-        storage_env_.storage_meta_cache_priority_ = config_.storage_meta_cache_priority;
         storage_env_.bf_cache_miss_count_threshold_ = config_.bf_cache_miss_count_threshold;
 
         // policy
@@ -2790,13 +2788,7 @@ int ObServer::init_storage()
     storage_env_.ethernet_speed_ = ethernet_speed_;
   }
   if (OB_SUCC(ret)) {
-    if (OB_FAIL(OB_STORE_CACHE.init(storage_env_.index_block_cache_priority_,
-                                    storage_env_.user_block_cache_priority_,
-                                    storage_env_.user_row_cache_priority_,
-                                    storage_env_.fuse_row_cache_priority_,
-                                    storage_env_.bf_cache_priority_,
-                                    storage_env_.bf_cache_miss_count_threshold_,
-                                    storage_env_.storage_meta_cache_priority_))) {
+    if (OB_FAIL(OB_STORE_CACHE.init(storage_env_.bf_cache_miss_count_threshold_))) {
       LOG_WARN("Fail to init OB_STORE_CACHE, ", KR(ret), K(storage_env_.data_dir_));
     } else if (OB_FAIL(OB_STORAGE_OBJECT_MGR.init(
         GCTX.is_shared_storage_mode(), storage_env_.default_block_size_))) {
@@ -2819,7 +2811,7 @@ int ObServer::init_storage()
 int ObServer::init_tx_data_cache()
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL(OB_TX_DATA_KV_CACHE.init("tx_data_kv_cache", 2 /* cache priority */))) {
+  if (OB_FAIL(OB_TX_DATA_KV_CACHE.init("tx_data_kv_cache"))) {
     LOG_WARN("init OB_TX_DATA_KV_CACHE failed", KR(ret));
   }
   return ret;
@@ -2828,7 +2820,7 @@ int ObServer::init_tx_data_cache()
 int ObServer::init_log_kv_cache()
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL(OB_LOG_KV_CACHE.init(palf::OB_LOG_KV_CACHE_NAME, 1, palf::LOG_CACHE_MEMORY_LIMIT))) {
+  if (OB_FAIL(OB_LOG_KV_CACHE.init(palf::OB_LOG_KV_CACHE_NAME, palf::LOG_CACHE_MEMORY_LIMIT))) {
     LOG_WARN("init OB_LOG_KV_CACHE failed", KR(ret));
   }
   return ret;
@@ -2997,13 +2989,6 @@ int ObServer::reload_config()
 
   if (OB_FAIL(OB_STORE_CACHE.set_bf_cache_miss_count_threshold(GCONF.bf_cache_miss_count_threshold))) {
     LOG_WARN("set bf_cache_miss_count_threshold fail", KR(ret));
-  } else if (OB_FAIL(OB_STORE_CACHE.reset_priority(GCONF.index_block_cache_priority,
-                                                   GCONF.user_block_cache_priority,
-                                                   GCONF.user_row_cache_priority,
-                                                   GCONF.fuse_row_cache_priority,
-                                                   GCONF.bf_cache_priority,
-                                                   GCONF.storage_meta_cache_priority))) {
-    LOG_WARN("set cache priority fail, ", KR(ret));
   }
 
   // Start the gRPC server when enable_rpc_service is first set to True.

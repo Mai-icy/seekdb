@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
+# include <chrono> // to disable the error of redefinition structs with public
+
 #define private public  // get private members
 #include "share/index_usage/ob_index_usage_info_mgr.h"
 #include "mtlenv/mock_tenant_module_env.h"
