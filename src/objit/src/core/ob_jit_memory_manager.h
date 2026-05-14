@@ -21,6 +21,13 @@
 #include "lib/allocator/ob_malloc.h"
 #include "lib/allocator/page_arena.h"
 #include "core/ob_jit_allocator.h"
+#ifdef _WIN32
+#include <windows.h>
+#include <stdio.h>   // _snprintf_s
+#include <string.h>  // strlen
+#include <vector>
+#include <mutex>
+#endif
 
 namespace oceanbase {
 namespace jit {
@@ -37,6 +44,10 @@ public:
         code_section_addr_(nullptr),
         gcc_except_tab_addr_(nullptr),
         gcc_except_tab_size_(0)
+#ifdef _WIN32
+        , pdata_base_(0),
+        personality_trampoline_(nullptr)
+#endif
   {}
   virtual ~ObJitMemoryManager() {}
 
@@ -50,6 +61,15 @@ public:
     if (SectionName == "__text") {
       code_section_addr_ = ptr;
     }
+#elif defined(_WIN32)
+    // Track the *minimum* loaded section address as the base for .pdata RVA
+    // computation. RTDyld's RuntimeDyldCOFFX86_64::getImageBase() computes
+    // ImageBase = min(load addr of all loaded sections), so pdata_base_ must
+    // match that to interpret IMAGE_REL_AMD64_ADDR32NB relocations correctly.
+    DWORD64 addr = reinterpret_cast<DWORD64>(ptr);
+    if (pdata_base_ == 0 || addr < pdata_base_) {
+      pdata_base_ = addr;
+    }
 #endif
     return ptr;
   }
@@ -58,6 +78,17 @@ public:
       uintptr_t Size, unsigned Alignment, unsigned SectionID,
       llvm::StringRef SectionName, bool IsReadOnly){
     uint8_t *ptr = reinterpret_cast<uint8_t*>(allocator_.alloc(JMT_RO, Size, Alignment));
+#ifdef _WIN32
+    // Same min-tracking as allocateCodeSection: a data section may end up
+    // at a lower address than any code section (depends on allocator order),
+    // and RTDyld's ImageBase = min over all sections. Keep pdata_base_ in sync.
+    {
+      DWORD64 addr = reinterpret_cast<DWORD64>(ptr);
+      if (pdata_base_ == 0 || addr < pdata_base_) {
+        pdata_base_ = addr;
+      }
+    }
+#endif
 #if defined(__APPLE__)
     // Track __gcc_except_tab section address for .eh_frame LSDA fixup.
     // On macOS ARM64, RuntimeDyld doesn't properly relocate the LSDA pointer
@@ -66,6 +97,17 @@ public:
     if (SectionName == "__gcc_except_tab") {
       gcc_except_tab_addr_ = ptr;
       gcc_except_tab_size_ = Size;
+    }
+#elif defined(_WIN32)
+    // Track .pdata section for later registration with RtlAddFunctionTable.
+    // RTDyld on Windows does NOT call registerEHFrames for COFF .pdata;
+    // we intercept it here and register after finalizeMemory().
+    if (SectionName == ".pdata" && Size >= sizeof(RUNTIME_FUNCTION)) {
+      std::lock_guard<std::mutex> lk(pdata_mutex_);
+      PdataPending entry;
+      entry.table_ = reinterpret_cast<RUNTIME_FUNCTION *>(ptr);
+      entry.count_ = static_cast<DWORD>(Size / sizeof(RUNTIME_FUNCTION));
+      pdata_pending_.push_back(entry);
     }
 #endif
     return ptr;
@@ -82,16 +124,42 @@ public:
     if (Size > 0) {
       fixupEHFrameRelocations(Addr, Size);
     }
-#endif
     llvm::RTDyldMemoryManager::registerEHFrames(Addr, LoadAddr, Size);
     // Reset for next module
     code_section_addr_ = nullptr;
     gcc_except_tab_addr_ = nullptr;
     gcc_except_tab_size_ = 0;
+#elif defined(_WIN32)
+    // On Windows, registerEHFrames is called for ELF-style .eh_frame data if
+    // DwarfCFI mode is used, but NOT for COFF .pdata (handled in finalizeMemory).
+    // The base class would call __register_frame which doesn't exist on Windows.
+    // Simply ignore this call; .pdata registration happens in finalizeMemory().
+    (void)Addr; (void)LoadAddr; (void)Size;
+#else
+    llvm::RTDyldMemoryManager::registerEHFrames(Addr, LoadAddr, Size);
+    // Reset for next module
+    code_section_addr_ = nullptr;
+    gcc_except_tab_addr_ = nullptr;
+    gcc_except_tab_size_ = 0;
+#endif
   }
 
   virtual void deregisterEHFrames() {
+#if defined(_WIN32)
+    std::lock_guard<std::mutex> lk(pdata_mutex_);
+    for (int64_t i = 0; i < static_cast<int64_t>(registered_pdata_.size()); ++i) {
+      RtlDeleteFunctionTable(registered_pdata_[i].table_);
+    }
+    registered_pdata_.clear();
+    pdata_pending_.clear();
+    pdata_base_ = 0;
+    // Trampoline memory is owned by the allocator and freed with it; just drop
+    // our reference so subsequent finalizeMemory calls (if this manager is
+    // ever reused) cannot accidentally re-use a dangling pointer.
+    personality_trampoline_ = nullptr;
+#else
     llvm::RTDyldMemoryManager::deregisterEHFrames();
+#endif
   }
 
 private:
@@ -242,7 +310,14 @@ private:
   ///
   /// Returns true if an error occurred, false otherwise.
   virtual bool finalizeMemory(std::string *ErrMsg = 0) {
-    return allocator_.finalize();
+    bool ret = allocator_.finalize();
+#if defined(_WIN32)
+    // After memory is finalized (pages committed), register any accumulated
+    // .pdata sections with Windows so that RtlDispatchException can find the
+    // RUNTIME_FUNCTION entries for JIT-compiled PL code.
+    register_windows_pdata();
+#endif
+    return ret;
   }
 
 #if defined(__aarch64__)
@@ -272,11 +347,41 @@ private:
 private:
   uint8_t *alloc(uintptr_t Size, unsigned Alignment);
 
+#if defined(_WIN32)
+  void register_windows_pdata();
+
+  // Install a 16-byte personality trampoline inside the JIT region and rewrite
+  // every UNWIND_INFO::ExceptionHandler RVA in the accumulated .pdata entries
+  // to point at it. See ob_jit_memory_manager.cpp for the UNWIND_INFO parsing
+  // details. Callable only before allocator_.finalize() (because both the
+  // trampoline code page and the .xdata bytes must still be writable).
+  void install_personality_trampoline_and_patch_xdata();
+
+  // Trampoline opcodes (movabs rax, imm64; jmp rax). Exposed as a constant so
+  // the .cpp can keep the byte-layout logic self-contained.
+  static const size_t PERSONALITY_TRAMPOLINE_SIZE = 16;
+#endif
+
 private:
   ObJitAllocator &allocator_;
   uint8_t *code_section_addr_;
   uint8_t *gcc_except_tab_addr_;
   size_t gcc_except_tab_size_;
+
+#if defined(_WIN32)
+  struct PdataEntry { RUNTIME_FUNCTION *table_; DWORD64 base_; };
+  struct PdataPending { RUNTIME_FUNCTION *table_; DWORD count_; };
+  std::vector<PdataPending> pdata_pending_;
+  std::vector<PdataEntry> registered_pdata_;
+  std::mutex pdata_mutex_;
+  DWORD64 pdata_base_;  // base address for RVA computation (first code section)
+  // 16-byte trampoline allocated from code_mem_. Layout: movabs rax, imm64; jmp rax.
+  // When non-null and addressable from pdata_base_ via a DWORD RVA, every
+  // UNWIND_INFO::ExceptionHandler RVA in the JIT module gets rewritten to
+  // (personality_trampoline_ - pdata_base_), decoupling JIT placement from
+  // the distance to ob_pl_seh_personality in seekdb.exe.
+  uint8_t *personality_trampoline_;
+#endif
 };
 
 }  // core

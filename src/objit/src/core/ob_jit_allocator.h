@@ -39,6 +39,32 @@ enum JitMemType{
   JMT_RWE
 };
 
+#ifdef _WIN32
+// Lazily allocate and return the address of a 16-byte executable trampoline
+// page that performs `movabs rax, &ob_pl_seh_personality; jmp rax`.
+//
+// Why this exists:
+//   On Windows x64, UNWIND_INFO::ExceptionHandler is a 32-bit RVA relative
+//   to RTDyld's ImageBase = min(loaded JIT section). The COFF relocation
+//   IMAGE_REL_AMD64_ADDR32NB on the personality reference is also resolved
+//   at link time as `personality_addr - ImageBase` and must fit unsigned 32
+//   bits. If JIT memory is mapped >4GB away from seekdb.exe (which is
+//   typical when VirtualAlloc(NULL, ...) decides JIT lives at ~0x100_xxxx),
+//   the relocation truncates and SEH dispatch jumps into garbage.
+//
+//   This function exposes a stable trampoline address that lives near where
+//   the OS hands out JIT memory. JIT registers the trampoline as the
+//   "eh_personality" symbol (instead of ob_pl_seh_personality itself), and
+//   the JIT allocator scans downward from this address for new JIT
+//   regions. Distance trampoline - ImageBase is then bounded by the scan
+//   window and always fits in 32 bits.
+//
+// Thread-safety: idempotent; backed by std::call_once. Returns 0 only if the
+// initial VirtualAlloc fails — callers must treat that as an unrecoverable
+// SEH-broken state for JIT code.
+uintptr_t ob_jit_get_personality_trampoline();
+#endif
+
 
 class ObJitMemoryBlock;
 class ObJitMemoryGroup

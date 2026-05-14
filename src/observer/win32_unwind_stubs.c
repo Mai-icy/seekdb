@@ -15,15 +15,24 @@
  */
 
 /*
- * Stubs for Itanium ABI _Unwind_* functions on Windows.
- * Windows uses SEH for exception handling; PL exception handling via
- * the Itanium unwinder is not functional in this build.
+ * Itanium ABI _Unwind_* bridges for Windows SEH.
+ *
+ * On Windows, PL exceptions are dispatched via Windows SEH (RaiseException /
+ * RtlDispatchException). This file:
+ *   - Implements _Unwind_RaiseException / _Unwind_Resume by calling
+ *     RaiseException with OB_PL_SEH_EXCEPTION_CODE.
+ *   - Implements _Unwind_Get and _Unwind_Set accessors that read from / write
+ *     to the ObWin32UnwindCtx synthetic context built by ob_pl_seh_personality.
  */
 #ifdef _WIN32
 
+/* Include <stdint.h> before <windows.h> so that uintptr_t is defined before
+ * vcruntime.h (included transitively by windows.h) attempts to use it. */
+#include <stdint.h>
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
+#include "win32_pl_seh.h"
 
 void win32_trace(const char *msg) {
   HANDLE h = GetStdHandle(STD_ERROR_HANDLE);
@@ -41,36 +50,101 @@ struct _Unwind_Context;
 #define _URC_FATAL_PHASE1_ERROR 3
 #define _URC_FATAL_PHASE2_ERROR 2
 
+/* -----------------------------------------------------------------------
+ * Thread-local state shared with ob_pl_seh_personality
+ *
+ * §3.5 global-variable exemption: these MUST be file-scope __declspec(thread)
+ * because JIT-generated PL code loads them by linker-resolved symbol name
+ * (see ob_pl_adt.cpp TLS-model constant accessors). Encapsulating them in a
+ * class or TLS-get-helper would break the symbol-name linkage that LLVM IR
+ * relies on at JIT link time. Per-thread scope keeps concurrent PL frames
+ * on different threads correctly isolated.
+ * ----------------------------------------------------------------------- */
+__declspec(thread) void *tl_ob_pl_seh_exc_ptr = NULL;
+__declspec(thread) uintptr_t tl_ob_pl_seh_selector = 0;
+
+/* -----------------------------------------------------------------------
+ * _Unwind_Context accessors — ctx is actually an ObWin32UnwindCtx*
+ * ----------------------------------------------------------------------- */
+
 unsigned long long _Unwind_GetLanguageSpecificData(struct _Unwind_Context *ctx) {
-  (void)ctx;
-  return 0;
+  struct ObWin32UnwindCtx *wctx = (struct ObWin32UnwindCtx *)ctx;
+  return (unsigned long long)(uintptr_t)wctx->disp_ctx->HandlerData;
 }
 
 unsigned long long _Unwind_GetIP(struct _Unwind_Context *ctx) {
-  (void)ctx;
-  return 0;
+  struct ObWin32UnwindCtx *wctx = (struct ObWin32UnwindCtx *)ctx;
+  return (unsigned long long)wctx->disp_ctx->ControlPc;
 }
 
 unsigned long long _Unwind_GetRegionStart(struct _Unwind_Context *ctx) {
-  (void)ctx;
-  return 0;
+  struct ObWin32UnwindCtx *wctx = (struct ObWin32UnwindCtx *)ctx;
+  return (unsigned long long)(wctx->disp_ctx->ImageBase +
+                              wctx->disp_ctx->FunctionEntry->BeginAddress);
 }
 
 void _Unwind_SetGR(struct _Unwind_Context *ctx, int reg, unsigned long long val) {
-  (void)ctx; (void)reg; (void)val;
+  struct ObWin32UnwindCtx *wctx = (struct ObWin32UnwindCtx *)ctx;
+  if (reg >= 0 && reg < 2) {
+    wctx->gr[reg] = (uintptr_t)val;
+  }
 }
 
 void _Unwind_SetIP(struct _Unwind_Context *ctx, unsigned long long val) {
-  (void)ctx; (void)val;
+  struct ObWin32UnwindCtx *wctx = (struct ObWin32UnwindCtx *)ctx;
+  wctx->target_ip = (uintptr_t)val;
 }
 
+/* -----------------------------------------------------------------------
+ * _Unwind_RaiseException — phase 1+2 via Windows SEH
+ *
+ * Stores the exception pointer in TLS so that ob_pl_seh_personality can
+ * retrieve it during Windows SEH dispatch, then calls RaiseException.
+ *
+ * Critical design notes:
+ *   1. No __try/__except wrapper here.  If we wrapped the call, Windows
+ *      would find the __except handler in THIS frame first (before reaching
+ *      the JIT PL frame), and ob_pl_seh_personality would never be called.
+ *   2. flags = 0 (NOT EXCEPTION_NONCONTINUABLE).  With NONCONTINUABLE,
+ *      if no JIT handler is found Windows terminates the process.  With
+ *      flags=0, RtlDispatchException returns FALSE and RaiseException
+ *      returns normally to this function, so we can return
+ *      _URC_FATAL_PHASE1_ERROR to the PL runtime gracefully.
+ *   3. When ob_pl_seh_personality finds a handler it calls RtlUnwindEx,
+ *      which unwinds the stack past this frame to the landing pad.
+ *      In that case RaiseException never returns here.
+ * ----------------------------------------------------------------------- */
 _Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *exc) {
-  (void)exc;
+  ULONG_PTR args[OB_PL_SEH_NARGS];
+  args[0] = (ULONG_PTR)exc;
+  tl_ob_pl_seh_exc_ptr = exc;
+  tl_ob_pl_seh_selector = 0;
+  /* flags = 0: continuable exception so RaiseException can return when no
+   * handler is found, allowing graceful error propagation. */
+  RaiseException(OB_PL_SEH_EXCEPTION_CODE,
+                 0,
+                 OB_PL_SEH_NARGS,
+                 args);
+  /* Reached only when no handler was found (RtlDispatchException returned
+   * FALSE).  The JIT PL runtime will propagate the OB error code. */
   return _URC_FATAL_PHASE1_ERROR;
 }
 
+/* -----------------------------------------------------------------------
+ * _Unwind_Resume — re-raise during phase 2 cleanup
+ *
+ * Same design rationale as _Unwind_RaiseException: no __try wrapper, no
+ * EXCEPTION_NONCONTINUABLE, so RtlDispatchException can reach JIT frames.
+ * ----------------------------------------------------------------------- */
 void _Unwind_Resume(struct _Unwind_Exception *exc) {
-  (void)exc;
+  ULONG_PTR args[OB_PL_SEH_NARGS];
+  args[0] = (ULONG_PTR)exc;
+  tl_ob_pl_seh_exc_ptr = exc;
+  RaiseException(OB_PL_SEH_EXCEPTION_CODE,
+                 0,
+                 OB_PL_SEH_NARGS,
+                 args);
+  /* If RaiseException returns (no handler), nothing we can do. */
 }
 
 /*
