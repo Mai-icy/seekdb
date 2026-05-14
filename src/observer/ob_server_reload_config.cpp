@@ -171,13 +171,6 @@ int ObServerReloadConfig::operator()()
       reload_tenant_freezer_config_();
       reload_tenant_scheduler_config_();
   }
-  {
-    ObMallocAllocator *malloc_allocator = ObMallocAllocator::get_instance();
-    const bool reserve = true;
-    malloc_allocator->set_tenant_ctx_idle(OB_SERVER_TENANT_ID, ObCtxIds::LIBEASY,
-        (GCONF.__easy_memory_limit * GCONF.__easy_memory_reserved_percentage) / 100,
-        reserve);
-  }
 
   int64_t cache_size = GCONF.memory_chunk_cache_size;
   bool use_large_chunk_cache = 1 != cache_size;

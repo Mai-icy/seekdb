@@ -94,15 +94,17 @@ static int ob_fsync(int fd) {
   return 0;
 }
 #define fsync ob_fsync
-static int ob_fallocate(int fd, int, off_t, off_t len) {
+// MSVCRT typedefs `off_t` as 32-bit `long`. Use int64_t explicitly so PALF
+// log file offsets and sizes can exceed 2 GiB on Windows.
+static int ob_fallocate(int fd, int, int64_t, int64_t len) {
   return _chsize_s(fd, len) == 0 ? 0 : -1;
 }
 #define fallocate ob_fallocate
-static int ob_ftruncate(int fd, off_t len) {
+static int ob_ftruncate(int fd, int64_t len) {
   return _chsize_s(fd, len) == 0 ? 0 : -1;
 }
 #define ftruncate ob_ftruncate
-static ssize_t ob_pwrite(int fd, const void *buf, size_t count, off_t offset) {
+static ssize_t ob_pwrite(int fd, const void *buf, size_t count, int64_t offset) {
   long long prev = _lseeki64(fd, 0, SEEK_CUR);
   _lseeki64(fd, offset, SEEK_SET);
   int written = _write(fd, buf, (unsigned)count);
@@ -110,7 +112,7 @@ static ssize_t ob_pwrite(int fd, const void *buf, size_t count, off_t offset) {
   return written;
 }
 #define pwrite ob_pwrite
-static ssize_t ob_pread(int fd, void *buf, size_t count, off_t offset) {
+static ssize_t ob_pread(int fd, void *buf, size_t count, int64_t offset) {
   long long prev = _lseeki64(fd, 0, SEEK_CUR);
   _lseeki64(fd, offset, SEEK_SET);
   int nread = _read(fd, buf, (unsigned)count);

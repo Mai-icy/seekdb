@@ -29,7 +29,7 @@ namespace common
 
 ObKVCacheMap::ObKVCacheMap()
     : is_inited_(false),
-      bucket_allocator_(ObMemAttr(OB_SERVER_TENANT_ID, "CACHE_MAP_BKT", ObCtxIds::UNEXPECTED_IN_500)),
+      bucket_allocator_(ObMemAttr(OB_SERVER_TENANT_ID, "CACHE_MAP_BKT", ObCtxIds::DEFAULT_CTX_ID)),
       bucket_start_pos_(0),
       bucket_num_(0),
       bucket_size_(0),
@@ -54,7 +54,7 @@ int ObKVCacheMap::init(const int64_t bucket_num, ObKVCacheStore *store)
     ret = OB_INVALID_ARGUMENT;
     COMMON_LOG(WARN, "Invalid arguments, ", K(bucket_num), K(store), K(ret));
   } else if (OB_FAIL(bucket_lock_.init(bucket_num,
-      ObLatchIds::KV_CACHE_BUCKET_LOCK, ObMemAttr(OB_SERVER_TENANT_ID, "CACHE_MAP_LOCK", ObCtxIds::UNEXPECTED_IN_500)))) {
+      ObLatchIds::KV_CACHE_BUCKET_LOCK, ObMemAttr(OB_SERVER_TENANT_ID, "CACHE_MAP_LOCK", ObCtxIds::DEFAULT_CTX_ID)))) {
     COMMON_LOG(WARN, "Fail to init bucket lock, ", K(bucket_num), K(ret));
   } else if (OB_FAIL(global_hazard_station_.init(HAZARD_STATION_WAITING_THRESHOLD, HAZARD_STATION_SLOT_NUM))) {
     COMMON_LOG(WARN, "Fail to init hazard version, ", K(ret));

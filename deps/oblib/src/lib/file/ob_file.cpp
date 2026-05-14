@@ -1036,22 +1036,42 @@ int64_t pwrite_align(const int fd, const void *buf, const int64_t count, const i
 int64_t get_file_size(const int fd)
 {
   int64_t ret = -1;
+#ifdef _WIN32
+  // MSVCRT's `struct stat::st_size` is 32-bit (_off_t = long); files larger
+  // than 2 GiB get a truncated size. Use _fstat64 to report the real size.
+  struct _stat64 st;
+  if (-1 != fd
+      && 0 == _fstat64(fd, &st)) {
+    ret = st.st_size;
+  }
+#else
   struct stat st;
   if (-1 != fd
       && 0 == fstat(fd, &st)) {
     ret = st.st_size;
   }
+#endif
   return ret;
 }
 
 int64_t get_file_size(const char *fname)
 {
   int64_t ret = -1;
+#ifdef _WIN32
+  // MSVCRT's `struct stat::st_size` is 32-bit (_off_t = long); files larger
+  // than 2 GiB get a truncated size. Use _stat64 to report the real size.
+  struct _stat64 st;
+  if (NULL != fname
+      && 0 == _stat64(fname, &st)) {
+    ret = st.st_size;
+  }
+#else
   struct stat st;
   if (NULL != fname
       && 0 == stat(fname, &st)) {
     ret = st.st_size;
   }
+#endif
   return ret;
 }
 
@@ -1459,7 +1479,11 @@ void ObFileAsyncAppender::close()
       // Fatal error
       _OB_LOG_RET(ERROR, OB_ERR_SYS, "fsync fail fd=%d, will set fd=-1, and the fd will leek", fd_);
     } else {
+#ifdef _WIN32
+      if (0 != ob_ftruncate(fd_, file_pos_)) {
+#else
       if (0 != ftruncate(fd_, file_pos_)) {
+#endif
         OB_LOG_RET(WARN, OB_ERR_SYS, "fail to truncate file ", K_(fd), K(errno), KERRMSG);
       }
       if (0 != ::close(fd_)) {

@@ -216,14 +216,6 @@ int set_meta_obj_limit(uint64_t tenant_id, int64_t meta_obj_pct_lmt)
   return set_ctx_limit(tenant_id, common::ObCtxIds::META_OBJ_CTX_ID, ctx_limit);
 }
 
-int set_rpc_limit(uint64_t tenant_id, int64_t rpc_pct_lmt)
-{
-  if (OB_SYS_TENANT_ID != tenant_id) return OB_SUCCESS;
-  const int64_t tenant_limit = get_tenant_memory_limit(tenant_id);
-  const int64_t rpc_lmt = (tenant_limit / 100) * rpc_pct_lmt;
-  return set_ctx_limit(tenant_id, common::ObCtxIds::RPC_CTX_ID, rpc_lmt);
-}
-
 bool errsim_alloc(const ObMemAttr &attr)
 {
   int en4_val = (int)EventTable::EN_4;

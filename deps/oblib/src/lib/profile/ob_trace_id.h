@@ -24,8 +24,11 @@ namespace oceanbase
 {
 namespace common
 {
-#define TRACE_ID_FORMAT_V4 "Y%lX-%016lX-%lx-%lx"
-#define TRACE_ID_FORMAT_V6 "Z%X-%016lX-%lx-%lx"
+// Use %llX (%lX on Linux = 64-bit, but %lX on Windows = 32-bit which truncates
+// the port field stored in the upper 32 bits of uval_[0]).  %llX is always
+// 64-bit on both platforms.
+#define TRACE_ID_FORMAT_V4 "Y%llX-%016llX-%llx-%llx"
+#define TRACE_ID_FORMAT_V6 "Z%X-%016llX-%llx-%llx"
 struct ObCurTraceId
 {
   class SeqGenerator
@@ -121,9 +124,14 @@ struct ObCurTraceId
     {
       int64_t pos = 0;
       if (!id_.is_ipv6_) {
-        common::databuff_printf(buf, buf_len, pos, TRACE_ID_FORMAT_V4, uval_[0], uval_[1], uval_[2], uval_[3]);
+        common::databuff_printf(buf, buf_len, pos, TRACE_ID_FORMAT_V4,
+            (unsigned long long)uval_[0], (unsigned long long)uval_[1],
+            (unsigned long long)uval_[2], (unsigned long long)uval_[3]);
       } else {
-        common::databuff_printf(buf, buf_len, pos, TRACE_ID_FORMAT_V6, id_.bytes_no_ip_, uval_[1], uval_[2], uval_[3]);
+        common::databuff_printf(buf, buf_len, pos, TRACE_ID_FORMAT_V6,
+            id_.bytes_no_ip_,
+            (unsigned long long)uval_[1], (unsigned long long)uval_[2],
+            (unsigned long long)uval_[3]);
       }
 
       return pos;
@@ -152,9 +160,14 @@ struct ObCurTraceId
       int ret = OB_SUCCESS;
       int n_match = 0;
       if (TRACE_ID_FORMAT_V4[0] == buf[0]) {
-        n_match = sscanf(buf, TRACE_ID_FORMAT_V4, &uval_[0], &uval_[1], &uval_[2], &uval_[3]);
+        n_match = sscanf(buf, TRACE_ID_FORMAT_V4,
+                         (unsigned long long*)&uval_[0], (unsigned long long*)&uval_[1],
+                         (unsigned long long*)&uval_[2], (unsigned long long*)&uval_[3]);
       } else if (TRACE_ID_FORMAT_V6[0] == buf[0]) {
-        n_match = sscanf(buf, TRACE_ID_FORMAT_V6, &id_.bytes_no_ip_, &uval_[1], &uval_[2], &uval_[3]);
+        n_match = sscanf(buf, TRACE_ID_FORMAT_V6,
+                         &id_.bytes_no_ip_,
+                         (unsigned long long*)&uval_[1], (unsigned long long*)&uval_[2],
+                         (unsigned long long*)&uval_[3]);
       }
       if (n_match != 0 && n_match != 4) {
         ret = OB_INVALID_ARGUMENT;
