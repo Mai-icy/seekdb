@@ -157,7 +157,8 @@ void* ObMemstoreAllocator::alloc(AllocHandle& handle, int64_t size, const int64_
     if (is_throttled) {
       share::memstore_throttled_alloc() += align_size;
     }
-    res = arena_.alloc(handle.id_, handle.arena_handle_, align_size);
+    const int64_t effective_group_id = handle.mt_.is_inner_tablet() ? 0 : handle.id_;
+    res = arena_.alloc(effective_group_id, handle.arena_handle_, align_size);
   }
   return res;
 }
