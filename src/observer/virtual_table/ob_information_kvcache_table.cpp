@@ -113,7 +113,7 @@ int ObInfoSchemaKvCacheTable::inner_open()
   inst_handles_.reuse();
   if (OB_FAIL(set_ip())) {
     SERVER_LOG(WARN, "Fail to set ip from addr", K(ret), K(addr_));
-  } else if (OB_FAIL(ObKVGlobalCache::get_instance().get_cache_inst_info(effective_tenant_id_, inst_handles_))) {
+  } else if (OB_FAIL(ObKVGlobalCache::get_instance().get_cache_inst_info(inst_handles_))) {
     SERVER_LOG(WARN, "Fail to get cache info", K(ret), K(effective_tenant_id_));
   } else if (OB_FAIL(get_tenant_info())) {
     SERVER_LOG(WARN, "Fail to get tenant info", K(ret));
@@ -177,13 +177,8 @@ int ObInfoSchemaKvCacheTable::get_handles(ObKVCacheInst *&inst, ObDiagnoseTenant
     }
     if (OB_FAIL(ret)) {
     } else if (!oceanbase::lib::is_diagnose_info_enabled()) {
-    } else if (is_sys_tenant(effective_tenant_id_)) {
-      for (int64_t i = 0; i < tenant_dis_.count(); ++i) {
-        if (tenant_dis_.at(i).first == inst->tenant_id_) {
-          tenant_info = tenant_dis_.at(i).second;
-          break;
-        }
-      }
+    } else if (is_sys_tenant(effective_tenant_id_) && tenant_dis_.count() > 0) {
+      tenant_info = tenant_dis_.at(0).second;
     } else {
       tenant_info = &tenant_di_info_;
     }
@@ -264,23 +259,7 @@ int ObInfoSchemaKvCacheTable::process_row(const ObKVCacheInst *inst)
         break;
       }
       case CACHE_SIZE: {
-        cells_[cell_idx].set_int(inst->status_.store_size_ + inst->status_.map_size_);
-        break;
-      }
-      case PRIORITY: {
-        if (NULL != inst->status_.config_) {
-          cells_[cell_idx].set_int(inst->status_.config_->priority_);
-        } else {
-          cells_[cell_idx].set_int(0);
-        }
-        break;
-      }
-      case CACHE_STORE_SIZE: {
         cells_[cell_idx].set_int(inst->status_.store_size_);
-        break;
-      }
-      case CACHE_MAP_SIZE: {
-        cells_[cell_idx].set_int(inst->status_.map_size_);
         break;
       }
       case KV_CNT: {
@@ -314,10 +293,6 @@ int ObInfoSchemaKvCacheTable::process_row(const ObKVCacheInst *inst)
       }
       case TOTAL_MISS_CNT: {
         cells_[cell_idx].set_int(inst->status_.total_miss_cnt_);
-        break;
-      }
-      case HOLD_SIZE: {
-        cells_[cell_idx].set_int(inst->status_.hold_size_);
         break;
       }
       default: {

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#ifndef OB_BUILD_EMBED_MODE
 #define USING_LOG_PREFIX SQL_ENG
 #include "ob_parquet_table_row_iter.h"
 #include "sql/engine/basic/ob_arrow_basic.h"
@@ -1560,3 +1561,4 @@ DEF_TO_STRING(ObParquetIteratorState)
 
 }
 }
+#endif

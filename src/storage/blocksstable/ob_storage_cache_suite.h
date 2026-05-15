@@ -37,21 +37,8 @@ class ObStorageCacheSuite
 {
 public:
   static ObStorageCacheSuite &get_instance();
-  int init(
-      const int64_t index_block_cache_priority,
-      const int64_t user_block_cache_priority,
-      const int64_t user_row_cache_priority,
-      const int64_t fuse_row_cache_priority,
-      const int64_t bf_cache_priority,
-      const int64_t bf_cache_miss_count_threshold,
-      const int64_t storage_meta_cache_priority);
-  int reset_priority(
-      const int64_t index_block_cache_priority,
-      const int64_t user_block_cache_priority,
-      const int64_t user_row_cache_priority,
-      const int64_t fuse_row_cache_priority,
-      const int64_t bf_cache_priority,
-      const int64_t storage_meta_cache_priority);
+  int init(const int64_t bf_cache_miss_count_threshold);
+
   int set_bf_cache_miss_count_threshold(const int64_t bf_cache_miss_count_threshold);
   ObDataMicroBlockCache &get_block_cache() { return user_block_cache_; }
   ObIndexMicroBlockCache &get_index_block_cache() { return index_block_cache_; }
@@ -70,8 +57,6 @@ public:
 private:
   ObStorageCacheSuite();
   virtual ~ObStorageCacheSuite();
-  static const int64_t TRUNCATE_INFO_KV_CACHE_PRIORITY = 10;
-  static const int64_t TABLET_SPLIT_CACHE_PRIORITY = 10;
   ObIndexMicroBlockCache index_block_cache_;
   ObDataMicroBlockCache user_block_cache_;
   ObRowCache user_row_cache_;

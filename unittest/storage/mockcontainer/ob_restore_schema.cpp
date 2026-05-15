@@ -15,6 +15,8 @@
  */
 
 #include <fstream>
+#include <chrono>
+
 #define private public
 #include "sql/parser/ob_parser.h"
 #include "sql/resolver/ob_resolver.h"

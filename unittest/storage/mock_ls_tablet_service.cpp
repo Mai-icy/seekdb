@@ -16,6 +16,8 @@
 
 #define USING_LOG_PREFIX STORAGE
 
+#include <chrono>
+
 #define private public
 
 #include "mock_ls_tablet_service.h"

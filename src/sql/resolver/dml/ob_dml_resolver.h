@@ -24,7 +24,9 @@
 #include "sql/resolver/expr/ob_raw_expr_util.h"
 #include "sql/resolver/dml/ob_select_stmt.h"
 #include "sql/resolver/expr/ob_shared_expr_resolver.h"
+#ifndef OB_BUILD_EMBED_MODE
 #include "parquet/schema.h"
+#endif
 namespace oceanbase
 {
 namespace sql
@@ -960,9 +962,11 @@ private:
   bool is_update_for_mv_fast_refresh(const ObDMLStmt &stmt);
   int resolve_px_node_addrs(const ParseNode &hint_node, ObIArray<ObAddr> &addrs);
   static int set_basic_column_properties(ObColumnSchemaV2 &column_schema, const common::ObString &mock_gen_column_str);
+#ifndef OB_BUILD_EMBED_MODE
   int build_column_schemas_for_parquet(const parquet::SchemaDescriptor* schema,
                                       const ColumnIndexType column_index_type,
                                       ObTableSchema& table_schema);
+#endif
   int build_column_schemas_for_csv(const ObExternalFileFormat &format,
                                   common::ObString table_location,
                                   ObTableSchema &table_schema,

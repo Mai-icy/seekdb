@@ -92,7 +92,7 @@ int ObTransService::init(const ObAddr &self,
                          share::schema::ObMultiVersionSchemaService *schema_service)
 {
   int ret = OB_SUCCESS;
-  ObLinkQueueThreadPool::set_run_wrapper(MTL_CTX());
+  set_run_wrapper(MTL_CTX());
   const int64_t tenant_id = MTL_ID();
   const int64_t tenant_memory_limit = lib::get_tenant_memory_limit(tenant_id);
   int64_t msg_task_cnt = MSG_TASK_CNT_PER_GB * (tenant_memory_limit / (1024 * 1024 * 1024));

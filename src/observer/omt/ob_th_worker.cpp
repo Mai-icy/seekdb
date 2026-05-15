@@ -38,37 +38,30 @@ namespace oceanbase
 
 namespace omt
 {
-int create_worker(ObThWorker* &worker, ObTenant *tenant, uint64_t group_id,
-                  int32_t level, bool force, ObResourceGroup *group, int32_t group_index)
+int create_worker(ObThWorker* &worker, ObTenant *tenant)
 {
   int ret = OB_SUCCESS;
-  if (!force && tenant->total_worker_cnt() >= tenant->max_worker_cnt()) {
-    ret = OB_RESOURCE_OUT;
-    LOG_WARN("create worker fail", K(ret), K(tenant->id()), K(group_id), K(level),
-                                    K(tenant->total_worker_cnt()), K(tenant->max_worker_cnt()));
-  } else if (OB_ISNULL(worker = OB_NEW(ObThWorker,
+  if (OB_ISNULL(worker = OB_NEW(ObThWorker,
                                        ObMemAttr(0 == GET_TENANT_ID() ? OB_SERVER_TENANT_ID : GET_TENANT_ID(),
                                        "OMT_Worker",
                                        ObCtxIds::DEFAULT_CTX_ID, OB_NORMAL_ALLOC)))) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
-    LOG_ERROR("create worker fail", K(ret), K(tenant->id()), K(group_id), K(level));
+    LOG_ERROR("create worker fail", K(ret), K(tenant->id()));
   } else if (OB_FAIL(worker->init())) {
-    LOG_ERROR("init worker fail", K(ret), K(tenant->id()), K(group_id), K(level));
+    LOG_ERROR("init worker fail", K(ret), K(tenant->id()));
     ob_delete(worker);
     worker = nullptr;
   } else {
     worker->reset();
     worker->set_tenant(tenant);
-    worker->set_group_id_(group_id);
-    worker->set_worker_level(level);
-    worker->set_group(group);
-    worker->set_numa_info(tenant->id(), GCONF._enable_numa_aware, group_index);
+    worker->set_group_id_(0);
+    worker->set_worker_level(0);
+    worker->set_group(nullptr);
+    worker->set_numa_info(tenant->id(), GCONF._enable_numa_aware, -1);
     if (OB_FAIL(worker->start())) {
       ob_delete(worker);
       worker = nullptr;
-      LOG_ERROR("worker start failed", K(ret), K(tenant->id()), K(group_id), K(level));
-    } else {
-      ++tenant->total_worker_cnt_;
+      LOG_ERROR("worker start failed", K(ret), K(tenant->id()));
     }
   }
   return ret;
@@ -86,7 +79,6 @@ int destroy_worker(ObThWorker *worker)
     worker->wait();
     worker->destroy();
     ob_delete(worker);
-    --tenant->total_worker_cnt_;
   }
   return ret;
 }
@@ -98,10 +90,9 @@ ObThWorker::ObThWorker()
       is_inited_(false), tenant_(nullptr),
       run_cond_(),
       pause_flag_(false), large_query_(false),
-      priority_limit_(RQ_LOW), is_lq_yield_(false),
-      query_start_time_(0), last_check_time_(0),
+      query_start_time_(0), query_enqueue_time_(0), last_check_time_(0),
       can_retry_(true), need_retry_(false),
-      last_wakeup_ts_(0), blocking_ts_(nullptr),
+      blocking_ts_(nullptr),
       idle_us_(0), is_doing_ddl_(nullptr)
 {
   module_name_[0] = '\0';
@@ -208,22 +199,14 @@ ObThWorker::Status ObThWorker::check_rate_limiter()
 // by self thread
 ObThWorker::Status ObThWorker::check_wait()
 {
-  const int64_t threshold = GCONF.large_query_threshold;
   const int64_t curr_time = common::ObClockGenerator::getClock();
   Status st = WS_NOWAIT;
   if (OB_UNLIKELY(tenant_->has_stopped())) {
     st = WS_INVALID;
   } else if (OB_UNLIKELY(!tenant_->user_sched_enabled())) {
   } else if (OB_UNLIKELY(true == get_disable_wait_flag())) {
-  } else if (this->get_curr_request_level() >= MULTI_LEVEL_THRESHOLD) {
-  } else if (this->is_group_worker() && this->get_group_id() != share::OBCG_LQ) {
   } else if (curr_time > last_check_time_ + WORKER_CHECK_PERIOD) {
     st = check_throttle();
-    if (st != WS_OUT_OF_THROTTLE) {
-      if (OB_UNLIKELY(0 != threshold && curr_time > get_query_start_time() + threshold)) {
-        tenant_->lq_yield(*this);
-      }
-    }
     last_check_time_ = curr_time;
   }
   return st;
@@ -234,6 +217,7 @@ inline void ObThWorker::process_request(rpc::ObRequest &req)
   // reset retry flags
   can_retry_ = true;
   need_retry_ = false;
+
   req.set_large_retry_flag(false);
   bool need_wait_lock = false;
   int ret = OB_SUCCESS;
@@ -276,7 +260,7 @@ inline void ObThWorker::process_request(rpc::ObRequest &req)
     } else {
       // first retry, do not put the req to retry_queue
       if (req.large_retry_flag()) {
-        if (OB_FAIL(tenant_->recv_large_request(req))) {
+        if (OB_FAIL(tenant_->recv_request(req))) {
           LOG_WARN("tenant receive large request fail, "
               "retry with current worker", "tenant", tenant_->id(), K(ret));
         }
@@ -306,11 +290,9 @@ inline void ObThWorker::process_request(rpc::ObRequest &req)
 
 void ObThWorker::set_th_worker_thread_name()
 {
-  char buf[32];
   if (serving_tenant_id_ != tenant_->id()) {
     serving_tenant_id_ = tenant_->id();
-    snprintf(buf, sizeof(buf), "L%d_G%ld", get_worker_level(), get_group_id());
-    lib::set_thread_name(buf);
+    lib::set_thread_name("ReqWorker");
   }
 }
 
@@ -324,14 +306,12 @@ void ObThWorker::worker(int64_t &tenant_id, int64_t &req_recv_timestamp, int32_t
   blocking_ts_ = &Thread::blocking_ts_;
   ObDisableDiagnoseGuard disable_guard;
   is_doing_ddl_ = &Thread::is_doing_ddl_;
-
+  static constexpr int64_t POLL_INTERVAL = 100 * 1000L;
   // Avoid adding and deleting entities from the root node for every request, the parameters are meaningless
   CREATE_WITH_TEMP_ENTITY(RESOURCE_OWNER, OB_SERVER_TENANT_ID) {
     auto *pm = common::ObPageManager::thread_local_instance();
-    if (this->get_worker_level() == INT32_MAX) {
-      this->set_worker_level(0);
-    }
-    snprintf(module_name_, MAX_MODULE_NAME_LEN, "ReqWorker(Level:%d)", get_worker_level());
+    snprintf(module_name_, MAX_MODULE_NAME_LEN, "ReqWorker");
+    int64_t idle_since = 0;
     while (!has_set_stop()) {
       worker_level = get_worker_level();
       if (OB_NOT_NULL(tenant_)) {
@@ -375,16 +355,22 @@ void ObThWorker::worker(int64_t &tenant_id, int64_t &req_recv_timestamp, int32_t
           } allocator_guard(&allocator_);
           WITH_ENTITY(&tenant_->ctx()) {
             rpc::ObRequest *req = NULL;
+            bool expand = false;
             {
               set_compatibility_mode(tenant_->get_compat_mode());
               // get request from queue and process it
               wait_start_time = ObTimeUtility::current_time();
-              /// get request from tenant
-              ret = tenant_->get_new_request(*this, is_level_worker() ? NESTING_REQUEST_WAIT_TIME : REQUEST_WAIT_TIME, req);
+              ret = tenant_->pop_with_idle([&]() {
+                return tenant_->get_new_request(*this, POLL_INTERVAL, req);
+              }, expand);
               wait_end_time = ObTimeUtility::current_time();
             }
             if (OB_SUCC(ret)) {
               if (OB_NOT_NULL(req)) {
+                idle_since = 0;
+                if (expand) {
+                  tenant_->try_expand_one(tenant_->min_worker_cnt());
+                }
                 ObEnableDiagnoseGuard enable_guard;
                 ObDiagnosticInfo *di =
                     req->get_type() == ObRequest::OB_MYSQL
@@ -408,8 +394,8 @@ void ObThWorker::worker(int64_t &tenant_id, int64_t &req_recv_timestamp, int32_t
                 query_start_time_ = wait_end_time;
                 query_enqueue_time_ = req->get_enqueue_timestamp();
                 last_check_time_ = wait_end_time;
-                set_last_wakeup_ts(query_start_time_);
                 process_request(*req);
+                tenant_->completion_cnt_.fetch_add(1, std::memory_order_relaxed);
                 query_enqueue_time_ = INT64_MAX;
                 query_start_time_ = INT64_MAX;
               } else {
@@ -419,19 +405,18 @@ void ObThWorker::worker(int64_t &tenant_id, int64_t &req_recv_timestamp, int32_t
                     K(tenant_), K(ret), K(req));
               }
             } else if (OB_ENTRY_NOT_EXIST == ret) {
-              // timeout while waiting for request from tenant request queue
+              if (idle_since == 0) {
+                idle_since = wait_end_time;
+              } else if (wait_end_time - idle_since >= ObTenant::KEEP_ALIVE_TIMEOUT) {
+                if (tenant_->try_shrink_one(0)) {
+                  stop();
+                  break;
+                }
+                idle_since = 0;
+              }
               ret = OB_SUCCESS;
             }
             IGNORE_RETURN ATOMIC_FAA(&idle_us_, (wait_end_time - wait_start_time));
-            if (this->get_worker_level() != 0) {
-              // nesting workers not allowed to calling check_worker_count
-            } else if (!is_group_worker()) {
-              tenant_->lq_end(*this);
-              tenant_->check_worker_count(*this);
-            } else {
-              ObResourceGroup *group = static_cast<ObResourceGroup *>(group_);
-              group->check_worker_count(*this);
-            }
           }
         }
       }
@@ -468,7 +453,6 @@ int ObThWorker::check_large_query_quota()
       tenant_->user_sched_enabled() &&
       can_retry_ &&
       !large_query()) {
-    // if current query is not served by large_query worker (!large_query())
     // evict it back to large query queue
     if (has_req_flag()) {
       rpc::ObRequest *req = const_cast<rpc::ObRequest *>(get_cur_request());

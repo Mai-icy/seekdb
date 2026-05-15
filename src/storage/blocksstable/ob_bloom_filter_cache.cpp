@@ -900,12 +900,11 @@ int ObBloomFilterCache::check_need_load(const ObBloomFilterCacheKey &bf_key, boo
   return ret;
 }
 
-int ObBloomFilterCache::init(const char *cache_name, const int64_t priority)
+int ObBloomFilterCache::init(const char *cache_name)
 {
   int ret = OB_SUCCESS;
-  char *buf = NULL;
   // size must be 2^n, for fast mod
-  if (OB_FAIL((common::ObKVCache<ObBloomFilterCacheKey, ObBloomFilterCacheValue>::init(cache_name, priority)))) {
+  if (OB_FAIL((common::ObKVCache<ObBloomFilterCacheKey, ObBloomFilterCacheValue>::init(cache_name)))) {
     LOG_WARN("Fail to init kv cache, ", K(ret));
   }
   return ret;

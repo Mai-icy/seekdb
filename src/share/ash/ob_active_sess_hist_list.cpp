@@ -32,6 +32,19 @@ share::ObActiveSessHistList* __attribute__((used)) lib_get_ash_list_instance() {
 }
 using namespace oceanbase::common;
 using namespace oceanbase::share;
+using namespace oceanbase::lib;
+
+int64_t get_default_ash_size()
+{
+  if (!GCONF._ob_ash_enable) {
+    return 0;
+  }
+  if (is_mini_mode() ) {
+    return 1 * 1024 * 1024;
+  } else {
+    return 12 * 1024 * 1024;  // 12M
+  }
+}
 
 ObActiveSessHistList::ObActiveSessHistList()
     : ash_size_(0),
@@ -42,11 +55,7 @@ ObActiveSessHistList::ObActiveSessHistList()
     ash_size_ = GCONF._ob_ash_size;
   }
   if (ash_size_ == 0) {
-    if (lib::is_mini_mode()) {
-      ash_size_ = 4 * 1024 * 1024;  // 4M
-    } else {
-      ash_size_ = 12 * 1024 * 1024;  // 12M
-    }
+    ash_size_ = get_default_ash_size();
   }
 }
 
@@ -83,11 +92,7 @@ int ObActiveSessHistList::resize_ash_size()
   int ret = OB_SUCCESS;
   int64_t ash_size = GCONF._ob_ash_size;
   if (ash_size == 0) {
-    if (lib::is_mini_mode()) {
-      ash_size = 4 * 1024 * 1024;  // 4M
-    } else {
-      ash_size = 12 * 1024 * 1024;  // 12M
-    }
+    ash_size = get_default_ash_size();
   }
   if (ash_size != ash_size_) {
     LockGuard lock(mutex_);
@@ -125,7 +130,7 @@ int ObActiveSessHistList::allocate_ash_buffer(int64_t ash_size, common::ObShared
   } else {
     ash_buffer->set_label("ASHListBuffer");
     ash_buffer->set_tenant_id(OB_SYS_TENANT_ID);
-    if (OB_FAIL(ash_buffer->prepare_allocate(ash_size / sizeof(ObActiveSessionStatItem)))) {
+    if (OB_FAIL(ash_buffer->prepare_allocate(MAX(1, ash_size / sizeof(ObActiveSessionStatItem))))) {
       LOG_WARN("fail init ASH circular buffer", K(ret));
     } else {
       LOG_INFO("init ASH circular buffer OK", "size", ash_buffer->size());

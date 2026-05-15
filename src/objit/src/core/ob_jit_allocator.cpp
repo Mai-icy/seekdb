@@ -25,9 +25,22 @@
 #endif
 
 #ifdef _WIN32
+#include <mutex>
+
 #define MAP_PRIVATE     0x02
 #define MAP_ANONYMOUS   0x20
 #define MAP_FAILED      ((void*)-1)
+
+// Forward declaration of the Windows SEH personality adapter living in
+// src/pl/ob_pl_exception_handling.cpp. Re-declared here (rather than
+// pulled in via the PL header) to keep the JIT layer free of a hard
+// dependency on the PL include tree. The signature must stay in sync
+// with src/pl/ob_pl_exception_handling.h:184.
+extern "C" EXCEPTION_DISPOSITION ob_pl_seh_personality(
+    EXCEPTION_RECORD   *exc_record,
+    void               *establisher_frame,
+    CONTEXT            *ctx_record,
+    DISPATCHER_CONTEXT *disp_ctx);
 
 static DWORD ob_prot_to_win_protect(int64_t prot) {
   bool r = (prot & PROT_READ) != 0;
@@ -51,9 +64,111 @@ static void usleep(unsigned int usec) {
   Sleep(usec / 1000);
 }
 
+static void *win32_alloc_near_anchor(size_t length, DWORD protect, uintptr_t anchor) {
+  void *result = NULL;
+  if (0 == length || 0 == anchor) {
+    // Caller asked for zero bytes, or trampoline init failed earlier — let
+    // the caller decide whether to fall back to plain VirtualAlloc.
+  } else {
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    uintptr_t granularity = si.dwAllocationGranularity;
+    size_t reserve_len = (length + granularity - 1) & ~(granularity - 1);
+    static uintptr_t s_jit_alloc_cursor = 0;
+
+    uintptr_t search_lo = (anchor > 0x60000000ULL)
+                            ? (anchor - 0x60000000ULL)   // ~1.5 GB below anchor
+                            : static_cast<uintptr_t>(0x10000);
+    uintptr_t search_hi = (s_jit_alloc_cursor != 0 && s_jit_alloc_cursor <= anchor)
+                            ? s_jit_alloc_cursor
+                            : (anchor & ~(granularity - 1));
+
+    uintptr_t cursor = search_hi;
+    bool stop = false;
+    while (NULL == result && !stop && cursor > search_lo + reserve_len) {
+      MEMORY_BASIC_INFORMATION mbi;
+      if (0 == VirtualQuery(reinterpret_cast<LPCVOID>(cursor - 1), &mbi, sizeof(mbi))) {
+        stop = true;
+      } else {
+        uintptr_t region_base = reinterpret_cast<uintptr_t>(mbi.BaseAddress);
+        uintptr_t region_size = static_cast<uintptr_t>(mbi.RegionSize);
+        uintptr_t region_end = region_base + region_size;
+
+        if (MEM_FREE == mbi.State) {
+          // Highest aligned slot within this free region, capped at search_hi.
+          uintptr_t upper = (region_end < search_hi) ? region_end : search_hi;
+          if (upper >= region_base + reserve_len) {
+            uintptr_t alloc_addr = (upper - reserve_len) & ~(granularity - 1);
+            if (alloc_addr >= region_base) {
+              void *p = VirtualAlloc(reinterpret_cast<LPVOID>(alloc_addr), reserve_len,
+                                     MEM_RESERVE | MEM_COMMIT, protect);
+              if (NULL != p) {
+                s_jit_alloc_cursor = reinterpret_cast<uintptr_t>(p);
+                result = p;
+              }
+            }
+          }
+        }
+        if (NULL == result) {
+          if (region_base < granularity) {
+            stop = true;
+          } else {
+            cursor = region_base;
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
+static std::once_flag s_jit_anchor_once;
+static uintptr_t s_jit_anchor_trampoline = 0;
+
+static void init_jit_anchor()
+{
+  SYSTEM_INFO si;
+  GetSystemInfo(&si);
+  SIZE_T page = static_cast<SIZE_T>(si.dwPageSize);
+  void *tramp = VirtualAlloc(NULL, page,
+                             MEM_COMMIT | MEM_RESERVE,
+                             PAGE_EXECUTE_READWRITE);
+  if (NULL != tramp) {
+    // Trampoline body (12 bytes used, page-sized region is overkill but
+    // page is the minimum VirtualAlloc commit granularity):
+    //   48 B8 <imm64>   movabs rax, &ob_pl_seh_personality
+    //   FF E0           jmp    rax
+    uintptr_t target = reinterpret_cast<uintptr_t>(&ob_pl_seh_personality);
+    uint8_t *bytes = reinterpret_cast<uint8_t *>(tramp);
+    bytes[0] = 0x48; bytes[1] = 0xB8;
+    for (int i = 0; i < 8; ++i) {
+      bytes[2 + i] = static_cast<uint8_t>((target >> (i * 8)) & 0xFF);
+    }
+    bytes[10] = 0xFF; bytes[11] = 0xE0;
+    // Remaining bytes of the page stay zero. Execution enters at offset 0
+    // (the registered "eh_personality" symbol value) and exits via jmp rax,
+    // so the trailing slack is unreachable.
+    s_jit_anchor_trampoline = reinterpret_cast<uintptr_t>(tramp);
+  }
+  // If VirtualAlloc fails we leave the trampoline at 0; downstream
+  // ob_jit_get_personality_trampoline() callers (PL init, JIT mmap shim) get
+  // 0 and fall back to plain VirtualAlloc — SEH dispatch for JIT code will
+  // be broken in that mode, matching the pre-anchor failure surface.
+}
+
 static void *mmap(void * /*addr*/, size_t length, int prot, int /*flags*/, int /*fd*/, int /*offset*/) {
   DWORD protect = ob_prot_to_win_protect(prot);
-  void *p = VirtualAlloc(NULL, length, MEM_RESERVE | MEM_COMMIT, protect);
+  uintptr_t anchor = oceanbase::jit::core::ob_jit_get_personality_trampoline();
+  void *p = NULL;
+  if (0 != anchor) {
+    p = win32_alloc_near_anchor(length, protect, anchor);
+  }
+  if (NULL == p) {
+    // No anchor (init failed) or the scan window is exhausted. Plain
+    // VirtualAlloc lets us at least allocate memory; SEH dispatch through
+    // this region may fail, but losing memory entirely is worse.
+    p = VirtualAlloc(NULL, length, MEM_COMMIT | MEM_RESERVE, protect);
+  }
   return p ? p : MAP_FAILED;
 }
 
@@ -73,6 +188,14 @@ using namespace oceanbase::common;
 namespace oceanbase {
 namespace jit {
 namespace core {
+
+#ifdef _WIN32
+uintptr_t ob_jit_get_personality_trampoline()
+{
+  std::call_once(s_jit_anchor_once, init_jit_anchor);
+  return s_jit_anchor_trampoline;
+}
+#endif
 
 class ObJitMemoryBlock
 {
@@ -465,7 +588,11 @@ void ObJitAllocator::reserve(const JitMemType mem_type, int64_t sz, int64_t alig
 bool ObJitAllocator::finalize()
 {
   int ret = OB_SUCCESS;
+#ifdef _WIN32
+  if (OB_FAIL(ro_data_mem_.finalize(PROT_READ | PROT_EXEC, false /*is_code_memory*/))) {
+#else
   if (OB_FAIL(ro_data_mem_.finalize(PROT_READ, false /*is_code_memory*/))) {
+#endif
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("fail to finalize ro data memory", K(ret));
   } else if (OB_FAIL(rw_data_mem_.finalize(PROT_READ | PROT_WRITE, false /*is_code_memory*/))) {

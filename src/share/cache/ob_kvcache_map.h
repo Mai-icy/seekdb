@@ -75,15 +75,17 @@ private:
     ObKVCacheInst *inst_;
     uint64_t hash_code_;
     int32_t seq_num_;
+    int32_t kvpair_size_;
     ObKVMemBlockHandle *mb_handle_;
     const ObIKVCacheKey *key_;
     const ObIKVCacheValue *value_;
     Node *next_;
     int64_t get_cnt_;
-    Node()
-      : inst_(NULL),
+    Node() :
+        inst_(NULL),
         hash_code_(0),
         seq_num_(0),
+        kvpair_size_(0),
         mb_handle_(NULL),
         key_(NULL),
         value_(NULL),
@@ -92,7 +94,7 @@ private:
     {}
     virtual ~Node() {};
     virtual void retire() override;  // only free memory of itself
-    INHERIT_TO_STRING_KV("Node", ObKVCacheHazardNode, KPC_(inst), K_(hash_code), K_(seq_num), KP_(mb_handle), KP_(key),
+    INHERIT_TO_STRING_KV("Node", ObKVCacheHazardNode, KPC_(inst), K_(hash_code), K_(seq_num), K_(kvpair_size), KP_(mb_handle), KP_(key),
                          KP_(value), KP_(next), K_(get_cnt));
   };
   struct Bucket

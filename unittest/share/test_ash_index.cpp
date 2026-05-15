@@ -18,6 +18,7 @@
 #define private public
 #define protected public
 #include "share/ash/ob_active_sess_hist_list.h"
+#include "share/config/ob_server_config.h"
 #undef private
 #undef public
 #include <gtest/gtest.h>
@@ -830,6 +831,7 @@ int main(int argc, char **argv)
 {
   oceanbase::common::ObLogger::get_logger().set_log_level("INFO");
   OB_LOGGER.set_log_level("INFO");
+  GCONF._ob_ash_enable = true;
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

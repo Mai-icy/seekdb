@@ -29,42 +29,7 @@ begin
 end;
 /
 
--- specify_create_tenant: 创建指定的租户
-drop procedure if exists specify_create_tenant;/
-create procedure specify_create_tenant()
-begin
-  declare my_mysqltest_mode varchar(20);
-  select @mysqltest_mode into @my_mysqltest_mode;
-end /
-
--- set_specify_create_tenant: 设置指定创建的租户
-drop procedure if exists set_specify_create_tenant;/
-create procedure set_specify_create_tenant()
-begin
-  declare my_mysqltest_mode varchar(20);
-  select @mysqltest_mode into @my_mysqltest_mode;
-  if (@my_mysqltest_mode = 'oracle' or @my_mysqltest_mode = 'both') then
-    call exec_sql("alter tenant oracle set variables ob_tcp_invited_nodes='%';");
-    call exec_sql("alter tenant oracle set variables autocommit='on';");
-    call exec_sql("alter tenant oracle set variables nls_date_format='YYYY-MM-DD HH24:MI:SS';");
-    call exec_sql("alter tenant oracle set variables nls_timestamp_format='YYYY-MM-DD HH24:MI:SS.FF';");
-    call exec_sql("alter tenant oracle set variables nls_timestamp_tz_format='YYYY-MM-DD HH24:MI:SS.FF TZR TZD';");
-    call exec_sql("alter tenant oracle set variables recyclebin = 'on';");
-    call exec_sql("alter tenant oracle set variables ob_enable_truncate_flashback = 'on';");
-  end if;
-
-  if (@my_mysqltest_mode = 'mysql' or @my_mysqltest_mode = 'both') then
-    call exec_sql("alter tenant mysql set variables ob_tcp_invited_nodes='%';");
-    call exec_sql("alter tenant mysql set variables recyclebin = 'on';");
-    call exec_sql("alter tenant mysql set variables ob_enable_truncate_flashback = 'on';");
-  end if;
-end /
 delimiter ;
-
-source init_create_tenant_routines.sql;
-
--- 关闭租户创建
--- call test.specify_create_tenant();
 
 /****************************** ATTENTION ******************************/
 /* The tenant=all will be deprecated. If you want all tenants to be    */
@@ -75,9 +40,6 @@ system sleep 5;
 set global recyclebin = 'on';
 set global ob_enable_truncate_flashback = 'on';
 set global _nlj_batching_enabled = true;
--- alter tenant oracle set variables _nlj_batching_enabled = true;
--- alter tenant mysql set variables _nlj_batching_enabled = true;
--- call test.set_specify_create_tenant();
 alter system set ob_compaction_schedule_interval = '10s' tenant sys;
 alter system set ob_compaction_schedule_interval = '10s' tenant all_user;
 alter system set ob_compaction_schedule_interval = '10s' tenant all_meta;

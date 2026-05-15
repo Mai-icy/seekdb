@@ -49,7 +49,6 @@ int ObReloadConfig::reload_ob_logger_set()
              K(conf_->syslog_file_uncompressed_count.str()), KR(ret));
     } else {
       OB_LOGGER.set_enable_async_log(conf_->enable_async_syslog);
-      ObKVGlobalCache::get_instance().reload_priority();
     }
   }
   return ret;

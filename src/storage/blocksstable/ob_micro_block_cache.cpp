@@ -1146,12 +1146,12 @@ int ObMicroBlockBufTransformer::transfrom(char *block_buf, const int64_t buf_siz
 }
 
 /*-------------------------------------ObDataMicroBlockCache--------------------------------------*/
-int ObDataMicroBlockCache::init(const char *cache_name, const int64_t priority)
+int ObDataMicroBlockCache::init(const char *cache_name)
 {
   int ret = OB_SUCCESS;
   const int64_t mem_limit = 4 * 1024 * 1024 * 1024LL;
   if (OB_SUCCESS != (ret = common::ObKVCache<ObMicroBlockCacheKey, ObMicroBlockCacheValue>::init(
-      cache_name, priority))) {
+      cache_name))) {
     STORAGE_LOG(WARN, "Fail to init kv cache, ", K(ret));
   } else if (OB_FAIL(allocator_.init(mem_limit, OB_MALLOC_MIDDLE_BLOCK_SIZE, OB_MALLOC_MIDDLE_BLOCK_SIZE))) {
     STORAGE_LOG(WARN, "Fail to init io allocator, ", K(ret));
@@ -1501,9 +1501,9 @@ ObIndexMicroBlockCache::~ObIndexMicroBlockCache()
 {
 }
 
-int ObIndexMicroBlockCache::init(const char *cache_name, const int64_t priority)
+int ObIndexMicroBlockCache::init(const char *cache_name)
 {
-  return ObDataMicroBlockCache::init(cache_name, priority);
+  return ObDataMicroBlockCache::init(cache_name);
 }
 
 int ObIndexMicroBlockCache::load_block(

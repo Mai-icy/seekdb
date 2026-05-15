@@ -17,6 +17,7 @@
 #ifndef OB_PARQUET_BASIC_H
 #define OB_PARQUET_BASIC_H
 
+#ifndef OB_BUILD_EMBED_MODE
 #include <arrow/api.h>
 #include <arrow/io/api.h>
 #include <parquet/arrow/reader.h>
@@ -137,4 +138,5 @@ private:
 } // end of sql namespace
 } // end of oceanbase namespace
 
+#endif // !OB_BUILD_EMBED_MODE
 #endif // OB_PARQUET_BASIC_H

@@ -17,11 +17,13 @@
 #ifndef OB_PARQUET_TABLE_ROW_ITER_H
 #define OB_PARQUET_TABLE_ROW_ITER_H
 
+#ifndef OB_BUILD_EMBED_MODE
 #include <arrow/api.h>
 #include <arrow/io/api.h>
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 #include <parquet/exception.h>
+#endif // OB_BUILD_EMBED_MODE
 
 #include "share/ob_i_tablet_scan.h"
 #include "lib/file/ob_file.h"
@@ -61,6 +63,7 @@ public:
   int64_t cur_row_group_row_count_;
 };
 
+#ifndef OB_BUILD_EMBED_MODE
 class ObParquetTableRowIterator : public ObExternalTableRowIterator {
 public:
   ObParquetTableRowIterator() :
@@ -178,6 +181,12 @@ private:
   common::ObArrayWrap<ObLength> file_url_lens_; //for file url expr
   ObFilePrefetchBuffer file_prefetch_buffer_;
 };
+
+#else
+class ObParquetTableRowIterator
+{};
+
+#endif // OB_BUILD_EMBED_MODE
 
 }
 }

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <chrono>
 
 #define private public
 #define protected public

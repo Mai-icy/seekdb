@@ -125,14 +125,8 @@ struct ObStorageEnv
   const char *clog_dir_;
 
   // for cache
-  int64_t tablet_ls_cache_priority_;
-  int64_t index_block_cache_priority_;
-  int64_t user_block_cache_priority_;
-  int64_t user_row_cache_priority_;
-  int64_t fuse_row_cache_priority_;
-  int64_t bf_cache_priority_;
-  int64_t storage_meta_cache_priority_;
   int64_t bf_cache_miss_count_threshold_;
+  int64_t ddl_kv_merge_slow_time_;
 
   int64_t ethernet_speed_;
 
@@ -149,14 +143,7 @@ struct ObStorageEnv
                K_(redundancy_level),
                K_(log_spec),
                K_(clog_dir),
-               K_(tablet_ls_cache_priority),
-               K_(index_block_cache_priority),
-               K_(user_block_cache_priority),
-               K_(user_row_cache_priority),
-               K_(fuse_row_cache_priority),
-               K_(bf_cache_priority),
                K_(bf_cache_miss_count_threshold),
-               K_(storage_meta_cache_priority),
                K_(ethernet_speed));
 };
 

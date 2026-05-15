@@ -145,7 +145,7 @@ class ObBloomFilterCache : public common::ObKVCache<ObBloomFilterCacheKey, ObBlo
 public:
   ObBloomFilterCache();
   virtual ~ObBloomFilterCache();
-  int init(const char *cache_name, const int64_t priority);
+  int init(const char *cache_name);
   void destroy();
   /**
    * put bloom filter to cache

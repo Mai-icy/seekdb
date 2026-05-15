@@ -39,16 +39,13 @@ private:
 private:
   enum CACHE_COLUMN
   {
-        CACHE_ID = common::OB_APP_MIN_COLUMN_ID,
-    CACHE_NAME,
-    MEMBLOCK_PTR,
+    MEMBLOCK_PTR = common::OB_APP_MIN_COLUMN_ID,
     REF_COUNT,
     STATUS,
     POLICY,
     KV_CNT,
     GET_CNT,
     RECENT_GET_CNT,
-    PRIORITY,
     SCORE,
     ALIGN_SIZE
   };

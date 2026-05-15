@@ -90,7 +90,7 @@ public:
   {
     common::ObKVCache<ObTruncateInfoCacheKey, ObTruncateInfoCacheValue>::destroy();
   }
-  int init(const char *cache_name, const int64_t priority);
+  int init(const char *cache_name);
   int get_truncate_info_array(const ObTruncateInfoCacheKey &key, ObTruncateInfoValueHandle &handle);
   int put_truncate_info_array(const ObTruncateInfoCacheKey &key, ObTruncateInfoCacheValue &value);
 private:

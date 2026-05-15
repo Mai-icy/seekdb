@@ -125,11 +125,11 @@ ObTmpBlockCache &ObTmpBlockCache::get_instance()
   return instance;
 }
 
-int ObTmpBlockCache::init(const char *cache_name, const int64_t priority)
+int ObTmpBlockCache::init(const char *cache_name)
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL((common::ObKVCache<ObTmpBlockCacheKey, ObTmpBlockCacheValue>::init(
-      cache_name, priority)))) {
+      cache_name)))) {
     STORAGE_LOG(WARN, "Fail to init kv cache, ", KR(ret));
   }
   return ret;
@@ -447,11 +447,11 @@ ObTmpPageCache &ObTmpPageCache::get_instance()
   return instance;
 }
 
-int ObTmpPageCache::init(const char *cache_name, const int64_t priority)
+int ObTmpPageCache::init(const char *cache_name)
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL((common::ObKVCache<ObTmpPageCacheKey, ObTmpPageCacheValue>::init(
-      cache_name, priority)))) {
+      cache_name)))) {
     STORAGE_LOG(WARN, "Fail to init kv cache, ", KR(ret));
   }
   return ret;

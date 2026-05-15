@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <thread>
 #include <gtest/gtest.h>
 
 #define protected public

@@ -19,12 +19,14 @@
 
 
 #include "sql/engine/ob_operator.h"
+#ifndef OB_BUILD_EMBED_MODE
 #include "sql/engine/basic/ob_arrow_basic.h"
+#include <parquet/api/writer.h>
+#endif
 #include "lib/file/ob_file.h"
 #include "share/backup/ob_backup_struct.h"
 #include "sql/engine/table/ob_external_table_access_service.h"
 #include "sql/engine/cmd/ob_load_data_parser.h"
-#include <parquet/api/writer.h>
 #include "ob_select_into_basic.h"
 #include "sql/resolver/dml/ob_select_stmt.h"
 
@@ -136,6 +138,7 @@ private:
   int64_t &write_offset_;
 };
 
+#ifndef OB_BUILD_EMBED_MODE
 class ObBatchFileWriter : public ObExternalFileWriter
 {
 public:
@@ -235,6 +238,12 @@ private:
   int64_t estimated_bytes_;
   std::shared_ptr<parquet::schema::GroupNode> parquet_writer_schema_;
 };
+
+#else
+class ObParquetFileWriter
+{};
+
+#endif // !OB_BUILD_EMBED_MODE
 
 }
 }

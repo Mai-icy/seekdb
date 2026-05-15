@@ -25,6 +25,10 @@
 #include <lib/clang/17/include/unwind.h>
 #endif
 
+#ifdef _WIN32
+#include "observer/win32_pl_seh.h"
+#endif
+
 namespace oceanbase
 {
 namespace pl
@@ -172,6 +176,17 @@ public:
 }
 }
 
+#ifdef _WIN32
+/* Windows SEH personality adapter — registered as the "eh_personality" JIT
+ * symbol on Windows. UNWIND_INFO.ExceptionHandler in JIT .xdata entries
+ * points here. Windows calls this with the 4-parameter SEH calling convention;
+ * it bridges to ObPLEH::eh_personality (Itanium 5-parameter ABI). */
+extern "C" EXCEPTION_DISPOSITION ob_pl_seh_personality(
+    EXCEPTION_RECORD    *exc_record,
+    void                *establisher_frame,
+    CONTEXT             *ctx_record,
+    DISPATCHER_CONTEXT  *disp_ctx);
+#endif /* _WIN32 */
 
 
 #endif /* OCEANBASE_SRC_PL_OB_PL_EXCEPTION_HANDLING_H_ */

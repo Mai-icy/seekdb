@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+#include <chrono>
+
 #define USING_LOG_PREFIX STORAGE
 #define private public
 #define protected public
 
 #include "lib/utility/ob_test_util.h"
-
 #include "storage/backup/test_backup.h"
 #include "share/backup/ob_backup_io_adapter.h"
 #include "storage/backup/ob_backup_linked_block_writer.h"

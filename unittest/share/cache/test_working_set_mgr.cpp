@@ -54,7 +54,7 @@ TEST(TestWorkingSet, common)
   WorkingSetMB *mb_wrapper = NULL;
 
   const int64_t limit = 10 * 1024 * 1024; // 10MB
-  ASSERT_EQ(OB_SUCCESS, ObKVGlobalCache::get_instance().store_.alloc_mbhandle(ws_list_key, mb_handle));
+  ASSERT_EQ(OB_SUCCESS, ObKVGlobalCache::get_instance().store_.alloc_mbhandle(mb_handle));
   ASSERT_EQ(OB_SUCCESS, working_set.init(ws_list_key, limit, mb_handle,
       ws_mb_pool, ObKVGlobalCache::get_instance().store_));
   ASSERT_TRUE(working_set.is_valid());
@@ -123,7 +123,7 @@ TEST(TestWorkingSetList, common)
     ASSERT_TRUE(NULL != buf);
     ObWorkingSet *ws = new (buf) ObWorkingSet();
     ObKVMemBlockHandle *mb_handle = NULL;
-    ASSERT_EQ(OB_SUCCESS, ObKVGlobalCache::get_instance().store_.alloc_mbhandle(list_key, mb_handle));
+    ASSERT_EQ(OB_SUCCESS, ObKVGlobalCache::get_instance().store_.alloc_mbhandle(mb_handle));
     ASSERT_EQ(OB_SUCCESS, ws->init(list_key, limit, mb_handle,
         ws_mb_pool, ObKVGlobalCache::get_instance().store_));
     ASSERT_EQ(OB_SUCCESS, working_sets.push_back(ws));

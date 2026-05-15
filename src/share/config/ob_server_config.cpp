@@ -136,40 +136,29 @@ int ObServerConfig::add_extra_config(const char *config_str,
   return add_extra_config_unsafe(config_str, version, check_config);
 }
 
+static double calc_default_tenant_cpu(const double quota)
+{
+  double cpu = quota;
+  if (0 == cpu) {
+    int64_t n = get_cpu_count();
+    if (n <= 4)           cpu = 1;
+    else if (n <= 8)      cpu = 2;
+    else if (n <= 16)     cpu = 3;
+    else if (n <= 32)     cpu = 4;
+    else if (n <= 64)     cpu = 6;
+    else                  cpu = n / 10.0;
+  }
+  return cpu;
+}
+
 double ObServerConfig::get_sys_tenant_default_min_cpu()
 {
-  double min_cpu = server_cpu_quota_min;
-  if (0 == min_cpu) {
-    int64_t cpu_count = get_cpu_count();
-    if (cpu_count < 8) {
-      min_cpu = 1;
-    } else if (cpu_count < 16) {
-      min_cpu = 2;
-    } else if (cpu_count < 32) {
-      min_cpu = 3;
-    } else {
-      min_cpu = 4;
-    }
-  }
-  return min_cpu;
+  return calc_default_tenant_cpu(server_cpu_quota_min);
 }
 
 double ObServerConfig::get_sys_tenant_default_max_cpu()
 {
-  double max_cpu = server_cpu_quota_max;
-  if (0 == max_cpu) {
-    int64_t cpu_count = get_cpu_count();
-    if (cpu_count < 8) {
-      max_cpu = 1;
-    } else if (cpu_count < 16) {
-      max_cpu = 2;
-    } else if (cpu_count < 32) {
-      max_cpu = 3;
-    } else {
-      max_cpu = 4;
-    }
-  }
-  return max_cpu;
+  return calc_default_tenant_cpu(server_cpu_quota_max);
 }
 
 ObServerMemoryConfig::ObServerMemoryConfig()

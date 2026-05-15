@@ -412,7 +412,6 @@ int HazardDomain::reclaim(F func)
               prev->next_ = next;
             }
             reclaimed_memory_size += mb_handle->mem_block_->get_hold_size();
-            ATOMIC_SAF(&mb_handle->inst_->status_.retired_size_, mb_handle->mem_block_->get_hold_size());
             func(mb_handle);
           } else {
             prev = curr;

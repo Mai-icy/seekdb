@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <thread>
+
 #include "storage/multi_data_source/runtime_utility/common_define.h"
 #include <ratio>
 #define UNITTEST_DEBUG

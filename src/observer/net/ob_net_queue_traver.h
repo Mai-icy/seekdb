@@ -25,7 +25,6 @@
 #include "src/observer/ob_server_struct.h"
 #include "src/observer/omt/ob_multi_tenant.h"
 #include "src/observer/omt/ob_tenant.h"
-#include "src/observer/omt/ob_multi_level_queue.h"
 namespace oceanbase
 {
 namespace rpc
@@ -86,9 +85,7 @@ public:
   ~ObNetQueueTraver() = default;
   int traverse_one_tenant(oceanbase::omt::ObTenant *tenant_ptr, ObINetTraverProcess &process);
 private:
-  typedef oceanbase::common::ObPriorityQueue2<0, 1> TenantReqQueue;
-  int traverse_one_tenant_queue(oceanbase::omt::ReqQueue &tenant_req_queue, oceanbase::omt::ObMultiLevelQueue *tenant_multi_level_queue, int32_t group_id, ObINetTraverProcess &process);
-  int traverse_one_tenant_group_queue(TenantReqQueue &tenant_group_queue,oceanbase::omt::ObMultiLevelQueue *tenant_multi_level_queue, int32_t group_id, ObINetTraverProcess &process);
+  int traverse_one_tenant_queue(oceanbase::omt::ReqQueue &tenant_req_queue, int32_t group_id, ObINetTraverProcess &process);
   int traverse_one_tenant_one_link_queue(ObLinkQueue *link_queue, int32_t group_id, ObINetTraverProcess &process);
   DISALLOW_COPY_AND_ASSIGN(ObNetQueueTraver);
 };

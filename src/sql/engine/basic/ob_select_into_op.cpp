@@ -16,11 +16,6 @@
 
 #define USING_LOG_PREFIX SQL_ENG
 
-#include <arrow/api.h>
-#include <arrow/io/file.h>
-#include <arrow/util/logging.h>
-#include <parquet/api/writer.h>
-#include <parquet/exception.h>
 #include <cmath>
 #include <memory>
 
@@ -32,16 +27,24 @@
 #include "lib/udt/ob_collection_type.h"
 #include "share/config/ob_server_config.h"
 
+#ifndef OB_BUILD_EMBED_MODE
+#include <arrow/api.h>
+#include <arrow/io/file.h>
+#include <arrow/util/logging.h>
+#include <parquet/api/writer.h>
+#include <parquet/exception.h>
 #include <arrow/c/bridge.h>
 #include <arrow/array.h>
 
+#define ARROW_FAIL(statement) (OB_UNLIKELY(!(statement).ok()))
+
+#endif
 
 namespace oceanbase
 {
 using namespace common;
 namespace sql
 {
-#define ARROW_FAIL(statement) (OB_UNLIKELY(!(statement).ok()))
 
 OB_SERIALIZE_MEMBER(ObSelectIntoOpInput, task_id_, sqc_id_);
 OB_SERIALIZE_MEMBER((ObSelectIntoSpec, ObOpSpec), into_type_, user_vars_, outfile_name_,
@@ -96,9 +99,11 @@ int ObSelectIntoOp::inner_open()
       }
       case ObExternalFileFormat::FormatType::PARQUET_FORMAT:
       {
+#ifndef OB_BUILD_EMBED_MODE
         if (OB_FAIL(init_parquet_env())) {
-          LOG_WARN("failed to init csv env", K(ret));
+          LOG_WARN("failed to init parquet env", K(ret));
         }
+#endif
         break;
       }
       case ObExternalFileFormat::FormatType::ORC_FORMAT:
@@ -193,18 +198,6 @@ void ObSelectIntoOp::set_csv_format_options()
   }
 }
 
-int ObSelectIntoOp::init_parquet_env()
-{
-  int ret = OB_SUCCESS;
-  arrow_alloc_.init(MTL_ID());
-  if (OB_FAIL(setup_parquet_schema())) {
-    LOG_WARN("failed to set up parquet schema", K(ret));
-  } else if (OB_FAIL(init_env_common())) {
-    LOG_WARN("failed to init env common", K(ret));
-  }
-  return ret;
-}
-
 int ObSelectIntoOp::init_env_common()
 {
   int ret = OB_SUCCESS;
@@ -245,7 +238,9 @@ int ObSelectIntoOp::calc_url_and_set_access_info()
   const ObItemType into_type = MY_SPEC.into_type_;
   ObString path = file_name_.get_varchar().trim();
   if (path.prefix_match_ci(OB_S3_PREFIX)) {
-    file_location_ = IntoFileLocation::REMOTE_S3;
+    ret = OB_NOT_SUPPORTED;
+    LOG_USER_ERROR(OB_NOT_SUPPORTED, "S3 storage");
+    LOG_WARN("S3 storage is not supported", K(ret));
   } else if (path.prefix_match_ci(OB_AZBLOB_PREFIX)) {
     file_location_ = IntoFileLocation::REMOTE_AZBLOB;
   } else if (path.prefix_match_ci(OB_OSS_PREFIX)) {
@@ -389,7 +384,8 @@ int ObSelectIntoOp::inner_get_next_batch(const int64_t max_row_cnt)
   //when do_partition is false, create the only data_writer here
   if (OB_SUCC(ret) && T_INTO_VARIABLES != into_type && !do_partition_
       && (ObExternalFileFormat::FormatType::CSV_FORMAT == format_type_
-          || ObExternalFileFormat::FormatType::PARQUET_FORMAT == format_type_)) {
+          || ObExternalFileFormat::FormatType::PARQUET_FORMAT == format_type_
+          )) {
     if (OB_FAIL(create_the_only_data_writer(data_writer))) {
       LOG_WARN("failed to create the only data writer", K(ret));
     } else if (OB_ISNULL(data_writer)) {
@@ -429,9 +425,14 @@ int ObSelectIntoOp::inner_get_next_batch(const int64_t max_row_cnt)
               LOG_WARN("csv into outfile batch failed", K(ret));
             }
           } else if (ObExternalFileFormat::FormatType::PARQUET_FORMAT == format_type_) {
+#ifndef OB_BUILD_EMBED_MODE
             if (OB_FAIL(into_outfile_batch_parquet(brs_, data_writer))) {
               LOG_WARN("parquet into outfile batch failed", K(ret));
             }
+#else
+            ret = OB_NOT_SUPPORTED;
+            LOG_WARN("parquet is not supported in embed mode", K(ret));
+#endif // OB_BUILD_EMBED_MODE
           } else if (ObExternalFileFormat::FormatType::ORC_FORMAT == format_type_) {
             ret = OB_NOT_SUPPORTED;
           } else {
@@ -1407,6 +1408,118 @@ int ObSelectIntoOp::into_outfile_batch_csv(const ObBatchRows &brs, ObExternalFil
   return ret;
 }
 
+int ObSelectIntoOp::get_data_from_expr_vector(const common::ObIVector* expr_vector,
+                                              int row_idx,
+                                              ObObjType type,
+                                              int64_t &value,
+                                              const bool is_strict_mode,
+                                              const ObDateSqlMode date_sql_mode)
+{
+  int ret = OB_SUCCESS;
+  int32_t date;
+  switch(type) {
+    case ObTinyIntType:
+      value = expr_vector->get_tinyint(row_idx);
+      break;
+    case ObSmallIntType:
+      value = expr_vector->get_smallint(row_idx);
+      break;
+    case ObMediumIntType:
+      value = expr_vector->get_mediumint(row_idx);
+      break;
+    case ObInt32Type:
+      value = expr_vector->get_int32(row_idx);
+      break;
+    case ObIntType:
+      value = expr_vector->get_int(row_idx);
+      break;
+    case ObYearType:
+      value = expr_vector->get_year(row_idx);
+      break;
+    case ObDateType:
+      value = expr_vector->get_date(row_idx);
+      break;
+    case ObMySQLDateType:
+      CAST_FAIL(
+        ObTimeConverter::mdate_to_date(expr_vector->get_mysql_date(row_idx), date, date_sql_mode));
+      value = date;
+      break;
+    case ObMySQLDateTimeType:
+      CAST_FAIL(ObTimeConverter::mdatetime_to_datetime(expr_vector->get_mysql_datetime(row_idx), value,
+                                             date_sql_mode));
+      break;
+    default:
+      ret = OB_OBJ_TYPE_ERROR;
+  }
+  return ret;
+}
+
+bool ObSelectIntoOp::file_need_split(int64_t file_size)
+{
+  return (file_location_ == IntoFileLocation::SERVER_DISK
+          && !MY_SPEC.is_single_ && file_size > MY_SPEC.max_file_size_)
+        || (file_location_ != IntoFileLocation::SERVER_DISK
+            && ((!MY_SPEC.is_single_ && file_size > min(MY_SPEC.max_file_size_, MAX_OSS_FILE_SIZE))
+                || (MY_SPEC.is_single_ && file_size > MAX_OSS_FILE_SIZE)));
+}
+
+int ObSelectIntoOp::check_oracle_number(ObObjType obj_type, int16_t &precision, int8_t scale)
+{
+  int ret = OB_SUCCESS;
+  return ret;
+}
+
+int ObSelectIntoOp::calc_byte_array(const common::ObIVector* expr_vector,
+                                    int row_idx,
+                                    const ObDatumMeta &datum_meta,
+                                    const ObObjMeta &obj_meta,
+                                    ObIAllocator &allocator,
+                                    char* &buf,
+                                    uint32_t &res_len)
+{
+  int ret = OB_SUCCESS;
+  ObString ob_str;
+  ObString res_str;
+  bool has_lob_header = obj_meta.has_lob_header();
+  res_len = 0;
+  buf = nullptr;
+  int64_t buf_size = 0;
+  if (OB_FAIL(ObTextStringHelper::read_real_string_data(allocator, expr_vector, datum_meta,
+                                                        has_lob_header, ob_str, row_idx))) {
+    LOG_WARN("failed to get string", K(ret));
+  } else if (ob_str.length() == 0 || CS_TYPE_BINARY == datum_meta.cs_type_
+             || CHARSET_UTF8MB4 == ObCharset::charset_type_by_coll(datum_meta.cs_type_)) {
+    if (OB_FAIL(ob_write_string(allocator, ob_str, res_str))) {
+      LOG_WARN("failed to write string", K(ret));
+    } else {
+      res_len = static_cast<uint32_t>(res_str.length());
+      buf = const_cast<char *>(res_str.ptr());
+    }
+  } else if (OB_FALSE_IT(buf_size = ob_str.length() * ObCharset::MAX_MB_LEN)) {
+  } else if (OB_ISNULL(buf = static_cast<char *>(allocator.alloc(buf_size)))) {
+    ret = OB_ALLOCATE_MEMORY_FAILED;
+    LOG_WARN("failed to alloc memory", K(ret), K(buf_size));
+  } else if (OB_FAIL(ObCharset::charset_convert(datum_meta.cs_type_, ob_str.ptr(),
+                                                ob_str.length(), CS_TYPE_UTF8MB4_BIN,
+                                                buf, buf_size, res_len, false, false))) {
+    LOG_WARN("failed to convert charset", K(ret));
+  }
+  return ret;
+}
+
+#ifndef OB_BUILD_EMBED_MODE
+int ObSelectIntoOp::init_parquet_env()
+{
+  int ret = OB_SUCCESS;
+  arrow_alloc_.init(MTL_ID());
+  if (OB_FAIL(setup_parquet_schema())) {
+    LOG_WARN("failed to set up parquet schema", K(ret));
+  } else if (OB_FAIL(init_env_common())) {
+    LOG_WARN("failed to init env common", K(ret));
+  }
+  return ret;
+}
+
 int ObSelectIntoOp::get_parquet_logical_type(std::shared_ptr<const parquet::LogicalType> &logical_type,
                                              const ObObjType &obj_type,
                                              const int32_t precision,
@@ -1496,7 +1609,6 @@ int ObSelectIntoOp::calc_parquet_decimal_length(int precision)
   // Put in utils?
   return std::ceil((1 + precision / std::log10(2)) / 8);
 }
-
 
 int ObSelectIntoOp::setup_parquet_schema()
 {
@@ -1654,175 +1766,6 @@ int ObSelectIntoOp::into_outfile_batch_parquet(const ObBatchRows &brs, ObExterna
         }
       }
     }
-  }
-  return ret;
-}
-
-int ObSelectIntoOp::get_data_from_expr_vector(const common::ObIVector* expr_vector,
-                                              int row_idx,
-                                              ObObjType type,
-                                              int64_t &value,
-                                              const bool is_strict_mode,
-                                              const ObDateSqlMode date_sql_mode)
-{
-  int ret = OB_SUCCESS;
-  int32_t date;
-  switch(type) {
-    case ObTinyIntType:
-      value = expr_vector->get_tinyint(row_idx);
-      break;
-    case ObSmallIntType:
-      value = expr_vector->get_smallint(row_idx);
-      break;
-    case ObMediumIntType:
-      value = expr_vector->get_mediumint(row_idx);
-      break;
-    case ObInt32Type:
-      value = expr_vector->get_int32(row_idx);
-      break;
-    case ObIntType:
-      value = expr_vector->get_int(row_idx);
-      break;
-    case ObYearType:
-      value = expr_vector->get_year(row_idx);
-      break;
-    case ObDateType:
-      value = expr_vector->get_date(row_idx);
-      break;
-    case ObMySQLDateType:
-      CAST_FAIL(
-        ObTimeConverter::mdate_to_date(expr_vector->get_mysql_date(row_idx), date, date_sql_mode));
-      value = date;
-      break;
-    case ObMySQLDateTimeType:
-      CAST_FAIL(ObTimeConverter::mdatetime_to_datetime(expr_vector->get_mysql_datetime(row_idx), value,
-                                             date_sql_mode));
-      break;
-    default:
-      ret = OB_OBJ_TYPE_ERROR;
-  }
-  return ret;
-}
-
-bool ObSelectIntoOp::file_need_split(int64_t file_size)
-{
-  return (file_location_ == IntoFileLocation::SERVER_DISK
-          && !MY_SPEC.is_single_ && file_size > MY_SPEC.max_file_size_)
-        || (file_location_ != IntoFileLocation::SERVER_DISK
-            && ((!MY_SPEC.is_single_ && file_size > min(MY_SPEC.max_file_size_, MAX_OSS_FILE_SIZE))
-                || (MY_SPEC.is_single_ && file_size > MAX_OSS_FILE_SIZE)));
-}
-
-int ObSelectIntoOp::check_oracle_number(ObObjType obj_type, int16_t &precision, int8_t scale)
-{
-  int ret = OB_SUCCESS;
-  return ret;
-}
-
-int ObSelectIntoOp::calc_parquet_decimal_array(const common::ObIVector* expr_vector,
-                                               int row_idx,
-                                               const ObDatumMeta &datum_meta,
-                                               int parquet_decimal_length,
-                                               uint8_t* parquet_flba_ptr)
-{
-  int ret = OB_SUCCESS;
-  const ObDecimalInt* ob_decimal;
-  const uint8_t* decimal_bytes;
-  ObDecimalIntBuilder tmp_dec_alloc;
-  ObDecimalInt* tmp_decimal;
-  int ob_decimal_length = wide::ObDecimalIntConstValue::get_int_bytes_by_precision(datum_meta.precision_);
-  if (ob_is_decimal_int_tc(datum_meta.get_type())) {
-    ob_decimal = expr_vector->get_decimal_int(row_idx);
-  } else if (ob_is_number_tc(datum_meta.get_type())) {
-    number::ObNumber number(expr_vector->get_number(row_idx));
-    if (OB_FAIL(wide::from_number_to_decimal_fixed_length(number, tmp_dec_alloc, datum_meta.scale_,
-                                                          ob_decimal_length, tmp_decimal))){
-      LOG_WARN("failed to case number to decimal int", K(ret));
-    } else {
-      ob_decimal = tmp_decimal;
-    }
-  } else {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("get unexpected type", K(datum_meta.get_type()));
-  }
-  if (OB_FAIL(ret)) {
-  } else if (ob_decimal_length < parquet_decimal_length) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("get unexpected decimal length", K(ob_decimal_length), K(parquet_decimal_length), K(ret));
-  } else {
-    switch (ob_decimal_length) {
-      case sizeof(int32_t):
-      {
-        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int32_v_);
-        break;
-      }
-      case sizeof(int64_t):
-      {
-        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int64_v_);
-        break;
-      }
-      case sizeof(int128_t):
-      {
-        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int128_v_);
-        break;
-      }
-      case sizeof(int256_t):
-      {
-        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int256_v_);
-        break;
-      }
-      case sizeof(int512_t):
-      {
-        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int512_v_);
-        break;
-      }
-      default:
-      {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected type", K(ob_decimal_length), K(ret));
-      }
-    }
-  }
-  for (int i = 0; OB_SUCC(ret) && i < parquet_decimal_length; i++) {
-    parquet_flba_ptr[i] = decimal_bytes[parquet_decimal_length - i - 1];
-  }
-  return ret;
-}
-
-int ObSelectIntoOp::calc_byte_array(const common::ObIVector* expr_vector,
-                                    int row_idx,
-                                    const ObDatumMeta &datum_meta,
-                                    const ObObjMeta &obj_meta,
-                                    ObIAllocator &allocator,
-                                    char* &buf,
-                                    uint32_t &res_len)
-{
-  int ret = OB_SUCCESS;
-  ObString ob_str;
-  ObString res_str;
-  bool has_lob_header = obj_meta.has_lob_header();
-  res_len = 0;
-  buf = nullptr;
-  int64_t buf_size = 0;
-  if (OB_FAIL(ObTextStringHelper::read_real_string_data(allocator, expr_vector, datum_meta,
-                                                        has_lob_header, ob_str, row_idx))) {
-    LOG_WARN("failed to get string", K(ret));
-  } else if (ob_str.length() == 0 || CS_TYPE_BINARY == datum_meta.cs_type_
-             || CHARSET_UTF8MB4 == ObCharset::charset_type_by_coll(datum_meta.cs_type_)) {
-    if (OB_FAIL(ob_write_string(allocator, ob_str, res_str))) {
-      LOG_WARN("failed to write string", K(ret));
-    } else {
-      res_len = static_cast<uint32_t>(res_str.length());
-      buf = const_cast<char *>(res_str.ptr());
-    }
-  } else if (OB_FALSE_IT(buf_size = ob_str.length() * ObCharset::MAX_MB_LEN)) {
-  } else if (OB_ISNULL(buf = static_cast<char *>(allocator.alloc(buf_size)))) {
-    ret = OB_ALLOCATE_MEMORY_FAILED;
-    LOG_WARN("failed to alloc memory", K(ret), K(buf_size));
-  } else if (OB_FAIL(ObCharset::charset_convert(datum_meta.cs_type_, ob_str.ptr(),
-                                                ob_str.length(), CS_TYPE_UTF8MB4_BIN,
-                                                buf, buf_size, res_len, false, false))) {
-    LOG_WARN("failed to convert charset", K(ret));
   }
   return ret;
 }
@@ -2033,6 +1976,77 @@ int ObSelectIntoOp::build_parquet_cell(parquet::RowGroupWriter* rg_writer,
   }
   return ret;
 }
+
+int ObSelectIntoOp::calc_parquet_decimal_array(const common::ObIVector* expr_vector,
+                                               int row_idx,
+                                               const ObDatumMeta &datum_meta,
+                                               int parquet_decimal_length,
+                                               uint8_t* parquet_flba_ptr)
+{
+  int ret = OB_SUCCESS;
+  const ObDecimalInt* ob_decimal;
+  const uint8_t* decimal_bytes;
+  ObDecimalIntBuilder tmp_dec_alloc;
+  ObDecimalInt* tmp_decimal;
+  int ob_decimal_length = wide::ObDecimalIntConstValue::get_int_bytes_by_precision(datum_meta.precision_);
+  if (ob_is_decimal_int_tc(datum_meta.get_type())) {
+    ob_decimal = expr_vector->get_decimal_int(row_idx);
+  } else if (ob_is_number_tc(datum_meta.get_type())) {
+    number::ObNumber number(expr_vector->get_number(row_idx));
+    if (OB_FAIL(wide::from_number_to_decimal_fixed_length(number, tmp_dec_alloc, datum_meta.scale_,
+                                                          ob_decimal_length, tmp_decimal))){
+      LOG_WARN("failed to case number to decimal int", K(ret));
+    } else {
+      ob_decimal = tmp_decimal;
+    }
+  } else {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("get unexpected type", K(datum_meta.get_type()));
+  }
+  if (OB_FAIL(ret)) {
+  } else if (ob_decimal_length < parquet_decimal_length) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("get unexpected decimal length", K(ob_decimal_length), K(parquet_decimal_length), K(ret));
+  } else {
+    switch (ob_decimal_length) {
+      case sizeof(int32_t):
+      {
+        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int32_v_);
+        break;
+      }
+      case sizeof(int64_t):
+      {
+        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int64_v_);
+        break;
+      }
+      case sizeof(int128_t):
+      {
+        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int128_v_);
+        break;
+      }
+      case sizeof(int256_t):
+      {
+        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int256_v_);
+        break;
+      }
+      case sizeof(int512_t):
+      {
+        decimal_bytes = reinterpret_cast<const uint8_t*>(ob_decimal->int512_v_);
+        break;
+      }
+      default:
+      {
+        ret = OB_ERR_UNEXPECTED;
+        LOG_WARN("unexpected type", K(ob_decimal_length), K(ret));
+      }
+    }
+  }
+  for (int i = 0; OB_SUCC(ret) && i < parquet_decimal_length; i++) {
+    parquet_flba_ptr[i] = decimal_bytes[parquet_decimal_length - i - 1];
+  }
+  return ret;
+}
+#endif // !OB_BUILD_EMBED_MODE
 
 int ObSelectIntoOp::into_dumpfile(ObExternalFileWriter *data_writer)
 {
@@ -2336,7 +2350,10 @@ int ObSelectIntoOp::new_data_writer(ObExternalFileWriter *&data_writer)
     }
     case ObExternalFileFormat::FormatType::PARQUET_FORMAT:
     {
-      if (OB_ISNULL(ptr = ctx_.get_allocator().alloc(sizeof(ObParquetFileWriter)))) {
+      if (lib::is_embed_mode()) {
+        ret = OB_NOT_SUPPORTED;
+        LOG_WARN("parquet not supported in embed mode", K(ret));
+      } else if (OB_ISNULL(ptr = ctx_.get_allocator().alloc(sizeof(ObParquetFileWriter)))) {
         ret = OB_ALLOCATE_MEMORY_FAILED;
         LOG_WARN("failed to allocate data writer", K(ret), K(sizeof(ObParquetFileWriter)));
       } else {
@@ -2372,10 +2389,12 @@ void ObSelectIntoOp::destroy()
   } else if (OB_NOT_NULL(data_writer_)) {
     data_writer_->~ObExternalFileWriter();
   }
+#ifndef OB_BUILD_EMBED_MODE
   {
     ObMallocHookAttrGuard guard(ObMemAttr(MTL_ID(), "IntoParquet"));
     parquet_writer_schema_.reset();
   }
+#endif
   external_properties_.~ObExternalFileFormat();
   partition_map_.destroy();
   ObOperator::destroy();

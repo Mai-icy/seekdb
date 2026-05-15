@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <chrono>
+
 #define private public  // get private members
 #define protected public  // get private members
 #include "observer/table/object_pool/ob_table_object_pool.h"

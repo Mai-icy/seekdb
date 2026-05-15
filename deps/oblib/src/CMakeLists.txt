@@ -48,7 +48,7 @@ target_include_directories(
   ${DEP_DIR}/include/apr-1/
   ${DEP_DIR}/include/icu
   ${DEP_DIR}/include/icu/common
-  ${DEP_DIR}/include/apache-arrow
+  $<$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>:${DEP_DIR}/include/apache-arrow>
   ${DEP_DIR}/include/fast_float
   ${USSL_INCLUDE_DIRS}
 )
@@ -351,11 +351,11 @@ else()
     ${DEP_DIR}/lib/libicustubdata.a
     ${DEP_DIR}/lib/libicuuc.a
     ${DEP_DIR}/lib/libprotobuf-c.a
-    ${_LIB_PATH}/libarrow.a
-    ${_LIB_PATH}/libparquet.a
-    $<$<NOT:$<PLATFORM_ID:Darwin>>:${_LIB_PATH}/libarrow_bundled_dependencies.a>
-    $<$<PLATFORM_ID:Darwin>:-L/opt/homebrew/lib -lutf8proc -lthrift -lre2 -lbrotlicommon -lbrotlienc -lbrotlidec -lbz2>
-    ${_LIB_PATH_EXTRA}/liborc.a
+    $<$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>:${_LIB_PATH}/libarrow.a>
+    $<$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>:${_LIB_PATH}/libparquet.a>
+    $<$<AND:$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>,$<NOT:$<PLATFORM_ID:Darwin>>>:${_LIB_PATH}/libarrow_bundled_dependencies.a>
+    $<$<AND:$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>,$<PLATFORM_ID:Darwin>>:-L/opt/homebrew/lib -lutf8proc -lthrift -lre2 -lbrotlicommon -lbrotlienc -lbrotlidec -lbz2>
+    $<$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>:${_LIB_PATH}/liborc.a>
     ${_LIB_PATH_EXTRA}/libsnappy.a
     $<$<NOT:$<BOOL:${ANDROID}>>:${_LIB_PATH_EXTRA}/libprotoc.a>
     ${_LIB_PATH_EXTRA}/libprotobuf.a

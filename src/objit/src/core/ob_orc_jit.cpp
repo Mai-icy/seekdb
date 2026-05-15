@@ -17,10 +17,20 @@
 #define USING_LOG_PREFIX PL
 #include "core/ob_orc_jit.h"
 
+#include <atomic>
+#include <mutex>
+#include <vector>
+
 #include "llvm/Config/llvm-config.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "core/ob_pl_ir_compiler.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#include <stdio.h>
+#include <cstdarg>
+#endif
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -39,6 +49,124 @@ std::vector<std::string*> ObJitGlobalSymbolGenerator::persistent_strings;
 
 std::pair<lib::ObMutex, ObNotifyLoaded::KeyEntryMap> ObNotifyLoaded::AllGdbReg;
 
+namespace detail {
+static std::atomic<uint64_t> g_shim_seq{0};
+#ifdef _WIN32
+
+static void ob_shim_trace(const char *fmt, ...) {
+  char buf[512];
+  va_list ap;
+  va_start(ap, fmt);
+  int n = _vsnprintf_s(buf, sizeof(buf), _TRUNCATE, fmt, ap);
+  va_end(ap);
+  if (n <= 0) return;
+  OutputDebugStringA(buf);
+}
+#else
+static inline void ob_shim_trace(const char *, ...) {}
+#endif
+
+class ObJitMemoryManagerShim final : public llvm::RTDyldMemoryManager
+{
+public:
+  // Magic values: live shims have ALIVE; ~Shim flips to DEAD before returning,
+  // so any virtual call after destruction is detectable.
+  static constexpr uint64_t MAGIC_ALIVE = 0xA11CEDEADBEEF42AULL;
+  static constexpr uint64_t MAGIC_DEAD  = 0xDEADDEADDEADDEADULL;
+
+  explicit ObJitMemoryManagerShim(ObJitMemoryManager *delegate)
+    : magic_(MAGIC_ALIVE),
+      seq_(g_shim_seq.fetch_add(1, std::memory_order_relaxed) + 1),
+      delegate_(delegate)
+  {
+  }
+
+  ~ObJitMemoryManagerShim() override {
+    // Flip magic AFTER trace so any racing virtual caller still sees Alive
+    // until the moment we record the dtor. After this store, downstream
+    // checks in registerEHFrames/finalizeMemory will catch use-after-dtor.
+    magic_ = MAGIC_DEAD;
+  }
+  static void operator delete(void *) noexcept { /* shim is pinned, never freed */ }
+  static void operator delete[](void *) noexcept { /* not used, but keep symmetric */ }
+
+  uint8_t *allocateCodeSection(uintptr_t Size, unsigned Align,
+                               unsigned SectionID,
+                               llvm::StringRef SectionName) override
+  {
+    return delegate_->allocateCodeSection(Size, Align, SectionID, SectionName);
+  }
+
+  uint8_t *allocateDataSection(uintptr_t Size, unsigned Align,
+                               unsigned SectionID,
+                               llvm::StringRef SectionName,
+                               bool IsReadOnly) override
+  {
+    return delegate_->allocateDataSection(Size, Align, SectionID, SectionName,
+                                          IsReadOnly);
+  }
+
+  bool finalizeMemory(std::string *ErrMsg = nullptr) override
+  {
+    // finalizeMemory is private in ObJitMemoryManager; route through the
+    // base-class virtual to satisfy access checks while keeping virtual dispatch.
+    return static_cast<llvm::RTDyldMemoryManager *>(delegate_)->finalizeMemory(ErrMsg);
+  }
+
+  void registerEHFrames(uint8_t *Addr, uint64_t LoadAddr, size_t Size) override
+  {
+    delegate_->registerEHFrames(Addr, LoadAddr, Size);
+  }
+
+  void deregisterEHFrames() override
+  {
+    delegate_->deregisterEHFrames();
+  }
+
+#if defined(__aarch64__)
+  void reserveAllocationSpace(uintptr_t CodeSize, uint32_t CodeAlign,
+                              uintptr_t RODataSize, uint32_t RODataAlign,
+                              uintptr_t RWDataSize, uint32_t RWDataAlign) override
+  {
+    delegate_->reserveAllocationSpace(CodeSize, CodeAlign,
+                                      RODataSize, RODataAlign,
+                                      RWDataSize, RWDataAlign);
+  }
+
+  bool needsToReserveAllocationSpace() override
+  {
+    return delegate_->needsToReserveAllocationSpace();
+  }
+#endif
+
+private:
+  // Diagnostic: MAGIC_ALIVE while constructed, MAGIC_DEAD after ~Shim().
+  // Placed first so its offset is stable; checked at every virtual entry.
+  uint64_t magic_;
+  uint64_t seq_;                  // monotonic id for matching ctor/dtor in logs
+  ObJitMemoryManager *delegate_;  // pinned in persistent pool, not owning
+  DISALLOW_COPY_AND_ASSIGN(ObJitMemoryManagerShim);
+};
+
+class ObJitMemMgrPool
+{
+public:
+  ObJitMemMgrPool() {}
+  ~ObJitMemMgrPool() {}
+  std::mutex &get_mutex() { return mtx_; }
+  std::vector<std::unique_ptr<ObJitMemoryManager>> &get_mgrs() { return mgrs_; }
+private:
+  std::mutex mtx_;
+  std::vector<std::unique_ptr<ObJitMemoryManager>> mgrs_;
+  DISALLOW_COPY_AND_ASSIGN(ObJitMemMgrPool);
+};
+
+static ObJitMemMgrPool &get_mem_mgr_pool() {
+  static ObJitMemMgrPool pool;
+  return pool;
+}
+} // namespace detail
+
 ObOrcJit::ObOrcJit(common::ObIAllocator &Allocator)
   : DebugBuf(nullptr),
     DebugLen(0),
@@ -54,13 +182,48 @@ int ObOrcJit::init()
 {
   int ret = OB_SUCCESS;
 
+    // NB: capture stable pointers (`alloc_ptr`, `notify_ptr`) into the inner
+    // factory lambda by VALUE rather than reusing the enclosing lambda's
+    // `this` via `[&]`. The outer lambda is owned by `ObEngineBuilder` and
+    // can be moved-from when `LLJITBuilder::create()` consumes the builder,
+    // leaving any reference into the outer closure dangling. The inner
+    // factory lambda is stored inside `RTDyldObjectLinkingLayer` and gets
+    // invoked once per emit() (including async re-entries triggered by
+    // nested compilations such as cursor SQL).
+    //
+    // In addition, what LLVM gets back from the factory is now an
+    // `ObJitMemoryManagerShim` rather than the real `ObJitMemoryManager`.
+    // The shim is a thin forwarding object that LLVM owns and may destroy at
+    // any time during ORC v2 async materialization; the real manager lives
+    // in the persistent pool keyed by `get_mem_mgr_pool()` and survives the
+    // shim. This decoupling fixes the Windows crash in
+    // `RuntimeDyldImpl::finalizeAsync` -> `registerEHFrames` where the
+    // MemMgr pointer had been freed and reused by ORC for a
+    // `_Ref_count_obj2<AsynchronousSymbolQuery>` (vtable slot ended up at
+    // 0xfffffffffffffff8). With the shim, even if LLVM frees its handle
+    // mid-operation, in-flight calls into the real manager still operate on
+    // a live object.
+    ObJitAllocator *alloc_ptr = &JITAllocator;
+    ObNotifyLoaded *notify_ptr = &NotifyLoaded;
     ObEngineBuilder.setObjectLinkingLayerCreator(
-    [this](ExecutionSession &ES, const Triple &TT) {
+    [alloc_ptr, notify_ptr](ExecutionSession &ES, const Triple &TT) {
       auto ObjLinkingLayer =
           std::make_unique<RTDyldObjectLinkingLayer>(
             ES,
-            [&]() {
-              return std::make_unique<ObJitMemoryManager>(JITAllocator);
+            [alloc_ptr]() -> std::unique_ptr<RuntimeDyld::MemoryManager> {
+              // NB: std::unique_ptr usage here is mandated by the LLVM ORC
+              // factory signature (returns std::unique_ptr<MemoryManager>).
+              // §6.1 exemption applies.
+              std::unique_ptr<ObJitMemoryManager> real(new ObJitMemoryManager(*alloc_ptr));
+              ObJitMemoryManager *raw = real.get();
+              {
+                detail::ObJitMemMgrPool &pool = detail::get_mem_mgr_pool();
+                std::lock_guard<std::mutex> lk(pool.get_mutex());
+                pool.get_mgrs().push_back(std::move(real));
+              }
+              std::unique_ptr<detail::ObJitMemoryManagerShim> shim(
+                  new detail::ObJitMemoryManagerShim(raw));
+              return shim;
           });
 
 #if defined(__APPLE__) && defined(__aarch64__)
@@ -71,8 +234,12 @@ int ObOrcJit::init()
       // the unwinder cannot find the personality function or LSDA data for
       // JIT-compiled PL code.
       ObjLinkingLayer->setProcessAllSections(true);
+#elif defined(_WIN32)
+      ObjLinkingLayer->setProcessAllSections(true);
+      ObjLinkingLayer->setAutoClaimResponsibilityForObjectSymbols(true);
+      ObjLinkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(true);
 #endif
-      ObjLinkingLayer->registerJITEventListener(NotifyLoaded);
+      ObjLinkingLayer->registerJITEventListener(*notify_ptr);
       return ObjLinkingLayer;
     });
 
@@ -105,6 +272,7 @@ int ObOrcJit::init()
       tm_builder_wrapper->getOptions().ExceptionModel = ExceptionHandling::DwarfCFI;
       tm_builder_wrapper->getOptions().MCOptions.EmitDwarfUnwind = EmitDwarfUnwindType::Always;
 #endif
+      tm_builder_wrapper->setCodeModel(llvm::CodeModel::Large);
       ObEngineBuilder.setJITTargetMachineBuilder(*tm_builder_wrapper);
     }
 

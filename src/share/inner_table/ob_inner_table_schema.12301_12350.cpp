@@ -2799,36 +2799,6 @@ int ObInnerTableSchema::all_virtual_kvcache_store_memblock_schema(ObTableSchema 
   table_schema.set_collation_type(ObCharset::get_default_collation(ObCharset::get_default_charset()));
 
   if (OB_SUCC(ret)) {
-    ADD_COLUMN_SCHEMA("cache_id", //column_name
-      ++column_id, //column_id
-      0, //rowkey_id
-      0, //index_id
-      0, //part_key_pos
-      ObIntType, //column_type
-      CS_TYPE_INVALID, //column_collation_type
-      sizeof(int64_t), //column_length
-      -1, //column_precision
-      -1, //column_scale
-      false, //is_nullable
-      false); //is_autoincrement
-  }
-
-  if (OB_SUCC(ret)) {
-    ADD_COLUMN_SCHEMA("cache_name", //column_name
-      ++column_id, //column_id
-      0, //rowkey_id
-      0, //index_id
-      0, //part_key_pos
-      ObVarcharType, //column_type
-      CS_TYPE_INVALID, //column_collation_type
-      OB_MAX_KVCACHE_NAME_LENGTH, //column_length
-      -1, //column_precision
-      -1, //column_scale
-      false, //is_nullable
-      false); //is_autoincrement
-  }
-
-  if (OB_SUCC(ret)) {
     ADD_COLUMN_SCHEMA("memblock_ptr", //column_name
       ++column_id, //column_id
       0, //rowkey_id
@@ -2934,21 +2904,6 @@ int ObInnerTableSchema::all_virtual_kvcache_store_memblock_schema(ObTableSchema 
   }
 
   if (OB_SUCC(ret)) {
-    ADD_COLUMN_SCHEMA("priority", //column_name
-      ++column_id, //column_id
-      0, //rowkey_id
-      0, //index_id
-      0, //part_key_pos
-      ObIntType, //column_type
-      CS_TYPE_INVALID, //column_collation_type
-      sizeof(int64_t), //column_length
-      -1, //column_precision
-      -1, //column_scale
-      false, //is_nullable
-      false); //is_autoincrement
-  }
-
-  if (OB_SUCC(ret)) {
     ADD_COLUMN_SCHEMA("score", //column_name
       ++column_id, //column_id
       0, //rowkey_id
@@ -2958,7 +2913,7 @@ int ObInnerTableSchema::all_virtual_kvcache_store_memblock_schema(ObTableSchema 
       CS_TYPE_INVALID, //column_collation_type
       38, //column_length
       38, //column_precision
-      3, //column_scale
+      6, //column_scale
       false, //is_nullable
       false); //is_autoincrement
   }

@@ -276,7 +276,7 @@ int ObStorageLogReader::get_next_log(
     } else {
       log_buffer_.get_position() += entry.data_len_;
       cursor_.offset_ += entry.get_serialize_size() + entry.data_len_;
-      FLOG_INFO("successfully get next log", K(entry), K(cursor_));
+      STORAGE_REDO_LOG(TRACE, "successfully get next log", K(entry), K(cursor_));
     }
   }
 

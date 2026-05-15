@@ -61,13 +61,7 @@ int ObAdminDumpsstExecutor::execute(int argc, char *argv[])
         &ObTenantMemLimitGetter::get_instance(), 1024L, 512 * 1024 * 1024, 64 * 1024))) {
       STORAGE_LOG(ERROR, "Fail to init kv cache, ", K(ret));
     } else if (OB_FAIL(OB_STORE_CACHE.init(
-        storage_env_.index_block_cache_priority_,
-        storage_env_.user_block_cache_priority_,
-        storage_env_.user_row_cache_priority_,
-        storage_env_.fuse_row_cache_priority_,
-        storage_env_.bf_cache_priority_,
-        storage_env_.bf_cache_miss_count_threshold_,
-        storage_env_.storage_meta_cache_priority_))) {
+        storage_env_.bf_cache_miss_count_threshold_))) {
       STORAGE_LOG(WARN, "Fail to init OB_STORE_CACHE, ", K(ret), K(storage_env_.data_dir_));
     } else if (OB_FAIL(load_config())) {
       STORAGE_LOG(WARN, "fail to load config", K(ret));

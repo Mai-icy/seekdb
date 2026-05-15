@@ -1135,7 +1135,7 @@ int ObInnerTableSchema::gv_ob_kvcache_schema(ObTableSchema &table_schema)
   table_schema.set_collation_type(ObCharset::get_default_collation(ObCharset::get_default_charset()));
 
   if (OB_SUCC(ret)) {
-    if (OB_FAIL(table_schema.set_view_definition(R"__( SELECT   CACHE_NAME,   PRIORITY,   CACHE_SIZE,   HIT_RATIO,   TOTAL_PUT_CNT,   TOTAL_HIT_CNT,   TOTAL_MISS_CNT FROM oceanbase.__all_virtual_kvcache_info )__"))) {
+    if (OB_FAIL(table_schema.set_view_definition(R"__( SELECT   CACHE_NAME,   CACHE_SIZE,   HIT_RATIO,   TOTAL_PUT_CNT,   TOTAL_HIT_CNT,   TOTAL_MISS_CNT FROM oceanbase.__all_virtual_kvcache_info )__"))) {
       LOG_ERROR("fail to set view_definition", K(ret));
     }
   }
@@ -1186,7 +1186,7 @@ int ObInnerTableSchema::v_ob_kvcache_schema(ObTableSchema &table_schema)
   table_schema.set_collation_type(ObCharset::get_default_collation(ObCharset::get_default_charset()));
 
   if (OB_SUCC(ret)) {
-    if (OB_FAIL(table_schema.set_view_definition(R"__(     SELECT     CACHE_NAME,     PRIORITY,     CACHE_SIZE,     HIT_RATIO,     TOTAL_PUT_CNT,     TOTAL_HIT_CNT,     TOTAL_MISS_CNT     FROM oceanbase.GV$OB_KVCACHE  )__"))) {
+    if (OB_FAIL(table_schema.set_view_definition(R"__(     SELECT     CACHE_NAME,     CACHE_SIZE,     HIT_RATIO,     TOTAL_PUT_CNT,     TOTAL_HIT_CNT,     TOTAL_MISS_CNT     FROM oceanbase.GV$OB_KVCACHE  )__"))) {
       LOG_ERROR("fail to set view_definition", K(ret));
     }
   }

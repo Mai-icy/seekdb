@@ -205,7 +205,6 @@
 #include "observer/virtual_table/ob_all_virtual_tenant_scheduler_running_job.h"
 #include "observer/virtual_table/ob_all_virtual_compatibility_control.h"
 #include "observer/virtual_table/ob_all_virtual_sql_stat.h"
-#include "observer/virtual_table/ob_all_virtual_ss_local_cache_info.h"
 #include "observer/virtual_table/ob_all_virtual_vector_index_info.h"
 #include "observer/virtual_table/ob_all_virtual_tmp_file.h"
 #include "observer/virtual_table/ob_all_virtual_log_transport_dest_stat.h"
@@ -2602,15 +2601,6 @@ int ObVTIterCreator::create_vt_iter(ObVTableScanParam &params,
             if (OB_SUCC(NEW_VIRTUAL_TABLE(ObAllVirtualSqlStat, all_virtual_sqlstat))) {
               all_virtual_sqlstat->set_allocator(&allocator);
               vt_iter = static_cast<ObVirtualTableIterator *>(all_virtual_sqlstat);
-            }
-            break;
-          }
-          case OB_ALL_VIRTUAL_SS_LOCAL_CACHE_INFO_TID: {
-            ObAllVirtualSSLocalCacheInfo *local_cache_info = nullptr;
-            if (OB_FAIL(NEW_VIRTUAL_TABLE(ObAllVirtualSSLocalCacheInfo, local_cache_info))) {
-              SERVER_LOG(ERROR, "failed to init ObAllVirtualSSLocalCacheInfo", K(ret));
-            } else {
-              vt_iter = static_cast<ObVirtualTableIterator *>(local_cache_info);
             }
             break;
           }

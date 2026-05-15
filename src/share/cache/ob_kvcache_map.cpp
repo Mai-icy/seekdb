@@ -245,7 +245,6 @@ int ObKVCacheMap::put(
         } else {
           new_node = new (buf) Node();
           // set new node
-          new_node->tenant_id_ = inst.tenant_id_;
           new_node->inst_ = &inst;
           new_node->hash_code_ = hash_code;
           new_node->mb_handle_ = hazptr_holder.get_mb_handle();
@@ -253,6 +252,7 @@ int ObKVCacheMap::put(
           new_node->value_ = kvpair->value_;
           new_node->get_cnt_ = 1;
           new_node->seq_num_ = new_node->mb_handle_->get_seq_num_for_node();
+          new_node->kvpair_size_ = kvpair->size_;
 
           // update mb_handle_ and inst
           if (NULL == iter) {
@@ -263,6 +263,7 @@ int ObKVCacheMap::put(
           (void) ATOMIC_AAF(&new_node->mb_handle_->get_cnt_, 1);
           ++new_node->mb_handle_->recent_get_cnt_;
           inst.status_.total_put_cnt_.inc();
+          ATOMIC_AAF(&inst.status_.store_size_, kvpair->size_);
 
           // add new node to list
           new_node->next_ = bucket_ptr;
@@ -551,6 +552,9 @@ int ObKVCacheMap::erase_tenant(const uint64_t tenant_id, const bool force_erase)
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     COMMON_LOG(WARN, "The ObKVCacheMap has not been inited, ", K(ret));
+  } else if (OB_UNLIKELY(tenant_id != OB_SYS_TENANT_ID)) {
+    ret = OB_INVALID_ARGUMENT;
+    COMMON_LOG(WARN, "Invalid argument ", K(tenant_id), K(ret));
   } else {
     Node *iter = NULL;
     Node *prev = NULL;
@@ -569,20 +573,15 @@ int ObKVCacheMap::erase_tenant(const uint64_t tenant_id, const bool force_erase)
           prev = NULL;
           iter = bucket_ptr;
           while (NULL != iter) {
-            if (tenant_id == iter->inst_->tenant_id_) {
-              if (OB_FAIL(hazptr_holder.protect(protect_success, iter->mb_handle_, iter->seq_num_))) {
-                COMMON_LOG(WARN, "protect failed", KP(iter->mb_handle_));
-              } else if (protect_success) {
-                (void)ATOMIC_SAF(&iter->mb_handle_->kv_cnt_, 1);
-                (void) ATOMIC_SAF(&iter->get_cnt_, iter->get_cnt_);
-                hazptr_holder.release();
-              }
-              (void) ATOMIC_SAF(&iter->inst_->status_.kv_cnt_, 1);
-              internal_map_erase(hazard_guard, prev, iter, bucket_ptr);
-            } else {
-              prev = iter;
-              iter = iter->next_;
+            if (OB_FAIL(hazptr_holder.protect(protect_success, iter->mb_handle_, iter->seq_num_))) {
+              COMMON_LOG(WARN, "protect failed", KP(iter->mb_handle_));
+            } else if (protect_success) {
+              (void)ATOMIC_SAF(&iter->mb_handle_->kv_cnt_, 1);
+              (void) ATOMIC_SAF(&iter->get_cnt_, iter->get_cnt_);
+              hazptr_holder.release();
             }
+            (void) ATOMIC_SAF(&iter->inst_->status_.kv_cnt_, 1);
+            internal_map_erase(hazard_guard, prev, iter, bucket_ptr);
           }
         }
       }
@@ -604,9 +603,9 @@ int ObKVCacheMap::erase_tenant_cache(const uint64_t tenant_id, const int64_t cac
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     COMMON_LOG(WARN, "The ObKVCacheMap has not been inited, ", K(ret));
-  } else if (OB_UNLIKELY(cache_id < 0)) {
+  } else if (OB_UNLIKELY(cache_id < 0) || OB_UNLIKELY(tenant_id != OB_SYS_TENANT_ID)) {
     ret = OB_INVALID_ARGUMENT;
-    COMMON_LOG(WARN, "Invalid argument ", K(cache_id), K(ret));
+    COMMON_LOG(WARN, "Invalid argument ", K(cache_id), K(tenant_id), K(ret));
   } else {
     Node *iter = NULL;
     Node *prev = NULL;
@@ -625,7 +624,7 @@ int ObKVCacheMap::erase_tenant_cache(const uint64_t tenant_id, const int64_t cac
           iter = bucket_ptr;
           prev = NULL;
           while (NULL != iter && OB_SUCC(ret)) {
-            if (tenant_id == iter->inst_->tenant_id_ && cache_id == iter->inst_->cache_id_) {
+            if (cache_id == iter->inst_->cache_id_) {
               if (OB_FAIL(hazptr_holder.protect(protect_success, iter->mb_handle_, iter->seq_num_))) {
                 COMMON_LOG(WARN, "protect failed", KP(iter->mb_handle_));
               } else if (protect_success) {
@@ -828,6 +827,7 @@ void ObKVCacheMap::internal_map_erase(const ObKVCacheHazardGuard &guard,
 {
   // Remember to update kv_cnt of inst and mb_handle outside
   if (NULL != iter) {
+    ATOMIC_SAF(&iter->inst_->status_.store_size_, iter->kvpair_size_);
     Node *erase_node = iter;
     if (NULL == prev) {
       bucket_ptr = iter->next_;
@@ -880,7 +880,7 @@ int ObKVCacheMap::internal_data_move(const ObKVCacheHazardGuard &guard,
   if (NULL == (buf = old_iter->inst_->node_allocator_.alloc(sizeof(Node)))) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     COMMON_LOG(WARN, "Fail to allocate memory for Node, ", K(ret), "size:", sizeof(Node));
-  } else if (OB_FAIL(store_->store(*old_iter->inst_, *old_iter->key_, *old_iter->value_, new_kvpair, hazptr_holder, LFU))) {
+  } else if (OB_FAIL(store_->store(*old_iter->key_, *old_iter->value_, new_kvpair, hazptr_holder, LFU))) {
     old_iter->inst_->node_allocator_.free(buf);
     COMMON_LOG(WARN, "Fail to move kvpair ", K(ret));
   } else {
@@ -897,6 +897,7 @@ int ObKVCacheMap::internal_data_move(const ObKVCacheHazardGuard &guard,
     new_node->get_cnt_ = old_iter->get_cnt_;
     new_node->next_ = old_iter->next_;
     new_node->seq_num_ = new_node->mb_handle_->get_seq_num_for_node();
+    new_node->kvpair_size_ = new_kvpair->size_;
 
     // update inst and mb_handle
     (void) ATOMIC_SAF(&old_iter->mb_handle_->kv_cnt_, 1);

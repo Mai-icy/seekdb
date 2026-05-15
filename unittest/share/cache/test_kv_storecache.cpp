@@ -1095,13 +1095,12 @@ TEST_F(TestKVCache, compute_wash_size_when_min_wash_negative)
   CHUNK_MGR.total_hold_ = 10LL * 1024 * 1024 * 1024;
 
   // compute
-  ObKVGlobalCache::get_instance().store_.compute_tenant_wash_size();
+  int64_t global_wash_size = 0;
+  ObKVGlobalCache::get_instance().store_.compute_global_wash_size(global_wash_size);
 
-  // check tenant wash size
-  ObKVCacheStore::TenantWashInfo *tenant_wash_info = NULL;
-  ObKVGlobalCache::get_instance().store_.tenant_wash_map_.get(tenant_id_, tenant_wash_info);
-  COMMON_LOG(INFO, "xxx", "wash_size", tenant_wash_info->wash_size_);
-  ASSERT_TRUE(tenant_wash_info->wash_size_ >= 0);
+  // check global wash size
+  COMMON_LOG(INFO, "xxx", "wash_size", global_wash_size);
+  ASSERT_TRUE(global_wash_size >= 0);
 }
 
 TEST_F(TestKVCache, get_mb_list)

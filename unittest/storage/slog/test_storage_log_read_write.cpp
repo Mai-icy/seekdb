@@ -16,6 +16,8 @@
 
 #define USING_LOG_PREFIX STORAGE_REDO
 
+#include <thread>
+
 #include "storage/blocksstable/ob_data_file_prepare.h"
 #include "storage/slog/simple_ob_storage_log.h"
 

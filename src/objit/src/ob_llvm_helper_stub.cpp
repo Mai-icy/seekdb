@@ -15,10 +15,10 @@
  */
 
 /*
- * Stub implementations for ObLLVMHelper and related classes on Android.
- * LLVM JIT is not available on Android; all methods return OB_NOT_SUPPORTED.
+ * Stub implementations for ObLLVMHelper and related classes in embedded mode.
+ * LLVM JIT is not available in embedded builds; all methods return OB_NOT_SUPPORTED.
  */
-#ifdef __ANDROID__
+#ifdef OB_BUILD_EMBED_MODE
 
 #include "objit/ob_llvm_helper.h"
 #include "lib/ob_errno.h"
@@ -181,4 +181,4 @@ int ObLLVMHelper::get_compiled_stack_size(uint64_t &) { return OB_NOT_SUPPORTED;
 } // namespace jit
 } // namespace oceanbase
 
-#endif // __ANDROID__
+#endif // OB_BUILD_EMBED_MODE

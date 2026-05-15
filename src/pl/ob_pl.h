@@ -459,6 +459,11 @@ public:
   inline int add_out_arg(int64_t i) { return out_args_.add_member(i); }
   inline ObFuncPtr get_action() const { return action_; }
   inline void set_action(ObFuncPtr action) { action_ = action; }
+  inline const common::ObString &get_interface_name() const { return interface_name_; }
+  int set_interface_name(const ObString &interface_name)
+  {
+    return ob_write_string(get_allocator(), interface_name, interface_name_);
+  }
 
   inline bool is_debug_mode() const { return !get_debug_info().empty(); }
 
@@ -556,6 +561,7 @@ private:
   common::ObString package_name_;
   common::ObString database_name_;
   common::ObString priv_user_;
+  common::ObString interface_name_;
   bool has_parallel_affect_factor_;
 
   DISALLOW_COPY_AND_ASSIGN(ObPLFunction);
@@ -1240,6 +1246,7 @@ public:
   static int insert_error_msg(int errcode);
 
   static int simple_execute(ObPLExecCtx *ctx, int64_t argc, int64_t *argv);
+  static int interface_execute(ObPLExecCtx *ctx, int64_t argc, int64_t *argv);
   
   static int check_trigger_arg(ParamStore &params, const ObPLFunction &func, ObPLContext &pl_ctx, ObExecContext &ctx);
 
@@ -1295,6 +1302,39 @@ public:
   {
     //pop the pl stack from current execution stack
     exec_ctx_.set_pl_stack_ctx(parent_stack_);
+  }
+
+  // Restore exec_ctx.pl_stack_ctx_ to a pre-recorded snapshot. Idempotent:
+  // becomes a no-op when the value already matches.
+  //
+  // Why this exists (Windows /EHsc + SEH unwind): when the callee's PL JIT
+  // raises an SEH exception (RaiseException with OB_PL_SEH_EXCEPTION_CODE)
+  // and the caller's PL personality dispatches it to a CONTINUE HANDLER,
+  // the frames between throw and target are unwound by RtlUnwindEx. In
+  // /EHsc compile mode the cleanup unwind tables emitted by MSVC/clang-cl
+  // for functions that contain a `try { } catch (...) {}` block are only
+  // honoured for C++-throw-driven unwinds — they are silently SKIPPED for
+  // SEH-driven unwinds, so destructors of locals (notably this very
+  // LinkPLStackGuard's dtor inside ObPL::execute 12-arg) never fire. The
+  // result is exec_ctx.pl_stack_ctx_ left dangling at a callee-side
+  // ObPLContext on a frame that has already been wiped, and any later
+  // chase of pl_stack_ctx_->my_exec_ctx_ reads garbage from whatever
+  // object now occupies that slot.
+  //
+  // ObPL::execute_proc snapshots caller's pl_stack_ctx_ before the inner
+  // pl.execute() call and calls this method from a SEH __finally afterwards
+  // — __finally fires regardless of normal/throw/SEH-unwind exit paths, so
+  // pl_stack_ctx_ is always restored.
+  //
+  // Exposed as a static here (rather than a free function) because
+  // ObExecContext::set_pl_stack_ctx is private and grants friendship only
+  // to LinkPLStackGuard.
+  static void force_restore_pl_stack_ctx(sql::ObExecContext &exec_ctx,
+                                         ObPLContext *snapshot)
+  {
+    if (exec_ctx.get_pl_stack_ctx() != snapshot) {
+      exec_ctx.set_pl_stack_ctx(snapshot);
+    }
   }
 private:
   sql::ObExecContext &exec_ctx_;
