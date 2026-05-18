@@ -62,11 +62,7 @@ void __attribute__((used)) lib_mtl_switch(lib::IRunWrapper *run_wrapper, std::fu
 {
   int ret = OB_SUCCESS;
   MAKE_TENANT_SWITCH_SCOPE_GUARD(guard);
-  share::ObTenantBase *tenant_base = nullptr;
-  if (OB_ISNULL(tenant_base = dynamic_cast<share::ObTenantBase *>(run_wrapper))) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("invalid run wrapper type", K(ret), KP(run_wrapper));
-  } else if (OB_FAIL(guard.switch_to(tenant_base))) {
+  if (OB_FAIL(guard.switch_to(static_cast<share::ObTenantBase *>(run_wrapper)))) {
     LOG_WARN("failed to switch to tenant", K(ret), KP(run_wrapper));
   } else {
     fn();
