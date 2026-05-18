@@ -211,14 +211,9 @@ inline void ob_usleep(const useconds_t v)
 
 template <oceanbase::common::ObWaitEventIds::ObWaitEventIdEnum event_id =
               oceanbase::common::ObWaitEventIds::DEFAULT_SLEEP>
-inline void ob_usleep(const useconds_t v, const bool is_idle_sleep)
+inline void ob_usleep(const useconds_t v, const bool /*is_idle_sleep*/)
 {
-  if (is_idle_sleep) {
-    ObBKGDSessInActiveGuard inactive_guard;
-    ob_usleep(v);
-  } else {
-    ob_usleep(v);
-  }
+  ob_usleep(v);
 
 }
 
