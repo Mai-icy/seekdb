@@ -474,8 +474,7 @@ void ObCSFetcher::try_advance_min_dep_lsn_()
 
 void ObCSFetcher::try_advance_refresh_scn_()
 {
-  if (!REACH_TIME_INTERVAL(CS_FETCHER_REFRESH_SCN_ADVANCE_INTERVAL_US)
-      || OB_ISNULL(GCTX.sql_proxy_)) {
+  if (!REACH_TIME_INTERVAL(CS_FETCHER_REFRESH_SCN_ADVANCE_INTERVAL_US)) {
     return;
   }
   int ret = OB_SUCCESS;
@@ -485,10 +484,12 @@ void ObCSFetcher::try_advance_refresh_scn_()
     return;
   }
   if (refresh_scn.is_valid()) {
-    int64_t affected = 0;
-    if (OB_FAIL(ObGlobalStatProxy::advance_change_stream_refresh_scn(
-                    *GCTX.sql_proxy_, MTL_ID(), refresh_scn, affected))) {
-      LOG_WARN("CSFetcher: fail to advance_change_stream_refresh_scn", KR(ret), K(refresh_scn));
+    if (OB_ISNULL(dispatcher_)) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("CSFetcher: dispatcher_ is null", KR(ret), K(refresh_scn));
+    } else if (OB_FAIL(dispatcher_->update_refresh_scn(
+                   static_cast<int64_t>(refresh_scn.get_val_for_gts())))) {
+      LOG_WARN("CSFetcher: fail to update_refresh_scn (idle gts)", KR(ret), K(refresh_scn));
     } else if (REACH_TIME_INTERVAL(10 * 1000 * 1000)) {
       LOG_INFO("CSFetcher: refresh_scn advanced",
                "mode", running_mode_ == ACTIVE ? "ACTIVE" : "IDLE",

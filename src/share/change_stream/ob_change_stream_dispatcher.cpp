@@ -109,13 +109,15 @@ int ObCSDispatcher::init_refresh_scn_()
     ret = OB_SCHEMA_EAGAIN;
     LOG_WARN("schema is not formal", KR(ret));
   } else {
-    // Load current refresh_scn from database (row may already exist or was just inserted).
     SCN current_refresh_scn;
     if (OB_FAIL(ObGlobalStatProxy::get_change_stream_refresh_scn(
             *GCTX.sql_proxy_, MTL_ID(), false /* for_update */, current_refresh_scn))) {
-      LOG_WARN("CSDispatcher: failed to load change_stream_refresh_scn, use 0", KR(ret));
+      LOG_WARN("CSDispatcher: failed to load change_stream_refresh_scn", KR(ret));
     } else {
-      refresh_scn_ = current_refresh_scn.get_val_for_gts();
+      const int64_t loaded_refresh_scn = static_cast<int64_t>(current_refresh_scn.get_val_for_gts());
+      // Recovery baseline must follow persisted global_stat exactly.
+      // Unlike update_refresh_scn(), reload is allowed to move backward.
+      ATOMIC_STORE(&refresh_scn_, loaded_refresh_scn);
       LOG_INFO("CSDispatcher: initialized refresh_scn successfully", K(refresh_scn_));
     }
   }
@@ -139,6 +141,7 @@ void ObCSDispatcher::destroy()
     wait();
     tx_ring_.destroy();
     dispatch_cond_.destroy();
+    refresh_scn_ = 0;
     next_sn_ = 0;
     dispatch_sn_ = 0;
     next_commit_sn_ = 0;
@@ -147,6 +150,21 @@ void ObCSDispatcher::destroy()
     active_batch_count_ = 0;
     is_inited_ = false;
   }
+}
+
+int ObCSDispatcher::update_refresh_scn(const int64_t refresh_scn)
+{
+  int ret = OB_SUCCESS;
+  if (refresh_scn < 0) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("invalid refresh_scn", KR(ret), K(refresh_scn));
+  } else {
+    int64_t old_refresh_scn = ATOMIC_LOAD(&refresh_scn_);
+    while (old_refresh_scn < refresh_scn && !ATOMIC_BCAS(&refresh_scn_, old_refresh_scn, refresh_scn)) {
+      old_refresh_scn = ATOMIC_LOAD(&refresh_scn_);
+    }
+  }
+  return ret;
 }
 
 int ObCSDispatcher::push(ObCSTxInfo *tx)
@@ -448,9 +466,10 @@ int ObCSDispatcher::do_dispatch_()
           break;
         }
       }
-    } else if (tx->commit_version_ <= refresh_scn_) {
+    } else if (tx->commit_version_ <= get_refresh_scn()) {
       LOG_WARN("CSDispatcher: skip tx (commit_version <= refresh_scn)",
-               K(exec_ctx->batch_sn_), K(dispatch_sn_), K(tx->tx_id_), K(tx->commit_version_), K(refresh_scn_));
+               K(exec_ctx->batch_sn_), K(dispatch_sn_), K(tx->tx_id_),
+               K(tx->commit_version_), "refresh_scn", get_refresh_scn());
       if (ATOMIC_BCAS(&next_commit_sn_, dispatch_sn_, dispatch_sn_ + 1)) {
         bool popped = false;
         ObCSTxInfo *pop_tx = nullptr;
@@ -689,10 +708,6 @@ void ObCSDispatcher::release_batch(ObCSExecCtx *ctx)
   // Advance serial commit cursor so next batch can proceed.
   set_next_commit_sn(ctx->batch_sn_ + num_tx);
 
-  // Update in-memory refresh_scn.
-  if (ctx->refresh_scn_ > refresh_scn_) {
-    refresh_scn_ = ctx->refresh_scn_;
-  }
 }
 
 
