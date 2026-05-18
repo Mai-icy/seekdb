@@ -265,6 +265,7 @@ ob_set_subtarget(ob_share common
   ob_batch_selector.cpp
   ob_timezone_importer.cpp
   ob_srs_importer.cpp
+  ob_internal_table_change_notifier.cpp
 )
 
 # ob_local_device.cpp defines AIO emulation types/functions for Android/macOS that

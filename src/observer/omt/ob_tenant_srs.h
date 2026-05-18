@@ -97,29 +97,15 @@ private:
 class ObTenantSrs
 {
 public:
-  class TenantSrsUpdatePeriodicTask : public common::ObTimerTask
+  // Async retry task: scheduled by notifier callback or self-rescheduled on failure.
+  // Stops when refresh_sys_srs() succeeds.
+  class RetryTimerTask : public common::ObTimerTask
   {
   public:
-    TenantSrsUpdatePeriodicTask() : tenant_srs_(nullptr) {}
-    virtual ~TenantSrsUpdatePeriodicTask() {}
-    int init(ObTenantSrs *srs);
-    TenantSrsUpdatePeriodicTask(const TenantSrsUpdatePeriodicTask &) = delete;
-    TenantSrsUpdatePeriodicTask &operator=(const TenantSrsUpdatePeriodicTask &) = delete;
-    void runTimerTask(void) override;
-  private:
-    static const uint64_t SLEEP_USECONDS = 5000000;
-    static const uint64_t BOOTSTRAP_PERIOD = 1000000;
-    ObTenantSrs *tenant_srs_;
-  };
-
-  class TenantSrsUpdateTask : public common::ObTimerTask
-  {
-  public:
-    TenantSrsUpdateTask() : tenant_srs_(nullptr) {}
-    virtual ~TenantSrsUpdateTask() {}
-    TenantSrsUpdateTask(const TenantSrsUpdateTask &) = delete;
-    TenantSrsUpdateTask &operator=(const TenantSrsUpdateTask &) = delete;
-    void runTimerTask(void) override;
+    static const int64_t RETRY_INTERVAL = 1000000;
+    RetryTimerTask() : tenant_srs_(nullptr) {}
+    int init(ObTenantSrs *srs) { tenant_srs_ = srs; return OB_SUCCESS; }
+    void runTimerTask() override;
   private:
     ObTenantSrs *tenant_srs_;
   };
@@ -144,16 +130,16 @@ public:
   int get_tenant_srs_guard(ObSrsCacheGuard &srs_guard);
   int get_srs_bounds(uint64_t srid, const ObSrsItem *srs_item, const ObSrsBoundsItem *&bounds_item);
   int get_last_snapshot(ObSrsCacheGuard &srs_guard);
-  TenantSrsUpdatePeriodicTask &get_update_srs_task() { return  srs_update_periodic_task_; }
   int try_get_last_snapshot(ObSrsCacheGuard &srs_guard);
   void recycle_old_snapshots();
   void recycle_last_snapshots();
-  int cancle_update_task();
   static int mtl_init(ObTenantSrs* &tenant_srs);
   int start();
   void stop();
   void wait();
   void destroy();
+  int schedule_retry();
+  RetryTimerTask &get_retry_timer() { return retry_timer_; }
 
 private:
   typedef common::PageArena<ObSrsCacheSnapShot*, common::ModulePageAllocator> ObCGeoModuleArena;
@@ -187,8 +173,7 @@ private:
   uint64_t local_sys_srs_version_;
   // local user defined srs cache version
   uint64_t local_user_srs_version_;
-  TenantSrsUpdatePeriodicTask srs_update_periodic_task_;
-  TenantSrsUpdateTask srs_update_task_;
+  RetryTimerTask retry_timer_;
   common::ObSrsBoundsItem infinite_plane_;
   DISALLOW_COPY_AND_ASSIGN(ObTenantSrs);
 };

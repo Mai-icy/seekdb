@@ -20,6 +20,7 @@
 #include "observer/ob_sql_client_decorator.h"
 #include "src/share/ob_server_struct.h"
 #include "share/ob_srs_importer.h"
+#include "share/ob_internal_table_change_notifier.h"
 #include "lib/geo/ob_geo_utils.h"
 
 using namespace oceanbase::share;
@@ -42,34 +43,20 @@ int ObTenantSrs::mtl_init(ObTenantSrs* &tenant_srs)
 
 int ObTenantSrs::start()
 {
-  int ret = OB_SUCCESS;
-  if (!inited_) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("tenant srs isn't inited", K(ret));
-  } else if (OB_FAIL(TG_SCHEDULE(MTL(omt::ObSharedTimer*)->get_tg_id(), srs_update_periodic_task_, 0, false))) {
-    LOG_WARN("failed to schedule tenant srs update task", K(ret));
-  }
-  return ret;
+  return OB_SUCCESS;
 }
 
 void ObTenantSrs::stop()
 {
-  if (OB_LIKELY(inited_)) {
-    TG_CANCEL_TASK(MTL(omt::ObSharedTimer*)->get_tg_id(), srs_update_periodic_task_);
-  }
 }
 
 void ObTenantSrs::wait()
 {
-  if (OB_LIKELY(inited_)) {
-    TG_WAIT_TASK(MTL(omt::ObSharedTimer*)->get_tg_id(), srs_update_periodic_task_);
-  }
 }
 
 void ObTenantSrs::destroy()
 {
   if (OB_LIKELY(inited_)) {
-    cancle_update_task();
     recycle_old_snapshots();
     recycle_last_snapshots();
     allocator_.~ObFIFOAllocator();
@@ -91,15 +78,24 @@ int ObTenantSrs::init()
     page_allocator_.set_allocator(&allocator_);
     page_allocator_.set_attr(mem_attr);
     mode_arena_.init(DEFAULT_PAGE_SIZE, page_allocator_);
-    if (OB_FAIL(srs_update_periodic_task_.init(this))) {
-      LOG_WARN("failed to init srs update task", K(ret));
+    if (OB_FAIL(retry_timer_.init(this))) {
+      LOG_WARN("failed to init srs retry timer", K(ret));
     } else {
       inited_ = true;
-      infinite_plane_.minX_ = INT32_MIN;
-      infinite_plane_.minY_ = INT32_MIN;
-      infinite_plane_.maxX_ = INT32_MAX;
-      infinite_plane_.maxY_ = INT32_MAX;
     }
+  }
+  if (OB_SUCC(ret)) {
+    infinite_plane_.minX_ = INT32_MIN;
+    infinite_plane_.minY_ = INT32_MIN;
+    infinite_plane_.maxX_ = INT32_MAX;
+    infinite_plane_.maxY_ = INT32_MAX;
+    // Register with notifier for import/standby promotion triggers
+    share::ObInternalTableChangeNotifier::get_instance().register_module(
+        table::ObModuleDataArg::GIS,
+        [](uint64_t /*tenant_id*/) -> int {
+          LOG_INFO("[SRS_NOTIFIER] scheduling async refresh");
+          return OTSRS_MGR->schedule_retry();
+        });
   } 
   return ret;
 }
@@ -235,7 +231,7 @@ int ObTenantSrs::refresh_srs(bool is_sys)
   ObSrsCacheSnapShot *srs = NULL;
   const uint64_t tenant_id = MTL_ID();
   if (OB_FAIL(fetch_all_srs(srs, is_sys))) {
-    if (ret == OB_ERR_EMPTY_QUERY ) {
+    if (ret == OB_ERR_EMPTY_QUERY) {
       LOG_DEBUG("srs table is empty", K(is_sys));
     } else {
       LOG_WARN("failed to fetch ObSrsCacheSnapShot", K(ret), K(is_sys));
@@ -267,11 +263,30 @@ int ObTenantSrs::refresh_sys_srs()
   return refresh_srs(true);
 }
 
-
-int ObTenantSrs::TenantSrsUpdatePeriodicTask::init(ObTenantSrs *srs)
+int ObTenantSrs::schedule_retry()
 {
-  tenant_srs_ = srs;
-  return OB_SUCCESS;
+  int ret = OB_SUCCESS;
+  if (OB_FAIL(TG_SCHEDULE(MTL(omt::ObSharedTimer*)->get_tg_id(),
+                          retry_timer_, RetryTimerTask::RETRY_INTERVAL, false))) {
+    LOG_WARN("schedule srs retry timer failed", K(ret));
+  } else {
+    LOG_INFO("[SRS] retry timer scheduled");
+  }
+  return ret;
+}
+
+void ObTenantSrs::RetryTimerTask::runTimerTask()
+{
+  int ret = OB_SUCCESS;
+  if (OB_ISNULL(tenant_srs_)) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("tenant srs is null in retry timer");
+  } else if (OB_FAIL(tenant_srs_->refresh_sys_srs())) {
+    LOG_WARN("srs retry refresh failed, rescheduling", K(ret));
+    tenant_srs_->schedule_retry();
+  } else {
+    LOG_INFO("[SRS] retry timer succeeded");
+  }
 }
 
 
@@ -315,77 +330,6 @@ void ObTenantSrs::recycle_old_snapshots()
   }
 }
 
-void ObTenantSrs::TenantSrsUpdateTask::runTimerTask()
-{
-  int ret = OB_SUCCESS;
-  if (OB_ISNULL(tenant_srs_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("failed to do srs update task. tenant_srs is null", K(ret));
-  } else if (OB_FAIL(tenant_srs_->refresh_sys_srs())) {
-    if (ret != OB_ERR_EMPTY_QUERY) {
-      LOG_WARN("failed to refresh sys srs", K(ret), K(tenant_srs_->remote_sys_srs_version_),
-              K(tenant_srs_->local_sys_srs_version_));
-    }
-  }
-}
-
-void ObTenantSrs::TenantSrsUpdatePeriodicTask::runTimerTask()
-{
-  int ret = OB_SUCCESS;
-  ObMultiVersionSchemaService *schema_service = nullptr;
-  const uint64_t tenant_id = MTL_ID();
-  bool is_sys_overdue = false;
-  bool is_user_overdue = false;
-  uint32_t delay = SLEEP_USECONDS;
-
-
-  if ((tenant_id == OB_SYS_TENANT_ID && !GSCHEMASERVICE.is_sys_full_schema()) ||
-      (tenant_id != OB_SYS_TENANT_ID && !GSCHEMASERVICE.is_tenant_full_schema(tenant_id))) {
-    delay = BOOTSTRAP_PERIOD;
-  } else {
-    uint32_t old_snapshot_size = 0;
-    {
-      TCRLockGuard guard(tenant_srs_->lock_);
-      is_sys_overdue = tenant_srs_->local_sys_srs_version_ < tenant_srs_->remote_sys_srs_version_;
-      is_user_overdue = tenant_srs_->local_user_srs_version_ < tenant_srs_->remote_user_srs_version_;
-      old_snapshot_size = tenant_srs_->srs_old_snapshots_.size();
-    }
-
-    if ((is_sys_overdue || tenant_srs_->last_sys_snapshot_ == NULL)
-        && OB_FAIL(tenant_srs_->refresh_sys_srs())) {
-      if (ret != OB_ERR_EMPTY_QUERY) {
-        LOG_WARN("failed to refresh sys srs", K(ret), K(tenant_srs_->remote_sys_srs_version_),
-                 K(tenant_srs_->local_sys_srs_version_));
-      } else {
-        delay = BOOTSTRAP_PERIOD;
-      }
-    }
-    if (is_user_overdue) {
-      // to do:user srs refresh
-    } 
-    if (old_snapshot_size > 0) {
-      tenant_srs_->recycle_old_snapshots();
-    }
-  }
-  // timer task, ignore error code 
-  if (OB_FAIL(TG_SCHEDULE(MTL(omt::ObSharedTimer*)->get_tg_id(), *this, delay, false))) {
-    LOG_WARN("schedule srs update task failed", K(ret));
-  }
-}
-
-int ObTenantSrs::cancle_update_task()
-{
-  int ret = OB_SUCCESS;
-  bool is_exist = true;
-  if (OB_FAIL(TG_TASK_EXIST(MTL(omt::ObSharedTimer*)->get_tg_id(), srs_update_periodic_task_, is_exist))) {
-    LOG_WARN("failed to check tenant srs update task", K(ret));
-  } else if (is_exist) {
-    if (OB_FAIL(TG_CANCEL_R(MTL(omt::ObSharedTimer*)->get_tg_id(), srs_update_periodic_task_))) {
-      LOG_WARN("failed to cancel tenant srs update task", K(ret));
-    }
-  }
-  return ret;
-}
 
 int ObSrsCacheSnapShot::get_srs_item(uint64_t srid, const ObSrsItem *&srs_item)
 {

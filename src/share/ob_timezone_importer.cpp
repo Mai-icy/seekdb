@@ -121,17 +121,6 @@ int ObTimezoneImporter::import_timezone_info(const ObString &file_path)
       LOG_WARN("write failed", K(ret));
     }
   }
-  if (OB_SUCC(ret)) {
-    // 3. insert version into __all_sys_stat
-    ObSqlString sql;
-    if (OB_FAIL(sql.assign_fmt("replace into %s(data_type, name, value, info) "
-                  "values(5, 'current_timezone_version', 1, 'current time zone version')",
-                  OB_ALL_SYS_STAT_TNAME))) {
-      LOG_WARN("assign fmt failed", K(ret));
-    } else if (OB_FAIL(trans.write(tenant_id_, sql.ptr(), affected_rows))) {
-      LOG_WARN("write failed", K(ret));
-    }
-  }
   if (trans.is_started()) {
     int tmp_ret = OB_SUCCESS;
     if (OB_SUCCESS != (tmp_ret = trans.end(OB_SUCC(ret)))) {
