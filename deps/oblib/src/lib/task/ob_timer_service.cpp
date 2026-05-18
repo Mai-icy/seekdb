@@ -166,8 +166,14 @@ void ObTimerTaskThreadPool::set_ext_tname(const TaskToken *token)
     char *ext_tname = ob_get_extended_thread_name();
     const char *tname = ob_get_tname();
     if (nullptr != ext_tname && nullptr != tname) {
-      IGNORE_RETURN databuff_printf(ext_tname, OB_EXTENED_THREAD_NAME_BUF_LEN,
-          "%s_%s", tname, token->timer_name_);
+      size_t tname_len = STRLEN(tname);
+      size_t timer_name_len = STRLEN(token->timer_name_);
+      if (tname_len + 1 + timer_name_len < OB_EXTENED_THREAD_NAME_BUF_LEN) {
+        MEMCPY(ext_tname, tname, tname_len);
+        ext_tname[tname_len] = '_';
+        MEMCPY(ext_tname + tname_len + 1, token->timer_name_, timer_name_len);
+        ext_tname[tname_len + 1 + timer_name_len] = '\0';
+      }
     }
   }
 }
