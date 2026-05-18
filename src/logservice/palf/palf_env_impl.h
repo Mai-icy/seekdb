@@ -308,28 +308,6 @@ private:
   };
   int reload_palf_handle_impl_(const int64_t palf_id);
 
-  struct LogGetRecycableFileCandidate {
-    LogGetRecycableFileCandidate();
-    ~LogGetRecycableFileCandidate();
-    bool operator() (const LSKey &palf_id, IPalfHandleImpl *palf_handle_impl);
-    int64_t id_;
-    block_id_t min_block_id_;
-    block_id_t min_using_block_id_;
-    int ret_code_;
-    TO_STRING_KV(K_(id), K_(min_block_id), K_(min_using_block_id), K_(ret_code));
-  };
-  struct GetTotalUsedDiskSpace
-  {
-    GetTotalUsedDiskSpace();
-    ~GetTotalUsedDiskSpace();
-    bool operator() (const LSKey &palf_id, IPalfHandleImpl *palf_handle_impl);
-    TO_STRING_KV(K_(total_used_disk_space), K_(total_unrecyclable_disk_space), K_(ret_code));
-    int64_t total_used_disk_space_;
-    int64_t total_unrecyclable_disk_space_;
-    int64_t maximum_used_size_;
-    int64_t palf_id_;
-    int ret_code_;
-  };
   struct RemoveStaleIncompletePalfFunctor : public ObBaseDirFunctor {
     RemoveStaleIncompletePalfFunctor(PalfEnvImpl *palf_env_impl);
     ~RemoveStaleIncompletePalfFunctor();

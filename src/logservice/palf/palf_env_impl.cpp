@@ -20,6 +20,7 @@
 #include <direct.h>
 #endif
 #include "palf_handle.h"
+#include "share/ob_ls_id.h"                                     // ObLSID
 #include "share/ob_local_device.h"                            // ObLocalDevice
 #include "share/resource_manager/ob_resource_manager.h"       // ObResourceManager
 #include "share/io/ob_io_manager.h"                           // ObIOManager
@@ -624,68 +625,6 @@ int PalfEnvImpl::remove_directory(const char *log_dir)
   return ret;
 }
 
-PalfEnvImpl::LogGetRecycableFileCandidate::LogGetRecycableFileCandidate()
-  : id_(-1),
-    min_block_id_(LOG_INVALID_BLOCK_ID),
-    min_using_block_id_(LOG_INVALID_BLOCK_ID),
-    ret_code_(OB_SUCCESS)
-{}
-
-PalfEnvImpl::LogGetRecycableFileCandidate::~LogGetRecycableFileCandidate()
-{
-  ret_code_ = OB_SUCCESS;
-  min_using_block_id_ = LOG_INVALID_BLOCK_ID;
-  min_block_id_ = LOG_INVALID_BLOCK_ID;
-  id_ = -1;
-}
-
-bool PalfEnvImpl::LogGetRecycableFileCandidate::operator()(const LSKey &palf_id, IPalfHandleImpl *palf_handle_impl)
-{
-  bool bool_ret = true;
-  if (NULL == palf_handle_impl) {
-    PALF_LOG_RET(ERROR, OB_ERR_UNEXPECTED, "the value in hashmap is NULL, unexpected error", K(palf_id), KP(palf_handle_impl));
-    bool_ret = false;
-  } else {
-    int ret = OB_SUCCESS;
-    const LSN base_lsn = palf_handle_impl->get_base_lsn_used_for_block_gc();
-    const block_id_t min_using_block_id = lsn_2_block(base_lsn, PALF_BLOCK_SIZE);
-    block_id_t min_block_id = LOG_INVALID_BLOCK_ID;
-    // OB_ENTRY_NOT_EXIST means there is not any block;
-    // OB_NO_SUCH_FILE_OR_DIRECTORY means there is concurrently with rebuild.
-    // OB_ERR_OUT_OF_UPPER_BOUND means there is one block
-    auto need_skip_by_ret = [](const int ret ){
-      return OB_ENTRY_NOT_EXIST == ret  || OB_NO_SUCH_FILE_OR_DIRECTORY == ret
-          || OB_ERR_OUT_OF_UPPER_BOUND == ret;
-    };
-    if (false == base_lsn.is_valid()) {
-      PALF_LOG(WARN, "base_lsn is invalid", K(base_lsn), KPC(palf_handle_impl));
-    } else if (OB_FAIL(palf_handle_impl->get_min_block_id_for_gc(min_block_id))
-               && !need_skip_by_ret(ret)) {
-      ret_code_ = ret;
-      bool_ret = false;
-      PALF_LOG(WARN, "LogGetRecycableFileCandidate get_min_block_info_for_gc failed", K(ret), K(palf_id));
-      // recycable conditions:
-      // 1. current palf_handle_impl must have some block can be recycable;
-      // 2. current palf_handle_impl must have older blocks(at least two blocks).
-      // Always keep there are at least two blocks in range [begin_lsn, base_lsn], because for restart, we will read
-      // first uncommitted log before base_lsn.
-    } else if (need_skip_by_ret(ret)
-               || min_using_block_id < min_block_id
-               || min_using_block_id - min_block_id < 2) {
-      PALF_LOG(TRACE, "can not recycle blocks, need keep at least two blocks or has been concurrently"
-          " with rebuild, skip it",
-          K(ret), KPC(palf_handle_impl), K(min_block_id), K(min_using_block_id));
-    } else {
-      id_ = palf_id.id_;
-      min_block_id_ = min_block_id;
-      min_using_block_id_ = min_using_block_id;
-      PALF_LOG(TRACE, "can be recycable palf_handle_impl", K(id_), K(min_block_id_), K(min_using_block_id_),
-          K(base_lsn));
-    }
-  }
-  return bool_ret;
-}
-
 int PalfEnvImpl::try_recycle_blocks()
 {
   int ret = OB_SUCCESS;
@@ -805,41 +744,6 @@ int PalfEnvImpl::try_recycle_blocks()
 bool PalfEnvImpl::check_disk_space_enough()
 {
   return true == ATOMIC_LOAD(&diskspace_enough_);
-}
-
-PalfEnvImpl::GetTotalUsedDiskSpace::GetTotalUsedDiskSpace()
-  : total_used_disk_space_(0), total_unrecyclable_disk_space_(0), maximum_used_size_(0), palf_id_(INVALID_PALF_ID) {}
-PalfEnvImpl::GetTotalUsedDiskSpace::~GetTotalUsedDiskSpace() {}
-
-bool PalfEnvImpl::GetTotalUsedDiskSpace::operator() (const LSKey &ls_key, IPalfHandleImpl *palf_handle_impl)
-{
-  bool bool_ret = true;
-  if (NULL == palf_handle_impl) {
-    ret_code_ = OB_ERR_UNEXPECTED;
-    bool_ret = false;
-  } else {
-    constexpr int64_t MB = 1024 * 1024;
-    int ret = OB_SUCCESS;
-    int64_t used_size = 0;
-    int64_t unrecyclable_size = 0;
-    if (OB_FAIL(palf_handle_impl->get_total_used_disk_space(used_size, unrecyclable_size))) {
-      PALF_LOG(WARN, "failed to get_total_used_disk_space", K(ls_key));
-      ret_code_ = ret;
-      bool_ret = false;
-    } else {
-      if (used_size >= maximum_used_size_) {
-        maximum_used_size_ = used_size;
-        palf_id_ = ls_key.id_;
-      }
-      total_used_disk_space_ += used_size;
-      total_unrecyclable_disk_space_ += unrecyclable_size;
-      PALF_LOG(TRACE, "get_total_used_disk_space success", K(ls_key),
-             "total_used_disk_space(MB):", total_used_disk_space_/MB,
-             "total_unrecyclable_disk_space(MB):", total_unrecyclable_disk_space_/MB,
-             "end_lsn", palf_handle_impl->get_end_lsn());
-    }
-  }
-  return bool_ret;
 }
 
 PalfEnvImpl::RemoveStaleIncompletePalfFunctor::RemoveStaleIncompletePalfFunctor(PalfEnvImpl *palf_env_impl)
@@ -1106,15 +1010,15 @@ int PalfEnvImpl::get_total_used_disk_space_(int64_t &total_used_disk_space,
                                             int64_t &maximum_used_size)
 {
   int ret = OB_SUCCESS;
-  GetTotalUsedDiskSpace functor;
-  if (OB_FAIL(palf_handle_impl_map_.for_each(functor))) {
-    ret = functor.ret_code_;
-    PALF_LOG(WARN, "get_total_used_disk_space", K(ret), K(functor));
+  IPalfHandleImplGuard guard;
+  if (OB_FAIL(get_palf_handle_impl(ObLSID::SYS_LS_ID, guard))) {
+    PALF_LOG(WARN, "get_palf_handle_impl failed", K(ret));
+  } else if (OB_FAIL(guard.get_palf_handle_impl()->get_total_used_disk_space(
+                 total_used_disk_space, total_unrecyclable_disk_space))) {
+    PALF_LOG(WARN, "get_total_used_disk_space failed", K(ret));
   } else {
-    palf_id = functor.palf_id_;
-    maximum_used_size = functor.maximum_used_size_;
-    total_used_disk_space = functor.total_used_disk_space_;
-    total_unrecyclable_disk_space = functor.total_unrecyclable_disk_space_;
+    maximum_used_size = total_used_disk_space;
+    palf_id = ObLSID::SYS_LS_ID;
   }
   return ret;
 }
@@ -1147,26 +1051,32 @@ int PalfEnvImpl::recycle_blocks_(bool &has_recycled)
 {
   int ret = OB_SUCCESS;
   has_recycled = false;
-  // TODO by runlin:
-  //  1. only execute unlink blocks when the disk usage watemark reaches the threshold.
-  //  2. batch unlink in each round.
-  LogGetRecycableFileCandidate functor;
-  if (OB_FAIL(palf_handle_impl_map_.for_each(functor))) {
-    PALF_LOG(WARN, "palf_handle_impl_map_ for_each failed", K(ret), K(functor));
+  IPalfHandleImplGuard guard;
+  if (OB_FAIL(get_palf_handle_impl(ObLSID::SYS_LS_ID, guard))) {
+    PALF_LOG(WARN, "get_palf_handle_impl failed", K(ret));
   } else {
-    IPalfHandleImplGuard guard;
-    int64_t palf_id(functor.id_);
-    const block_id_t min_block_id = functor.min_block_id_;
-    if (false == is_valid_block_id(min_block_id)) {
-      PALF_LOG(TRACE, "there is not any block can be recycled, need verify the base"
-          "lsn of PalfHandleImpl whether has been advanced", K(ret), KPC(this));
-    } else if (OB_FAIL(get_palf_handle_impl(palf_id, guard))) {
-      PALF_LOG(WARN, "get_palf_handle_impl failed", K(ret), K(palf_id));
+    const LSN base_lsn = guard.get_palf_handle_impl()->get_base_lsn_used_for_block_gc();
+    const block_id_t min_using_block_id = lsn_2_block(base_lsn, PALF_BLOCK_SIZE);
+    block_id_t min_block_id = LOG_INVALID_BLOCK_ID;
+    auto need_skip_by_ret = [](const int ret) {
+      return OB_ENTRY_NOT_EXIST == ret || OB_NO_SUCH_FILE_OR_DIRECTORY == ret
+          || OB_ERR_OUT_OF_UPPER_BOUND == ret;
+    };
+    if (false == base_lsn.is_valid()) {
+      PALF_LOG(WARN, "base_lsn is invalid", K(base_lsn));
+    } else if (OB_FAIL(guard.get_palf_handle_impl()->get_min_block_id_for_gc(min_block_id))
+               && !need_skip_by_ret(ret)) {
+      PALF_LOG(WARN, "get_min_block_id_for_gc failed", K(ret));
+    } else if (need_skip_by_ret(ret)
+               || min_using_block_id < min_block_id
+               || min_using_block_id - min_block_id < 2) {
+      PALF_LOG(TRACE, "can not recycle blocks, need keep at least two blocks",
+               K(ret), K(min_block_id), K(min_using_block_id));
     } else if (OB_FAIL(guard.get_palf_handle_impl()->delete_block(min_block_id))) {
-      PALF_LOG(WARN, "delete block failed", K(ret), K(min_block_id), K(functor));
+      PALF_LOG(WARN, "delete_block failed", K(ret), K(min_block_id));
     } else {
       has_recycled = true;
-      PALF_LOG(INFO, "recycle_blocks success", K(functor));
+      PALF_LOG(INFO, "recycle_blocks success", K(min_block_id), K(min_using_block_id));
     }
   }
   return ret;
