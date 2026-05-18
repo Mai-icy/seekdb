@@ -16,15 +16,11 @@
 
 #define USING_LOG_PREFIX  SQL_ENG
 #include "ob_px_tenant_target_monitor.h"
-#include "share/ob_rpc_share.h"
-#include "logservice/ob_log_service.h"
 
 namespace oceanbase
 {
 using namespace oceanbase::common;
 using namespace oceanbase::share;
-using namespace oceanbase::transaction;
-using namespace oceanbase::share::schema;
 using namespace obutil;
 
 namespace sql
@@ -42,8 +38,6 @@ int ObPxTenantTargetMonitor::init(const uint64_t tenant_id, ObAddr &server)
              OB_UNLIKELY(!server.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(tenant_id), K(server));
-  } else if (OB_FAIL(init_obrpc_proxy(rpc_proxy_))) {
-    LOG_WARN("fail init rpc proxy", K(ret));
   } else if (!global_target_usage_.created() && OB_FAIL(global_target_usage_.create(PX_SERVER_TARGET_BUCKET_NUM, ObModIds::OB_SQL_PX))) {
     LOG_WARN("global target usage create failed", K(ret));
   } else if (OB_FAIL(global_target_usage_.set_refactored(server, ServerTargetUsage()))) {
@@ -52,7 +46,6 @@ int ObPxTenantTargetMonitor::init(const uint64_t tenant_id, ObAddr &server)
     tenant_id_ = tenant_id;
     server_ = server;
     role_ = FOLLOWER;
-    cluster_id_ = GCONF.cluster_id;
     parallel_servers_target_ = INT64_MAX;
     version_ = 0;
     is_init_ = true;
@@ -67,14 +60,11 @@ void ObPxTenantTargetMonitor::reset()
   tenant_id_ = OB_INVALID_TENANT_ID;
   server_.reset();
   role_ = FOLLOWER;
-  dummy_cache_leader_.reset();
-  rpc_proxy_.destroy();
   parallel_servers_target_ = INT64_MAX;
   global_target_usage_.clear();
   version_ = UINT64_MAX;
   parallel_session_count_ = 0;
   print_debug_log_ = false;
-  need_send_refresh_all_ = true;
 }
 
 void ObPxTenantTargetMonitor::set_parallel_servers_target(int64_t parallel_servers_target)
@@ -95,39 +85,12 @@ int64_t ObPxTenantTargetMonitor::get_parallel_session_count()
 int ObPxTenantTargetMonitor::refresh_statistics(bool need_refresh_all)
 {
   int ret = OB_SUCCESS;
-  ObAddr leader;
-  if (OB_FAIL(get_dummy_leader(leader))) {
-    LOG_WARN("get dummy leader fail", K(ret));
-  } else if (server_ != leader) {
-    LOG_TRACE("follower refresh statistics", K(tenant_id_), K(server_), K(leader),
-              K(dummy_cache_leader_), K(role_), K(version_));
-    // In a single-machine scenario, do not go through global queuing
-    if (role_ == LEADER) {
-      LOG_INFO("leader switch to follower", K(tenant_id_), K(server_), K(leader), K(version_));
-      role_ = FOLLOWER;
-      // from leader to follower, refresh all the statistics
-      if (OB_FAIL(reset_follower_statistics(-1))) {
-        LOG_WARN("reset statistics failed", K(ret));
-      }
+  if (role_ == FOLLOWER || need_refresh_all) {
+    role_ = LEADER;
+    if (OB_FAIL(reset_leader_statistics())) {
+      LOG_WARN("reset statistics failed", K(ret));
     }
-    if (OB_FAIL(ret)) {
-    } else if (OB_FAIL(query_statistics(leader))) {
-      LOG_WARN("query statistics failed", K(ret));
-    }
-  } else {
-    // Only leader can enter, can be leaderless, but cannot have multiple leaders
-    LOG_TRACE("leader refresh statistics", K(tenant_id_), K(server_), K(leader),
-              K(dummy_cache_leader_), K(role_), K(need_refresh_all), K(version_));
-    // Only newly appointed leader need to reset the statistics, do nothing if the old leader become
-    // new leader again.
-    if (role_ == FOLLOWER || need_refresh_all) {
-      role_ = LEADER;
-      // from follower to leader or observer is not longer alive, refresh all the statistics
-      if (OB_FAIL(reset_leader_statistics())) {
-        LOG_WARN("reset statistics failed", K(ret));
-      }
-      LOG_INFO("refresh global_target_usage_", K(tenant_id_), K(version_), K(server_), K(need_refresh_all));
-    }
+    LOG_INFO("refresh global_target_usage_", K(tenant_id_), K(version_), K(server_), K(need_refresh_all));
   }
   if (!print_debug_log_ && OB_SUCCESS != OB_E(EventTable::EN_PX_PRINT_TARGET_MONITOR_LOG) OB_SUCCESS) {
     print_debug_log_ = true;
@@ -135,153 +98,6 @@ int ObPxTenantTargetMonitor::refresh_statistics(bool need_refresh_all)
   return ret;
 }
 
-int ObPxTenantTargetMonitor::get_dummy_leader(ObAddr &leader)
-{
-  int ret = OB_SUCCESS;
-  bool need_refresh = true;
-  if (dummy_cache_leader_.is_valid()) {
-    leader = dummy_cache_leader_;
-  } else {
-    MTL_SWITCH(tenant_id_) {
-      transaction::ObILocationAdapter *location_adapter = NULL;
-      if (OB_ISNULL(location_adapter = MTL(ObTransService*)->get_location_adapter())) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("location adapter is null", K(ret), K(tenant_id_));
-      } else if (OB_FAIL(location_adapter->nonblock_get_leader(cluster_id_, tenant_id_,
-                                                                SYS_LS, leader))) {
-        LOG_WARN("nonblock get strong leader failed", K(ret), K(leader));
-      } else {
-        dummy_cache_leader_ = leader;
-      }
-    } else {
-      LOG_WARN("switch to tenant failed", K(tenant_id_));
-    }
-  }
-
-  if (OB_SUCC(ret)) {
-    if (OB_FAIL(check_dummy_location_credible(need_refresh))) {
-      LOG_WARN("check dummy location failed", K(ret));
-    }
-  }
-
-  if (need_refresh) {
-    refresh_dummy_location();
-    LOG_WARN("refresh dummy location cache", K(ret), K(tenant_id_));
-  }
-  return ret;
-}
-
-int ObPxTenantTargetMonitor::check_dummy_location_credible(bool &need_refresh)
-{
-  int ret = OB_SUCCESS;
-  ObRole role = FOLLOWER;
-  need_refresh = true;
-  if (OB_FAIL(get_role(role))) {
-    LOG_WARN("get role failed", K(ret));
-  } else if ((server_ == dummy_cache_leader_ && role == LEADER) ||
-             (server_ != dummy_cache_leader_ && role != LEADER)) {
-    need_refresh = false;
-  } else {
-    LOG_INFO("dummy location not credible, need refresh", K(tenant_id_), K(server_),
-             K(dummy_cache_leader_), K(role));
-  }
-  return ret;
-}
-
-int ObPxTenantTargetMonitor::get_role(ObRole &role)
-{
-  int ret = OB_SUCCESS;
-  role = FOLLOWER;
-  const uint64_t tenant_id = tenant_id_;
-  MTL_SWITCH(tenant_id) {
-    bool palf_exist = false;
-    int64_t leader_epoch = 0;  // unused
-    logservice::ObLogService *log_service = nullptr;
-    palf::PalfHandleGuard palf_handle_guard;
-    if (OB_ISNULL(log_service = MTL(logservice::ObLogService*))) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("MTL ObLogService is null", KR(ret), K(tenant_id));
-    } else if (OB_FAIL(log_service->check_palf_exist(SYS_LS, palf_exist))) {
-      LOG_WARN("fail to check palf exist", KR(ret), K(tenant_id), K(SYS_LS));
-    } else if (!palf_exist) {
-      // bypass
-    } else if (OB_FAIL(log_service->open_palf(SYS_LS, palf_handle_guard))) {
-      LOG_WARN("open palf failed", KR(ret), K(tenant_id), K(SYS_LS));
-    } else if (OB_FAIL(palf_handle_guard.get_role(role, leader_epoch))) {
-      LOG_WARN("get role failed", KR(ret), K(tenant_id));
-    }
-  }
-  return ret;
-}
-
-int ObPxTenantTargetMonitor::refresh_dummy_location()
-{
-  int ret = OB_SUCCESS;
-  return ret;
-}
-
-int ObPxTenantTargetMonitor::query_statistics(ObAddr &leader)
-{
-  int ret = OB_SUCCESS;
-  // send once in 100ms, 1s timeout should be more appropriate than default
-  static const int64_t OB_TARGET_MONITOR_RPC_TIMEOUT = 1000 * 1000; // 1s
-  ObPxRpcFetchStatArgs args(tenant_id_, version_, need_send_refresh_all_);
-  SMART_VAR(ObPxRpcFetchStatResponse, result) {
-    need_send_refresh_all_ = false;
-    if (!args.need_refresh_all()) {
-      for (hash::ObHashMap<ObAddr, ServerTargetUsage>::iterator it = global_target_usage_.begin();
-          OB_SUCC(ret) && it != global_target_usage_.end(); ++it) {
-        auto report_local_used = [&](hash::HashMapPair<ObAddr, ServerTargetUsage> &entry) -> int {
-          int ret = OB_SUCCESS;
-          // Compared to the last report, this machine has consumed a few more resources of entry machines, report this number to the leader, the leader will add this value to the global statistics.
-          // Why report "increment" instead? Because the resources of the entry machine are used by multiple machines, no one can get the full data
-          int64_t local_used = entry.second.get_local_used();
-          if (local_used == entry.second.get_report_used()) {
-            // do nothing
-          } else if (OB_FAIL(args.push_local_target_usage(entry.first, local_used - entry.second.get_report_used()))) {
-            LOG_WARN("push server and target_usage failed", K(ret));
-          } else {
-            entry.second.set_report_used(local_used);
-          }
-          return ret;
-        };
-
-        if (OB_FAIL(global_target_usage_.atomic_refactored(it->first, report_local_used))) {
-          LOG_WARN("atomic refactored, report_local_used failed", K(ret));
-        }
-      }
-    }
-    if (OB_FAIL(ret)) {
-    } else if (OB_FAIL(rpc_proxy_
-                .to(leader)
-                .by(tenant_id_)
-                .timeout(OB_TARGET_MONITOR_RPC_TIMEOUT)
-                .fetch_statistics(args, result))) {
-      // whether leader receive the rpc is unknown
-      need_send_refresh_all_ = true;
-      LOG_WARN("send rpc to query statistics failed, need send refresh all", K(ret));
-    } else if (result.get_status() == MONITOR_READY) {
-      for (int i = 0; OB_SUCC(ret) && i < result.addr_target_array_.count(); i++) {
-        ObAddr &server = result.addr_target_array_.at(i).addr_;
-        int64_t peer_used_full = result.addr_target_array_.at(i).target_;
-        if (OB_FAIL(update_peer_target_used(server, peer_used_full, UINT64_MAX))) {
-          LOG_WARN("set thread count failed", K(ret), K(server), K(peer_used_full));
-        }
-      }
-    } else if (result.get_status() == MONITOR_NOT_MASTER) {
-      refresh_dummy_location();
-      need_send_refresh_all_ = true;
-      LOG_INFO("report to not master, need send refresh all", K(tenant_id_), K(leader), K(version_));
-    } else if (result.get_status() == MONITOR_VERSION_NOT_MATCH) {
-      uint64_t leader_version = result.get_version();
-      LOG_INFO("monitor version not match", K(tenant_id_), K(leader_version), K(version_));
-      if (OB_FAIL(reset_follower_statistics(leader_version))) {
-        LOG_WARN("reset statistics failed", K(ret));
-      }
-    }
-  }
-  return ret;
-}
 
 bool ObPxTenantTargetMonitor::is_leader()
 {
@@ -336,20 +152,6 @@ int ObPxTenantTargetMonitor::get_global_target_usage(const hash::ObHashMap<ObAdd
 {
   int ret = OB_SUCCESS;
   global_target_usage = &global_target_usage_;
-  return ret;
-}
-
-int ObPxTenantTargetMonitor::reset_follower_statistics(uint64_t version)
-{
-  int ret = OB_SUCCESS;
-  SpinWLockGuard wlock_guard(spin_lock_);
-  global_target_usage_.clear();
-  if (OB_FAIL(global_target_usage_.set_refactored(server_, ServerTargetUsage()))) {
-    LOG_WARN("set refactored failed", K(ret));
-  } else {
-    version_ = version;
-  }
-  LOG_INFO("reset follower statistics", K(tenant_id_), K(ret), K(version));
   return ret;
 }
 

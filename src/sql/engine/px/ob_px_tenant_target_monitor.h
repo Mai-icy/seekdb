@@ -20,9 +20,6 @@
 #include "lib/net/ob_addr.h"
 #include "share/ob_define.h"
 #include "share/inner_table/ob_inner_table_schema_constants.h"
-#include "storage/tx/ob_location_adapter.h"
-#include "storage/tx/ob_ts_mgr.h"
-#include "sql/engine/px/ob_px_rpc_proxy.h"
 #include "lib/lock/ob_monitor.h"
 #include "lib/lock/mutex.h"
 
@@ -31,7 +28,6 @@ namespace oceanbase
 {
 namespace sql
 {
-class ObILocationAdapter;
 
 enum PX_TARGET_MONITOR_STATUS {
   MONITOR_READY = 0,
@@ -131,11 +127,6 @@ public:
   uint64_t get_version();
   int update_peer_target_used(const ObAddr &server, int64_t peer_used, uint64_t version);
   int get_global_target_usage(const hash::ObHashMap<ObAddr, ServerTargetUsage> *&global_target_usage);
-  // if role is follower and find that its version is different with leader's
-  // call this function to reset statistics, the param version is from the leader.
-  int reset_follower_statistics(uint64_t version);
-  // if role is leader and wants to start a new round of statistics, call this function.
-  // A new version is generated in this function and will be sync to all followers later.
   int reset_leader_statistics();
 
   // for px_admission
@@ -148,14 +139,9 @@ public:
   int get_all_target_info(common::ObIArray<ObPxTargetInfo> &target_info_array);
   static uint64_t get_server_index(uint64_t version);
 
-  TO_STRING_KV(K_(is_init), K_(tenant_id), K_(server), K_(dummy_cache_leader), K_(role));
+  TO_STRING_KV(K_(is_init), K_(tenant_id), K_(server), K_(role));
 
 private:
-  int get_dummy_leader(ObAddr &leader);
-  int check_dummy_location_credible(bool &need_refresh);
-  int get_role(ObRole &role);
-  int refresh_dummy_location();
-  int query_statistics(ObAddr &leader);
   uint64_t get_new_version();
 
 private:
@@ -163,30 +149,14 @@ private:
   bool is_init_;
   uint64_t tenant_id_;
   ObAddr server_;
-  // inner sql without pl no_use_px, so here can depend on all_dummy
-  int64_t cluster_id_;
-  common::ObAddr dummy_cache_leader_;
   ObRole role_;
-  obrpc::ObPxRpcProxy rpc_proxy_;
-  int64_t parallel_servers_target_; // equal in every server
-  uint64_t version_; // for refresh target_info
-  hash::ObHashMap<ObAddr, ServerTargetUsage> global_target_usage_; // include self
-  // a lock to handle the concurrent access and modification of version_ and usage map.
-  // use write lock before reset map and refresh the version
-  // use read lock before other operations of version_ and usage map.
-  // That means, there may be multiple threads modify the map concurrently,
-  // including insert/update operations, without delete.
-  // The basic principle is that:
-  // 1. When we update the map and find that the key does not exist, we try to insert an entry first,
-  //    if insert failed with OB_HASH_EXIST, that means someone else insert already, we should try update again.
-  //    This update operation will always succeed because we have created read lock and this entry cannot be removed.
-  // 2. When we insert into the map and failed with OB_HASH_EXIST, skip insert if the usage is empty,
-  //    otherwise do a update operation.
+  int64_t parallel_servers_target_;
+  uint64_t version_;
+  hash::ObHashMap<ObAddr, ServerTargetUsage> global_target_usage_;
   SpinRWLock spin_lock_;
   int64_t parallel_session_count_;
   ObPxTargetCond target_cond_;
   bool print_debug_log_;
-  bool need_send_refresh_all_;
 };
 
 }
