@@ -359,16 +359,12 @@ ObTenant::ObTenant(const int64_t id,
       workers_lock_(common::ObLatchIds::TENANT_WORKER_LOCK),
       cgroup_ctrl_(cgroup_ctrl),
       disable_user_sched_(false),
-      token_usage_(.0),
-      token_usage_check_ts_(0),
       token_change_ts_(0),
       completion_cnt_(0),
       ctx_(nullptr),
       st_metrics_(),
-      sql_limiter_(),
-      worker_us_(0)
+      sql_limiter_()
 {
-  token_usage_check_ts_ = ObTimeUtility::current_time();
 }
 
 ObTenant::~ObTenant() {}
@@ -958,7 +954,6 @@ int ObTenant::timeup()
     // it may fail during drop tenant, try next time.
     if (!has_stopped()) {
       check_worker_count();
-      update_token_usage();
       // Rescue expansion: if request completion stalls for 3s while
       // queue is non-empty and workers are at min_worker_cnt, workers
       // may be deadlocked — expand up to max_worker_cnt.
@@ -972,7 +967,6 @@ int ObTenant::timeup()
         last_completion_cnt = completion_cnt;
       }
       handle_retry_req();
-      update_queue_size();
     }
     IGNORE_RETURN unlock();
   }
@@ -1116,11 +1110,6 @@ void ObTenant::handle_retry_req(bool need_clear)
   }
 }
 
-void ObTenant::update_queue_size()
-{
-  req_queue_.set_limit(common::ObServerConfig::get_instance().tenant_task_queue_size);
-}
-
 void ObTenant::check_worker_count()
 {
   int ret = OB_SUCCESS;
@@ -1169,26 +1158,6 @@ bool ObTenant::do_add_worker()
              "max_worker_cnt", max_worker_cnt());
   }
   return OB_SUCCESS == ret && succ_num == 1;
-}
-
-// thread unsafe
-void ObTenant::update_token_usage()
-{
-  int ret = OB_SUCCESS;
-  const auto now = ObTimeUtility::current_time();
-  const auto duration = static_cast<double>(now - token_usage_check_ts_);
-  if (duration >= 1000 * 1000 && OB_SUCC(workers_lock_.trylock())) {  // every second
-    int64_t idle_us = 0;
-    token_usage_check_ts_ = now;
-    DLIST_FOREACH_REMOVESAFE(wnode, workers_) {
-      const auto w = static_cast<ObThWorker*>(wnode->get_data());
-      idle_us += ATOMIC_SET(&w->idle_us_, 0);
-    }
-    workers_lock_.unlock();
-    const auto total_us = duration * worker_count();
-    token_usage_ = std::max(.0, 1.0 * (total_us - idle_us) / total_us);
-    IGNORE_RETURN ATOMIC_FAA(&worker_us_, total_us - idle_us);
-  }
 }
 
 int64_t ObTenant::get_cpu_time() const
