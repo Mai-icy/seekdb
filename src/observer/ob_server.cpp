@@ -39,7 +39,6 @@
 #endif
 #include "share/allocator/ob_tenant_mutil_allocator_mgr.h"
 #include "share/object_storage/ob_device_connectivity.h"
-#include "share/ob_bg_thread_monitor.h"
 #include "share/resource_manager/ob_resource_manager.h"
 #include "share/sequence/ob_sequence_cache.h"
 #include "sql/engine/px/p2p_datahub/ob_p2p_dh_mgr.h"
@@ -484,8 +483,6 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
       LOG_ERROR("init table service failed", KR(ret));
     } else if (OB_FAIL(ObTimerMonitor::get_instance().init())) {
       LOG_ERROR("init timer monitor failed", KR(ret));
-    } else if (OB_FAIL(ObBGThreadMonitor::get_instance().init())) {
-      LOG_ERROR("init bg thread monitor failed", KR(ret));
     } else if (OB_FAIL(PX_P2P_DH.init())) {
       LOG_ERROR("init px p2p datahub failed", KR(ret));
     } else if (OB_FAIL(G_RES_MGR.init())) {
@@ -599,10 +596,6 @@ void ObServer::destroy()
     FLOG_INFO("begin to destroy timer monitor");
     ObTimerMonitor::get_instance().destroy();
     FLOG_INFO("timer monitor destroyed");
-
-    FLOG_INFO("begin to destroy background thread monitor");
-    ObBGThreadMonitor::get_instance().destroy();
-    FLOG_INFO("background thread monitor destroyed");
 
     FLOG_INFO("begin to destroy unix domain listener");
     unix_domain_listener_.destroy();
@@ -974,11 +967,6 @@ int ObServer::start(bool embed_mode)
       FLOG_INFO("success to start timer monitor");
     }
 
-    if (FAILEDx(ObBGThreadMonitor::get_instance().start())) {
-      LOG_ERROR("fail to start bg thread monitor", KR(ret));
-    } else {
-      FLOG_INFO("success to start bg thread monitor");
-    }
 #ifdef ENABLE_IMC
     if (FAILEDx(imc_tasks_.start())) {
       LOG_ERROR("fail to start imc tasks", KR(ret));
@@ -1356,10 +1344,6 @@ int ObServer::stop()
     ObTimerMonitor::get_instance().stop();
     FLOG_INFO("timer monitor stopped");
 
-    FLOG_INFO("begin to stop bgthread monitor");
-    ObBGThreadMonitor::get_instance().stop();
-    FLOG_INFO("bgthread monitor stopped");
-
     FLOG_INFO("begin to stop timer");
     TG_STOP(lib::TGDefIDs::ServerGTimer);
     FLOG_INFO("timer stopped");
@@ -1553,6 +1537,7 @@ int ObServer::wait()
     SLEEP(3);
   }
   _Exit(0);
+  return ret;
 }
 
 int ObServer::init_tz_info_mgr()
