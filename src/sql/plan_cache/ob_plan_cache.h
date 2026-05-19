@@ -216,8 +216,6 @@ public:
   void runTimerTask(void);
 private:
   void run_plan_cache_task();
-  //void run_ps_cache_task();
-  void run_free_cache_obj_task();
 public:
   ObPlanCache* plan_cache_;
   int64_t run_task_counter_;
@@ -384,7 +382,6 @@ public:
                                           ObFastParserResult &fp_result);
   static int construct_multi_stmt_fast_parser_result(common::ObIAllocator &allocator,
                                                      ObPlanCacheCtx &pc_ctx);
-  int dump_all_objs() const;
   int dump_deleted_objs_by_ns(ObIArray<AllocCacheObjInfo> &deleted_objs,
                               const int64_t safe_timestamp,
                               const ObLibCacheNameSpace ns);
@@ -458,8 +455,6 @@ private:
   int check_after_get_plan(int tmp_ret, ObILibCacheCtx &ctx, ObILibCacheObject *cache_obj);
   int get_normalized_pattern_digest(const ObPlanCacheCtx &pc_ctx, uint64_t &pattern_digest);
 private:
-  enum PlanCacheGCStrategy { INVALID = -1, OFF = 0, REPORT = 1, AUTO = 2};
-  static int get_plan_cache_gc_strategy();
 private:
   const static int64_t SLICE_SIZE = 1024; //1k
 private:
