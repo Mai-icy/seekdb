@@ -74,7 +74,7 @@ struct ObDiskUsageReportKey
 
 typedef hash::HashMapPair<ObDiskUsageReportKey, std::pair<int64_t, int64_t>> ObDiskUsageReportMap;// pair(occupy_size, required_size)
 
-class ObDiskUsageReportTask : public common::ObTimerTask, public observer::ObIDiskReport
+class ObDiskUsageReportTask : public observer::ObIDiskReport
 {
 public:
   ObDiskUsageReportTask();
@@ -84,43 +84,11 @@ public:
   virtual int delete_tenant_usage_stat(const uint64_t tenant_id) override;
 
   // get data disk used size of specified tenant_id in current observer
-  int get_data_disk_used_size(const uint64_t tenant_id, int64_t &used_size) const;
+  int get_data_disk_used_size(const uint64_t tenant_id, int64_t &used_size);
 
 private:
-  class ObReportResultGetter final
-  {
-  public:
-    explicit ObReportResultGetter(ObArray<ObDiskUsageReportMap> &result_arr)
-      : result_arr_(result_arr)
-    {}
-    ~ObReportResultGetter() = default;
-    int operator()(const ObDiskUsageReportMap &pair)
-    {
-      int ret = OB_SUCCESS;
-      if (OB_FAIL(result_arr_.push_back(pair))) {
-        STORAGE_LOG(WARN, "failed to push back pair", K(ret));
-      }
-      return ret;
-    }
-  private:
-    ObArray<ObDiskUsageReportMap> &result_arr_;
-    DISALLOW_COPY_AND_ASSIGN(ObReportResultGetter);
-  };
-
-private:
-  int report_tenant_disk_usage(const char *svr_ip, const int32_t svr_port, const int64_t seq_num);
-  int refresh_tenant_disk_usage();
-
-  int count_tenant();
-  int count_tenant_slog(const uint64_t tenant_id);
-  int count_tenant_clog(const uint64_t tenant_id);
   int count_tenant_data(const uint64_t tenant_id);
-  int count_server_slog();
-  int count_server_clog();
-  int count_server_meta();
-  int count_tenant_tmp();
 
-  virtual void runTimerTask();
   typedef common::hash::ObHashMap<ObDiskUsageReportKey, std::pair<int64_t, int64_t>> ReportResultMap; // pair(occupy_size, required_size)
 private:
   bool is_inited_;
