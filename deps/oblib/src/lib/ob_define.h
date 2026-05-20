@@ -2783,10 +2783,9 @@ OB_INLINE int64_t ob_gettid()
   return tid;
 }
 
-OB_INLINE uint64_t& ob_get_tenant_id()
+OB_INLINE uint64_t ob_get_tenant_id()
 {
-  thread_local uint64_t tenant_id = 0;
-  return tenant_id;
+  return oceanbase::OB_SYS_TENANT_ID;
 }
 
 OB_INLINE char* ob_get_tname()

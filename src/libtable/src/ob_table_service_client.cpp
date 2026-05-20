@@ -540,11 +540,8 @@ int ObTableServiceClientImpl::init_tenant_env(const uint64_t &tenant_id)
   if (OB_INVALID_TENANT_ID == tenant_id) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid tenant id", K(ret));
-  } else {
-    ObTenantBase ctx(tenant_id);
-    *ObTenantEnv::get_tenant_local() = ctx;
-    ob_get_tenant_id() = ctx.id();
   }
+  // For single tenant: global context is already initialized, nothing to copy.
   return ret;
 }
 

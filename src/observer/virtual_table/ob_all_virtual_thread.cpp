@@ -111,7 +111,7 @@ int ObAllVirtualThread::inner_get_next_row(common::ObNewRow *&row)
             continue;
           }
         }
-        GET_OTHER_TSI_ADDR(tenant_id, &ob_get_tenant_id());
+        uint64_t tenant_id = oceanbase::OB_SYS_TENANT_ID;
         if (!is_sys_tenant(effective_tenant_id_)
             && tenant_id != effective_tenant_id_) {
           continue;

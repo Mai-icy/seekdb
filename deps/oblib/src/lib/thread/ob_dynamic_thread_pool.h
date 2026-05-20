@@ -146,15 +146,8 @@ private:
 class ObResetThreadTenantIdGuard {
 public:
   DISABLE_COPY_ASSIGN(ObResetThreadTenantIdGuard);
-  ObResetThreadTenantIdGuard() {
-    tenant_id_ = ob_get_tenant_id();
-    ob_get_tenant_id() = 0;
-  }
-  ~ObResetThreadTenantIdGuard() {
-    ob_get_tenant_id() = tenant_id_;
-  }
-private:
-  int64_t tenant_id_;
+  ObResetThreadTenantIdGuard() = default;
+  ~ObResetThreadTenantIdGuard() = default;
 };
 }
 }

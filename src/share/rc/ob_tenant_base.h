@@ -383,7 +383,7 @@ using ObTableScanIteratorObjPool = common::ObServerObjectPool<oceanbase::storage
       share::ObChangeStreamMgr*                        \
   )
 // Get tenant ID
-#define MTL_ID() share::ObTenantEnv::get_tenant_local()->id()
+#define MTL_ID() (oceanbase::OB_SYS_TENANT_ID)
 // Get tenant epoch id
 #define MTL_EPOCH_ID() share::ObTenantEnv::get_tenant_local()->get_epoch()
 // tenant switchover epoch
@@ -713,27 +713,23 @@ private:
 using ReleaseCbFunc = std::function<int ()>;
 extern int get_tenant_base_with_lock(uint64_t tenant_id, ObTenantBase *&ctx, ReleaseCbFunc &release_cb);
 
+// g_tenant_ctx is a dummy to avoid nullptr deref before create_tenant_module().
+// Once g_tenant_ptr = this (after create_mtl_module), all MTL reads go directly
+// to the real ObTenant — no copies, no dual objects.
+inline ObTenantBase g_tenant_ctx(OB_INVALID_TENANT_ID, 0);
+inline ObTenantBase *g_tenant_ptr = &g_tenant_ctx;
+
 class ObTenantEnv
 {
 public:
   static void set_tenant(ObTenantBase *ctx);
-  static inline ObTenantBase *&get_tenant()
+  static inline ObTenantBase *get_tenant()
   {
-#ifdef ENABLE_INITIAL_EXEC_TLS_MODEL
-    static thread_local ObTenantBase* __attribute__((tls_model("initial-exec"))) ctx = nullptr;
-#else
-    static thread_local ObTenantBase* __attribute__((tls_model("local-dynamic"))) ctx = nullptr;
-#endif
-    return ctx;
+    return g_tenant_ptr;
   }
   static inline ObTenantBase *get_tenant_local()
   {
-#ifdef ENABLE_INITIAL_EXEC_TLS_MODEL
-    static thread_local ObTenantBase __attribute__((tls_model("initial-exec"))) ctx(OB_INVALID_TENANT_ID, 0);
-#else
-    static thread_local ObTenantBase __attribute__((tls_model("local-dynamic"))) ctx(OB_INVALID_TENANT_ID);
-#endif
-    return &ctx;
+    return g_tenant_ptr;
   }
   template<class T>
   static inline T mtl()
