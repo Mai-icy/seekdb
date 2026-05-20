@@ -18,6 +18,7 @@
 
 
 #include "ob_dbms_sched_job_utils.h"
+#include "ob_dbms_sched_service.h"
 #include "share/stat/ob_dbms_stats_maintenance_window.h"
 #include "observer/dbms_scheduler/ob_dbms_sched_table_operator.h"
 #include "storage/ob_common_id_utils.h"
@@ -456,6 +457,8 @@ int ObDBMSSchedJobUtils::remove_dbms_sched_job(
       } else if (!if_exists && !is_double_row(affected_rows)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("affected_rows unexpected to be two", KR(ret), K(affected_rows));
+      } else {
+        rootserver::ObDBMSSchedService::wakeup_scheduler();
       }
     }
   }
@@ -568,6 +571,8 @@ int ObDBMSSchedJobUtils::create_dbms_sched_job(
       if (OB_SUCC(ret) && OB_UNLIKELY(!is_double_row(affected_rows))) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("affected_rows unexpected to be two", KR(ret), K(affected_rows));
+      } else if (OB_SUCC(ret)) {
+        rootserver::ObDBMSSchedService::wakeup_scheduler();
       }
     }
   }
@@ -710,6 +715,8 @@ int ObDBMSSchedJobUtils::update_dbms_sched_job_info(common::ObISQLClient &sql_cl
     } else if (!is_double_row(affected_rows)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("affected_rows unexpected to be two", KR(ret), K(affected_rows));
+    } else {
+      rootserver::ObDBMSSchedService::wakeup_scheduler();
     }
   }
   return ret;  

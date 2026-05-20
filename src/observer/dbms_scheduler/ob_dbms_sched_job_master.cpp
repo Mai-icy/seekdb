@@ -53,11 +53,12 @@ int ObDBMSSchedJobMaster::init(common::ObMySQLProxy *sql_proxy,
     LOG_WARN("fail to init action record", K(ret));
   } else if (OB_FAIL(alive_jobs_.create(1024, ObMemAttr(tenant_id, "DbmsSched_Job")))) {
     LOG_WARN("failed to create job hash set", K(ret));
+  } else if (OB_FAIL(thread_cond_.init(ObWaitEventIds::REENTRANT_THREAD_COND_WAIT))) {
+    LOG_WARN("failed to init thread cond", K(ret));
   } else if (OB_ISNULL(ObCurTraceId::get())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("trace id is null", K(ret));
   } else {
-    tenant_server_cache_.reset();
     self_addr_ = GCONF.self_addr_;
     schema_service_ = schema_service;
     job_rpc_proxy_ = GCTX.dbms_sched_job_rpc_proxy_;
@@ -85,6 +86,7 @@ int ObDBMSSchedJobMaster::stop()
 {
   int ret = OB_SUCCESS;
   stoped_ = true;
+  wakeup();
   LOG_INFO("dbms sched job master begin stop", K(ret));
   return ret;
 }
@@ -156,53 +158,37 @@ int ObDBMSSchedJobMaster::scheduler()
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("not init yet", K(ret));
   } else {
+    bool first_iter = true;
     while (OB_SUCC(ret) && !stoped_) {
-      bool is_leader = is_leader_;
-      ObLink* ptr = NULL;
-      ObDBMSSchedJobKey *job_key = NULL;
-      int tmp_ret = OB_SUCCESS;
-      if (is_leader && TC_REACH_TIME_INTERVAL(CHECK_NEW_INTERVAL)) {
-        if (OB_SUCCESS != (tmp_ret = check_tenant())) {
-          LOG_WARN("fail to check tenant", K(tmp_ret));
+      int64_t deadline_us;
+      if (is_leader_) {
+        schedule_due_jobs();
+        if (wait_vector_.count() > 0) {
+          ObDBMSSchedJobKey *job_key = wait_vector_[0];
+          if (OB_ISNULL(job_key) || !job_key->is_valid()) {
+            ret = OB_ERR_UNEXPECTED;
+            LOG_ERROR("unexpected error, invalid job key in ready queue!", K(ret), KPC(job_key));
+            break;
+          }
+          deadline_us = job_key->get_execute_at();
+        } else {
+          deadline_us = 0;
         }
-      }
-      if (is_leader && TC_REACH_TIME_INTERVAL(UPDATE_SERVER_CACHE_INTERVAL)) {
-        if (OB_SUCCESS != (tmp_ret = update_tenant_server_cache())) {
-          LOG_WARN("fail to update server", K(tmp_ret));
-        }
-      }
-      if (is_leader && TC_REACH_TIME_INTERVAL(PURGE_RUN_DETAIL_INTERVAL)) {
-        if (OB_SUCCESS != (tmp_ret = purge_run_detail())) {
-          LOG_WARN("fail to purge run detail", K(tmp_ret));
-        }
-      }
-      if (!is_leader) {
+      } else {
         clear_wait_vector();
         alive_jobs_.clear();
+        deadline_us = 0;
       }
 
-      if (wait_vector_.count() == 0) {
-        ob_usleep(MIN_SCHEDULER_INTERVAL, true);
-      } else if (OB_ISNULL(job_key = wait_vector_[0]) || !job_key->is_valid()) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_ERROR("unexpected error, invalid job key found in ready queue!", K(ret), KPC(job_key));
-      } else {
-        int64_t delay = job_key->get_execute_at() - ObTimeUtility::current_time();
-        if (delay > MIN_SCHEDULER_INTERVAL) {
-          ob_usleep(MIN_SCHEDULER_INTERVAL, true);
-        } else {
-          ob_usleep(max(0, delay), true);
-          common::ObCurTraceId::TraceId job_trace_id;
-          job_trace_id.init(GCONF.self_addr_);
-          ObTraceIdGuard trace_id_guard(job_trace_id);
-          if (OB_SUCCESS != (tmp_ret = wait_vector_.remove(wait_vector_.begin()))) {
-            LOG_WARN("fail to remove job_id from sorted vector", K(ret));
-          } else if (OB_SUCCESS != (tmp_ret = scheduler_job(job_key))) {
-            LOG_WARN("fail to scheduler single dbms sched job", K(ret), K(tmp_ret));
-          } else {
-            LOG_INFO("success to scheduler single dbms sched job", K(ret), K(tmp_ret));
-          }
-        }
+      bool woken = idle(deadline_us);
+
+      if (first_iter || (woken && is_leader_)) {
+        check_tenant();
+      }
+      first_iter = false;
+
+      if (is_leader_ && TC_REACH_TIME_INTERVAL(PURGE_RUN_DETAIL_INTERVAL)) {
+        purge_run_detail();
       }
     }
     clear_wait_vector();
@@ -210,6 +196,57 @@ int ObDBMSSchedJobMaster::scheduler()
     LOG_INFO("dbms sched job master stoped", K(ret));
   }
   return ret;
+}
+
+int ObDBMSSchedJobMaster::schedule_due_jobs()
+{
+  int ret = OB_SUCCESS;
+  int tmp_ret = OB_SUCCESS;
+  while (OB_SUCC(ret) && wait_vector_.count() > 0) {
+    ObDBMSSchedJobKey *job_key = wait_vector_[0];
+    if (OB_ISNULL(job_key) || !job_key->is_valid()) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_ERROR("unexpected error, invalid job key in ready queue!", K(ret), KPC(job_key));
+      break;
+    }
+    int64_t delay = job_key->get_execute_at() - ObTimeUtility::current_time();
+    if (delay > 0) {
+      break; // not yet due
+    }
+    common::ObCurTraceId::TraceId job_trace_id;
+    job_trace_id.init(GCONF.self_addr_);
+    ObTraceIdGuard trace_id_guard(job_trace_id);
+    if (OB_SUCCESS != (tmp_ret = wait_vector_.remove(wait_vector_.begin()))) {
+      LOG_WARN("fail to remove job_id from sorted vector", K(ret));
+    } else if (OB_SUCCESS != (tmp_ret = scheduler_job(job_key))) {
+      LOG_WARN("fail to scheduler single dbms sched job", K(ret), K(tmp_ret));
+    }
+  }
+  return ret;
+}
+
+bool ObDBMSSchedJobMaster::idle(int64_t deadline_us)
+{
+  ObThreadCondGuard guard(thread_cond_);
+  while (!wokeup_ && !stoped_) {
+    if (deadline_us > 0) {
+      int64_t remaining = deadline_us - ObTimeUtility::current_time();
+      if (remaining <= 0) break;
+      thread_cond_.wait_us(remaining);
+    } else {
+      thread_cond_.wait();
+    }
+  }
+  bool was_woken = wokeup_;
+  wokeup_ = false;
+  return was_woken;
+}
+
+void ObDBMSSchedJobMaster::wakeup()
+{
+  ObThreadCondGuard guard(thread_cond_);
+  wokeup_ = true;
+  thread_cond_.broadcast();
 }
 
 int ObDBMSSchedJobMaster::scheduler_job(ObDBMSSchedJobKey *job_key)
@@ -270,7 +307,7 @@ int ObDBMSSchedJobMaster::scheduler_job(ObDBMSSchedJobKey *job_key)
       job_key = NULL;
       LOG_INFO("free enddate job", K(job_info));
     } else if (now < job_info.get_next_date()) {
-        next_check_date = min(job_info.get_next_date(), now + CHECK_NEW_INTERVAL);
+        next_check_date = job_info.get_next_date();
     } else {
       bool can_running = false;
       if (OB_FAIL(table_operator_.check_job_can_running(job_info.get_tenant_id(), alive_jobs_.size(), can_running))) {
@@ -286,14 +323,14 @@ int ObDBMSSchedJobMaster::scheduler_job(ObDBMSSchedJobKey *job_key)
         } else if (OB_SUCCESS != (tmp = table_operator_.update_next_date(job_info.get_tenant_id(), job_info, new_next_date))){
           LOG_WARN("update next date failed", K(tmp), K(job_info));
         } else {
-          next_check_date = min(new_next_date, now + CHECK_NEW_INTERVAL);
+          next_check_date = new_next_date;
         }
       } else {
         int64_t new_next_date = calc_next_date(job_info);
         if (OB_FAIL(run_job(job_info, job_key, new_next_date))) {
           LOG_WARN("failed to run job", K(ret), K(job_info), KPC(job_key));
         } else {
-          next_check_date = min(new_next_date, now + CHECK_NEW_INTERVAL);
+          next_check_date = new_next_date;
           next_check_date = min(next_check_date, now + TO_TS(job_info.get_max_run_duration()));
         }
       }
@@ -311,6 +348,7 @@ int ObDBMSSchedJobMaster::scheduler_job(ObDBMSSchedJobKey *job_key)
 int ObDBMSSchedJobMaster::destroy()
 {
   allocator_.destroy();
+  thread_cond_.destroy();
   inited_ = false;
   stoped_ = true;
   is_leader_ = false;
@@ -450,23 +488,6 @@ int ObDBMSSchedJobMaster::register_job(ObDBMSSchedJobKey *job_key, int64_t next_
     common::ObSortedVector<ObDBMSSchedJobKey *>::iterator iter;
     ObDBMSSchedJobKey *replace_job_key = NULL;
     OZ (wait_vector_.replace(job_key, iter, compare_job_key, equal_job_key, replace_job_key));
-  }
-  return ret;
-}
-
-int ObDBMSSchedJobMaster::update_tenant_server_cache()
-{
-  int ret = OB_SUCCESS;
-  if (!inited_) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("dbms sched master not inited", K(ret), K(inited_));
-  } else {
-    tenant_server_cache_.reuse();
-    if (GCTX.start_service_time_ <= 0) {
-      // do nothing, server may not started
-    } else if (OB_FAIL(tenant_server_cache_.push_back(GCTX.self_addr()))) {
-      LOG_WARN("fail to execute push_back", KR(ret), K(tenant_server_cache_));
-    }
   }
   return ret;
 }

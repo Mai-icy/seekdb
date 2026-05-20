@@ -15,6 +15,7 @@
  */
 
 #include "observer/dbms_scheduler/ob_dbms_sched_service.h"
+#include "share/rc/ob_tenant_base.h"
 #define USING_LOG_PREFIX SERVER
 
 namespace oceanbase
@@ -165,6 +166,17 @@ int ObDBMSSchedService::resume_leader()
     }
   }
   return ret;
+}
+
+void ObDBMSSchedService::wakeup_scheduler()
+{
+  int ret = OB_SUCCESS;
+  MTL_SWITCH(OB_SYS_TENANT_ID) {
+    rootserver::ObDBMSSchedService *svc = MTL(rootserver::ObDBMSSchedService*);
+    if (OB_NOT_NULL(svc)) {
+      svc->job_master_.wakeup();
+    }
+  }
 }
 
 }  // namespace rootserver

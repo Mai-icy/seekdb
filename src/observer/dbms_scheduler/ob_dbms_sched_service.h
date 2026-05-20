@@ -41,6 +41,7 @@ public:
   }
 
   static int mtl_init(ObDBMSSchedService *&dbms_sched_service);
+  static void wakeup_scheduler();
   int init();
   int start();
   virtual void do_work() override;
