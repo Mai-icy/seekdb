@@ -309,66 +309,13 @@ int ObDDLCtrlSpeedItem::limit_and_sleep(
   return ret;
 }
 
-int ObDDLCtrlSpeedHandle::ObDDLCtrlSpeedItemHandle::set_ctrl_speed_item(
-    ObDDLCtrlSpeedItem *item)
-{
-  int ret = OB_SUCCESS;
-  if (OB_ISNULL(item)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpected err, item is nullptr", K(ret));
-  } else {
-    item->inc_ref();
-    item_ = item;
-  }
-  return ret;
-}
-
-int ObDDLCtrlSpeedHandle::ObDDLCtrlSpeedItemHandle::get_ctrl_speed_item(
-    ObDDLCtrlSpeedItem *&item) const
-{
-  int ret = OB_SUCCESS;
-  if (OB_ISNULL(item_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpected error, speed handle item is nullptr", K(ret));
-  } else {
-    item = item_;
-  }
-  return ret;
-}
-
-void ObDDLCtrlSpeedHandle::ObDDLCtrlSpeedItemHandle::reset()
-{
-  if (nullptr != item_) {
-    if (0 == item_->dec_ref()) {
-      item_->~ObDDLCtrlSpeedItem();
-      ObDDLCtrlSpeedHandle::get_instance().get_allocator().free(item_);
-    }
-    item_ = nullptr;
-  }
-}
-
 ObDDLCtrlSpeedHandle::ObDDLCtrlSpeedHandle()
-  : is_inited_(false), speed_handle_map_(),
-    bucket_lock_(), refreshTimerTask_()
+  : is_inited_(false), tenant_id_(OB_INVALID_TENANT_ID), refreshTimerTask_()
 {
 }
 
 ObDDLCtrlSpeedHandle::~ObDDLCtrlSpeedHandle()
 {
-  int ret = OB_SUCCESS;
-  if (speed_handle_map_.created()) {
-    ObArray<SpeedHandleKey> remove_items;
-    common::hash::ObHashMap<SpeedHandleKey, ObDDLCtrlSpeedItem*>::const_iterator iter = speed_handle_map_.begin();
-    for (; iter != speed_handle_map_.end(); ++iter) {
-      if (OB_FAIL(remove_items.push_back(iter->first))) {
-        LOG_WARN("push back failed", K(ret), "key", iter->first);
-      }
-    }
-    (void)remove_ctrl_speed_item(remove_items);
-    speed_handle_map_.destroy();
-  }
-  bucket_lock_.destroy();
-  allocator_.destroy();
 }
 
 ObDDLCtrlSpeedHandle &ObDDLCtrlSpeedHandle::get_instance()
@@ -380,22 +327,9 @@ ObDDLCtrlSpeedHandle &ObDDLCtrlSpeedHandle::get_instance()
 int ObDDLCtrlSpeedHandle::init()
 {
   int ret = OB_SUCCESS;
-  lib::ObMemAttr attr(OB_SERVER_TENANT_ID, "DDLSpeedCtrl");
-  SET_USE_500(attr);
-  const int64_t memory_limit = 1024L * 1024L * 1024L * 1L; // 1GB
   if (OB_UNLIKELY(is_inited_)) {
     ret = OB_INIT_TWICE;
     LOG_WARN("inited twice", K(ret));
-  } else if (OB_UNLIKELY(speed_handle_map_.created())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpected error, speed handle map is created", K(ret));
-  } else if (OB_FAIL(bucket_lock_.init(MAP_BUCKET_NUM))) {
-    LOG_WARN("init bucket lock failed", K(ret));
-  } else if (OB_FAIL(speed_handle_map_.create(MAP_BUCKET_NUM, attr, attr))) {
-    LOG_WARN("fail to create speed handle map", K(ret));
-  } else if (OB_FAIL(allocator_.init(OB_MALLOC_NORMAL_BLOCK_SIZE,
-      attr.label_, OB_SERVER_TENANT_ID, memory_limit))) {
-    LOG_WARN("init alloctor failed", K(ret));
   } else if (OB_FAIL(refreshTimerTask_.init(lib::TGDefIDs::ServerGTimer))) {
     LOG_WARN("fail to init refreshTimerTask", K(ret));
   } else {
@@ -413,221 +347,49 @@ int ObDDLCtrlSpeedHandle::limit_and_sleep(const uint64_t tenant_id,
                                           int64_t &real_sleep_us)
 {
   int ret = OB_SUCCESS;
-  SpeedHandleKey speed_handle_key;
-  ObDDLCtrlSpeedItem *speed_handle_item = nullptr;
-  ObDDLCtrlSpeedItemHandle item_handle;
-  item_handle.reset();
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     LOG_WARN("not init", K(ret));
   } else if(OB_UNLIKELY(OB_INVALID_TENANT_ID == tenant_id || !ls_id.is_valid() || bytes < 0 || 0 == task_id)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(tenant_id), K(task_id), K(ls_id), K(bytes));
-  } else if (FALSE_IT(speed_handle_key.tenant_id_ = tenant_id)) {
-  } else if (FALSE_IT(speed_handle_key.ls_id_ = ls_id)) {
-  } else if (OB_UNLIKELY(!speed_handle_map_.created())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("speed handle map is not created", K(ret));
   } else if (OB_FAIL(DDL_SIM(tenant_id, task_id, WRITE_DUPLICATED_DDL_REDO_LOG))) {
     LOG_WARN("ddl sim remote write", K(ret), K(tenant_id), K(task_id));
-  } else if (OB_FAIL(add_ctrl_speed_item(speed_handle_key, item_handle))) {
-    LOG_WARN("add speed item failed", K(ret));
-  } else if (OB_FAIL(item_handle.get_ctrl_speed_item(speed_handle_item))) {
-    LOG_WARN("get speed handle item failed", K(ret));
-  } else if (OB_ISNULL(speed_handle_item)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpected err, ctrl speed item is nullptr", K(ret), K(speed_handle_key));
-  } else if (OB_FAIL(speed_handle_item->limit_and_sleep(bytes,
-                                                        tenant_id,
-                                                        task_id,
-                                                        checker,
-                                                        real_sleep_us))) {
-    LOG_WARN("fail to limit and sleep", K(ret), K(bytes), K(task_id), K(real_sleep_us));
+  } else if (OB_INVALID_TENANT_ID == tenant_id_) {
+    tenant_id_ = tenant_id;
   }
-  return ret;
-}
-
-// add entry in speed_handle_map if it does not exist.
-// set entry in ctrl_speed_item_handle.
-int ObDDLCtrlSpeedHandle::add_ctrl_speed_item(
-    const SpeedHandleKey &speed_handle_key,
-    ObDDLCtrlSpeedItemHandle &item_handle)
-{
-  int ret = OB_SUCCESS;
-  common::ObBucketHashWLockGuard guard(bucket_lock_, speed_handle_key.hash());
-  char *buf = nullptr;
-  ObDDLCtrlSpeedItem *speed_handle_item = nullptr;
-  item_handle.reset();
-  if (OB_UNLIKELY(!is_inited_)) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("not init", K(ret));
-  } else if (OB_UNLIKELY(!speed_handle_key.is_valid())) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("ls id is invalid", K(ret), K(speed_handle_key));
-  } else if (OB_UNLIKELY(!speed_handle_map_.created())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpected, speed handle map is not created", K(ret));
-  } else if (nullptr != speed_handle_map_.get(speed_handle_key)) {
-    // do nothing, speed handle item has already exist.
-  } else if (OB_ISNULL(buf = static_cast<char *>(allocator_.alloc(sizeof(ObDDLCtrlSpeedItem))))) {
-    ret = OB_ALLOCATE_MEMORY_FAILED;
-    LOG_WARN("fail to allocate memory", K(ret));
-  } else {
-    speed_handle_item = new (buf) ObDDLCtrlSpeedItem();
-    if (OB_ISNULL(speed_handle_item)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected nullptr", K(ret));
-    } else if (OB_FAIL(speed_handle_item->init(speed_handle_key.ls_id_))) {
-        LOG_WARN("fail to init new speed handle item", K(ret), K(speed_handle_key));
-    } else if (OB_FAIL(speed_handle_map_.set_refactored(speed_handle_key, speed_handle_item))) {
-      LOG_WARN("fail to add speed handle item", K(ret), K(speed_handle_key));
+  if (OB_SUCC(ret) && OB_FAIL(speed_handle_item_.init(ls_id))) {
+    if (OB_INIT_TWICE != ret) {
+      LOG_WARN("fail to init speed handle item", K(ret), K(ls_id));
     } else {
-      speed_handle_item->inc_ref();
+      ret = OB_SUCCESS; // already inited, treat as success
     }
   }
-
-  // set entry for ctrl_speed_item_handle.
   if (OB_SUCC(ret)) {
-    ObDDLCtrlSpeedItem *curr_speed_handle_item = nullptr;
-    if (OB_FAIL(speed_handle_map_.get_refactored(speed_handle_key, curr_speed_handle_item))) {
-      LOG_WARN("get refactored failed", K(ret), K(speed_handle_key));
-    } else if (OB_ISNULL(curr_speed_handle_item)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected err, speed handle item is nullptr", K(ret), K(speed_handle_key));
-    } else if (OB_FAIL(item_handle.set_ctrl_speed_item(curr_speed_handle_item))) {
-      LOG_WARN("set ctrl speed item failed", K(ret), K(speed_handle_key));
-    }
-  }
-  if (OB_FAIL(ret)) {
-    if (nullptr != speed_handle_item) {
-      speed_handle_item->~ObDDLCtrlSpeedItem();
-      speed_handle_item = nullptr;
-    }
-    if (nullptr != buf) {
-      allocator_.free(buf);
-      buf = nullptr;
+    ret = speed_handle_item_.limit_and_sleep(bytes, tenant_id, task_id, checker, real_sleep_us);
+    if (OB_FAIL(ret)) {
+      LOG_WARN("fail to limit and sleep", K(ret), K(bytes), K(task_id), K(real_sleep_us));
     }
   }
   return ret;
 }
 
-// remove entry from speed_handle_map.
-int ObDDLCtrlSpeedHandle::remove_ctrl_speed_item(const ObIArray<SpeedHandleKey> &remove_items)
-{
-  int ret = OB_SUCCESS;
-  for (int64_t i = 0; i < remove_items.count(); i++) { // ignore ret, to free more items.
-    const SpeedHandleKey &speed_handle_key = remove_items.at(i);
-    common::ObBucketHashWLockGuard guard(bucket_lock_, speed_handle_key.hash());
-    char *buf = nullptr;
-    ObDDLCtrlSpeedItem *speed_handle_item = nullptr;
-    if (OB_UNLIKELY(!is_inited_)) {
-      ret = OB_NOT_INIT;
-      LOG_WARN("not init", K(ret));
-    } else if (OB_UNLIKELY(!speed_handle_key.is_valid())) {
-      ret = OB_INVALID_ARGUMENT;
-      LOG_WARN("ls id is invalid", K(ret), K(speed_handle_key));
-    } else if (OB_UNLIKELY(!speed_handle_map_.created())) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected, speed handle map is not created", K(ret));
-    } else if (OB_FAIL(speed_handle_map_.get_refactored(speed_handle_key, speed_handle_item))) {
-      LOG_WARN("get refactored failed", K(ret), K(speed_handle_key));
-    } else if (OB_FAIL(speed_handle_map_.erase_refactored(speed_handle_key))) {
-      LOG_WARN("fail to erase_refactored", K(ret), K(speed_handle_key));
-    } else if (OB_ISNULL(speed_handle_item)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected error, speed handle item is nullptr", K(ret), K(speed_handle_key));
-    } else {
-      if (0 == speed_handle_item->dec_ref()) {
-        speed_handle_item->~ObDDLCtrlSpeedItem();
-        allocator_.free(speed_handle_item);
-        speed_handle_item = nullptr;
-      }
-    }
-  }
-  return ret;
-}
-
-// refresh speed_handle_map, including
-// 1. remove speed_handle_item whose ls/tenant does not exist;
-// 2. refresh write_speed_ and refresh disk_used_stop_write_threshold_.
 int ObDDLCtrlSpeedHandle::refresh()
 {
   int ret = OB_SUCCESS;
-  // 1. remove speed_handle_item whose ls/tenant does not exist;
-  GetNeedRemoveItemsFn get_need_remove_items_fn;
-  if (OB_FAIL(speed_handle_map_.foreach_refactored(get_need_remove_items_fn))) {
-    LOG_WARN("foreach refactored failed", K(ret));
-  } else if (OB_FAIL(remove_ctrl_speed_item(get_need_remove_items_fn.remove_items_))) {
-    LOG_WARN("remove ctrl speed item failed", K(ret), "to_remove_items", get_need_remove_items_fn.remove_items_);
-  }
-  // 2. update speed and disk config.
-  if (OB_SUCC(ret)) {
-    UpdateSpeedHandleItemFn update_speed_handle_item_fn;
-    if (OB_FAIL(speed_handle_map_.foreach_refactored(update_speed_handle_item_fn))) {
-      LOG_WARN("update write speed and disk config failed", K(ret));
-    }
-  }
-  return ret;
-}
-
-// UpdateSpeedHandleItemFn update ddl clog write speed and disk used config
-int ObDDLCtrlSpeedHandle::UpdateSpeedHandleItemFn::operator() (
-    hash::HashMapPair<SpeedHandleKey, ObDDLCtrlSpeedItem*> &entry)
-{
-  int ret = OB_SUCCESS;
-  MTL_SWITCH(entry.first.tenant_id_) {
-    if (OB_ISNULL(entry.second)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected nulptr", K(ret), K(entry.first));
-    } else if (OB_FAIL(entry.second->refresh())) {
-      LOG_WARN("refresh speed and disk config failed", K(ret), K(entry));
-    }
-  } else if (OB_TENANT_NOT_IN_SERVER == ret || OB_IN_STOP_STATE == ret) { // tenant deleted or on deleting
-    if (OB_ISNULL(entry.second)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected nulptr", K(ret), K(entry.first));
-    } else {
-      entry.second->reset_need_stop_write();
+  if (OB_UNLIKELY(OB_INVALID_TENANT_ID == tenant_id_)) {
+    // not initialized yet, skip refresh
+  } else {
+    MTL_SWITCH(tenant_id_) {
+      if (OB_FAIL(speed_handle_item_.refresh())) {
+        LOG_WARN("refresh speed and disk config failed", K(ret));
+      }
+    } else if (OB_TENANT_NOT_IN_SERVER == ret || OB_IN_STOP_STATE == ret) {
+      speed_handle_item_.reset_need_stop_write();
       ret = OB_SUCCESS;
-    }
-  } else {
-    LOG_WARN("switch tenant id failed", K(ret), K(MTL_ID()), K(entry));
-  }
-  return ret;
-}
-
-int ObDDLCtrlSpeedHandle::GetNeedRemoveItemsFn::operator() (
-  hash::HashMapPair<SpeedHandleKey, ObDDLCtrlSpeedItem*> &entry)
-{
-  int ret = OB_SUCCESS;
-  bool erase = false;
-  const SpeedHandleKey &speed_handle_key = entry.first;
-  if (OB_UNLIKELY(!speed_handle_key.is_valid())) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid arg", K(ret), K(speed_handle_key));
-  } else {
-    MTL_SWITCH(speed_handle_key.tenant_id_) {
-      ObLSHandle ls_handle;
-      if (OB_FAIL(MTL(ObLSService *)->get_ls(speed_handle_key.ls_id_, ls_handle, ObLSGetMod::DDL_MOD))) {
-        if (OB_LS_NOT_EXIST == ret) {
-          erase = true;
-          ret = OB_SUCCESS;
-        } else {
-          LOG_WARN("fail to get ls", K(ret), K(speed_handle_key));
-        }
-      }
     } else {
-      if (OB_TENANT_NOT_IN_SERVER == ret || OB_IN_STOP_STATE == ret) { // tenant deleted or on deleting
-        ret = OB_SUCCESS;
-        erase = true;
-      } else {
-        LOG_WARN("fail to switch tenant id", K(ret), K(MTL_ID()), K(speed_handle_key));
-      }
+      LOG_WARN("switch tenant id failed", K(ret), K(tenant_id_));
     }
-  }
-  if (OB_FAIL(ret)) {
-  } else if (erase && OB_FAIL(remove_items_.push_back(speed_handle_key))) {
-    LOG_WARN("add remove item failed", K(ret));
   }
   return ret;
 }

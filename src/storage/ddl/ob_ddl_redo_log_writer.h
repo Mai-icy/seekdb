@@ -135,24 +135,6 @@ public:
                       const int64_t task_id,
                       ObDDLNeedStopWriteChecker &checker,
                       int64_t &real_sleep_us);
-  ObIAllocator &get_allocator() { return allocator_; }
-private:
-  struct SpeedHandleKey {
-    public:
-      SpeedHandleKey()
-        : tenant_id_(OB_INVALID_TENANT_ID), ls_id_() {}
-      ~SpeedHandleKey() {}
-      int64_t hash() const {return tenant_id_ + ls_id_.hash();}
-      int hash(uint64_t &hash_val) const {hash_val = hash(); return OB_SUCCESS;}
-      bool is_valid() const {
-        return OB_INVALID_TENANT_ID != tenant_id_ && ls_id_.is_valid();}
-      bool operator == (const SpeedHandleKey &other) const {
-        return tenant_id_ == other.tenant_id_ && ls_id_ == other.ls_id_;}
-      TO_STRING_KV(K_(tenant_id), K_(ls_id));
-    public:
-      uint64_t tenant_id_;
-      share::ObLSID ls_id_;
-  };
 private:
   class RefreshSpeedHandleTask: public common::ObTimerTask
   {
@@ -171,51 +153,14 @@ private:
     DISABLE_COPY_ASSIGN(RefreshSpeedHandleTask);
   };
 private:
-  struct UpdateSpeedHandleItemFn final
-  {
-  public:
-    UpdateSpeedHandleItemFn() = default;
-    ~UpdateSpeedHandleItemFn() = default;
-    int operator() (common::hash::HashMapPair<SpeedHandleKey, ObDDLCtrlSpeedItem*> &entry);
-  };
-  struct GetNeedRemoveItemsFn final
-  {
-  public:
-    GetNeedRemoveItemsFn() :
-      remove_items_() { }
-    ~GetNeedRemoveItemsFn() = default;
-    int operator() (common::hash::HashMapPair<SpeedHandleKey, ObDDLCtrlSpeedItem*> &entry);
-  public:
-    ObArray<SpeedHandleKey> remove_items_;
-  };
-private:
-  class ObDDLCtrlSpeedItemHandle final
-  {
-  public:
-    ObDDLCtrlSpeedItemHandle(): item_(nullptr) { }
-    ~ObDDLCtrlSpeedItemHandle() { reset(); }
-    int set_ctrl_speed_item(
-        ObDDLCtrlSpeedItem *item);
-    int get_ctrl_speed_item(
-        ObDDLCtrlSpeedItem*& item) const;
-    void reset();
-  private:
-    ObDDLCtrlSpeedItem *item_;
-    DISALLOW_COPY_AND_ASSIGN(ObDDLCtrlSpeedItemHandle);
-  };
-private:
   ObDDLCtrlSpeedHandle();
   ~ObDDLCtrlSpeedHandle();
   int refresh();
-  int add_ctrl_speed_item(const SpeedHandleKey &speed_handle_key, ObDDLCtrlSpeedItemHandle &item_handle);
-  int remove_ctrl_speed_item(const ObIArray<SpeedHandleKey> &remove_items);
 
 private:
-  static const int64_t MAP_BUCKET_NUM  = 1024;
   bool is_inited_;
-  common::hash::ObHashMap<SpeedHandleKey, ObDDLCtrlSpeedItem*> speed_handle_map_;
-  common::ObConcurrentFIFOAllocator allocator_;
-  common::ObBucketLock bucket_lock_;
+  uint64_t tenant_id_;
+  ObDDLCtrlSpeedItem speed_handle_item_;
   RefreshSpeedHandleTask refreshTimerTask_;
 };
 
