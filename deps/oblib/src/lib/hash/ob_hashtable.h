@@ -1492,6 +1492,18 @@ public:
     } else {
       for (int64_t i = 0; OB_SUCC(ret) && i < bucket_num_; i++) {
         hashbucket &bucket = buckets_[i];
+        // Dirty-read bucket.node before acquiring rdlock: empty buckets are skipped
+        // without any locking overhead. The final check is done under the lock below.
+        // This is safe because:
+        //  - a bucket that appears empty but becomes non-empty concurrently is just a
+        //    missed iteration, which foreach_refactored (a non-snapshot scan) already
+        //    tolerates for concurrent inserts on already-scanned buckets.
+        //  - on x86-64 the aligned pointer load is hardware-atomic.
+        // The same dirty-read pattern is used by iterator::operator++, begin() and
+        // destroy() elsewhere in this file.
+        if (NULL == bucket.node) {
+          continue;
+        }
         bucket_lock_cond blc(bucket);
         readlocker locker(blc.lock());
         hashnode *node = bucket.node;
