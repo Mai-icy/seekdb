@@ -1,0 +1,9 @@
+# These parameters are permanently valid
+base-dir=/opt/homebrew/var/seekdb/data
+data-dir=/opt/homebrew/var/seekdb/data/store
+redo-dir=/opt/homebrew/var/seekdb/data/store/redo
+
+# These parameters are valid only during initialization
+port=2881
+cpu_count=4
+memory_limit=2G
