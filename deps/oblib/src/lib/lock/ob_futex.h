@@ -32,11 +32,18 @@
 #endif
 #include "lib/ob_abort.h"
 
+#ifdef __linux__
+#include <sys/syscall.h>
+inline int futex(uint32_t *uaddr, int futex_op, uint32_t val, const struct timespec* timeout)
+{
+  return (int)syscall(SYS_futex, uaddr, futex_op, val, timeout, nullptr, 0u);
+}
+#else
 extern "C" {
 extern int futex_hook(uint32_t *uaddr, int futex_op, uint32_t val, const struct timespec* timeout);
 }
-
 #define futex(...) futex_hook(__VA_ARGS__)
+#endif
 
 #ifdef __linux__
 inline int futex_wake(volatile int *p, int val)

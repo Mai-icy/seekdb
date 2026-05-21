@@ -37,18 +37,8 @@
 using namespace oceanbase;
 using namespace oceanbase::common;
 using namespace oceanbase::lib;
-thread_local int64_t Thread::loop_ts_ = 0;
-#ifdef _WIN32
-thread_local pthread_t Thread::thread_joined_ = pthread_null();
-#else
-thread_local pthread_t Thread::thread_joined_ = 0;
-#endif
 thread_local int64_t Thread::sleep_us_ = 0;
-thread_local int64_t Thread::blocking_ts_ = 0;
 thread_local bool Thread::is_doing_ddl_ = false;
-thread_local ObAddr Thread::rpc_dest_addr_;
-thread_local obrpc::ObRpcPacketCode Thread::pcode_ = obrpc::ObRpcPacketCode::OB_INVALID_RPC_CODE;
-thread_local uint8_t Thread::wait_event_ = 0;
 thread_local Thread* Thread::current_thread_ = nullptr;
 int64_t Thread::total_thread_count_ = 0;
 

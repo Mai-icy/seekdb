@@ -479,7 +479,6 @@ int ObMPQuery::process_single_stmt(const ObMultiStmtItem &multi_stmt_item,
       //Each execution of different SQL requires an update
       ctx_.self_add_plan_ = false;
       retry_ctrl_.reset_retry_times();//each statement records retry times separately
-      oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT_FOR_LOCAL_RETRY);
       do {
         ret = OB_SUCCESS; //When a local retry occurs, the error code needs to be reset, otherwise the retry cannot proceed
         need_disconnect = true;

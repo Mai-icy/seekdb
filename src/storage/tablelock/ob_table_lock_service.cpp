@@ -558,7 +558,6 @@ int ObTableLockService::lock_table(const uint64_t table_id,
     int64_t abs_timeout_ts = (0 == timeout_us)
       ? ObTimeUtility::current_time() + DEFAULT_TIMEOUT_US
       : ObTimeUtility::current_time() + timeout_us;
-    Thread::WaitGuard guard(Thread::WAIT);
     do {
       if (timeout_us != 0) {
         retry_timeout_us = abs_timeout_ts - ObTimeUtility::current_time();
@@ -604,7 +603,6 @@ int ObTableLockService::unlock_table(const uint64_t table_id,
     int64_t abs_timeout_ts = (0 == timeout_us)
       ? ObTimeUtility::current_time() + DEFAULT_TIMEOUT_US
       : ObTimeUtility::current_time() + timeout_us;
-    Thread::WaitGuard guard(Thread::WAIT);
     do {
       if (timeout_us != 0) {
         retry_timeout_us = abs_timeout_ts - ObTimeUtility::current_time();
@@ -652,7 +650,6 @@ int ObTableLockService::lock_tablet(const uint64_t table_id,
     int64_t abs_timeout_ts = (0 == timeout_us)
       ? ObTimeUtility::current_time() + DEFAULT_TIMEOUT_US
       : ObTimeUtility::current_time() + timeout_us;
-    Thread::WaitGuard guard(Thread::WAIT);
     do {
       if (timeout_us != 0) {
         retry_timeout_us = abs_timeout_ts - ObTimeUtility::current_time();
@@ -704,7 +701,6 @@ int ObTableLockService::unlock_tablet(const uint64_t table_id,
     int64_t abs_timeout_ts = (0 == timeout_us)
       ? ObTimeUtility::current_time() + DEFAULT_TIMEOUT_US
       : ObTimeUtility::current_time() + timeout_us;
-    Thread::WaitGuard guard(Thread::WAIT);
     do {
       if (timeout_us != 0) {
         retry_timeout_us = abs_timeout_ts - ObTimeUtility::current_time();
@@ -744,7 +740,6 @@ int ObTableLockService::lock_partition_or_subpartition(ObTxDesc &tx_desc,
   } else if (OB_FAIL(get_table_partition_level_(arg.table_id_, part_level))) {
     LOG_WARN("can not get table partition level", K(ret), K(arg));
   } else {
-    Thread::WaitGuard guard(Thread::WAIT);
     if (PARTITION_LEVEL_TWO == part_level) {
       arg.is_sub_part_ = true;
     }
@@ -772,7 +767,6 @@ int ObTableLockService::lock(ObTxDesc &tx_desc,
     LOG_WARN("invalid argument", K(ret), K(tx_desc), K(arg), K(tx_desc.is_valid()),
              K(tx_param.is_valid()), K(arg.is_valid()));
   } else {
-    Thread::WaitGuard guard(Thread::WAIT);
     ObTableLockCtx ctx;
     if (OB_FAIL(ctx.set_by_lock_req(arg))) {
       LOG_WARN("set ObTableLockCtx failed", K(ret), K(arg));
@@ -822,7 +816,6 @@ int ObTableLockService::replace_lock(ObTxDesc &tx_desc,
     LOG_WARN("invalid argument", K(ret), K(tx_desc), K(replace_req), K(tx_desc.is_valid()),
              K(tx_param.is_valid()), K(replace_req.is_valid()));
   } else {
-    Thread::WaitGuard guard(Thread::WAIT);
     ObReplaceTableLockCtx ctx;
     if (OB_FAIL(ctx.set_by_lock_req(*replace_req.unlock_req_, true))) {
       LOG_WARN("fail to set unlock_ctx", K(ret), K(replace_req));

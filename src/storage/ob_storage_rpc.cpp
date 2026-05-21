@@ -716,7 +716,6 @@ int ObStorageStreamRpcP<RPC_CODE>::flush_and_wait()
     ret = OB_NOT_INIT;
     STORAGE_LOG(WARN, "bandwidth_throttle_ must not null", K(ret));
   } else {
-    Thread::WaitGuard guard(Thread::WAIT_FOR_IO_EVENT);
     if (OB_SUCCESS != (tmp_ret = bandwidth_throttle_->limit_out_and_sleep(
         this->result_.get_position(), last_send_time_, max_idle_time))) {
       STORAGE_LOG(WARN, "failed limit out band", K(tmp_ret));

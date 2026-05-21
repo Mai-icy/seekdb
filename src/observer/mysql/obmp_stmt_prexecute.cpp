@@ -184,7 +184,6 @@ int ObMPStmtPrexecute::before_process()
                                                       session->get_effective_tenant_id()))) {
             LOG_WARN("failed to check_and_refresh_schema", K(ret));
           } else {
-            oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT_FOR_LOCAL_RETRY);
             do {
               // reset `ret` explicitly before local retry
               ret = OB_SUCCESS;
