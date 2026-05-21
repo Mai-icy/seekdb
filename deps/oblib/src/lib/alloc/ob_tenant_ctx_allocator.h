@@ -25,7 +25,6 @@
 #include "lib/resource/ob_resource_mgr.h"
 #include "lib/allocator/ob_tc_malloc.h"
 #include "lib/alloc/memory_sanity.h"
-#include "lib/alloc/ob_malloc_time_monitor.h"
 #include "lib/alloc/alloc_func.h"
 #include <signal.h>
 namespace oceanbase
@@ -483,8 +482,6 @@ public:
         on_free(*obj, *block);
         inner_attr.use_malloc_v2_ = block->is_malloc_v2_;
       }
-      BASIC_TIME_GUARD(time_guard, "ObMalloc");
-      DEFER(ObMallocTimeMonitor::get_instance().record_malloc_time(time_guard, size, inner_attr));
 #ifdef OB_BUILD_EMBED_MODE
       bool light_backtrace_allowed = false;
       bool sample_allowed = false;
@@ -498,10 +495,8 @@ public:
         int64_t total_size = 0;
         if (g_alloc_failed_ctx().need_wash_block()) {
           total_size += ta.sync_wash();
-          BASIC_TIME_GUARD_CLICK("WASH_BLOCK_END");
         } else if (g_alloc_failed_ctx().need_wash_chunk()) {
           total_size += CHUNK_MGR.sync_wash();
-          BASIC_TIME_GUARD_CLICK("WASH_CHUNK_END");
         }
         if (total_size > 0) {
           nobj = allocator.realloc_object(obj, size, inner_attr);

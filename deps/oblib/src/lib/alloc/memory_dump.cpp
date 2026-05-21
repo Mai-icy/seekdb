@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX COMMON
 
 #include "lib/alloc/memory_dump.h"
+#include "lib/resource/achunk_mgr.h"
 #ifdef _WIN32
 #include <fcntl.h>
 #endif
@@ -148,8 +149,7 @@ public:
 #endif // _WIN32
 
 ObMemoryDump::ObMemoryDump()
-  : task_mutex_(ObLatchIds::ALLOC_MEM_DUMP_TASK_LOCK),
-    avaliable_task_set_((1 << TASK_NUM) - 1),
+  : pending_(0),
     print_buf_(nullptr),
     dump_context_(nullptr),
     iter_lock_(),
@@ -158,8 +158,6 @@ ObMemoryDump::ObMemoryDump()
     huge_segv_cnt_(0),
     is_inited_(false)
 {
-  STATIC_ASSERT(TASK_NUM <= 64, "task num too large");
-  task_mutex_.enable_record_stat(false);
 }
 
 ObMemoryDump::~ObMemoryDump()
@@ -185,8 +183,8 @@ int ObMemoryDump::init()
   if (OB_UNLIKELY(is_inited_)) {
     ret = OB_INIT_TWICE;
     LOG_WARN("init twice", K(ret));
-  } else if (OB_FAIL(queue_.init(TASK_NUM, "memdumpqueue"))) {
-    LOG_WARN("task queue init failed", K(ret));
+  } else if (OB_FAIL(cond_.init(ObWaitEventIds::DEFAULT_COND_WAIT))) {
+    LOG_WARN("cond init failed", K(ret));
   } else {
     MemoryContext context;// = nullptr;
     int ret = ROOT_CONTEXT->CREATE_CONTEXT(context, ContextParam().set_label("MemDumpContext"));
@@ -238,6 +236,10 @@ int ObMemoryDump::init()
 void ObMemoryDump::stop()
 {
   if (is_inited_) {
+    {
+      ObThreadCondGuard guard(cond_);
+      cond_.signal();
+    }
     TG_STOP(TGDefIDs::MEMORY_DUMP);
   }
 }
@@ -254,41 +256,34 @@ void ObMemoryDump::destroy()
   if (is_inited_) {
     stop();
     wait();
-    queue_.destroy();
+    cond_.destroy();
     is_inited_ = false;
   }
-}
-
-int ObMemoryDump::push(void *task)
-{
-  int ret = OB_SUCCESS;
-  if (!is_inited_) {
-    ret = OB_NOT_INIT;
-  } else if (NULL == task) {
-    ret = OB_INVALID_ARGUMENT;
-  } else {
-    ret = queue_.push(task);
-    if (OB_SIZE_OVERFLOW == ret) {
-      ret = OB_EAGAIN;
-    }
-  }
-  return ret;
 }
 
 int ObMemoryDump::generate_mod_stat_task()
 {
   int ret = OB_SUCCESS;
-  ObMemoryDumpTask *task = alloc_task();
-  if (OB_ISNULL(task)) {
-    ret = OB_ALLOCATE_MEMORY_FAILED;
-    LOG_WARN("alloc task failed");
+  if (!is_inited_) {
+    ret = OB_NOT_INIT;
   } else {
-    task->type_ = STAT_LABEL;
-    COMMON_LOG(INFO, "task info", K(*task));
-    if (OB_FAIL(push(task))) {
-      LOG_WARN("push task failed", K(ret));
-      free_task(task);
-    }
+    ObThreadCondGuard guard(cond_);
+    pending_ |= PENDING_STAT_LABEL;
+    cond_.signal();
+  }
+  return ret;
+}
+
+int ObMemoryDump::request_dump(const ObMemoryDumpTask &task)
+{
+  int ret = OB_SUCCESS;
+  if (!is_inited_) {
+    ret = OB_NOT_INIT;
+  } else {
+    ObThreadCondGuard guard(cond_);
+    pending_dump_task_ = task;
+    pending_ |= PENDING_DUMP;
+    cond_.signal();
   }
   return ret;
 }
@@ -346,22 +341,37 @@ void ObMemoryDump::print_malloc_sample_info()
 
 void ObMemoryDump::run1()
 {
-  SANITY_DISABLE_CHECK_RANGE(); // prevent sanity_check_range
-  int ret = OB_SUCCESS;
+  SANITY_DISABLE_CHECK_RANGE();
   lib::set_thread_name("MemoryDump");
-  static int64_t last_dump_ts = common::ObClockGenerator::getClock();
+  int64_t last_stat_ts = 0;
   while (!has_set_stop()) {
-    void *task = NULL;
-    if (OB_SUCC(queue_.pop(task, 100 * 1000))) {
-      handle(task);
-    } else if (OB_ENTRY_NOT_EXIST == ret) {
-      int64_t current_ts = common::ObClockGenerator::getClock();
-      if (current_ts - last_dump_ts > STAT_LABEL_INTERVAL) {
-        generate_mod_stat_task();
-        last_dump_ts = current_ts;
-      } else {
-        ob_usleep(1000, true/*is_idle_sleep*/);
+    int pending = 0;
+    ObMemoryDumpTask local_dump_task;
+
+    {
+      ObThreadCondGuard guard(cond_);
+      if (0 == pending_) {
+        cond_.wait(10 * 1000);  // 10s timeout, woke by signal or timeout
       }
+      pending = pending_;
+      local_dump_task = pending_dump_task_;
+      pending_ = 0;
+    }
+
+    // event-driven: DUMP always
+    if (pending & PENDING_DUMP) {
+      handle(&local_dump_task);
+    }
+
+    // event-driven or timer-based STAT_LABEL
+    ObMemoryDumpTask stat_task;
+    stat_task.type_ = STAT_LABEL;
+    if (pending & PENDING_STAT_LABEL) {
+      handle(&stat_task);
+      last_stat_ts = ObTimeUtility::current_time();
+    } else if (ObTimeUtility::current_time() - last_stat_ts > STAT_LABEL_INTERVAL) {
+      handle(&stat_task);
+      last_stat_ts = ObTimeUtility::current_time();
     }
   }
 }
@@ -710,6 +720,14 @@ void ObMemoryDump::handle(void *task)
     }
 
     print_malloc_sample_info();
+
+    // print global chunk freelist
+    {
+      static const int64_t CHUNK_BUF_LEN = 4LL << 10;
+      char chunk_buf[CHUNK_BUF_LEN] = "";
+      int64_t chunk_pos = CHUNK_MGR.to_string(chunk_buf, CHUNK_BUF_LEN);
+      _OB_LOG(INFO, "%.*s", static_cast<int>(chunk_pos), chunk_buf);
+    }
   } else {
     int fd = -1;
     if (-1 == (fd = ::open(LOG_FILE,
@@ -822,9 +840,6 @@ void ObMemoryDump::handle(void *task)
     if (fd > 0) {
       ::close(fd);
     }
-  }
-  if (task != nullptr) {
-    free_task(task);
   }
 }
 
