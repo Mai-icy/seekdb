@@ -1397,9 +1397,6 @@ bool ObTransService::check_ls_readable_(ObLS &ls,
   int ret = OB_SUCCESS;
   bool readable = false;
   readable = snapshot <= ls.get_ls_wrs_handler()->get_ls_weak_read_ts();
-  if (!readable) {
-    TRANS_LOG(INFO, "check replica readable fail", K(ret), K(snapshot));
-  }
   return readable;
 }
 

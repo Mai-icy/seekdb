@@ -870,6 +870,10 @@ STAT_EVENT_SET_DEF(ASYNC_DATA_MAINTAIN_LOG_DROPPED_COUNT, "async data maintain l
 STAT_EVENT_SET_DEF(ASYNC_ROOT_SERVICE_LOG_DROPPED_COUNT, "async root service log dropped count", ObStatClassIds::DEBUG, 160034, false, true, true)
 STAT_EVENT_SET_DEF(ASYNC_SCHEMA_LOG_DROPPED_COUNT, "async schema log dropped count", ObStatClassIds::DEBUG, 160035, false, true, true)
 STAT_EVENT_SET_DEF(ASYNC_FORCE_ALLOW_LOG_DROPPED_COUNT, "async force allow log dropped count", ObStatClassIds::DEBUG, 160036, false, true, true)
+STAT_EVENT_SET_DEF(RINGBUF_ALLOC_WAIT_COUNT, "ringbuf alloc wait count", ObStatClassIds::DEBUG, 160037, false, true, true)
+STAT_EVENT_SET_DEF(RINGBUF_ALLOC_DROP_COUNT, "ringbuf alloc drop count", ObStatClassIds::DEBUG, 160038, false, true, true)
+STAT_EVENT_SET_DEF(RINGBUF_ALLOC_SUCCESS_COUNT, "ringbuf alloc success count", ObStatClassIds::DEBUG, 160039, false, true, true)
+STAT_EVENT_SET_DEF(RINGBUF_QUEUE_DEPTH, "ringbuf queue depth", ObStatClassIds::DEBUG, 160040, false, true, true)
 
 
 //OBSERVER
