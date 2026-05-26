@@ -208,6 +208,8 @@
   https://api.nuget.org*
   http://timestamp.digicert.com*
   http://wixtoolset.org*
+  https://www.python.org*
+  https://visualstudio.microsoft.com*
 **/Doxyfile
   www.doxygen.org)
   https://www.gnu.org/software/libiconv/
