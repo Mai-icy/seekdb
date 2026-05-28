@@ -35,7 +35,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Android")
   target_link_libraries(embedded_client PRIVATE seekdb_embed_c)
 endif()
 
-if(BUILD_EMBED_MODE)
+if(BUILD_EMBED_MODE AND OFF)
   # Set target Python version, can be overridden by CMake parameter
   if(NOT DEFINED PYTHON_VERSION)
     set(PYTHON_VERSION "3.8")
