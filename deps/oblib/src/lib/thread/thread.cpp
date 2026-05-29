@@ -207,7 +207,7 @@ void Thread::stop()
 uint64_t Thread::get_tenant_id() const
 {
   uint64_t tenant_id = OB_SERVER_TENANT_ID;
-  IRunWrapper *run_wrapper_ = threads_->get_run_wrapper();
+  IRunWrapper *run_wrapper_ = threads_->get_effective_run_wrapper();
   if (OB_NOT_NULL(run_wrapper_)) {
     tenant_id = run_wrapper_->id();
   }
@@ -219,7 +219,7 @@ void Thread::run()
   if (OB_NUMA_SHARED_INDEX != numa_node_) {
     AFFINITY_CTRL.thread_bind_to_node(numa_node_);
   }
-  IRunWrapper *run_wrapper_ = threads_->get_run_wrapper();
+  IRunWrapper *run_wrapper_ = threads_->get_effective_run_wrapper();
   if (OB_NOT_NULL(run_wrapper_)) {
     {
       ObDisableDiagnoseGuard disable_guard;

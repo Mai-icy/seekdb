@@ -188,7 +188,6 @@ ObServer::ObServer()
     ctas_clean_up_task_(),
     refresh_active_time_task_(),
     refresh_cpu_frequency_task_(),
-    refresh_io_calibration_task_(),
     schema_status_proxy_(sql_proxy_),
     is_log_dir_empty_(false),
     conn_res_mgr_(),
@@ -413,9 +412,6 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
       LOG_ERROR("init tmp page cache failed", KR(ret));
     } else if (OB_FAIL(init_log_kv_cache())) {
       LOG_ERROR("init log kv cache failed", KR(ret));
-    } else if (OB_FAIL(locality_manager_.init(self_addr_,
-                                              &sql_proxy_))) {
-      LOG_ERROR("init locality manager failed", KR(ret));
     } else if (OB_FAIL(init_ts_mgr())) {
       LOG_ERROR("init ts mgr failed", KR(ret));
     } else if (OB_FAIL(weak_read_service_.init(net_frame_.get_req_transport()))) {
@@ -434,8 +430,6 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
       LOG_ERROR("init server startup task handler failed", KR(ret));
     } else if (OB_FAIL(SERVER_STORAGE_META_SERVICE.init())) {
       LOG_ERROR("init server storage meta handler failed", KR(ret));
-    } else if (OB_FAIL(palf::election::GLOBAL_INIT_ELECTION_MODULE())) {
-      LOG_ERROR("init election module failed", KR(ret));
     } else if (OB_FAIL(init_multi_tenant())) {
       LOG_ERROR("init multi tenant failed", KR(ret));
     } else if (OB_FAIL(init_ctas_clean_up_task())) {
@@ -448,8 +442,6 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
       LOG_ERROR("init refresh active time task failed", KR(ret));
     } else if (OB_FAIL(init_refresh_cpu_frequency())) {
       LOG_ERROR("init refresh cpu frequency failed", KR(ret));
-    } else if (OB_FAIL(init_refresh_io_calibration())) {
-      LOG_ERROR("init refresh io calibration failed", KR(ret));
     } else if (OB_FAIL(ObOptStatManager::get_instance().init(
                          &sql_proxy_, &config_))) {
       LOG_ERROR("init opt stat manager failed", KR(ret));
@@ -643,10 +635,6 @@ void ObServer::destroy()
     session_mgr_.destroy();
     FLOG_INFO("session manager destroyed");
 
-    FLOG_INFO("begin to destroy locality manager");
-    locality_manager_.destroy();
-    FLOG_INFO("locality manager destroyed");
-
     FLOG_INFO("begin to destroy sql engine");
     sql_engine_.destroy();
     FLOG_INFO("sql engine destroyed");
@@ -770,9 +758,6 @@ void ObServer::destroy()
     FLOG_INFO("server blacklist destroy");
 #endif
 
-    FLOG_INFO("begin to destroy global election report timer");
-    palf::election::GLOBAL_REPORT_TIMER.destroy();
-    FLOG_INFO("global election report timer destroyed");
 
     FLOG_INFO("begin to destroy virtual tenant manager");
     ObVirtualTenantManager::get_instance().destroy();
@@ -933,12 +918,6 @@ int ObServer::start(bool embed_mode)
       LOG_ERROR("fail to start oceanbase service", KR(ret));
     } else {
       FLOG_INFO("success to start oceanbase service");
-    }
-
-    if (FAILEDx(locality_manager_.start())) {
-      LOG_ERROR("fail to start locality manager", K(ret));
-    } else {
-      FLOG_INFO("success to start locality manager");
     }
 
     if (FAILEDx(config_mgr_.reload_config())) {
@@ -1128,6 +1107,17 @@ int ObServer::try_update_hidden_sys()
   } else if (OB_FAIL(multi_tenant_.update_hidden_sys_tenant())) {
     LOG_WARN("fail to update hidden sys tenant unit", KR(ret));
   }
+  tenant = nullptr;
+  if (OB_FAIL(ret)) {
+  } else if (OB_FAIL(multi_tenant_.get_tenant(tenant_id, tenant))) {
+    LOG_WARN("failed to get sys tenant for default run wrapper", KR(ret), K(tenant_id));
+  } else if (OB_ISNULL(tenant)) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("sys tenant is null when setting default run wrapper", K(tenant_id));
+  } else {
+    lib::Threads::set_default_run_wrapper(tenant);
+    LOG_INFO("set default run wrapper to sys tenant", K(tenant_id), KP(tenant));
+  }
   return ret;
 }
 
@@ -1316,10 +1306,6 @@ int ObServer::stop()
     OB_STORAGE_OBJECT_MGR.stop();
     FLOG_INFO("storage object mgr stopped");
 
-    FLOG_INFO("begin to stop locality manager");
-    locality_manager_.stop();
-    FLOG_INFO("locality manager stopped");
-
     FLOG_INFO("begin to stop location service");
     location_service_.stop();
     FLOG_INFO("location service stopped");
@@ -1453,18 +1439,6 @@ int ObServer::stop()
     FLOG_INFO("begin to stop rootservice event history");
     ROOTSERVICE_EVENT_INSTANCE.stop();
     FLOG_INFO("rootservice event history stopped");
-
-    FLOG_INFO("begin to stop global election report timer");
-    palf::election::GLOBAL_REPORT_TIMER.stop();
-    FLOG_INFO("global election report timer stopped");
-
-#ifdef OB_BUILD_SHARED_STORAGE
-    if (GCTX.is_shared_storage_mode()) {
-      FLOG_INFO("begin to stop ls prewarm manager");
-      OB_LS_PREWARM_MGR.stop();
-      FLOG_INFO("ls prewarm manager stopped");
-    }
-#endif
 
     FLOG_INFO("begin to stop kv global cache");
     ObKVGlobalCache::get_instance().stop();
@@ -1716,10 +1690,6 @@ int ObServer::wait()
     OB_STORAGE_OBJECT_MGR.wait();
     FLOG_INFO("wait storage object mgr success");
 
-    FLOG_INFO("begin to wait locality_manager");
-    locality_manager_.wait();
-    FLOG_INFO("wait locality_manager success");
-
     FLOG_INFO("begin to wait location service");
     location_service_.wait();
     FLOG_INFO("wait location service success");
@@ -1760,10 +1730,6 @@ int ObServer::wait()
     startup_accel_handler_.wait();
     FLOG_INFO("wait server startup task handler success");
 
-    FLOG_INFO("begin to wait global election report timer");
-    palf::election::GLOBAL_REPORT_TIMER.wait();
-    FLOG_INFO("wait global election report timer success");
-
     FLOG_INFO("begin to wait WR service");
     wr_service_.wait();
     FLOG_INFO("wait WR service success");
@@ -1771,14 +1737,6 @@ int ObServer::wait()
     FLOG_INFO("begin to wait rootservice event history");
     ROOTSERVICE_EVENT_INSTANCE.wait();
     FLOG_INFO("wait rootservice event history success");
-
-#ifdef OB_BUILD_SHARED_STORAGE
-    if (GCTX.is_shared_storage_mode()) {
-      FLOG_INFO("begin to wait ls prewarm manager");
-      OB_LS_PREWARM_MGR.wait();
-      FLOG_INFO("wait ls prewarm manager success");
-    }
-#endif
 
     FLOG_INFO("begin to wait kv global cache");
     ObKVGlobalCache::get_instance().wait();
@@ -1880,6 +1838,8 @@ int ObServer::init_config(const ObServerOptions &opts)
     LOG_ERROR("reload memory config failed", KR(ret));
   } else if (OB_FAIL(set_running_mode())) {
     LOG_ERROR("set running mode failed", KR(ret));
+  } else if (OB_FAIL(init_create_func())) {
+    LOG_ERROR("init create func failed", KR(ret));
   } else if (OB_FAIL(init_self_addr())) {
     LOG_ERROR("init self_addr failed", KR(ret));
   } else if (OB_FAIL(init_config_module(optstr.ptr()))) {
@@ -1922,21 +1882,30 @@ int ObServer::init_opts_config(const ObServerOptions &opts, const char *optstr)
     LOG_ERROR("init data dir and redo dir failed", KR(ret));
   }
 
-#ifdef OB_BUILD_SHARED_STORAGE
-  if (gctx_.is_shared_storage_mode()) {
-    if (FAILEDx(device_config_mgr_.init(config_.data_dir))) {
-      LOG_ERROR("fail to init device config mgr", KR(ret), K(config_.data_dir));
-    } else if (OB_FAIL(device_config_mgr_.load_configs())) {
-      LOG_ERROR("fail to load device configs", KR(ret));
-    }
-  }
-#endif
-
   // The command line is specified, subject to the command line
   if (opts.use_ipv6_) {
     config_.use_ipv6 = opts.use_ipv6_;
   }
 
+  return ret;
+}
+
+int ObServer::init_create_func()
+{
+  int ret = OB_SUCCESS;
+  lib::init_create_func();
+  lib::create_func_inited_ = true;
+  lib::TGMgr::instance();
+  {
+    auto &tg_mgr = lib::TGMgr::instance();
+    int fixed = 0;
+    for (int i = 0; i < lib::TGDefIDs::END; i++) {
+      if (lib::create_funcs_[i] && !tg_mgr.tgs_[i]) {
+        tg_mgr.tgs_[i] = lib::create_funcs_[i]();
+        if (tg_mgr.tgs_[i]) fixed++;
+      }
+    }
+  }
   return ret;
 }
 
@@ -2666,7 +2635,6 @@ int ObServer::init_global_context()
   gctx_.net_frame_ = &net_frame_;
 
   gctx_.batch_rpc_ = &batch_rpc_;
-  gctx_.locality_manager_ = &locality_manager_;
   gctx_.disk_reporter_ = &disk_usage_report_task_;
   gctx_.log_block_mgr_ = &log_block_mgr_;
   (void)gctx_.set_upgrade_stage(obrpc::OB_UPGRADE_STAGE_INVALID);
@@ -3324,56 +3292,6 @@ int ObServer::refresh_cpu_frequency()
   return ret;
 }
 
-ObServer::ObRefreshIOCalibrationTimeTask::ObRefreshIOCalibrationTimeTask()
-: obs_(nullptr), tg_id_(-1), is_inited_(false)
-{}
-
-int ObServer::ObRefreshIOCalibrationTimeTask::init(ObServer *obs, int tg_id)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(is_inited_)) {
-    ret = OB_INIT_TWICE;
-    LOG_ERROR("ObRefreshIOCalibrationTimeTask has already been inited", KR(ret));
-  } else if (OB_ISNULL(obs)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_ERROR("ObRefreshIOCalibrationTimeTask init with null ptr", KR(ret), K(obs));
-  } else {
-    obs_ = obs;
-    tg_id_ = tg_id;
-    is_inited_ = true;
-    if (OB_FAIL(TG_SCHEDULE(tg_id_, *this, REFRESH_INTERVAL, true /*schedule repeatly*/))) {
-      LOG_ERROR("fail to schedule task ObRefreshIOCalibrationTimeTask", KR(ret));
-    }
-  }
-  return ret;
-}
-
-
-void ObServer::ObRefreshIOCalibrationTimeTask::runTimerTask()
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(!is_inited_)) {
-    ret = OB_NOT_INIT;
-    LOG_ERROR("ObRefreshIOCalibrationTimeTask has not been inited", KR(ret));
-  } else if (OB_ISNULL(obs_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_ERROR("ObRefreshIOCalibrationTimeTask task got null ptr", KR(ret));
-  } else if (OB_FAIL(obs_->refresh_io_calibration())) {
-    LOG_WARN("ObRefreshIOCalibrationTimeTask task failed", KR(ret));
-  } else {
-    TG_CANCEL(tg_id_, *this);
-  }
-}
-
-int ObServer::refresh_io_calibration()
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(ObIOCalibration::get_instance().read_from_table())) {
-    LOG_WARN("fail to refresh io calibration from table", KR(ret));
-  }
-  return ret;
-}
-
 int ObServer::init_refresh_active_time_task()
 {
   int ret = OB_SUCCESS;
@@ -3415,15 +3333,6 @@ int ObServer::init_refresh_cpu_frequency()
   int ret = OB_SUCCESS;
   if (OB_FAIL(refresh_cpu_frequency_task_.init(this, lib::TGDefIDs::ServerGTimer))) {
     LOG_ERROR("fail to init refresh cpu frequency task", KR(ret));
-  }
-  return ret;
-}
-
-int ObServer::init_refresh_io_calibration()
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(refresh_io_calibration_task_.init(this, lib::TGDefIDs::ServerGTimer))) {
-    LOG_ERROR("fail to init refresh io calibration task", KR(ret));
   }
   return ret;
 }
