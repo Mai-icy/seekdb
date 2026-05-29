@@ -398,6 +398,9 @@ win_deps_archives/
 win_deps.zip
 win_deps/
 
+############# package #############
+package/pkg/*.pkg
+
 ############# test #############
 test/tmp
 test/var
