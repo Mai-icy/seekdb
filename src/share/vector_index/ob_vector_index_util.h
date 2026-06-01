@@ -164,7 +164,7 @@ struct ObVectorIndexParam
 {
   static constexpr float DEFAULT_REFINE_K = 4.0;
   static constexpr int DEFAULT_BQ_BITS_QUERY = 32;
-  static constexpr int DEFAULT_WINDOW_SIZE = 100000;
+  static constexpr int DEFAULT_WINDOW_SIZE = 60000;
 
   ObVectorIndexParam() :
     type_(VIAT_MAX), lib_(VIAL_MAX), dim_(0), m_(0), ef_construction_(0), ef_search_(0),
