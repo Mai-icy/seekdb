@@ -78,9 +78,12 @@ int ObConfigStorage::create_table_if_not_exists()
 int ObConfigStorage::load_all_configs(ObSystemConfig &system_config)
 {
   int ret = OB_SUCCESS;
+  ObUniqueGuard<ObSystemConfigValue> config_value;
   if (!is_inited()) {
     ret = OB_NOT_INIT;
     LOG_WARN("not init", K(ret));
+  } else if (OB_FAIL(ob_make_unique(config_value))) {
+    LOG_WARN("failed to allocate config value");
   } else {
     const char *select_sql =
       "SELECT name, data_type, value, info, section, scope, source, edit_level "
@@ -88,7 +91,8 @@ int ObConfigStorage::load_all_configs(ObSystemConfig &system_config)
 
     auto row_processor = [&](share::ObSQLiteRowReader &reader) -> int {
       ObSystemConfigKey key;
-      ObSystemConfigValue value;
+      ObSystemConfigValue &value = *config_value;
+      value.reset();
 
       const char *name_str = reader.get_text();
       if (nullptr != name_str) {
