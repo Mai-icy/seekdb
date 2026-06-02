@@ -1,7 +1,7 @@
 # These parameters are permanently valid
-base-dir=/opt/homebrew/var/seekdb/data
-data-dir=/opt/homebrew/var/seekdb/data/store
-redo-dir=/opt/homebrew/var/seekdb/data/store/redo
+base-dir=/opt/seekdb/var/seekdb/data
+data-dir=/opt/seekdb/var/seekdb/data/store
+redo-dir=/opt/seekdb/var/seekdb/data/store/redo
 
 # These parameters are valid only during initialization
 port=2881

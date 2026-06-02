@@ -100,12 +100,16 @@ SEEKDB_BIN="$SEEKDB_BUILD/src/observer/seekdb"
 # Step 2: Build menu bar app
 # ---------------------------------------------------------------------------
 MENUBAR_SRC="$MACPKG_DIR/seekdbctl/menubar"
-MENUBAR_BIN="$SEEKDB_BUILD/SeekDBMenuBar"
+MENUBAR_BIN="$SEEKDB_BUILD/seekdb-menubar"
 
-HELPER_BIN="$SEEKDB_BUILD/SeekDBHelper"
+HELPER_BIN="$SEEKDB_BUILD/seekdb-helper"
+ICON_ASSETS_DIR="$MACPKG_DIR/assets"
+SVG2PNG_BIN="$SEEKDB_BUILD/svg2png"
+APP_ICONSET="$SEEKDB_BUILD/AppIcon.iconset"
+APP_ICON_ICNS="$SEEKDB_BUILD/AppIcon.icns"
 
 if [[ "$DO_MENUBAR" == true && -f "$MENUBAR_SRC/SeekDBMenuBar.swift" ]]; then
-  info "Compiling SeekDB menu bar app ..."
+  info "Compiling seekdb menu bar app ..."
   swiftc \
     -o "$MENUBAR_BIN" \
     -framework AppKit \
@@ -132,18 +136,20 @@ fi
 # ---------------------------------------------------------------------------
 PKG_NAME="${PROJECT_NAME}-${VERSION}-${RELEASE}-macos${MACOS_VERSION_MAJOR}-${MACOS_ARCH}"
 STAGING="$SEEKDB_BUILD/_pkg_staging"
+APP_BUNDLE_NAME="seekdb Monitor.app"
+APP_EXECUTABLE="seekdb-menubar"
 rm -rf "$STAGING"
 
 info "Assembling staging directory ..."
 
 # --- binaries ---
-install -d "$STAGING/opt/homebrew/bin"
-install -d "$STAGING/opt/homebrew/lib/seekdb"
-install -m 755 "$SEEKDB_BIN" "$STAGING/opt/homebrew/bin/seekdb"
+install -d "$STAGING/opt/seekdb/bin"
+install -d "$STAGING/opt/seekdb/lib/seekdb"
+install -m 755 "$SEEKDB_BIN" "$STAGING/opt/seekdb/bin/seekdb"
 
 # --- bundle non-system dylibs (recursive) ---
 info "Bundling dynamic libraries ..."
-DYLIB_DIR="$STAGING/opt/homebrew/lib/seekdb"
+DYLIB_DIR="$STAGING/opt/seekdb/lib/seekdb"
 
 collect_non_system_deps() {
   otool -L "$1" 2>/dev/null | awk '/^\t/ {print $1}' | while read -r dep; do
@@ -183,10 +189,10 @@ BUNDLED_COUNT=$(ls "$DYLIB_DIR"/*.dylib 2>/dev/null | wc -l | tr -d ' ')
 info "  bundled $BUNDLED_COUNT dylibs"
 
 # rewrite paths: seekdb binary
-for dep in $(collect_non_system_deps "$STAGING/opt/homebrew/bin/seekdb"); do
+for dep in $(collect_non_system_deps "$STAGING/opt/seekdb/bin/seekdb"); do
   dep_name="$(basename "$dep")"
   install_name_tool -change "$dep" "@executable_path/../lib/seekdb/$dep_name" \
-    "$STAGING/opt/homebrew/bin/seekdb" 2>/dev/null
+    "$STAGING/opt/seekdb/bin/seekdb" 2>/dev/null
 done
 
 # rewrite paths: each dylib's deps + id
@@ -204,18 +210,18 @@ info "Re-signing binaries ..."
 for lib in "$DYLIB_DIR"/*.dylib; do
   codesign --force --sign - "$lib" 2>/dev/null || true
 done
-codesign --force --sign - "$STAGING/opt/homebrew/bin/seekdb" 2>/dev/null || true
+codesign --force --sign - "$STAGING/opt/seekdb/bin/seekdb" 2>/dev/null || true
 for script in seekdbctl seekdb_start seekdb_stop seekdb_status seekdb_config \
               seekdb_setup seekdb_cleanup seekdb_paths seekdb_uninstall; do
   src="$MACPKG_DIR/seekdbctl/$script"
-  if [[ -f "$src" ]]; then install -m 755 "$src" "$STAGING/opt/homebrew/bin/$script"; fi
+  if [[ -f "$src" ]]; then install -m 755 "$src" "$STAGING/opt/seekdb/bin/$script"; fi
 done
 
 # --- ob_admin / ob_error (optional, relink dylibs) ---
 for tool_bin in "$SEEKDB_BUILD/tools/ob_admin/ob_admin" "$SEEKDB_BUILD/tools/ob_error/src/ob_error"; do
   if [[ -x "$tool_bin" ]]; then
     tool_name="$(basename "$tool_bin")"
-    install -m 755 "$tool_bin" "$STAGING/opt/homebrew/bin/$tool_name"
+    install -m 755 "$tool_bin" "$STAGING/opt/seekdb/bin/$tool_name"
     for dep in $(collect_non_system_deps "$tool_bin"); do
       dep_name="$(basename "$dep")"
       if [[ -f "$dep" && ! -f "$DYLIB_DIR/$dep_name" ]]; then
@@ -223,9 +229,9 @@ for tool_bin in "$SEEKDB_BUILD/tools/ob_admin/ob_admin" "$SEEKDB_BUILD/tools/ob_
         chmod 644 "$DYLIB_DIR/$dep_name"
       fi
       install_name_tool -change "$dep" "@executable_path/../lib/seekdb/$dep_name" \
-        "$STAGING/opt/homebrew/bin/$tool_name" 2>/dev/null
+        "$STAGING/opt/seekdb/bin/$tool_name" 2>/dev/null
     done
-    codesign --force --sign - "$STAGING/opt/homebrew/bin/$tool_name" 2>/dev/null || true
+    codesign --force --sign - "$STAGING/opt/seekdb/bin/$tool_name" 2>/dev/null || true
   fi
 done
 
@@ -243,81 +249,111 @@ if [[ -x "$HELPER_BIN" ]]; then
 fi
 
 # --- helper scripts ---
-install -d "$STAGING/opt/homebrew/libexec/seekdb/scripts"
+install -d "$STAGING/opt/seekdb/libexec/seekdb/scripts"
 install -m 755 "$MACPKG_DIR/launchd/profile/seekdb_launchd_start" \
-  "$STAGING/opt/homebrew/libexec/seekdb/scripts/"
+  "$STAGING/opt/seekdb/libexec/seekdb/scripts/"
 install -m 755 "$MACPKG_DIR/launchd/profile/seekdb_launchd_stop" \
-  "$STAGING/opt/homebrew/libexec/seekdb/scripts/"
+  "$STAGING/opt/seekdb/libexec/seekdb/scripts/"
 for py in import_time_zone_info.py import_srs_data.py; do
   if [[ -f "$TOPDIR/tools/$py" ]]; then
-    install -m 755 "$TOPDIR/tools/$py" "$STAGING/opt/homebrew/libexec/seekdb/"
+    install -m 755 "$TOPDIR/tools/$py" "$STAGING/opt/seekdb/libexec/seekdb/"
   fi
 done
 
 # --- config ---
-install -d "$STAGING/opt/homebrew/etc/seekdb"
-install -m 644 "$MACPKG_DIR/launchd/profile/seekdb.cnf" "$STAGING/opt/homebrew/etc/seekdb/"
+install -d "$STAGING/opt/seekdb/etc/seekdb"
+install -m 644 "$MACPKG_DIR/launchd/profile/seekdb.cnf" "$STAGING/opt/seekdb/etc/seekdb/"
 for f in default_parameter.json default_system_variable.json; do
   src="$TOPDIR/src/share/parameter/$f"
   if [[ ! -f "$src" ]]; then src="$TOPDIR/src/share/system_variable/$f"; fi
-  if [[ -f "$src" ]]; then install -m 644 "$src" "$STAGING/opt/homebrew/etc/seekdb/"; fi
+  if [[ -f "$src" ]]; then install -m 644 "$src" "$STAGING/opt/seekdb/etc/seekdb/"; fi
 done
 # ob_system_variable_init.json (generated at build time)
 if [[ -f "$SEEKDB_BUILD/src/share/ob_system_variable_init.json" ]]; then
-  install -m 644 "$SEEKDB_BUILD/src/share/ob_system_variable_init.json" "$STAGING/opt/homebrew/etc/seekdb/"
+  install -m 644 "$SEEKDB_BUILD/src/share/ob_system_variable_init.json" "$STAGING/opt/seekdb/etc/seekdb/"
 fi
 for f in oceanbase_upgrade_dep.yml deps_compat.yml; do
   if [[ -f "$TOPDIR/tools/upgrade/$f" ]]; then
-    install -m 644 "$TOPDIR/tools/upgrade/$f" "$STAGING/opt/homebrew/etc/seekdb/"
+    install -m 644 "$TOPDIR/tools/upgrade/$f" "$STAGING/opt/seekdb/etc/seekdb/"
   fi
 done
 
 # --- share: admin SQL ---
-install -d "$STAGING/opt/homebrew/share/seekdb/admin"
+install -d "$STAGING/opt/seekdb/share/seekdb/admin"
 SYS_PACK_DIR="$SEEKDB_BUILD/syspack_release"
 if [[ -d "$SYS_PACK_DIR" ]]; then
-  cp -R "$SYS_PACK_DIR/"* "$STAGING/opt/homebrew/share/seekdb/admin/" 2>/dev/null || true
+  cp -R "$SYS_PACK_DIR/"* "$STAGING/opt/seekdb/share/seekdb/admin/" 2>/dev/null || true
 fi
 
 # --- share: help ---
-install -d "$STAGING/opt/homebrew/share/seekdb/help"
+install -d "$STAGING/opt/seekdb/share/seekdb/help"
 if [[ -f "$TOPDIR/src/sql/fill_help_tables-ob.sql" ]]; then
-  install -m 644 "$TOPDIR/src/sql/fill_help_tables-ob.sql" "$STAGING/opt/homebrew/share/seekdb/help/"
+  install -m 644 "$TOPDIR/src/sql/fill_help_tables-ob.sql" "$STAGING/opt/seekdb/share/seekdb/help/"
 fi
 
 # --- share: timezone ---
-install -d "$STAGING/opt/homebrew/share/seekdb/timezone"
+install -d "$STAGING/opt/seekdb/share/seekdb/timezone"
 for f in timezone_V1.log timezone.data timezone_name.data timezone_trans.data timezone_trans_type.data; do
   if [[ -f "$TOPDIR/tools/$f" ]]; then
-    install -m 644 "$TOPDIR/tools/$f" "$STAGING/opt/homebrew/share/seekdb/timezone/"
+    install -m 644 "$TOPDIR/tools/$f" "$STAGING/opt/seekdb/share/seekdb/timezone/"
   fi
 done
 
 # --- share: srs ---
-install -d "$STAGING/opt/homebrew/share/seekdb/srs"
+install -d "$STAGING/opt/seekdb/share/seekdb/srs"
 for f in spatial_reference_systems.data default_srs_data_mysql.sql; do
   if [[ -f "$TOPDIR/tools/$f" ]]; then
-    install -m 644 "$TOPDIR/tools/$f" "$STAGING/opt/homebrew/share/seekdb/srs/"
+    install -m 644 "$TOPDIR/tools/$f" "$STAGING/opt/seekdb/share/seekdb/srs/"
   fi
 done
 
 # --- share: upgrade ---
-install -d "$STAGING/opt/homebrew/share/seekdb/upgrade"
+install -d "$STAGING/opt/seekdb/share/seekdb/upgrade"
 for f in upgrade_pre.py upgrade_post.py upgrade_checker.py upgrade_health_checker.py; do
   if [[ -f "$TOPDIR/tools/upgrade/$f" ]]; then
-    install -m 644 "$TOPDIR/tools/upgrade/$f" "$STAGING/opt/homebrew/share/seekdb/upgrade/"
+    install -m 644 "$TOPDIR/tools/upgrade/$f" "$STAGING/opt/seekdb/share/seekdb/upgrade/"
   fi
 done
 
-# --- SeekDB Monitor .app bundle ---
+# --- seekdb Monitor .app bundle ---
 if [[ "$DO_MENUBAR" == true && -x "$MENUBAR_BIN" ]]; then
-  APP_DIR="$STAGING/Applications/SeekDB Monitor.app/Contents"
-  install -d "$APP_DIR/MacOS"
-  install -m 755 "$MENUBAR_BIN" "$APP_DIR/MacOS/SeekDBMenuBar"
+  APP_BUNDLE="$STAGING/Applications/$APP_BUNDLE_NAME"
+  APP_DIR="$APP_BUNDLE/Contents"
+  install -d "$APP_DIR/MacOS" "$APP_DIR/Resources"
+  install -m 755 "$MENUBAR_BIN" "$APP_DIR/MacOS/$APP_EXECUTABLE"
+
+  [[ -f "$ICON_ASSETS_DIR/original.svg" ]] || die "app icon source not found: $ICON_ASSETS_DIR/original.svg"
+  [[ -f "$MACPKG_DIR/svg2png.swift" ]] || die "SVG renderer source not found: $MACPKG_DIR/svg2png.swift"
+  info "Generating app icon ..."
+  swiftc \
+    -o "$SVG2PNG_BIN" \
+    -framework AppKit \
+    -target arm64-apple-macosx13.0 \
+    "$MACPKG_DIR/svg2png.swift"
+  rm -rf "$APP_ICONSET" "$APP_ICON_ICNS"
+  mkdir -p "$APP_ICONSET"
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_16x16.png" 16
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_16x16@2x.png" 32
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_32x32.png" 32
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_32x32@2x.png" 64
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_128x128.png" 128
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_128x128@2x.png" 256
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_256x256.png" 256
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_256x256@2x.png" 512
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_512x512.png" 512
+  "$SVG2PNG_BIN" "$ICON_ASSETS_DIR/original.svg" "$APP_ICONSET/icon_512x512@2x.png" 1024
+  iconutil -c icns -o "$APP_ICON_ICNS" "$APP_ICONSET"
+  install -m 644 "$APP_ICON_ICNS" "$APP_DIR/Resources/AppIcon.icns"
+
+  for icon in active loading stopped; do
+    [[ -f "$ICON_ASSETS_DIR/$icon.svg" ]] || die "status icon source not found: $ICON_ASSETS_DIR/$icon.svg"
+    install -m 644 "$ICON_ASSETS_DIR/$icon.svg" "$APP_DIR/Resources/$icon.svg"
+  done
+
   # Generate Info.plist from template
   sed "s/@OceanBase_VERSION@/${VERSION}/g" "$MENUBAR_SRC/info.plist.in" > "$APP_DIR/Info.plist"
-  codesign --force --sign - "$APP_DIR/MacOS/SeekDBMenuBar"
-  codesign --force --sign - "$STAGING/Applications/SeekDB Monitor.app"
+  codesign --force --sign - "$APP_DIR/MacOS/$APP_EXECUTABLE"
+  codesign --force --sign - "$APP_BUNDLE"
   info "Menu bar app bundled"
 fi
 
@@ -344,7 +380,7 @@ cat > "$COMPONENT_PLIST" <<'CPEOF'
     <key>BundleOverwriteAction</key>
     <string>upgrade</string>
     <key>RootRelativeBundlePath</key>
-    <string>Applications/SeekDB Monitor.app</string>
+    <string>Applications/seekdb Monitor.app</string>
   </dict>
 </array>
 </plist>
@@ -364,7 +400,7 @@ DIST_XML="$SEEKDB_BUILD/_pkg_distribution.xml"
 cat > "$DIST_XML" <<DISTEOF
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-    <title>SeekDB ${VERSION}</title>
+    <title>seekdb ${VERSION}</title>
     <license file="LICENSE"/>
     <options customize="never" require-scripts="false"/>
     <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
@@ -398,7 +434,7 @@ info "Package created: $OUTPUT_PKG"
 ls -lh "$OUTPUT_PKG"
 
 # Cleanup temp files
-rm -f "$COMPONENT_PKG" "$DIST_XML" "$COMPONENT_PLIST"
-rm -rf "$STAGING" "$RESOURCES_DIR"
+rm -f "$COMPONENT_PKG" "$DIST_XML" "$COMPONENT_PLIST" "$SVG2PNG_BIN" "$APP_ICON_ICNS"
+rm -rf "$STAGING" "$RESOURCES_DIR" "$APP_ICONSET"
 
 info "Done."
