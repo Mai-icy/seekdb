@@ -5,7 +5,7 @@
   <string>com.seekdb.server</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/opt/homebrew/libexec/seekdb/scripts/seekdb_launchd_start</string>
+    <string>/opt/seekdb/libexec/seekdb/scripts/seekdb_launchd_start</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
@@ -15,11 +15,11 @@
     <true/>
   </dict>
   <key>WorkingDirectory</key>
-  <string>/opt/homebrew/var/seekdb/data</string>
+  <string>/opt/seekdb/var/seekdb/data</string>
   <key>StandardOutPath</key>
-  <string>/opt/homebrew/var/seekdb/data/log/launchd.out.log</string>
+  <string>/opt/seekdb/var/seekdb/data/log/launchd.out.log</string>
   <key>StandardErrorPath</key>
-  <string>/opt/homebrew/var/seekdb/data/log/launchd.err.log</string>
+  <string>/opt/seekdb/var/seekdb/data/log/launchd.err.log</string>
   <key>EnvironmentVariables</key>
   <dict>
     <key>REPORTER</key>

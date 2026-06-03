@@ -3,12 +3,12 @@ set -u
 
 LABEL="com.seekdb.server"
 PLIST="/Library/LaunchDaemons/${LABEL}.plist"
-CONFIG_FILE="${SEEKDB_CONFIG_FILE:-/opt/homebrew/etc/seekdb/seekdb.cnf}"
-BASE_DIR="/opt/homebrew/var/seekdb/data"
+CONFIG_FILE="${SEEKDB_CONFIG_FILE:-/opt/seekdb/etc/seekdb/seekdb.cnf}"
+BASE_DIR="/opt/seekdb/var/seekdb/data"
 LOG_DIR="${BASE_DIR}/log"
-START_SCRIPT="/opt/homebrew/libexec/seekdb/scripts/seekdb_launchd_start"
-STOP_SCRIPT="/opt/homebrew/libexec/seekdb/scripts/seekdb_launchd_stop"
-SEEKDB_BIN="/opt/homebrew/bin/seekdb"
+START_SCRIPT="/opt/seekdb/libexec/seekdb/scripts/seekdb_launchd_start"
+STOP_SCRIPT="/opt/seekdb/libexec/seekdb/scripts/seekdb_launchd_stop"
+SEEKDB_BIN="/opt/seekdb/bin/seekdb"
 DEFAULT_PORT="2881"
 
 usage() {
@@ -26,22 +26,22 @@ Commands:
   config       Print or update the active configuration
   setup        Alias for `initialize` (kept for backward compat)
   initialize   Wipe data and bootstrap a fresh database
-  boot-status  Print whether SeekDB is enabled to start at boot (enabled|disabled|unavailable)
-  enable-boot  Register SeekDB to start automatically at boot
-  disable-boot Unregister SeekDB from starting automatically at boot
+  boot-status  Print whether seekdb is enabled to start at boot (enabled|disabled|unavailable)
+  enable-boot  Register seekdb to start automatically at boot
+  disable-boot Unregister seekdb from starting automatically at boot
   clean-data   Stop the service and remove config/data directories after confirmation
   uninstall    Stop service and remove installed files, config, and data
   help         Show this help
 
 Recommended shortcuts:
-  seekdb-start    Start SeekDB daemon
-  seekdb-stop     Stop SeekDB daemon
-  seekdb-status   Check SeekDB status
+  seekdb-start    Start seekdb daemon
+  seekdb-stop     Stop seekdb daemon
+  seekdb-status   Check seekdb status
   seekdb-cleanup  Remove config and data directories
   seekdb-paths    Show paths
   seekdb-config   Show or update path configuration
   seekdb-setup    Initialize, enable boot startup, and start
-  seekdb-uninstall Remove SeekDB completely
+  seekdb-uninstall Remove seekdb completely
 
 Examples:
   seekdb-paths
@@ -272,13 +272,13 @@ cmd_enable_boot() {
   require_root
   [ -f "$PLIST" ] || die "LaunchDaemon plist not found: $PLIST"
   launchctl enable "system/${LABEL}" >/dev/null 2>&1 || true
-  info "SeekDB is enabled to start at boot."
+  info "seekdb is enabled to start at boot."
 }
 
 cmd_disable_boot() {
   require_root
   launchctl disable "system/${LABEL}" >/dev/null 2>&1 || true
-  info "SeekDB is disabled from starting at boot."
+  info "seekdb is disabled from starting at boot."
 }
 
 cmd_status() {
@@ -334,7 +334,7 @@ cmd_paths() {
   echo "Redo:   $(read_config_value "redo-dir" || printf "%s/store/redo" "$BASE_DIR")"
   echo "PID:    $BASE_DIR/run/seekdb.pid"
   echo "Log:    $LOG_DIR/seekdb.log"
-  echo "Share:  /opt/homebrew/share/seekdb"
+  echo "Share:  /opt/seekdb/share/seekdb"
   echo "Port:   $port"
 }
 
@@ -364,7 +364,7 @@ cmd_doctor() {
   local port
   port="$(get_port)"
 
-  echo "SeekDB diagnostics"
+  echo "seekdb diagnostics"
   echo "------------------"
   [ -x "$SEEKDB_BIN" ] && echo "binary     : ok ($SEEKDB_BIN)" || echo "binary     : missing ($SEEKDB_BIN)"
   [ -f "$CONFIG_FILE" ] && echo "config     : ok ($CONFIG_FILE)" || echo "config     : missing ($CONFIG_FILE)"
@@ -382,7 +382,7 @@ cmd_doctor() {
 
   if command -v df >/dev/null 2>&1; then
     echo "disk       :"
-    df -h "$BASE_DIR" 2>/dev/null || df -h /opt/homebrew 2>/dev/null || true
+    df -h "$BASE_DIR" 2>/dev/null || df -h /opt/seekdb 2>/dev/null || true
   fi
 
   if command -v sysctl >/dev/null 2>&1; then
@@ -516,29 +516,47 @@ cmd_clean_data() {
   info "Config, data, and logs removed"
 }
 
+remove_seekdb_link() {
+  local link="$1"
+  local target=""
+  [ -L "$link" ] || return 0
+  target="$(readlink "$link" 2>/dev/null || true)"
+  case "$target" in
+    /opt/seekdb/bin/*|/opt/homebrew/bin/*) rm -f "$link" ;;
+  esac
+}
+
 cmd_uninstall() {
   require_root
   cmd_stop || true
   rm -f "$PLIST"
+  for cmd in seekdb seekdbctl seekdb-start seekdb-stop seekdb-status \
+             seekdb-cleanup seekdb-paths seekdb-config seekdb-setup seekdb-uninstall; do
+    remove_seekdb_link "/usr/local/bin/${cmd}"
+  done
   rm -rf \
-    /opt/homebrew/bin/seekdb \
-    /opt/homebrew/bin/obshell \
-    /opt/homebrew/bin/seekdbctl \
-    /opt/homebrew/bin/seekdb-start \
-    /opt/homebrew/bin/seekdb-stop \
-    /opt/homebrew/bin/seekdb-status \
-    /opt/homebrew/bin/seekdb-cleanup \
-    /opt/homebrew/bin/seekdb-paths \
-    /opt/homebrew/bin/seekdb-config \
-    /opt/homebrew/bin/seekdb-setup \
-    /opt/homebrew/bin/seekdb-uninstall \
-    /opt/homebrew/libexec/seekdb \
-    /opt/homebrew/etc/seekdb \
-    /opt/homebrew/var/seekdb \
-    /opt/homebrew/share/seekdb
+    "/Applications/seekdb Monitor.app" \
+    "/Applications/SeekDB Monitor.app" \
+    /Library/LaunchDaemons/com.seekdb.helper.plist \
+    /Library/PrivilegedHelperTools/com.seekdb.helper \
+    /opt/seekdb/bin/seekdb \
+    /opt/seekdb/bin/obshell \
+    /opt/seekdb/bin/seekdbctl \
+    /opt/seekdb/bin/seekdb-start \
+    /opt/seekdb/bin/seekdb-stop \
+    /opt/seekdb/bin/seekdb-status \
+    /opt/seekdb/bin/seekdb-cleanup \
+    /opt/seekdb/bin/seekdb-paths \
+    /opt/seekdb/bin/seekdb-config \
+    /opt/seekdb/bin/seekdb-setup \
+    /opt/seekdb/bin/seekdb-uninstall \
+    /opt/seekdb/libexec/seekdb \
+    /opt/seekdb/etc/seekdb \
+    /opt/seekdb/var/seekdb \
+    /opt/seekdb/share/seekdb
   pkgutil --forget com.seekdb.server >/dev/null 2>&1 || true
   pkgutil --forget com.seekdb.server.server >/dev/null 2>&1 || true
-  info "SeekDB has been completely removed."
+  info "seekdb has been completely removed."
 }
 
 case "${1:-help}" in

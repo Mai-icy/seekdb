@@ -1,8 +1,8 @@
 #!/bin/bash
 set -u
 
-CONFIG_FILE="${SEEKDB_CONFIG_FILE:-/opt/homebrew/etc/seekdb/seekdb.cnf}"
-BASE_DIR="/opt/homebrew/var/seekdb/data"
+CONFIG_FILE="${SEEKDB_CONFIG_FILE:-/opt/seekdb/etc/seekdb/seekdb.cnf}"
+BASE_DIR="/opt/seekdb/var/seekdb/data"
 TIMEOUT="${SEEKDB_STOP_TIMEOUT:-30}"
 
 trim() {

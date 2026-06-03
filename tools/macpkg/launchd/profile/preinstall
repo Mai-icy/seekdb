@@ -1,7 +1,7 @@
 #!/bin/bash
 set -u
 
-CONFIG_FILE="/opt/homebrew/etc/seekdb/seekdb.cnf"
+CONFIG_FILE="/opt/seekdb/etc/seekdb/seekdb.cnf"
 BACKUP_FILE="/tmp/seekdb.cnf.pkg.bak"
 
 if [ -f "$CONFIG_FILE" ]; then
