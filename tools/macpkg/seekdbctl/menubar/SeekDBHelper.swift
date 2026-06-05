@@ -1,13 +1,13 @@
 // Copyright (c) 2025 OceanBase.
 // Licensed under the Apache License, Version 2.0.
 //
-// Privileged helper daemon for SeekDB Monitor.
+// Privileged helper daemon for seekdb Monitor.
 // Runs as root via LaunchDaemon, accepts XPC commands from the menu bar app.
-// Compile: swiftc -o SeekDBHelper -framework Foundation SeekDBHelper.swift
+// Compile: swiftc -o seekdb-helper -framework Foundation SeekDBHelper.swift
 
 import Foundation
 
-let SEEKDBCTL = "/opt/homebrew/bin/seekdbctl"
+let SEEKDBCTL = "/opt/seekdb/bin/seekdbctl"
 
 @objc(SeekDBHelperProtocol)
 protocol SeekDBHelperProtocol {

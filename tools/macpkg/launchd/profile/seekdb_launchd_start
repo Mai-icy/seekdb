@@ -1,9 +1,9 @@
 #!/bin/bash
 set -u
 
-CONFIG_FILE="${SEEKDB_CONFIG_FILE:-/opt/homebrew/etc/seekdb/seekdb.cnf}"
-SEEKDB_BIN="${SEEKDB_BIN:-/opt/homebrew/bin/seekdb}"
-BASE_DIR="/opt/homebrew/var/seekdb/data"
+CONFIG_FILE="${SEEKDB_CONFIG_FILE:-/opt/seekdb/etc/seekdb/seekdb.cnf}"
+SEEKDB_BIN="${SEEKDB_BIN:-/opt/seekdb/bin/seekdb}"
+BASE_DIR="/opt/seekdb/var/seekdb/data"
 DATA_DIR=""
 REDO_DIR=""
 LOG_DIR=""

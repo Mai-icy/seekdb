@@ -4,11 +4,13 @@
   <key>CFBundleIdentifier</key>
   <string>com.seekdb.monitor</string>
   <key>CFBundleName</key>
-  <string>SeekDB Monitor</string>
+  <string>seekdb Monitor</string>
   <key>CFBundleDisplayName</key>
-  <string>SeekDB Monitor</string>
+  <string>seekdb Monitor</string>
   <key>CFBundleExecutable</key>
-  <string>SeekDBMenuBar</string>
+  <string>seekdb-menubar</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleVersion</key>
   <string>@OceanBase_VERSION@</string>
   <key>CFBundleShortVersionString</key>

@@ -1,17 +1,19 @@
 import AppKit
 import Carbon
+import Darwin
 import Security
 
 // MARK: - Constants
 
-let SEEKDBCTL = "/opt/homebrew/bin/seekdbctl"
+let SEEKDBCTL = "/opt/seekdb/bin/seekdbctl"
 let STATUS_INTERVAL_STABLE: TimeInterval = 10.0
 let STATUS_INTERVAL_TRANSIENT: TimeInterval = 1.0
 
 // MARK: - Status Model
 
-let SEEKDB_CONFIG = "/opt/homebrew/etc/seekdb/seekdb.cnf"
-let SEEKDB_BIN = "/opt/homebrew/bin/seekdb"
+let SEEKDB_CONFIG = "/opt/seekdb/etc/seekdb/seekdb.cnf"
+let SEEKDB_BIN = "/opt/seekdb/bin/seekdb"
+let MONITOR_APP_PATH = "/Applications/seekdb Monitor.app"
 let DEFAULT_PORT = "2881"
 
 enum ServiceState { case active, starting, stopping, stopped }
@@ -41,14 +43,11 @@ struct SeekDBStatus {
     static func detect() -> SeekDBStatus {
         var s = SeekDBStatus()
         s.port = readConfigPort()
-        let pgrepResult = runCommand(["/usr/bin/pgrep", "-f", SEEKDB_BIN])
-        let pids = pgrepResult.output.trimmingCharacters(in: .whitespacesAndNewlines)
-        if pgrepResult.exitCode == 0 && !pids.isEmpty {
+        if let pid = installedSeekDBPid() {
             s.processRunning = true
-            s.pid = pids.components(separatedBy: "\n").first ?? ""
+            s.pid = pid
+            s.portOpen = portIsListeningByPid(s.port, pid: pid)
         }
-        let ncResult = runCommand(["/usr/bin/nc", "-z", "127.0.0.1", s.port])
-        s.portOpen = ncResult.exitCode == 0
         return s
     }
 }
@@ -70,6 +69,55 @@ func readConfigValue(_ key: String, fallback: String = "") -> String {
 
 func readConfigPort() -> String {
     return readConfigValue("port", fallback: DEFAULT_PORT)
+}
+
+func canonicalPath(_ path: String) -> String {
+    return URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL.path
+}
+
+func processExecutablePath(pid: String) -> String? {
+    guard let pidValue = Int32(pid), pidValue > 0 else { return nil }
+    var buffer = [CChar](repeating: 0, count: 4096)
+    let result = proc_pidpath(pid_t(pidValue), &buffer, UInt32(buffer.count))
+    guard result > 0 else { return nil }
+    return String(cString: buffer)
+}
+
+func installedSeekDBPid() -> String? {
+    let installedPath = SEEKDB_BIN
+    let installedCanonicalPath = canonicalPath(installedPath)
+    let pgrepResult = runCommand(["/usr/bin/pgrep", "-x", "seekdb"])
+    guard pgrepResult.exitCode == 0 else { return nil }
+
+    let pids = pgrepResult.output
+        .components(separatedBy: .newlines)
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+
+    for pid in pids {
+        guard let executablePath = processExecutablePath(pid: pid) else { continue }
+        if executablePath == installedPath || canonicalPath(executablePath) == installedCanonicalPath {
+            return pid
+        }
+    }
+    return nil
+}
+
+func portIsListeningByPid(_ port: String, pid: String) -> Bool {
+    let result = runCommand(["/usr/sbin/lsof", "-nP", "-iTCP:\(port)", "-sTCP:LISTEN", "-t"])
+    let owners = result.output
+        .components(separatedBy: .newlines)
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+    if result.exitCode == 0 && !owners.isEmpty {
+        return owners.contains(pid)
+    }
+
+    // Non-root monitor processes may not be able to inspect a root LaunchDaemon
+    // with lsof. Once the installed seekdb PID is confirmed, nc is the fallback
+    // for detecting that the configured SQL port is reachable.
+    let ncResult = runCommand(["/usr/bin/nc", "-z", "127.0.0.1", port])
+    return ncResult.exitCode == 0
 }
 
 // MARK: - Shell Helpers
@@ -121,9 +169,9 @@ func waitForPort(_ port: String, timeout: TimeInterval, completion: @escaping (B
             Thread.sleep(forTimeInterval: 0.5)
         }
         let logTail = runCommand(["/bin/sh", "-c",
-            "tail -n 20 /opt/homebrew/var/seekdb/data/log/launchd.err.log 2>/dev/null; " +
+            "tail -n 20 /opt/seekdb/var/seekdb/data/log/launchd.err.log 2>/dev/null; " +
             "echo '---'; " +
-            "tail -n 30 /opt/homebrew/var/seekdb/data/log/seekdb.log 2>/dev/null"])
+            "tail -n 30 /opt/seekdb/var/seekdb/data/log/seekdb.log 2>/dev/null"])
         DispatchQueue.main.async { completion(false, logTail.output) }
     }
 }
@@ -210,9 +258,32 @@ func chmod(_ path: String, _ mode: UInt16) {
     Darwin.chmod(path, mode_t(mode))
 }
 
+func pathIsInTrash(_ path: String) -> Bool {
+    return path.split(separator: "/").contains { component in
+        component == ".Trash" || component == ".Trashes"
+    }
+}
+
 // MARK: - Status Icon
 
 func makeStatusIcon(_ state: ServiceState) -> NSImage {
+    let resource: String
+    switch state {
+    case .active:
+        resource = "active"
+    case .starting, .stopping:
+        resource = "loading"
+    case .stopped:
+        resource = "stopped"
+    }
+
+    if let url = Bundle.main.url(forResource: resource, withExtension: "svg"),
+       let image = NSImage(contentsOf: url) {
+        image.size = NSSize(width: 18, height: 18)
+        image.isTemplate = false
+        return image
+    }
+
     let size = NSSize(width: 18, height: 18)
     let image = NSImage(size: size, flipped: false) { rect in
         let color: NSColor
@@ -273,7 +344,7 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
             contentRect: NSRect(x: 0, y: 0, width: w, height: h),
             styleMask: [.titled, .closable],
             backing: .buffered, defer: false)
-        window.title = "SeekDB Settings"
+        window.title = "seekdb Settings"
         window.center()
         window.delegate = self
         window.isReleasedWhenClosed = false
@@ -326,7 +397,7 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
         y -= rowH
 
         portField = addRow(label: "Port:", value: readConfigValue("port", fallback: "2881"))
-        baseDirField = addRow(label: "Base Dir:", value: readConfigValue("base-dir", fallback: "/opt/homebrew/var/seekdb/data"), withBrowse: true)
+        baseDirField = addRow(label: "Base Dir:", value: readConfigValue("base-dir", fallback: "/opt/seekdb/var/seekdb/data"), withBrowse: true)
         dataDirField = addRow(label: "Data Dir:", value: readConfigValue("data-dir", fallback: ""), withBrowse: true)
         redoDirField = addRow(label: "Redo Dir:", value: readConfigValue("redo-dir", fallback: ""), withBrowse: true)
         pluginDirField = addRow(label: "Plugin Dir:", value: readConfigValue("plugin-dir", fallback: ""), withBrowse: true)
@@ -445,7 +516,7 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
             NSApp.activate(ignoringOtherApps: true)
             let alert = NSAlert()
             alert.messageText = "Port \(port) is already in use"
-            alert.informativeText = "It is held by \(holder.description). SeekDB will not be able to bind to this port. Save anyway?"
+            alert.informativeText = "It is held by \(holder.description). seekdb will not be able to bind to this port. Save anyway?"
             alert.alertStyle = .warning
             alert.addButton(withTitle: "Cancel")
             alert.addButton(withTitle: "Save Anyway")
@@ -456,7 +527,7 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
         }
 
         // 3. Admin password gate
-        guard authorizeAdmin(prompt: "SeekDB Monitor needs your password to apply new settings and restart the database service.") else {
+        guard authorizeAdmin(prompt: "seekdb Monitor needs your password to apply new settings and restart the database service.") else {
             statusLabel.stringValue = "Cancelled."
             return
         }
@@ -492,7 +563,7 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
                     self.statusLabel.stringValue = "Service did not come up on port \(port)."
                     NSApp.activate(ignoringOtherApps: true)
                     let alert = NSAlert()
-                    alert.messageText = "SeekDB did not come up on port \(port)"
+                    alert.messageText = "seekdb did not come up on port \(port)"
                     alert.informativeText = logs.isEmpty
                         ? "Check ~/var/seekdb/data/log/seekdb.log for details."
                         : "Recent log output:\n\n\(logs)"
@@ -548,7 +619,7 @@ class MainWindowController: NSObject, NSWindowDelegate {
             contentRect: NSRect(x: 0, y: 0, width: w, height: h),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered, defer: false)
-        window.title = "SeekDB Monitor"
+        window.title = "seekdb Monitor"
         window.center()
         window.delegate = self
         window.isReleasedWhenClosed = false
@@ -662,7 +733,7 @@ class MainWindowController: NSObject, NSWindowDelegate {
         case .stopped:  color = .systemRed
         }
         statusDot.layer?.backgroundColor = color.cgColor
-        statusTitleLabel.stringValue = "SeekDB: \(status.summary)"
+        statusTitleLabel.stringValue = "seekdb: \(status.summary)"
         let pid = status.pid.isEmpty ? "—" : status.pid
         let port = status.port.isEmpty ? "—" : status.port
         statusDetailLabel.stringValue = "PID \(pid)  ·  Port \(port)"
@@ -678,10 +749,12 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var menu: NSMenu!
     var statusTimer: Timer?
+    var appRemovalTimer: Timer?
     var currentStatus = SeekDBStatus()
     let settingsController = SettingsWindowController()
     let mainWindowController = MainWindowController()
-    var allowTerminate = false
+    let launchedFromInstalledApp = Bundle.main.bundleURL.standardizedFileURL.path == MONITOR_APP_PATH
+    var uninstallingAfterAppRemoval = false
 
     // menu items that update dynamically
     var statusMenuItem: NSMenuItem!
@@ -706,6 +779,7 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
         mainWindowController.showWindow()
 
         refreshStatus()
+        startAppRemovalMonitor()
     }
 
     @objc func statusBarClicked(_ sender: Any?) {
@@ -731,22 +805,15 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if allowTerminate { return .terminateNow }
-        // Allow termination during system logout / shutdown / restart.
-        if let event = NSAppleEventManager.shared().currentAppleEvent,
-           event.attributeDescriptor(forKeyword: AEKeyword(kAEQuitReason)) != nil {
-            return .terminateNow
-        }
-        // User-triggered Quit (Dock menu, Cmd-Q): just hide windows, keep running.
-        NSApp.windows.forEach { $0.orderOut(nil) }
-        NSApp.hide(nil)
-        return .terminateCancel
+        statusTimer?.invalidate()
+        appRemovalTimer?.invalidate()
+        return .terminateNow
     }
 
     func buildMenu() {
         menu = NSMenu()
 
-        statusMenuItem = NSMenuItem(title: "SeekDB: Unknown", action: nil, keyEquivalent: "")
+        statusMenuItem = NSMenuItem(title: "seekdb: Unknown", action: nil, keyEquivalent: "")
         statusMenuItem.isEnabled = false
         menu.addItem(statusMenuItem)
 
@@ -801,6 +868,12 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
         let uninstallItem = NSMenuItem(title: "Uninstall...", action: #selector(uninstallService), keyEquivalent: "")
         uninstallItem.target = self
         menu.addItem(uninstallItem)
+
+        menu.addItem(.separator())
+
+        let quitItem = NSMenuItem(title: "Quit Monitor", action: #selector(quitMonitor), keyEquivalent: "q")
+        quitItem.target = self
+        menu.addItem(quitItem)
     }
 
     func refreshStatus() {
@@ -810,7 +883,7 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
                 guard let self = self else { return }
                 self.currentStatus = status
                 self.statusItem.button?.image = makeStatusIcon(status.state)
-                self.statusMenuItem.title = "SeekDB: \(status.summary)"
+                self.statusMenuItem.title = "seekdb: \(status.summary)"
                 self.portMenuItem.title = "Port: \(status.port.isEmpty ? "--" : status.port)"
                 self.startItem.isEnabled = (status.state == .stopped)
                 self.stopItem.isEnabled = (status.state == .active)
@@ -835,7 +908,39 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    func showResult(success: Bool, output: String, title: String = "SeekDB") {
+    func startAppRemovalMonitor() {
+        appRemovalTimer?.invalidate()
+        appRemovalTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            self?.checkAppRemoval()
+        }
+        checkAppRemoval()
+    }
+
+    func checkAppRemoval() {
+        guard !uninstallingAfterAppRemoval else { return }
+
+        let bundlePath = Bundle.main.bundleURL.standardizedFileURL.path
+        let currentBundleInTrash = pathIsInTrash(bundlePath)
+        let installedBundleMissing = launchedFromInstalledApp
+            && !FileManager.default.fileExists(atPath: MONITOR_APP_PATH)
+
+        guard currentBundleInTrash || installedBundleMissing else { return }
+
+        uninstallingAfterAppRemoval = true
+        appRemovalTimer?.invalidate()
+        statusTimer?.invalidate()
+        statusItem.button?.image = makeStatusIcon(.stopping)
+        statusMenuItem.title = "seekdb: Uninstalling…"
+
+        runPrivileged(command: "uninstall") { [weak self] success, output in
+            if !success {
+                self?.showResult(success: false, output: output, title: "Automatic Uninstall Failed")
+            }
+            NSApp.terminate(nil)
+        }
+    }
+
+    func showResult(success: Bool, output: String, title: String = "seekdb") {
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = output.isEmpty ? (success ? "Done" : "Failed") : output
@@ -857,9 +962,9 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     // MARK: - Service Actions
 
     @objc func startService() {
-        guard authorizeAdmin(prompt: "SeekDB Monitor needs your password to start the database service.") else { return }
+        guard authorizeAdmin(prompt: "seekdb Monitor needs your password to start the database service.") else { return }
         statusItem.button?.image = makeStatusIcon(.starting)
-        statusMenuItem.title = "SeekDB: Starting…"
+        statusMenuItem.title = "seekdb: Starting…"
         runPrivileged(command: "start") { [weak self] success, output in
             if !success { self?.showResult(success: false, output: output, title: "Start Failed") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self?.refreshStatus() }
@@ -867,9 +972,9 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     @objc func stopService() {
-        guard authorizeAdmin(prompt: "SeekDB Monitor needs your password to stop the database service.") else { return }
+        guard authorizeAdmin(prompt: "seekdb Monitor needs your password to stop the database service.") else { return }
         statusItem.button?.image = makeStatusIcon(.stopping)
-        statusMenuItem.title = "SeekDB: Stopping…"
+        statusMenuItem.title = "seekdb: Stopping…"
         runPrivileged(command: "stop") { [weak self] success, output in
             if !success { self?.showResult(success: false, output: output, title: "Stop Failed") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self?.refreshStatus() }
@@ -877,9 +982,9 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     @objc func restartService() {
-        guard authorizeAdmin(prompt: "SeekDB Monitor needs your password to restart the database service.") else { return }
+        guard authorizeAdmin(prompt: "seekdb Monitor needs your password to restart the database service.") else { return }
         statusItem.button?.image = makeStatusIcon(.starting)
-        statusMenuItem.title = "SeekDB: Restarting…"
+        statusMenuItem.title = "seekdb: Restarting…"
         runPrivileged(command: "restart") { [weak self] success, output in
             if !success { self?.showResult(success: false, output: output, title: "Restart Failed") }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self?.refreshStatus() }
@@ -889,12 +994,12 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     // MARK: - Logs
 
     @objc func viewLogs() {
-        let logDir = readConfigValue("base-dir", fallback: "/opt/homebrew/var/seekdb/data") + "/log"
+        let logDir = readConfigValue("base-dir", fallback: "/opt/seekdb/var/seekdb/data") + "/log"
         openTerminal("tail -n 200 \(logDir)/seekdb.log \(logDir)/launchd.out.log \(logDir)/launchd.err.log 2>/dev/null; echo '\\nPress any key to close'; read -n1")
     }
 
     @objc func followLogs() {
-        let logDir = readConfigValue("base-dir", fallback: "/opt/homebrew/var/seekdb/data") + "/log"
+        let logDir = readConfigValue("base-dir", fallback: "/opt/seekdb/var/seekdb/data") + "/log"
         openTerminal("tail -n 50 -F \(logDir)/seekdb.log \(logDir)/launchd.out.log \(logDir)/launchd.err.log 2>/dev/null")
     }
 
@@ -910,20 +1015,20 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     // MARK: - Diagnostics
 
     @objc func runDoctor() {
-        let baseDir = readConfigValue("base-dir", fallback: "/opt/homebrew/var/seekdb/data")
+        let baseDir = readConfigValue("base-dir", fallback: "/opt/seekdb/var/seekdb/data")
         let logDir = baseDir + "/log"
         let port = readConfigValue("port", fallback: "2881")
         let script = """
-        echo 'SeekDB diagnostics'
+        echo 'seekdb diagnostics'
         echo '------------------'
-        test -x /opt/homebrew/bin/seekdb && echo 'binary     : ok' || echo 'binary     : missing'
+        test -x /opt/seekdb/bin/seekdb && echo 'binary     : ok' || echo 'binary     : missing'
         test -f \(SEEKDB_CONFIG) && echo 'config     : ok' || echo 'config     : missing'
         test -d \(baseDir) && echo 'base dir   : ok' || echo 'base dir   : missing'
         test -d \(logDir) && echo 'log dir    : ok' || echo 'log dir    : missing'
         nc -z 127.0.0.1 \(port) 2>/dev/null && echo 'port       : open (\(port))' || echo 'port       : closed (\(port))'
-        pgrep -f /opt/homebrew/bin/seekdb >/dev/null && echo 'process    : running' || echo 'process    : not running'
+        pgrep -f /opt/seekdb/bin/seekdb >/dev/null && echo 'process    : running' || echo 'process    : not running'
         echo 'disk       :'
-        df -h \(baseDir) 2>/dev/null || df -h /opt/homebrew 2>/dev/null
+        df -h \(baseDir) 2>/dev/null || df -h /opt/seekdb 2>/dev/null
         echo 'memory     :' $(( $(sysctl -n hw.memsize 2>/dev/null) / 1024 / 1024 )) MB
         echo '\\nPress any key to close'; read -n1
         """
@@ -937,7 +1042,7 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
             message: "Initialize Database?",
             info: "This will erase all database data and bootstrap a fresh instance.\nConfiguration and plugins will be preserved.\n\nThis cannot be undone."
         ) else { return }
-        guard authorizeAdmin(prompt: "SeekDB Monitor needs your password to initialize the database. All current data will be erased.") else { return }
+        guard authorizeAdmin(prompt: "seekdb Monitor needs your password to initialize the database. All current data will be erased.") else { return }
         statusItem.button?.image = makeStatusIcon(.starting)
         runPrivileged(command: "initialize") { [weak self] success, output in
             self?.showResult(success: success, output: output, title: "Initialize Database")
@@ -948,9 +1053,9 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     @objc func cleanData() {
         guard confirmAction(
             message: "Clean All Data?",
-            info: "This will stop SeekDB and remove all config and data directories.\nThis cannot be undone."
+            info: "This will stop seekdb and remove all config and data directories.\nThis cannot be undone."
         ) else { return }
-        guard authorizeAdmin(prompt: "SeekDB Monitor needs your password to remove all configuration and data. This cannot be undone.") else { return }
+        guard authorizeAdmin(prompt: "seekdb Monitor needs your password to remove all configuration and data. This cannot be undone.") else { return }
         statusItem.button?.image = makeStatusIcon(.stopping)
         runPrivileged(command: "clean-data", args: ["--force"]) { [weak self] success, output in
             self?.showResult(success: success, output: output, title: "Clean Data")
@@ -960,14 +1065,13 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
 
     @objc func uninstallService() {
         guard confirmAction(
-            message: "Uninstall SeekDB?",
+            message: "Uninstall seekdb?",
             info: "This will stop the service and remove all installed files, config, and data.\nThis cannot be undone."
         ) else { return }
-        guard authorizeAdmin(prompt: "SeekDB Monitor needs your password to uninstall SeekDB and remove all data.") else { return }
+        guard authorizeAdmin(prompt: "seekdb Monitor needs your password to uninstall seekdb and remove all data.") else { return }
         runPrivileged(command: "uninstall") { [weak self] success, output in
             self?.showResult(success: success, output: output, title: "Uninstall")
             if success {
-                self?.allowTerminate = true
                 NSApp.terminate(nil)
             }
             self?.refreshStatus()
@@ -975,6 +1079,10 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Window
+
+    @objc func quitMonitor() {
+        NSApp.terminate(nil)
+    }
 
     @objc func openMainWindow() {
         mainWindowController.showWindow()
