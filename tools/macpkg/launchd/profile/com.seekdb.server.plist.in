@@ -10,10 +10,7 @@
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
-  <dict>
-    <key>Crashed</key>
-    <true/>
-  </dict>
+  <false/>
   <key>WorkingDirectory</key>
   <string>/opt/seekdb/var/seekdb/data</string>
   <key>StandardOutPath</key>
