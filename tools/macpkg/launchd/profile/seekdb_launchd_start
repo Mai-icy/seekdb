@@ -77,6 +77,12 @@ if [ -z "$LOG_DIR" ]; then
   LOG_DIR="$BASE_DIR/log"
 fi
 
+UNINSTALL_MARKER="$BASE_DIR/run/uninstalling"
+if [ -f "$UNINSTALL_MARKER" ]; then
+  echo "seekdb is marked for uninstall; not starting."
+  exit 0
+fi
+
 mkdir -p "$BASE_DIR" "$DATA_DIR" "$REDO_DIR" "$BASE_DIR/run" "$LOG_DIR"
 
 ARGS=("--base-dir=$BASE_DIR" "--nodaemon")

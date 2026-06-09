@@ -157,22 +157,18 @@ func portInUse(_ port: Int) -> PortHolder? {
     return PortHolder(command: String(cols[0]), pid: String(cols[1]))
 }
 
-func waitForPort(_ port: String, timeout: TimeInterval, completion: @escaping (Bool, String) -> Void) {
+func waitForPort(_ port: String, timeout: TimeInterval, completion: @escaping (Bool) -> Void) {
     DispatchQueue.global(qos: .utility).async {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             let r = runCommand(["/usr/bin/nc", "-z", "127.0.0.1", port])
             if r.exitCode == 0 {
-                DispatchQueue.main.async { completion(true, "") }
+                DispatchQueue.main.async { completion(true) }
                 return
             }
             Thread.sleep(forTimeInterval: 0.5)
         }
-        let logTail = runCommand(["/bin/sh", "-c",
-            "tail -n 20 /opt/seekdb/var/seekdb/data/log/launchd.err.log 2>/dev/null; " +
-            "echo '---'; " +
-            "tail -n 30 /opt/seekdb/var/seekdb/data/log/seekdb.log 2>/dev/null"])
-        DispatchQueue.main.async { completion(false, logTail.output) }
+        DispatchQueue.main.async { completion(false) }
     }
 }
 
@@ -328,6 +324,7 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
     var bootStartupSwitch: NSButton!
     var statusLabel: NSTextField!
     var onSaved: (() -> Void)?
+    var onLockService: ((Bool) -> Void)?
     private var bootStartupApplying = false
 
     func showWindow() {
@@ -473,7 +470,14 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
             } else {
                 self.bootStartupSwitch.state = enable ? .off : .on
                 self.bootStartupSwitch.isEnabled = true
-                self.statusLabel.stringValue = "Error: \(output)"
+                self.statusLabel.stringValue = "Failed to change boot startup."
+                let logDir = readConfigValue("base-dir", fallback: "/opt/seekdb/var/seekdb/data") + "/log"
+                NSApp.activate(ignoringOtherApps: true)
+                let alert = NSAlert()
+                alert.messageText = "Failed to change boot startup"
+                alert.informativeText = "Check logs for details:\n\n\(logDir)/seekdb.log\n\(logDir)/launchd.err.log"
+                alert.alertStyle = .warning
+                alert.runModal()
             }
         }
     }
@@ -534,6 +538,7 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
 
         saveButton.isEnabled = false
         statusLabel.stringValue = "Saving…"
+        onLockService?(true)
 
         var args: [String] = ["--port", port]
         if !baseDir.isEmpty { args += ["--base-dir", baseDir] }
@@ -542,17 +547,26 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
         if !pluginDir.isEmpty { args += ["--plugin-dir", pluginDir] }
         args += ["--restart"]
 
+        let logDir = (baseDir.isEmpty ? "/opt/seekdb/var/seekdb/data" : baseDir) + "/log"
         runPrivileged(command: "config", args: args) { [weak self] success, output in
             guard let self = self else { return }
             if !success {
                 self.saveButton.isEnabled = true
-                self.statusLabel.stringValue = "Error: \(output)"
+                self.onLockService?(false)
+                self.statusLabel.stringValue = "Failed to apply settings."
+                NSApp.activate(ignoringOtherApps: true)
+                let alert = NSAlert()
+                alert.messageText = "Failed to apply settings"
+                alert.informativeText = "Check logs for details:\n\n\(logDir)/seekdb.log\n\(logDir)/launchd.err.log"
+                alert.alertStyle = .warning
+                alert.runModal()
                 return
             }
             // 3. Wait for the new port to actually accept connections.
             self.statusLabel.stringValue = "Restarting (waiting for service)…"
-            waitForPort(port, timeout: 30) { ok, logs in
+            waitForPort(port, timeout: 30) { ok in
                 self.saveButton.isEnabled = true
+                self.onLockService?(false)
                 if ok {
                     self.statusLabel.stringValue = "Saved and restarted."
                     self.onSaved?()
@@ -564,9 +578,7 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
                     NSApp.activate(ignoringOtherApps: true)
                     let alert = NSAlert()
                     alert.messageText = "seekdb did not come up on port \(port)"
-                    alert.informativeText = logs.isEmpty
-                        ? "Check ~/var/seekdb/data/log/seekdb.log for details."
-                        : "Recent log output:\n\n\(logs)"
+                    alert.informativeText = "Check logs for details:\n\n\(logDir)/seekdb.log\n\(logDir)/launchd.err.log"
                     alert.alertStyle = .warning
                     alert.runModal()
                 }
@@ -581,7 +593,6 @@ class SettingsWindowController: NSObject, NSWindowDelegate {
         alert.informativeText = message
         alert.alertStyle = .warning
         alert.runModal()
-        statusLabel.stringValue = message
     }
 
     @objc func cancelSettings() {
@@ -600,6 +611,8 @@ class MainWindowController: NSObject, NSWindowDelegate {
     var startButton: NSButton!
     var stopButton: NSButton!
     var restartButton: NSButton!
+    var settingsButton: NSButton!
+    var initializeButton: NSButton!
 
     func showWindow() {
         if window == nil { buildWindow() }
@@ -701,15 +714,16 @@ class MainWindowController: NSObject, NSWindowDelegate {
         ])
 
         addSectionLabel("Configuration")
+        settingsButton = makeButton("Settings…", #selector(SeekDBMenuBarApp.openSettings))
         addRow([
-            makeButton("Settings…", #selector(SeekDBMenuBarApp.openSettings)),
+            settingsButton,
             makeButton("Run Doctor", #selector(SeekDBMenuBarApp.runDoctor))
         ])
 
         addSectionLabel("Maintenance")
+        initializeButton = makeButton("Initialize Database", #selector(SeekDBMenuBarApp.setupService))
         addRow([
-            makeButton("Initialize Database", #selector(SeekDBMenuBarApp.setupService)),
-            makeButton("Clean Data…", #selector(SeekDBMenuBarApp.cleanData)),
+            initializeButton,
             makeButton("Uninstall…", #selector(SeekDBMenuBarApp.uninstallService))
         ])
 
@@ -723,7 +737,7 @@ class MainWindowController: NSObject, NSWindowDelegate {
         window?.orderOut(nil)
     }
 
-    func update(_ status: SeekDBStatus) {
+    func update(_ status: SeekDBStatus, locked: Bool = false) {
         guard window != nil else { return }
         let color: NSColor
         switch status.state {
@@ -737,9 +751,19 @@ class MainWindowController: NSObject, NSWindowDelegate {
         let pid = status.pid.isEmpty ? "—" : status.pid
         let port = status.port.isEmpty ? "—" : status.port
         statusDetailLabel.stringValue = "PID \(pid)  ·  Port \(port)"
-        startButton.isEnabled = (status.state == .stopped)
-        stopButton.isEnabled = (status.state == .active)
-        restartButton.isEnabled = (status.state == .active)
+        if locked {
+            startButton.isEnabled = false
+            stopButton.isEnabled = false
+            restartButton.isEnabled = false
+            settingsButton.isEnabled = false
+            initializeButton.isEnabled = false
+        } else {
+            startButton.isEnabled = (status.state == .stopped)
+            stopButton.isEnabled = (status.state == .active)
+            restartButton.isEnabled = (status.state == .active)
+            settingsButton.isEnabled = true
+            initializeButton.isEnabled = true
+        }
     }
 }
 
@@ -755,6 +779,7 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     let mainWindowController = MainWindowController()
     let launchedFromInstalledApp = Bundle.main.bundleURL.standardizedFileURL.path == MONITOR_APP_PATH
     var uninstallingAfterAppRemoval = false
+    var serviceOperationInProgress = false
 
     // menu items that update dynamically
     var statusMenuItem: NSMenuItem!
@@ -762,6 +787,8 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     var startItem: NSMenuItem!
     var stopItem: NSMenuItem!
     var restartItem: NSMenuItem!
+    var settingsItem: NSMenuItem!
+    var setupItem: NSMenuItem!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -847,7 +874,7 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
-        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
+        settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
 
@@ -857,13 +884,9 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
-        let setupItem = NSMenuItem(title: "Initialize Database", action: #selector(setupService), keyEquivalent: "")
+        setupItem = NSMenuItem(title: "Initialize Database", action: #selector(setupService), keyEquivalent: "")
         setupItem.target = self
         menu.addItem(setupItem)
-
-        let cleanItem = NSMenuItem(title: "Clean Data...", action: #selector(cleanData), keyEquivalent: "")
-        cleanItem.target = self
-        menu.addItem(cleanItem)
 
         let uninstallItem = NSMenuItem(title: "Uninstall...", action: #selector(uninstallService), keyEquivalent: "")
         uninstallItem.target = self
@@ -885,10 +908,20 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
                 self.statusItem.button?.image = makeStatusIcon(status.state)
                 self.statusMenuItem.title = "seekdb: \(status.summary)"
                 self.portMenuItem.title = "Port: \(status.port.isEmpty ? "--" : status.port)"
-                self.startItem.isEnabled = (status.state == .stopped)
-                self.stopItem.isEnabled = (status.state == .active)
-                self.restartItem.isEnabled = (status.state == .active)
-                self.mainWindowController.update(status)
+                if self.serviceOperationInProgress {
+                    self.startItem.isEnabled = false
+                    self.stopItem.isEnabled = false
+                    self.restartItem.isEnabled = false
+                    self.settingsItem.isEnabled = false
+                    self.setupItem.isEnabled = false
+                } else {
+                    self.startItem.isEnabled = (status.state == .stopped)
+                    self.stopItem.isEnabled = (status.state == .active)
+                    self.restartItem.isEnabled = (status.state == .active)
+                    self.settingsItem.isEnabled = true
+                    self.setupItem.isEnabled = true
+                }
+                self.mainWindowController.update(status, locked: self.serviceOperationInProgress)
                 self.scheduleNextPoll()
             }
         }
@@ -943,8 +976,14 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     func showResult(success: Bool, output: String, title: String = "seekdb") {
         let alert = NSAlert()
         alert.messageText = title
-        alert.informativeText = output.isEmpty ? (success ? "Done" : "Failed") : output
-        alert.alertStyle = success ? .informational : .critical
+        if success {
+            alert.informativeText = "Done."
+            alert.alertStyle = .informational
+        } else {
+            let logDir = readConfigValue("base-dir", fallback: "/opt/seekdb/var/seekdb/data") + "/log"
+            alert.informativeText = "Check logs for details:\n\n\(logDir)/seekdb.log\n\(logDir)/launchd.err.log"
+            alert.alertStyle = .critical
+        }
         alert.runModal()
     }
 
@@ -962,6 +1001,7 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     // MARK: - Service Actions
 
     @objc func startService() {
+        guard !serviceOperationInProgress else { return }
         guard authorizeAdmin(prompt: "seekdb Monitor needs your password to start the database service.") else { return }
         statusItem.button?.image = makeStatusIcon(.starting)
         statusMenuItem.title = "seekdb: Starting…"
@@ -972,6 +1012,7 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     @objc func stopService() {
+        guard !serviceOperationInProgress else { return }
         guard authorizeAdmin(prompt: "seekdb Monitor needs your password to stop the database service.") else { return }
         statusItem.button?.image = makeStatusIcon(.stopping)
         statusMenuItem.title = "seekdb: Stopping…"
@@ -982,6 +1023,7 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     }
 
     @objc func restartService() {
+        guard !serviceOperationInProgress else { return }
         guard authorizeAdmin(prompt: "seekdb Monitor needs your password to restart the database service.") else { return }
         statusItem.button?.image = makeStatusIcon(.starting)
         statusMenuItem.title = "seekdb: Restarting…"
@@ -1006,7 +1048,12 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     // MARK: - Settings
 
     @objc func openSettings() {
+        guard !serviceOperationInProgress else { return }
         settingsController.onSaved = { [weak self] in
+            self?.refreshStatus()
+        }
+        settingsController.onLockService = { [weak self] locked in
+            self?.serviceOperationInProgress = locked
             self?.refreshStatus()
         }
         settingsController.showWindow()
@@ -1038,28 +1085,20 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     // MARK: - Initialize / Dangerous Actions
 
     @objc func setupService() {
+        guard !serviceOperationInProgress else { return }
         guard confirmAction(
             message: "Initialize Database?",
             info: "This will erase all database data and bootstrap a fresh instance.\nConfiguration and plugins will be preserved.\n\nThis cannot be undone."
         ) else { return }
         guard authorizeAdmin(prompt: "seekdb Monitor needs your password to initialize the database. All current data will be erased.") else { return }
+        serviceOperationInProgress = true
         statusItem.button?.image = makeStatusIcon(.starting)
+        refreshStatus()
         runPrivileged(command: "initialize") { [weak self] success, output in
-            self?.showResult(success: success, output: output, title: "Initialize Database")
-            self?.refreshStatus()
-        }
-    }
-
-    @objc func cleanData() {
-        guard confirmAction(
-            message: "Clean All Data?",
-            info: "This will stop seekdb and remove all config and data directories.\nThis cannot be undone."
-        ) else { return }
-        guard authorizeAdmin(prompt: "seekdb Monitor needs your password to remove all configuration and data. This cannot be undone.") else { return }
-        statusItem.button?.image = makeStatusIcon(.stopping)
-        runPrivileged(command: "clean-data", args: ["--force"]) { [weak self] success, output in
-            self?.showResult(success: success, output: output, title: "Clean Data")
-            self?.refreshStatus()
+            guard let self = self else { return }
+            self.serviceOperationInProgress = false
+            self.showResult(success: success, output: output, title: "Initialize Database")
+            self.refreshStatus()
         }
     }
 
@@ -1095,4 +1134,18 @@ let app = NSApplication.shared
 let delegate = SeekDBMenuBarApp()
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
+
+let mainMenu = NSMenu()
+let editMenuItem = NSMenuItem()
+editMenuItem.submenu = {
+    let menu = NSMenu(title: "Edit")
+    menu.addItem(NSMenuItem(title: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x"))
+    menu.addItem(NSMenuItem(title: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
+    menu.addItem(NSMenuItem(title: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v"))
+    menu.addItem(NSMenuItem(title: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"))
+    return menu
+}()
+mainMenu.addItem(editMenuItem)
+app.mainMenu = mainMenu
+
 app.run()

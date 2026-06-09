@@ -24,7 +24,7 @@ class Helper: NSObject, SeekDBHelperProtocol, NSXPCListenerDelegate {
     }
 
     func execute(command: String, args: [String], withReply reply: @escaping (Bool, String) -> Void) {
-        let allowed = ["start", "stop", "restart", "setup", "initialize", "config", "enable-boot", "disable-boot", "clean-data", "uninstall"]
+        let allowed = ["start", "stop", "restart", "setup", "initialize", "config", "enable-boot", "disable-boot", "uninstall"]
         guard allowed.contains(command) else {
             reply(false, "Command not allowed: \(command)")
             return
@@ -41,7 +41,8 @@ class Helper: NSObject, SeekDBHelperProtocol, NSXPCListenerDelegate {
             proc.waitUntilExit()
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             let output = String(data: data, encoding: .utf8) ?? ""
-            reply(proc.terminationStatus == 0, output)
+            let success = proc.terminationStatus == 0
+            reply(success, output)
         } catch {
             reply(false, error.localizedDescription)
         }
