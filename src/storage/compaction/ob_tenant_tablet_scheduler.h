@@ -89,50 +89,11 @@ private:
   static const int64_t EMPTY_MVCC_ROW_PERCENTAGE = 50;
   static const int64_t TOMBSTONE_MAX_ROW_COUNT = 500000;
   static const int64_t TOMBSTONE_STEP_ROW_COUNT = 50000;
-  static const int64_t FAST_FREEZE_TABLET_STAT_KEY_BUCKET_NUM = OB_MAX_LS_NUM_PER_TENANT_PER_SERVER * 1024;
+  // entry is a subset of ObTenantTabletStatMgr::stream_map_ (capped at 20000),
+  // align bucket count with stream_map_ to share the same prime sizing.
+  static const int64_t FAST_FREEZE_TABLET_STAT_KEY_BUCKET_NUM = 1543;
   common::hash::ObHashMap<ObTabletStatKey, int64_t> store_map_;
   bool enable_fast_freeze_;
-};
-
-struct ObProhibitScheduleMediumMap
-{
-public:
-
-  enum class ProhibitFlag : int32_t
-  {
-    TRANSFER = 0,
-    MEDIUM = 1,
-    SPLIT = 2,
-    FLAG_MAX
-  };
-
-  static const char *ProhibitFlagStr[];
-  static bool is_valid_flag(const ProhibitFlag &flag)
-  {
-    return flag >= ProhibitFlag::TRANSFER && flag < ProhibitFlag::FLAG_MAX;
-  }
-  ObProhibitScheduleMediumMap();
-  ~ObProhibitScheduleMediumMap() { destroy(); }
-  int init();
-  void destroy();
-  int clear_flag(const ObTabletID &tablet_id, const ProhibitFlag &input_flag);
-  int add_flag(const ObTabletID &tablet_id, const ProhibitFlag &input_flag);
-  int batch_clear_flags(const ObIArray<ObTabletID> &tablet_ids, const ProhibitFlag &input_flag);
-  int batch_add_flags(const ObIArray<ObTabletID> &tablet_ids, const ProhibitFlag &input_flag);
-  int64_t to_string(char *buf, const int64_t buf_len) const;
-  int64_t get_transfer_flag_cnt() const;
-  int64_t get_split_flag_cnt() const;
-private:
-  static const int64_t PRINT_LOG_INTERVAL = 2 * 60 * 1000 * 1000L; // 2m
-  static const int64_t TABLET_ID_MAP_BUCKET_NUM = OB_MAX_LS_NUM_PER_TENANT_PER_SERVER * 1024;
-
-  int inner_batch_check_tablets_not_prohibited_(const ObIArray<ObTabletID> &tablet_ids); // hold lock outside !!
-  int inner_batch_add_tablets_prohibit_flags_(const ObIArray<ObTabletID> &tablet_ids, const ProhibitFlag &input_flag); // hold lock outside !!
-  int inner_clear_flag_(const ObTabletID &tablet_id, const ProhibitFlag &input_flag); // hold lock outside !!
-  int64_t transfer_flag_cnt_;
-  int64_t split_flag_cnt_;
-  mutable obsys::ObRWLock lock_;
-  common::hash::ObHashMap<ObTabletID, ProhibitFlag> tablet_id_map_; // tablet is used for transfer of medium compaction
 };
 
 
@@ -166,17 +127,6 @@ public:
     return OB_ITER_END == ret
       || OB_STATE_NOT_MATCH == ret
       || OB_LS_NOT_EXIST == ret;
-  }
-  // The transfer task sets the flag that prohibits the scheduling of medium when the log stream is src_ls of transfer
-  int stop_tablets_schedule_medium(const ObIArray<ObTabletID> &tablet_ids, const ObProhibitScheduleMediumMap::ProhibitFlag &input_flag);
-  int clear_tablets_prohibit_medium_flag(const ObIArray<ObTabletID> &tablet_ids, const ObProhibitScheduleMediumMap::ProhibitFlag &input_flag);
-  int clear_prohibit_medium_flag(const ObTabletID &tablet_id, const ObProhibitScheduleMediumMap::ProhibitFlag &input_flag)
-  {
-    return prohibit_medium_map_.clear_flag(tablet_id, input_flag);
-  }
-  int tablet_start_schedule_medium(const ObTabletID &tablet_id, bool &tablet_could_schedule_medium);
-  const ObProhibitScheduleMediumMap& get_prohibit_medium_ls_map() const {
-    return prohibit_medium_map_;
   }
   int64_t get_bf_queue_size() const { return bf_queue_.task_count(); }
   virtual int schedule_merge(const int64_t broadcast_version) override;
@@ -304,7 +254,6 @@ private:
   ObFastFreezeChecker fast_freeze_checker_;
   ObCompactionScheduleIterator minor_ls_tablet_iter_;
   ObCompactionScheduleIterator gc_sst_tablet_iter_;
-  ObProhibitScheduleMediumMap prohibit_medium_map_;
   ObTenantTabletSchedulerTaskMgr timer_task_mgr_;
   ObScheduleBatchSizeMgr batch_size_mgr_;
   ObMediumLoop medium_loop_;
