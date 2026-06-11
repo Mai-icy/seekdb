@@ -121,18 +121,20 @@ void ObRemoteLogWriter::run1()
   ObDIActionGuard ag("LogService", "LogRestoreService", "RemoteLogWriter");
   lib::set_thread_name("RFLWorker");
 
-  const int64_t THREAD_RUN_INTERVAL = 100 * 1000L;
+  const int64_t IDLE_INTERVAL = 1000 * 1000L;     // 1s when no active restore handler
+  const int64_t ACTIVE_INTERVAL = 100 * 1000L;     // 100ms when active
   if (OB_UNLIKELY(! inited_)) {
     LOG_INFO("ObRemoteLogWriter not init");
   } else {
+    bool was_active = false;
     while (! has_set_stop()) {
-      int64_t begin_tstamp = ObTimeUtility::current_time();
-      do_thread_task_();
-      int64_t end_tstamp = ObTimeUtility::current_time();
-      int64_t wait_interval = THREAD_RUN_INTERVAL - (end_tstamp - begin_tstamp);
-      if (wait_interval > 0) {
-        ob_usleep(wait_interval, true/*is_idle_sleep*/);
+      const bool is_active = restore_service_->is_restore_active();
+      if (is_active || was_active) {
+        do_thread_task_();
       }
+      was_active = is_active;
+      const int64_t interval = is_active ? ACTIVE_INTERVAL : IDLE_INTERVAL;
+      restore_service_->wait_on_cond(interval);
     }
   }
 }

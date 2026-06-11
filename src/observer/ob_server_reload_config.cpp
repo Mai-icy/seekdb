@@ -170,6 +170,9 @@ int ObServerReloadConfig::operator()()
 
       reload_tenant_freezer_config_();
       reload_tenant_scheduler_config_();
+      if (OB_NOT_NULL(GCTX.omt_)) {
+        GCTX.omt_->reload_tenant_task_queue_size();
+      }
   }
 
   int64_t cache_size = GCONF.memory_chunk_cache_size;

@@ -52,7 +52,6 @@ int ObLobQueryBaseHandler::execute()
   int tmp_ret = OB_SUCCESS;
   int64_t retry_cnt = 0;
   bool is_continue = true;
-  oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT_FOR_LOCAL_RETRY);
   do {
     if (OB_FAIL(do_execute())) {
       LOG_WARN("do_execute fail, check need rerty", KR(ret), K(retry_cnt), K(param_));

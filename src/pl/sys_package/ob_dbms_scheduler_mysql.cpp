@@ -18,6 +18,7 @@
 
 #include "observer/ob_inner_sql_connection_pool.h"
 #include "observer/dbms_scheduler/ob_dbms_sched_job_executor.h"
+#include "observer/dbms_scheduler/ob_dbms_sched_service.h"
 #include "ob_dbms_scheduler_mysql.h"
 #include "share/stat/ob_dbms_stats_maintenance_window.h"
 #include "share/ob_scheduled_manage_dynamic_partition.h"
@@ -71,6 +72,7 @@ int ObDBMSSchedulerMysql::disable(
   OZ (dml.splice_update_sql(OB_ALL_TENANT_SCHEDULER_JOB_TNAME, sql));
   OZ (execute_sql(ctx, sql, affected_rows));
   CK (OB_LIKELY(1 == affected_rows || 2 == affected_rows));
+  rootserver::ObDBMSSchedService::wakeup_scheduler();
   return ret;
 }
 
@@ -93,6 +95,7 @@ int ObDBMSSchedulerMysql::enable(
   OZ (dml.splice_update_sql(OB_ALL_TENANT_SCHEDULER_JOB_TNAME, sql));
   OZ (execute_sql(ctx, sql, affected_rows));
   CK (OB_LIKELY(1 == affected_rows || 2 == affected_rows));
+  rootserver::ObDBMSSchedService::wakeup_scheduler();
   return ret;
 }
 
@@ -128,6 +131,7 @@ int ObDBMSSchedulerMysql::set_attribute(
       OZ (dml.splice_update_sql(OB_ALL_TENANT_SCHEDULER_JOB_TNAME, sql));
       OZ (execute_sql(ctx, sql, affected_rows));
       CK (1 == affected_rows || 2 == affected_rows);
+      rootserver::ObDBMSSchedService::wakeup_scheduler();
     } else if (OB_FAIL(ObScheduledManageDynamicPartition::set_attribute(ctx.get_my_session(),
                                                                         params.at(0).get_string(),
                                                                         params.at(1).get_string(),
@@ -140,6 +144,7 @@ int ObDBMSSchedulerMysql::set_attribute(
       OZ (dml.splice_update_sql(OB_ALL_TENANT_SCHEDULER_JOB_TNAME, sql));
       OZ (execute_sql(ctx, sql, affected_rows));
       CK (1 == affected_rows || 2 == affected_rows);
+      rootserver::ObDBMSSchedService::wakeup_scheduler();
     } else {
       OZ (params.at(1).get_varchar(attr_name));
       OZ (params.at(2).get_varchar(attr_val));

@@ -223,7 +223,8 @@ ObCompactionScheduleIterator::ObCompactionScheduleIterator(
     const bool is_major)
   : ObBasicMergeScheduleIterator(),
     is_major_(is_major),
-    report_scn_flag_(false)
+    report_scn_flag_(false),
+    tablet_get_mode_(storage::ObMDSGetTabletMode::READ_ALL_COMMITED)
 {
   ls_ids_.set_attr(ObMemAttr(MTL_ID(), "CompIter"));
 }
@@ -317,7 +318,7 @@ int ObCompactionScheduleIterator::get_tablet_ids()
 int ObCompactionScheduleIterator::get_tablet_handle(
   const ObTabletID &tablet_id, ObTabletHandle &tablet_handle)
 {
-  int ret = cur_ls_handle_.get_ls()->get_tablet_svr()->get_tablet(tablet_id, tablet_handle,  0/*timeout*/, storage::ObMDSGetTabletMode::READ_ALL_COMMITED);
+  int ret = cur_ls_handle_.get_ls()->get_tablet_svr()->get_tablet(tablet_id, tablet_handle,  0/*timeout*/, tablet_get_mode_);
 #ifdef ERRSIM
   if (OB_SUCC(ret) && tablet_id.id() > ObTabletID::MIN_USER_TABLET_ID) {
     ret = OB_E(EventTable::EN_COMPACTION_ITER_TABLET_NOT_EXIST) ret;

@@ -2100,19 +2100,6 @@ int ObPlanCache::destroy_cache_obj(const bool is_leaked, const uint64_t object_i
   return ret;
 }
 
-int ObPlanCache::dump_all_objs() const
-{
-  int ret = OB_SUCCESS;
-  ObArray<AllocCacheObjInfo> alloc_obj_list;
-  ObDumpAllCacheObjOp get_all_objs_op(&alloc_obj_list, INT64_MAX);
-  if (OB_FAIL(co_mgr_.foreach_alloc_cache_obj(get_all_objs_op))) {
-    LOG_WARN("failed to traverse alloc cache obj map", K(ret));
-  } else {
-    LOG_INFO("Dumping All Cache Objs", K(alloc_obj_list.count()), K(alloc_obj_list));
-  }
-  return ret;
-}
-
 int ObPlanCache::dump_deleted_objs_by_ns(ObIArray<AllocCacheObjInfo> &deleted_objs,
                                          const int64_t safe_timestamp,
                                          const ObLibCacheNameSpace ns)
@@ -2361,19 +2348,6 @@ int ObPlanCache::flush_pl_cache()
 
 const char *plan_cache_gc_confs[3] = { "OFF", "REPORT", "AUTO" };
 
-int ObPlanCache::get_plan_cache_gc_strategy()
-{
-  PlanCacheGCStrategy strategy = INVALID;
-  for (int i = 0; i < ARRAYSIZEOF(plan_cache_gc_confs) && strategy == INVALID; i++) {
-    if (0 == ObString::make_string(plan_cache_gc_confs[i])
-               .case_compare(GCONF._ob_plan_cache_gc_strategy)) {
-      strategy = static_cast<PlanCacheGCStrategy>(i);
-    }
-  }
-  return strategy;
-}
-
-
 void ObPlanCacheEliminationTask::runTimerTask()
 {
   int ret = OB_SUCCESS;
@@ -2392,11 +2366,6 @@ void ObPlanCacheEliminationTask::runTimerTask()
     SQL_PC_LOG(INFO, "schedule next cache evict task",
               "evict_interval", (int64_t)(GCONF.plan_cache_evict_interval));
   }
-  // free cache obj in deleted map
-  if (plan_cache_->get_plan_cache_gc_strategy() > 0) {
-    observer::ObReqTimeGuard req_timeinfo_guard;
-    run_free_cache_obj_task();
-  }
   SQL_PC_LOG(INFO, "schedule next cache evict task",
              "evict_interval", (int64_t)(GCONF.plan_cache_evict_interval));
 }
@@ -2412,36 +2381,6 @@ void ObPlanCacheEliminationTask::run_plan_cache_task()
     SQL_PC_LOG(ERROR, "Plan cache evict failed, please check", K(ret));
   }  else if (OB_FAIL(plan_cache_->cache_evict_by_glitch_node())) {
     SQL_PC_LOG(ERROR, "Plan cache evict by glitch failed, please check", K(ret));
-  }
-}
-
-void ObPlanCacheEliminationTask::run_free_cache_obj_task()
-{
-  int ret = OB_SUCCESS;
-  ObArray<AllocCacheObjInfo> deleted_objs;
-  int64_t safe_timestamp = INT64_MAX;
-  if (observer::ObGlobalReqTimeService::get_instance()
-                         .get_global_safe_timestamp(safe_timestamp)) {
-    // ignore ret
-    SQL_PC_LOG(ERROR, "failed to get global safe timestamp", K(ret));
-  } else if (OB_FAIL(plan_cache_->dump_deleted_objs<DUMP_ALL>(deleted_objs, safe_timestamp))) {
-    SQL_PC_LOG(WARN, "failed to traverse hashmap", K(ret));
-  } else {
-    int64_t tot_mem_used = 0;
-    for (int k = 0; k < deleted_objs.count(); k++) {
-      tot_mem_used += deleted_objs.at(k).mem_used_;
-    } // end for
-    if (tot_mem_used >= ((plan_cache_->get_mem_limit() / 100) * 30)) {
-      // ignore ret
-      LOG_ERROR("Cache Object Memory Leaked Much!!!", K(tot_mem_used),
-                K(plan_cache_->get_mem_limit()), K(deleted_objs), K(safe_timestamp));
-    } else if (deleted_objs.count() > 0) {
-      LOG_WARN("Cache Object Memory Leaked Much!!!", K(deleted_objs),
-               K(safe_timestamp), K(plan_cache_->get_mem_limit()));
-    }
-  }
-  if (OB_SUCC(ret) && OB_FAIL(plan_cache_->dump_all_objs())) {
-    LOG_WARN("failed to dump deleted map", K(ret));
   }
 }
 

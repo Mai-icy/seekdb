@@ -165,7 +165,6 @@ int ObPxSqcAsyncProxy::wait_all() {
   // 1. Obtain enough and correct callback results within the valid time frame
   // 2. Timeout, ret = OB_TIMEOUT
   // 3. retry an rpc failure
-  oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT_FOR_PX_MSG);
   while (return_cb_count_ < sqcs_.count() && OB_SUCC(ret)) {
 
     ObThreadCondGuard guard(cond_);

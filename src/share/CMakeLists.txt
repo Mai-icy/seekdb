@@ -157,7 +157,6 @@ ob_set_subtarget(ob_share cache
 ob_set_subtarget(ob_share common
   ob_autoincrement_param.cpp
   ob_autoincrement_service.cpp
-  ob_bg_thread_monitor.cpp
   ob_cascad_member.cpp
   ob_cascad_member_list.cpp
   ob_cluster_role.cpp
@@ -265,6 +264,7 @@ ob_set_subtarget(ob_share common
   ob_batch_selector.cpp
   ob_timezone_importer.cpp
   ob_srs_importer.cpp
+  ob_internal_table_change_notifier.cpp
 )
 
 # ob_local_device.cpp defines AIO emulation types/functions for Android/macOS that

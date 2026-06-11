@@ -1703,7 +1703,6 @@ int dump_thread_info(lua_State *L)
       "tname",
       "tid",
       "thread_base",
-      "loop_ts",
       "latch_hold",
       "latch_wait",
       "trace_id",
@@ -1731,9 +1730,6 @@ int dump_thread_info(lua_State *L)
           snprintf(addr, 32, "%p", thread_base);
           gen.next_column(addr);
         }
-        // loop_ts
-        GET_OTHER_TSI_ADDR(loop_ts, &oceanbase::lib::Thread::loop_ts_);
-        gen.next_column(loop_ts);
         // latch_hold
         {
           char addrs[256];
@@ -1779,38 +1775,16 @@ int dump_thread_info(lua_State *L)
           gen.next_column(trace_id_buf);
         }
         // status
-        GET_OTHER_TSI_ADDR(blocking_ts, &Thread::blocking_ts_);
         {
-          GET_OTHER_TSI_ADDR(join_addr, &Thread::thread_joined_);
-          GET_OTHER_TSI_ADDR(sleep_us, &Thread::sleep_us_);
-          const char* status_str = nullptr;
-          if (0 != join_addr) {
-            status_str = "Join";
-          } else if (0 != sleep_us) {
-            status_str = "Sleep";
-          } else if (0 != blocking_ts) {
-            status_str = "Wait";
-          } else {
-            status_str = "Run";
-          }
-          gen.next_column(status_str);
+          gen.next_column("Run");
         }
         // wait_event
         {
           GET_OTHER_TSI_ADDR(wait_addr, &ObLatch::current_wait);
-          GET_OTHER_TSI_ADDR(join_addr, &Thread::thread_joined_);
-          GET_OTHER_TSI_ADDR(sleep_us, &Thread::sleep_us_);
-          GET_OTHER_TSI_ADDR(rpc_dest_addr, &Thread::rpc_dest_addr_);
-          GET_OTHER_TSI_ADDR(event, &Thread::wait_event_);
           constexpr int64_t BUF_LEN = 64;
           char wait_event[BUF_LEN];
-          ObAddr addr;
-          struct iovec local_iov = {&addr, sizeof(ObAddr)};
-          struct iovec remote_iov = {thread_base + rpc_dest_addr_offset, sizeof(ObAddr)};
           wait_event[0] = '\0';
-          if (0 != join_addr) {
-            IGNORE_RETURN snprintf(wait_event, BUF_LEN, "thread %u %ld", *(uint32_t*)(join_addr + tid_offset), tid_offset);
-          } else if (OB_NOT_NULL(wait_addr)) {
+          if (OB_NOT_NULL(wait_addr)) {
             uint32_t val = 0;
             struct iovec local_iov = {&val, sizeof(val)};
             struct iovec remote_iov = {wait_addr, sizeof(val)};
@@ -1821,28 +1795,6 @@ int dump_thread_info(lua_State *L)
             } else {
               IGNORE_RETURN snprintf(wait_event, BUF_LEN, "%u rdlocks", val & 0x3fffffff);
             }
-          } else if (sizeof(ObAddr) == process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0)
-                     && addr.is_valid()) {
-            GET_OTHER_TSI_ADDR(pcode, &Thread::pcode_);
-            int64_t pos1 = 0;
-            int64_t pos2 = 0;
-            if (((pos1 = snprintf(wait_event, 37, "rpc 0x%X(%s", pcode, obrpc::ObRpcPacketSet::instance().name_of_idx(obrpc::ObRpcPacketSet::instance().idx_of_pcode(pcode)) + 3)) > 0)
-                && ((pos2 = snprintf(wait_event + std::min(static_cast<int64_t>(36), pos1), 6, ") to ")) > 0)) {
-              int64_t pos = std::min(static_cast<int64_t>(36), pos1) + std::min(static_cast<int64_t>(5), pos2);
-              pos += addr.to_string(wait_event + pos, BUF_LEN - pos);
-            }
-          } else if (0 != blocking_ts && (0 != (Thread::WAIT_IN_TENANT_QUEUE & event))) {
-            IGNORE_RETURN snprintf(wait_event, BUF_LEN, "tenant worker request");
-          } else if (0 != blocking_ts && (0 != (Thread::WAIT_FOR_IO_EVENT & event))) {
-            IGNORE_RETURN snprintf(wait_event, BUF_LEN, "IO events");
-          } else if (0 != blocking_ts && (0 != (Thread::WAIT_FOR_LOCAL_RETRY & event))) {
-            IGNORE_RETURN snprintf(wait_event, BUF_LEN, "local retry");
-          } else if (0 != blocking_ts && (0 != (Thread::WAIT_FOR_PX_MSG & event))) {
-            IGNORE_RETURN snprintf(wait_event, BUF_LEN, "px message");
-          } else if (0 != sleep_us) {
-            IGNORE_RETURN snprintf(wait_event, BUF_LEN, "%ld us", sleep_us);
-          } else if (0 != blocking_ts) {
-            IGNORE_RETURN snprintf(wait_event, BUF_LEN, "%ld us", common::ObTimeUtility::fast_current_time() - blocking_ts);
           }
           gen.next_column(wait_event);
         }

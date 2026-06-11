@@ -168,11 +168,13 @@ void ObLockWaitMgr::run1()
   int64_t now = 0;
   lib::set_thread_name("LockWaitMgr");
   while(!has_set_stop() || !is_hash_empty()) {
-    ObLink* iter = check_timeout();
-    while (NULL != iter) {
-      Node* cur = CONTAINER_OF(iter, Node, retire_link_);
-      iter = iter->next_;
-      (void)repost(cur);
+    if (ATOMIC_LOAD(&total_wait_node_) > 0) {
+      ObLink* iter = check_timeout();
+      while (NULL != iter) {
+        Node* cur = CONTAINER_OF(iter, Node, retire_link_);
+        iter = iter->next_;
+        (void)repost(cur);
+      }
     }
     // dump debug info, and check deadlock enabdle, clear mapper if deadlock is disabled
     now = ObClockGenerator::getClock();

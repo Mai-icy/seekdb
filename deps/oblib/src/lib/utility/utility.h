@@ -205,20 +205,14 @@ template <oceanbase::common::ObWaitEventIds::ObWaitEventIdEnum event_id =
               oceanbase::common::ObWaitEventIds::DEFAULT_SLEEP>
 inline void ob_usleep(const useconds_t v)
 {
-  oceanbase::common::ObSleepEventGuard<event_id> wait_guard((int64_t)v);
   ::usleep(v);
 }
 
 template <oceanbase::common::ObWaitEventIds::ObWaitEventIdEnum event_id =
               oceanbase::common::ObWaitEventIds::DEFAULT_SLEEP>
-inline void ob_usleep(const useconds_t v, const bool is_idle_sleep)
+inline void ob_usleep(const useconds_t v, const bool /*is_idle_sleep*/)
 {
-  if (is_idle_sleep) {
-    ObBKGDSessInActiveGuard inactive_guard;
-    ob_usleep(v);
-  } else {
-    ob_usleep(v);
-  }
+  ob_usleep(v);
 
 }
 
@@ -232,7 +226,9 @@ template <oceanbase::common::ObWaitEventIds::ObWaitEventIdEnum event_id =
               oceanbase::common::ObWaitEventIds::DEFAULT_SLEEP>
 inline void ob_usleep(const useconds_t v, const int64_t p1, const int64_t p2, const int64_t p3)
 {
-  oceanbase::common::ObSleepEventGuard<event_id> wait_guard((int64_t)v, p1, p2, p3);
+  UNUSED(p1);
+  UNUSED(p2);
+  UNUSED(p3);
   ::usleep(v);
 }
 

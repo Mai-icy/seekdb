@@ -31,6 +31,7 @@
 #include "share/table/ob_redis_importer.h"
 #include "share/ob_timezone_importer.h"
 #include "share/ob_srs_importer.h"
+#include "share/ob_internal_table_change_notifier.h"
 
 namespace oceanbase
 {
@@ -1763,6 +1764,9 @@ int ObModuleDataExecutor::execute(ObExecContext &ctx, ObModuleDataStmt &stmt)
         table::ObRedisImporter importer(arg.target_tenant_id_, ctx);
         if (OB_FAIL(importer.exec_op(arg.op_))) {
           LOG_WARN("fail to exec op", K(ret), K(arg.op_));
+        } else {
+          share::ObInternalTableChangeNotifier::get_instance().notify(
+              table::ObModuleDataArg::REDIS, arg.target_tenant_id_);
         }
          break;
       }
@@ -1770,6 +1774,9 @@ int ObModuleDataExecutor::execute(ObExecContext &ctx, ObModuleDataStmt &stmt)
         table::ObSRSImporter importer(arg.target_tenant_id_, ctx);
         if (OB_FAIL(importer.exec_op(arg))) {
           LOG_WARN("fail to exec op", K(ret), K(arg.op_));
+        } else {
+          share::ObInternalTableChangeNotifier::get_instance().notify(
+              table::ObModuleDataArg::GIS, arg.target_tenant_id_);
         }
         break;
       }
@@ -1777,6 +1784,9 @@ int ObModuleDataExecutor::execute(ObExecContext &ctx, ObModuleDataStmt &stmt)
         table::ObTimezoneImporter importer(arg.target_tenant_id_, ctx);
         if (OB_FAIL(importer.exec_op(arg))) {
           LOG_WARN("fail to exec op", K(ret), K(arg.op_));
+        } else {
+          share::ObInternalTableChangeNotifier::get_instance().notify(
+              table::ObModuleDataArg::TIMEZONE, arg.target_tenant_id_);
         }
         break;
       }

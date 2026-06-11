@@ -1332,7 +1332,6 @@ int ObLocalDevice::io_getevents(
   } else {
     int sys_ret = 0;
     {
-      oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT_FOR_IO_EVENT);
       common::ObBKGDSessInActiveGuard inactive_guard;
       while ((sys_ret = ::io_getevents(
           local_io_context->io_context_,

@@ -1695,7 +1695,6 @@ int ObMPStmtExecute::do_process_single(ObSQLSessionInfo &session,
   ObReqTimeGuard req_timeinfo_guard;
   // Each execution of different SQL requires an update
   ctx_.self_add_plan_ = false;
-  oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT_FOR_LOCAL_RETRY);
   do {
     // Must always be set to OB_SUCCESS, otherwise it may cause a deadlock due to do_process() not being called
     ret = OB_SUCCESS;

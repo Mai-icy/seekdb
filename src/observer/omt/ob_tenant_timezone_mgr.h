@@ -98,6 +98,7 @@ public:
   void destroy();
 
   int refresh_timezone_info();
+  int schedule_retry();
 private:
   int init_timezone();
   // static function of calling instance().get_tenant_timezone_map(). For init tenant_tz_map_getter_

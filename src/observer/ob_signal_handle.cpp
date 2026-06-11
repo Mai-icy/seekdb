@@ -70,7 +70,6 @@ void ObSignalHandle::run1()
     struct timespec timeout = {1, 0};
     while (!has_set_stop()) {//need not to check ret
       {
-        oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT);
         common::ObBKGDSessInActiveGuard inactive_guard;
         signum = sigtimedwait(&waitset, NULL, &timeout);
       }

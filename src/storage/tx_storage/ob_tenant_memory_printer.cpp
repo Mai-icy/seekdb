@@ -100,10 +100,6 @@ int ObTenantMemoryPrinter::print_tenant_usage()
       _STORAGE_LOG(INFO, "====== tenants memory info ======\n%s", print_buf);
     }
 
-    // print global chunk freelist
-    int64_t pos = CHUNK_MGR.to_string(print_buf, BUF_LEN);
-    _STORAGE_LOG(INFO, "%.*s", static_cast<int>(pos), print_buf);
-    ObMallocTimeMonitor::get_instance().print();
     print_mutex_.unlock();
   }
   return ret;

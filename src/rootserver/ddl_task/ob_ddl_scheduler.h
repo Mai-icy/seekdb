@@ -354,7 +354,7 @@ private:
   public:
     explicit DDLIdling(volatile bool &stop): ObThreadIdling(stop) {}
     virtual ~DDLIdling() {}
-    virtual int64_t get_idle_interval_us() override { return 1000L * 1000L; }
+    virtual int64_t get_idle_interval_us() override { return 30L * 1000L * 1000L; }
   };
   class DDLScanTask : public common::ObTimerTask
   {

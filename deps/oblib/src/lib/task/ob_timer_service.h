@@ -168,7 +168,6 @@ private:
       const TaskToken *token,
       const ObTimer *timer,
       const ObTimerTask *task);
-  static void check_clock();
   int new_token(
       TaskToken *&token,
       const ObTimer *timer,
@@ -184,7 +183,7 @@ private:
   uint64_t tenant_id_;
   obutil::ObMonitor<obutil::Mutex> monitor_;
   TokenAlloc token_alloc_;
-  ObSortedVector<TaskToken *> priority_task_queue_;
+  ObVector<TaskToken *> priority_task_queue_;
   ObSortedVector<TaskToken *> running_task_set_;
   ObSortedVector<TaskToken *> uncanceled_task_set_;
   ObTimerTaskThreadPool worker_thread_pool_;
@@ -195,11 +194,10 @@ private:
   static constexpr int64_t MIN_WORKER_THREAD_NUM = 4L;
   static constexpr int64_t MAX_WORKER_THREAD_NUM = 128L;
   static constexpr int64_t TASK_NUM_LIMIT = 10000L;
-  static constexpr int64_t CLOCK_SKEW_DELTA = 20L * 1000L;          // 20ms
-  static constexpr int64_t CLOCK_ERROR_DELTA = 500L * 1000L;        // 500ms
   static constexpr int64_t DUMP_INTERVAL = 60L * 1000L * 1000L;     // 60s
   static constexpr int64_t ALARM_INTERVAL = 60L * 1000L * 1000L;    // 1min
-  using VecIter = ObSortedVector<TaskToken *>::iterator;
+  static constexpr int64_t TOKEN_DISPATCHED = INT64_MAX;             // marker: token dispatched, stays in queue
+  using VecIter = ObVector<TaskToken *>::iterator;
 public:
   static constexpr int64_t DELAY_IN_PRI_QUEUE_THREASHOLD = 1L * 1000L * 1000L; // 1s
 };

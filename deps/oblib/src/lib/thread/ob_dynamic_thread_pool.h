@@ -126,7 +126,7 @@ private:
 
 class ObSimpleThreadPoolDynamicMgr : public lib::TGRunnable {
 public:
-  static const int64_t CHECK_INTERVAL_US = 200 * 1000;
+  static const int64_t CHECK_INTERVAL_US = 3 * 1000 * 1000;
   ObSimpleThreadPoolDynamicMgr() : pool_list_(), pool_list_lock_(), is_inited_(false) {}
   virtual ~ObSimpleThreadPoolDynamicMgr();
   int init();
@@ -146,15 +146,8 @@ private:
 class ObResetThreadTenantIdGuard {
 public:
   DISABLE_COPY_ASSIGN(ObResetThreadTenantIdGuard);
-  ObResetThreadTenantIdGuard() {
-    tenant_id_ = ob_get_tenant_id();
-    ob_get_tenant_id() = 0;
-  }
-  ~ObResetThreadTenantIdGuard() {
-    ob_get_tenant_id() = tenant_id_;
-  }
-private:
-  int64_t tenant_id_;
+  ObResetThreadTenantIdGuard() = default;
+  ~ObResetThreadTenantIdGuard() = default;
 };
 }
 }

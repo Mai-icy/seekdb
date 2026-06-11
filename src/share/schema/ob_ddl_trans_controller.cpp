@@ -39,8 +39,6 @@ int ObDDLTransController::init(share::schema::ObMultiVersionSchemaService *schem
     } else if (OB_ISNULL(schema_service)) {
       ret = OB_INVALID_ARGUMENT;
       LOG_WARN("schema_service is null", KR(ret));
-    } else if (OB_FAIL(tenants_.create(10))) {
-      LOG_WARN("hashset create fail", KR(ret));
     } else if (OB_FAIL(ObThreadPool::start())) {
       LOG_WARN("thread start fail", KR(ret));
     } else {
@@ -71,7 +69,6 @@ void ObDDLTransController::destroy()
     wait();
     ObThreadPool::destroy();
     tasks_.destroy();
-    tenants_.destroy();
     schema_service_ = NULL;
   }
 }
@@ -86,53 +83,40 @@ void ObDDLTransController::run1()
   ObDIActionGuard ag("DDLService", "DDLTransCtr", "detect task");
   lib::set_thread_name("DDLTransCtr");
   while (!has_set_stop()) {
-    int ret = OB_SUCCESS;
-    ObArray<uint64_t> tenant_ids;
+    bool need_refresh = false;
     {
       SpinWLockGuard guard(lock_);
-      for (common::hash::ObHashSet<uint64_t>::iterator iter = tenants_.begin(); OB_SUCC(ret) && iter != tenants_.end(); iter++) {
-        if (OB_FAIL(tenant_ids.push_back(iter->first))) {
-          LOG_WARN("push_back fail", KR(ret), K(iter->first));
-        }
-      }
-      if (OB_SUCC(ret) && tenant_ids.count() > 0) {
-        tenants_.reuse();
-      }
+      need_refresh = need_refresh_;
+      need_refresh_ = false;
     }
-    if (OB_SUCC(ret) && tenant_ids.count() > 0) {
-      LOG_INFO("refresh_schema tenants", K(tenant_ids));
+    if (need_refresh) {
+      int ret = OB_SUCCESS;
+      LOG_INFO("refresh_schema for sys tenant");
       if (OB_ISNULL(GCTX.root_service_)) {
         ret = OB_INVALID_ARGUMENT;
         LOG_WARN("invalid argument", KR(ret), KP(GCTX.root_service_));
       } else {
-        // ignore ret continue
-        for (int64_t i = 0; i < tenant_ids.count(); i++) {
-          ObZone zone;
-          ObArray<ObAddr> server_list;
-          const uint64_t tenant_id = tenant_ids.at(i);
-          int64_t refreshed_schema_version = OB_INVALID_VERSION;
-          int64_t start_time = ObTimeUtility::current_time();
-          ObCurTraceId::init(GCONF.self_addr_);
-          ObDIActionGuard(ObDIActionGuard::NS_ACTION, "control tenant[T_%ld]", tenant_id);
+        ObArray<ObAddr> server_list;
+        int64_t refreshed_schema_version = OB_INVALID_VERSION;
+        int64_t start_time = ObTimeUtility::current_time();
+        ObCurTraceId::init(GCONF.self_addr_);
+        ObDIActionGuard(ObDIActionGuard::NS_ACTION, "control tenant[T_%ld]", OB_SYS_TENANT_ID);
 
-          if (OB_FAIL(server_list.push_back(GCTX.self_addr()))) {
-            LOG_WARN("fail to push self addr", KR(ret));
-          }
-          // overwrite ret to continue
-          if (OB_FAIL(GCTX.root_service_->get_ddl_service().publish_schema_and_get_schema_version(tenant_id, server_list, refreshed_schema_version))) {
-            LOG_WARN("fail to publish_schema", KR(ret), K(tenant_id));
-          } else if (OB_FAIL(broadcast_consensus_version(tenant_id, refreshed_schema_version, server_list))) {
-            LOG_WARN("fail to broadcast consensus version", KR(ret), K(tenant_id), K(refreshed_schema_version));
-          } else {
-            int64_t end_time = ObTimeUtility::current_time();
-            LOG_INFO("refresh_schema", KR(ret), K(tenant_id), K(end_time - start_time), K(refreshed_schema_version));
-          }
-         }
+        if (OB_FAIL(server_list.push_back(GCTX.self_addr()))) {
+          LOG_WARN("fail to push self addr", KR(ret));
+        }
+        if (OB_FAIL(GCTX.root_service_->get_ddl_service().publish_schema_and_get_schema_version(OB_SYS_TENANT_ID, server_list, refreshed_schema_version))) {
+          LOG_WARN("fail to publish_schema", KR(ret));
+        } else if (OB_FAIL(broadcast_consensus_version(OB_SYS_TENANT_ID, refreshed_schema_version, server_list))) {
+          LOG_WARN("fail to broadcast consensus version", KR(ret), K(refreshed_schema_version));
+        } else {
+          int64_t end_time = ObTimeUtility::current_time();
+          LOG_INFO("refresh_schema", KR(ret), K(end_time - start_time), K(refreshed_schema_version));
+        }
       }
-    }
-    if (tenant_ids.empty()) {
+    } else {
       common::ObBKGDSessInActiveGuard inactive_guard;
-      wait_cond_.timedwait(100 * 1000);
+      wait_cond_.wait();
     }
   }
 }
@@ -366,9 +350,8 @@ int ObDDLTransController::remove_task(const uint64_t tenant_id, const int64_t ta
       LOG_INFO("remove parallel ddl task", K(tasks_.at(i)));
       if (OB_FAIL(tasks_.remove(i))) {
         LOG_WARN("remove_task fail", KR(ret), K(tenant_id), K(task_id));
-      } else if (OB_FAIL(tenants_.set_refactored(tenant_id, 1, 0, 1))) {
-        LOG_WARN("set_refactored fail", KR(ret), K(tenant_id));
       } else {
+        need_refresh_ = true;
         wait_cond_.signal();
       }
       break;

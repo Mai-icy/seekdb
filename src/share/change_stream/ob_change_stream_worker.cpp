@@ -269,6 +269,14 @@ void ObCSExecutor::do_finish_batch_(ObCSExecCtx *ctx, ObCSDispatcher &dispatcher
                  KR(ret), K(ctx->batch_sn_));
         dispatcher.inc_epoch();
       } else {
+        if (OB_FAIL(dispatcher.update_refresh_scn(ctx->refresh_scn_))) {
+          LOG_WARN("update refresh_scn after batch commit failed",
+                   KR(ret), K(ctx->batch_sn_), K(ctx->refresh_scn_));
+          ret = OB_SUCCESS;
+        }
+      }
+
+      if (OB_SUCC(ret)) {
         // ── Commit succeeded — release ring buffer and advance cursor. ──
         int64_t end_time = ObTimeUtil::current_time();
         int64_t first_tx_commit = ctx->create_time_;

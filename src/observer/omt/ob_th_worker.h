@@ -89,7 +89,6 @@ public:
   OB_INLINE ObTenant* get_tenant() { return tenant_; }
   OB_INLINE bool large_query() const { return large_query_; }
   OB_INLINE void set_large_query(bool v = true) { large_query_ = v; }
-  OB_INLINE int64_t blocking_ts() const { return OB_NOT_NULL(blocking_ts_) ? (*blocking_ts_) : 0; }
   OB_INLINE const char *get_module_name() const { return module_name_; }
   OB_INLINE bool is_doing_ddl() const { return OB_NOT_NULL(is_doing_ddl_) ? (*is_doing_ddl_) : false; }
 
@@ -118,7 +117,6 @@ private:
   // if upper scheduler support retry, need this request retry?
   bool need_retry_;
 
-  int64_t* blocking_ts_;
   int64_t idle_us_;
   static const int64_t MAX_MODULE_NAME_LEN = 23; //no more than 3 int64_t
   char module_name_[MAX_MODULE_NAME_LEN];

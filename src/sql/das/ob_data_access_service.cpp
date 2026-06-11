@@ -209,7 +209,6 @@ int ObDataAccessService::retry_das_task(ObDASRef &das_ref, ObIDASTaskOp &task_op
   bool retry_continue = false;
   ObDASLocationRouter &location_router = DAS_CTX(das_ref.get_exec_ctx()).get_location_router();
   location_router.reset_cur_retry_cnt();
-  oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT_FOR_LOCAL_RETRY);
   do {
     ObDASRetryCtrl::retry_func retry_func = nullptr;
 

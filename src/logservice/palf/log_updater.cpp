@@ -97,12 +97,10 @@ void LogUpdater::runTimerTask()
   if (NULL == palf_env_impl_) {
     PALF_LOG(ERROR, "palf_env_impl_ is NULL, unexpected error");
   } else {
-    auto update_func = [](IPalfHandleImpl *ipalf_handle_impl) {
-      return ipalf_handle_impl->update_palf_stat();
-    };
-    int tmp_ret = OB_SUCCESS;
-    if (OB_SUCCESS != (tmp_ret = palf_env_impl_->for_each(update_func))) {
-      PALF_LOG(WARN, "for_each try_freeze_log_func failed", K(tmp_ret));
+    IPalfHandleImpl *handle = nullptr;
+    if (OB_SUCCESS == palf_env_impl_->get_palf_handle_impl(SYS_PALF_ID, handle)) {
+      handle->update_palf_stat();
+      palf_env_impl_->revert_palf_handle_impl(handle);
     }
     int64_t cost_time_us = ObTimeUtility::current_time() - start_time_us;
     if (cost_time_us >= PALF_UPDATE_CACHED_STAT_INTERVAL_US) {

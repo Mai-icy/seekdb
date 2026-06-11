@@ -17,7 +17,6 @@
 #include "object_set.h"
 #include "lib/rc/context.h"
 #include "lib/utility/ob_tracepoint.h"
-#include "lib/alloc/ob_malloc_time_monitor.h"
 
 // macOS sys/param.h defines isset macro which conflicts with method calls
 #ifdef isset
@@ -913,8 +912,6 @@ void ObjectSetV2::do_free_object(AObject *obj, ABlock *block)
 
 ABlock *ObjectSetV2::alloc_block(const uint64_t size, const ObMemAttr &attr)
 {
-  BASIC_TIME_GUARD(time_guard, "ALLOC_BLOCK");
-  DEFER(ObMallocTimeMonitor::get_instance().record_malloc_time(time_guard, size, attr));
   ABlock *block = blk_mgr_->alloc_block(size, attr);
   if (OB_LIKELY(block != NULL)) {
     block->obj_set_v2_ = this;

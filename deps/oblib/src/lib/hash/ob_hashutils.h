@@ -201,7 +201,7 @@ public:
   ~MutexWaiter() {}
   int operator()(pthread_cond_t &cond, pthread_mutex_t &lock, struct timespec &ts)
   {
-    return ob_pthread_cond_timedwait(&cond, &lock, &ts);
+    return pthread_cond_timedwait(&cond, &lock, &ts);
   }
 };
 
