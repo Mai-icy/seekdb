@@ -41,3 +41,4 @@ int ObHbaseNormalCellIter::get_next_cell(ObNewRow *&row)
  
 } // end of namespace table
 } // end of namespace oceanbase
+ 

@@ -201,8 +201,8 @@ int TestSSMetaService::build_update_table_store_param_(ObArenaAllocator &allocat
   MockSSTableGenerator sstable_gen;
   ObSSTable *sstable = nullptr;
   if (OB_FAIL(sstable_gen.mock_sstable(
-      allocator, schema,
-      table_type,
+      allocator, schema, 
+      table_type, 
       tablet_handle.get_obj()->get_tablet_id(), 0, 200, table_handle))) {
     LOG_WARN("failed to generate new sstable", K(ret), K(schema), KPC(tablet_handle.get_obj()));
   } else if (OB_FAIL(table_handle.get_sstable(sstable))) {

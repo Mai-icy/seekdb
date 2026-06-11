@@ -103,7 +103,7 @@ int ObDASIDRequestRpc::fetch_new_range(const ObDASIDRequest &msg,
     const int64_t start_id = ATOMIC_FAA(&local_id_counter_, range);
     const int64_t end_id = start_id + range;
     const uint64_t tenant_id = msg.get_tenant_id();
-
+    
     if (OB_FAIL(res.init(tenant_id, OB_SUCCESS, start_id, end_id))) {
       LOG_WARN("init das id result failed", KR(ret), K(tenant_id), K(start_id), K(end_id));
     } else {

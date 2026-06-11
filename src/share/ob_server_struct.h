@@ -198,7 +198,7 @@ struct ObGlobalContext
 
   // Primary-Standby configuration
   common::ObClusterRole server_role_;
-
+  
   // KV storage for simple information (cluster role, switchover status, etc.)
   share::ObKVStorage *kv_storage_;
 

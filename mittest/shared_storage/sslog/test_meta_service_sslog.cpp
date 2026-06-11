@@ -341,8 +341,8 @@ int ObTestSSLogMetaService::build_update_table_store_param_(ObArenaAllocator &al
   MockSSTableGenerator sstable_gen;
   ObSSTable *sstable = nullptr;
   if (OB_FAIL(sstable_gen.mock_sstable(
-      allocator, schema,
-      table_type,
+      allocator, schema, 
+      table_type, 
       tablet_handle.get_obj()->get_tablet_id(), 0, 200, table_handle))) {
     LOG_WARN("failed to generate new sstable", K(ret), K(schema), KPC(tablet_handle.get_obj()));
   } else if (OB_FAIL(table_handle.get_sstable(sstable))) {
@@ -1284,7 +1284,7 @@ TEST_F(ObTestSSLogMetaService, test_tablet_handle_assign)
   ASSERT_EQ(OB_ERR_UNEXPECTED, tmp_tablet_handle.assign(t3m_tablet_handle)); // COPY_FROM_T3M
 }
 
-TEST_F(ObTestSSLogMetaService, test_BasePointerHandle)
+TEST_F(ObTestSSLogMetaService, test_BasePointerHandle) 
 {
   share::ObTenantSwitchGuard tenant_guard;
   ASSERT_EQ(OB_SUCCESS, tenant_guard.switch_to(tenant_id));
@@ -1334,7 +1334,7 @@ int main(int argc, char **argv)
   char buf[1000];
   const int64_t cur_time_ns = ObTimeUtility::current_time_ns();
   memset(buf, 1000, sizeof(buf));
-  databuff_printf(buf, sizeof(buf), "%s/%lu_meta_service?host=%s&access_id=%s&access_key=%s&s3_region=%s&max_iops=2000&max_bandwidth=200000000B&scope=region",
+  databuff_printf(buf, sizeof(buf), "%s/%lu_meta_service?host=%s&access_id=%s&access_key=%s&s3_region=%s&max_iops=2000&max_bandwidth=200000000B&scope=region", 
       oceanbase::unittest::S3_BUCKET, cur_time_ns, oceanbase::unittest::S3_ENDPOINT, oceanbase::unittest::S3_AK, oceanbase::unittest::S3_SK, oceanbase::unittest::S3_REGION);
   oceanbase::shared_storage_info = buf;
   while(EOF != (c = getopt(argc,argv,"t:l:"))) {

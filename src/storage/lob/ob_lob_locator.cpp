@@ -312,7 +312,7 @@ int ObLobLocatorHelper::fuse_mem_lob_header(ObObj &def_obj, uint64_t col_id, boo
             if (OB_FAIL(locator.get_read_snapshot_data(read_snapshot_data))) {
               STORAGE_LOG(WARN, "Lob: get_read_snapshot_data failed", K(ret), K(locator));
             } else if (OB_FAIL(tx_read_snapshot_.serialize_for_lob(share::ObLSID(ls_id_), fb_snapshot_,
-                read_snapshot_data.ptr(), read_snapshot_data.length(), pos))) {
+                read_snapshot_data.ptr(), read_snapshot_data.length(), pos))) { 
               STORAGE_LOG(WARN, "Lob: serialize_for_lob failed", K(ret), K(locator));
             }
           }
@@ -479,7 +479,7 @@ int ObLobLocatorHelper::build_lob_locatorv2(ObLobLocatorV2 &locator,
           if (OB_FAIL(locator.get_read_snapshot_data(read_snapshot_data))) {
             STORAGE_LOG(WARN, "Lob: get_read_snapshot_data failed", K(ret), K(locator));
           } else if (OB_FAIL(tx_read_snapshot_.serialize_for_lob(share::ObLSID(ls_id_), fb_snapshot_,
-              read_snapshot_data.ptr(), read_snapshot_data.length(), pos))) {
+              read_snapshot_data.ptr(), read_snapshot_data.length(), pos))) { 
             STORAGE_LOG(WARN, "Lob: serialize_for_lob failed", K(ret), K(locator));
           }
         }

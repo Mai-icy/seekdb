@@ -31,7 +31,7 @@ namespace storage
 class ObCGMicroBlockWriter final
 {
 public:
-  explicit ObCGMicroBlockWriter() :
+  explicit ObCGMicroBlockWriter() : 
     is_inited_(false),
     cg_block_file_writer_(),
     writer_args_(),
@@ -111,3 +111,4 @@ private:
 } // end oceanbase
 
 #endif //OCEANBASE_STORAGE_OB_CG_MICRO_BLOCK_WRITE_OP_H_
+

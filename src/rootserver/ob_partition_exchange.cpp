@@ -2854,7 +2854,7 @@ int ObPartitionExchange::update_table_all_monitor_modified_(const uint64_t tenan
   if (OB_UNLIKELY(OB_INVALID_TENANT_ID == tenant_id || OB_INVALID_ID == new_table_id || !tablet_id.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(tenant_id), K(new_table_id), K(tablet_id));
-  } else if (OB_FAIL(monitor_modified_read_sql_string.assign_fmt("SELECT last_inserts, last_updates, last_deletes, inserts, updates, deletes FROM %s WHERE table_id = %ld and tablet_id = %ld",
+  } else if (OB_FAIL(monitor_modified_read_sql_string.assign_fmt("SELECT last_inserts, last_updates, last_deletes, inserts, updates, deletes FROM %s WHERE table_id = %ld and tablet_id = %ld", 
              OB_ALL_MONITOR_MODIFIED_TNAME, orig_table_schema.get_table_id(), tablet_id.id()))) {
     LOG_WARN("fail to assign sql string", K(ret), K(tenant_id), K(orig_table_schema.get_table_id()), K(tablet_id));
   } else {

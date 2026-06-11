@@ -236,9 +236,9 @@ CREATE MATERIALIZED VIEW LOG ON cluster_base
   PURGE START WITH sysdate() NEXT sysdate() + interval 3 minute;
 
 CREATE /*+ parallel(64) */  MATERIALIZED VIEW mv_incre_test_2
-PARALLEL 25
+PARALLEL 25 
   PARTITION BY KEY(task_id) PARTITIONS 8
-  REFRESH FAST
+  REFRESH FAST 
 START WITH sysdate() + interval 5 minute NEXT sysdate() + interval 3 minute
 AS
 SELECT

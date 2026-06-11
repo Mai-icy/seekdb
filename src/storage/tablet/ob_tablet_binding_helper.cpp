@@ -343,7 +343,7 @@ int ObTabletBindingHelper::bind_lob_tablet_to_data_tablet(
 int ObTabletBindingHelper::build_single_table_write_defensive(
     const ObTableSchema &table_schema,
     const int64_t schema_version,
-    rootserver::ObDDLSQLTransaction &trans)
+    rootserver::ObDDLSQLTransaction &trans) 
 {
   int ret = OB_SUCCESS;
   if (OB_UNLIKELY(!table_schema.is_valid() || schema_version <= 0)) {

@@ -259,7 +259,7 @@ void TestMacroBlockRowBareIterator::generate_cg_block_without_batch(ObCGBlockFil
   ObArenaAllocator allocator;
   ASSERT_EQ(OB_SUCCESS, row.init(allocator, TestMacroBlockRowBareIterator::TEST_COLUMN_CNT));
   ASSERT_EQ(false, dag_temp_macro_writer->is_alloc_block_needed());
-
+ 
   int current_index = dag_temp_macro_writer->current_index_;
   ObMacroBlock &current_block = dag_temp_macro_writer->macro_blocks_[current_index];
   while (current_block.get_micro_block_count() < test_micro_block_count - 1) {
@@ -286,7 +286,7 @@ void TestMacroBlockRowBareIterator::generate_cg_block_without_batch(ObCGBlockFil
     ASSERT_EQ(OB_SUCCESS, dag_temp_macro_writer->wait_io_finish(dag_temp_macro_writer->macro_handles_[current_index], &current_block));
   }
   ASSERT_EQ(false, current_block.is_dirty());
-
+  
   ASSERT_EQ(OB_SUCCESS, dag_temp_macro_writer->close());
   delete dag_temp_macro_writer;
 }
@@ -326,8 +326,8 @@ void TestMacroBlockRowBareIterator::prepare_data_desc(ObWholeDataStoreDesc &data
   SCN end_scn;
   end_scn.convert_for_tx(snapshot_version);
   table_schema_.enable_macro_block_bloom_filter_ = true;
-  ret = data_desc.init(false/*is_ddl*/, table_schema_, ObLSID(1), ObTabletID(1), merge_type,
-                       ObTimeUtility::fast_current_time()/*snapshot_version*/, DATA_CURRENT_VERSION,
+  ret = data_desc.init(false/*is_ddl*/, table_schema_, ObLSID(1), ObTabletID(1), merge_type, 
+                       ObTimeUtility::fast_current_time()/*snapshot_version*/, DATA_CURRENT_VERSION, 
                        table_schema_.get_micro_index_clustered(), 0/*transfer_seq*/, 0/*concurrent_cnt*/,
                        end_scn, end_scn, nullptr, 0/*table_cg_idx*/,
                        compaction::ObExecMode::EXEC_MODE_LOCAL/*exec_mode*/, need_submit_io);

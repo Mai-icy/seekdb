@@ -96,13 +96,13 @@ public:
 struct ObAdapterMapKeyValue
 {
 public:
-  ObAdapterMapKeyValue(ObTabletID tablet_id, ObPluginVectorIndexAdaptor *adapter)
-      : tablet_id_(tablet_id),
-        adapter_(adapter)
+  ObAdapterMapKeyValue(ObTabletID tablet_id, ObPluginVectorIndexAdaptor *adapter) 
+      : tablet_id_(tablet_id), 
+        adapter_(adapter) 
   {}
-  ObAdapterMapKeyValue()
-      : tablet_id_(),
-        adapter_(nullptr)
+  ObAdapterMapKeyValue() 
+      : tablet_id_(), 
+        adapter_(nullptr) 
   {}
   TO_STRING_KV(K_(tablet_id), K_(adapter));
 

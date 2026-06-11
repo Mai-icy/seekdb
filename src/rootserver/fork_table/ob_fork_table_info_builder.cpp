@@ -202,3 +202,5 @@ int ObForkTableInfoBuilder::generate_fork_tablet_info_(
 
 } // rootserver
 } // oceanbase
+
+

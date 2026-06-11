@@ -251,8 +251,8 @@ int ObLogSysTableQueryer::do_query_(const uint64_t tenant_id,
     ret = ERRSIM_FETCH_LOG_SYS_QUERY_FAILED;
     LOG_WARN("errsim do query error", K(ERRSIM_FETCH_LOG_SYS_QUERY_FAILED));
   }
-  if (OB_NOT_NULL(err_handler_) && (-ER_CONNECT_FAILED == ret || -ER_ACCESS_DENIED_ERROR == ret
-    || OB_SERVER_IS_INIT == ret || OB_TENANT_NOT_EXIST == ret || OB_TENANT_NOT_IN_SERVER == ret
+  if (OB_NOT_NULL(err_handler_) && (-ER_CONNECT_FAILED == ret || -ER_ACCESS_DENIED_ERROR == ret 
+    || OB_SERVER_IS_INIT == ret || OB_TENANT_NOT_EXIST == ret || OB_TENANT_NOT_IN_SERVER == ret 
     || OB_SIZE_OVERFLOW == ret || OB_TIMEOUT == ret)) {
     err_handler_->handle_error(share::SYS_LS, logfetcher::IObLogErrHandler::ErrType::FETCH_LOG, trace_id,
       palf::LSN(palf::LOG_INVALID_LSN_VAL)/*no need to pass lsn*/, ret, "%s");
@@ -318,7 +318,7 @@ int ObLogSysTableQueryer::parse_record_from_row_(common::sqlclient::ObMySQLResul
   // In oceanbase-lite, SVR_IP and SVR_PORT are no longer available from GV$OB_LOG_STAT.
   // Use current server address instead.
   server = GCTX.self_addr();
-
+  
   if (OB_FAIL(common::string_to_role(role_string, role))) {
     LOG_WARN("string_tor_role failed", KR(ret), K(role_string), K(role));
   } else {

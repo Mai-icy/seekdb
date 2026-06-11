@@ -1757,7 +1757,7 @@ int ObSSTableIndexBuilder::check_small_sstable() const
     for (int64_t i = 0; i < roots_.count() && OB_SUCC(ret); i++) {
       ObBlockInfo block_info = roots_[i]->small_sstable_block_info_;
       if (block_info.is_valid() && block_info.is_small_sstable()) {
-        // It is possible that a thread executing in a serial manner has repeatedly
+        // It is possible that a thread executing in a serial manner has repeatedly 
         // called the open() and close() methods of ObMacroBlockWriter
         ret = OB_ERR_UNEXPECTED;
         STORAGE_LOG(WARN, "small sstable must have exactly one IndexTreeRootCtx", K(ret));
@@ -1780,7 +1780,7 @@ int ObSSTableIndexBuilder::check_and_rewrite_sstable(ObSSTableMergeRes &res)
     res.nested_offset_ = 0;
     res.nested_size_ = OB_DEFAULT_MACRO_BLOCK_SIZE;
   } else if (block_info.is_valid() && block_info.is_small_sstable()) {
-    // The small SSTable has already been written into a shared macro block by ObMacroBlockWriter
+    // The small SSTable has already been written into a shared macro block by ObMacroBlockWriter 
     // during the data macro block writing phase.
     res.nested_offset_ = block_info.nested_offset_;
     res.nested_size_ = block_info.nested_size_;
@@ -2749,7 +2749,7 @@ ObDataIndexBlockBuilder::~ObDataIndexBlockBuilder() { reset(); }
 void ObDataIndexBlockBuilder::reset() {
   inner_reset();
   meta_row_allocator_.reset();
-  task_allocator_.reset();
+  task_allocator_.reset();  
 }
 
 void ObDataIndexBlockBuilder::reuse()
@@ -3320,8 +3320,8 @@ int ObDataIndexBlockBuilder::append_index_micro_block_and_macro_meta(
     STORAGE_LOG(WARN, "expect macro id equal", K(ret), K(leaf_block_desc), K(macro_row_desc));
   } else if (OB_FAIL(write_meta_block(macro_block, macro_row_desc, ddl_start_row_offset))) {
     STORAGE_LOG(WARN, "fail to build meta block", K(ret));
-  }
-
+  } 
+  
   if (OB_SUCC(ret)) {
     index_tree_root_ctx_->last_macro_size_ =
         data_offset + leaf_block_size + meta_block_size_;

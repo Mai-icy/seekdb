@@ -137,7 +137,7 @@ SELECT name FROM fts_table_2 WHERE MATCH (title) AGAINST ("title") order by name
 
 DROP TABLE fts_table_2;
 DROP TABLE fts_fk_table;
-
+ 
 # 4. table related ddl
 --disable_warnings
 DROP TABLE IF EXISTS fts_table_3;
@@ -185,3 +185,4 @@ show create table fts_table;
 drop table fts_table;
 
 disconnect sys_conn;
+

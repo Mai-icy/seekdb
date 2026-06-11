@@ -261,7 +261,7 @@ void TestDagMacroWriter::generate_cg_block(ObCGBlockFile &cg_block_file,
   ObArenaAllocator allocator;
   ASSERT_EQ(OB_SUCCESS, row.init(allocator, TestDagMacroWriter::TEST_COLUMN_CNT));
   ASSERT_EQ(false, dag_temp_macro_writer->is_alloc_block_needed());
-
+ 
   int current_index = dag_temp_macro_writer->current_index_;
   ObMacroBlock &current_block = dag_temp_macro_writer->macro_blocks_[current_index];
   while (current_block.get_micro_block_count() < test_micro_block_count - 1) {
@@ -297,7 +297,7 @@ void TestDagMacroWriter::generate_cg_block(ObCGBlockFile &cg_block_file,
     ASSERT_EQ(OB_SUCCESS, dag_temp_macro_writer->wait_io_finish(dag_temp_macro_writer->macro_handles_[current_index], &current_block));
   }
   ASSERT_EQ(false, current_block.is_dirty());
-
+  
   ASSERT_EQ(OB_SUCCESS, dag_temp_macro_writer->close());
   delete dag_temp_macro_writer;
 }
@@ -335,7 +335,7 @@ void TestDagMacroWriter::generate_cg_block_without_batch(ObCGBlockFile &cg_block
   ObArenaAllocator allocator;
   ASSERT_EQ(OB_SUCCESS, row.init(allocator, TestDagMacroWriter::TEST_COLUMN_CNT));
   ASSERT_EQ(false, dag_temp_macro_writer->is_alloc_block_needed());
-
+ 
   int current_index = dag_temp_macro_writer->current_index_;
   ObMacroBlock &current_block = dag_temp_macro_writer->macro_blocks_[current_index];
   while (current_block.get_micro_block_count() < test_micro_block_count - 1) {
@@ -362,7 +362,7 @@ void TestDagMacroWriter::generate_cg_block_without_batch(ObCGBlockFile &cg_block
     ASSERT_EQ(OB_SUCCESS, dag_temp_macro_writer->wait_io_finish(dag_temp_macro_writer->macro_handles_[current_index], &current_block));
   }
   ASSERT_EQ(false, current_block.is_dirty());
-
+  
   ASSERT_EQ(OB_SUCCESS, dag_temp_macro_writer->close());
   delete dag_temp_macro_writer;
 }
@@ -396,7 +396,7 @@ void TestDagMacroWriter::large_batch_generate_cg_block(ObCGBlockFile &cg_block_f
   ObArenaAllocator allocator;
   ASSERT_EQ(OB_SUCCESS, row.init(allocator, TestDagMacroWriter::TEST_COLUMN_CNT));
   ASSERT_EQ(false, dag_temp_macro_writer->is_alloc_block_needed());
-
+  
   int full_macro_block_micro_count = 0;
   int current_index = dag_temp_macro_writer->current_index_;
   ObMacroBlock &current_block = dag_temp_macro_writer->macro_blocks_[current_index];
@@ -434,14 +434,14 @@ void TestDagMacroWriter::large_batch_generate_cg_block(ObCGBlockFile &cg_block_f
   ASSERT_EQ(true, current_next_block.is_dirty());
   micro_block_cnt = full_macro_block_micro_count+current_next_block.get_micro_block_count();
   ASSERT_GT(micro_block_cnt, full_macro_block_micro_count);
-
+  
   //generate second cg_block
   ASSERT_EQ(OB_SUCCESS, dag_temp_macro_writer->flush_macro_block(current_next_block, true/*is_close_flush*/, nullptr));
   if (dag_temp_macro_writer->is_need_macro_buffer_) {
     ASSERT_EQ(OB_SUCCESS, dag_temp_macro_writer->wait_io_finish(dag_temp_macro_writer->macro_handles_[current_index], &current_next_block));
   }
   ASSERT_EQ(false, current_block.is_dirty());
-
+  
   ASSERT_EQ(OB_SUCCESS, dag_temp_macro_writer->close());
   delete dag_temp_macro_writer;
   STORAGE_LOG(INFO, "successfully write two macro blocks into temp file", K(micro_block_cnt), K(full_macro_block_micro_count));
@@ -482,8 +482,8 @@ void TestDagMacroWriter::prepare_data_desc(ObWholeDataStoreDesc &data_desc,
   SCN end_scn;
   end_scn.convert_for_tx(snapshot_version);
   table_schema_.enable_macro_block_bloom_filter_ = true;
-  ret = data_desc.init(false/*is_ddl*/, table_schema_, ObLSID(1), ObTabletID(1), merge_type,
-                       ObTimeUtility::fast_current_time()/*snapshot_version*/, DATA_CURRENT_VERSION,
+  ret = data_desc.init(false/*is_ddl*/, table_schema_, ObLSID(1), ObTabletID(1), merge_type, 
+                       ObTimeUtility::fast_current_time()/*snapshot_version*/, DATA_CURRENT_VERSION, 
                        table_schema_.get_micro_index_clustered(), 0/*transfer_seq*/, 0/*concurrent_cnt*/,
                        end_scn, end_scn, nullptr, 0/*table_cg_idx*/,
                        compaction::ObExecMode::EXEC_MODE_LOCAL/*exec_mode*/, need_submit_io);
@@ -624,7 +624,7 @@ void TestDagMacroWriter::aggregate_cg_blocks_into_macro_block(ObCGBlockFilesIter
   int ret = OB_SUCCESS;
   // The total count of micro blocks in all cgblocks
   int64_t all_micro_block_count = 0;
-  // Since the test randomly selects some starting points of micro blocks in cgblocks and writes them into macro blocks,
+  // Since the test randomly selects some starting points of micro blocks in cgblocks and writes them into macro blocks, 
   // we need to count the actual number of micro blocks that have been written into macro blocks.
   int64_t actual_micro_block_count = 0;
   while (OB_SUCC(ret) && curr_count++ < count) {
@@ -732,13 +732,13 @@ void TestDagMacroWriter::test_buf_not_enough(ObCGBlockFilesIterator &cg_block_fi
 void TestDagMacroWriter::test_reuse_macro_block(ObCGBlockFilesIterator &cg_block_files_iter,
                                                               const uint64_t count)
 {
-
+  
 }
 
 TEST_F(TestDagMacroWriter, test_dag_macro_writer)
 {
   LOG_INFO("BEGIN TestDagMacroWriter.test_dag_macro_writer");
-
+  
   ObMemAttr attr(MTL_ID(), "cg_blok_file");
   ObCGBlockFile *cg_block_file_0 = nullptr;
   ObCGBlockFile *cg_block_file_1 = nullptr;
@@ -755,7 +755,7 @@ TEST_F(TestDagMacroWriter, test_dag_macro_writer)
   EXPECT_EQ(OB_SUCCESS, cg_block_files.push_back(cg_block_file_0));
   EXPECT_EQ(OB_SUCCESS, cg_block_files.push_back(cg_block_file_1));
   EXPECT_EQ(OB_SUCCESS, cg_block_files_iter.push_back_cg_block_files(cg_block_files));
-
+  
   aggregate_cg_blocks_into_macro_block(cg_block_files_iter, micro_block_cnt);
 
   LOG_INFO("FINISH TestDagMacroWriter.test_dag_macro_writer");
@@ -820,7 +820,7 @@ TEST_F(TestDagMacroWriter, test_dag_macro_writer_encrypt_data)
   ASSERT_EQ(OB_SUCCESS, share::ObBlockCipher::encrypt(master_key_, strlen(master_key_), raw_key_,
                         strlen(raw_key_), OB_MAX_ENCRYPTION_KEY_NAME_LENGTH, nullptr, 0, nullptr, 0,
                         0, mode_, encrypt_key_, encrypt_key_len_, nullptr));
-
+  
   ObMemAttr attr(MTL_ID(), "cg_blok_file");
   ObCGBlockFile *cg_block_file_0 = nullptr;
   ObCGBlockFile *cg_block_file_1 = nullptr;
@@ -838,10 +838,10 @@ TEST_F(TestDagMacroWriter, test_dag_macro_writer_encrypt_data)
   EXPECT_EQ(OB_SUCCESS, cg_block_files.push_back(cg_block_file_0));
   EXPECT_EQ(OB_SUCCESS, cg_block_files.push_back(cg_block_file_1));
   EXPECT_EQ(OB_SUCCESS, cg_block_files_iter.push_back_cg_block_files(cg_block_files));
-
+  
   //major merge will generate logic id
   aggregate_cg_blocks_into_macro_block(cg_block_files_iter, micro_block_cnt, merge_type, true);
-
+  
   LOG_INFO("FINISH TestDagMacroWriter.test_dag_macro_writer_encrypt_data");
 }
 
@@ -866,10 +866,10 @@ TEST_F(TestDagMacroWriter, test_macro_writer_logic_id)
   EXPECT_EQ(OB_SUCCESS, cg_block_files.push_back(cg_block_file_0));
   EXPECT_EQ(OB_SUCCESS, cg_block_files.push_back(cg_block_file_1));
   EXPECT_EQ(OB_SUCCESS, cg_block_files_iter.push_back_cg_block_files(cg_block_files));
-
+  
   //minor merge will not generate logic id
   aggregate_cg_blocks_into_macro_block(cg_block_files_iter, micro_block_cnt, merge_type);
-
+  
   LOG_INFO("FINISH TestDagMacroWriter.test_macro_writer_logic_id");
 }
 
@@ -972,7 +972,7 @@ TEST_F(TestDagMacroWriter, test_reuse_macro_block_writer)  // not reuse macro bl
 //   ASSERT_EQ(OB_SUCCESS, macro_writer->close());
 //   ObSSTableMergeRes res;
 //   ASSERT_EQ(OB_SUCCESS, sstable_builder.close(res));
-
+  
 //   LOG_INFO("FINISH TestDagMacroWriter.test_dag_slice_macro_flusher");
 // }
 

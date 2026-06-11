@@ -1207,7 +1207,7 @@ int ObDASDomainIdMergeIter::multi_get_row()
               } else if (rowkey_domain_rowkey.equal(data_table_rowkey, is_found)) {
                 LOG_WARN("fail to equal rowkey between data table and rowkey", K(ret));
               }
-              LOG_TRACE("compare one row in rowkey domain", K(ret), "need_skip=", !is_found,
+              LOG_TRACE("compare one row in rowkey domain", K(ret), "need_skip=", !is_found, 
                        K(data_table_rowkey), K(rowkey_domain_rowkey));
             }
 
@@ -1295,7 +1295,7 @@ int ObDASDomainIdMergeIter::multi_get_rows(int64_t &count, int64_t capacity)
               }
             }
           }
-
+          
           if (OB_SUCC(ret)) {
             ret = expect_iter_end ? OB_ITER_END : OB_SUCCESS;
           }
@@ -1420,7 +1420,7 @@ int ObDASDomainIdMergeIter::fill_null_domain_id_in_data_table(
     common::ObIAllocator &allocator)
 {
   int ret = OB_SUCCESS;
-
+  
   if (OB_ISNULL(ctdef) || OB_ISNULL(rtdef) || OB_ISNULL(data_table_ctdef_) || OB_ISNULL(data_table_rtdef_)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arguments", K(ret), KP(ctdef), KP(rtdef), KP(data_table_ctdef_), KP(data_table_rtdef_));
@@ -1465,7 +1465,7 @@ int ObDASDomainIdMergeIter::fill_null_domain_id_in_data_table(
 int ObDASDomainIdMergeIter::reset_rowkey_domain_iter_scan_range(int64_t iter_idx, const common::ObRowkey &data_table_rowkey)
 {
   int ret = OB_SUCCESS;
-
+  
   if (iter_idx < 0 || iter_idx >= rowkey_domain_scan_params_.count()) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid iter index", K(ret), K(iter_idx), K(rowkey_domain_scan_params_.count()));
@@ -1508,7 +1508,7 @@ int ObDASDomainIdMergeIter::reset_rowkey_domain_iter_scan_range(int64_t iter_idx
             }
             extend_end_key_obj_ptr[data_table_rowkey.get_obj_cnt()].set_max_value();
             key_range.end_key_.assign(extend_end_key_obj_ptr, data_table_rowkey.get_obj_cnt() + 1);
-
+            
             if (OB_FAIL(scan_param.key_ranges_.push_back(key_range))) {
               LOG_WARN("fail to push back key range for emb_vec scan param", K(ret), K(key_range));
             }
@@ -1533,11 +1533,11 @@ int ObDASDomainIdMergeIter::reset_rowkey_domain_iter_scan_range(int64_t iter_idx
       if (OB_FAIL(iter->rescan())) {
         LOG_WARN("fail to rescan rowkey domain iter", K(ret), K(iter_idx));
       }
-      LOG_INFO("reset domain iter scan range", K(ret), K(iter_idx), K(is_emb_vec_domain),
+      LOG_INFO("reset domain iter scan range", K(ret), K(iter_idx), K(is_emb_vec_domain), 
                 K(scan_param.key_ranges_), K(data_table_rowkey));
     }
   }
-
+  
   return ret;
 }
 

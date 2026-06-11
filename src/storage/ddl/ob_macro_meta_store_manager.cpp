@@ -101,7 +101,7 @@ int ObMacroMetaStoreManager::add_store_item(const ObTabletID &tablet_id, const i
   return ret;
 }
 
-int ObMacroMetaStoreManager::get_sorted_macro_meta_stores(const int64_t cg_idx, ObIArray<ObMacroMetaStoreManager::StoreItem> &macro_meta_stores)
+int ObMacroMetaStoreManager::get_sorted_macro_meta_stores(const int64_t cg_idx, ObIArray<ObMacroMetaStoreManager::StoreItem> &macro_meta_stores) 
 {
   static ObTabletID dummy_tablet_id;
   return get_sorted_macro_meta_stores(dummy_tablet_id, cg_idx, macro_meta_stores);

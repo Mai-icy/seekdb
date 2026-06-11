@@ -170,7 +170,7 @@ int ObDagMacroBlockWriter::on_buffer_not_enough()
  * @param cg_block              [in] The CGBlock data to be appended to the macro block.
  * @param macro_block_fill_threshold [in] The fill ratio threshold (0-100) for reusing the macro block.
  *                                  If the current macro block's data volume is greater than or equal to this threshold,
- *                                  the macro block in cg_block can be reused; otherwise, have to iterate and reuse
+ *                                  the macro block in cg_block can be reused; otherwise, have to iterate and reuse 
  *                                  the micro block rather than reuse the macro block.
  * @return int                  Returns 0 on success, non-zero on failure.
  */
@@ -229,8 +229,8 @@ int ObDagMacroBlockWriter::reuse_micro_blocks(ObDagMicroBlockIterator &micro_blo
       STORAGE_LOG(WARN, "invalid micro_block_desc or micro_index_data", K(ret), K(micro_block_desc), K(micro_index_data));
     } else if (FALSE_IT(micro_block_desc.logic_micro_id_.reset())) {
       // The logic micro id generated in the first stage of dag writer cannot guarantee uniqueness.
-      // So the logic id obtained directly from the middle layer cannot be directly used for
-      // append_micro_block in the second stage. Therefore, it needs to be reset and regenerated
+      // So the logic id obtained directly from the middle layer cannot be directly used for 
+      // append_micro_block in the second stage. Therefore, it needs to be reset and regenerated 
       // as a unique micro block logic id in the second stage.
     } else if (OB_FAIL(ObMacroBlockWriter::append_micro_block(micro_block_desc, micro_index_data))) {
       STORAGE_LOG(WARN, "fail to append micro", K(ret), K(micro_block_desc), K(micro_index_data));

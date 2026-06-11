@@ -34,3 +34,4 @@ static bool is_cdc(const LogFetcherUser &user) { return LogFetcherUser::CDC == u
 } // namespace oceanbase
 
 #endif
+

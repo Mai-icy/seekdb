@@ -14,7 +14,7 @@ set @@collation_connection='utf8mb4_bin';
 # create
 create table json_test(pk int primary key, j json) row_format=COMPRESSED SEMISTRUCT_ENCODING_TYPE='encoding';
 show create table json_test;
-# alter
+# alter 
 alter table json_test set SEMISTRUCT_ENCODING_TYPE = '';
 show create table json_test;
 alter table json_test set SEMISTRUCT_ENCODING_TYPE = 'encoding';
@@ -162,13 +162,13 @@ select pk, md5(j), j from json_test2 where json_value(j, '$.int_dict' RETURNING 
 select pk, md5(j), j from json_test2 where json_value(j, '$.int_dict' RETURNING SIGNED) is not null;
 
 # string dict
-# ==
+# == 
 select pk, md5(j), j from json_test2 where json_value(j, '$.str_dict' RETURNING CHAR) = 'Fake';
 # <=
 select pk, md5(j), j from json_test2 where json_value(j, '$.str_dict' RETURNING CHAR) <= 'Fake';
 # <
 select pk, md5(j), j from json_test2 where json_value(j, '$.str_dict' RETURNING CHAR) < 'Fake';
-# >=
+# >= 
 select pk, md5(j), j from json_test2 where json_value(j, '$.str_dict' RETURNING CHAR) >= 'Fake';
 # >
 select pk, md5(j), j from json_test2 where json_value(j, '$.str_dict' RETURNING CHAR) > 'Fake';
@@ -282,7 +282,7 @@ drop table json_test;
 drop table json_test2;
 
 create table json_test(c1 int, c2 number, c3 decimal(10, 2), c4 decimal(18, 2), c_bit BIT(6), c5 decimal(38, 30));
-insert into json_test values(1, 1.0, 8.90, 10.21, b'010101', 32321321.321321321321),
+insert into json_test values(1, 1.0, 8.90, 10.21, b'010101', 32321321.321321321321), 
                             (2, 2.0, 8.00, 20.21, b'000101', 42321321.321321321322),
                             (3, 3.0, 8.10, 30.21, b'100101', 52321321.32132141321),
                             (4, 4.0, 8.20, 40.21, b'010100', 62321321.321351321321),

@@ -192,7 +192,7 @@ int ObUserSqlService::drop_user_delete_role_grantee_map(
         }
       }
       const int64_t is_deleted = 1;
-      if (OB_SUCC(ret) && OB_FAIL(insert_sql.append_fmt("(now(6), now(6), %lu, %lu, %ld, %ld, %lu, %lu)",
+      if (OB_SUCC(ret) && OB_FAIL(insert_sql.append_fmt("(now(6), now(6), %lu, %lu, %ld, %ld, %lu, %lu)", 
           ObSchemaUtils::get_extract_schema_id(exec_tenant_id, is_role ? id : user_id), 
           ObSchemaUtils::get_extract_schema_id(exec_tenant_id, is_role ? user_id : id),
           new_schema_version, 

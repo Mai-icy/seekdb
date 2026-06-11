@@ -4224,7 +4224,7 @@ int ObVectorIndexSliceStore::serialize_vector_index(
         if (!tenant_config.is_valid()) {
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("fail get tenant_config", KR(ret), K(adp->get_tenant_id()));
-        } else if (OB_FAIL(adp->renew_single_snap_index(type == VIAT_HNSW_BQ
+        } else if (OB_FAIL(adp->renew_single_snap_index(type == VIAT_HNSW_BQ 
             || (tenant_config->vector_index_memory_saving_mode && (type == VIAT_HNSW || type == VIAT_HNSW_SQ || type == VIAT_HGRAPH))))) {
           LOG_WARN("fail to renew single snap index", K(ret));
         }
@@ -5054,14 +5054,14 @@ int ObDDLTabletMergeDagParamV2::init(const bool for_major,
                                      ObDDLTabletContext *tablet_ctx,
                                      const ObTransID &trans_id,
                                      const ObTxSEQ &seq_no)
-{
+{ 
   int ret = OB_SUCCESS;
   bool is_cs_replica = false;
   bool is_column_store = false;
   ObTabletHandle tablet_handle;
   ObWriteTabletParam              *tablet_param = nullptr;
   ObDDLTabletContext::MergeCtx    *merge_ctx    = nullptr;
-
+  
   if ((is_full_direct_load(direct_load_type) && !for_replay
                                              && (0 == task_param.ddl_task_id_ || 0 == task_param.execution_id_))
       || (nullptr == tablet_ctx)) {
@@ -5114,7 +5114,7 @@ int ObDDLTabletMergeDagParamV2::init(const bool for_major,
         table_key_.version_range_.snapshot_version_ = task_param.snapshot_version_;
         table_key_.scn_range_.start_scn_ = start_scn;
       } else {
-        if (is_column_store && !GCTX.is_shared_storage_mode()) {
+        if (is_column_store && !GCTX.is_shared_storage_mode()) { 
           table_key_.table_type_ = ObITable::TableType::INC_MAJOR_DDL_MERGE_CO_SSTABLE;
         } else {
           table_key_.table_type_ = ObITable::TableType::INC_MAJOR_DDL_DUMP_SSTABLE;
@@ -5183,8 +5183,8 @@ int ObDDLTabletMergeDagParamV2::get_merge_helper(ObIDDLMergeHelper *&merge_helpe
     merge_helper = tablet_ctx_->lob_merge_ctx_.merge_helper_;
   } else {
     merge_helper = tablet_ctx_->merge_ctx_.merge_helper_;
-  }
-
+  } 
+  
   if (OB_FAIL(ret)) {
   } else if (nullptr == merge_helper) {
     ret = OB_ERR_UNEXPECTED;
@@ -5254,9 +5254,9 @@ int ObDDLTabletMergeDagParamV2::assign(const ObDDLTabletMergeDagParamV2 &merge_d
   return ret;
 }
 
-int ObDDLTabletMergeDagParamV2::get_tablet_param(share::ObLSID &ls_id,
+int ObDDLTabletMergeDagParamV2::get_tablet_param(share::ObLSID &ls_id, 
                                                  ObTabletID    &tablet_id,
-                                                 ObWriteTabletParam *&tablet_param) const
+                                                 ObWriteTabletParam *&tablet_param) const 
 {
   int ret = OB_SUCCESS;
   tablet_param =  nullptr;
@@ -5343,7 +5343,7 @@ int ObDDLTabletMergeDagParamV2::init_cg_sstable_array( hash::ObHashSet<int64_t> 
                                            ObMemAttr(MTL_ID(), "ddl_tblt_prm")))) {
     LOG_WARN("failed to init fifo allocator", K(ret));
   }
-
+  
   for (hash::ObHashSet<int64_t>::const_iterator iter = slice_idxes.begin(); OB_SUCC(ret) && iter != slice_idxes.end(); iter++) {
     char* buf = nullptr;
     ObArray<ObTableHandleV2> *table_array = nullptr;
@@ -5366,7 +5366,7 @@ int ObDDLTabletMergeDagParamV2::init_cg_sstable_array( hash::ObHashSet<int64_t> 
 
   if (OB_FAIL(ret)) {
     /* release mem when failed */
-    for (hash::ObHashMap<int64_t, ObArray<ObTableHandleV2>*>::const_iterator iter = merge_ctx->slice_cg_sstables_.begin();
+    for (hash::ObHashMap<int64_t, ObArray<ObTableHandleV2>*>::const_iterator iter = merge_ctx->slice_cg_sstables_.begin(); 
          iter != merge_ctx->slice_cg_sstables_.end();
          iter++) {
       if (nullptr != iter->second) {
@@ -5380,8 +5380,8 @@ int ObDDLTabletMergeDagParamV2::init_cg_sstable_array( hash::ObHashSet<int64_t> 
 }
 
 /*
- * this function is used for set table type for different cg
- * since in column store, rowkey cg is set as co sstable
+ * this function is used for set table type for different cg 
+ * since in column store, rowkey cg is set as co sstable 
  * and other cg is set as normal cg sstable
 */
 int ObDDLTabletMergeDagParamV2::get_table_type(
@@ -5447,11 +5447,11 @@ int ObDDLMergeBucketLock::init()
   return ret;
 }
 
-int ObDDLMergeBucketLock::mtl_init(ObDDLMergeBucketLock *&ddl_merge_bucket_lock)
+int ObDDLMergeBucketLock::mtl_init(ObDDLMergeBucketLock *&ddl_merge_bucket_lock) 
 {
   int ret = OB_SUCCESS;
   const uint64_t tenant_id = MTL_ID();
-
+  
   if (OB_ISNULL(ddl_merge_bucket_lock)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invlaid argument, ddl merge bucket lock should not be null", K(ret));

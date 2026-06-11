@@ -590,7 +590,7 @@ int ObSnapshotTableProxy::get_snapshot(
       if (OB_FAIL(rootserver::ObRootUtils::get_rs_default_timeout_ctx(ctx))) {
         LOG_WARN("fail to get timeout ctx", KR(ret), K(tenant_id), K(ctx));
       } else if (OB_FAIL(sql.assign_fmt("SELECT * FROM %s WHERE snapshot_type = %d AND snapshot_scn = %lu "
-          , OB_ALL_ACQUIRED_SNAPSHOT_TNAME, snapshot_type,
+          , OB_ALL_ACQUIRED_SNAPSHOT_TNAME, snapshot_type, 
           snapshot_scn.get_val_for_inner_table_field()))) {
         LOG_WARN("fail to assign sql", KR(ret), K(tenant_id), K(snapshot_type));
       } else if (OB_FAIL(proxy.read(res, tenant_id, sql.ptr()))) {
@@ -639,7 +639,7 @@ int ObSnapshotTableProxy::check_snapshot_exist(
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       if (OB_FAIL(sql.assign_fmt("SELECT time_to_usec(gmt_create) FROM %s WHERE snapshot_type = %d "
-                  "ORDER BY gmt_create DESC LIMIT 1", OB_ALL_ACQUIRED_SNAPSHOT_TNAME,
+                  "ORDER BY gmt_create DESC LIMIT 1", OB_ALL_ACQUIRED_SNAPSHOT_TNAME, 
                   snapshot_type))) {
         LOG_WARN("fail to assign sql", KR(ret), K(tenant_id), K(snapshot_type));
       } else if (OB_FAIL(proxy.read(res, tenant_id, sql.ptr()))) {

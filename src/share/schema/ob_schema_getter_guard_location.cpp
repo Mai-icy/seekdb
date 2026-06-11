@@ -86,3 +86,4 @@ int ObSchemaGetterGuard::get_location_schema_by_id(const uint64_t tenant_id,
 }
 }
 }
+

@@ -228,19 +228,19 @@ private:
   OB_DEFINE_TABLE_LOAD_INDEX_TABLE_OP(INC_INDEX_TABLE_INSERT_OP, IncMinorIndexTableInsertOp,
                                       CHANNEL_INPUT, FULL_ROW, NORMAL, INC,
                                       ObTableLoadNormalRowHandler,
-                                      OB_TABLE_LOAD_INC_BASIC_OPEN_FLAG);
+                                      OB_TABLE_LOAD_INC_BASIC_OPEN_FLAG);                                        
   // 唯一索引表插入非冲突行算子
   OB_DEFINE_TABLE_LOAD_INDEX_TABLE_OP(INC_UNIQUE_INDEX_TABLE_INSERT_OP, IncUniqueIndexTableInsertOp,
                                       CHANNEL_INPUT, FULL_ROW, MERGE_WITH_CONFLICT_CHECK, INC,
                                       ObTableLoadUniqueIndexTableInsertRowHandler,
                                       OB_TABLE_LOAD_INC_BASIC_OPEN_FLAG);
-
+  
   // ------------ DeletePhase ------------ //
-  // 数据表删除算子，删除行保留主键，用于非DELETE_INSERT_ENGINE
+  // 数据表删除算子，删除行保留主键，用于非DELETE_INSERT_ENGINE 
   OB_DEFINE_TABLE_LOAD_DATA_TABLE_OP(INC_DATA_TABLE_DELETE_OP, IncDataTableDeleteOp, CHANNEL_INPUT,
                                      ROWKEY, MERGE_WITH_ORIGIN_QUERY_FOR_DATA, INC,
                                      ObTableLoadNormalRowHandler,
-                                     OB_TABLE_LOAD_INC_BASIC_OPEN_FLAG);
+                                     OB_TABLE_LOAD_INC_BASIC_OPEN_FLAG); 
   // lob表删除算子
   OB_DEFINE_TABLE_LOAD_LOB_TABLE_OP(INC_LOB_TABLE_DELETE_OP, IncLobTableDeleteOp, CHANNEL_INPUT,
                                     LOB_ID, MERGE_WITH_ORIGIN_QUERY_FOR_LOB, INC,

@@ -37,7 +37,7 @@ int ObDropLocationResolver::resolve(const ParseNode &parse_tree)
   int ret = OB_SUCCESS;
   ParseNode *node = const_cast<ParseNode*>(&parse_tree);
   ObDropLocationStmt *drop_location_stmt = NULL;
-  uint64_t tenant_id = OB_INVALID_ID;
+  uint64_t tenant_id = OB_INVALID_ID; 
   if (OB_ISNULL(session_info_) || OB_ISNULL(schema_checker_)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(ret));
@@ -76,7 +76,7 @@ int ObDropLocationResolver::resolve(const ParseNode &parse_tree)
       ret = OB_ERR_TOO_LONG_IDENT;
       LOG_USER_ERROR(OB_ERR_TOO_LONG_IDENT, static_cast<int32_t>(child_node->str_len_), child_node->str_value_);
     } else if (FALSE_IT(location_name.assign_ptr(child_node->str_value_, static_cast<int32_t>(child_node->str_len_)))){
-
+      
     } else if (OB_FAIL(session_info_->get_name_case_mode(case_mode))) {
       LOG_WARN("failed to get name case mode", K(ret));
     } else if (is_mysql_mode() && OB_LOWERCASE_AND_INSENSITIVE == case_mode
@@ -86,7 +86,7 @@ int ObDropLocationResolver::resolve(const ParseNode &parse_tree)
       drop_location_stmt->set_location_name(location_name);
     }
   }
-
+  
   return ret;
 }
 } // end namespace sql

@@ -1357,7 +1357,7 @@ int ObTabletDirectLoadMgr::prepare_schema_item_on_demand(const uint64_t table_id
       } else if (OB_FAIL(table_schema->get_is_column_store(schema_item_.is_column_store_))) {
         LOG_WARN("fail to get is column store", K(ret));
       } else if (FALSE_IT(is_vector_data_complement= ObDirectLoadMgrUtil::need_process_vec_index(table_schema->get_index_type()))) {
-      } else if (is_vector_data_complement &&
+      } else if (is_vector_data_complement && 
                  OB_FAIL(ObDirectLoadMgrUtil::prepare_schema_item_for_vec_idx_data(tenant_id,
                                                                                    schema_guard,
                                                                                    table_schema,

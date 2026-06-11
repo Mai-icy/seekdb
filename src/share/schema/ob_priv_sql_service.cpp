@@ -546,9 +546,9 @@ int ObPrivSqlService::gen_column_priv_dml(
   int64_t all_priv = 0;
 
   if ((priv_set & OB_PRIV_SELECT) != 0) { all_priv |= 1; }
-  if ((priv_set & OB_PRIV_INSERT) != 0) { all_priv |= 2; }
-  if ((priv_set & OB_PRIV_UPDATE) != 0) { all_priv |= 4; }
-  if ((priv_set & OB_PRIV_REFERENCES) != 0) { all_priv |= 8; }
+  if ((priv_set & OB_PRIV_INSERT) != 0) { all_priv |= 2; } 
+  if ((priv_set & OB_PRIV_UPDATE) != 0) { all_priv |= 4; } 
+  if ((priv_set & OB_PRIV_REFERENCES) != 0) { all_priv |= 8; } 
   if (OB_FAIL(dml.add_pk_column("user_id", column_priv_key.user_id_))
       || OB_FAIL(dml.add_pk_column("priv_id", priv_id))
       || OB_FAIL(dml.add_column("database_name", column_priv_key.db_))
@@ -1634,9 +1634,9 @@ int ObPrivSqlService::gen_obj_mysql_priv_dml(
 {
   int ret = OB_SUCCESS;
   int64_t all_priv = 0;
-
+  
   if ((priv_set & OB_PRIV_READ) != 0) { all_priv |= 1; }
-  if ((priv_set & OB_PRIV_WRITE) != 0) { all_priv |= 2; }
+  if ((priv_set & OB_PRIV_WRITE) != 0) { all_priv |= 2; } 
   if ((priv_set & OB_PRIV_GRANT) != 0) {all_priv |= 4; }
   if (OB_FAIL(dml.add_pk_column("user_id", obj_mysql_priv_key.user_id_))
       || OB_FAIL(dml.add_pk_column("obj_name", ObHexEscapeSqlStr(obj_mysql_priv_key.object_name_)))
@@ -1644,7 +1644,7 @@ int ObPrivSqlService::gen_obj_mysql_priv_dml(
       || OB_FAIL(dml.add_column("all_priv", all_priv))) {
     LOG_WARN("add column failed", K(ret));
   }
-
+  
   if (OB_FAIL(ret)) {
   } else {
     if (grantor.length() > 0 && OB_FAIL(dml.add_column("GRANTOR", grantor))) {

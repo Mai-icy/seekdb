@@ -293,7 +293,7 @@ int ObTabletSplitCtx::prepare_index_builder(
         } else if (OB_FAIL(ObDDLUtil::ddl_get_tablet(ls_handle_, param.dest_tablets_id_.at(j), tablet_handle))) {
           LOG_WARN("get tablet failed", K(ret));
         } else if (OB_FAIL(data_desc.init(
-            true/*is_ddl*/, *clipped_storage_schema, param.ls_id_,
+            true/*is_ddl*/, *clipped_storage_schema, param.ls_id_, 
             dst_tablet_id, merge_type, snapshot_version, param.data_format_version_,
             tablet_handle.get_obj()->get_tablet_meta().micro_index_clustered_,
             tablet_handle.get_obj()->get_transfer_seq(),
@@ -673,7 +673,7 @@ int ObTabletSplitPrepareTask::process()
         if (OB_ISNULL(GCTX.config_) { // overwrite ret is expected.
           ret = OB_INVALID_ARGUMENT;
           LOG_WARN("get server zone failed", K(ret));
-        } else if (0 != ObCharset::instr(ObCollationType::CS_TYPE_UTF8MB4_GENERAL_CI, GCTX.config_->zone.str().ptr(), GCTX.config_->zone.str().length(),
+        } else if (0 != ObCharset::instr(ObCollationType::CS_TYPE_UTF8MB4_GENERAL_CI, GCTX.config_->zone.str().ptr(), GCTX.config_->zone.str().length(), 
             zone1_str.ptr(), zone1_str.length())) {
           ret = OB_EAGAIN;
           LOG_INFO("[ERRSIM] set eagain for tablet split", K(ret));

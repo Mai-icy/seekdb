@@ -21,28 +21,28 @@
 using namespace oceanbase::common;
 using namespace oceanbase::sql;
 
-namespace oceanbase
+namespace oceanbase 
 {
-namespace sql
+namespace sql 
 {
 ObExprAIComplete::ObExprAIComplete(common::ObIAllocator &alloc)
-    : ObFuncExprOperator(alloc,
-                        T_FUN_SYS_AI_COMPLETE,
+    : ObFuncExprOperator(alloc, 
+                        T_FUN_SYS_AI_COMPLETE, 
                         N_AI_COMPLETE,
-                        MORE_THAN_ZERO,
+                        MORE_THAN_ZERO, 
                         NOT_VALID_FOR_GENERATED_COL,
-                        NOT_ROW_DIMENSION)
+                        NOT_ROW_DIMENSION) 
 {
 }
 
-ObExprAIComplete::~ObExprAIComplete()
+ObExprAIComplete::~ObExprAIComplete() 
 {
 }
 
 int ObExprAIComplete::calc_result_typeN(ObExprResType &type,
                                         ObExprResType *types_stack,
                                         int64_t param_num,
-                                        common::ObExprTypeCtx &type_ctx) const
+                                        common::ObExprTypeCtx &type_ctx) const 
 {
 
   UNUSED(type_ctx);
@@ -83,9 +83,9 @@ int ObExprAIComplete::calc_result_typeN(ObExprResType &type,
   return ret;
 }
 
-int ObExprAIComplete::eval_ai_complete(const ObExpr &expr,
+int ObExprAIComplete::eval_ai_complete(const ObExpr &expr, 
                                        ObEvalCtx &ctx,
-                                       ObDatum &res)
+                                       ObDatum &res) 
 {
   INIT_SUCC(ret);
   ObDatum *arg_model_id = nullptr;
@@ -169,7 +169,7 @@ int ObExprAIComplete::eval_ai_complete(const ObExpr &expr,
     } else if (OB_FAIL(ai_service_guard.get_ai_endpoint_by_ai_model_name(model_id, endpoint_info))) {
       LOG_WARN("failed to get endpoint info", K(ret), K(model_id));
     } else if (OB_ISNULL(endpoint_info)) {
-      ret = OB_ERR_UNEXPECTED;
+      ret = OB_ERR_UNEXPECTED;  
       LOG_WARN("endpoint info is null", K(ret));
     } else {
       ObAIFuncModel model(temp_allocator, *info, *endpoint_info);
@@ -188,7 +188,7 @@ int ObExprAIComplete::get_prompt_object_from_str(ObIAllocator &allocator,
                                                   const ObDatumMeta &meta,
                                                   ObArray<ObString> &prompts,
                                                   ObArray<ObJsonObject *> &prompt_objects,
-                                                  bool& is_all_str)
+                                                  bool& is_all_str) 
 {
   INIT_SUCC(ret);
   ObObjType val_type = meta.type_;
@@ -196,7 +196,7 @@ int ObExprAIComplete::get_prompt_object_from_str(ObIAllocator &allocator,
   ObJsonInType expect_type = ObJsonInType::JSON_TREE;
   for (int64_t i = 0; OB_SUCC(ret) && i < prompts.count(); ++i) {
     ObString prompt = prompts.at(i);
-    ObIJsonBase *j_base = nullptr;
+    ObIJsonBase *j_base = nullptr; 
     ObJsonObject *prompt_object = nullptr;
     if (OB_FAIL(ObJsonBaseFactory::get_json_base(&allocator, prompt, j_in_type,
                                                     expect_type, j_base, 0))) {
@@ -213,7 +213,7 @@ int ObExprAIComplete::get_prompt_object_from_str(ObIAllocator &allocator,
 
 int ObExprAIComplete::transform_prompt_object_to_str(ObIAllocator &allocator,
                                                     ObArray<ObJsonObject *> &prompt_objects,
-                                                    ObArray<ObString> &prompts)
+                                                    ObArray<ObString> &prompts) 
 {
   INIT_SUCC(ret);
   for (int64_t i = 0; OB_SUCC(ret) && i < prompt_objects.count(); ++i) {
@@ -228,13 +228,13 @@ int ObExprAIComplete::transform_prompt_object_to_str(ObIAllocator &allocator,
   return ret;
 }
 
-int ObExprAIComplete::get_vector_params(const ObExpr &expr,
-                                        ObEvalCtx &ctx,
-                                        const ObBitVector &skip,
-                                        const EvalBound &bound,
-                                        ObString &model_id,
-                                        ObArray<ObString> &prompts,
-                                        ObJsonObject *&config)
+int ObExprAIComplete::get_vector_params(const ObExpr &expr, 
+                                        ObEvalCtx &ctx, 
+                                        const ObBitVector &skip, 
+                                        const EvalBound &bound, 
+                                        ObString &model_id, 
+                                        ObArray<ObString> &prompts, 
+                                        ObJsonObject *&config) 
 {
   INIT_SUCC(ret);
   if (OB_FAIL(expr.args_[0]->eval_vector(ctx, skip, bound))) {
@@ -307,14 +307,14 @@ int ObExprAIComplete::get_vector_params(const ObExpr &expr,
   return ret;
 }
 
-int ObExprAIComplete::pack_json_array_to_res_vector(const ObExpr &expr,
+int ObExprAIComplete::pack_json_array_to_res_vector(const ObExpr &expr, 
                                       ObEvalCtx &ctx,
                                       ObIAllocator &allocator,
                                       ObArray<ObJsonObject *> &responses,
-                                      const ObBitVector &skip,
+                                      const ObBitVector &skip, 
                                       const EvalBound &bound,
                                       const ObAiModelEndpointInfo &endpoint_info,
-                                      ObIVector *res_vec)
+                                      ObIVector *res_vec) 
 {
   int ret = OB_SUCCESS;
   ObBitVector &eval_flags = expr.get_evaluated_flags(ctx);
@@ -356,13 +356,13 @@ int ObExprAIComplete::pack_json_array_to_res_vector(const ObExpr &expr,
   return ret;
 }
 
-int ObExprAIComplete::pack_json_string_to_res_vector(const ObExpr &expr,
+int ObExprAIComplete::pack_json_string_to_res_vector(const ObExpr &expr, 
                                                     ObEvalCtx &ctx,
                                                     ObIAllocator &allocator,
                                                     ObIJsonBase *response,
                                                     const ObBitVector &skip,
                                                     const EvalBound &bound,
-                                                    ObIVector *res_vec)
+                                                    ObIVector *res_vec) 
 {
   int ret = OB_SUCCESS;
   ObBitVector &eval_flags = expr.get_evaluated_flags(ctx);
@@ -472,7 +472,7 @@ int ObExprAIComplete::eval_ai_complete_vector(const ObExpr &expr, ObEvalCtx &ctx
     } else if (OB_FAIL(ai_service_guard.get_ai_endpoint_by_ai_model_name(model_id, endpoint_info))) {
       LOG_WARN("failed to get endpoint info", K(ret), K(model_id));
     } else if (OB_ISNULL(endpoint_info)) {
-      ret = OB_ERR_UNEXPECTED;
+      ret = OB_ERR_UNEXPECTED;  
       LOG_WARN("endpoint info is null", K(ret));
     } else if (OB_FAIL(ObAIFuncUtils::check_info_type_completion(info))) {
       LOG_WARN("model type must be COMPLETION", K(ret));
@@ -542,7 +542,7 @@ int ObExprAIComplete::construct_tuple_str(ObIAllocator &allocator, ObArray<ObStr
   if (OB_FAIL(content_buffer.append("["))) {
     LOG_WARN("fail to append [", K(ret));
   } else {
-    for (int64_t i = 0; OB_SUCC(ret) && i < contents.count(); ++i) {
+    for (int64_t i = 0; OB_SUCC(ret) && i < contents.count(); ++i) {      
       ObString tuple_str;
       if (OB_FAIL(get_tuple_str(allocator, contents.at(i), tuple_str))) {
         LOG_WARN("fail to get tuple str", K(ret));
@@ -604,7 +604,7 @@ int ObExprAIComplete::eval_ai_complete_vector_v2(const ObExpr &expr, ObEvalCtx &
     } else if (OB_FAIL(ai_service_guard.get_ai_endpoint_by_ai_model_name(model_id, endpoint_info))) {
       LOG_WARN("failed to get endpoint info", K(ret), K(model_id));
     } else if (OB_ISNULL(endpoint_info)) {
-      ret = OB_ERR_UNEXPECTED;
+      ret = OB_ERR_UNEXPECTED;  
       LOG_WARN("endpoint info is null", K(ret));
     } else if (OB_FAIL(ObAIFuncUtils::check_info_type_completion(info))) {
       LOG_WARN("model type must be COMPLETION", K(ret));
@@ -638,7 +638,7 @@ int ObExprAIComplete::eval_ai_complete_vector_v2(const ObExpr &expr, ObEvalCtx &
 
 int ObExprAIComplete::cg_expr(ObExprCGCtx &expr_cg_ctx,
                               const ObRawExpr &raw_expr,
-                              ObExpr &rt_expr) const
+                              ObExpr &rt_expr) const 
 {
   INIT_SUCC(ret);
   // TODO: support schema version match in plan cache for ai func

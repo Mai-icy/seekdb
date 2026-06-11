@@ -611,9 +611,9 @@ int ObResolver::resolve(IsPrepared if_prepared, const ParseNode &parse_tree, ObS
       case T_SHOW_CHECK_TABLE:
       case T_SHOW_CREATE_USER:
       case T_SHOW_CATALOGS:
-      case T_SHOW_CREATE_CATALOG:
+      case T_SHOW_CREATE_CATALOG: 
       case T_SHOW_LOCATIONS:
-      case T_SHOW_CREATE_LOCATION:
+      case T_SHOW_CREATE_LOCATION: 
       case T_LOCATION_UTILS_LIST: {
         REGISTER_STMT_RESOLVER(Show);
         break;

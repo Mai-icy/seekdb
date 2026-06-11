@@ -131,7 +131,7 @@ public:
 
   int init(const common::ObAddr& addr, int64_t timeout);
   int get_ls_view_tablet_count(ObGetLSViewTabletCountResult& result);
-  int check_restore_precondition(obrpc::ObCheckRestorePreconditionResult& result);
+  int check_restore_precondition(obrpc::ObCheckRestorePreconditionResult& result); 
   int fetch_tablet_info(const obrpc::ObCopyTabletInfoArg& arg,
                         std::function<int(const obrpc::ObCopyTabletInfo&)> callback);
   int create_tablet_info_stream(

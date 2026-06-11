@@ -23,7 +23,7 @@ for file in $(ls *.proto); do
        --cpp_out "${CURRENT_BINARY_DIR}" \
        --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN_EXECUTABLE}" \
            "${proto_path}"
-
+   
    echo "rename .cc files"
    proto_ouput_cc="${PROTO_NAME}.pb.cc"
    proto_ouput_cpp="${PROTO_NAME}.pb.cpp"
@@ -31,10 +31,10 @@ for file in $(ls *.proto); do
    proto_grpc_ouput_cc="${PROTO_NAME}.grpc.pb.cc"
    proto_grpc_ouput_cpp="${PROTO_NAME}.grpc.pb.cpp"
    proto_grpc_ouput_h="${PROTO_NAME}.grpc.pb.h"
-
+   
    mv $proto_ouput_cc $proto_ouput_cpp
    mv $proto_grpc_ouput_cc $proto_grpc_ouput_cpp
-
+   
    echo "success generated files:"
    echo -e "\t${proto_ouput_h}"
    echo -e "\t${proto_ouput_cpp}"

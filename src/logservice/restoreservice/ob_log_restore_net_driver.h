@@ -75,13 +75,13 @@ public:
   // Set source without scheduling (non-blocking)
   // The background thread will call do_schedule() later
   int set_source(share::ObRestoreSourceServiceAttr &source);
-
+  
   // Check if source is set and valid
   bool has_source() const;
-
+  
   // Get the saved source (for converting to ObLogRestoreSourceItem)
   int get_saved_source(share::ObRestoreSourceServiceAttr &source) const;
-
+  
   // Schedule using the source that was set via set_source()
   // This is called by the background thread
   int do_schedule_with_saved_source();

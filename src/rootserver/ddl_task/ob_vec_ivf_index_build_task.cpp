@@ -1980,7 +1980,7 @@ int ObVecIVFIndexBuildTask::cleanup_impl()
     } else if (OB_FAIL(owner_id.convert_from_value(ObLockOwnerType::DEFAULT_OWNER_TYPE,
                                                    task_id_))) {
       LOG_WARN("failed to get owner id", K(ret), K(task_id_));
-    } else if (!is_skip_unlock &&
+    } else if (!is_skip_unlock && 
                OB_FAIL(ObDDLLock::unlock_for_add_drop_index(*data_schema,
                                                             index_table_id,
                                                             false,

@@ -1500,7 +1500,7 @@ TEST_F(TestVectorIndexAdaptor, test_hnsw_bq_ser_deser)
 TEST_F(TestVectorIndexAdaptor, test_sparse_vector_index_query)
 {
   obvsag::VectorIndexPtr index_handler = nullptr;
-
+  
   const char* const METRIC = "ip";
   const char* const DATATYPE = "sparse";
   bool use_reorder = false;
@@ -1509,10 +1509,10 @@ TEST_F(TestVectorIndexAdaptor, test_sparse_vector_index_query)
   VsagMemContext vsag_mem_context;
   ASSERT_EQ(vsag_mem_context.init(), 0);
 
-  ASSERT_EQ(obvectorutil::create_index(index_handler,
-                                      obvsag::IPIVF_TYPE,
+  ASSERT_EQ(obvectorutil::create_index(index_handler, 
+                                      obvsag::IPIVF_TYPE, 
                                       DATATYPE,
-                                      METRIC,
+                                      METRIC, 
                                       use_reorder,
                                       doc_prune_ratio,
                                       window_size,
@@ -1574,15 +1574,15 @@ TEST_F(TestVectorIndexAdaptor, test_sparse_vector_index_query)
 
   std::cout << "===================== Query Result ================" << std::endl;
 
-  ASSERT_EQ(0, obvectorutil::knn_search(index_handler,
-                                      query_len,
+  ASSERT_EQ(0, obvectorutil::knn_search(index_handler, 
+                                      query_len, 
                                       query_dims,
-                                      query_vals,
-                                      top_k,
-                                      result_dist0,
-                                      result_ids0,
+                                      query_vals, 
+                                      top_k, 
+                                      result_dist0, 
+                                      result_ids0, 
                                       extra_info_buf_ptr,
-                                      result_size,
+                                      result_size, 
                                       query_prune_ratio,
                                       n_candidate,
                                       &test_filter));
@@ -1602,29 +1602,29 @@ TEST_F(TestVectorIndexAdaptor, test_sparse_vector_index_query)
   const float* result_dist1;
   const int64_t* result_ids1;
   result_size = 0;
-  ASSERT_EQ(0, obvectorutil::knn_search(index_handler,
-                                      query_len,
+  ASSERT_EQ(0, obvectorutil::knn_search(index_handler, 
+                                      query_len, 
                                       query_dims1,
-                                      query_vals1,
-                                      top_k,
-                                      result_dist1,
-                                      result_ids1,
+                                      query_vals1, 
+                                      top_k, 
+                                      result_dist1, 
+                                      result_ids1, 
                                       extra_info_buf_ptr,
-                                      result_size,
+                                      result_size, 
                                       query_prune_ratio,
                                       n_candidate,
                                       nullptr));
   std::cout << "result size: " << result_size << std::endl;
   ASSERT_EQ(0, result_size);
-  ASSERT_EQ(0, obvectorutil::knn_search(index_handler,
-                                      0,
+  ASSERT_EQ(0, obvectorutil::knn_search(index_handler, 
+                                      0, 
                                       query_dims,
-                                      query_vals,
-                                      top_k,
-                                      result_dist1,
-                                      result_ids1,
+                                      query_vals, 
+                                      top_k, 
+                                      result_dist1, 
+                                      result_ids1, 
                                       extra_info_buf_ptr,
-                                      result_size,
+                                      result_size, 
                                       query_prune_ratio,
                                       n_candidate,
                                       nullptr));
@@ -1638,7 +1638,7 @@ TEST_F(TestVectorIndexAdaptor, test_sparse_vector_index_serial)
   common::obvectorutil::ObVsagLogger* ob_logger = new (raw_memory)common::obvectorutil::ObVsagLogger();
   obvsag::set_logger(ob_logger);
   obvsag::VectorIndexPtr index_handler = nullptr;
-
+  
   const char* const METRIC = "ip";
   const char* const DATATYPE = "sparse";
   bool use_reorder = false;
@@ -1649,10 +1649,10 @@ TEST_F(TestVectorIndexAdaptor, test_sparse_vector_index_serial)
   VsagMemContext vsag_mem_context;
   ASSERT_EQ(vsag_mem_context.init(), 0);
 
-  ASSERT_EQ(obvectorutil::create_index(index_handler,
-                                      obvsag::IPIVF_TYPE,
+  ASSERT_EQ(obvectorutil::create_index(index_handler, 
+                                      obvsag::IPIVF_TYPE, 
                                       DATATYPE,
-                                      METRIC,
+                                      METRIC, 
                                       use_reorder,
                                       doc_prune_ratio,
                                       window_size,
@@ -1704,15 +1704,15 @@ TEST_F(TestVectorIndexAdaptor, test_sparse_vector_index_serial)
 
   std::cout << "===================== Query Result ================" << std::endl;
 
-  ASSERT_EQ(0, obvectorutil::knn_search(index_handler,
-                                      query_len,
+  ASSERT_EQ(0, obvectorutil::knn_search(index_handler, 
+                                      query_len, 
                                       query_dims,
-                                      query_vals,
-                                      top_k,
-                                      result_dist0,
-                                      result_ids0,
+                                      query_vals, 
+                                      top_k, 
+                                      result_dist0, 
+                                      result_ids0, 
                                       extra_info_buf_ptr,
-                                      result_size0,
+                                      result_size0, 
                                       query_prune_ratio,
                                       n_candidate,
                                       &test_filter));
@@ -1740,10 +1740,10 @@ TEST_F(TestVectorIndexAdaptor, test_sparse_vector_index_serial)
   des_param.size_ = ser_param.size_;
   des_param.cur_pos_ = 0;
   des_param.part_size_ = 1000;
-  ASSERT_EQ(obvectorutil::create_index(des_index_handler,
-                                      obvsag::IPIVF_TYPE,
+  ASSERT_EQ(obvectorutil::create_index(des_index_handler, 
+                                      obvsag::IPIVF_TYPE, 
                                       DATATYPE,
-                                      METRIC,
+                                      METRIC, 
                                       use_reorder,
                                       doc_prune_ratio,
                                       window_size,
@@ -1765,15 +1765,15 @@ TEST_F(TestVectorIndexAdaptor, test_sparse_vector_index_serial)
   const int64_t* result_ids1;
   int64_t result_size1 = 0;
   extra_info_buf_ptr = nullptr;
-  ASSERT_EQ(0, obvectorutil::knn_search(des_index_handler,
-                                      query_len1,
+  ASSERT_EQ(0, obvectorutil::knn_search(des_index_handler, 
+                                      query_len1, 
                                       query_dims1,
-                                      query_vals1,
-                                      top_k,
-                                      result_dist1,
-                                      result_ids1,
+                                      query_vals1, 
+                                      top_k, 
+                                      result_dist1, 
+                                      result_ids1, 
                                       extra_info_buf_ptr,
-                                      result_size1,
+                                      result_size1, 
                                       query_prune_ratio,
                                       n_candidate,
                                       &test_filter));

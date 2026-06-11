@@ -50,3 +50,4 @@ private:
 } // end namespace oceanbase
 
 #endif // _OB_LOCATION_UTILS_STMT_H
+

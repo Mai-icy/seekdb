@@ -40,10 +40,10 @@ ERROR HY000: cannot fast refresh materialized view mv7_1: query with assignment 
 create sequence seq increment by 1 start with 1;
 create materialized view mv8_1 refresh fast on demand as select seq.NEXTVAL from t1;
 ERROR HY000: sequence number not allowed here
-# 9. query with rownum/rowid/ora_rowscn pseudocolumns is not supported
+# 9. query with rownum/rowid/ora_rowscn pseudocolumns is not supported 
 create materialized view mv9_1 refresh fast on demand as select c1, ora_rowscn from t1;
 ERROR HY000: cannot fast refresh materialized view mv9_1: query with ora_rowscn pseudo columns is not supported
-# 10. non-deterministic query is not supported
+# 10. non-deterministic query is not supported 
 create materialized view mv10_1 refresh fast on demand as select c1, floor(rand()) from t1;
 ERROR HY000: cannot fast refresh materialized view mv10_1: non-deterministic query is not supported
 create materialized view mv10_2 refresh fast on demand as select c1, sysdate() from t1;
@@ -78,7 +78,7 @@ ERROR HY000: cannot fast refresh materialized view mv18_1: a count(*) item is re
 # 19. select output is not standard group by for mysql mode
 create materialized view mv19_1 refresh fast on demand as select c1, c2, count(*) cnt from t1 group by c1;
 ERROR HY000: cannot fast refresh materialized view mv19_1: the select item list contains columns that are not in the group by clause
-# 20. all group by column are required in the select list
+# 20. all group by column are required in the select list 
 create materialized view mv20_1 refresh fast on demand as select c1, count(*) cnt from t1 group by c1, c2;
 ERROR HY000: cannot fast refresh materialized view mv20_1: all group by column are required in the select item list
 # 21. query with distinct keyword is not supported

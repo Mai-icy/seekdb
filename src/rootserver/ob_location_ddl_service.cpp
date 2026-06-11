@@ -180,9 +180,9 @@ int ObLocationDDLService::check_location_constraint(const ObTableSchema &schema)
   } else if (is_odps_external_table) {
     // do nothing
   } else {
-    if ((!schema.get_external_file_location().empty()
+    if ((!schema.get_external_file_location().empty() 
       && OB_INVALID_ID != schema.get_external_location_id())
-      || (schema.get_external_file_location().empty()
+      || (schema.get_external_file_location().empty() 
           && OB_INVALID_ID == schema.get_external_location_id())) {
       ret = OB_INVALID_ARGUMENT;
       LOG_WARN("both file location and location id are valid", KR(ret), K(schema));
@@ -192,3 +192,4 @@ int ObLocationDDLService::check_location_constraint(const ObTableSchema &schema)
 }
 } // end namespace rootserver
 } // end namespace oceanbase
+

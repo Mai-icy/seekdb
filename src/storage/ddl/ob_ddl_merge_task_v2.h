@@ -42,7 +42,7 @@ at the same time data tablet should also control the dependency on lob tablet
                 +--------------------+
                 | prepare_for_merge()|
                 +--------------------+
-                              |
+                              |  
             +-----------------+----------------------+
             |                 |                      |
             v                 v                      |
@@ -65,13 +65,13 @@ at the same time data tablet should also control the dependency on lob tablet
                       | assemble_task()   |          |
                       +-------------------+          |
                               |                      |
-                              +----------------------+
+                              +----------------------+ 
                               |
                               |
                               v
-                      +-------------------+
-                      | guard_task()      |
-                      +-------------------+
+                      +-------------------+ 
+                      | guard_task()      | 
+                      +-------------------+ 
 
 
 
@@ -98,7 +98,7 @@ class ObDDLMergePrepareTask: public share::ObITask
 public:
   ObDDLMergePrepareTask();
   ~ObDDLMergePrepareTask();
-
+  
   int init(const ObDDLTabletMergeDagParamV2 &merge_param);
   int inner_process();
   virtual int process() override;
@@ -116,9 +116,9 @@ class ObDDLMergeCgSliceTask: public share::ObITask
 {
 public:
   ObDDLMergeCgSliceTask();
-  int init(const ObDDLTabletMergeDagParamV2 &ddl_merge_param,
+  int init(const ObDDLTabletMergeDagParamV2 &ddl_merge_param, 
            const int64_t cg_idx,
-           const int64_t start_slice_idx,
+           const int64_t start_slice_idx, 
            const int64_t end_slice_idx);
   virtual int process() override;
   virtual void task_debug_info_to_string(char *buf, const int64_t buf_len, int64_t &pos) const override;

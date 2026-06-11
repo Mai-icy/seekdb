@@ -31,7 +31,7 @@ struct ObVectorCosineSimilarity
 };
 
 template <typename T>
-OB_INLINE double ObVectorCosineSimilarity<T>::get_cosine_similarity(double distance)
+OB_INLINE double ObVectorCosineSimilarity<T>::get_cosine_similarity(double distance) 
 {
   if (distance > 1.0) {
     distance = 1.0;

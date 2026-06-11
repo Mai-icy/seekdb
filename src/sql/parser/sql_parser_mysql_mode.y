@@ -18186,7 +18186,7 @@ DROP CONSTRAINT constraint_name
   $$ = NULL;
 }
 | LOCK_ opt_equal_mark lock_opt
-{
+{ 
   (void)($2);
   (void)($3);
   $$ = NULL;
@@ -18217,14 +18217,14 @@ DEFAULT
 {
   (void) ($$);
 }
-| NONE
+| NONE 
 {
  (void) ($$);
 }
 | SHARED
 {
   (void) ($$);
-}
+} 
 | EXCLUSIVE
 {
   (void) ($$);

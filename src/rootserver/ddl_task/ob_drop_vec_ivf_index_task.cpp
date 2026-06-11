@@ -470,7 +470,7 @@ int ObDropVecIVFIndexTask::drop_aux_index_table(const share::ObDDLTaskStatus &ne
   } else {
     LOG_INFO("drop_aux_index_table success", K(ret), K(parent_task_id_), K(task_id_), K(*this));
   }
-
+  
   return ret;
 }
 
@@ -712,7 +712,7 @@ int ObDropVecIVFIndexTask::create_drop_index_task(
   } else if (OB_UNLIKELY(nullptr == database_schema || nullptr == data_table_schema)) {
     if (OB_ISNULL(data_table_schema) && drop_index_arg_.is_hidden_) {
       task_id = -1;
-      LOG_INFO("hidden data_table maybe removed when offline ddl is failed, skip drop",
+      LOG_INFO("hidden data_table maybe removed when offline ddl is failed, skip drop", 
         K(ret), K(index_tid), K(index_name));
     } else {
       ret = OB_ERR_UNEXPECTED;

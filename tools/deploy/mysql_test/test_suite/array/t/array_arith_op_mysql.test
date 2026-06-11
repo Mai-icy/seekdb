@@ -69,7 +69,7 @@ drop table arr_t2;
 # test cmp (= != > < ), only = != supported
 #########################################################################
 --error 5083
-select [1,2] > [1,null];
+select [1,2] > [1,null];                                                                                                
 --error 5083
 select [1,2] < [1,null];
 select [1,2] = [1,null];
@@ -78,7 +78,7 @@ select [1,2] = "[1,2]";
 select [1,2,3,4,5] = [1,2,3,4,5];
 select [1,2] = [1.0, 2.0];
 select [1,2] = [1.0000000000001, 2.0];
---error 5083
+--error 5083                               
 select [1,2] < [1,null,3];
 --error 5083
 select [1,2] < [[1,null,3]];
@@ -309,7 +309,7 @@ while($loop < 10)
   if ($val == 0) {
     insert into t1(c2,c3,c4) values([1,2,3,4],[1.2,2.3,6.9,-1.02],['中文ing123',1,'1']);
     inc $val;
-  }
+  } 
   if ($val != 0) {
     insert into t1(c2,c3,c4) values([1,2,3,4],[5.2,6.3,7.9,-10.02],['中文ing123',1,'1']);
     dec $val;
@@ -496,7 +496,7 @@ select avg(c1) from  t2_vector;
 drop table if exists t,test,tt0,t2, t1, t1_vector, t2_vector;
 --enable_warnings
 
-set ob_default_lob_inrow_threshold=0;
+set ob_default_lob_inrow_threshold=0; 
 create table t1(c1 int,c2 tinyint[],c3 vector(3),c4 smallint[],c5 varchar(30),c6 int[],c7 vector(3) as (c5*c4+c6)) PARTITION BY KEY(c1) PARTITIONS 100;
 insert into t1(c1,c2,c3,c4,c5,c6) values(1,'[1,1,2]','[2,2,3]',array(1,3,2),'[1,2,3]',[2,3,4]);
 insert into t1(c1,c2,c3,c4,c5,c6) values(2,'[1,0,3]','[1,0,3]',array(2,3,2),'[2,2,3]',[5,3,4]);
@@ -578,3 +578,4 @@ select id, arr_dint != array_remove([[1]], [1]) from tt where id = 7;
 --disable_warnings
 drop table if exists tt;
 --enable_warnings
+

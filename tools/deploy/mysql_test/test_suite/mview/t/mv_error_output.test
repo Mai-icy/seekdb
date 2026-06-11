@@ -1,6 +1,6 @@
 # owner: zg410411
 # owner group: mv
-# tags:
+# tags: 
 # descriotion: materialized view error output test
 #
 
@@ -61,12 +61,12 @@ create sequence seq increment by 1 start with 1;
 --error 4315
 create materialized view mv8_1 refresh fast on demand as select seq.NEXTVAL from t1;
 
---echo # 9. query with rownum/rowid/ora_rowscn pseudocolumns is not supported
+--echo # 9. query with rownum/rowid/ora_rowscn pseudocolumns is not supported 
 --error 9760
 create materialized view mv9_1 refresh fast on demand as select c1, ora_rowscn from t1;
 # create materialized view mv9_2 refresh fast on demand as select c1, rownum from t1; -- oracle mode
 
---echo # 10. non-deterministic query is not supported
+--echo # 10. non-deterministic query is not supported 
 --error 9760
 create materialized view mv10_1 refresh fast on demand as select c1, floor(rand()) from t1;
 --error 9760
@@ -111,7 +111,7 @@ create materialized view mv18_1 refresh fast on demand as select c1 from t1 grou
 --error 9760
 create materialized view mv19_1 refresh fast on demand as select c1, c2, count(*) cnt from t1 group by c1;
 
---echo # 20. all group by column are required in the select list
+--echo # 20. all group by column are required in the select list 
 --error 9760
 create materialized view mv20_1 refresh fast on demand as select c1, count(*) cnt from t1 group by c1, c2;
 

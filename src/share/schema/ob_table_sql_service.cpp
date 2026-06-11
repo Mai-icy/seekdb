@@ -2503,7 +2503,7 @@ int ObTableSqlService::delete_single_column(
 
 bool ObTableSqlService::table_need_sync_schema_version(const ObTableSchema &table)
 {
-  return (table.is_index_table() || table.is_mlog_table()
+  return (table.is_index_table() || table.is_mlog_table() 
           || table.is_aux_vp_table() || table.is_aux_lob_table());
 }
 

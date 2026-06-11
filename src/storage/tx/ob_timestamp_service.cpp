@@ -277,7 +277,7 @@ int ObTimestampService::switch_to_leader()
   }
 
   if (OB_FAIL(ret)) {
-    TRANS_LOG(WARN, "ObTimestampService switch_to_leader failed", K(ret), K(MTL_ID()),
+    TRANS_LOG(WARN, "ObTimestampService switch_to_leader failed", K(ret), K(MTL_ID()), 
               "service_type", MTL(ObTimestampAccess *)->get_service_type());
   }
 

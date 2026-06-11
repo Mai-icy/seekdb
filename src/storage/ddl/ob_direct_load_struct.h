@@ -365,8 +365,8 @@ public:
   ObDirectLoadType direct_load_type_;
 };
 
-/* TODO @zhuoran.zzr
- * full & inc load type need different param
+/* TODO @zhuoran.zzr 
+ * full & inc load type need different param 
  * add differnt init param later
  */
 struct ObTabletDDLParam final
@@ -396,7 +396,7 @@ public:
   transaction::ObTxSEQ seq_no_; // for incremental direct load
 };
 
-struct ObDDLTableMergeDagParam : public share::ObIDagInitParam
+struct ObDDLTableMergeDagParam : public share::ObIDagInitParam 
 {
 public:
   ObDDLTableMergeDagParam()
@@ -1551,7 +1551,7 @@ public:
   ObConcurrentFIFOAllocator allocator_;
 };
 
-struct ObDDLMergeBucketLock
+struct ObDDLMergeBucketLock 
 {
 public:
   static int mtl_init(ObDDLMergeBucketLock *&ddl_merge_bucket_lock);

@@ -28,7 +28,7 @@ namespace oceanbase
 {
 namespace restore
 {
-
+  
 class ObRestoreDagNetCtx : public ObIHADagNetCtx
 {
 public:
@@ -44,17 +44,17 @@ public:
 public:
   share::SCN local_clog_checkpoint_scn_;
   ObRestoreTask task_;
-  common::ObArenaAllocator allocator_;
-  ObStorageHATableInfoMgr ha_table_info_mgr_;
-  ObHATabletGroupMgr tablet_group_mgr_;
-  ObLSMetaPackage src_ls_meta_package_;
-  ObArray<ObLogicTabletID> sys_tablet_id_array_;
-  ObArray<ObLogicTabletID> data_tablet_id_array_;
+  common::ObArenaAllocator allocator_;                                        
+  ObStorageHATableInfoMgr ha_table_info_mgr_;      
+  ObHATabletGroupMgr tablet_group_mgr_;  
+  ObLSMetaPackage src_ls_meta_package_;          
+  ObArray<ObLogicTabletID> sys_tablet_id_array_;    
+  ObArray<ObLogicTabletID> data_tablet_id_array_;   
   int64_t start_ts_;
   int64_t finish_ts_;
   CopyTabletSimpleInfoMap tablet_simple_info_map_;
-  INHERIT_TO_STRING_KV("ObIHADagNetCtx", ObIHADagNetCtx, K_(local_clog_checkpoint_scn),
-                          K_(task), K_(src_ls_meta_package),
+  INHERIT_TO_STRING_KV("ObIHADagNetCtx", ObIHADagNetCtx, K_(local_clog_checkpoint_scn), 
+                          K_(task), K_(src_ls_meta_package), 
                           K_(start_ts), K_(finish_ts));
   DISALLOW_COPY_AND_ASSIGN(ObRestoreDagNetCtx);
 };
@@ -75,7 +75,7 @@ public:
   common::ObTabletID tablet_id_;
   ObTabletHandle tablet_handle_;
   ObMacroBlockReuseMgr macro_block_reuse_mgr_;
-  ObCopyTabletRecordExtraInfo extra_info_;
+  ObCopyTabletRecordExtraInfo extra_info_; 
 private:
   common::SpinRWLock lock_;
   ObCopyTabletStatus::STATUS status_;
@@ -127,7 +127,7 @@ private:
   bool is_inited_;
   ObRestoreDagNetCtx *ctx_;
   common::ObInOutBandwidthThrottle *bandwidth_throttle_;
-  ObIRestoreHelper *helper_;
+  ObIRestoreHelper *helper_; 
   ObRestoreHandler *handler_;
   DISALLOW_COPY_AND_ASSIGN(ObRestoreDagNet);
 };
@@ -555,8 +555,8 @@ public:
       share::ObIDagNet *dag_net,
       ObLS *ls);
   static int create_or_update_tablet(
-      const obrpc::ObCopyTabletInfo &tablet_info,
-      const bool need_check_tablet_limit,
+      const obrpc::ObCopyTabletInfo &tablet_info, 
+      const bool need_check_tablet_limit, 
       ObLS *ls);
 private:
   static int hold_local_tablet_(

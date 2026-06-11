@@ -68,3 +68,4 @@ private:
 } // end namespace oceanbase
  
 #endif//OCEANBASE_ROOTSERVER_OB_DROP_TABLEGROUP_H_
+ 

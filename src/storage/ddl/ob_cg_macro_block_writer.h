@@ -54,7 +54,7 @@ public:
   bool is_inited() const { return is_inited_; }
   int64_t get_last_macro_seq() const { return macro_block_writer_.get_last_macro_seq(); }
   TO_STRING_KV(K(is_inited_), K(macro_block_writer_), KP(ddl_redo_callback_), K(index_builder_), K(data_desc_));
-
+  
 private:
   DISABLE_COPY_ASSIGN(ObCgMacroBlockWriter);
 

@@ -535,7 +535,7 @@ psmall_test=[
 'vector_index.vector_index_rebuild',
 'vector_index.vector_ivf_index_with_filter',
 'vector_async.async_vec_dml_basic',
-'vector_async.async_vec_ddl_create',
+'vector_async.async_vec_ddl_create',            
 'vector_async.async_vec_ddl_post_create',
 'vector_async.async_vec_ddl_drop_rebuild',
 'vector_async.async_vec_ddl_alter_table',

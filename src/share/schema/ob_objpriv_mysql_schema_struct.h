@@ -103,7 +103,7 @@ public:
   //constructor and destructor
   ObObjMysqlPriv()
       : ObSchema(), ObPriv(),
-        obj_type_(common::OB_INVALID_ID)
+        obj_type_(common::OB_INVALID_ID)        
   { }
   explicit ObObjMysqlPriv(common::ObIAllocator *allocator)
       : ObSchema(allocator), ObPriv(),
@@ -156,3 +156,4 @@ private:
 }
 }
 #endif
+

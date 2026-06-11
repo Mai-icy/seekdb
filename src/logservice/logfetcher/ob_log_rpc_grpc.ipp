@@ -69,7 +69,7 @@ int ObLogRpc::async_fetch_missing_log_grpc(
       auto context = std::make_shared<grpc::ClientContext>();
       grpc_client->ctx_.set_grpc_context(*context, timeout);
       auto response = std::make_shared<ResponseType>();
-
+      
       // Send async unary request with callback
       // cb will be deleted in lambda after callback completes
       grpc_client->stub_->async()->fetch_missing_log(
@@ -84,7 +84,7 @@ int ObLogRpc::async_fetch_missing_log_grpc(
             }
             delete cb;  // Delete callback after completion
           });
-
+      
       LOG_TRACE("async fetch_missing_log RPC sent", K(tenant_id), K(svr));
     }
   }
@@ -122,7 +122,7 @@ int ObLogRpc::async_fetch_log_grpc(
         auto context = std::make_shared<grpc::ClientContext>();
         grpc_client->ctx_.set_grpc_context(*context, timeout);
         auto response = std::make_shared<ResponseType>();
-
+        
         // Send async unary request with callback
         // cb will be deleted in lambda after callback completes
         grpc_client->stub_->async()->fetch_log(
@@ -137,7 +137,7 @@ int ObLogRpc::async_fetch_log_grpc(
               }
               delete cb;  // Delete callback after completion
             });
-
+      
       LOG_TRACE("async fetch_log RPC sent", K(tenant_id), K(svr));
     }
   }
@@ -175,7 +175,7 @@ int ObLogRpc::async_fetch_raw_log_grpc(
         auto context = std::make_shared<grpc::ClientContext>();
         grpc_client->ctx_.set_grpc_context(*context, timeout);
         auto response = std::make_shared<ResponseType>();
-
+        
         // Send async unary request with callback
         // cb will be deleted in lambda after callback completes
         grpc_client->stub_->async()->fetch_raw_log(
@@ -190,7 +190,7 @@ int ObLogRpc::async_fetch_raw_log_grpc(
               }
               delete cb;  // Delete callback after completion
             });
-
+      
       LOG_TRACE("async fetch_raw_log RPC sent", K(tenant_id), K(svr));
     }
   }

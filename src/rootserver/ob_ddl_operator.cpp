@@ -956,7 +956,7 @@ int ObDDLOperator::create_table(ObTableSchema &table_schema,
 
   if (OB_SUCC(ret) && (table_schema.is_vec_delta_buffer_type() ||
       table_schema.is_hybrid_vec_index_log_type()) &&
-      OB_FAIL(ObVectorIndexUtil::add_dbms_vector_jobs(trans, tenant_id,
+      OB_FAIL(ObVectorIndexUtil::add_dbms_vector_jobs(trans, tenant_id, 
                                                       table_schema.get_table_id(),
                                                       table_schema.get_exec_env()))) {
     LOG_WARN("failed to add dbms_vector jobs", K(ret), K(tenant_id), K(table_schema));

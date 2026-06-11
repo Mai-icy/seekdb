@@ -81,3 +81,4 @@ struct DataDictionaryInLogInfo
 } // namespace oceanbase
 
 #endif
+

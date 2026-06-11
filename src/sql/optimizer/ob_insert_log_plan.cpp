@@ -1029,8 +1029,8 @@ int ObInsertLogPlan::prepare_dml_infos()
                                                             primary_upd_dml_info->ref_table_id_,
                                                             table_schema))) {
             LOG_WARN("failed to get table schema", K(ret), K(primary_upd_dml_info->ref_table_id_));
-          } else if (OB_NOT_NULL(table_schema) && OB_FAIL(ObVectorIndexUtil::check_table_has_vector_index(*table_schema,
-                                                                                                          *schema_guard,
+          } else if (OB_NOT_NULL(table_schema) && OB_FAIL(ObVectorIndexUtil::check_table_has_vector_index(*table_schema, 
+                                                                                                          *schema_guard, 
                                                                                                           has_vec_index))) {
             LOG_WARN("failed to check has vector index", K(ret));
           } else if (has_vec_index && table_schema->is_table_with_hidden_pk_column()) {

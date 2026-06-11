@@ -486,7 +486,7 @@ int ObLSDDLLogHandler::flush(SCN &rec_scn)
           } else if (FALSE_IT(param.rec_scn_ = ddl_kv_mgr_handle.get_obj()->get_max_freeze_scn())) {
           } else if (OB_TMP_FAIL(compaction::ObScheduleDagFunc::schedule_ddl_table_merge_dag(param))) {
             LOG_WARN("try schedule ddl merge dag failed when ddl kv is full ", K(tmp_ret), K(param));
-          }
+          } 
           FLOG_INFO("schedule ddl dump merge task", K(ret), K(ls_->get_ls_id()), K(tablet_handle.get_obj()->get_tablet_id()));
         }
       }

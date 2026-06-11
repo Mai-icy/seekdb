@@ -124,7 +124,7 @@ bool ObLSBackupCleanDagNetInitParam::operator != (const ObLSBackupCleanDagNetIni
 
 int64_t ObLSBackupCleanDagNetInitParam::hash() const
 { 
-  uint64_t hash_value = 0;
+  uint64_t hash_value = 0; 
   hash_value += trace_id_.hash();
   hash_value = common::murmurhash(&job_id_, sizeof(job_id_), hash_value);
   hash_value = common::murmurhash(&tenant_id_, sizeof(tenant_id_), hash_value);

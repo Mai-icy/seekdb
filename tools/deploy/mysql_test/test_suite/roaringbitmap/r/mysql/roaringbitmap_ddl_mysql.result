@@ -41,7 +41,7 @@ ALTER TABLE t2 DROP COLUMN rb1;
 ALTER TABLE t2 DROP COLUMN rb2;
 desc t2;
 Field	Type	Null	Key	Default	Extra
-i	int(11)	NO	PRI	NULL
+i	int(11)	NO	PRI	NULL	
 DROP TABLE t2;
 CREATE TABLE roaringbitmap(roaringbitmap int);
 INSERT INTO roaringbitmap(roaringbitmap) VALUES (1);
@@ -143,19 +143,19 @@ ERROR 0A000: Modify other type to roaringbitmap not supported
 create table tt1 as select rb_build_empty();
 desc tt1;
 Field	Type	Null	Key	Default	Extra
-rb_build_empty()	roaringbitmap	YES		NULL
+rb_build_empty()	roaringbitmap	YES		NULL	
 create table tt2 as select rb_from_string('');
 desc tt2;
 Field	Type	Null	Key	Default	Extra
-rb_from_string('')	roaringbitmap	YES		NULL
+rb_from_string('')	roaringbitmap	YES		NULL	
 create table tt3 as select rb_build_varbinary(0x01030401000000020000000300000004000000);
 desc tt3;
 Field	Type	Null	Key	Default	Extra
-rb_build_varbinary(0x01030401000000020000000300000004000000)	roaringbitmap	YES		NULL
+rb_build_varbinary(0x01030401000000020000000300000004000000)	roaringbitmap	YES		NULL	
 create table tt4 as select rb_build_agg(1);
 desc tt4;
 Field	Type	Null	Key	Default	Extra
-rb_build_agg(1)	roaringbitmap	YES		NULL
+rb_build_agg(1)	roaringbitmap	YES		NULL	
 create table roaringbitmap_ddl_t (rb roaringbitmap DEFAULT 0x0100);
 show create table roaringbitmap_ddl_t;
 Table	Create Table
@@ -164,7 +164,7 @@ roaringbitmap_ddl_t	CREATE TABLE `roaringbitmap_ddl_t` (
 ) ORGANIZATION INDEX DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'zstd_1.3.8' REPLICA_NUM =  BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE ENABLE_MACRO_BLOCK_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 0
 desc roaringbitmap_ddl_t;
 Field	Type	Null	Key	Default	Extra
-rb	roaringbitmap	YES		X'0100'
+rb	roaringbitmap	YES		X'0100'	
 select ddl_stmt_str from oceanbase.__all_ddl_operation where ddl_stmt_str like '%roaringbitmap%' order by gmt_create desc limit 22;
 ddl_stmt_str
 create table roaringbitmap_ddl_t (rb roaringbitmap DEFAULT 0x0100)

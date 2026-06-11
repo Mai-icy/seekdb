@@ -144,9 +144,9 @@ struct ObUniqueCheckingParam final
 public:
   ObUniqueCheckingParam():
     is_inited_(false), tenant_id_(common::OB_INVALID_TENANT_ID), ls_id_(share::ObLSID::INVALID_LS_ID), tablet_id_(),
-    is_scan_index_(false), schema_service_(nullptr), schema_guard_(share::schema::ObSchemaMgrItem::MOD_UNIQ_CHECK),
+    is_scan_index_(false), schema_service_(nullptr), schema_guard_(share::schema::ObSchemaMgrItem::MOD_UNIQ_CHECK), 
     index_schema_(nullptr), data_table_schema_(nullptr), callback_(nullptr), execution_id_(0),
-    snapshot_version_(0), task_id_(0), compat_mode_(lib::Worker::CompatMode::INVALID), user_parallelism_(0),
+    snapshot_version_(0), task_id_(0), compat_mode_(lib::Worker::CompatMode::INVALID), user_parallelism_(0), 
     concurrent_cnt_(0), ranges_(), allocator_("UniqueChecking", OB_MALLOC_NORMAL_BLOCK_SIZE, MTL_ID())
     {}
   ~ObUniqueCheckingParam() { destroy(); }
@@ -164,7 +164,7 @@ public:
   bool is_valid() const
   {
     return common::OB_INVALID_TENANT_ID != tenant_id_ && ls_id_.is_valid() && tablet_id_.is_valid() && snapshot_version_ > 0
-    && schema_service_ != nullptr && compat_mode_ != lib::Worker::CompatMode::INVALID && execution_id_ >= 0 && task_id_ > 0
+    && schema_service_ != nullptr && compat_mode_ != lib::Worker::CompatMode::INVALID && execution_id_ >= 0 && task_id_ > 0 
     && user_parallelism_ > 0;
   }
 
@@ -213,7 +213,7 @@ public:
   int64_t task_id_;
   lib::Worker::CompatMode compat_mode_;
   int64_t user_parallelism_;
-  int64_t concurrent_cnt_;
+  int64_t concurrent_cnt_;							
   ObArray<blocksstable::ObDatumRange> ranges_;
   common::ObArenaAllocator allocator_;
 };

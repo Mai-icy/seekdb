@@ -503,7 +503,7 @@ int ObDASTRMergeIter::create_sparse_retrieval_iter()
       } else {
         for (int64_t i = 0; OB_SUCC(ret) && i < dim_weights_.count(); ++i) {
           if (sr_iter_param_.dim_weights_->at(i) <= 0.0) {
-            ret = OB_NOT_SUPPORTED;
+            ret = OB_NOT_SUPPORTED; 
             LOG_WARN("not supported dim weight", K(ret), K(sr_iter_param_.dim_weights_->at(i)));
             LOG_USER_ERROR(OB_NOT_SUPPORTED, "token weight < 0 is");
           }
@@ -1225,7 +1225,7 @@ static int get_query_tokens_directly(ObString &query_str,
         LOG_WARN("failed to push boost", K(ret));
       }
     }
-  }
+  }  
   return ret;
 }
 

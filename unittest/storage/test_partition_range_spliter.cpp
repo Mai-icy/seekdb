@@ -302,7 +302,7 @@ void TestRangeSpliter::prepare_sstable_handle(ObTableHandleV2 &handle,
       "bigint   var   bigint  bigint flag    multi_version_row_flag\n"
       "29       var1    -8     0      EXIST   L\n"
       "30       var1    -9    0     EXIST   CLF\n";
-
+  
   int schema_rowkey_cnt = 2;
   ObScnRange scn_range;
   scn_range.start_scn_.set_min();

@@ -33,10 +33,10 @@ using namespace oceanbase::blocksstable;
 using namespace oceanbase::share;
 
 
-ObDDLTabletContext::MergeCtx::~MergeCtx()
+ObDDLTabletContext::MergeCtx::~MergeCtx() 
 {
   fifo_.reset();
-  for (hash::ObHashMap<int64_t, ObArray<ObTableHandleV2>*>::const_iterator iter = slice_cg_sstables_.begin();
+  for (hash::ObHashMap<int64_t, ObArray<ObTableHandleV2>*>::const_iterator iter = slice_cg_sstables_.begin(); 
       iter != slice_cg_sstables_.end();
       iter++) {
     if (nullptr != iter->second) {
@@ -515,3 +515,4 @@ int ObDDLTabletContext::get_all_slices(ObIArray<ObDDLSlice *> &ddl_slices)
   }
   return ret;
 }
+

@@ -797,14 +797,14 @@ static int parse_float_value(const char*& ptr, const char* end, const char* text
 {
   int ret = OB_SUCCESS;
   value = 0.0f;
-
+  
   if (ptr >= end) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("unexpected end when parsing value", K(ret));
   } else if (OB_FAIL(check_null_value_for_sparse_vector(ptr, end, text_start))) {
   } else {
     const char *value_start = ptr;
-
+    
     // Parse float: allow digits, '.', 'e', 'E', '+', '-'
     bool has_dot = false;
     bool has_exp = false;
@@ -836,7 +836,7 @@ static int parse_float_value(const char*& ptr, const char* end, const char* text
       }
       ++ptr;
     }
-
+    
     if (OB_SUCC(ret)) {
       int64_t value_len = ptr - value_start;
       if (value_len <= 0) {
@@ -853,7 +853,7 @@ static int parse_float_value(const char*& ptr, const char* end, const char* text
       }
     }
   }
-
+  
   return ret;
 }
 

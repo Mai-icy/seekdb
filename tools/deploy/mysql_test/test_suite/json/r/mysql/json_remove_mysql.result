@@ -90,8 +90,8 @@ Result
 drop table if exists json_test1;
 Warnings:
 Note	1051	Unknown table 'test.json_test1'
-create table json_test1(
-c1 int primary key,
+create table json_test1( 
+c1 int primary key, 
 c2 json);
 insert into json_test1 values(2,'{
   "width":  "800",

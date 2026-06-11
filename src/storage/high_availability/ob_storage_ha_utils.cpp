@@ -681,7 +681,7 @@ int ObStorageHAUtils::build_tablets_sstable_info_with_helper(
 
   if (OB_ISNULL(helper) || OB_ISNULL(ha_table_info_mgr) || OB_ISNULL(dag_net)) {
     ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("build tablets sstable info with helper get invalid argument",
+    LOG_WARN("build tablets sstable info with helper get invalid argument", 
                 K(ret), KP(helper), KP(ha_table_info_mgr), KP(dag_net));
   } else if (tablet_handle_array.empty()) {
     ret = OB_EAGAIN;

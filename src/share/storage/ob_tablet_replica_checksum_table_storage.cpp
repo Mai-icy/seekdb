@@ -353,7 +353,7 @@ int ObTabletReplicaChecksumTableStorage::batch_get(
           common::ObString b_column_checksums_obstr(b_column_checksums_len, static_cast<const char *>(b_column_checksums_blob));
           int tmp_ret = item.column_meta_.set_with_str(item.data_checksum_type_, b_column_checksums_obstr);
           if (OB_SUCCESS != tmp_ret) {
-            LOG_WARN("failed to set column meta with b_column_checksums blob, skip invalid data",
+            LOG_WARN("failed to set column meta with b_column_checksums blob, skip invalid data", 
                      K(tmp_ret), K(b_column_checksums_obstr), K(item.tablet_id_), K(item.ls_id_));
             item.column_meta_.reset();
           }
@@ -446,7 +446,7 @@ int ObTabletReplicaChecksumTableStorage::range_get(
         common::ObString b_column_checksums_obstr(b_column_checksums_len, static_cast<const char *>(b_column_checksums_blob));
         int tmp_ret = item.column_meta_.set_with_str(item.data_checksum_type_, b_column_checksums_obstr);
         if (OB_SUCCESS != tmp_ret) {
-          LOG_WARN("failed to set column meta with b_column_checksums blob, skip invalid data",
+          LOG_WARN("failed to set column meta with b_column_checksums blob, skip invalid data", 
                    K(tmp_ret), K(b_column_checksums_obstr), K(item.tablet_id_), K(item.ls_id_));
           item.column_meta_.reset();
         }
@@ -635,3 +635,4 @@ int ObTabletReplicaChecksumTableStorage::batch_check_checksum(
 
 } // namespace share
 } // namespace oceanbase
+

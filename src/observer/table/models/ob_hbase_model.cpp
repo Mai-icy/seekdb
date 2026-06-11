@@ -1889,4 +1889,4 @@ int ObHBaseModel::add_dict_and_bm_to_result_entity(const ObTableLSOp &ls_op,
     }
   }
   return ret;
-}
+} 

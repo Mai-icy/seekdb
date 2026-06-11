@@ -390,7 +390,7 @@ public:
    */
   bool is_originally_column_store_data_direct_load() const { return is_data_direct_load(direct_load_type_) && !need_process_cs_replica_; }
   bool get_is_no_logging() override { return is_no_logging_; }
-  VIRTUAL_TO_STRING_KV(K_(is_inited), K_(is_schema_item_ready), K_(ls_id), K_(tablet_id), K_(table_key), K_(ref_cnt),
+  VIRTUAL_TO_STRING_KV(K_(is_inited), K_(is_schema_item_ready), K_(ls_id), K_(tablet_id), K_(table_key), K_(ref_cnt), 
                K_(direct_load_type), K_(need_process_cs_replica), K_(need_fill_column_group),K_(sqc_build_ctx), KPC(lob_mgr_handle_.get_obj()), K_(schema_item), K_(column_items), K_(lob_column_idxs),
                K_(task_cnt), K_(cg_cnt), K_(micro_index_clustered), K_(tablet_transfer_seq), K_(is_no_logging));
 

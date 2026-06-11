@@ -166,7 +166,7 @@ select '\nhello\n' from dual;
 | hello
   |
 +---------+
-|
+| 
 hello
  |
 +---------+
@@ -230,7 +230,7 @@ select B'1010' from dual;
 +---------+
 | B'1010' |
 +---------+
-|
+| 
        |
 +---------+
 select Date'2012-12-12' from dual;

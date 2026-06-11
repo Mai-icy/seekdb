@@ -115,7 +115,7 @@ int ObDDLReplayExecutor::check_need_replay_ddl_inc_log_(
   } else if (tablet->get_tablet_meta().ha_status_.is_restore_status_empty()) {
     ret = OB_EAGAIN;
     need_replay = false;
-    // TODO(xingzhi): add this fuction where supporting restore
+    // TODO(xingzhi): add this fuction where supporting restore 
     //(void) ls->get_ls_restore_handler()->try_record_one_tablet_to_restore(tablet->get_tablet_meta().tablet_id_);
     if (REACH_COUNT_INTERVAL(1000L)) {
       LOG_INFO("can not replay ddl log, need wait tablet restore status change to remote, prevent sstable array explosion",
@@ -1276,7 +1276,7 @@ int ObSplitFinishReplayExecutor::modify_tablet_restore_status_if_need(
       } else if (OB_FAIL(ls->get_tablet_svr()->update_tablet_restore_status(t_id, 
           ObTabletRestoreStatus::STATUS::EMPTY, false/* need reset transfer flag */, true/*need_to_set_split_data_complete*/))) {
         LOG_WARN("failed to update tablet restore status", K(ret), KPC(tablet));
-      // TODO(xingzhi): add this fuction where supporting restore
+      // TODO(xingzhi): add this fuction where supporting restore 
       // } else {
       //  (void) ls->get_ls_restore_handler()->try_record_one_tablet_to_restore(t_id);
       //  LOG_INFO("modify tablet restore status", K(tablet->get_tablet_id()), "old status", des_restore_status, "new status", ObTabletRestoreStatus::STATUS::EMPTY);

@@ -108,7 +108,7 @@ select * from V$OB_PARAMETERS where data_type = 'UNKNOWN';
 
 # [step 2] check data_tpye for __all_virtual_sys_parameter_stat
 --echo ===============  [2] check data_tpye for __all_virtual_sys_parameter_stat  ===============
-select name, data_type from __all_virtual_sys_parameter_stat where name = 'enable_sql_audit';          # BOOL
+select name, data_type from __all_virtual_sys_parameter_stat where name = 'enable_sql_audit';          # BOOL       
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'max_string_print_length';   # INT
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'location_cache_cpu_quota';  # DOUBLE
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'default_row_format';        # STRING

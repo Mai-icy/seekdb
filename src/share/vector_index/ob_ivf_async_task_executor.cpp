@@ -442,7 +442,7 @@ int ObIvfAsyncTaskExector::check_schema_version_changed(bool &schema_changed)
   schema_changed = false;
   int64_t schema_version = 0;
   ObSchemaGetterGuard schema_guard;
-
+  
   if (OB_FAIL(ObMultiVersionSchemaService::get_instance().get_tenant_schema_guard(
           tenant_id_, schema_guard))) {
     LOG_WARN("fail to get schema guard", KR(ret), K(tenant_id_));

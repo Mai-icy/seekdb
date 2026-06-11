@@ -3081,7 +3081,7 @@ int ObDDLTaskRecordOperator::update_parent_task_message(
         LOG_WARN("fail to update task message", K(ret), K(parent_task_id));
       }
     } else if (DDL_CREATE_VEC_SPIV_INDEX == task_record.ddl_type_) {
-      SMART_VAR(ObFtsIndexBuildTask, task) {
+      SMART_VAR(ObFtsIndexBuildTask, task) { 
         if (OB_FAIL(task.init(task_record))) {
           LOG_WARN("fail to init ObFtsIndexBuildTask", K(ret), K(task_record));
         } else if (UPDATE_CREATE_INDEX_ID == update_type) {
@@ -3101,7 +3101,7 @@ int ObDDLTaskRecordOperator::update_parent_task_message(
         } else if (UPDATE_DROP_INDEX_TASK_ID == update_type) {
           task.set_drop_index_task_id(target_task_id);
           task.set_drop_index_task_submitted(true);
-        }
+        } 
       }
       if (OB_FAIL(ret)) {
       } else if (OB_FAIL(task.update_task_message(proxy))) {

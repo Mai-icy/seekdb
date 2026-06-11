@@ -190,7 +190,7 @@ int ObESQueryParser::add_pk_to_sort(ObQueryReqFromJson *query_req, const ObEsQue
     } else if (OB_FAIL(ObReqColumnExpr::construct_column_expr(rowkey_expr, alloc_, rowkey))) {
       LOG_WARN("fail to create column expr", K(ret));
     } else if (query_req != base_table_req) {
-      // need to add __pk_increment to select items,
+      // need to add __pk_increment to select items, 
       // ignore occurence of 'Unknown column '__pk_increment'' error
       if (OB_FAIL(base_table_req->select_items_.push_back(rowkey_expr))) {
         LOG_WARN("fail to add rowkey expr", K(ret));
@@ -3124,7 +3124,7 @@ int ObESQueryParser::construct_sub_query_with_minimum_should_match(ObQueryReqFro
       } else if (OB_FAIL(query_req->score_items_.push_back(score_expr))) {
         LOG_WARN("fail to push back score expr", K(ret));
       }
-    }
+    } 
   }
   return ret;
 }

@@ -48,7 +48,7 @@ namespace restore
  *                        │ │      │       │ │      │          │      │
  *                        │ └─wait─┘       │ └──────┘          └─wait─┘
  *                        └────────────────┘  ret!=OB_SUCCESS && !is_complete_
- *         ret!=OB_SUCCESS || result_!=OB_SUCCESS
+ *         ret!=OB_SUCCESS || result_!=OB_SUCCESS        
  */
 enum class ObLSRestoreStatus : int8_t
 {
@@ -72,7 +72,7 @@ public:
   static const char *get_status_str(const ObLSRestoreStatus &status);
 };
 
-class ObRestoreHandler
+class ObRestoreHandler 
 {
 public:
   ObRestoreHandler();
@@ -94,7 +94,7 @@ public:
   int get_restore_task_and_status(
       ObRestoreTask &task,
       ObLSRestoreStatus &status);
-  TO_STRING_KV(K_(is_inited), KPC_(ls), K_(start_ts), K_(finish_ts), K_(task_list),
+  TO_STRING_KV(K_(is_inited), KPC_(ls), K_(start_ts), K_(finish_ts), K_(task_list), 
                 K_(status), K_(result), K_(is_stop), K_(is_cancel),
                 K_(is_complete), K_(is_dag_net_cleared), K_(is_timer_scheduled));
 

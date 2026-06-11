@@ -74,7 +74,7 @@ public:
     cg_macro_block_writer_(),
     start_seqences_(),
     row_offsets_()
-    {
+    { 
       cg_block_files_iter_arr_.set_block_allocator(ModulePageAllocator(allocator_));
       start_seqences_.set_block_allocator(ModulePageAllocator(allocator_));
       row_offsets_.set_block_allocator(ModulePageAllocator(allocator_));

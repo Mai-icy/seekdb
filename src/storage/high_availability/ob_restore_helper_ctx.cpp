@@ -94,8 +94,8 @@ ObRestoreHelperCtxType ObRestoreHelperTabletInfoCtx::get_type() const
 
 bool ObRestoreHelperTabletInfoCtx::is_valid() const
 {
-  return OB_NOT_NULL(grpc_client_)
-           && OB_NOT_NULL(tablet_info_context_)
+  return OB_NOT_NULL(grpc_client_) 
+           && OB_NOT_NULL(tablet_info_context_) 
            && tablet_info_reader_;
 }
 
@@ -145,7 +145,7 @@ bool ObRestoreHelperSSTableInfoCtx::is_valid() const
 {
   return ObRestoreHelperCtxType::RESTORE_HELPER_CTX_SSTABLE_INFO == get_type()
          && OB_NOT_NULL(grpc_client_)
-         && OB_NOT_NULL(sstable_info_context_)
+         && OB_NOT_NULL(sstable_info_context_) 
          && sstable_info_reader_;
 }
 
@@ -193,8 +193,8 @@ ObRestoreHelperCtxType ObRestoreHelperSSTableMacroRangeCtx::get_type() const
 
 bool ObRestoreHelperSSTableMacroRangeCtx::is_valid() const
 {
-  return OB_NOT_NULL(grpc_client_)
-          && OB_NOT_NULL(macro_info_context_)
+  return OB_NOT_NULL(grpc_client_) 
+          && OB_NOT_NULL(macro_info_context_) 
           && macro_info_reader_;
 }
 
@@ -245,8 +245,8 @@ ObRestoreHelperCtxType ObRestoreHelperMacroBlockCtx::get_type() const
 
 bool ObRestoreHelperMacroBlockCtx::is_valid() const
 {
-  return OB_NOT_NULL(grpc_client_)
-            && OB_NOT_NULL(macro_block_context_)
+  return OB_NOT_NULL(grpc_client_) 
+            && OB_NOT_NULL(macro_block_context_) 
             && macro_block_reader_;
 }
 
@@ -282,7 +282,7 @@ int ObRestoreHelperCtxUtil::create_ctx(
   int ret = OB_SUCCESS;
   void *buf = nullptr;
   ctx = nullptr;
-  if (OB_UNLIKELY(ctx_type <= ObRestoreHelperCtxType::RESTORE_HELPER_CTX_NONE
+  if (OB_UNLIKELY(ctx_type <= ObRestoreHelperCtxType::RESTORE_HELPER_CTX_NONE 
                       || ctx_type >= ObRestoreHelperCtxType::RESTORE_HELPER_CTX_MAX)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid ctx type", K(ret), "ctx_type", static_cast<int64_t>(ctx_type));

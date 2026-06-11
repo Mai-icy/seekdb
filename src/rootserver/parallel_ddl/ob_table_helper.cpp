@@ -780,7 +780,7 @@ int ObTableHelper::inner_generate_table_schema_(const ObCreateTableArg &arg, ObT
       LOG_WARN("fail to check location ", KR(ret), K(new_table));
     }
   }
-
+  
 
   return ret;
 }
@@ -817,7 +817,7 @@ int ObTableHelper::inner_generate_aux_table_schema_(const ObCreateTableArg &arg)
       if (FAILEDx(gen_object_ids_(object_cnt, id_generator))) {
         LOG_WARN("fail to gen object ids", KR(ret), K_(tenant_id), K(object_cnt));
       }
-
+  
       // 1. build index table
       ObIndexBuilder index_builder(*ddl_service_);
       for (int64_t i = 0; OB_SUCC(ret) && i < arg.index_arg_list_.size(); ++i) {
@@ -895,7 +895,7 @@ int ObTableHelper::inner_generate_aux_table_schema_(const ObCreateTableArg &arg)
           data_table = &(new_tables_.at(0)); // memory of data table may change after add table to new_tables_
         }
       } // end for
-
+  
       // 2. build lob table
       if (OB_SUCC(ret) && has_lob_table) {
         HEAP_VARS_2((ObTableSchema, lob_meta_schema), (ObTableSchema, lob_piece_schema)) {
@@ -921,7 +921,7 @@ int ObTableHelper::inner_generate_aux_table_schema_(const ObCreateTableArg &arg)
           data_table->set_aux_lob_meta_tid(lob_meta_schema.get_table_id());
           data_table->set_aux_lob_piece_tid(lob_piece_schema.get_table_id());
         }
-
+  
         } // end HEAP_VARS_2
       }
     }

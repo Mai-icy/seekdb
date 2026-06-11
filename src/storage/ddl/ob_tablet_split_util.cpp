@@ -39,21 +39,21 @@ using namespace oceanbase::share;
 using namespace oceanbase::storage;
 using namespace oceanbase::compaction;
 
-bool ObTabletSplitRegisterMdsArg::is_valid() const
+bool ObTabletSplitRegisterMdsArg::is_valid() const 
 {
   /*      exec_tenant_id_(common::OB_INVALID_TENANT_ID),*/
-  bool is_valid = !split_info_array_.empty() && OB_INVALID_TENANT_ID != tenant_id_
+  bool is_valid = !split_info_array_.empty() && OB_INVALID_TENANT_ID != tenant_id_ 
       && parallelism_ > 0 && ls_id_.is_valid() && is_tablet_split(task_type_) && table_schema_ != nullptr;
   for (int64_t i = 0; is_valid && i < lob_schema_versions_.count(); ++i) {
     is_valid = is_valid && lob_schema_versions_.at(i);
   }
   for (int64_t i = 0; is_valid && i < split_info_array_.count(); i++) {
     is_valid = is_valid && split_info_array_.at(i).is_valid();
-  }
+  }  
   return is_valid;
 }
 
-int ObTabletSplitRegisterMdsArg::assign(const ObTabletSplitRegisterMdsArg &other)
+int ObTabletSplitRegisterMdsArg::assign(const ObTabletSplitRegisterMdsArg &other) 
 {
   int ret = OB_SUCCESS;
   if (OB_UNLIKELY(!other.is_valid())) {

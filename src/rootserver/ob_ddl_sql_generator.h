@@ -110,7 +110,7 @@ public:
                                  const share::schema::ObNeedPriv &need_priv,
                                  const bool is_grant,
                                  common::ObSqlString &sql_string);
-
+  
   
 private:
   static int get_priv_name(const int64_t priv, const char *&name);

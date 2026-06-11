@@ -258,7 +258,7 @@
                                                 "disk_rnd_read_speed," \
                                                 "network_speed) VALUES " 
 
-#define DELETE_SYSTEM_STAT_SQL "DELETE FROM %s WHERE ID=%ld"
+#define DELETE_SYSTEM_STAT_SQL "DELETE FROM %s WHERE ID=%ld" 
 
 namespace oceanbase
 {

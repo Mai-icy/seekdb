@@ -368,3 +368,4 @@ int ObDAGCGMacroBlockWriteOp::set_remain_block(ObDDLSlice *ddl_slice)
 
 } // end namespace storage
 } // end namespace oceanbase
+

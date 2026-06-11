@@ -176,3 +176,4 @@ int ObCGBlockFilesIterator::get_remain_block_files(ObIArray<ObCGBlockFile *> &bl
 
 } //end storage
 } // end oceanbase
+

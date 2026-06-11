@@ -103,12 +103,12 @@ int ObVecITaskExecutor::load_task_from_inner_table()
     field2.field_name_ = "status";
     field2.data_.uint_ = ObVecIndexAsyncTaskStatus::OB_VECTOR_ASYNC_TASK_PREPARE;
     ObVecIndexAsyncTaskOption &task_opt = index_ls_mgr->get_async_task_opt();
-
+    
     if (OB_FAIL(filters.push_back(field1))) {
       LOG_WARN("fail to push back field", K(ret));
     } else if (OB_FAIL(filters.push_back(field2))) {
       LOG_WARN("fail to push back field", K(ret));
-    } else if (OB_FAIL(ObVecIndexAsyncTaskUtil::resume_task_from_inner_table(tenant_id_, OB_ALL_VECTOR_INDEX_TASK_TNAME,
+    } else if (OB_FAIL(ObVecIndexAsyncTaskUtil::resume_task_from_inner_table(tenant_id_, OB_ALL_VECTOR_INDEX_TASK_TNAME, 
         false, filters, ls_, *sql_proxy, task_opt))) {
       LOG_WARN("fail to load task from inner table", K(ret));
     }

@@ -27,7 +27,7 @@ using namespace oceanbase::blocksstable;
 using namespace oceanbase::share;
 using namespace oceanbase::table;
 
-ObChunk::~ObChunk()
+ObChunk::~ObChunk() 
 {
   if (type_ == DIRECT_LOAD_BATCH_DATUM_ROWS && direct_load_batch_rows_ != nullptr) {
     direct_load_batch_rows_->~ObDirectLoadBatchDatumRows();

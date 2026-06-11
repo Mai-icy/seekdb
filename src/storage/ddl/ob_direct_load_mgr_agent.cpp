@@ -183,8 +183,8 @@ int ObDirectLoadMgrAgent::open_sstable_slice(
       data_writer_.reset();
       if (OB_FAIL(mgr_handle_.get_base_obj()->prepare_index_builder())) {
         LOG_WARN("failed to prepare index builder", K(ret));
-      } else if (OB_FAIL(data_writer_.init(mgr_handle_.get_base_obj(),
-                                           start_seq,
+      } else if (OB_FAIL(data_writer_.init(mgr_handle_.get_base_obj(), 
+                                           start_seq, 
                                            slice_info.slice_idx_,
                                            slice_info.merge_slice_idx_))) {
         LOG_WARN("failed to init data writer", K(ret));
@@ -194,8 +194,8 @@ int ObDirectLoadMgrAgent::open_sstable_slice(
       if (OB_FAIL(lob_mgr_handle_.get_base_obj()->prepare_index_builder())) {
         LOG_WARN("failed to prepare index builder", K(ret));
       } else if (OB_FAIL(lob_writer_.init(lob_mgr_handle_.get_base_obj(),
-                                          start_seq,
-                                          slice_info.slice_idx_,
+                                          start_seq, 
+                                          slice_info.slice_idx_, 
                                           slice_info.merge_slice_idx_))) {
         LOG_WARN("failed to init lob writer", K(ret), K(idem_start_seq_));
       }

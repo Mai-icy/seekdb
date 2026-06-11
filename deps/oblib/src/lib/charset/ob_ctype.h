@@ -810,7 +810,7 @@ size_t ob_strnxfrm_unicode_full_bin(const ObCharsetInfo *cs,
                              const unsigned char *src, size_t srclen, unsigned int flags, bool *is_valid_unicode);
 
 
-bool ob_like_range_generic(const ObCharsetInfo *cs, const char *ptr, size_t ptr_length,
+bool ob_like_range_generic(const ObCharsetInfo *cs, const char *ptr, size_t ptr_length, 
 #ifdef _WIN32
                               pchar escape, pchar w_one, pchar w_many,
 #else

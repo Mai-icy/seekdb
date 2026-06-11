@@ -914,7 +914,7 @@ int ObSchemaHistoryRecycler::try_recycle_schema_history(
     RECYCLE_FIRST_SCHEMA(RECYCLE_AND_COMPRESS, location, OB_ALL_TENANT_LOCATION_HISTORY_TNAME,
                          location_id);
     ret = OB_SUCCESS; // overwrite ret
-
+    
     // -------------------------- object priv --------------------------------------------
     // (RECYCLE_AND_COMPRESS)
     {
@@ -930,7 +930,7 @@ int ObSchemaHistoryRecycler::try_recycle_schema_history(
       }
       ret = OB_SUCCESS;
     }
-
+    
 #undef RECYCLE_FIRST_SCHEMA
     int64_t cost_ts = ObTimeUtility::current_time() - start_ts;
     ROOTSERVICE_EVENT_ADD("schema_recycler", "batch_recycle_by_tenant",
@@ -1657,7 +1657,7 @@ DEFINE_COMPRESS_SCHEMA_HISTORY(ObObjectPrivRecycleSchemaExecutor,
                                ObObjectPrivCompressSchemaInfo);
 DEFINE_COMPRESS_SCHEMA_HISTORY(ObObjectPrivMysqlRecycleSchemaExecutor,
                                ObObjectPrivMysqlSchemaKey,
-                               ObObjectPrivMysqlCompressSchemaInfo);
+                               ObObjectPrivMysqlCompressSchemaInfo); 
 #undef DEFINE_COMPRESS_SCHEMA_HISTORY
 
 #define BATCH_COMPRESS_SCHEMA_HISTORY(EXECUTOR, INFO) \

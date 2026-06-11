@@ -73,3 +73,4 @@ private:
 } // namespace oceanbase
 
 #endif // OB_ROOTSERVER_TRUNCATE_INFO_TRUNCATE_TABLET_ARG_H_
+

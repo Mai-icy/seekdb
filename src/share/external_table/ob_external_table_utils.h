@@ -166,11 +166,11 @@ class ObExternalTableUtils {
                                             common::ObNewRange &new_range);
   static bool is_skipped_insert_column(const schema::ObColumnSchemaV2& column);
 
-  static int get_external_file_location(const ObTableSchema &table_schema,
+  static int get_external_file_location(const ObTableSchema &table_schema, 
                                         ObSchemaGetterGuard &schema_guard,
                                         ObIAllocator &allocator,
                                         ObString &file_location);
-  static int get_external_file_location_access_info(const ObTableSchema &table_schema,
+  static int get_external_file_location_access_info(const ObTableSchema &table_schema, 
                                                     ObSchemaGetterGuard &schema_guard,
                                                     ObString &access_info);
   static int remove_external_file_list(const uint64_t tenant_id,

@@ -185,7 +185,7 @@ int ObVecTaskManager::process_task()
     } else {
       ob_usleep(1LL * 1000 * 1000);
     }
-
+    
     if (REACH_TIME_INTERVAL(10 * 60L * 1000000)) {  // 60s
       LOG_INFO("vector index task not finished", K(ret), K(task_ids_));
     }
@@ -261,7 +261,7 @@ int ObVecTaskManager::check_task_status()
       field.data_.uint_ = task_ids_.at(i);
       if (OB_FAIL(filters.push_back(field))) {
         LOG_WARN("fail to push back field", K(ret));
-      } else if (OB_FAIL(ObVecIndexAsyncTaskUtil::construct_read_task_sql(tenant_id_, OB_ALL_VECTOR_INDEX_TASK_HISTORY_TNAME,
+      } else if (OB_FAIL(ObVecIndexAsyncTaskUtil::construct_read_task_sql(tenant_id_, OB_ALL_VECTOR_INDEX_TASK_HISTORY_TNAME, 
           false, false, filters, *sql_proxy, sql))) {
         LOG_WARN("fail to construct read task sql", K(ret));
       } else {

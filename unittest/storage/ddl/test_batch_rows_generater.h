@@ -62,7 +62,7 @@ private:
   {
     bool is_integer_type = false;
     if (ObTinyIntType == obj_type || ObSmallIntType == obj_type || ObMediumIntType == obj_type ||
-        ObInt32Type == obj_type || ObIntType == obj_type || ObUTinyIntType == obj_type ||
+        ObInt32Type == obj_type || ObIntType == obj_type || ObUTinyIntType == obj_type || 
         ObUSmallIntType == obj_type || ObUMediumIntType == obj_type || ObUInt32Type == obj_type || ObUInt64Type == obj_type) {
       is_integer_type = true;
     }

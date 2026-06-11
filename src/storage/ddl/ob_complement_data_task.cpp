@@ -494,7 +494,7 @@ int ObComplementDataContext::init(
       }
     }
   }
-
+   
   if (OB_SUCC(ret)) {
     is_major_sstable_exist_ = nullptr != first_major_sstable ? true : false;
     concurrent_cnt_ = param.concurrent_cnt_;
@@ -645,7 +645,7 @@ int ObComplementDataDag::calc_total_row_count()
 /*
  * TODO @zhuoran.zzr
  * now complement data task seem to only used for idem type direct load
- * need to rejeuct request from older version
+ * need to rejeuct request from older version 
 */
 int ObComplementDataDag::create_first_task()
 {
@@ -719,7 +719,7 @@ int ObComplementDataDag::create_first_task()
     task_param.execution_id_        = param_.execution_id_;
     task_param.target_table_id_     = param_.dest_table_id_;
     task_param.is_no_logging_       = param_.is_no_logging_;
-
+    
     if (OB_FAIL(dag_merge_param.init(true /* for major */, false /* for lob*/, false /* for replay*/,
                                      mock_scn /* start_scn*/,
                                      param_.direct_load_type_, task_param,
@@ -734,7 +734,7 @@ int ObComplementDataDag::create_first_task()
     } else if (OB_FAIL(data_merge_prepare_task->add_child(*merge_task))) {
       LOG_WARN("add child failed", K(ret));
     }
-
+    
     if (OB_FAIL(ret)) {
     } else if (!param_.dest_lob_meta_tablet_id_.is_valid()) {
       /* if lob tablet id invalid, skip */
@@ -751,7 +751,7 @@ int ObComplementDataDag::create_first_task()
       LOG_WARN("failed to init lob merge task", K(ret));
     } else if (OB_FAIL(lob_merge_prepare_task->add_child(*merge_task))) {
       LOG_WARN("add child failed", K(ret));
-    }
+    } 
   }
 
   if (OB_FAIL(ret)) { // add task in reverse order
@@ -765,8 +765,8 @@ int ObComplementDataDag::create_first_task()
     LOG_WARN("add task failed", K(ret));
   } else if (OB_FAIL(add_task(*prepare_task))) {
     LOG_WARN("add task failed", K(ret));
-  }
-
+  } 
+  
   return ret;
 }
 
@@ -1573,7 +1573,7 @@ int ObComplementMergeTask::init(ObComplementDataParam &param, ObComplementDataCo
   return ret;
 }
 
-/* dest major sstable checksum have been report,
+/* dest major sstable checksum have been report, 
  * only origin sstalbe checksum should be rerprot
 */
 int ObComplementMergeTask::process()

@@ -112,3 +112,4 @@ int ObTabletSliceRowIterator::get_next_batch(const ObBatchDatumRows *&datum_rows
   int ret = OB_NOT_SUPPORTED;
   return ret;
 }
+

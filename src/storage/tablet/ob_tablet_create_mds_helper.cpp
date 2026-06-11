@@ -706,7 +706,7 @@ int ObTabletCreateMdsHelper::build_pure_data_tablet(
       create_tablet_schema, need_create_empty_major_sstable, micro_index_clustered, split_src_tablet_id))) {
     LOG_WARN("check and get create tablet schema_info failed", K(ret));
   } else if (FALSE_IT(data_format_version = create_tablet_extra_infos[info.table_schema_index_[index]].need_create_empty_major_ ? 0 : create_tablet_extra_infos[index].tenant_data_version_)) {
-    // using need_create_empty_major_sstable to determine tablet build by the offline ddl
+    // using need_create_empty_major_sstable to determine tablet build by the offline ddl 
   } else if (OB_FAIL(info.get_fork_tablet_info(index, fork_tablet_info))) {
     LOG_WARN("failed to get fork tablet info", K(ret), K(index));
   } else if (CLICK_FAIL(ls->get_tablet_svr()->create_tablet(ls_id, data_tablet_id, data_tablet_id,
@@ -804,7 +804,7 @@ int ObTabletCreateMdsHelper::build_mixed_tablets(
     } else if (CLICK_FAIL(tablet_id_array.push_back(tablet_id))) {
       LOG_WARN("failed to push back tablet id", K(ret), K(ls_id), K(tablet_id));
     } else if (FALSE_IT(data_format_version = create_tablet_extra_infos[info.table_schema_index_[i]].need_create_empty_major_ ? 0 : create_tablet_extra_infos[i].tenant_data_version_)) {
-      // using need_create_empty_major_sstable to determine tablet build by the offline ddl
+      // using need_create_empty_major_sstable to determine tablet build by the offline ddl 
     } else if (OB_FAIL(info.get_fork_tablet_info(i, fork_tablet_info))) {
       LOG_WARN("failed to get fork tablet info", K(ret), K(i));
     } else if (CLICK_FAIL(ls->get_tablet_svr()->create_tablet(ls_id, tablet_id, data_tablet_id,
@@ -910,7 +910,7 @@ int ObTabletCreateMdsHelper::build_pure_aux_tablets(
         create_tablet_schema, need_create_empty_major_sstable, micro_index_clustered, split_src_tablet_id))) {
       LOG_WARN("check and get create tablet schema_info failed", K(ret));
     } else if (FALSE_IT(data_format_version = create_tablet_extra_infos[info.table_schema_index_[i]].need_create_empty_major_ ? 0 : create_tablet_extra_infos[i].tenant_data_version_)) {
-      // using need_create_empty_major_sstable to determine tablet build by the offline ddl
+      // using need_create_empty_major_sstable to determine tablet build by the offline ddl 
     } else if (OB_FAIL(info.get_fork_tablet_info(i, fork_tablet_info))) {
       LOG_WARN("failed to get fork tablet info", K(ret), K(i));
     } else if (CLICK_FAIL(ls->get_tablet_svr()->create_tablet(ls_id, tablet_id, data_tablet_id,
@@ -1024,7 +1024,7 @@ int ObTabletCreateMdsHelper::build_bind_hidden_tablets(
     } else if (CLICK_FAIL(tablet_id_array.push_back(tablet_id))) {
       LOG_WARN("failed to push back tablet id", K(ret), K(ls_id), K(tablet_id));
     } else if (FALSE_IT(data_format_version = create_tablet_extra_infos[info.table_schema_index_[i]].need_create_empty_major_ ? 0 : create_tablet_extra_infos[i].tenant_data_version_)) {
-      // using need_create_empty_major_sstable to determine tablet build by the offline ddl
+      // using need_create_empty_major_sstable to determine tablet build by the offline ddl 
     } else if (OB_FAIL(info.get_fork_tablet_info(i, fork_tablet_info))) {
       LOG_WARN("failed to get fork tablet info", K(ret), K(i));
     } else if (CLICK_FAIL(ls->get_tablet_svr()->create_tablet(ls_id, tablet_id, tablet_id,

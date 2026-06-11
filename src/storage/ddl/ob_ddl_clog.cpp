@@ -261,7 +261,7 @@ int ObDDLMacroBlockClogCb::on_success()
 
   ObTabletDirectLoadMgrHandle direct_load_mgr_handle;
   ObTenantDirectLoadMgr *tenant_direct_load_mgr = MTL(ObTenantDirectLoadMgr *);
-
+  
   /* param for check idempotence */
   ObDDLKvMgrHandle kv_mgr_handle;
   if (OB_ISNULL(tenant_direct_load_mgr)) {
@@ -310,7 +310,7 @@ int ObDDLMacroBlockClogCb::on_success()
       LOG_WARN("ddl kv mgr handle not valid", K(ret));
     } else if (OB_FAIL(kv_mgr_handle.get_obj()->set_idem_block_checksum(ddl_macro_block_.block_type_,
                                                                         direct_load_type_,
-                                                                        macro_block_id_,
+                                                                        macro_block_id_, 
                                                                         ddl_macro_block_.logic_id_,
                                                                         block_checksum_,
                                                                         ddl_macro_block_.table_key_.table_type_))) {

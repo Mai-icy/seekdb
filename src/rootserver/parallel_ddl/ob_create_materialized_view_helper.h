@@ -63,3 +63,5 @@ private:
 } // end namespace oceanbase
 
 #endif // OCEANBASE_ROOTSERVER_OB_CREATE_MATERIALIZED_VIEW_HELPER_H_
+
+

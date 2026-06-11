@@ -177,7 +177,7 @@ int ObForkTableTask::init(const ObDDLTaskRecord &task_record)
       ddl_tracing_.open_for_recovery();
     }
   }
-
+  
   LOG_INFO("init fork table task finished", K(ret), KPC(this));
   return ret;
 }
@@ -356,9 +356,9 @@ int ObForkTableTask::wait_freeze_end(const ObDDLTaskStatus next_task_status)
 {
   int ret = OB_SUCCESS;
   ObSchemaGetterGuard schema_guard;
-  ObSEArray<ObTabletID, 4> src_tablet_ids;
+  ObSEArray<ObTabletID, 4> src_tablet_ids;  
   const int64_t start_ts = ObTimeUtility::current_time();
-
+  
   if (OB_FAIL(get_schema_guard(schema_guard))) {
     LOG_WARN("fail to get schema guard", K(ret));
   } else if (OB_FAIL(ObForkTableUtil::collect_tablet_ids_from_table(schema_guard, tenant_id_, object_id_, src_tablet_ids))) {
@@ -415,7 +415,7 @@ int ObForkTableTask::build_data(const ObDDLTaskStatus next_task_status)
     LOG_WARN("fail to get dst tablet ids", K(ret));
   } else if (src_tablet_ids.count() != dst_tablet_ids.count()) {
     ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("tablet count mismatch", K(ret),
+    LOG_WARN("tablet count mismatch", K(ret), 
              K(src_tablet_ids.count()), K(dst_tablet_ids.count()));
   } else if (OB_FAIL(build_fork_info(src_tablet_ids, dst_tablet_ids, fork_info))) {
     LOG_WARN("fail to build fork info", K(ret));
@@ -483,7 +483,7 @@ int ObForkTableTask::wait_data_complement(const ObDDLTaskStatus next_task_status
         break;
       }
     }
-
+    
     if (OB_SUCC(ret)) {
       is_data_complement_ = all_complete;
       if (all_complete) {
@@ -504,7 +504,7 @@ int ObForkTableTask::wait_data_complement(const ObDDLTaskStatus next_task_status
       LOG_WARN("fail to get src tablet ids", K(ret));
     } else if (OB_UNLIKELY(src_tablet_ids.count() != dst_tablet_ids.count())) {
       ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("src and dst tablet count mismatch", K(ret),
+      LOG_WARN("src and dst tablet count mismatch", K(ret), 
                K(src_tablet_ids.count()), K(dst_tablet_ids.count()));
     } else {
       storage::ObTableForkInfo fork_info;
@@ -613,7 +613,7 @@ int ObForkTableTask::cleanup_impl()
       ObTableLockOwnerID lock_owner;
       ObMySQLTransaction trans;
       ObTimeoutCtx ctx;
-
+      
       if (OB_FAIL(GCTX.schema_service_->get_tenant_schema_guard(tenant_id_, schema_guard))) {
         LOG_WARN("get tenant schema guard failed", K(ret), K(tenant_id_));
       } else if (OB_FAIL(schema_guard.get_table_schema(tenant_id_, object_id_, src_table_schema))) {
@@ -670,7 +670,7 @@ int ObForkTableTask::cleanup_impl()
           need_retry_ = false;  // clean succ, stop the task
         }
       }
-
+      
       if (trans.is_started()) {
         bool commit = (OB_SUCCESS == ret);
         int tmp_ret = trans.end(commit);
@@ -725,7 +725,7 @@ int ObForkTableTask::build_fork_info(
         consumer_group_id_,
         src_tablet_ids,
         dst_tablet_ids);
-
+    
     if (OB_UNLIKELY(!fork_info.is_valid())) {
       ret = OB_INVALID_ARGUMENT;
       LOG_WARN("invalid fork info", K(ret), K(fork_info));
@@ -736,3 +736,6 @@ int ObForkTableTask::build_fork_info(
 
 }  // namespace rootserver
 }  // namespace oceanbase
+
+
+

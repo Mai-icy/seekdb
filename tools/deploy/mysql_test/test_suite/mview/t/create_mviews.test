@@ -1,8 +1,8 @@
 # owner: lana.lgx
 # owner group: data
 # tags:
-# descriotion:
-# 创建mv的测试
+# descriotion: 
+# 创建mv的测试 
 #
 
 --disable_query_log

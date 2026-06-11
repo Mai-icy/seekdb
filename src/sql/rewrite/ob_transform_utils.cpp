@@ -6375,10 +6375,10 @@ int ObTransformUtils::pushdown_group_by(ObSelectStmt *parent_stmt,
  * @brief ObTransformUtils::create_simple_view
  * When push_group_by is false, decompose stmt into two layers:
  * Inner layer does table scan, join, and filter, forming an SPJ query
- * Outer layer does distinct, group-by, order-by, window function, etc., non-SPJ operations
+ * Outer layer does distinct, group-by, order-by, window function, etc., non-SPJ operations 
  * let the view_stmt process some subqueries
  * push_group_by: move aggregate functions into the view for computation
- * what is more:
+ * what is more: 
  *   it need follow a basic 'select computing sequence' which when push_group_by is true,
  * then push_conditions need be true
  */

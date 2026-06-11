@@ -74,7 +74,7 @@ public:
   virtual int check_restore_precondition() = 0;
   virtual int init_for_ls_view() = 0;
   virtual int fetch_next_tablet_info(obrpc::ObCopyTabletInfo &tablet_info) = 0;
-  virtual int fetch_ls_meta(ObLSMetaPackage &ls_meta) = 0;
+  virtual int fetch_ls_meta(ObLSMetaPackage &ls_meta) = 0; 
   virtual int init_for_build_tablets_sstable_info(
       const common::ObIArray<ObTabletHandle> &tablet_handle_array) = 0;
   virtual int fetch_next_tablet_sstable_header(obrpc::ObCopyTabletSSTableHeader &copy_header) = 0;

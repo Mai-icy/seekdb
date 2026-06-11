@@ -92,7 +92,7 @@ int ObDropTablegroupHelper::lock_tablegroup_by_obj_id_()
     LOG_INFO("tablegroup not exists", KR(ret), K(tablegroup_name));
   } else if (OB_FAIL(add_lock_object_by_id_(tablegroup_id_, share::schema::TABLEGROUP_SCHEMA,
                      transaction::tablelock::EXCLUSIVE))) {
-    LOG_WARN("failed to add lock object by tablegroup id", KR(ret), K_(tablegroup_id));
+    LOG_WARN("failed to add lock object by tablegroup id", KR(ret), K_(tablegroup_id));                      
   } else if (OB_FAIL(lock_existed_objects_by_id_())) {
     LOG_WARN("fail to lock objects by id", KR(ret));
   }

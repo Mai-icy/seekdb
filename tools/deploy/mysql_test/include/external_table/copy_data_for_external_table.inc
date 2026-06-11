@@ -13,3 +13,4 @@ exec $SCP_CMD;
 --enable_query_log
 disconnect obsys_for_external_table;
 connection default;
+

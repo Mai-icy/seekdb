@@ -106,7 +106,7 @@ int ObDASMatchIter::inner_init(ObDASIterParam &param)
         relevance_collector_ = inner_product_relevance_collector;
       }
     }
-
+    
     if (OB_FAIL(ret)) {
     } else if (FALSE_IT(children_relevance_exprs_.set_allocator(&myself_allocator_))) {
     } else if (OB_FAIL(children_relevance_exprs_.init(match_param.children_relevance_exprs_.count()))) {
@@ -118,7 +118,7 @@ int ObDASMatchIter::inner_init(ObDASIterParam &param)
       LOG_WARN("failed to init children domain id exprs", K(ret));
     } else if (OB_FAIL(children_domain_id_exprs_.prepare_allocate(match_param.children_domain_id_exprs_.count()))) {
       LOG_WARN("failed to prepare allocate children domain id exprs", K(ret));
-    }
+    } 
     for (int64_t i = 0; OB_SUCC(ret) && i < match_param.children_relevance_exprs_.count(); ++i) {
       children_relevance_exprs_[i] = match_param.children_relevance_exprs_.at(i);
       children_domain_id_exprs_[i] = match_param.children_domain_id_exprs_.at(i);
@@ -483,7 +483,7 @@ int ObDASMatchIter::fill_merge_heap()
             max_query_score_ += max_query_score;
           }
         }
-        if (OB_FAIL(ret)) {
+        if (OB_FAIL(ret)) { 
         } else {
           const double query_boost = ir_match_part_score_rtdef_->match_boost_;
           item.relevance_ = item.relevance_ * query_boost;
@@ -498,7 +498,7 @@ int ObDASMatchIter::fill_merge_heap()
       } else if (OB_FAIL(merge_heap_->push(item))) {
         LOG_WARN("fail to push item to merge heap", K(ret), K(item));
       }
-    }
+    } 
   }
   if (OB_FAIL(ret)) {
   } else if (merge_heap_->empty()) {
@@ -621,7 +621,7 @@ int ObDASMatchIter::project_results(const int64_t count)
     }
   }
 
-
+  
   return ret;
 }
 

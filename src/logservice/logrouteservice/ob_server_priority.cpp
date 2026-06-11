@@ -101,3 +101,4 @@ int get_replica_priority(const common::ObReplicaType type,
 
 } // namespace logservice
 } // namespace oceanbase
+

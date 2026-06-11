@@ -262,7 +262,7 @@ int ObLogRestoreProxyUtil::init_with_service_attr(
   const char *default_user = "root";
   const char *default_passwd = "";
   const char *db_name = OB_SYS_DATABASE_NAME; // Default to MySQL mode
-
+  
   if (OB_ISNULL(service_attr)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("service_attr is null", KR(ret), KP(service_attr));
@@ -572,7 +572,7 @@ int ObLogRestoreProxyUtil::get_max_log_info(const ObLSID &id, palf::AccessMode &
 {
   int ret = OB_SUCCESS;
   UNUSED(id); // Always query sys_ls, id parameter is kept for compatibility
-
+  
   if (OB_UNLIKELY(!inited_)) {
     ret = OB_NOT_INIT;
     LOG_WARN("ObLogRestoreProxyUtil not inited", K(ret));
@@ -590,7 +590,7 @@ int ObLogRestoreProxyUtil::get_max_log_info(const ObLSID &id, palf::AccessMode &
         // Create grpc client and call get_max_log_info
         rootserver::standby::ObServiceGrpcClient grpc_client;
         const int64_t timeout = cal_timeout_() * 1000 * 1000; // Convert to microseconds
-
+        
         if (OB_FAIL(grpc_client.init(server_addr, timeout))) {
           LOG_WARN("init grpc client failed", K(ret), K(server_addr), K(timeout));
         } else if (OB_FAIL(grpc_client.get_max_log_info(mode, scn))) {
@@ -601,7 +601,7 @@ int ObLogRestoreProxyUtil::get_max_log_info(const ObLSID &id, palf::AccessMode &
       }
     }
   }
-
+  
   return ret;
 }
 

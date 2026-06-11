@@ -37,7 +37,7 @@ int ObSchemaGetterGuard::get_ai_model_schema(const uint64_t tenant_id,
                                              const ObAiModelSchema *&ai_model_schema)
 {
   int ret = OB_SUCCESS;
-
+  
   const ObSchemaMgr *mgr = nullptr;
   ObNameCaseMode mode = OB_NAME_CASE_INVALID;
   if (!check_inner_stat()) {
@@ -60,7 +60,7 @@ int ObSchemaGetterGuard::get_ai_model_schema(const uint64_t tenant_id,
   } else if (OB_FAIL(mgr->get_ai_model_schema(tenant_id, ai_model_name, mode, ai_model_schema))){
     LOG_WARN("fail to get ai model schema", K(ret), K(tenant_id), K(ai_model_name));
   }
-
+  
   return ret;
 }
 
@@ -69,7 +69,7 @@ int ObSchemaGetterGuard::get_ai_model_schema(const uint64_t tenant_id,
                                              const ObAiModelSchema *&ai_model_schema)
 {
   int ret = OB_SUCCESS;
-
+  
   const ObSchemaMgr *mgr = nullptr;
   if (!check_inner_stat()) {
     ret = OB_INNER_STAT_ERROR;
@@ -86,10 +86,11 @@ int ObSchemaGetterGuard::get_ai_model_schema(const uint64_t tenant_id,
   } else if (OB_FAIL(mgr->get_ai_model_schema(tenant_id, ai_model_id, ai_model_schema))){
     LOG_WARN("fail to get ai model schema", K(ret), K(tenant_id), K(ai_model_id));
   }
-
+  
   return ret;
 }
 
 } // namespace schema
 } // namespace share
 } // namespace oceanbase
+ 

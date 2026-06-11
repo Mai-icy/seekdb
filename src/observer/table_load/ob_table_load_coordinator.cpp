@@ -424,7 +424,7 @@ int ObTableLoadCoordinator::calc_memory_size(
       task_need_sort = true;
     }
   }
-
+  
   for (int64_t i = 0; OB_SUCC(ret) && i < store_server_count; i++) {
     ObDirectLoadResourceUnit &unit = apply_arg.apply_array_[i];
     int64_t min_memory = MIN(min_part_memory *  unit.thread_count_, memory_limit); // Minimum memory that needs to be allocated

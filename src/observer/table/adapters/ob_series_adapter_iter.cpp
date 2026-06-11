@@ -422,3 +422,4 @@ int ObHbaseSeriesCellIter::get_next_cell(ObNewRow *&row, uint8_t depth)
 
 } // end of namespace table
 } // end of namespace oceanbase
+  

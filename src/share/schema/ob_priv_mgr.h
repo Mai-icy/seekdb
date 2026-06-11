@@ -290,7 +290,7 @@ public:
   int del_obj_mysql_priv(const ObObjMysqlPrivSortKey &obj_mysql_priv_key);
   int get_obj_mysql_priv(const ObObjMysqlPrivSortKey &obj_mysql_priv_key,
                          const ObObjMysqlPriv *&obj_mysql_priv) const;
-  int get_obj_mysql_priv_set(const ObObjMysqlPrivSortKey &obj_mysql_priv_key,
+  int get_obj_mysql_priv_set(const ObObjMysqlPrivSortKey &obj_mysql_priv_key, 
                              ObPrivSet &priv_set) const;
   // other
   int get_db_privs_in_tenant(const uint64_t tenant_id,
@@ -337,7 +337,7 @@ public:
                                  const uint64_t obj_type,
                                  ObIArray<const ObObjMysqlPriv *> &obj_privs,
                                  bool reset_flag) const;
-
+    
   static const char *get_first_priv_name(ObPrivSet priv_set);
   static const char *get_priv_name(int64_t priv_shift);
   int get_priv_schema_count(int64_t &priv_scheam_count) const;

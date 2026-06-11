@@ -328,7 +328,7 @@ int ObDomainIndexBuilderUtil::locate_aux_index_schema_by_name(
                                               user_index_name))) {
       LOG_WARN("fail to get index name",
           K(ret), K(new_data_table_id), K(inner_index_name));
-    } else if (share::schema::is_built_in_fts_index(type) &&
+    } else if (share::schema::is_built_in_fts_index(type) && 
         OB_FAIL(ObFtsIndexBuilderUtil::generate_fts_aux_index_name(&allocator,
                                                                    type,
                                                                    user_index_name,

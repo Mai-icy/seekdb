@@ -1139,7 +1139,7 @@ int ObVecIndexBuildTask::serialize_params_to_message(
   int8_t is_offline_rebuild = static_cast<int8_t>(is_offline_rebuild_);
   int8_t is_post_create_hybrid_vector = static_cast<int8_t>(is_post_create_hybrid_vector_);
   int8_t is_retryable_ddl = static_cast<int8_t>(is_retryable_ddl_);
-
+  
   if (OB_UNLIKELY(nullptr == buf || buf_len <= 0)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arguments", K(ret), KP(buf), K(buf_len));
@@ -2074,7 +2074,7 @@ int ObVecIndexBuildTask::cleanup_impl()
     } else if (OB_FAIL(owner_id.convert_from_value(ObLockOwnerType::DEFAULT_OWNER_TYPE,
                                                    task_id_))) {
       LOG_WARN("failed to get owner id", K(ret), K(task_id_));
-    } else if (!is_skip_unlock &&
+    } else if (!is_skip_unlock && 
                OB_FAIL(ObDDLLock::unlock_for_add_drop_index(*data_schema,
                                                             index_table_id,
                                                             false,

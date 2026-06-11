@@ -160,7 +160,7 @@ bool ObAiModelEndpointInfo::is_valid_ai_model_name(const ObString &ai_model_name
     LOG_WARN("fail to get ai model schema", KR(ret), K(tenant_id), K(ai_model_name));
   } else if (OB_NOT_NULL(ai_model_schema)) {
     is_valid = true;
-  }
+  } 
   return is_valid;
 }
 

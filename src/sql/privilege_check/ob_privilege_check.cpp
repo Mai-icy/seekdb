@@ -439,7 +439,7 @@ int get_dml_stmt_need_privs(
               }
             }
             
-            if (OB_SUCC(ret)
+            if (OB_SUCC(ret) 
                && ObTableType::EXTERNAL_TABLE == table_item->table_type_
                && common::OB_INVALID_ID != table_item->external_location_id_) {
               ObSchemaGetterGuard schema_guard;
@@ -728,7 +728,7 @@ int get_create_table_stmt_need_privs(
         const ObLocationSchema *location_schema = NULL;
         CK(GCTX.schema_service_ != NULL);
         OZ(GCTX.schema_service_->get_tenant_schema_guard(session_priv.tenant_id_, schema_guard));
-        if (OB_FAIL(schema_guard.get_location_schema_by_id(session_priv.tenant_id_,
+        if (OB_FAIL(schema_guard.get_location_schema_by_id(session_priv.tenant_id_, 
                                                            stmt->get_external_location_id(),
                                                            location_schema))) {
           LOG_WARN("failed to get location schema");

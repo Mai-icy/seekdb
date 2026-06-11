@@ -1555,7 +1555,7 @@ int ObIndexBuilder::do_create_local_index(
                                                          table_schema,
                                                          tenant_data_version,
                                                          my_arg,
-                                                         create_index_on_empty_table_opt,
+                                                         create_index_on_empty_table_opt, 
                                                          new_table_schema,
                                                          gen_columns,
                                                          index_schema))) {

@@ -236,7 +236,7 @@ int ObCGBlockFile::BlockStore::get_next_cg_block(ObCGBlock &cg_block)
       const int64_t macro_buffer_size = cg_block.get_macro_buffer_size();
       const bool is_tail_cg_block = (cg_block.get_total_size() + file_offset_) > file_size_;
       int64_t read_buffer_size = is_tail_cg_block ? macro_buffer_size : cg_block.get_total_size();
-
+      
       if (OB_FAIL(get_io_info(buf, read_buffer_size, timeout_ms, io_info))) {
         LOG_WARN("fail to get io info", K(ret));
       } else if (OB_FAIL(MTL(ObTenantTmpFileManager*)->pread(MTL_ID(), io_info, file_offset_, handle))) { // TODO @youchuan.yc using aio

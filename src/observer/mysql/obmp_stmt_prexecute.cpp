@@ -783,10 +783,10 @@ int ObMPStmtPrexecute::response_query_header(ObSQLSessionInfo &session,
     if (((0 != iteration_count_ || stmt::T_ANONYMOUS_BLOCK == stmt_type_) && fields_count > 0)
         || (OB_OCI_EXACT_FETCH == exec_mode_ && stmt::T_SELECT == stmt_type_)) {
 
-      /* has result cases:
-       * 1. Prefetch and has result set: iteration_count_ > 0 & fields_count > 0
-       * 2. Anonymous block and has result set: T_ANONYMOUS_BLOCK == stmt_type_ && fields_count > 0.
-       *                                    In the case of an anonymous block, regardless of the value of iteration_count_,
+      /* has result cases: 
+       * 1. Prefetch and has result set: iteration_count_ > 0 & fields_count > 0 
+       * 2. Anonymous block and has result set: T_ANONYMOUS_BLOCK == stmt_type_ && fields_count > 0. 
+       *                                    In the case of an anonymous block, regardless of the value of iteration_count_, 
        *                                    whether prefetching is done or not, has_result needs to be set
        * 3. exact_fetch mode: OB_OCI_EXACT_FETCH == exec_mode_ && stmt::T_SELECT == stmt_type_
        */ 

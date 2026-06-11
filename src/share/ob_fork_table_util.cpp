@@ -578,3 +578,4 @@ int ObForkTableUtil::release_snapshot(
 
 OB_SERIALIZE_MEMBER(ObForkTableInfo, fork_src_table_id_, fork_snapshot_version_);
 OB_SERIALIZE_MEMBER(ObForkTabletInfo, fork_info_, fork_snapshot_version_, fork_src_tablet_id_);
+

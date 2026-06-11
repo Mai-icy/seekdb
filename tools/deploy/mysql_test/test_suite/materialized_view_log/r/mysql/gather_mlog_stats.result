@@ -19,18 +19,18 @@ Outputs & filters:
 -------------------------------------
   0 - output([mlog$_t1.id], [mlog$_t1.age], [mlog$_t1.SEQUENCE$$], [mlog$_t1.DMLTYPE$$], [mlog$_t1.OLD_NEW$$]), filter(nil), rowset=16
       access([mlog$_t1.id], [mlog$_t1.SEQUENCE$$], [mlog$_t1.age], [mlog$_t1.DMLTYPE$$], [mlog$_t1.OLD_NEW$$]), partitions(p0)
-      is_index_back=false, is_global_index=false,
+      is_index_back=false, is_global_index=false, 
       range_key([mlog$_t1.id], [mlog$_t1.SEQUENCE$$]), range(MIN,MIN ; MAX,MAX)always true
 Used Hint:
 -------------------------------------
   /*+
-
+      
   */
 Qb name trace:
 -------------------------------------
-  stmt_id:0, stmt_type:T_EXPLAIN
+  stmt_id:0, stmt_type:T_EXPLAIN 
   stmt_id:1, SEL$1
-Outline Data:
+Outline Data: 
 -------------------------------------
   /*+
       BEGIN_OUTLINE_DATA

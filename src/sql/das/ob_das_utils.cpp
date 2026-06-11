@@ -934,7 +934,7 @@ int ObDASUtils::find_child_das_rtdef(ObDASBaseRtDef *root_rtdef,
   return ret;
 }
 
-bool ObDASUtils::is_index_merge(const ObDASBaseCtDef *attach_ctdef)
+bool ObDASUtils::is_index_merge(const ObDASBaseCtDef *attach_ctdef) 
 {
   bool bret = false;
   if (attach_ctdef != nullptr) {
@@ -952,7 +952,7 @@ bool ObDASUtils::is_index_merge(const ObDASBaseCtDef *attach_ctdef)
   return bret;
 }
 
-bool ObDASUtils::is_func_lookup(const ObDASBaseCtDef *attach_ctdef)
+bool ObDASUtils::is_func_lookup(const ObDASBaseCtDef *attach_ctdef) 
 {
   int ret = OB_SUCCESS;
   bool bret = false;
@@ -967,7 +967,7 @@ bool ObDASUtils::is_func_lookup(const ObDASBaseCtDef *attach_ctdef)
   return bret;
 }
 
-bool ObDASUtils::is_vec_idx_scan(const ObDASBaseCtDef *attach_ctdef)
+bool ObDASUtils::is_vec_idx_scan(const ObDASBaseCtDef *attach_ctdef) 
 {
   int ret = OB_SUCCESS;
 
@@ -984,7 +984,7 @@ bool ObDASUtils::is_vec_idx_scan(const ObDASBaseCtDef *attach_ctdef)
   return bret;
 }
 
-bool ObDASUtils::is_fts_idx_scan(const ObDASBaseCtDef *attach_ctdef)
+bool ObDASUtils::is_fts_idx_scan(const ObDASBaseCtDef *attach_ctdef) 
 {
   int ret = OB_SUCCESS;
 

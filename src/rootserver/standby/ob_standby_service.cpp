@@ -243,7 +243,7 @@ int ObStandbyService::failover_to_primary(
     } else {
       switch_scn = ls_recovery_stat.get_sync_scn();
     }
-
+    
     // Schema refresh trigger is now managed by MTL framework
     // It checks tenant role at runtime to decide whether to refresh schema
   }
@@ -280,7 +280,7 @@ int ObStandbyService::switch_to_primary(
       LOG_WARN("fail to failover to primary", KR(ret));
     }
     switch_scn = role_transition_service.get_so_scn();
-
+    
     // Schema refresh trigger is now managed by MTL framework
     // It checks tenant role at runtime to decide whether to refresh schema
   }
@@ -357,7 +357,7 @@ int ObStandbyService::switch_to_standby(
             LOG_WARN("fail to switchover_update_tenant_status", KR(ret), K(tenant_info));
           }
           switch_scn = role_transition_service.get_so_scn();
-
+          
           // Schema refresh trigger is now managed by MTL framework
           // It checks tenant role at runtime to decide whether to refresh schema
         }

@@ -532,7 +532,7 @@ int ObVecIndexAsyncTaskUtil::resume_task_from_inner_table(
               }
 
               if (OB_FAIL(ret)) {
-              } else if (task_result.task_type_ == ObVecIndexAsyncTaskType::OB_VECTOR_ASYNC_INDEX_IVF_LOAD ||
+              } else if (task_result.task_type_ == ObVecIndexAsyncTaskType::OB_VECTOR_ASYNC_INDEX_IVF_LOAD || 
                          task_result.task_type_ == ObVecIndexAsyncTaskType::OB_VECTOR_ASYNC_INDEX_IVF_CLEAN) {
                 need_resumed = false;
               }
@@ -974,7 +974,7 @@ int ObVecIndexAsyncTaskHandler::push_task(
       task = nullptr;
     }
     if (OB_FAIL(ret)) {
-    } else if (OB_NOT_NULL(task) &&
+    } else if (OB_NOT_NULL(task) && 
         (task->current_status() == ObHybridVectorRefreshTaskStatus::TASK_PREPARE || task->current_status() == ObHybridVectorRefreshTaskStatus::TASK_FINISH)) {
       task->reset_status();
       handle_ls_process_task_cnt(task->get_ls_id(), true);
@@ -1048,7 +1048,7 @@ void ObVecIndexAsyncTaskHandler::handle(void *task)
   } else {
     async_task = static_cast<ObVecIndexIAsyncTask *>(task);
     ObPluginVectorIndexService *vector_index_service = MTL(ObPluginVectorIndexService *);
-    if (async_task->get_task_type() == ObVecIndexAsyncTaskType::OB_VECTOR_ASYNC_INDEX_OPTINAL
+    if (async_task->get_task_type() == ObVecIndexAsyncTaskType::OB_VECTOR_ASYNC_INDEX_OPTINAL 
     || async_task->get_task_type() == ObVecIndexAsyncTaskType::OB_VECTOR_ASYNC_HYBRID_VECTOR_EMBEDDING
     || async_task->get_task_type() == ObVecIndexAsyncTaskType::OB_VECTOR_ASYNC_INDEX_IVF_LOAD
     || async_task->get_task_type() == ObVecIndexAsyncTaskType::OB_VECTOR_ASYNC_INDEX_IVF_CLEAN) {
@@ -1075,7 +1075,7 @@ void ObVecIndexAsyncTaskHandler::handle(void *task)
       LOG_WARN("unexpected task type", K(ret), KPC(async_task));
     }
   }
-  if (OB_NOT_NULL(async_task)
+  if (OB_NOT_NULL(async_task) 
       && (async_task->get_task_type() != ObVecIndexAsyncTaskType::OB_VECTOR_ASYNC_HYBRID_VECTOR_EMBEDDING || async_task->all_finished())) {
     handle_ls_process_task_cnt(async_task->get_ls_id(), false);
     dec_async_task_ref();
@@ -1388,7 +1388,7 @@ int ObVecIndexAsyncTask::process_data_for_index(ObPluginVectorIndexAdaptor &adap
     } else if (OB_ISNULL(vectors = static_cast<float *>(allocator_.alloc(sizeof(float) * dim * VEC_INDEX_HNSWSQ_BUILD_COUNT_THRESHOLD)))) {
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("failed to alloc new mem.", K(ret));
-    }
+    } 
     if (OB_FAIL(ret)) {
     } else if (OB_ISNULL(vids = static_cast<int64_t *>(allocator_.alloc(sizeof(int64_t) * VEC_INDEX_HNSWSQ_BUILD_COUNT_THRESHOLD)))) {
       ret = OB_ALLOCATE_MEMORY_FAILED;

@@ -99,3 +99,4 @@ int ObLSRouterKey::deep_copy(char *buf,
 
 } // namespace logservice
 } // namespace oceanbase
+

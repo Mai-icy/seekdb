@@ -1001,7 +1001,7 @@ int ObAlterTableExecutor::execute_alter_external_table(ObExecContext &ctx, ObAlt
         LOG_WARN("pointer is null", K(ret), KP(GCTX.schema_service_));
       } else if (OB_FAIL(GCTX.schema_service_->get_tenant_schema_guard(arg.alter_table_schema_.get_tenant_id(), schema_guard))) {
         LOG_WARN("get schema guard failed", K(ret));
-      }
+      } 
       ObString file_location;
       ObString access_info;
       OZ (ObExternalTableUtils::get_external_file_location(arg.alter_table_schema_, schema_guard, ctx.get_allocator(), file_location));
@@ -1154,7 +1154,7 @@ int ObAlterTableExecutor::execute(ObExecContext &ctx, ObAlterTableStmt &stmt)
             LOG_WARN("pointer is null", K(ret), KP(GCTX.schema_service_));
           } else if (OB_FAIL(GCTX.schema_service_->get_tenant_schema_guard(alter_table_arg.alter_table_schema_.get_tenant_id(), schema_guard))) {
             LOG_WARN("get schema guard failed", K(ret));
-          }
+          } 
           OZ (ObExternalTableUtils::get_external_file_location(alter_table_arg.alter_table_schema_, schema_guard, ctx.get_allocator(), file_location));
           ObSqlString full_file_location;
           full_file_location.append(file_location);

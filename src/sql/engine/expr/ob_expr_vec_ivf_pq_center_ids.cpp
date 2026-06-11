@@ -198,10 +198,10 @@ int ObExprVecIVFPQCenterIds::calc_pq_center_ids(
       LOG_WARN("fail to calc location ids", 
                 K(ret), K(pq_cent_table_id), K(pq_cent_tablet_id), KP(calc_pq_centroid_table_id_expr), KP(calc_pq_centroid_part_id_expr));
     } else if (OB_FAIL(ObVectorIndexUtil::calc_location_ids(
-          eval_ctx,
-          calc_centroid_table_id_expr,
-          calc_centroid_part_id_expr,
-          cent_table_id,
+          eval_ctx, 
+          calc_centroid_table_id_expr, 
+          calc_centroid_part_id_expr, 
+          cent_table_id, 
           cent_tablet_id))) {
       LOG_WARN("fail to calc location ids", K(ret), K(cent_table_id), K(cent_tablet_id), KP(calc_centroid_table_id_expr), KP(calc_centroid_part_id_expr));
     } else if (is_empty_pq_ids) {

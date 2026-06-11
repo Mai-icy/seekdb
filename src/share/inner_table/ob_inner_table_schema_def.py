@@ -3558,7 +3558,7 @@ def_table_schema(
   ]
   )
 
-# 473 : __all_tenant_event_history
+# 473 : __all_tenant_event_history 
 
 def_table_schema(
   table_name     = '__all_tenant_scheduler_job_class',
@@ -22381,7 +22381,7 @@ def_table_schema(
   normal_columns  = [],
   gm_columns      = [],
   in_tenant_space = True,
-  view_definition = """SELECT
+  view_definition = """SELECT 
     SESSION_ID,
     TX_ID,
     STATE,

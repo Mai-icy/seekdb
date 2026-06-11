@@ -79,10 +79,10 @@ int ObLocationDDLOperator::create_location(const ObString &ddl_str,
     lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
     if (OB_FAIL(share::ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode))) {
       LOG_WARN("failed to get compat mode", K(ret), K(tenant_id));
-    } else if (lib::Worker::CompatMode::ORACLE == compat_mode
+    } else if (lib::Worker::CompatMode::ORACLE == compat_mode 
                && OB_FAIL(ddl_operator.grant_table(table_priv_key, priv_set, NULL, trans, priv_array, 0, obj_priv_key))) {
       LOG_WARN("fail to grant table, oracle mode", K(ret), K(table_priv_key), K(priv_set), K(obj_priv_key));
-    } else if (lib::Worker::CompatMode::MYSQL == compat_mode
+    } else if (lib::Worker::CompatMode::MYSQL == compat_mode 
                && OB_FAIL(mysql_ddl_operator.grant_object(obj_mysql_priv_key, priv_set, trans, 0, false))) {
       LOG_WARN("fail to grant table, mysql mode", K(ret), K(obj_mysql_priv_key), K(priv_set));
     }
@@ -164,13 +164,13 @@ int ObLocationDDLOperator::drop_location(const ObString &ddl_str,
     LOG_WARN("location in use", K(ret));
   } else if (OB_FAIL(share::ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode))) {
     LOG_WARN("failed to get compat mode", K(ret), K(tenant_id));
-  } else if (lib::Worker::CompatMode::ORACLE == compat_mode
-             && OB_FAIL(ddl_operator.drop_obj_privs(tenant_id, location_id, location_type,
+  } else if (lib::Worker::CompatMode::ORACLE == compat_mode 
+             && OB_FAIL(ddl_operator.drop_obj_privs(tenant_id, location_id, location_type, 
                                                     trans, schema_service_, schema_guard))) {
     LOG_WARN("failed to drop obj privs for location", K(ret),
               K(tenant_id), K(location_id), K(location_type));
   } else if (lib::Worker::CompatMode::MYSQL == compat_mode
-             && OB_FAIL(mysql_ddl_operator.drop_obj_mysql_privs(tenant_id, schema.get_location_name(), location_type,
+             && OB_FAIL(mysql_ddl_operator.drop_obj_mysql_privs(tenant_id, schema.get_location_name(), location_type, 
                                                           trans, schema_service_, schema_guard))) {
     LOG_WARN("failed to drop obj privs for location", K(ret),
               K(tenant_id), K(location_id), K(location_type));
@@ -187,3 +187,4 @@ int ObLocationDDLOperator::drop_location(const ObString &ddl_str,
 
 }
 }
+

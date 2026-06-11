@@ -43,3 +43,4 @@ private:
 } // end namespace rootserver
 } // end namespace oceanbase
 #endif // _OCEANBASE_ROOTSERVER_OB_LOCATION_DDL_SERVICE_H_
+

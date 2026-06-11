@@ -275,7 +275,7 @@ private:
   struct ObLSRouterKey;
   struct ObLSRouterValue;
   class LSSvrList;
-
+  
   int get_ls_svr_list_(const ObLSRouterKey &router_key, LSSvrList &svr_list);
   int query_ls_log_info_and_update_(const ObLSRouterKey &router_key, LSSvrList &svr_list);
   int query_units_info_and_update_(const ObLSRouterKey &router_key, LSSvrList &svr_list);
@@ -318,3 +318,4 @@ private:
 } // namespace oceanbase
 
 #endif
+

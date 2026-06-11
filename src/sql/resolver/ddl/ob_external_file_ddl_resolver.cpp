@@ -141,7 +141,7 @@ int ObDDLResolver::resolve_external_file_location(ObResolverParams &params,
       // url like: oss://ak:sk@host/bucket/...
       ObSqlString tmp_location;
       ObSqlString prefix;
-
+      
       if (OB_FAIL(resolve_file_prefix(url, prefix, storage_info->device_type_, params))) {
         LOG_WARN("failed to resolve file prefix", K(ret));
       } else if (OB_FAIL(tmp_location.append(prefix.string()))) {
@@ -194,7 +194,7 @@ int ObDDLResolver::resolve_external_file_location(ObResolverParams &params,
 int ObDDLResolver::resolve_external_file_location_object(ObResolverParams &params,
                                                          ObTableSchema &table_schema,
                                                          common::ObString location_obj,
-                                                         common::ObString sub_path)
+                                                         common::ObString sub_path) 
 {
   int ret = OB_SUCCESS;
   if (!table_schema.is_external_table()) {
@@ -222,3 +222,4 @@ int ObDDLResolver::resolve_external_file_location_object(ObResolverParams &param
 }
 }
 }
+

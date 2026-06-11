@@ -1302,7 +1302,7 @@ int ObIvfPqBuildHelper::build(const common::ObTableID &table_id, const common::O
       LOG_WARN("[ERRSIM] fail to build ivf pq", K(ret));
     }
   }
-#endif
+#endif 
 
   return ret;
 }

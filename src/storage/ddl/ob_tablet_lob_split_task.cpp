@@ -676,7 +676,7 @@ int ObTabletLobBuildMapTask::process()
         if (OB_ISNULL(GCTX.config_) { // overwrite ret is expected.
           ret = OB_INVALID_ARGUMENT;
           LOG_WARN("get server zone failed", K(ret));
-        } else if (0 != ObCharset::instr(ObCollationType::CS_TYPE_UTF8MB4_GENERAL_CI, GCTX.config_->zone.str().ptr(), GCTX.config_->zone.str().length(),
+        } else if (0 != ObCharset::instr(ObCollationType::CS_TYPE_UTF8MB4_GENERAL_CI, GCTX.config_->zone.str().ptr(), GCTX.config_->zone.str().length(), 
             zone1_str.ptr(), zone1_str.length())) {
           ret = OB_EAGAIN;
           LOG_INFO("set eagain for tablet split", K(ret));

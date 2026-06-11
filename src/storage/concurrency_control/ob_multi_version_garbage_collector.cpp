@@ -684,7 +684,7 @@ int ObMultiVersionGarbageCollector::collect(ObMultiVersionGCSnapshotFunctor& cal
       for (int64_t i = 0; OB_SUCC(ret) && i < entries.count(); ++i) {
         const share::ObReservedSnapshotEntry &entry = entries.at(i);
         share::SCN snapshot_version_scn;
-
+        
         if (OB_FAIL(snapshot_version_scn.convert_for_inner_table_field(entry.snapshot_version_))) {
           MVCC_LOG(WARN, "set min snapshot version scn failed", K(ret), K(entry.snapshot_version_));
         } else if (OB_FAIL(calculator(snapshot_version_scn,
@@ -695,7 +695,7 @@ int ObMultiVersionGarbageCollector::collect(ObMultiVersionGCSnapshotFunctor& cal
           MVCC_LOG(WARN, "calculate snapshot version failed", K(ret));
         } else {
           MVCC_LOG(INFO, "multi version garbage collector collects successfully",
-                   K(entry.snapshot_version_), K(entry.snapshot_type_),
+                   K(entry.snapshot_version_), K(entry.snapshot_type_), 
                    K(entry.create_time_), K(entry.svr_addr_), K(entry.status_));
         }
       }

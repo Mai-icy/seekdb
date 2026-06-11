@@ -165,7 +165,7 @@ int ObServiceGrpcClient::get_tenant_info(share::ObAllTenantInfo& tenant_info)
   } else {
     serverservice::GetTenantInfoReq req; // Empty request, no serialization needed
     serverservice::GetTenantInfoRes res;
-
+    
     grpc::ClientContext context;
     GRPC_SET_CONTEXT(grpc_client_, context);
     auto status = grpc_client_.stub_->get_tenant_info(&context, req, &res);
@@ -189,7 +189,7 @@ int ObServiceGrpcClient::get_max_log_info(palf::AccessMode& mode, share::SCN& sc
   } else {
     serverservice::GetMaxLogInfoReq req; // Empty request, always query sys_ls
     serverservice::GetMaxLogInfoRes res;
-
+    
     grpc::ClientContext context;
     GRPC_SET_CONTEXT(grpc_client_, context);
     auto status = grpc_client_.stub_->get_max_log_info(&context, req, &res);

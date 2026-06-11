@@ -1415,7 +1415,7 @@ int ObSchemaRetrieveUtils::fill_table_schema(
         int64_t, true/*skip null error*/, ignore_column_error, 0);
     EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
       result, dynamic_partition_policy, table_schema, true/*skip_null_error*/, true/*skip_column_error*/, "");
-    EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, external_location_id, table_schema,
+    EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, external_location_id, table_schema, 
                                                         uint64_t, true, true, common::OB_INVALID_ID);
     EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
       result, external_sub_path, table_schema, true/*skip null*/, true/*ignore column error*/, empty_str);
@@ -2162,9 +2162,9 @@ int ObSchemaRetrieveUtils::fill_obj_priv_schema(
 
 template<typename T>
 int ObSchemaRetrieveUtils::fill_obj_mysql_priv_schema (
-                            const uint64_t tenant_id,
-                            T &result,
-                            ObObjMysqlPriv &obj_mysql_priv,
+                            const uint64_t tenant_id, 
+                            T &result, 
+                            ObObjMysqlPriv &obj_mysql_priv, 
                             bool &is_deleted)
 {
   int ret = common::OB_SUCCESS;

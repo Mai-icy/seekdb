@@ -786,7 +786,7 @@ int ObDASSPIVMergeIter::get_ctdef_with_rowkey_exprs(const ObDASScanCtDef *&ctdef
   if (OB_ISNULL(ctdef) || OB_ISNULL(rtdef)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("ctdef or rtdef is null", K(ret), KP(ctdef), KP(rtdef));
-  }
+  } 
 
   return ret;
 }
@@ -949,7 +949,7 @@ int ObDASSPIVMergeIter::get_rowkey_and_set_docids(ObIAllocator &allocator, bool 
   return ret;
 }
 
-int ObDASSPIVMergeIter::rowkey2docid(ObRowkey &rowkey, ObDocIdExt &docid)
+int ObDASSPIVMergeIter::rowkey2docid(ObRowkey &rowkey, ObDocIdExt &docid) 
 {
   int ret = OB_SUCCESS;
 
@@ -961,7 +961,7 @@ int ObDASSPIVMergeIter::rowkey2docid(ObRowkey &rowkey, ObDocIdExt &docid)
     LOG_WARN("invalid rowkey length", K(ret), K(rowkey.length()));
   } else if (OB_UNLIKELY(!rowkey.is_valid())) {
     ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("invalid rowkey", K(ret), K(rowkey.length()));
+    LOG_WARN("invalid rowkey", K(ret), K(rowkey.length()));  
   } else if (OB_FAIL(docid.from_obj(*rowkey.ptr()))){
     LOG_WARN("failed to get docid from rowkey", K(ret));
   }
@@ -1084,10 +1084,10 @@ int ObDASSPIVMergeIter::do_brute_force(ObIAllocator &allocator, bool is_vectoriz
       for (int64_t i = 0; OB_SUCC(ret) && i < batch_count && !max_heap.empty(); ++i) {
         ObRowkey *rowkey = max_heap.top().rowkey_;
         if (OB_FAIL(max_heap.pop())) {
-          LOG_WARN("failed to pop rowkey from heap", K(ret));
+          LOG_WARN("failed to pop rowkey from heap", K(ret));  
         } else if (OB_ISNULL(rowkey)) {
           ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("failed to get rowkey from max heap.", K(ret));
+          LOG_WARN("failed to get rowkey from max heap.", K(ret));  
         } else {
           ObDocIdExt cur_docid;
           if (OB_FAIL(rowkey2docid(*rowkey, cur_docid))) {
@@ -1095,12 +1095,12 @@ int ObDASSPIVMergeIter::do_brute_force(ObIAllocator &allocator, bool is_vectoriz
           } else if (OB_FAIL(result_docids_.push_back(cur_docid))) {
             LOG_WARN("failed to push back docid", K(ret));
           }
-        }
+        }   
       }
     }
     for (int i = 0; OB_SUCC(ret) && i < heap_size / 2; i++) {
       std::swap(result_docids_.at(i), result_docids_.at(heap_size - 1 - i));
-    }
+    } 
   }
 
   return ret;
@@ -1115,20 +1115,20 @@ int ObDASSPIVMergeIter::set_valid_docids_with_rowkeys(ObIAllocator &allocator, i
 
     int64_t rowkey_idx = 0;
     int rowkeys_size = saved_rowkeys_.count();
-
+    
     while (OB_SUCC(ret) && rowkey_idx < rowkeys_size) {
       int batch_size = 0;
       for (int64_t i = 0; OB_SUCC(ret) && i < batch_count && rowkey_idx < rowkeys_size; ++i) {
         ObRowkey *rowkey;
         if (OB_ISNULL(rowkey = saved_rowkeys_.at(rowkey_idx++))) {
           ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("failed to get rowkey from saved rowkeys.", K(ret));
+          LOG_WARN("failed to get rowkey from saved rowkeys.", K(ret));  
         } else if (OB_FAIL(ObDasVecScanUtils::set_lookup_key(*rowkey, rowkey_docid_scan_param_, rowkey_docid_ctdef->ref_table_id_))) {
           LOG_WARN("failed to set rowkey.", K(ret));
         }
         batch_size++;
       }
-      if (OB_SUCC(ret) && OB_FAIL(do_rowkey_docid_table_scan())) {
+      if (OB_SUCC(ret) && OB_FAIL(do_rowkey_docid_table_scan())) { 
         LOG_WARN("failed to do rowkey docid table scan", K(ret));
       }
 
@@ -1149,14 +1149,14 @@ int ObDASSPIVMergeIter::set_valid_docids_with_rowkeys(ObIAllocator &allocator, i
   } else {
     int64_t rowkey_idx = 0;
     int rowkeys_size = saved_rowkeys_.count();
-
+    
     while (OB_SUCC(ret) && rowkey_idx < rowkeys_size) {
       for (int64_t i = 0; OB_SUCC(ret) && i < batch_count && rowkey_idx < rowkeys_size; ++i) {
         ObRowkey *rowkey;
         ObDocIdExt docid;
         if (OB_ISNULL(rowkey = saved_rowkeys_.at(rowkey_idx++))) {
           ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("failed to get rowkey from saved rowkeys.", K(ret));
+          LOG_WARN("failed to get rowkey from saved rowkeys.", K(ret));  
         } else if (OB_FAIL(rowkey2docid(*rowkey, docid))) {
           LOG_WARN("failed to set docid.", K(ret));
         } else if (OB_FAIL(valid_docid_set_.set_refactored(docid))){

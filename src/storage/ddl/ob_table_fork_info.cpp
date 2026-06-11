@@ -210,3 +210,5 @@ OB_DEF_SERIALIZE_SIZE(ObTableForkInfo)
 
 } // namespace storage
 } // namespace oceanbase
+
+

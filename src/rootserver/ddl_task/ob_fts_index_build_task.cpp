@@ -664,7 +664,7 @@ int ObFtsIndexBuildTask::prepare_aux_index_tables()
                                                             transaction::tablelock::SHARE,
                                                             owner_id,
                                                             trans))) {
-      LOG_WARN("failed to lock all dictionary table",
+      LOG_WARN("failed to lock all dictionary table", 
           K(ret), K(tenant_id_), K(dic_loader_handle), K(owner_id));
     } else if (OB_FAIL(update_task_message(trans))) {
       LOG_WARN("fail to update fulltext index build task message",

@@ -138,7 +138,7 @@ int ObTabletForkMdsArg::set_truncate_arg(const rootserver::ObTruncateTabletArg &
     const int64_t buf_len = arg.get_serialize_size();
     int64_t pos = 0;
     char *buf = nullptr;
-
+    
     if (OB_ISNULL(buf = static_cast<char *>(tmp_allocator.alloc(buf_len)))) {
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("fail alloc memory", K(ret), K(buf_len));
@@ -279,3 +279,4 @@ int ObTabletForkMdsHelper::modify(
 
 } // namespace storage
 } // namespace oceanbase
+

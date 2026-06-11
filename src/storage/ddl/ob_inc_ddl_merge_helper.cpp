@@ -15,7 +15,7 @@
  */
 
 #define USING_LOG_PREFIX STORAGE_COMPACTION
-#include "storage/ddl/ob_inc_ddl_merge_helper.h"
+#include "storage/ddl/ob_inc_ddl_merge_helper.h" 
 #include "storage/ddl/ob_ddl_merge_task_utils.h"
 #include "storage/ddl/ob_ddl_merge_task.h"
 #include "storage/ddl/ob_direct_load_mgr_utils.h"
@@ -53,16 +53,16 @@ int ObIncMinDDLMergeHelper::process_prepare_task(ObIDag *dag,
                                                  ObIArray<ObTuple<int64_t, int64_t, int64_t>> &cg_slices)
 {
   int ret = OB_SUCCESS;
-
+  
   cg_slices.reset();
   ObLSID ls_id;
   ObTabletID tablet_id;
   ObWriteTabletParam           *tablet_param = nullptr;
   ObDDLTabletContext::MergeCtx *merge_ctx    = nullptr;
-
+  
   ObTabletHandle tablet_handle;
   ObDDLKV *ddl_kv = nullptr;
-
+  
   bool need_check_tablet = false;
   share::SCN clog_checkpoint_scn;
   hash::ObHashSet<int64_t> slice_idxes;
@@ -141,7 +141,7 @@ int ObIncMinDDLMergeHelper::process_prepare_task(ObIDag *dag,
   } else if (OB_FAIL(dag_merge_param.init_cg_sstable_array(slice_idxes))) {
     LOG_WARN("failed to init cg sstable array", K(ret));
   }
-
+  
   return ret;
 }
 
@@ -152,7 +152,7 @@ int ObIncMinDDLMergeHelper::merge_cg_slice(ObIDag *dag,
                                            const int64_t end_slice_idx)
 {
   int ret = OB_SUCCESS;
-
+  
   ObLSID ls_id;
   ObTabletID tablet_id;
   ObTabletHandle tablet_handle;
@@ -166,12 +166,12 @@ int ObIncMinDDLMergeHelper::merge_cg_slice(ObIDag *dag,
   ObTableHandleV2 sstable_handle;
   ObArray<ObStorageMetaHandle> meta_handles;
   ObTabletMemberWrapper<ObTabletTableStore> table_store_wrapper;
-
+  
   ObTabletDDLParam tablet_ddl_param;
   ObArray<ObDDLBlockMeta> sorted_metas;
   ObArray<ObSSTable*> ddl_sstables;
   ObArenaAllocator arena(ObMemAttr(MTL_ID(), "merge_cg_slice"));
-
+  
   /* prepare param */
   if (nullptr == dag || !dag_merge_param.is_valid() || cg_idx < 0 || start_slice_idx > end_slice_idx) {
     ret = OB_INVALID_ARGUMENT;
@@ -217,24 +217,24 @@ int ObIncMinDDLMergeHelper::merge_cg_slice(ObIDag *dag,
     if (OB_FAIL(ret)) {
     } else if (OB_FAIL(tablet_handle.get_obj()->get_ddl_sstables(ddl_sstable_iter))) {
       LOG_WARN("failed to get ddl sstable", K(ret));
-    } else if (OB_FAIL(ObDDLMergeTaskUtils::get_ddl_tables_from_ddl_kvs(merge_ctx->ddl_kv_handles_,
+    } else if (OB_FAIL(ObDDLMergeTaskUtils::get_ddl_tables_from_ddl_kvs(merge_ctx->ddl_kv_handles_, 
                                                    cg_idx,
-                                                   start_slice_idx,
+                                                   start_slice_idx, 
                                                    dag_merge_param.for_major_ ? INT64_MAX : end_slice_idx,
                                                    ddl_sstables))) {
      LOG_WARN("failed to get ddl tables from  ddl kvs", K(ret));
-    } else if (OB_FAIL(ObDDLMergeTaskUtils::get_ddl_tables_from_dump_tables(tablet_param->storage_schema_->is_row_store(),
+    } else if (OB_FAIL(ObDDLMergeTaskUtils::get_ddl_tables_from_dump_tables(tablet_param->storage_schema_->is_row_store(), 
                                                        ddl_sstable_iter,
                                                        cg_idx,
-                                                       start_slice_idx,
+                                                       start_slice_idx, 
                                                        dag_merge_param.for_major_ ? INT64_MAX : end_slice_idx,
                                                        ddl_sstables,
                                                        meta_handles))) {
       LOG_WARN("failed to get ddl tables from dump sstables", K(ret), K(dag_merge_param), K(cg_idx), K(start_slice_idx), K(end_slice_idx));
-    } else if (OB_FAIL(ObDDLMergeTaskUtils::get_sorted_meta_array(*tablet_handle.get_obj(),
-                                                                  tablet_ddl_param,
+    } else if (OB_FAIL(ObDDLMergeTaskUtils::get_sorted_meta_array(*tablet_handle.get_obj(), 
+                                                                  tablet_ddl_param, 
                                                                   tablet_param->storage_schema_,
-                                                                  ddl_sstables,
+                                                                  ddl_sstables, 
                                                                   tablet_handle.get_obj()->get_rowkey_read_info(),
                                                                   arena,
                                                                   sorted_metas))) {

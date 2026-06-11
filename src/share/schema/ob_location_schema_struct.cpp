@@ -130,3 +130,4 @@ OB_SERIALIZE_MEMBER(ObLocationSchema,
 }
 }
 }
+

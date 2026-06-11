@@ -260,7 +260,7 @@ void ObDirectLoadOptimizerCtx::enable_by_append_hint()
   load_method_ = ObDirectLoadMethod::FULL;
 }
 
-void ObDirectLoadOptimizerCtx::enable_by_config(ObExecContext *exec_ctx)
+void ObDirectLoadOptimizerCtx::enable_by_config(ObExecContext *exec_ctx) 
 {
   if (OB_UNLIKELY(exec_ctx->get_table_direct_insert_ctx().get_force_inc_direct_write())) {
     insert_mode_ = ObDirectLoadInsertMode::NORMAL;

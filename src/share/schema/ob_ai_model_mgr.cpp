@@ -161,7 +161,7 @@ int ObAiModelMgr::deep_copy(const ObAiModelMgr &other)
     ret = OB_NOT_INIT;
     LOG_WARN("ai model mgr not init", K(ret));
   } else if (this != &other) {
-    reset();
+    reset();  
     for (AiModelIter iter = other.ai_model_infos_.begin();
          OB_SUCC(ret) && iter != other.ai_model_infos_.end();
          iter++) {
@@ -419,7 +419,7 @@ int ObAiModelMgr::del_ai_model(const ObTenantAiModelId &tenant_ai_model_id)
              K(ai_model_infos_));
     int tmp_ret = OB_SUCCESS;
     if (OB_SUCCESS != (tmp_ret = rebuild_ai_model_hashmap())) {
-      LOG_WARN("rebuild ai model hashmap failed", K(ret), K(tmp_ret));
+      LOG_WARN("rebuild ai model hashmap failed", K(ret), K(tmp_ret));  
     }
   }
 
@@ -494,7 +494,7 @@ int ObAiModelMgr::rebuild_ai_model_hashmap()
   }
 
 
-  return ret;
+  return ret; 
 }
 
 } // namespace schema

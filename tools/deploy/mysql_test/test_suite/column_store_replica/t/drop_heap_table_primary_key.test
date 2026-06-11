@@ -11,9 +11,9 @@
 connect (obsys,$OBMYSQL_MS0,admin,$OBMYSQL_PWD,oceanbase,$OBMYSQL_PORT);
 connection obsys;
 
-#let $z1 = query_get_value(select distinct zone from oceanbase.__all_zone where zone != '' limit 3, zone, 1);
-#let $z2 = query_get_value(select distinct zone from oceanbase.__all_zone where zone != '' limit 3, zone, 2);
-#let $z2_ip         = query_get_value(select svr_ip     from oceanbase.__all_server where zone = '$z2', svr_ip,     1);
+#let $z1 = query_get_value(select distinct zone from oceanbase.__all_zone where zone != '' limit 3, zone, 1); 
+#let $z2 = query_get_value(select distinct zone from oceanbase.__all_zone where zone != '' limit 3, zone, 2); 
+#let $z2_ip         = query_get_value(select svr_ip     from oceanbase.__all_server where zone = '$z2', svr_ip,     1); 
 #let $z2_mysql_port = query_get_value(select inner_port from oceanbase.__all_server where zone = '$z2', inner_port, 1);
 
 --disable_warnings

@@ -362,7 +362,7 @@ grpc::Status ObStorageGrpcServiceImpl::fetch_sstable_macro_info(
             LOG_WARN("client cancelled the request", K(ret));
             break;
           }
-
+          
           header.reset();
           if (OB_FAIL(producer.get_next_sstable_macro_range_info(header))) {
             if (OB_ITER_END == ret) {
@@ -476,12 +476,12 @@ grpc::Status ObStorageGrpcServiceImpl::check_restore_precondition(
 {
   int ret = OB_SUCCESS;
   obrpc::ObCheckRestorePreconditionResult result;
-
+  
   MTL_SWITCH(OB_SYS_TENANT_ID) {
     ObLSHandle ls_handle;
     ObLS *ls = nullptr;
     ObLSVTInfo ls_info;
-    share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
+    share::ObLSID ls_id(share::ObLSID::SYS_LS_ID); 
     if (OB_FAIL(MTL(ObLSService*)->get_ls(ls_id, ls_handle, ObLSGetMod::STORAGE_MOD))) {
       LOG_WARN("failed to get ls", K(ret), K(ls_id));
     } else if (OB_ISNULL(ls = ls_handle.get_ls())) {
@@ -491,7 +491,7 @@ grpc::Status ObStorageGrpcServiceImpl::check_restore_precondition(
       LOG_WARN("failed to get ls info", K(ret), K(ls_id));
     } else {
       result.required_disk_size_ = ls_info.required_data_disk_size_;
-      //check standby and primary node version match
+      //check standby and primary node version match 
       result.cluster_version_ = GET_MIN_CLUSTER_VERSION();
       ObLSTabletService *tablet_service = ls->get_tablet_svr();
       if (OB_ISNULL(tablet_service)) {
@@ -500,23 +500,23 @@ grpc::Status ObStorageGrpcServiceImpl::check_restore_precondition(
       } else if (OB_FAIL(tablet_service->get_ls_migration_required_size(result.total_tablet_size_))) {
         LOG_WARN("failed to get ls migration required size", K(ret), K(ls_id));
       } else {
-        LOG_INFO("calculated total tablet size for validation",
+        LOG_INFO("calculated total tablet size for validation", 
                  "ls_info_size", result.required_disk_size_,
                  "total_tablet_size", result.total_tablet_size_);
       }
     }
   }
-
+  
   if (OB_SUCC(ret)) {
     if (OB_FAIL(serialize_ob_to_proto(result, response))) {
       LOG_WARN("failed to serialize ObCheckRestorePreconditionResult", K(ret));
     } else {
-      share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
-      LOG_INFO("check_restore_precondition RPC handled successfully",
+      share::ObLSID ls_id(share::ObLSID::SYS_LS_ID); 
+      LOG_INFO("check_restore_precondition RPC handled successfully", 
                K(ls_id), K(result.required_disk_size_), K(result.cluster_version_));
     }
   }
-
+  
   return obgrpc::ob_error_to_grpc_status(ret);
 }
 
@@ -626,7 +626,7 @@ int ObStorageGrpcServiceImpl::build_sstable_macro_info_(
               LOG_WARN("client cancelled the request", K(ret));
               break;
             }
-
+            
             macro_range_info.reuse();
             if (OB_FAIL(producer->get_next_macro_range_info(macro_range_info))) {
               if (OB_ITER_END == ret) {
@@ -680,7 +680,7 @@ int ObStorageGrpcClient::init_tablet_sstable_info_stream(
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("failed to alloc grpc client context", K(ret));
     } else if (FALSE_IT(sstable_info_ctx.sstable_info_context_ = new (ctx_buf) grpc::ClientContext())) {
-    } else if (OB_FAIL(grpc_client->create_tablet_sstable_info_stream(arg, *sstable_info_ctx.sstable_info_context_,
+    } else if (OB_FAIL(grpc_client->create_tablet_sstable_info_stream(arg, *sstable_info_ctx.sstable_info_context_, 
                                                                           sstable_info_ctx.sstable_info_reader_))) {
         LOG_WARN("failed to create tablet sstable info stream", K(ret), K(arg), K(src_addr));
     } else {
@@ -729,7 +729,7 @@ int ObStorageGrpcClient::init_sstable_macro_info_stream(
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("failed to alloc grpc client context", K(ret));
     } else if (FALSE_IT(macro_range_ctx.macro_info_context_ = new (ctx_buf) grpc::ClientContext())) {
-    } else if (OB_FAIL(grpc_client->create_sstable_macro_info_stream(arg, *macro_range_ctx.macro_info_context_,
+    } else if (OB_FAIL(grpc_client->create_sstable_macro_info_stream(arg, *macro_range_ctx.macro_info_context_, 
                                                                           macro_range_ctx.macro_info_reader_))) {
         LOG_WARN("failed to create sstable macro info stream", K(ret), K(arg), K(src_addr));
     } else {
@@ -778,7 +778,7 @@ int ObStorageGrpcClient::init_macro_block_stream(
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("failed to alloc grpc client context", K(ret));
     } else if (FALSE_IT(macro_block_ctx.macro_block_context_ = new (ctx_buf) grpc::ClientContext())) {
-    } else if (OB_FAIL(grpc_client->create_macro_block_stream(arg, *macro_block_ctx.macro_block_context_,
+    } else if (OB_FAIL(grpc_client->create_macro_block_stream(arg, *macro_block_ctx.macro_block_context_, 
                                                                   macro_block_ctx.macro_block_reader_))) {
         LOG_WARN("failed to create macro block stream", K(ret), K(arg), K(src_addr));
     } else {
@@ -827,7 +827,7 @@ int ObStorageGrpcClient::init_tablet_info_stream(
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("failed to alloc grpc client context", K(ret));
     } else if (FALSE_IT(tablet_info_ctx.tablet_info_context_ = new (ctx_buf) grpc::ClientContext())) {
-    } else if (OB_FAIL(grpc_client->create_tablet_info_stream(arg, *tablet_info_ctx.tablet_info_context_,
+    } else if (OB_FAIL(grpc_client->create_tablet_info_stream(arg, *tablet_info_ctx.tablet_info_context_, 
                                                                   tablet_info_ctx.tablet_info_reader_))) {
         LOG_WARN("failed to create tablet info stream", K(ret), K(arg), K(src_addr));
     } else {

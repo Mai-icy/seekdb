@@ -21,7 +21,7 @@
 #include "lib/restore/ob_storage_info.h"
 #include "sql/resolver/dcl/ob_dcl_resolver.h"
 #include "share/external_table/ob_external_table_utils.h"
-
+ 
 namespace oceanbase
 {
 namespace sql
@@ -30,11 +30,11 @@ ObAlterLocationResolver::ObAlterLocationResolver(ObResolverParams &params)
   : ObDDLResolver(params)
 {
 }
-
+ 
 ObAlterLocationResolver::~ObAlterLocationResolver()
 {
 }
-
+ 
 int ObAlterLocationResolver::resolve(const ParseNode &parse_tree)
 {
   int ret = OB_SUCCESS;
@@ -57,7 +57,7 @@ int ObAlterLocationResolver::resolve(const ParseNode &parse_tree)
   } else {
     stmt_ = create_location_stmt;
     create_location_stmt->set_tenant_id(session_info_->get_effective_tenant_id());
-    create_location_stmt->set_user_id(session_info_->get_user_id());
+    create_location_stmt->set_user_id(session_info_->get_user_id());   
     create_location_stmt->set_or_replace(true);
   }
 
@@ -117,7 +117,7 @@ int ObAlterLocationResolver::resolve(const ParseNode &parse_tree)
         ret = OB_ERR_TOO_LONG_IDENT;
         LOG_USER_ERROR(OB_ERR_TOO_LONG_IDENT, static_cast<int32_t>(child_node->str_len_), child_node->str_value_);
       } else if (FALSE_IT(location_url.assign_ptr(child_node->str_value_, static_cast<int32_t>(child_node->str_len_)))){
-
+        
       } else {
         ObString access_info = location_schema->get_location_access_info_str();
         ObBackupStorageInfo back_up_backup;
@@ -182,7 +182,7 @@ int ObAlterLocationResolver::resolve(const ParseNode &parse_tree)
     ObBackupStorageInfo back_up_backup;
     ObObjectStorageInfo *storage_info = nullptr;
     storage_info = &back_up_backup;
-    char storage_info_buf[OB_MAX_BACKUP_STORAGE_INFO_LENGTH] = { 0 };
+    char storage_info_buf[OB_MAX_BACKUP_STORAGE_INFO_LENGTH] = { 0 };  
     ObString uri_cstr = location_url;
     ObString storage_info_cstr = credential_params.string();
     if (OB_SUCC(ret)) {
@@ -205,3 +205,4 @@ int ObAlterLocationResolver::resolve(const ParseNode &parse_tree)
 }
 } // end namespace sql
 } // end namespace oceanbase
+

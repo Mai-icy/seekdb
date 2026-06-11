@@ -158,7 +158,7 @@ int ObDeadLockDetectorMgr::init()
 {
   #define PRINT_WRAPPER KR(ret)
   int ret = OB_SUCCESS;
-
+  
   if (OB_FAIL(ObDeadLockInnerTableService::init())) {
     DETECT_LOG(WARN, "failed to init deadlock inner table service", K(ret));
   } else if (nullptr != proxy_ || nullptr != rpc_) {

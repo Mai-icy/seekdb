@@ -183,7 +183,7 @@ static struct timespec *tc_make_timespec(struct timespec *ts, int64_t us)
 static int tc_futex_wait(int *p, int val, const int64_t timeout_us) {
   // Convert timeout to milliseconds
   DWORD timeout_ms = tc_us_to_ms(timeout_us);
-
+  
   // WaitOnAddress atomically checks if *p == val and waits if true
   BOOL result = WaitOnAddress(
     (volatile VOID*)p,    // Address to wait on
@@ -191,7 +191,7 @@ static int tc_futex_wait(int *p, int val, const int64_t timeout_us) {
     sizeof(int),          // Size of value
     timeout_ms            // Timeout in milliseconds
   );
-
+  
   if (!result) {
     DWORD err = GetLastError();
     if (err == ERROR_TIMEOUT) {
@@ -200,7 +200,7 @@ static int tc_futex_wait(int *p, int val, const int64_t timeout_us) {
     // Other errors (like ERROR_INVALID_PARAMETER)
     return EINVAL;
   }
-
+  
   // Successfully woken up (value changed or spurious wakeup)
   return 0;
 }

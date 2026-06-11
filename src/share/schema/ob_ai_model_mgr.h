@@ -19,7 +19,7 @@
 
 #include "share/schema/ob_schema_struct.h"
 #include "share/ai_service/ob_ai_service_struct.h"
-
+ 
 namespace oceanbase
 {
 
@@ -77,7 +77,7 @@ public:
     case_mode_ = common::OB_NAME_CASE_INVALID;
   }
 
-  int assign(const ObAiModelSchema &other);
+  int assign(const ObAiModelSchema &other); 
   int assign(const uint64_t tenant_id, const ObAiServiceModelInfo &model_info);
   int64_t get_convert_size() const override;
 
@@ -252,5 +252,6 @@ private:
 }
 } // namespace share
 } // namespace oceanbase
-
+ 
  #endif // OCEANBASE_SRC_SHARE_SCHEMA_OB_EXTERNAL_RESOURCE_MGR_H_
+ 

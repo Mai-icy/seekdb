@@ -66,3 +66,4 @@ void ObDDLDagThreadPool::run1()
     FLOG_INFO("ddl dag thread stop", "thread_idx", get_thread_idx(), KPC(ddl_dag_));
   }
 }
+

@@ -838,7 +838,7 @@ int ObDASScanOp::reuse_iter()
             lookup_iter->set_ls_id(ls_id_);
             break;
           }
-          case ITER_TREE_MATCH:
+          case ITER_TREE_MATCH: 
           case ITER_TREE_TEXT_RETRIEVAL: {
             ObDASIter *result_iter = static_cast<ObDASIter *>(result_);
             if (OB_FAIL(ObDASIterUtils::set_text_retrieval_related_ids(

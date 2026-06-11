@@ -38,3 +38,4 @@ int64_t ObCdcServiceMonitor::round_rate_;
 
 } // namespace cdc
 } // namespace oceanbase
+

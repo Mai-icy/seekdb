@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include "ob_cdc_define.h"
 #include "lib/utility/ob_print_utils.h"
-#include "lib/time/ob_time_utility.h"
+#include "lib/time/ob_time_utility.h"    
 
 namespace oceanbase
 {
@@ -44,3 +44,4 @@ private:
 } // namespace oceanbase
 
 #endif
+

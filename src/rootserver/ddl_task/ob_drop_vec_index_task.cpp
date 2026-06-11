@@ -199,7 +199,7 @@ int ObDropVecIndexTask::obtain_snapshot(const share::ObDDLTaskStatus next_task_s
   } else if (OB_FAIL(check_snapshot_table_exist(is_snapshot_table_exist))) {
     LOG_WARN("fail to check snapshot table exist", K(ret));
   }
-
+  
   // skip and success，switch to DROP_AUX_INDEX_TABLE
   if (OB_SUCC(ret) && !state_finished) {
     if (!is_snapshot_table_exist) { // snapshot table not exist, skip obtain snapshot
@@ -217,13 +217,13 @@ int ObDropVecIndexTask::obtain_snapshot(const share::ObDDLTaskStatus next_task_s
     } else if (snapshot_version_ <= 0) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("snapshot version is invalid", K(ret), K(snapshot_version_));
-    } else if (OB_FAIL(update_task_message())) {
+    } else if (OB_FAIL(update_task_message())) { 
       LOG_WARN("fail to snapshot_version_ to __all_ddl_task_status", K(ret));
     } else {
       state_finished = true;
     }
   }
-
+  
 #ifdef ERRSIM
   if (OB_SUCC(ret)) {
     ret = OB_E(common::EventTable::EN_VEC_INDEX_OBTAIN_SNAPSHOT_ERR) OB_SUCCESS;
@@ -653,7 +653,7 @@ int ObDropVecIndexTask::drop_aux_index_table(const share::ObDDLTaskStatus &new_s
     LOG_WARN("fail to create drop index task", K(ret), K(vec_index_snapshot_data_));
   } else if (0 == hybrid_embedded_vec_.task_id_ && hybrid_embedded_vec_.is_valid()
       && OB_FAIL(create_drop_index_task(schema_guard, hybrid_embedded_vec_.table_id_, hybrid_embedded_vec_.index_name_, hybrid_embedded_vec_.task_id_))) {
-    LOG_WARN("fail to create drop index task", K(ret), K(hybrid_embedded_vec_));
+    LOG_WARN("fail to create drop index task", K(ret), K(hybrid_embedded_vec_)); 
   } else if (OB_FAIL(update_task_message())) {
     LOG_WARN("fail to update domain_index_, vec_index_id_, vec_index_snapshot_data_, hybrid_embedded_vec_ to __all_ddl_task_status", K(ret));
   } else if (OB_FAIL(wait_none_share_index_child_task_finish(has_finished))) {
@@ -841,7 +841,7 @@ int ObDropVecIndexTask::create_drop_index_task(
   } else if (OB_UNLIKELY(nullptr == database_schema || nullptr == data_table_schema)) {
     if (OB_ISNULL(data_table_schema) && drop_index_arg_.is_hidden_) {
       task_id = -1;
-      LOG_INFO("hidden data_table maybe removed when offline ddl is failed, skip drop",
+      LOG_INFO("hidden data_table maybe removed when offline ddl is failed, skip drop", 
         K(ret), K(index_tid), K(index_name));
     } else {
       ret = OB_ERR_UNEXPECTED;

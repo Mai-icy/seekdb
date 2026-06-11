@@ -105,3 +105,4 @@ int ObAllZoneTypeInfo::add(AllZoneTypeRecord &record)
 
 } // namespace logservice
 } // namespace oceanbase
+

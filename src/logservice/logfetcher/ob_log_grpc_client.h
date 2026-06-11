@@ -60,3 +60,4 @@ protected:
 } // oceanbase
 
 #endif /* OCEANBASE_LOGSERVICE_LOGFETCHER_OB_LOG_GRPC_CLIENT_H_ */
+

@@ -542,8 +542,8 @@ int ObMajorFreezeHelper::get_frozen_status(
 }
 
 int ObMajorFreezeHelper::get_frozen_status(
-    const int64_t tenant_id,
-    const SCN &frozen_scn,
+    const int64_t tenant_id, 
+    const SCN &frozen_scn, 
     share::ObFreezeInfo &frozen_status,
     ObISQLClient *proxy)
 {

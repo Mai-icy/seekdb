@@ -26,10 +26,10 @@ namespace sql
 ObLocationUtilsResolver::ObLocationUtilsResolver(ObResolverParams &params)
     :ObCMDResolver(params)
 {}
-
+ 
 ObLocationUtilsResolver::~ObLocationUtilsResolver()
 {}
-
+ 
 int ObLocationUtilsResolver::resolve(const ParseNode &parse_tree)
 {
   int ret = OB_SUCCESS;
@@ -98,3 +98,4 @@ int ObLocationUtilsResolver::resolve(const ParseNode &parse_tree)
 }
 } // sql
 } // oceanbase
+

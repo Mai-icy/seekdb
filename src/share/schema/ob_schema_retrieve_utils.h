@@ -534,9 +534,9 @@ public:
                                   uint64_t &option);
 
   template<typename T>
-  static int fill_obj_mysql_priv_schema(const uint64_t tenant_id,
-                                        T &result,
-                                        ObObjMysqlPriv &obj_mysql_priv,
+  static int fill_obj_mysql_priv_schema(const uint64_t tenant_id, 
+                                        T &result, 
+                                        ObObjMysqlPriv &obj_mysql_priv, 
                                         bool &is_deleted);
 
   template<typename T>

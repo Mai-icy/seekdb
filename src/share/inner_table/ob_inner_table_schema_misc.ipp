@@ -4115,7 +4115,7 @@ case OB_ALL_TENANT_OBJAUTH_MYSQL_TID: {
 // Usage: Include this file and use the constant strings in your .cpp file
 
 // __all_merge_info
-inline const char *SQLITE_CREATE_TABLE_MERGE_INFO =
+inline const char *SQLITE_CREATE_TABLE_MERGE_INFO = 
   "CREATE TABLE IF NOT EXISTS __all_merge_info (\n"
   "  id INTEGER NOT NULL DEFAULT 0,\n"
   "  frozen_scn INTEGER NOT NULL,\n"
@@ -4131,7 +4131,7 @@ inline const char *SQLITE_CREATE_TABLE_MERGE_INFO =
   ");";
 
 // __all_zone_merge_info
-inline const char *SQLITE_CREATE_TABLE_ZONE_MERGE_INFO =
+inline const char *SQLITE_CREATE_TABLE_ZONE_MERGE_INFO = 
   "CREATE TABLE IF NOT EXISTS __all_zone_merge_info (\n"
   "  id INTEGER NOT NULL DEFAULT 0,\n"
   "  all_merged_scn INTEGER NOT NULL,\n"
@@ -4146,7 +4146,7 @@ inline const char *SQLITE_CREATE_TABLE_ZONE_MERGE_INFO =
   ");";
 
 // __all_reserved_snapshot
-inline const char *SQLITE_CREATE_TABLE_RESERVED_SNAPSHOT =
+inline const char *SQLITE_CREATE_TABLE_RESERVED_SNAPSHOT = 
   "CREATE TABLE IF NOT EXISTS __all_reserved_snapshot (\n"
   "  snapshot_type INTEGER NOT NULL,\n"
   "  create_time INTEGER NOT NULL,\n"
@@ -4156,7 +4156,7 @@ inline const char *SQLITE_CREATE_TABLE_RESERVED_SNAPSHOT =
   ");";
 
 // __all_server_event_history
-inline const char *SQLITE_CREATE_TABLE_SERVER_EVENT_HISTORY =
+inline const char *SQLITE_CREATE_TABLE_SERVER_EVENT_HISTORY = 
   "CREATE TABLE IF NOT EXISTS __all_server_event_history (\n"
   "  gmt_create INTEGER NOT NULL,\n"
   "  event_type INTEGER NOT NULL,\n"
@@ -4179,7 +4179,7 @@ inline const char *SQLITE_CREATE_TABLE_SERVER_EVENT_HISTORY =
   ");";
 
 // __all_column_checksum_error_info
-inline const char *SQLITE_CREATE_TABLE_COLUMN_CHECKSUM_ERROR_INFO =
+inline const char *SQLITE_CREATE_TABLE_COLUMN_CHECKSUM_ERROR_INFO = 
   "CREATE TABLE IF NOT EXISTS __all_column_checksum_error_info (\n"
   "  frozen_scn INTEGER NOT NULL,\n"
   "  index_type INTEGER NOT NULL,\n"
@@ -4194,7 +4194,7 @@ inline const char *SQLITE_CREATE_TABLE_COLUMN_CHECKSUM_ERROR_INFO =
   ");";
 
 // __all_deadlock_event_history
-inline const char *SQLITE_CREATE_TABLE_DEADLOCK_EVENT_HISTORY =
+inline const char *SQLITE_CREATE_TABLE_DEADLOCK_EVENT_HISTORY = 
   "CREATE TABLE IF NOT EXISTS __all_deadlock_event_history (\n"
   "  event_id INTEGER NOT NULL,\n"
   "  detector_id INTEGER NOT NULL,\n"
@@ -4219,7 +4219,7 @@ inline const char *SQLITE_CREATE_TABLE_DEADLOCK_EVENT_HISTORY =
   ");";
 
 // __all_tablet_meta_table
-inline const char *SQLITE_CREATE_TABLE_TABLET_META_TABLE =
+inline const char *SQLITE_CREATE_TABLE_TABLET_META_TABLE = 
   "CREATE TABLE IF NOT EXISTS __all_tablet_meta_table (\n"
   "  gmt_create INTEGER NULL,\n"
   "  gmt_modified INTEGER NULL,\n"
@@ -4233,7 +4233,7 @@ inline const char *SQLITE_CREATE_TABLE_TABLET_META_TABLE =
   ");";
 
 // __all_tablet_replica_checksum
-inline const char *SQLITE_CREATE_TABLE_TABLET_REPLICA_CHECKSUM =
+inline const char *SQLITE_CREATE_TABLE_TABLET_REPLICA_CHECKSUM = 
   "CREATE TABLE IF NOT EXISTS __all_tablet_replica_checksum (\n"
   "  tablet_id INTEGER NOT NULL,\n"
   "  compaction_scn INTEGER NOT NULL,\n"
@@ -4247,7 +4247,7 @@ inline const char *SQLITE_CREATE_TABLE_TABLET_REPLICA_CHECKSUM =
   ");";
 
 // __all_sys_parameter
-inline const char *SQLITE_CREATE_TABLE_SYS_PARAMETER =
+inline const char *SQLITE_CREATE_TABLE_SYS_PARAMETER = 
   "CREATE TABLE IF NOT EXISTS __all_sys_parameter (\n"
   "  gmt_create INTEGER NULL,\n"
   "  gmt_modified INTEGER NULL,\n"
@@ -4267,7 +4267,7 @@ inline const char *SQLITE_CREATE_TABLE_SYS_PARAMETER =
   ");";
 
 // __all_tenant_event_history
-inline const char *SQLITE_CREATE_TABLE_TENANT_EVENT_HISTORY =
+inline const char *SQLITE_CREATE_TABLE_TENANT_EVENT_HISTORY = 
   "CREATE TABLE IF NOT EXISTS __all_tenant_event_history (\n"
   "  gmt_create INTEGER NOT NULL,\n"
   "  module TEXT NOT NULL,\n"
@@ -4293,7 +4293,7 @@ inline const char *SQLITE_CREATE_TABLE_TENANT_EVENT_HISTORY =
   ");";
 
 // __all_rootservice_job
-inline const char *SQLITE_CREATE_TABLE_ROOTSERVICE_JOB =
+inline const char *SQLITE_CREATE_TABLE_ROOTSERVICE_JOB = 
   "CREATE TABLE IF NOT EXISTS __all_rootservice_job (\n"
   "  job_id INTEGER NOT NULL DEFAULT 0,\n"
   "  gmt_create INTEGER NULL,\n"
@@ -4305,7 +4305,7 @@ inline const char *SQLITE_CREATE_TABLE_ROOTSERVICE_JOB =
   ");";
 
 // __all_kv_table
-inline const char *SQLITE_CREATE_TABLE_KV_TABLE =
+inline const char *SQLITE_CREATE_TABLE_KV_TABLE = 
   "CREATE TABLE IF NOT EXISTS __all_kv_table (\n"
   "  key TEXT NOT NULL,\n"
   "  value TEXT NOT NULL DEFAULT '',\n"

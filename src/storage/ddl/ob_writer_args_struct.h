@@ -53,7 +53,7 @@ public:
   int init(const ObWriteMacroParam &param,
            const ObWriterType writer_type);
   void reset();
-  OB_INLINE bool is_need_submit_io_type(const ObWriterType writer_type) const
+  OB_INLINE bool is_need_submit_io_type(const ObWriterType writer_type) const 
   {
     return ObWriterType::DAG_CG_MACRO_BLOCK_WRITER_TYPE == writer_type;
   }

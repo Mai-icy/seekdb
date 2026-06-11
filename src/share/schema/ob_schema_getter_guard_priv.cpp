@@ -1705,7 +1705,7 @@ int ObSchemaGetterGuard::check_priv_or(const ObSessionPrivInfo &session_priv,
 
 int ObSchemaGetterGuard::check_obj_mysql_priv(const ObSessionPrivInfo &session_priv,
                         const common::ObIArray<uint64_t> &enable_role_id_array,
-                        const ObNeedPriv &obj_mysql_need_priv)
+                        const ObNeedPriv &obj_mysql_need_priv) 
 {
   int ret = OB_SUCCESS;
   uint64_t tenant_id = session_priv.tenant_id_;
@@ -1820,7 +1820,7 @@ int ObSchemaGetterGuard::check_location_access(const ObSessionPrivInfo &session_
     LOG_WARN("fail to check tenant schema guard", K(ret));
   } else if (OB_FAIL(check_lazy_guard(session_priv.tenant_id_, mgr))) {
     LOG_WARN("fail to check lazy guard", K(ret));
-  }
+  } 
 
   if (OB_SUCC(ret) && compat_mode == lib::Worker::CompatMode::MYSQL) {
     if (OB_FAIL(check_obj_mysql_priv(session_priv, enable_role_id_array, tmp_need_priv))) {

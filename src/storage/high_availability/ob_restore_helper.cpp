@@ -53,7 +53,7 @@ static const char *restore_task_type_strs[] = {
 
 const char *ObRestoreTaskType::get_str(const TYPE &type)
 {
-  STATIC_ASSERT(static_cast<int64_t>(MAX_RESTORE_TASK_TYPE) == ARRAYSIZEOF(restore_task_type_strs),
+  STATIC_ASSERT(static_cast<int64_t>(MAX_RESTORE_TASK_TYPE) == ARRAYSIZEOF(restore_task_type_strs), 
                     "restore task type str len is mismatch");
   const char *str = nullptr;
   if (type < 0 || type >= MAX_RESTORE_TASK_TYPE) {
@@ -183,7 +183,7 @@ int ObStandbyRestoreHelper::check_restore_precondition()
 {
   int ret = OB_SUCCESS;
   int64_t required_size = 0;
-
+  
   if (!is_valid()) {
     ret = OB_NOT_INIT;
     LOG_WARN("standby restore helper not init", K(ret), KPC(this));
@@ -205,7 +205,7 @@ int ObStandbyRestoreHelper::check_restore_precondition()
         if (OB_FAIL(LOCAL_DEVICE_INSTANCE.check_space_full(result.required_disk_size_))) {
           LOG_ERROR("failed to check_is_disk_full, cannot restore", KR(ret), K(result));
         } else {
-          LOG_INFO("disk space and cluster version check passed",
+          LOG_INFO("disk space and cluster version check passed", 
               "required_size", result.required_disk_size_,
               "total_tablet_size", result.total_tablet_size_,
               "cluster_version", result.cluster_version_);
@@ -357,7 +357,7 @@ int ObStandbyRestoreHelper::init_for_fetch_tablet_meta(const common::ObIArray<co
     arg.ls_id_ = ls_id;
     if (OB_FAIL(arg.tablet_id_list_.assign(tablet_id_array))) {
       LOG_WARN("failed to assign tablet id list", K(ret), K(tablet_id_array));
-    } else if (OB_FAIL(storage::ObStorageGrpcClient::init_tablet_info_stream(src_, RPC_TIMEOUT_US,
+    } else if (OB_FAIL(storage::ObStorageGrpcClient::init_tablet_info_stream(src_, RPC_TIMEOUT_US, 
                                                                               arg, ctx_allocator_, *tablet_info_ctx))) {
        LOG_WARN("failed to create tablet info stream", K(ret), K(arg));
     }
@@ -546,7 +546,7 @@ int ObStandbyRestoreHelper::init_for_build_tablets_sstable_info(
         LOG_WARN("failed to push back tablet sstable info arg", K(ret), K(tablet_arg));
       }
     }
-
+    
     if (OB_SUCC(ret)) {
       if (OB_FAIL(storage::ObStorageGrpcClient::init_tablet_sstable_info_stream(
               src_, RPC_TIMEOUT_US, arg, ctx_allocator_, *sstable_info_ctx))) {
@@ -556,7 +556,7 @@ int ObStandbyRestoreHelper::init_for_build_tablets_sstable_info(
         sstable_info_ctx->cur_tablet_id_.reset();
       }
     }
-
+    
     if (OB_FAIL(ret)) {
       // Cleanup on error
       if (OB_NOT_NULL(sstable_info_ctx)) {
@@ -673,20 +673,20 @@ int ObStandbyRestoreHelper::init_for_sstable_macro_range(const common::ObIArray<
     ObRestoreHelperSSTableMacroRangeCtx *macro_range_ctx = static_cast<ObRestoreHelperSSTableMacroRangeCtx *>(ctx_);
     obrpc::ObCopySSTableMacroRangeInfoArg arg;
     share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
-    arg.tenant_id_ = OB_SYS_TENANT_ID;
-    arg.ls_id_ = ls_id;
-    arg.tablet_id_ = copy_table_key_array.at(0).tablet_id_;
+    arg.tenant_id_ = OB_SYS_TENANT_ID;  
+    arg.ls_id_ = ls_id; 
+    arg.tablet_id_ = copy_table_key_array.at(0).tablet_id_;  
     arg.macro_range_max_marco_count_ = MACRO_RANGE_MAX_MACRO_COUNT;
     arg.need_check_seq_ = false;
     arg.ls_rebuild_seq_ = 0;
-
+    
     if (OB_FAIL(arg.copy_table_key_array_.assign(copy_table_key_array))) {
       LOG_WARN("failed to assign copy table key array", K(ret), "key_cnt", copy_table_key_array.count());
-    } else if (OB_FAIL(storage::ObStorageGrpcClient::init_sstable_macro_info_stream(src_, RPC_TIMEOUT_US,
+    } else if (OB_FAIL(storage::ObStorageGrpcClient::init_sstable_macro_info_stream(src_, RPC_TIMEOUT_US, 
                                                                                 arg, ctx_allocator_, *macro_range_ctx))) {
       LOG_WARN("failed to init sstable macro info stream", K(ret), K(arg), K_(src));
     }
-
+    
     if (OB_FAIL(ret)) {
       if (OB_NOT_NULL(macro_range_ctx)) {
         macro_range_ctx->reset();
@@ -705,7 +705,7 @@ int ObStandbyRestoreHelper::fetch_next_sstable_macro_range_info(storage::ObCopyS
 {
   int ret = OB_SUCCESS;
   sstable_macro_range_info.reset();
-
+  
   if (!is_valid()) {
     ret = OB_NOT_INIT;
     LOG_WARN("standby restore helper not init", K(ret), KPC(this));
@@ -736,7 +736,7 @@ int ObStandbyRestoreHelper::fetch_next_sstable_macro_range_info(storage::ObCopyS
         LOG_WARN("failed to deserialize ObCopySSTableMacroRangeInfoHeader", K(ret));
       } else {
         sstable_macro_range_info.copy_table_key_ = header.copy_table_key_;
-
+        
         // Read macro range infos
         for (int64_t i = 0; OB_SUCC(ret) && i < header.macro_range_count_; ++i) {
           storageservice::FetchSSTableMacroInfoRes response;
@@ -773,7 +773,7 @@ int ObStandbyRestoreHelper::init_for_macro_block_copy(
   if (!is_valid()) {
     ret = OB_NOT_INIT;
     LOG_WARN("standby restore helper not init", K(ret), KPC(this));
-  } else if (!copy_table_key.is_valid() || !macro_range_info.is_valid()
+  } else if (!copy_table_key.is_valid() || !macro_range_info.is_valid() 
                   || data_version < 0) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(copy_table_key), K(macro_range_info), K(data_version));
@@ -795,14 +795,14 @@ int ObStandbyRestoreHelper::init_for_macro_block_copy(
     macro_block_ctx->copy_table_key_ = copy_table_key;
     if (OB_FAIL(arg.copy_macro_range_info_.assign(macro_range_info))) {
       LOG_WARN("failed to assign macro range info", K(ret), K(macro_range_info));
-    } else if (OB_FAIL(storage::ObStorageGrpcClient::init_macro_block_stream(src_, RPC_TIMEOUT_US,
+    } else if (OB_FAIL(storage::ObStorageGrpcClient::init_macro_block_stream(src_, RPC_TIMEOUT_US, 
                                                                         arg, ctx_allocator_, *macro_block_ctx))) {
       LOG_WARN("failed to init macro block stream", K(ret), K(arg), K_(src));
     } else if (OB_FAIL(macro_block_ctx->data_buffer_.ensure_space(common::OB_DEFAULT_MACRO_BLOCK_SIZE))) {
-      LOG_WARN("failed to ensure space for macro block data buffer", K(ret),
+      LOG_WARN("failed to ensure space for macro block data buffer", K(ret), 
                   "buffer_size", common::OB_DEFAULT_MACRO_BLOCK_SIZE);
     }
-
+    
     if (OB_FAIL(ret)) {
       if (OB_NOT_NULL(macro_block_ctx)) {
         macro_block_ctx->reset();
@@ -821,7 +821,7 @@ int ObStandbyRestoreHelper::fetch_next_macro_block(storage::ObICopyMacroBlockRea
 {
   int ret = OB_SUCCESS;
   read_data.reset();
-
+  
   if (!is_valid()) {
     ret = OB_NOT_INIT;
     LOG_WARN("standby restore helper not init", K(ret), KPC(this));
@@ -854,7 +854,7 @@ int ObStandbyRestoreHelper::fetch_next_macro_block(storage::ObICopyMacroBlockRea
       blocksstable::MacroBlockId macro_id;
       int64_t data_checksum = 0;
       int64_t pos = 0;
-
+      
       if (OB_FAIL(macro_meta_row.init(OB_MAX_ROWKEY_COLUMN_NUMBER + 1))) {
         LOG_WARN("failed to init macro meta row", K(ret));
       } else if (OB_FAIL(macro_meta_row.deserialize(data_reader.data(), header.occupy_size_, pos))) {
@@ -866,7 +866,7 @@ int ObStandbyRestoreHelper::fetch_next_macro_block(storage::ObICopyMacroBlockRea
         LOG_WARN("macro block reuse mgr is NULL", K(ret), KP(macro_block_ctx->macro_block_reuse_mgr_));
       } else if (OB_FAIL(macro_block_ctx->macro_block_reuse_mgr_->get_macro_block_reuse_info(
           macro_block_ctx->copy_table_key_, macro_meta.get_logic_id(), macro_id, data_checksum))) {
-        LOG_WARN("failed to get macro block reuse info",
+        LOG_WARN("failed to get macro block reuse info", 
                     K(ret), K(macro_block_ctx->copy_table_key_), K(macro_meta.get_logic_id()));
       } else if (macro_meta.get_meta_val().data_checksum_ != data_checksum) {
         ret = OB_CHECKSUM_ERROR;
@@ -874,7 +874,7 @@ int ObStandbyRestoreHelper::fetch_next_macro_block(storage::ObICopyMacroBlockRea
       } else {
         macro_meta.val_.macro_id_ = macro_id;
       }
-
+      
       if (OB_SUCC(ret)) {
         if (OB_FAIL(read_data.set_macro_meta(macro_meta, header.is_reuse_macro_block_))) {
           LOG_WARN("failed to set macro meta", K(ret), K(macro_meta), K(header.is_reuse_macro_block_));
@@ -893,7 +893,7 @@ int ObStandbyRestoreHelper::fetch_macro_block_header_(
     obrpc::ObCopyMacroBlockHeader &header)
 {
   int ret = OB_SUCCESS;
-
+  
   if (OB_ISNULL(macro_block_ctx) || !macro_block_ctx->macro_block_reader_) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), KP(macro_block_ctx));
@@ -910,7 +910,7 @@ int ObStandbyRestoreHelper::fetch_macro_block_header_(
       LOG_WARN("failed to deserialize ObCopyMacroBlockHeader", K(ret));
     }
   }
-
+  
   return ret;
 }
 
@@ -920,7 +920,7 @@ int ObStandbyRestoreHelper::fetch_macro_block_data_(
     blocksstable::ObBufferReader &data_reader)
 {
   int ret = OB_SUCCESS;
-
+  
   if (OB_ISNULL(macro_block_ctx) || !macro_block_ctx->macro_block_reader_) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), KP(macro_block_ctx));
@@ -928,7 +928,7 @@ int ObStandbyRestoreHelper::fetch_macro_block_data_(
     int64_t occupy_size = header.occupy_size_;
     if (occupy_size > macro_block_ctx->data_buffer_.capacity()) {
       ret = OB_SIZE_OVERFLOW;
-      LOG_WARN("occupy size exceeds buffer capacity", K(ret),
+      LOG_WARN("occupy size exceeds buffer capacity", K(ret), 
                K(occupy_size), "buffer_capacity", macro_block_ctx->data_buffer_.capacity());
     } else {
       storageservice::FetchMacroBlockRes response;
@@ -953,7 +953,7 @@ int ObStandbyRestoreHelper::fetch_macro_block_data_(
       }
     }
   }
-
+  
   return ret;
 }
 

@@ -146,7 +146,7 @@ public:
       const RequestType &proto_req,
       ObGrpcAsyncCallback<ResponseType> *cb,
       const int64_t timeout);
-
+  
   template<typename RequestType, typename ResponseType>
   int async_fetch_log_grpc(
       const uint64_t tenant_id,
@@ -154,7 +154,7 @@ public:
       const RequestType &proto_req,
       ObGrpcAsyncCallback<ResponseType> *cb,
       const int64_t timeout);
-
+  
   template<typename RequestType, typename ResponseType>
   int async_fetch_raw_log_grpc(
       const uint64_t tenant_id,
@@ -194,19 +194,19 @@ private:
   const ObLogFetcherConfig  *cfg_;
   char external_info_val_[OB_MAX_CONFIG_VALUE_LEN];
   common::ObCompressorType compressor_type_;
-
+  
   // gRPC client manager for async streaming
   // Use map to cache clients for different server addresses
   // Note: logservice namespace is from proto package (global namespace), not oceanbase::logservice
 public:
   typedef obgrpc::ObGrpcClient<::logservice::LogService> LogGrpcClient;
 private:
-  typedef common::hash::ObHashMap<common::ObAddr, LogGrpcClient*,
-      common::hash::NoPthreadDefendMode, common::hash::hash_func<common::ObAddr>,
+  typedef common::hash::ObHashMap<common::ObAddr, LogGrpcClient*, 
+      common::hash::NoPthreadDefendMode, common::hash::hash_func<common::ObAddr>, 
       common::hash::equal_to<common::ObAddr>> GrpcClientMap;
   GrpcClientMap grpc_client_map_;
   common::SpinRWLock grpc_client_map_lock_;  // Protect grpc_client_map_
-
+  
   // Get or create gRPC client for a server address
   int get_or_create_grpc_client_(const common::ObAddr &svr, int64_t timeout, LogGrpcClient *&grpc_client);
 

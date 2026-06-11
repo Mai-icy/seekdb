@@ -497,7 +497,7 @@ int ObTabletDirectLoadMgrHandle::set_obj(ObBaseTabletDirectLoadMgr *mgr)
   return ret;
 }
 
-ObBaseTabletDirectLoadMgr* ObTabletDirectLoadMgrHandle::get_base_obj()
+ObBaseTabletDirectLoadMgr* ObTabletDirectLoadMgrHandle::get_base_obj() 
 {
   return tablet_mgr_;
 }
@@ -877,3 +877,4 @@ int ObDDLTableSchema::assign(const ObDDLTableSchema &other)
   }
   return ret;
 }
+

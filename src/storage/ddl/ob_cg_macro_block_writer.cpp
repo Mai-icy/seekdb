@@ -69,7 +69,7 @@ int ObCgMacroBlockWriter::init(
   } else if (is_incremental_direct_load(param.direct_load_type_)) { // 增量
     const ObWriteTabletParam &tablet_param =
       table_key.tablet_id_ != param.tablet_id_ ? param.lob_meta_tablet_param_ : param.tablet_param_;
-    const int64_t parallel_idx = ObDDLUtil::get_parallel_idx(start_sequence);
+    const int64_t parallel_idx = ObDDLUtil::get_parallel_idx(start_sequence);  
     const ObTxSEQ seq_no = ObTxSEQ::cast_from_int(param.tx_info_.seq_no_);
 
     share::SCN mock_start_scn;
@@ -88,7 +88,7 @@ int ObCgMacroBlockWriter::init(
     if (OB_FAIL(pre_warm_param.init(param.ls_id_, table_key.tablet_id_))) {
       LOG_WARN("fail to init pre warm param", KR(ret), K(param.ls_id_), K(table_key.tablet_id_));
     } else if (OB_FAIL(data_desc_.init(true/*is ddl*/,
-                                       *tablet_param.storage_schema_,
+                                       *tablet_param.storage_schema_,  
                                        param.ls_id_,
                                        table_key.get_tablet_id(),
                                        compaction::ObMergeType::MINOR_MERGE,
@@ -200,11 +200,11 @@ int ObCgMacroBlockWriter::init(
 
     macro_seq_param.seq_type_ = ObMacroSeqParam::SEQ_TYPE_INC;
     macro_seq_param.start_ = start_sequence.macro_data_seq_;
-
+    
     if (OB_FAIL(pre_warm_param.init(ls_id, table_key.tablet_id_))) {
       LOG_WARN("fail to initialize pre warm param", K(ret), K(ls_id), K(table_key.tablet_id_));
     } else if (OB_FAIL(data_desc_.init(true/*is ddl*/,
-                                       *tablet_param.storage_schema_,
+                                       *tablet_param.storage_schema_,  
                                        ls_id,
                                        table_key.get_tablet_id(),
                                        compaction::ObMergeType::MAJOR_MERGE,
@@ -346,3 +346,4 @@ void ObCgMacroBlockWriter::reset()
   OB_DELETE(ObIMacroBlockFlushCallback, ObMemAttr(MTL_ID(), "ddl_redo_cb"), ddl_redo_callback_);
   macro_block_writer_.reset();
 }
+

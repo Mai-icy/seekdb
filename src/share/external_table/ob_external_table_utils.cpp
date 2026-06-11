@@ -1177,10 +1177,10 @@ bool ObExternalTableUtils::is_skipped_insert_column(const schema::ObColumnSchema
   return is_skip;
 }
 
-int ObExternalTableUtils::get_external_file_location(const ObTableSchema &table_schema,
+int ObExternalTableUtils::get_external_file_location(const ObTableSchema &table_schema, 
                                                      ObSchemaGetterGuard &schema_guard,
                                                      ObIAllocator &allocator,
-                                                     ObString &file_location)
+                                                     ObString &file_location) 
 {
   int ret = OB_SUCCESS;
   const uint64_t tenant_id = table_schema.get_tenant_id();
@@ -1198,7 +1198,7 @@ int ObExternalTableUtils::get_external_file_location(const ObTableSchema &table_
       OZ (full_path.append(location_schema->get_location_url_str()));
       if (OB_SUCC(ret) && full_path.length() > 0
           && *(full_path.ptr() + full_path.length() - 1) != '/'
-          && !sub_path.empty()
+          && !sub_path.empty() 
           && sub_path[0] != '/') {
         OZ (full_path.append("/"));
       }
@@ -1213,9 +1213,9 @@ int ObExternalTableUtils::get_external_file_location(const ObTableSchema &table_
   return ret;
 }
 
-int ObExternalTableUtils::get_external_file_location_access_info(const ObTableSchema &table_schema,
+int ObExternalTableUtils::get_external_file_location_access_info(const ObTableSchema &table_schema, 
                                                                  ObSchemaGetterGuard &schema_guard,
-                                                                 ObString &access_info)
+                                                                 ObString &access_info) 
 {
   int ret = OB_SUCCESS;
   const uint64_t tenant_id = table_schema.get_tenant_id();
@@ -1260,7 +1260,7 @@ int ObExternalTableUtils::remove_external_file_list(const uint64_t tenant_id,
       ObSqlString full_path;
       full_path.append(location);
       if (!is_del_all) {
-        OZ (collect_external_file_list(nullptr, tenant_id, -1, location, access_info,
+        OZ (collect_external_file_list(nullptr, tenant_id, -1, location, access_info, 
                                        pattern, "", false, regexp_vars, allocator, full_path, file_urls, file_sizes));
       }
       if (OB_SUCC(ret)) {

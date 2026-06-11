@@ -39,7 +39,7 @@ class ObSNDDLMergeHelperV2;
 class ObIDDLMergeHelper
 {
 public:
-  static int get_merge_helper(ObIAllocator &allocator,
+  static int get_merge_helper(ObIAllocator &allocator, 
                               const ObDirectLoadType direct_load_type,
                               ObIDDLMergeHelper *&helper);
   static int get_rec_scn_from_ddl_kvs(ObDDLTabletMergeDagParamV2 &merge_param);
@@ -69,7 +69,7 @@ public:
                              ObDDLTabletMergeDagParamV2 &merge_param,
                              const int64_t cg_idx,
                              const int64_t start_slice,
-                             const int64_t end_slice)
+                             const int64_t end_slice) 
   { return OB_NOT_SUPPORTED; }
   virtual int assemble_sstable(ObDDLTabletMergeDagParamV2 &param)
   { return OB_NOT_SUPPORTED; }
@@ -79,14 +79,14 @@ public:
                                 const int64_t cg_idx,
                                 ObTabletDDLParam &ddl_param);
   virtual int prepare_ddl_param(const ObDDLTabletMergeDagParamV2 &merge_param,
-                                const int64_t cg_idx,
+                                const int64_t cg_idx, 
                                 const int64_t start_slice_idx,
                                 const int64_t end_slice_idx,
                                 ObTabletDDLParam &ddl_param);
   virtual int get_rec_scn(ObDDLTabletMergeDagParamV2 &merge_param)
   { return OB_NOT_SUPPORTED; }
 protected:
-  virtual bool is_supported_direct_load_type(const ObDirectLoadType direct_load_type)
+  virtual bool is_supported_direct_load_type(const ObDirectLoadType direct_load_type) 
   { return OB_NOT_SUPPORTED; }
 public:
     TO_STRING_KV(KP(this));
@@ -134,7 +134,7 @@ public:
                      ObDDLTabletMergeDagParamV2 &merge_param,
                      const int64_t cg_idx,
                      const int64_t start_slice,
-                     const int64_t end_slice);
+                     const int64_t end_slice); 
   int assemble_sstable(ObDDLTabletMergeDagParamV2 &param) override;
   int get_rec_scn(ObDDLTabletMergeDagParamV2 &merge_param) override;
 public:

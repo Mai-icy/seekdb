@@ -323,7 +323,7 @@ int ObTabletDDLKvMgr::calc_idem_block_checksum(const ObDDLMacroBlockType block_t
   return ObDDLMacroIdemChecker::calc_block_checksum(block_type, direct_load_type, buf, buf_size, checksum);
 }
 /*
-* check macro block already exist in ddl kv
+* check macro block already exist in ddl kv 
 * parameters check logic are set in IdemChker
 */
 int ObTabletDDLKvMgr::check_idem_block_exist(const ObDDLMacroBlockType block_type,
@@ -966,20 +966,20 @@ bool ObDDLMacroIdemChecker::is_inited()
   return checksum_map_.created();
 }
 
-/*
+/* 
  * only idem type need check idempotence
  * but if it's empty block type,skip it
 */
 bool ObDDLMacroIdemChecker::need_check_block_checksum(const ObDDLMacroBlockType block_type, const ObDirectLoadType direct_load_type)
 {
-  return is_idem_type(direct_load_type) &&
+  return is_idem_type(direct_load_type) && 
          ObDDLMacroBlockType::DDL_MB_SS_EMPTY_DATA_TYPE != block_type;
 }
 
-int ObDDLMacroIdemChecker::calc_block_checksum(const ObDDLMacroBlockType block_type,
+int ObDDLMacroIdemChecker::calc_block_checksum(const ObDDLMacroBlockType block_type, 
                                                const ObDirectLoadType direct_load_type,
-                                               const char *buf,
-                                               const int64_t buf_size,
+                                               const char *buf, 
+                                               const int64_t buf_size, 
                                                int64_t &checksum)
 {
   int ret = OB_SUCCESS;
@@ -1005,7 +1005,7 @@ int ObDDLMacroIdemChecker::calc_block_checksum(const ObDDLMacroBlockType block_t
 }
 
 
-int ObDDLMacroIdemChecker::check_block_exist(const ObDDLMacroBlockType block_type,
+int ObDDLMacroIdemChecker::check_block_exist(const ObDDLMacroBlockType block_type, 
                                              const ObDirectLoadType direct_load_type,
                                              const blocksstable::MacroBlockId &block_id,
                                              const blocksstable::ObLogicMacroBlockId &logic_id,
@@ -1042,7 +1042,7 @@ int ObDDLMacroIdemChecker::check_block_exist(const ObDDLMacroBlockType block_typ
   return ret;
 }
 
-int ObDDLMacroIdemChecker::set_block_checksum(const ObDDLMacroBlockType block_type,
+int ObDDLMacroIdemChecker::set_block_checksum(const ObDDLMacroBlockType block_type, 
                                               const ObDirectLoadType direct_load_type,
                                               const blocksstable::MacroBlockId &block_id,
                                               const blocksstable::ObLogicMacroBlockId &logic_id,

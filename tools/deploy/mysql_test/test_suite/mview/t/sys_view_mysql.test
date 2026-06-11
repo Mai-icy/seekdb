@@ -28,7 +28,7 @@ select * from information_schema.partitions where table_name='mv' order by 1,2,3
 
 select * from oceanbase.DBA_TAB_SUBPARTITIONS where table_name='mv' order by 1,2,3,4,5,6,7;
 select * from oceanbase.DBA_TAB_PARTITIONS where table_name='mv' order by 1,2,3,4,5,6,7;
-select * from oceanbase.DBA_PART_INDEXES where table_name='mv' order by 1,2,3,4,5,6,7;
+select * from oceanbase.DBA_PART_INDEXES where table_name='mv' order by 1,2,3,4,5,6,7; 
 
 connect (obsys,$OBMYSQL_MS0,root@sys,,oceanbase,$OBMYSQL_PORT);
 connection obsys;

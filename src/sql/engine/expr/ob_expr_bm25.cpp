@@ -37,7 +37,7 @@ int ObExprBM25::calc_result_typeN(
   UNUSED(type_ctx);
   const bool use_new_version = (GET_MIN_CLUSTER_VERSION() >= CLUSTER_VERSION_1_2_0_0);
   int64_t expected_param_num = use_new_version ? 6 : 5;
-
+  
   if (OB_UNLIKELY(param_num != expected_param_num)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("BM25 expr should have correct parameters", K(ret), K(param_num), K(expected_param_num), K(use_new_version));
@@ -73,7 +73,7 @@ int ObExprBM25::cg_expr(ObExprCGCtx &expr_cg_ctx, const ObRawExpr &raw_expr, ObE
 
 int ObExprBM25::eval_bm25_relevance_expr(const ObExpr &expr, ObEvalCtx &ctx, ObDatum &res_datum)
 {
-  int ret = OB_SUCCESS;
+  int ret = OB_SUCCESS;  
   if (!use_new_version(expr)) {
     ObDatum *token_doc_cnt_datum = nullptr;
     ObDatum *total_doc_cnt_datum = nullptr;
@@ -151,7 +151,7 @@ int ObExprBM25::eval_bm25_relevance_expr(const ObExpr &expr, ObEvalCtx &ctx, ObD
 
 int ObExprBM25::eval_batch_bm25_relevance_expr(const ObExpr &expr, ObEvalCtx &ctx, const ObBitVector &skip, const int64_t size)
 {
-  int ret = OB_SUCCESS;
+  int ret = OB_SUCCESS;  
   if (!use_new_version(expr)) {
     ObDatumVector token_doc_cnt_datum;
     ObDatumVector total_doc_cnt_datum;

@@ -37,7 +37,7 @@ class ObForkTableTask : public ObDDLTask
 public:
   ObForkTableTask();
   virtual ~ObForkTableTask();
-
+  
   int init(
       const uint64_t tenant_id,
       const int64_t task_id,
@@ -48,9 +48,9 @@ public:
       const int64_t snapshot_version,
       const obrpc::ObForkTableArg &fork_table_arg,
       const int64_t parent_task_id = 0);
-
+  
   int init(const ObDDLTaskRecord &task_record);
-
+  
   virtual int process() override;
   virtual bool is_valid() const override;
   virtual int serialize_params_to_message(char *buf, const int64_t buf_size, int64_t &pos) const override;
@@ -62,19 +62,19 @@ public:
 private:
   int wait_freeze_end(const ObDDLTaskStatus next_task_status);
   int build_data(const ObDDLTaskStatus next_task_status);
-  int wait_data_complement(const ObDDLTaskStatus next_task_status);
+  int wait_data_complement(const ObDDLTaskStatus next_task_status);  
   int fail();
   int succ();
   int finish();
   virtual int cleanup_impl() override;
-
-  int deep_copy_fork_table_arg(const obrpc::ObForkTableArg &arg);
+  
+  int deep_copy_fork_table_arg(const obrpc::ObForkTableArg &arg); 
   int get_schema_guard(share::schema::ObSchemaGetterGuard &schema_guard);
   int build_fork_info(
       const ObSEArray<ObTabletID, 4> &src_tablet_ids,
       const ObSEArray<ObTabletID, 4> &dst_tablet_ids,
       storage::ObTableForkInfo &fork_info);
-
+  
   ObRootService *root_service_;
   obrpc::ObForkTableArg fork_table_arg_;
   bool is_data_complement_;
@@ -86,3 +86,6 @@ private:
 }  // namespace oceanbase
 
 #endif /* OCEANBASE_ROOTSERVER_OB_FORK_TABLE_TASK_H */
+
+
+

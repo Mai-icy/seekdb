@@ -414,7 +414,7 @@ int ObAllVirtualSqlPlan::extract_tenant_and_plan_id(const common::ObIArray<commo
     } else if (OB_ISNULL(start_key_obj_ptr) || OB_ISNULL(end_key_obj_ptr)) {
       ret = OB_INVALID_ARGUMENT;
       SERVER_LOG(WARN, "invalid arguments", K(ret));
-    } else if (start_key_obj_ptr[KEY_PLAN_ID_IDX].is_min_value() &&
+    } else if (start_key_obj_ptr[KEY_PLAN_ID_IDX].is_min_value() && 
                end_key_obj_ptr[KEY_PLAN_ID_IDX].is_max_value()) {
       is_always_true = true;
       if (OB_FAIL(dump_tenant_plans(tenant_id))) {
@@ -429,7 +429,7 @@ int ObAllVirtualSqlPlan::extract_tenant_and_plan_id(const common::ObIArray<commo
       ret = OB_NOT_IMPLEMENT;
       SERVER_LOG(WARN, "plan id only supports exact value", K(ret));
     } else if (start_key_obj_ptr[KEY_PLAN_ID_IDX] == end_key_obj_ptr[KEY_PLAN_ID_IDX]) {
-      if (ObIntType != start_key_obj_ptr[KEY_PLAN_ID_IDX].get_type() ||
+      if (ObIntType != start_key_obj_ptr[KEY_PLAN_ID_IDX].get_type() || 
           (start_key_obj_ptr[KEY_PLAN_ID_IDX].get_type() != end_key_obj_ptr[KEY_PLAN_ID_IDX].get_type())) {
         ret = OB_ERR_UNEXPECTED;
         SERVER_LOG(WARN, "expect plan id type to be int",

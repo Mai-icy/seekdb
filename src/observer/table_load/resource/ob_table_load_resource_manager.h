@@ -84,11 +84,11 @@ private:
 		ObDirectLoadResourceApplyArg apply_arg_;
 		uint64_t miss_counts_;
 	};
-	class ObInitResourceTask : public common::ObTimerTask
+	class ObInitResourceTask : public common::ObTimerTask 
 	{
 	public:
-		ObInitResourceTask(ObTableLoadResourceManager &manager)
-			: manager_(manager)
+		ObInitResourceTask(ObTableLoadResourceManager &manager) 
+			: manager_(manager) 
 		{
 		}
 		virtual ~ObInitResourceTask() = default;
@@ -100,7 +100,7 @@ private:
 	{
   public:
     ObRefreshAndCheckTask(ObTableLoadResourceManager &manager) 
-			: manager_(manager)
+			: manager_(manager) 
 		{
 		}
     virtual ~ObRefreshAndCheckTask() = default;

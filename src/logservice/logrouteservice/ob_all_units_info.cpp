@@ -71,3 +71,4 @@ int ObUnitsRecordInfo::add(ObUnitsRecord &record)
 
 } // namespace logservice
 } // namespace oceanbase
+

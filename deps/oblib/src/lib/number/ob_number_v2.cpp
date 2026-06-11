@@ -1704,8 +1704,8 @@ int ObNumber::round_scale_v3_(const int64_t scale, const bool using_floating_sca
         // e.g:
         //   select cast(0.00012345678901234567890123456789012345678901111 as varchar(100)) from dual;
         //   Oracle result: .000123456789012345678901234567890123457
-        // oracle in to_char calculation, numbers with length greater than 40 will be converted
-        // to scientific notation, prefix 0 will be removed. OB temporarily does not support
+        // oracle in to_char calculation, numbers with length greater than 40 will be converted 
+        // to scientific notation, prefix 0 will be removed. OB temporarily does not support 
         // Oracle behavior (scientific notation and precision linkage)
         // Therefore, when prefix 0 appears in number to char conversion (decimal_prefix_zero_count > 0), keep consistent with before modification
         valid_precision = OB_MAX_NUMBER_PRECISION_INNER - is_negative()

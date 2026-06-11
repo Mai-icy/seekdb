@@ -184,7 +184,7 @@ int ObDDLIndependentDag::schedule_tablet_merge_task()
         LOG_WARN("failed to convert for tx", K(ret));
       } else if (OB_FAIL(get_tablet_context(tablet_id, tablet_context))) {
         LOG_WARN("get ddl tablet context failed", K(ret), K(tablet_id));
-      }
+      } 
       /* create merge task for data tablet*/
       ObDDLTabletMergeDagParamV2 merge_param;
       ObDDLMergePrepareTask *ddl_merge_task = nullptr;
@@ -192,7 +192,7 @@ int ObDDLIndependentDag::schedule_tablet_merge_task()
       } else if (OB_FAIL(merge_param.init(true  /*for major*/,
                                           false /* for lob*/,
                                           false /* for replay*/,
-                                          mock_start_scn,
+                                          mock_start_scn, 
                                           direct_load_type_,
                                           ddl_task_param_,
                                           tablet_context))) {
@@ -242,7 +242,7 @@ int ObDDLIndependentDag::add_scan_chunk(ObDDLChunk &ddl_chunk, const int64_t tim
     bool is_new_slice = false;
     const bool need_end_chunk = ddl_chunk.is_slice_end_ && (nullptr == ddl_chunk.chunk_data_ ||
                                                             !ddl_chunk.chunk_data_->is_end_chunk());
-
+    
     if (OB_UNLIKELY(nullptr != ddl_chunk.chunk_data_ &&
                     !(ddl_chunk.chunk_data_->is_cg_row_tmp_files_type() || ddl_chunk.chunk_data_->is_end_chunk()))) {
       ret = OB_ERR_UNEXPECTED;
@@ -508,9 +508,9 @@ int ObDDLIndependentDag::check_is_first_ddl_kv(ObTabletDDLKvMgr &ddl_kv_mgr,
   query_param.seq_no_ = transaction::ObTxSEQ();
 
   is_first = false;
-
-  if (OB_FAIL(ddl_kv_mgr.get_ddl_kvs(false/*frozen_only*/,
-                                    ddl_kv_handles,
+  
+  if (OB_FAIL(ddl_kv_mgr.get_ddl_kvs(false/*frozen_only*/, 
+                                    ddl_kv_handles, 
                                     query_param))) {
     LOG_WARN("failed to get ddl kvs", K(ret));
   } else {
@@ -518,7 +518,7 @@ int ObDDLIndependentDag::check_is_first_ddl_kv(ObTabletDDLKvMgr &ddl_kv_mgr,
       is_first = true;
     } else {
       ObDDLKV *ddl_kv = ddl_kv_handles.at(0).get_obj();
-      if (ddl_kv->get_trans_id() == tx_info_.trans_id_ &&
+      if (ddl_kv->get_trans_id() == tx_info_.trans_id_ && 
           ddl_kv->get_seq_no() == transaction::ObTxSEQ::cast_from_int(tx_info_.seq_no_)) {
         is_first = true;
       }
@@ -572,7 +572,7 @@ int ObDDLIndependentDag::inc_generate_write_macro_block_tasks(ObIArray<ObITask *
   if (OB_SUCC(ret) && (wait_dump)) {
     ObArray<ObITask*> data_merge_tasks;
     ObArray<ObITask*> lob_merge_tasks;
-
+ 
     // merge_tasks
     if (OB_FAIL(ret)) {
     } else if (OB_FAIL(init_merge_tasks(false/*for_major*/, data_merge_tasks, lob_merge_tasks))) {
@@ -928,14 +928,14 @@ int ObDDLIndependentDag::init_tablet_merge_task(
     LOG_WARN("failed to convert for tx", K(ret));
   } else if (OB_FAIL(get_tablet_context(tablet_id, tablet_context))) {
     LOG_WARN("get ddl tablet context failed", K(ret), K(tablet_id));
-  }
-
+  } 
+  
   if (OB_FAIL(ret)) {
   } else {
     if (OB_FAIL(merge_param.init(for_major  /*for major*/,
       false /* for lob*/,
       false /* for replay*/,
-      mock_start_scn,
+      mock_start_scn, 
       direct_load_type_,
       ddl_task_param_,
       tablet_context,
@@ -960,7 +960,7 @@ int ObDDLIndependentDag::init_tablet_merge_task(
     if (OB_FAIL(lob_merge_param.init(for_major  /*for major*/,
                                       true /* for lob*/,
                                       false /* for replay*/,
-                                      mock_start_scn,
+                                      mock_start_scn, 
                                       direct_load_type_,
                                       ddl_task_param_,
                                       tablet_context,

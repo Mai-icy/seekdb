@@ -54,7 +54,7 @@ private:
   void destroy();
   template <typename IncType, typename ...Args>
   int do_replay_inc_start(const common::ObTabletID &tablet_id, const SCN &scn, Args&&... args);
-  int do_replay_inc_minor_commit(const common::ObTabletID &tablet_id, const SCN &scn);
+  int do_replay_inc_minor_commit(const common::ObTabletID &tablet_id, const SCN &scn);  
 private:
   static const int64_t TOTAL_LIMIT = 10 * 1024 * 1024 * 1024LL;
   static const int64_t HOLD_LIMIT = 10 * 1024 * 1024 * 1024LL;

@@ -691,7 +691,7 @@ void ObCopyMacroBlockHandle::reset()
 
 bool ObCopyMacroBlockHandle::is_valid() const
 {
-  return (is_reuse_macro_block_ || read_handle_.is_valid())
+  return (is_reuse_macro_block_ || read_handle_.is_valid()) 
        && OB_NOT_NULL(macro_meta_)
        && macro_meta_->is_valid();
 }
@@ -705,7 +705,7 @@ int ObCopyMacroBlockHandle::set_macro_meta(
     LOG_WARN("set macro meta get invalid argument", K(ret), K(macro_meta));
   } else if (OB_FAIL(macro_meta.deep_copy(macro_meta_, allocator_))) {
     LOG_WARN("failed to deep copy macro meta", K(ret), K(macro_meta));
-  }
+  } 
 
   return ret;
 }
@@ -883,7 +883,7 @@ int ObCopyMacroBlockObProducer::get_next_macro_block(
       } else if (OB_FAIL(GET_MIN_DATA_VERSION(MTL_ID(), data_version))) {
         LOG_WARN("fail to get min data version", K(ret), K(MTL_ID()), K(data_version));
       } else if (OB_FAIL(macro_meta_row.init(copy_macro_block_handle_[handle_idx_].macro_meta_->get_meta_val().rowkey_count_ + 1))) {
-        // meta row's cell: all row keys (key) + value column
+        // meta row's cell: all row keys (key) + value column 
         LOG_WARN("failed to init macro meta row", K(ret), KPC(copy_macro_block_handle_[handle_idx_].macro_meta_));
       } else if (OB_FAIL(copy_macro_block_handle_[handle_idx_].macro_meta_->build_row(macro_meta_row, meta_row_allocator, data_version))) {
         LOG_WARN("failed to build macro row", K(ret), KPC(copy_macro_block_handle_[handle_idx_].macro_meta_), K(data_version));
@@ -957,7 +957,7 @@ int ObCopyMacroBlockObProducer::prefetch_()
       copy_macro_block_handle_[handle_idx_].is_reuse_macro_block_ = true;
       // if macro block is local, reset macro meta id to default
       // DEFAULT_IDX_ROW_MACRO_ID is also local id
-      if (macro_meta.get_macro_id().is_local_id()) {
+      if (macro_meta.get_macro_id().is_local_id()) { 
         copy_macro_block_handle_[handle_idx_].macro_meta_->val_.macro_id_ = ObIndexBlockRowHeader::DEFAULT_IDX_ROW_MACRO_ID;
       }
     } else {
@@ -1934,7 +1934,7 @@ int ObCopySSTableInfoObProducer::get_next_sstable_info(
       } else if (!need_copy_sstable) {
        //do nothing
         LOG_INFO("no need copy sstable", KPC(sstable), K(tablet_sstable_info_));
-      } else if (OB_FAIL(tablet_handle_.get_obj()->build_migration_sstable_param(table->get_key(),
+      } else if (OB_FAIL(tablet_handle_.get_obj()->build_migration_sstable_param(table->get_key(), 
                                                                         sstable_info.param_, false/*is_fork_table*/))) {
         LOG_WARN("failed to build migration sstable param", K(ret), K(*table));
       } else {

@@ -207,7 +207,7 @@ enum OB_PRIV_SHIFT
    OB_PRIV_DROP_AI_MODEL | OB_PRIV_ACCESS_AI_MODEL)
 #define OB_PRIV_OBJECT_ACC                                        \
    (OB_PRIV_READ | OB_PRIV_WRITE)
-
+ 
 enum OB_PRIV_OTHERS_TYPE
 {
   OB_PRIV_OTHERS_EXECUTE = (1LL << 0),

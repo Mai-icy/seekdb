@@ -105,7 +105,7 @@ private:
 struct ObDDLTabletContext final
 {
 public:
-  struct MergeCtx
+  struct MergeCtx 
   {
   public:
     MergeCtx() : ddl_kv_handles_(), mutex_(), fifo_(MTL_ID()), arena_(ObMemAttr(MTL_ID(), "ddl_tblt_prm")), slice_cg_sstables_(), merge_helper_(nullptr), is_inited_(false)  {}
@@ -184,3 +184,4 @@ public:
 }  // end namespace storage
 }  // end namespace oceanbase
 #endif//_OCEANBASE_STORAGE_DDL_OB_DDL_TABLET_CONTEXT_H_
+

@@ -93,3 +93,4 @@ int ObForkTableResolver::resolve(const ParseNode &parse_tree)
 
 }
 }
+

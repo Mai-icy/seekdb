@@ -60,7 +60,7 @@ public:
   // spiv
   static const char * SPIV_DIM_DOCID_VALUE_TABLE_NAME_SUFFIX;
 public:
-
+  
   static int get_vec_rowkey_col(
       const ObTableSchema &data_schema,
       const ObColumnSchemaV2 *&rowkey_col);
