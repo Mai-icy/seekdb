@@ -363,8 +363,6 @@ bool ObKVCacheStore::wash()
 
   // Record time cost of every step of wash
   int64_t compute_wash_size_time = 0;
-  int64_t refresh_score_time = 0;
-  // int64_t wash_sort_time = 0;
   int64_t wash_time = 0;
   int64_t reclaim_time = 0;
   int64_t start_time = 0;
@@ -384,19 +382,23 @@ bool ObKVCacheStore::wash()
   compute_wash_size_time = current_time - start_time;
   start_time = current_time;
 
-  // refresh score of every mb_handle
-  // ignore
-  refresh_score();
-  current_time = ObTimeUtility::current_time();
-  refresh_score_time = current_time - start_time;
-  start_time = current_time;
+  // compute base_mb_score_ (O(1) global stat update, was in refresh_score())
+  const int64_t mb_cnt = ATOMIC_LOAD(&global_status_.lru_mb_cnt_) + ATOMIC_LOAD(&global_status_.lfu_mb_cnt_);
+  const int64_t total_hit_cnt = global_status_.total_hit_cnt_.value();
+  double avg_hit = 0;
+  if (mb_cnt > 0) {
+    avg_hit = double(total_hit_cnt - global_status_.last_hit_cnt_) / (double)mb_cnt;
+  }
+  global_status_.last_hit_cnt_ = total_hit_cnt;
+  global_status_.base_mb_score_ = global_status_.base_mb_score_ * CACHE_SCORE_DECAY_FACTOR + avg_hit;
+
   tmp_washbale_size_info_.reuse();
 
   wash_heap_.mb_cnt_ = 0;
   int64_t heap_size = global_wash_size / block_size_;
   wash_heap_.heap_size_ = std::min(heap_size, WASH_HEAP_SIZE);
 
-  //sort mb_handles to wash
+  // refresh score and sort mb_handles to wash in a single pass
   HazptrHolder hazptr_holder;
   bool protect_success = false;
   for (int64_t i = 0; OB_SUCC(ret) && i < cur_mb_num_; ++i) {
@@ -406,11 +408,16 @@ bool ObKVCacheStore::wash()
     if (OB_FAIL(ret)) {
       COMMON_LOG(WARN, "failed to protect mb_handle");
     } else if (protect_success) {
+      // refresh score inline (merged from refresh_score() to halve hazptr ops)
+      double score = mb_handles_[i].score_ * CACHE_SCORE_DECAY_FACTOR + (double)(mb_handles_[i].recent_get_cnt_);
+      mb_handles_[i].score_ = score;
+      ATOMIC_STORE(&mb_handles_[i].recent_get_cnt_, 0);
+
       enum ObKVMBHandleStatus status = mb_handles_[i].get_status();
       if (FULL == status) {
         bool washed = false;
-        // wash out all blocks with 0 score
-        if (mb_handles_[i].score_ <= WASH_OUT_SCORE_THRESHOLD) {
+        // wash out all blocks with score at or below threshold
+        if (score <= WASH_OUT_SCORE_THRESHOLD) {
           wash_mb(&mb_handles_[i]);
           washed = true;
           if (wash_heap_.heap_size_ > 0) {
@@ -454,12 +461,11 @@ bool ObKVCacheStore::wash()
   COMMON_LOG(INFO,
       "Wash time detail, ",
       K(compute_wash_size_time),
-      K(refresh_score_time),
       K(wash_time),
       K(reclaim_time),
       K(reclaimed_size));
 
-  return true;
+  return reclaimed_size > 0;
 }
 
 int ObKVCacheStore::get_washable_size(const uint64_t tenant_id, int64_t &washable_size)

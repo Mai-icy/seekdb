@@ -690,11 +690,19 @@ int ObKVCacheMap::clean_garbage_node(int64_t &start_pos, const int64_t clean_num
       HazptrHolder hazptr_holder;
       bool protect_success;
       for (int64_t i = clean_start_pos; i < clean_end_pos && OB_SUCC(ret); i++) {
+        // fast path: skip empty buckets without lock acquisition
+        if (NULL == get_bucket_node(i)) {
+          continue;
+        }
         ObBucketWLockGuard guard(bucket_lock_, i);
         if (OB_FAIL(guard.get_ret())) {
           COMMON_LOG(WARN, "Fail to write lock bucket, ", K(ret), K(i));
         } else {
           Node *&bucket_ptr = get_bucket_node(i);
+          // double-check: another thread could have emptied it between check and lock
+          if (NULL == bucket_ptr) {
+            continue;
+          }
           prev = NULL;
           iter = bucket_ptr;
           while (NULL != iter) {
@@ -749,12 +757,20 @@ int ObKVCacheMap::replace_fragment_node(int64_t &start_pos, int64_t &replace_nod
       COMMON_LOG(WARN, "Fail to acquire hazard version", K(ret));
     } else {
       for (int64_t i = replace_start_pos; i < replace_end_pos && OB_SUCC(ret); i++) {
+        // fast path: skip empty buckets without lock acquisition
+        if (NULL == get_bucket_node(i)) {
+          continue;
+        }
         ObBucketWLockGuard guard(bucket_lock_, i);
         if (OB_FAIL(guard.get_ret())) {
           COMMON_LOG(WARN, "Fail to write lock bucket", K(ret), K(i));
         } else {
           const int64_t start = common::ObClockGenerator::getClock();
           Node *&bucket_ptr = get_bucket_node(i);
+          // double-check: another thread could have emptied it between check and lock
+          if (NULL == bucket_ptr) {
+            continue;
+          }
           prev = NULL;
           iter = bucket_ptr;
           int64_t node_count = 0;
