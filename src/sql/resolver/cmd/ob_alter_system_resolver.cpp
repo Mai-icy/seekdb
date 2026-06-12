@@ -149,11 +149,6 @@ int ObAlterSystemResolverUtil::check_compatibility_for_replica_type(const ObRepl
 {
   int ret = OB_SUCCESS;
   if (ObReplicaTypeCheck::is_columnstore_replica(replica_type)) {
-    if (GCTX.is_shared_storage_mode()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("column-store replica not supported in shared-storage mode", KR(ret));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "In shared-storage mode, C-replica is");
-    }
   }
   return ret;
 }
@@ -510,10 +505,7 @@ int ObFreezeResolver::resolve_major_freeze_(ObFreezeStmt *freeze_stmt, ParseNode
     ret = OB_NOT_SUPPORTED;
     LOG_WARN("not support to specify ls to major freeze", K(ret), "ls_id", freeze_stmt->get_ls_id());
   } else if (freeze_stmt->get_tablet_id().is_valid()) { // tablet major freeze
-    if (GCTX.is_shared_storage_mode()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not allowed to schedule tablet major for shared storage mode", KR(ret));
-    } else if (T_TABLET_ID == opt_tenant_list_or_tablet_id->type_) {
+    if (T_TABLET_ID == opt_tenant_list_or_tablet_id->type_) {
       if (OB_UNLIKELY(0 != freeze_stmt->get_tenant_ids().count())) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("tenant ids should be empty for type T_TABLET_ID", K(ret));

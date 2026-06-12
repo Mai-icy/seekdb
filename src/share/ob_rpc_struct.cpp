@@ -6040,107 +6040,6 @@ int ObCallRemoteWriteDDLCommitLogArg::init(const uint64_t tenant_id,
 OB_SERIALIZE_MEMBER(ObCallRemoteWriteDDLCommitLogArg, tenant_id_, ls_id_, table_key_, start_scn_,
                     table_id_, execution_id_, ddl_task_id_);
 
-#ifdef OB_BUILD_SHARED_STORAGE
-ObCallRemoteWriteDDLFinishLogArg::ObCallRemoteWriteDDLFinishLogArg()
-  : tenant_id_(OB_INVALID_TENANT_ID), log_info_()
-{}
-
-int ObCallRemoteWriteDDLFinishLogArg::init(const uint64_t tenant_id, const storage::ObDDLFinishLogInfo &log)
-{
-  int ret = OB_SUCCESS;
-  if (OB_INVALID_TENANT_ID == tenant_id || !log.is_valid()) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret), K(tenant_id), K(log));
-  } else if (OB_FAIL(log_info_.assign(log))) {
-    LOG_WARN("fail to get assign log", K(ret), K(log));
-  } else {
-    tenant_id_ = tenant_id;
-  }
-  return ret;
-}
-
-OB_SERIALIZE_MEMBER(ObCallRemoteWriteDDLFinishLogArg, tenant_id_, log_info_);
-
-OB_SERIALIZE_MEMBER(ObGetSSMacroBlockArg, tenant_id_, macro_id_, offset_, size_);
-OB_DEF_SERIALIZE(ObGetSSMacroBlockResult)
-{
-  int ret = OB_SUCCESS;
-  LST_DO_CODE(OB_UNIS_ENCODE,
-              macro_buf_);
-  return ret;
-}
-
-OB_DEF_DESERIALIZE(ObGetSSMacroBlockResult)
-{
-  int ret = OB_SUCCESS;
-  ObString tmp_str;
-  LST_DO_CODE(OB_UNIS_DECODE,
-        tmp_str);
-  if (OB_FAIL(ob_write_string(allocator_, tmp_str, macro_buf_))) {
-    LOG_WARN("failed to copy string", KR(ret), K(tmp_str));
-  }
-  return ret;
-}
-
-OB_DEF_SERIALIZE_SIZE(ObGetSSMacroBlockResult)
-{
-  int len = 0;
-    LST_DO_CODE(OB_UNIS_ADD_LEN,
-          macro_buf_);
-  return len;
-}
-
-
-OB_SERIALIZE_MEMBER(ObGetSSPhyBlockInfoArg, tenant_id_, phy_block_idx_);
-OB_SERIALIZE_MEMBER(ObGetSSPhyBlockInfoResult, ss_phy_block_info_, ret_);
-
-OB_SERIALIZE_MEMBER(ObSSMicroMetaInfo, reuse_version_, data_dest_, access_time_, length_, is_in_l1_, is_in_ghost_,
-    is_persisted_, is_reorganizing_, ref_cnt_, crc_, micro_key_);
-OB_SERIALIZE_MEMBER(ObGetSSMicroBlockMetaArg, tenant_id_, micro_key_);
-OB_SERIALIZE_MEMBER(ObGetSSMicroBlockMetaResult, micro_meta_info_, ret_);
-
-OB_SERIALIZE_MEMBER(ObGetSSMacroBlockByURIArg, tenant_id_, uri_, offset_, size_);
-OB_DEF_SERIALIZE(ObGetSSMacroBlockByURIResult)
-{
-  int ret = OB_SUCCESS;
-  LST_DO_CODE(OB_UNIS_ENCODE,
-              macro_buf_);
-  return ret;
-}
-
-OB_DEF_DESERIALIZE(ObGetSSMacroBlockByURIResult)
-{
-  int ret = OB_SUCCESS;
-  ObString tmp_str;
-  LST_DO_CODE(OB_UNIS_DECODE,
-        tmp_str);
-  if (OB_FAIL(ob_write_string(allocator_, tmp_str, macro_buf_))) {
-    LOG_WARN("failed to copy string", KR(ret), K(tmp_str));
-  }
-  return ret;
-}
-
-OB_DEF_SERIALIZE_SIZE(ObGetSSMacroBlockByURIResult)
-{
-  int len = 0;
-    LST_DO_CODE(OB_UNIS_ADD_LEN,
-          macro_buf_);
-  return len;
-}
-
-
-OB_SERIALIZE_MEMBER(ObDelSSTabletMetaArg, tenant_id_, macro_id_);
-OB_SERIALIZE_MEMBER(ObEnableSSMicroCacheArg, tenant_id_, is_enabled_);
-OB_SERIALIZE_MEMBER(ObGetSSMicroCacheInfoArg, tenant_id_);
-OB_SERIALIZE_MEMBER(ObGetSSMicroCacheInfoResult, micro_cache_stat_, super_block_, arc_info_);
-OB_SERIALIZE_MEMBER(ObClearSSMicroCacheArg, tenant_id_);
-OB_SERIALIZE_MEMBER(ObDelSSLocalTmpFileArg, tenant_id_, macro_id_);
-OB_SERIALIZE_MEMBER(ObDelSSLocalMajorArg, tenant_id_);
-OB_SERIALIZE_MEMBER(ObCalibrateSSDiskSpaceArg, tenant_id_);
-OB_SERIALIZE_MEMBER(ObDelSSTabletMicroArg, tenant_id_, tablet_id_);
-OB_SERIALIZE_MEMBER(ObSetSSCkptCompressorArg, tenant_id_, block_type_, compressor_type_);
-OB_SERIALIZE_MEMBER(ObSetSSCacheSizeRatioArg, tenant_id_, micro_cache_size_ratio_, macro_cache_size_ratio_);
-#endif
 
 ObCallRemoteWriteDDLIncCommitLogArg::ObCallRemoteWriteDDLIncCommitLogArg()
   : tenant_id_(OB_INVALID_ID), ls_id_(), tablet_id_(), lob_meta_tablet_id_(), tx_desc_(nullptr), need_release_(false)
@@ -6955,26 +6854,6 @@ OB_SERIALIZE_MEMBER(ObDumpServerUsageResult::ObServerInfo, log_disk_capacity_, l
 OB_SERIALIZE_MEMBER(ObDumpServerUsageResult::ObUnitInfo, tenant_id_, log_disk_size_, log_disk_in_use_);
 OB_SERIALIZE_MEMBER(ObDumpServerUsageResult, server_info_, unit_info_);
 
-#ifdef OB_BUILD_SHARED_STORAGE
-OB_SERIALIZE_MEMBER(ObLSSyncHotMicroKeyArg, tenant_id_, ls_id_, leader_addr_, micro_keys_);
-int ObLSSyncHotMicroKeyArg::assign(const ObLSSyncHotMicroKeyArg &other)
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(micro_keys_.assign(other.micro_keys_))) {
-    LOG_WARN("micro_keys_ assign failed", KR(ret));
-  } else {
-    tenant_id_ = other.tenant_id_;
-    ls_id_ = other.ls_id_;
-    leader_addr_ = other.leader_addr_;
-  }
-  return ret;
-}
-
-bool ObLSSyncHotMicroKeyArg::is_valid() const
-{
-  return is_valid_tenant_id(tenant_id_) && (micro_keys_.count() > 0) && (ls_id_ != ObLSID::INVALID_LS_ID) && leader_addr_.is_valid();
-}
-#endif
 
 OB_SERIALIZE_MEMBER(ObFetchStableMemberListArg, tenant_id_, ls_id_);
 

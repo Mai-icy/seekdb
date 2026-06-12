@@ -2202,17 +2202,6 @@ int ObStorageHATabletBuilderUtil::inner_update_tablet_table_store_with_major_(
                       "has_truncate_info", major_sstables_param.has_truncate_info_);
 #endif
 
-#ifdef OB_BUILD_SHARED_STORAGE
-    int64_t start_meta_macro_seq = table_extra_param.start_meta_macro_seq_;
-    if (OB_FAIL(ret)) {
-    } else if (!table_extra_param.is_valid()) {
-    } else if (!table_extra_param.is_leader_restore_) {
-    } else if (OB_FAIL(ls->upload_major_compaction_tablet_meta(tablet_id, param, start_meta_macro_seq))) {
-      LOG_WARN("failed to upload compaction tablet meta", K(ret), K(tablet_id), K(param), K(table_extra_param), K(start_meta_macro_seq));
-    } else {
-      LOG_INFO("succeed to upload major compaction tablet meta", K(tablet_id), K(param), K(table_extra_param), K(start_meta_macro_seq));
-    }
-#endif
 
     if (FAILEDx(ls->update_tablet_table_store(tablet_id, param, tablet_handle))) {
       LOG_WARN("failed to build ha tablet new table store", K(ret), KPC(tablet), K(param));

@@ -20,9 +20,6 @@
 #include "logservice/palf/palf_env.h"
 #include "share/scn.h"
 #include "logservice/ob_log_base_type.h"
-#ifdef OB_BUILD_SHARED_STORAGE
-#include "log/ob_log_iterator_storage.h"
-#endif
 
 #ifndef MOCK_OB_LOG_HANDLER_H_
 #define MOCK_OB_LOG_HANDLER_H_

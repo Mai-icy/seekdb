@@ -1,7 +1,5 @@
 set(ob_admin_tde_files "")
 
-set(ob_admin_shared_storage_files "")
-
 add_executable(ob_admin
   #  clog_tool/cmd_args_parser.h
   #  clog_tool/ob_admin_clog_v2_executor.cpp
@@ -78,7 +76,6 @@ add_executable(ob_admin
   log_tool/parser/ob_admin_parser_group_entry.cpp
   log_tool/ob_admin_log_tool_executor.cpp
   ${ob_admin_tde_files}
-  ${ob_admin_shared_storage_files}
   sql_tool/ob_admin_uncompress_plan_executor.cpp
   )
 

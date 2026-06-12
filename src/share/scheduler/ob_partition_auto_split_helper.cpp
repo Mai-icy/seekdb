@@ -722,9 +722,6 @@ int ObServerAutoSplitScheduler::check_and_fetch_tablet_split_info(const storage:
   } else if (OB_ISNULL(tablet = tablet_handle.get_obj())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("pointer to tablet is nullptr", K(ret), KP(tablet));
-  } else if ((GCTX.is_shared_storage_mode())) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_DEBUG("split in shared storage mode not supported", K(ret));
   } else if (OB_FAIL(tablet->ObITabletMdsCustomizedInterface::get_latest_split_data(
       split_data, writer, trans_stat, trans_version))) {
     if (OB_EMPTY_RESULT == ret) {

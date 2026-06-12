@@ -132,9 +132,6 @@
 #include "sql/resolver/ddl/ob_alter_location_resolver.h"
 #include "sql/resolver/ddl/ob_drop_location_resolver.h"
 #include "sql/resolver/cmd/ob_location_utils_resolver.h"
-#ifdef OB_BUILD_SHARED_STORAGE
-#include "sql/resolver/cmd/ob_trigger_storage_cache_resolver.h"
-#endif
 #include "sql/resolver/cmd/ob_sys_dispatch_call_resolver.h"
 
 namespace oceanbase
@@ -344,12 +341,6 @@ int ObResolver::resolve(IsPrepared if_prepared, const ParseNode &parse_tree, ObS
         REGISTER_STMT_RESOLVER(FlushDagWarnings);
         break;
       }
-#ifdef OB_BUILD_SHARED_STORAGE
-       case T_TRIGGER_STORAGE_CACHE: {
-        REGISTER_STMT_RESOLVER(TriggerStorageCache);
-        break;
-      }
-#endif
       case T_FLUSH_PRIVILEGES: 
       case T_INSTALL_PLUGIN:
       case T_UNINSTALL_PLUGIN:

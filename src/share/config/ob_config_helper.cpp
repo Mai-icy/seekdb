@@ -1319,7 +1319,7 @@ bool ObConfigDDLNoLoggingChecker::check(const uint64_t tenant_id, const obcall::
   const bool value = ObConfigBoolParser::get(t.value_.ptr(), is_valid);
 
   if (!is_valid) {
-  } else if (!GCTX.is_shared_storage_mode()) {
+  } else {
     is_valid = false;
     LOG_USER_ERROR(OB_OP_NOT_ALLOW, "it's not allowded to set no logging in shared nothing mode");
   }
@@ -1597,14 +1597,14 @@ bool ObConfigEnableAutoSplitChecker::check(const ObConfigItem &t) const
 {
   bool is_valid = false;
   bool enable_auto_split = ObConfigBoolParser::get(t.str(), is_valid);
-  return is_valid && !(GCTX.is_shared_storage_mode() && enable_auto_split);
+  return is_valid && !(enable_auto_split);
 }
 
 bool ObConfigAutoSplitTabletSizeChecker::check(const ObConfigItem &t) const
 {
   bool is_valid = false;
   int64_t value = ObConfigCapacityParser::get(t.str(), is_valid);
-  return is_valid && !GCTX.is_shared_storage_mode();
+  return is_valid;
 }
 
 bool ObConfigGlobalIndexAutoSplitPolicyChecker::check(const ObConfigItem &t) const

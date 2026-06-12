@@ -10624,47 +10624,8 @@ def_table_schema(
     normal_columns = []
   )
 # 12528: __tenant_virtual_show_catalog_tables
-
-def_table_schema(
-  owner             = 'baonian.wcx',
-  table_name        = '__all_virtual_storage_cache_task',
-  table_id          = '12529',
-  table_type        = 'VIRTUAL_TABLE',
-  in_tenant_space   = True,
-  gm_columns        = [],
-  rowkey_columns    = [
-    ('tablet_id', 'int'),
-  ],
-  normal_columns    = [
-    ('status',        'varchar:64'),
-    ('speed',         'varchar:29'),
-    ('start_time',    'timestamp'),
-    ('complete_time', 'timestamp'),
-    ('result',        'int'),
-    ('comment',       'varchar:4096')
-  ],  vtable_route_policy = 'local'
-  )
-
-def_table_schema(
-  owner             = 'baonian.wcx',
-  table_name        = '__all_virtual_tablet_local_cache',
-  table_id          = '12530',
-  table_type        = 'VIRTUAL_TABLE',
-  in_tenant_space   = True,
-  gm_columns        = [],
-  rowkey_columns    = [
-    ('tablet_id', 'int'),
-  ],
-  normal_columns    = [
-    ('storage_cache_policy', 'varchar:64'),
-    ('cached_data_size',     'int'),
-    ('cache_hit_count',      'int'),
-    ('cache_miss_count',     'int'),
-    ('cache_hit_size',       'int'),
-    ('cache_miss_size',      'int'),
-    ('info',                 'varchar:4096')
-  ],  vtable_route_policy = 'local'
-  )
+# 12529: __all_virtual_storage_cache_task
+# 12530: __all_virtual_tablet_local_cache
 
 # 12531: __tenant_virtual_catalog_table_column
 # 12532: __tenant_virtual_show_create_catalog_table
@@ -28560,97 +28521,10 @@ def_table_schema(
 """.replace("\n", " ")
 )
 
-def_table_schema(
-  owner           = 'baonian.wcx',
-  table_name      = 'GV$OB_STORAGE_CACHE_TASKS',
-  table_id        = '21644',
-  table_type      = 'SYSTEM_VIEW',
-  rowkey_columns  = [],
-  normal_columns  = [],
-  gm_columns      = [],
-  in_tenant_space = True,
-  view_definition = """
-  SELECT
-    TABLET_ID,
-    STATUS,
-    SPEED,
-    START_TIME,
-    COMPLETE_TIME,
-    RESULT,
-    COMMENT
-  FROM oceanbase.__all_virtual_storage_cache_task
-  """.replace("\n", " ")
-)
-
-def_table_schema(
-  owner           = 'baonian.wcx',
-  table_name      = 'V$OB_STORAGE_CACHE_TASKS',
-  table_id        = '21645',
-  table_type      = 'SYSTEM_VIEW',
-  rowkey_columns  = [],
-  normal_columns  = [],
-  gm_columns      = [],
-  in_tenant_space = True,
-  view_definition = """
-  SELECT
-    TABLET_ID,
-    STATUS,
-    SPEED,
-    START_TIME,
-    COMPLETE_TIME,
-    RESULT,
-    COMMENT
-  FROM oceanbase.GV$OB_STORAGE_CACHE_TASKS
-
-  """.replace("\n", " ")
-)
-
-def_table_schema(
-  owner           = 'baonian.wcx',
-  table_name      = 'GV$OB_TABLET_LOCAL_CACHE',
-  table_id        = '21646',
-  table_type      = 'SYSTEM_VIEW',
-  rowkey_columns  = [],
-  normal_columns  = [],
-  gm_columns      = [],
-  in_tenant_space = True,
-  view_definition = """
-  SELECT
-    TABLET_ID,
-    STORAGE_CACHE_POLICY,
-    CACHED_DATA_SIZE,
-    CACHE_HIT_COUNT,
-    CACHE_MISS_COUNT,
-    CACHE_HIT_SIZE,
-    CACHE_MISS_SIZE,
-    INFO
-  FROM oceanbase.__all_virtual_tablet_local_cache
-  """.replace("\n", " ")
-)
-
-def_table_schema(
-  owner           = 'baonian.wcx',
-  table_name      = 'V$OB_TABLET_LOCAL_CACHE',
-  table_id        = '21647',
-  table_type      = 'SYSTEM_VIEW',
-  rowkey_columns  = [],
-  normal_columns  = [],
-  gm_columns      = [],
-  in_tenant_space = True,
-  view_definition = """
-  SELECT
-    TABLET_ID,
-    STORAGE_CACHE_POLICY,
-    CACHED_DATA_SIZE,
-    CACHE_HIT_COUNT,
-    CACHE_MISS_COUNT,
-    CACHE_HIT_SIZE,
-    CACHE_MISS_SIZE,
-    INFO
-  FROM oceanbase.GV$OB_TABLET_LOCAL_CACHE
-
-  """.replace("\n", " ")
-)
+# 21644: GV$OB_STORAGE_CACHE_TASKS
+# 21645: V$OB_STORAGE_CACHE_TASKS
+# 21646: GV$OB_TABLET_LOCAL_CACHE
+# 21647: V$OB_TABLET_LOCAL_CACHE
 
 def_table_schema(
     owner = 'zhl413386',

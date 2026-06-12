@@ -944,12 +944,6 @@ void ObLSService::remove_ls_(ObLS *ls, const bool remove_from_disk, const bool w
     // creating an invalid tablet during restart.
     ret = OB_SUCCESS;
     if (success_step < 1) {
-#ifdef OB_BUILD_SHARED_STORAGE
-      if (remove_from_disk && GCTX.is_shared_storage_mode()
-          && OB_FAIL(ls->write_tablet_id_set_to_pending_free())) {
-        LOG_WARN("failed to write_tablet_id_set_to_pending_free", KR(ret), KPC(ls));
-      }
-#endif
       if (OB_FAIL(ret)) {
       } else if (OB_FAIL(ls->prepare_for_safe_destroy())) {
         LOG_WARN("prepare safe destroy failed", K(ret), KPC(ls));
@@ -1365,4 +1359,3 @@ int ObLSService::dump_ls_info()
 
 } // storage
 } // oceanbase
-

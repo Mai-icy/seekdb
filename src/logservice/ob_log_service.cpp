@@ -42,7 +42,6 @@ using namespace oceanbase::common;
 ObLogService::ObLogService() :
   is_inited_(false),
   is_running_(false),
-  enable_shared_storage_(false),
   self_(),
   palf_env_(NULL),
   net_keepalive_adapter_(NULL),
@@ -266,7 +265,7 @@ int ObLogService::init(const PalfOptions &options,
     self_ = self;
     is_inited_ = true;
     FLOG_INFO("ObLogService init success", K(ret), K(base_dir), K(self),
-        KP(ls_service), K(tenant_id), K(enable_shared_storage_));
+        KP(ls_service), K(tenant_id));
   }
 
   if (OB_FAIL(ret) && OB_INIT_TWICE != ret) {
@@ -779,7 +778,7 @@ int ObLogService::check_need_do_checkpoint(bool &need_do_checkpoint)
   } else if (OB_FAIL(palf_env_->get_disk_usage(used_size, total_size))) {
     CLOG_LOG(WARN, "get_disk_usage failed", K(ret));
   } else {
-    const int64_t CHECKPOINT_PERCENTAGE = GCTX.is_shared_storage_mode() ? 60 : 30;
+    const int64_t CHECKPOINT_PERCENTAGE = 30;
     ObLSService *ls_service = MTL(ObLSService*);
     ObSharedGuard<ObLSIterator> iterator;
     if (OB_ISNULL(ls_service)) {

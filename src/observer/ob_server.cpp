@@ -67,9 +67,6 @@
 #include "observer/ob_server_utils.h"
 #include "share/ob_device_credential_task.h"
 #include "lib/xml/ob_libxml2_sax_handler.h"
-#ifdef OB_BUILD_SHARED_STORAGE
-#include "storage/shared_storage/prewarm/ob_replica_prewarm_struct.h"
-#endif
 #include "share/vector_index/ob_plugin_vector_index_utils.h"
 #include "lib/roaringbitmap/ob_rb_memory_mgr.h"
 #include "storage/backup/ob_backup_meta_cache.h"
@@ -341,13 +338,6 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
       LOG_ERROR("init global kvcache failed", KR(ret));
     }
     }
-#ifdef OB_BUILD_SHARED_STORAGE
-    if (OB_SUCC(ret) && GCTX.is_shared_storage_mode()) {
-    if (OB_FAIL(OB_LS_PREWARM_MGR.init())) {
-      LOG_ERROR("init ls prewarm manager failed", KR(ret));
-    }
-    }
-#endif
     if (OB_SUCC(ret)) {
     if (OB_FAIL(schema_status_proxy_.init())) {
       LOG_ERROR("fail to init schema status proxy", KR(ret));
@@ -424,8 +414,7 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
     if (OB_SUCC(ret)) {
     if (OB_FAIL(init_tx_data_cache())) {
       LOG_ERROR("init tx data cache failed", KR(ret));
-    } else if (!GCTX.is_shared_storage_mode() &&
-               OB_FAIL(tmp_file::ObTmpBlockCache::get_instance().init("tmp_block_cache"))) {
+    } else if (OB_FAIL(tmp_file::ObTmpBlockCache::get_instance().init("tmp_block_cache"))) {
       LOG_ERROR("init tmp block cache failed", KR(ret));
     } else if (OB_FAIL(tmp_file::ObTmpPageCache::get_instance().init("tmp_page_cache"))) {
       LOG_ERROR("init tmp page cache failed", KR(ret));
@@ -607,14 +596,6 @@ void ObServer::destroy()
     TG_DESTROY(lib::TGDefIDs::ServerGTimer);
     FLOG_INFO("server gtimer destroyed");
 
-#ifdef OB_BUILD_SHARED_STORAGE
-    if (GCTX.is_shared_storage_mode()) {
-      FLOG_INFO("begin to destroy server gtimer");
-      TG_DESTROY(lib::TGDefIDs::TenantDirGCTimer);
-      FLOG_INFO("server gtimer destroyed");
-    }
-#endif
-
     FLOG_INFO("begin to destroy freeze timer");
     TG_DESTROY(lib::TGDefIDs::FreezeTimer);
     FLOG_INFO("freeze timer destroyed");
@@ -671,11 +652,10 @@ void ObServer::destroy()
     OB_TX_DATA_KV_CACHE.destroy();
     FLOG_INFO("tx data kv cache destroyed");
 
-    if (!GCTX.is_shared_storage_mode()) {
-      FLOG_INFO("begin to destroy tmp block cache");
-      tmp_file::ObTmpBlockCache::get_instance().destroy();
-      FLOG_INFO("tmp block cache destroyed");
-    }
+    FLOG_INFO("begin to destroy tmp block cache");
+    tmp_file::ObTmpBlockCache::get_instance().destroy();
+    FLOG_INFO("tmp block cache destroyed");
+
     FLOG_INFO("begin to destroy tmp page cache");
     tmp_file::ObTmpPageCache::get_instance().destroy();
     FLOG_INFO("tmp page cache destroyed");
@@ -774,14 +754,6 @@ void ObServer::destroy()
     FLOG_INFO("begin to destroy rootservice event history");
     ROOTSERVICE_EVENT_INSTANCE.destroy();
     FLOG_INFO("rootservice event history destroyed");
-
-#ifdef OB_BUILD_SHARED_STORAGE
-    if (GCTX.is_shared_storage_mode()) {
-      FLOG_INFO("begin to destory ls prewarm manager");
-      OB_LS_PREWARM_MGR.destroy();
-      FLOG_INFO("ls prewarm manager destoryed");
-    }
-#endif
 
     FLOG_INFO("begin to destroy kv global cache");
     ObKVGlobalCache::get_instance().destroy();
@@ -1324,13 +1296,6 @@ int ObServer::stop()
     TG_STOP(lib::TGDefIDs::ServerGTimer);
     FLOG_INFO("timer stopped");
 
-#ifdef OB_BUILD_SHARED_STORAGE
-    if (GCTX.is_shared_storage_mode()) {
-      FLOG_INFO("begin to stop timer");
-      TG_STOP(lib::TGDefIDs::TenantDirGCTimer);
-      FLOG_INFO("timer stopped");
-    }
-#endif
     FLOG_INFO("begin to stop freeze timer");
     TG_STOP(lib::TGDefIDs::FreezeTimer);
     FLOG_INFO("freeze timer stopped");
@@ -1778,11 +1743,6 @@ int ObServer::init_config_module(const char *optstr)
     LOG_ERROR("local address isn't valid", K(self_addr_), KR(ret));
   } else if (OB_FAIL(TG_START(lib::TGDefIDs::ServerGTimer))) {
     LOG_ERROR("init timer fail", KR(ret));
-#ifdef OB_BUILD_SHARED_STORAGE
-  } else if (GCTX.is_shared_storage_mode()
-      && OB_FAIL(TG_START(lib::TGDefIDs::TenantDirGCTimer))) {
-    LOG_ERROR("init timer fail", KR(ret));
-#endif
   } else if (OB_FAIL(TG_START(lib::TGDefIDs::FreezeTimer))) {
     LOG_ERROR("init freeze timer fail", KR(ret));
   } else if (OB_FAIL(TG_START(lib::TGDefIDs::SqlMemTimer))) {
@@ -2470,7 +2430,7 @@ int ObServer::init_storage()
     if (OB_FAIL(OB_STORE_CACHE.init(storage_env_.bf_cache_miss_count_threshold_))) {
       LOG_WARN("Fail to init OB_STORE_CACHE, ", KR(ret), K(storage_env_.data_dir_));
     } else if (OB_FAIL(OB_STORAGE_OBJECT_MGR.init(
-        GCTX.is_shared_storage_mode(), storage_env_.default_block_size_))) {
+        storage_env_.default_block_size_))) {
       LOG_ERROR("init storage object mgr fail", KR(ret));
     } else if (OB_FAIL(disk_usage_report_task_.init(sql_proxy_))) {
       LOG_WARN("fail to init disk usage report task", KR(ret));

@@ -24,8 +24,6 @@
 #include "mittest/mtlenv/mock_tenant_module_env.h"
 #undef private
 #undef protected
-#ifdef OB_BUILD_SHARED_STORAGE
-#endif
 #ifdef _WIN32
 #include <fcntl.h>
 #endif
