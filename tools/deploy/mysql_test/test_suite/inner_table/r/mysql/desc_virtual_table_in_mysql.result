@@ -5454,17 +5454,6 @@ value	bigint(20)	YES		NULL
 select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_wr_sysstat;
 IF(count(*) >= 0, 1, 0)
 1
-desc oceanbase.__all_virtual_kv_connection;
-Field	Type	Null	Key	Default	Extra
-client_ip	varchar(46)	NO	PRI	NULL	
-client_port	bigint(20)	NO	PRI	NULL	
-user_id	bigint(20)	NO		NULL	
-db_id	bigint(20)	NO		NULL	
-first_active_time	timestamp(6)	NO		NULL	
-last_active_time	timestamp(6)	NO		NULL	
-select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_kv_connection;
-IF(count(*) >= 0, 1, 0)
-1
 desc oceanbase.__all_virtual_virtual_long_ops_status_mysql_sys_agent;
 Field	Type	Null	Key	Default	Extra
 sid	bigint(20)	NO		NULL	
@@ -6388,18 +6377,6 @@ used_mem_size	bigint(20)	NO		NULL
 select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_ss_local_cache_info;
 IF(count(*) >= 0, 1, 0)
 1
-desc oceanbase.__all_virtual_kv_group_commit_status;
-Field	Type	Null	Key	Default	Extra
-group_type	varchar(32)	NO		NULL	
-table_id	bigint(20)	NO		NULL	
-schema_version	bigint(20)	NO		NULL	
-queue_size	bigint(20)	NO		NULL	
-batch_size	bigint(20)	NO		NULL	
-create_time	timestamp(6)	NO		NULL	
-update_time	timestamp(6)	NO		NULL	
-select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_kv_group_commit_status;
-IF(count(*) >= 0, 1, 0)
-1
 desc oceanbase.__all_virtual_vector_index_info;
 Field	Type	Null	Key	Default	Extra
 rowkey_vid_table_id	bigint(20)	NO		NULL	
@@ -6495,18 +6472,6 @@ coll_name	varchar(64)	NO		NULL
 select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_pkg_coll_type;
 IF(count(*) >= 0, 1, 0)
 1
-desc oceanbase.__all_virtual_kv_client_info;
-Field	Type	Null	Key	Default	Extra
-client_id	bigint(20) unsigned	NO		NULL	
-client_ip	varchar(46)	NO		NULL	
-client_port	bigint(20)	NO		NULL	
-user_name	varchar(64)	NO		NULL	
-first_login_ts	timestamp(6)	NO		NULL	
-last_login_ts	timestamp(6)	NO		NULL	
-client_info	varchar(2048)	NO		NULL	
-select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_kv_client_info;
-IF(count(*) >= 0, 1, 0)
-1
 desc oceanbase.__all_virtual_wr_sql_plan;
 Field	Type	Null	Key	Default	Extra
 tenant_id	bigint(20)	NO	PRI	NULL	
@@ -6562,16 +6527,6 @@ snap_id	bigint(20)	NO	PRI	NULL
 stat_id	bigint(20)	NO	PRI	NULL	
 value	bigint(20)	YES		NULL	
 select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_wr_res_mgr_sysstat;
-IF(count(*) >= 0, 1, 0)
-1
-desc oceanbase.__all_virtual_kv_redis_table;
-Field	Type	Null	Key	Default	Extra
-tenant_id	bigint(20)	NO	PRI	NULL	
-command_name	varchar(1024)	NO	PRI	NULL	
-gmt_create	timestamp(6)	NO		NULL	
-gmt_modified	timestamp(6)	NO		NULL	
-table_name	varchar(256)	NO		NULL	
-select /*+QUERY_TIMEOUT(60000000)*/ IF(count(*) >= 0, 1, 0) from oceanbase.__all_virtual_kv_redis_table;
 IF(count(*) >= 0, 1, 0)
 1
 desc oceanbase.__all_virtual_function_io_stat;

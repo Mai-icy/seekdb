@@ -243,6 +243,42 @@ int ObCopiedSSTableCreator::check_sstable_param_for_init_(const ObMigrationSSTab
   return ret;
 }
 
+// ObCopiedSharedSSTableCreator
+int ObCopiedSharedSSTableCreator::create_sstable()
+{
+  int ret = OB_SUCCESS;
+  ObSSTableMergeRes res;
+  ObTableHandleV2 table_handle;
+
+  if (IS_NOT_INIT) {
+    ret = OB_NOT_INIT;
+    LOG_WARN("ObCopiedSSTableCreator not init", K(ret));
+  } else {
+    SMART_VAR(ObTabletCreateSSTableParam, param) {
+      if (OB_FAIL(init_create_sstable_param_(param))) {
+        LOG_WARN("fail to init create sstable param", K(ret));
+      } else if (OB_FAIL(do_create_sstable_(param, table_handle))) {
+        LOG_WARN("failed to create sstable", K(ret), K(param));
+      } else if (OB_FAIL(finish_task_->add_sstable(table_handle))) {
+        LOG_WARN("fail to add sstable", K(ret), K(table_handle));
+      }
+    }
+  }
+  LOG_INFO("create shared sstable with index builder", K(ret), K(table_handle));
+  return ret;
+}
+
+int ObCopiedSharedSSTableCreator::check_sstable_param_for_init_(const ObMigrationSSTableParam *src_sstable_param) const
+{
+  int ret = OB_SUCCESS;
+  if (!src_sstable_param->is_shared_sstable()) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("sstable is not shared", K(ret), KPC(src_sstable_param));
+  }
+
+  return ret;
+}
+
 
 // ObSSTableCopyFinishTask
 ObSSTableCopyFinishTask::ObSSTableCopyFinishTask()

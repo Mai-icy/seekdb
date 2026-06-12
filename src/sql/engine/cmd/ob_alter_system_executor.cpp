@@ -23,6 +23,7 @@
 #include "storage/meta_store/ob_server_storage_meta_service.h"
 #include "storage/meta_store/ob_tenant_storage_meta_service.h"
 #include "observer/ob_server.h"
+#include "share/table/ob_ttl_util.h"
 #include "rootserver/standby/ob_standby_service.h" // ObStandbyService
 #include "sql/resolver/cmd/ob_switch_role_stmt.h" // ObSwitchRoleStmt
 #include "share/scheduler/ob_dag_warning_history_mgr.h"

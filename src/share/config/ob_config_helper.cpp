@@ -18,6 +18,7 @@
 #include "ob_config_helper.h"
 #include "rpc/frame/ob_req_packet_code.h"  // rpc::frame::ObReqCheckSumCheckLevel (relocated)
 #include "share/ob_resource_limit.h"
+#include "share/table/ob_ttl_util.h"
 #include "src/observer/ob_server.h"
 #include "share/config/ob_config_mode_name_def.h"
 #include "share/backup/ob_archive_persist_helper.h"

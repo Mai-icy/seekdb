@@ -35,7 +35,6 @@
 #include "storage/tx/ob_timestamp_service.h"
 #include "storage/tx/ob_standby_timestamp_service.h"
 #include "storage/tx/ob_trans_id_service.h"
-#include "observer/table/ttl/ob_ttl_service.h"
 #include "share/vector_index/ob_plugin_vector_index_service.h"
 #include "src/observer/table_load/resource/ob_table_load_resource_manager.h"
 #include "share/wr/ob_wr_service.h"
@@ -69,6 +68,7 @@ ObLS::ObLS()
     ls_freezer_(this),
     ls_sync_tablet_seq_handler_(),
     ls_ddl_log_handler_(),
+    vec_tg_id_(0),
     is_inited_(false),
     tenant_id_(OB_INVALID_TENANT_ID),
     running_state_(),
@@ -433,7 +433,11 @@ int ObLS::stop_()
     LOG_WARN("stop log handler failed", K(ret), KPC(this));
   }
   ls_tablet_svr_.stop();
-  tablet_ttl_mgr_.stop();
+
+  if (vec_tg_id_ != 0) {
+    vector_idx_scheduler_.stop();
+    TG_STOP(vec_tg_id_);
+  }
 
   return ret;
 }
@@ -469,6 +473,9 @@ void ObLS::wait_()
   int64_t retry_times = 0;
   do {
     retry_times++;
+    if (vec_tg_id_ != 0) {
+      TG_WAIT(vec_tg_id_);
+    }
     if (!wait_finished) {
       ob_usleep(100 * 1000); // 100 ms
       if (retry_times % 100 == 0) { // every 10 s
@@ -517,8 +524,8 @@ bool ObLS::safe_to_destroy()
   } else if (OB_FAIL(log_handler_.safe_to_destroy(is_log_handler_safe))) {
     LOG_WARN("log_handler_ check safe to destroy failed", K(ret), KPC(this));
   } else if (!is_log_handler_safe) {
-  } else if (OB_FAIL(tablet_ttl_mgr_.safe_to_destroy(is_ttl_mgr_safe))) {
-    LOG_WARN("tablet_ttl_mgr_ check safe to destroy failed", K(ret), KPC(this));
+  } else if (OB_FAIL(vector_idx_scheduler_.safe_to_destroy(is_ttl_mgr_safe))) {
+    LOG_WARN("vector_idx_scheduler_ check safe to destroy failed", K(ret), KPC(this));
   } else if (!is_ttl_mgr_safe) {
   } else {
     if (1 == ref_mgr_.get_total_ref_cnt()) { // only has one ref at the safe destroy task
@@ -817,15 +824,6 @@ int ObLS::register_sys_service()
       }
 #ifdef OB_BUILD_SYS_VEC_IDX
       REGISTER_TO_LOGSERVICE(VEC_INDEX_SERVICE_LOG_BASE_TYPE, MTL(ObPluginVectorIndexService *));
-
-      if (OB_SUCC(ret)) {
-        if (OB_FAIL(tablet_ttl_mgr_.init(this))) {
-          LOG_WARN("fail to init tablet ttl manager", KR(ret));
-        } else {
-          REGISTER_TO_LOGSERVICE(TTL_LOG_BASE_TYPE, &tablet_ttl_mgr_);
-          REGISTER_TO_LOGSERVICE(VEC_INDEX_LOG_BASE_TYPE, &tablet_ttl_mgr_.get_vector_idx_scheduler());
-        }
-      }
 #endif
     }
     if (is_meta_tenant(tenant_id)) {
@@ -842,23 +840,10 @@ int ObLS::register_user_service()
   const ObLSID &ls_id = ls_meta_.ls_id_;
 
   if (ls_id.is_sys_ls()) {
-    REGISTER_TO_LOGSERVICE(TTL_LOG_BASE_TYPE, MTL(table::ObTTLService *));
     REGISTER_TO_LOGSERVICE(MVIEW_MAINTENANCE_SERVICE_LOG_BASE_TYPE, MTL(ObMViewMaintenanceService *));
     REGISTER_TO_LOGSERVICE(TABLE_LOAD_RESOURCE_SERVICE_LOG_BASE_TYPE, MTL(observer::ObTableLoadResourceService *));
     REGISTER_TO_LOGSERVICE(DBMS_SCHEDULER_LOG_BASE_TYPE, MTL(rootserver::ObDBMSSchedService *));
     REGISTER_TO_LOGSERVICE(VEC_INDEX_SERVICE_LOG_BASE_TYPE, MTL(ObPluginVectorIndexService *));
-  }
-
-  if (ls_id.is_user_ls()) {
-    if (OB_SUCC(ret)) {
-      if (OB_FAIL(tablet_ttl_mgr_.init(this))) {
-        LOG_WARN("fail to init tablet ttl manager", KR(ret));
-      } else {
-        REGISTER_TO_LOGSERVICE(TTL_LOG_BASE_TYPE, &tablet_ttl_mgr_);
-        // reuse ttl timer
-        REGISTER_TO_LOGSERVICE(VEC_INDEX_LOG_BASE_TYPE, &tablet_ttl_mgr_.get_vector_idx_scheduler());
-      }
-    }
   }
 
   return ret;
@@ -875,6 +860,19 @@ int ObLS::register_to_service_()
     LOG_WARN("user tenant register failed", K(ret), K(ls_id));
   } else if (!is_user_tenant(tenant_id) && OB_FAIL(register_sys_service())) {
     LOG_WARN("no user tenant register failed", K(ret), K(ls_id));
+  }
+
+  if (OB_SUCC(ret)) {
+    vec_tg_id_ = 0;
+    if (OB_FAIL(TG_CREATE_TENANT(lib::TGDefIDs::TenantTabletTTLMgr, vec_tg_id_))) {
+      LOG_WARN("fail to create vector index timer", KR(ret));
+    } else if (OB_FAIL(TG_START(vec_tg_id_))) {
+      LOG_WARN("fail to start vector index timer", KR(ret), K_(vec_tg_id));
+    } else if (OB_FAIL(vector_idx_scheduler_.init(MTL_ID(), this, vec_tg_id_))) {
+      LOG_WARN("fail to init vector index scheduler", KR(ret), K(MTL_ID()));
+    } else {
+      REGISTER_TO_LOGSERVICE(VEC_INDEX_LOG_BASE_TYPE, &vector_idx_scheduler_);
+    }
   }
 
   return ret;
@@ -931,11 +929,13 @@ void ObLS::unregister_sys_service_()
       role_change_handler_.unregister_handler(INTERNAL_TABLE_NOTIFIER_LOG_BASE_TYPE);
 #ifdef OB_BUILD_SYS_VEC_IDX
       UNREGISTER_FROM_LOGSERVICE(VEC_INDEX_SERVICE_LOG_BASE_TYPE, MTL(ObPluginVectorIndexService *));
-      
-      UNREGISTER_FROM_LOGSERVICE(VEC_INDEX_LOG_BASE_TYPE, &tablet_ttl_mgr_.get_vector_idx_scheduler());
-      UNREGISTER_FROM_LOGSERVICE(TTL_LOG_BASE_TYPE, tablet_ttl_mgr_);
-      tablet_ttl_mgr_.destroy();
 #endif
+      UNREGISTER_FROM_LOGSERVICE(VEC_INDEX_LOG_BASE_TYPE, &vector_idx_scheduler_);
+      vector_idx_scheduler_.destroy();
+      if (vec_tg_id_ != 0) {
+        TG_DESTROY(vec_tg_id_);
+        vec_tg_id_ = 0;
+      }
     }
     if (is_meta_tenant(MTL_ID())) {
       UNREGISTER_FROM_LOGSERVICE(DBMS_SCHEDULER_LOG_BASE_TYPE, MTL(rootserver::ObDBMSSchedService *));
@@ -946,16 +946,18 @@ void ObLS::unregister_sys_service_()
 void ObLS::unregister_user_service_()
 {
   if (ls_meta_.ls_id_.is_sys_ls()) {
-    UNREGISTER_FROM_LOGSERVICE(TTL_LOG_BASE_TYPE, MTL(table::ObTTLService *));
     UNREGISTER_FROM_LOGSERVICE(MVIEW_MAINTENANCE_SERVICE_LOG_BASE_TYPE, MTL(ObMViewMaintenanceService *));
     UNREGISTER_FROM_LOGSERVICE(TABLE_LOAD_RESOURCE_SERVICE_LOG_BASE_TYPE, MTL(observer::ObTableLoadResourceService *));
     UNREGISTER_FROM_LOGSERVICE(DBMS_SCHEDULER_LOG_BASE_TYPE, MTL(rootserver::ObDBMSSchedService *));
     UNREGISTER_FROM_LOGSERVICE(VEC_INDEX_SERVICE_LOG_BASE_TYPE, MTL(ObPluginVectorIndexService *));
   }
   if (ls_meta_.ls_id_.is_user_ls()) {
-    UNREGISTER_FROM_LOGSERVICE(VEC_INDEX_LOG_BASE_TYPE, &tablet_ttl_mgr_.get_vector_idx_scheduler());
-    UNREGISTER_FROM_LOGSERVICE(TTL_LOG_BASE_TYPE, tablet_ttl_mgr_);
-    tablet_ttl_mgr_.destroy();
+    UNREGISTER_FROM_LOGSERVICE(VEC_INDEX_LOG_BASE_TYPE, &vector_idx_scheduler_);
+    vector_idx_scheduler_.destroy();
+    if (vec_tg_id_ != 0) {
+      TG_DESTROY(vec_tg_id_);
+      vec_tg_id_ = 0;
+    }
   }
 }
 

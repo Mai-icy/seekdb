@@ -18,6 +18,8 @@
 #define USING_LOG_PREFIX STORAGE
 
 #include "storage/vector_index/ob_vector_index_refresh.h"
+#include "share/vector_index/ob_vector_index_async_task.h"
+#include "share/vector_index/ob_vector_index_async_task_util.h"
 #include "rootserver/ob_rs_serial_call.h"
 #include "storage/tablelock/ob_lock_inner_connection_util.h"
 #include "sql/engine/cmd/ob_ddl_executor_util.h"
