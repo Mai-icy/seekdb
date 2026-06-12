@@ -853,12 +853,6 @@ int ObBackupStorageInfoOperator::get_restore_dest_id(
   return ret;
 }
 
-int ObBackupStorageInfoOperator::get_restore_shared_storage_limit(const common::ObTrafficControl::ObStorageKey &storage_key, int64_t &max_iops, int64_t &max_bandwidth)
-{
-  int ret = OB_NOT_SUPPORTED;
-  return ret;
-}
-
 int ObBackupStorageInfoOperator::get_dest_type(
     common::ObISQLClient &proxy,
     const uint64_t tenant_id,

@@ -96,7 +96,6 @@ ob_set_subtarget(ob_server mysql
 ob_set_subtarget(ob_server net
   net/ob_ingress_bw_alloc_service.cpp
   net/ob_net_endpoint_ingress_rpc_struct.cpp
-  net/ob_shared_storage_net_throt_rpc_struct.cpp
   net/ob_net_queue_traver.cpp
 )
 
@@ -549,7 +548,6 @@ ob_set_subtarget(ob_server virtual_table
   virtual_table/ob_all_virtual_opt_stat_gather_monitor.cpp
   virtual_table/ob_all_virtual_thread.cpp
   virtual_table/ob_all_virtual_cgroup_config.cpp
-  virtual_table/ob_all_virtual_shared_storage_quota.cpp
   virtual_table/ob_virtual_flt_config.cpp
   virtual_table/ob_all_virtual_kv_connection.cpp
   virtual_table/ob_all_virtual_tenant_resource_limit.cpp
@@ -573,8 +571,6 @@ ob_set_subtarget(ob_server virtual_table
   virtual_table/ob_all_virtual_cs_replica_tablet_stats.cpp
   virtual_table/ob_all_virtual_change_stream_refresh_stat.cpp
   virtual_table/ob_all_virtual_dynamic_partition_table.cpp
-  virtual_table/ob_all_virtual_storage_cache_task.cpp
-  virtual_table/ob_all_virtual_tablet_local_cache.cpp
   virtual_table/ob_tenant_show_catalog_databases.cpp
   virtual_table/ob_all_virtual_tenant_vector_mem_info.cpp
   virtual_table/ob_all_virtual_ccl_status.cpp

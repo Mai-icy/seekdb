@@ -24,7 +24,6 @@
 #include "observer/ob_srv_deliver.h"
 #include "observer/ob_server_struct.h"
 #include "observer/net/ob_ingress_bw_alloc_service.h"
-#include "observer/net/ob_shared_storage_net_throt_rpc_struct.h"
 
 namespace oceanbase {
 namespace rpc {
@@ -66,8 +65,6 @@ public:
   int net_endpoint_register(const ObNetEndpointKey &endpoint_key, int64_t expire_time);
   int net_endpoint_predict_ingress(const ObNetEndpointKey &endpoint_key, int64_t &predicted_bw);
   int net_endpoint_set_ingress(const ObNetEndpointKey &endpoint_key, int64_t assigned_bw);
-  // share storage net throt
-  int shared_storage_net_throt_set(const ObSharedDeviceResourceArray &assigned_resource);
 
 private:
   ObGlobalContext &gctx_;

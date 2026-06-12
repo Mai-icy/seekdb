@@ -217,14 +217,6 @@ struct ObGlobalContext
   // instead of self_addr_
   const ObAddr &self_addr() const { return self_addr_seq_.get_addr(); }
   const int64_t &self_seq() const { return self_addr_seq_.get_seq(); }
-  bool is_shared_storage_mode() const
-  {
-#ifdef OB_BUILD_SHARED_STORAGE
-    return (ObServerMode::SHARED_STORAGE_MODE == startup_mode_);
-#else
-    return false;
-#endif
-  }
 private:
   ObGlobalContext() { MEMSET(this, 0, sizeof(*this)); init(); }
   ObGlobalContext(const ObGlobalContext &other);

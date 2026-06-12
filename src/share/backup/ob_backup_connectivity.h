@@ -175,10 +175,6 @@ public:
       const uint64_t tenant_id,
       const share::ObBackupDest &backup_dest,
       ObBackupDestType::TYPE &dest_type);
-  static int get_restore_shared_storage_limit(
-      const common::ObTrafficControl::ObStorageKey &storage_key,
-      int64_t &max_iops,
-      int64_t &max_bandwidth);
 
 private:
   static int parse_backup_path(

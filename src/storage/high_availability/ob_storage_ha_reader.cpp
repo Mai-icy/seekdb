@@ -457,7 +457,6 @@ int ObCopyMacroBlockRestoreReader::convert_logical_id_to_shared_macro_id_(
     MacroBlockId &macro_block_id)
 {
   int ret = OB_SUCCESS;
-  const bool is_shared_storage_mode = GCTX.is_shared_storage_mode();
   macro_block_id.reset();
   if (!is_inited_) {
     ret = OB_NOT_INIT;
@@ -465,18 +464,6 @@ int ObCopyMacroBlockRestoreReader::convert_logical_id_to_shared_macro_id_(
   } else if (!logic_block_id.is_valid()) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("convert logical id to shared macro id get invalid argument", K(ret), K(logic_block_id));
-  } else if (!is_shared_storage_mode || !table_key_.is_major_sstable()) {
-    //do nothing
-  } else {
-    // logical id to change to macro block id in shared storage mode
-    // second_id:tablet_id, third_id:seq_id, fourth_id:N/A
-    // TODO(muwei.ym) this interface will be abandoned in quick restore
-    // Here incarnation value is default value : 0
-    macro_block_id.set_id_mode((uint64_t)ObMacroBlockIdMode::ID_MODE_SHARE);
-    macro_block_id.set_storage_object_type((uint64_t)ObStorageObjectType::SHARED_MAJOR_DATA_MACRO);
-    macro_block_id.set_second_id(logic_block_id.tablet_id_);
-    macro_block_id.set_third_id(logic_block_id.data_seq_.get_data_seq());
-    macro_block_id.set_column_group_id(logic_block_id.column_group_idx_);
   }
   return ret;
 }
@@ -2146,7 +2133,6 @@ int ObCopySSTableMacroRestoreReader::get_next_sstable_range_info(
 {
   int ret = OB_SUCCESS;
   sstable_macro_range_info.reset();
-  const bool is_shared_storage_mode = GCTX.is_shared_storage_mode();
 
   if (!is_inited_) {
     ret = OB_NOT_INIT;
@@ -2155,12 +2141,8 @@ int ObCopySSTableMacroRestoreReader::get_next_sstable_range_info(
     ret = OB_ITER_END;
   } else {
     const ObITable::TableKey &table_key = rpc_arg_.copy_table_key_array_.at(sstable_index_);
-    const bool is_shared_ddl_sstable = is_shared_storage_mode && table_key.is_ddl_dump_sstable();
 
-    if (is_shared_ddl_sstable) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("do not support shared ddl sstable", K(ret));
-    } else if (ObTabletRestoreAction::is_restore_replace_remote_sstable(restore_action_)) {
+    if (ObTabletRestoreAction::is_restore_replace_remote_sstable(restore_action_)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("do not support replace remote sstable", K(ret));
     } else {

@@ -24,11 +24,6 @@
 #include "storage/compaction/ob_batch_freeze_tablets_dag.h"
 #include "share/compaction/ob_batch_exec_dag.h"
 #include "observer/ob_server_event_history_table_operator.h"
-#ifdef OB_BUILD_SHARED_STORAGE
-#include "storage/compaction/ob_tablet_refresh_dag.h"
-#include "storage/compaction/ob_verify_ckm_dag.h"
-#include "storage/compaction/ob_update_skip_major_tablet_dag.h"
-#endif
 
 
 namespace oceanbase
@@ -612,12 +607,6 @@ int ObITask::add_child(ObITask &child, const bool check_child_task_status /* = t
     COMMON_LOG(WARN, "can not add self loop", K(ret));
   } else {
     if (check_child_task_status && ObITask::TASK_STATUS_INITING != OB_UNLIKELY(child.get_status())) {
-#ifdef OB_BUILD_SHARED_STORAGE
-      // TASK_STATUS_INITING means child has not been added into dag, which promise child can't be scheduled before this action.
-      // If you add a child task into dag before its parent call ObITask::add_child, the child may be scheduled if its indegree is 0. It is memory dangerous.
-      // Unfortunatly, there are many misuses in the sequence of ObITask::add_child and ObIDag::add_task, and many cases in the core-test will fail, so here do not return error code.
-      // Please check it. If you can make sure the child will not be scheduled(like copy children of other task), you can skip this check.
-#endif
       ret = OB_ERR_UNEXPECTED;
       COMMON_LOG(ERROR, "ATTENTION!!! child task status is not valid, please check it", K(ret), K(child));
     } else {
@@ -3305,17 +3294,6 @@ int ObDagPrioScheduler::check_ls_compaction_dag_exist_with_cancel(
         // do nothing
       } else if (ObDagType::DAG_TYPE_BATCH_FREEZE_TABLETS == cur->get_type()) {
         cancel_flag = (ls_id == static_cast<compaction::ObBatchFreezeTabletsDag *>(cur)->get_param().ls_id_);
-#ifdef OB_BUILD_SHARED_STORAGE
-      } else if (GCTX.is_shared_storage_mode()
-              && ObDagType::DAG_TYPE_VERIFY_CKM == cur->get_type()) {
-        cancel_flag = ls_id == static_cast<compaction::ObVerifyCkmDag *>(cur)->get_param().ls_id_;
-      } else if (GCTX.is_shared_storage_mode()
-              && ObDagType::DAG_TYPE_REFRESH_SSTABLES == cur->get_type()) {
-        cancel_flag = ls_id == static_cast<compaction::ObTabletsRefreshSSTableDag *>(cur)->get_param().ls_id_;
-      } else if (GCTX.is_shared_storage_mode()
-              && ObDagType::DAG_TYPE_UPDATE_SKIP_MAJOR == cur->get_type()) {
-        cancel_flag = ls_id == static_cast<compaction::ObUpdateSkipMajorTabletDag *>(cur)->get_param().ls_id_;
-#endif
       } else {
         cancel_flag = (ls_id == static_cast<compaction::ObTabletMergeDag *>(cur)->get_ls_id());
       }
@@ -3512,25 +3490,6 @@ int ObDagPrioScheduler::diagnose_compaction_dags()
           tmp_ret = OB_ERR_UNEXPECTED;
           COMMON_LOG(WARN, "get unexpected dag", K(tmp_ret), "dag_type", dag->get_type());
         } else if (!is_compaction_dag(dag->get_type())) {
-#ifdef OB_BUILD_SHARED_STORAGE
-          if (!GCTX.is_shared_storage_mode()) {
-            // do nothing
-          } else if (ObDagType::DAG_TYPE_REFRESH_SSTABLES == dag->get_type()) {
-            ObTabletsRefreshSSTableDag *refresh_dag = nullptr;
-            if (OB_ISNULL(refresh_dag = static_cast<ObTabletsRefreshSSTableDag *>(dag))) {
-              tmp_ret = OB_ERR_UNEXPECTED;
-              COMMON_LOG(WARN, "get unexpected null stored dag", K(tmp_ret), KPC(dag));
-            } else if (OB_TMP_FAIL(MTL(ObDiagnoseTabletMgr *)->add_diagnose_tablet(refresh_dag->get_param().ls_id_,
-                                                                                  refresh_dag->get_param().tablet_id_,
-                                                                                  ObIDag::get_diagnose_tablet_type(dag->get_type())))) {
-              COMMON_LOG(WARN, "failed to add diagnose tablet", K(tmp_ret), "dag_param", refresh_dag->get_param());
-            } else {
-              COMMON_LOG(TRACE, "dag maybe abormal", KPC(refresh_dag));
-            }
-          } else if (ObDagType::DAG_TYPE_VERIFY_CKM == dag->get_type()) {
-            // TODO(@DanLing) impl diagnose interface for verifying ckm
-          }
-#endif
         } else if (OB_ISNULL(merge_dag = static_cast<ObTabletMergeDag *>(dag))) {
           tmp_ret = OB_ERR_UNEXPECTED;
           COMMON_LOG(WARN, "get unexpected null stored dag", K(tmp_ret), KPC(dag));

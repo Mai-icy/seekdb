@@ -26,7 +26,6 @@
 #include "share/vector_index/ob_vector_index_util.h"
 #include "share/ob_vec_index_builder_util.h"
 
-
 namespace oceanbase
 {
 using namespace common;
@@ -204,8 +203,6 @@ int ObCreateTableResolver::set_default_micro_index_clustered_(share::schema::ObT
   // set default value. If user_specified, it is modifed in resolve_table_option.
   if (OB_FAIL(ret)) {
     // error occurred
-  } else if (GCTX.is_shared_storage_mode()) {
-    table_schema.set_micro_index_clustered(true);
   } else { // shared_nothing
     table_schema.set_micro_index_clustered(false);
   }
@@ -626,15 +623,6 @@ int ObCreateTableResolver::resolve(const ParseNode &parse_tree)
                                *create_table_stmt,
                                create_table_stmt->get_create_table_arg().schema_))) {
         LOG_WARN("fail to resolve hint", K(ret));
-      }
-    }
-
-    // check storage cache policy for partitioned table
-    // because we only know the if the table is partitioned table after resolve_table_options
-    if (OB_SUCC(ret) && GCTX.is_shared_storage_mode() && is_mysql_mode) {
-      ObTableSchema &table_schema = create_table_stmt->get_create_table_arg().schema_;
-      if (OB_FAIL(check_create_stmt_storage_cache_policy(table_schema.get_storage_cache_policy(), &table_schema))) {
-        LOG_WARN("fail to check storage cache policy", K(ret), K(table_schema.get_storage_cache_policy()));;
       }
     }
 
@@ -1499,7 +1487,6 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
       }
     }
 
-
     if (OB_SUCC(ret)) {
       if (OB_UNLIKELY(get_primary_key_size() > 0 && NULL != primary_node)) {
         ret = OB_ERR_PRIMARY_KEY_DUPLICATE;
@@ -2041,7 +2028,6 @@ int ObCreateTableResolver::generate_index_arg(const bool process_heap_table_prim
   return ret;
 }
 
-
 int ObCreateTableResolver::set_index_name()
 {
   int ret = OB_SUCCESS;
@@ -2240,12 +2226,6 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
           ret = OB_NOT_SUPPORTED;
           LOG_WARN("multi column of vector index is not support yet", K(ret), K(index_column_list_node->num_child_));
           LOG_USER_ERROR(OB_NOT_SUPPORTED, "multi vector index column is");
-#ifdef OB_BUILD_SHARED_STORAGE
-        } else if (GCTX.is_shared_storage_mode() && is_vec_index) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("vector index search index isn't supported in shared storage mode", K(ret));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "vector index search index in shared storage mode is");
-#endif
         }
         for (int32_t i = 0; OB_SUCC(ret) && i < index_column_list_node->num_child_; ++i) {
           ObString &column_name = sort_item.column_name_;
@@ -2883,7 +2863,6 @@ int ObCreateTableResolver::resolve_table_charset_info(const ParseNode *node) {
 
   return ret;
 }
-
 
 int ObCreateTableResolver::check_max_row_data_length(const ObTableSchema &table_schema)
 {

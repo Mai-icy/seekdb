@@ -14723,9 +14723,6 @@ int ObDDLService::alter_table_in_trans(obcall::ObAlterTableArg &alter_table_arg,
             ret = OB_NOT_SUPPORTED;
             LOG_WARN("create ivf index on table with column store not supported", K(ret), KPC(orig_table_schema));
             LOG_USER_ERROR(OB_NOT_SUPPORTED, "create ivf index on table with column store is");
-          } else if (GCTX.is_shared_storage_mode()) {
-            ret = OB_NOT_SUPPORTED;
-            SQL_RESV_LOG(WARN, "alter column group delayed does not support shared storage mode", K(ret));
           } else if (OB_FAIL(ObSchemaUtils::mock_default_cg(orig_table_schema->get_tenant_id(), new_table_schema))) {
             LOG_WARN("fail to mock default cg", K(ret), K(orig_table_schema), K(new_table_schema));
           } else if (OB_FAIL(alter_column_group(alter_table_arg,
@@ -15314,7 +15311,6 @@ int ObDDLService::check_long_run_ddl_has_index_(const ObTableSchema *orig_table_
   bool will_be_having_domain_index_operation = false;
   bool has_fts_or_multivalue_index = false;
   bool has_sparse_vector_index = false;
-  bool has_vec_index = false;
   uint64_t tenant_id =  alter_table_arg.alter_table_schema_.get_tenant_id();
   uint64_t table_id = alter_table_arg.alter_table_schema_.get_table_id();
   if (OB_ISNULL(orig_table_schema)) {
@@ -15348,10 +15344,6 @@ int ObDDLService::check_long_run_ddl_has_index_(const ObTableSchema *orig_table_
     ret = OB_NOT_SUPPORTED;
     LOG_WARN("The DDL cannot be run, table with sparse vector index is not supported.", KR(ret));
     LOG_USER_ERROR(OB_NOT_SUPPORTED, "Run this DDL operation on table with sparse vector index");
-  } else if (has_fts_or_multivalue_index && GCTX.is_shared_storage_mode()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("The DDL cannot be run, table with fulltext/multivalue/vector index in ss mode is not supported", KR(ret));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "Run this DDL operation on table with fulltext/multivalue/vector index in ss mode");
   }
   return ret;
 }
@@ -15467,9 +15459,6 @@ int ObDDLService::check_is_offline_ddl(ObAlterTableArg &alter_table_arg,
         && ObDDLType::DDL_DROP_COLUMN_INSTANT != ddl_type
         && ObDDLType::DDL_DROP_COLUMN == alter_table_ddl_type) {
         ddl_type = ObDDLType::DDL_TABLE_REDEFINITION;
-    }
-    if (OB_SUCC(ret) && ObDDLType::DDL_COLUMN_REDEFINITION == ddl_type && GCTX.is_shared_storage_mode()) {
-      ddl_type = ObDDLType::DDL_TABLE_REDEFINITION;
     }
     if (OB_SUCC(ret) && share::ObDDLTaskType::DELETE_COLUMN_FROM_SCHEMA == alter_table_arg.ddl_task_type_) {
       // alter table drop unused column[s].
@@ -16888,17 +16877,11 @@ int ObDDLService::recover_restore_table_ddl_task(
         LOG_WARN("get min data version failed", K(ret), K(dst_tenant_id));
       } else {
         ObDDLOperator ddl_operator(*schema_service_, *sql_proxy_);
-        bool is_src_table_column_store = false;
         ObString index_name("");
         if (OB_FAIL(dst_tenant_trans.start(sql_proxy_, dst_tenant_id, refreshed_dst_tenant_version))) {
           LOG_WARN("start transaction failed", K(ret), K(dst_tenant_id), K(refreshed_dst_tenant_version));
         } else if (OB_FAIL(dst_table_schema.assign(arg.target_schema_))) {
           LOG_WARN("assign failed", K(ret), K(session_id), K(arg));
-        } else if (OB_FAIL(src_table_schema->get_is_column_store(is_src_table_column_store))) {
-          LOG_WARN("judge if dest table is column store failed", K(ret), K(arg));
-        } else if (GCTX.is_shared_storage_mode() && is_src_table_column_store) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("shared storage mode not support retore table with column store", K(ret), K(arg));
         } else if (OB_FAIL(create_user_hidden_table(*src_table_schema, dst_table_schema, nullptr/*sequence_ddl_arg*/,
           false/*bind_tablets*/, *src_tenant_schema_guard, *dst_tenant_schema_guard, ddl_operator,
           dst_tenant_trans, allocator, tenant_data_version, index_name, true /*ignore_cs_replica*/))) {
@@ -17266,7 +17249,6 @@ int ObDDLService::check_alter_partitions(const ObTableSchema &orig_table_schema,
     LOG_WARN("split partition in 4.0 not allowed", K(ret), K(tablegroup_id));
     LOG_USER_ERROR(OB_OP_NOT_ALLOW, "split partition in 4.0");
   }
-  bool has_fts_or_multivalue_index = false;
   const int64_t table_id = orig_table_schema.get_table_id();
 
   if (OB_FAIL(ret)) {

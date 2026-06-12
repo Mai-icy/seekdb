@@ -21,10 +21,6 @@
 #include "share/ob_global_stat_proxy.h"
 #include "rootserver/ob_table_creator.h"
 #include "rootserver/ob_root_service.h"
-#ifdef OB_BUILD_SHARED_STORAGE
-#include "share/object_storage/ob_device_connectivity.h"
-#include "storage/shared_storage/ob_ss_format_util.h"
-#endif
 #include "share/inner_table/ob_load_inner_table_schema.h"
 #include "rootserver/ob_load_inner_table_schema_executor.h"
 #include "src/logservice/ob_server_log_block_mgr.h"
@@ -54,7 +50,6 @@ ObBaseBootstrap::ObBaseBootstrap(
       config_(config)
 {
 }
-
 
 int ObBaseBootstrap::check_inner_stat() const
 {
@@ -206,7 +201,6 @@ bool ObBootstrap::TableIdCompare::operator() (const ObSimpleTableSchemaV2* left,
   return bret;
 }
 
-
 ObBootstrap::ObBootstrap(
     ObDDLService &ddl_service,
     ObTenantDDLService &tenant_ddl_service,
@@ -295,12 +289,6 @@ int ObBootstrap::execute_bootstrap()
                     "bootstrap refresh all schema success.");
   }
   BOOTSTRAP_CHECK_SUCCESS_V2("refresh_schema");
-
-#ifdef OB_BUILD_SHARED_STORAGE
-  if (FAILEDx(write_shared_storage_args())) {
-    LOG_WARN("failed to init write shared storage args", KR(ret));
-  } else {}
-#endif
 
   ROOTSERVICE_EVENT_ADD("bootstrap", "bootstrap_succeed");
   BOOTSTRAP_CHECK_SUCCESS();
@@ -976,7 +964,6 @@ int ObBootstrap::set_in_bootstrap()
   }
   return ret;
 }
-
 
 } // end namespace rootserver
 } // end namespace oceanbase

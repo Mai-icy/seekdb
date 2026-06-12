@@ -41,7 +41,6 @@ void UpdateProtoTask::runTimerTask()
   //  LOG_INFO("update fetch log protocol to RawLogDataProto",
   //      "logfetcher_parallel_log_transport", cfg->logfetcher_parallel_log_transport.get(),
   //      "source_min_observer_version", fetcher_.get_source_min_observer_version());
-  } else if (false) {
   } else {
     fetcher_.update_fetch_log_protocol(obcall::ObCdcFetchLogProtocolType::LogGroupEntryProto);
     LOG_INFO("update fetch log protocol to LogGroupEntryProto",

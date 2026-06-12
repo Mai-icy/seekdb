@@ -247,7 +247,6 @@ private:
   };
   bool is_inited_;
   bool is_running_;
-  bool enable_shared_storage_;
 
   common::ObAddr self_;
   palf::PalfEnv *palf_env_;

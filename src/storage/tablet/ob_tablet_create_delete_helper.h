@@ -190,9 +190,6 @@ public:
              const int64_t len,
              const transaction::ObMulSourceDataNotifyArg &notify_arg);
 private:
-#ifdef OB_BUILD_SHARED_STORAGE
-  static int try_get_current_version_tablet_(const ObTabletMapKey &key, ObLS *ls, ObTabletHandle &handle);
-#endif
 
 private:
   class ReadMdsFunctor

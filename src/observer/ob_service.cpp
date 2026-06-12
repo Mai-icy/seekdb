@@ -1775,9 +1775,6 @@ int ObService::get_server_resource_info(share::ObServerResourceInfo &resource_in
   logservice::ObServerLogBlockMgr *log_block_mgr = GCTX.log_block_mgr_;
   resource_info.reset();
   int64_t reserved_size = 0;
-#ifdef OB_BUILD_SHARED_STORAGE
-  int64_t shared_storage_data_disk_in_use = 0;
-#endif
 
   if (OB_UNLIKELY(!inited_)) {
     ret = OB_NOT_INIT;
@@ -1792,11 +1789,6 @@ int ObService::get_server_resource_info(share::ObServerResourceInfo &resource_in
   } else if (FALSE_IT(clog_total_size_byte = log_block_mgr->get_log_disk_size())) {
   } else if (OB_FAIL(SERVER_STORAGE_META_SERVICE.get_reserved_size(reserved_size))) {
     LOG_WARN("Failed to get reserved size ", KR(ret), K(reserved_size));
-#ifdef OB_BUILD_SHARED_STORAGE
-  } else if (GCTX.is_shared_storage_mode()
-             && OB_FAIL(OB_SERVER_DISK_SPACE_MGR.get_used_disk_size(shared_storage_data_disk_in_use))) {
-    LOG_WARN("Failed to get used_disk_size", KR(ret));
-#endif
   } else {
     // cpu
     resource_info.cpu_ = get_cpu_count();
@@ -1811,17 +1803,6 @@ int ObService::get_server_resource_info(share::ObServerResourceInfo &resource_in
     resource_info.log_disk_in_use_ = clog_in_use_size_byte;
     resource_info.report_log_disk_assigned_ = svr_res_assigned.log_disk_size_;
     // data_disk
-#ifdef OB_BUILD_SHARED_STORAGE
-    if (GCTX.is_shared_storage_mode()) {
-      // shared-storage mode
-      resource_info.data_disk_total_ = OB_SERVER_DISK_SPACE_MGR.get_disk_size_capacity();
-      resource_info.data_disk_in_use_ = shared_storage_data_disk_in_use;
-      resource_info.report_data_disk_assigned_ = svr_res_assigned.data_disk_size_;
-      resource_info.report_data_disk_suggested_size_ = OB_SERVER_DISK_SPACE_MGR.get_data_disk_suggested_size();
-      resource_info.report_data_disk_suggested_operation_ = OB_SERVER_DISK_SPACE_MGR.get_data_disk_suggested_operation();
-    } else
-    // shared-nothing mode
-#endif
     {
       resource_info.data_disk_total_
           = OB_STORAGE_OBJECT_MGR.get_max_macro_block_count(reserved_size) * OB_STORAGE_OBJECT_MGR.get_macro_block_size();

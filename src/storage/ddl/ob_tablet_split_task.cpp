@@ -268,7 +268,7 @@ int ObTabletSplitCtx::prepare_index_builder(
   } else if (OB_FAIL(split_data.get_storage_schema(storage_schema))) {
     LOG_WARN("failed to get storage schema", K(ret));
   } else {
-    compaction::ObExecMode exec_mode = GCTX.is_shared_storage_mode() ? ObExecMode::EXEC_MODE_OUTPUT : ObExecMode::EXEC_MODE_LOCAL;
+    compaction::ObExecMode exec_mode = ObExecMode::EXEC_MODE_LOCAL;
     for (int64_t i = 0; OB_SUCC(ret) && i < sstables.count(); i++) {
       blocksstable::ObSSTable *sstable = static_cast<blocksstable::ObSSTable *>(sstables.at(i));
       for (int64_t j = 0; OB_SUCC(ret) && j < param.dest_tablets_id_.count(); j++) {
@@ -914,7 +914,7 @@ int ObTabletSplitWriteTask::prepare_macro_block_writer(
     macro_seq_param.seq_type_ = ObMacroSeqParam::SEQ_TYPE_INC;
     macro_seq_param.start_ = macro_start_seq.macro_data_seq_;
     const bool micro_index_clustered = context_->tablet_handle_.get_obj()->get_tablet_meta().micro_index_clustered_;
-    compaction::ObExecMode exec_mode = GCTX.is_shared_storage_mode() ? ObExecMode::EXEC_MODE_OUTPUT : ObExecMode::EXEC_MODE_LOCAL;
+    compaction::ObExecMode exec_mode = ObExecMode::EXEC_MODE_LOCAL;
 
     for (int64_t i = 0; OB_SUCC(ret) && i < param_->dest_tablets_id_.count(); i++) {
       ObPreWarmerParam pre_warm_param;

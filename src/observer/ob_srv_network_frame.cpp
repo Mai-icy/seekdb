@@ -444,12 +444,3 @@ int ObSrvNetworkFrame::net_endpoint_set_ingress(const ObNetEndpointKey &endpoint
   return ret;
 }
 
-int ObSrvNetworkFrame::shared_storage_net_throt_set(const ObSharedDeviceResourceArray &assigned_resource)
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(OB_IO_MANAGER.get_tc().set_limit_v2(assigned_resource))) {
-    LOG_WARN("set failed", K(assigned_resource));
-  }
-  return ret;
-}
-

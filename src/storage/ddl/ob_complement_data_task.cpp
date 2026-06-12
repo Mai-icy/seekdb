@@ -216,7 +216,7 @@ int ObComplementDataParam::init(const ObDDLBuildSingleReplicaRequestArg &arg)
     data_format_version_ = arg.data_format_version_;
     user_parallelism_ = arg.parallelism_;
     is_no_logging_ = arg.is_no_logging_;
-    direct_load_type_ = ObDirectLoadMgrUtil::ddl_get_direct_load_type(GCTX.is_shared_storage_mode(), data_format_version_);
+    direct_load_type_ = ObDirectLoadMgrUtil::ddl_get_direct_load_type(data_format_version_);
     if (OB_FAIL(ObDDLTableSchema::fill_ddl_table_schema(dest_tenant_id_, dest_table_id_, allocator_, ddl_table_schema_))) {
       LOG_WARN("fill ddl table schema failed", K(ret));
     } else if (OB_FAIL(fill_tablet_param())) {
@@ -228,24 +228,6 @@ int ObComplementDataParam::init(const ObDDLBuildSingleReplicaRequestArg &arg)
   }
   return ret;
 }
-
-#ifdef OB_BUILD_SHARED_STORAGE
-struct DatumRangeCompare
-{
-public:
-  explicit DatumRangeCompare(const ObStorageDatumUtils *datum_utils)
-    : ret_(OB_SUCCESS), datum_utils_(datum_utils) {}
-  bool operator() (const ObDatumRange &left, const ObDatumRange &right)
-  {
-    int cmp_ret = 0;
-    ret_ = (OB_SUCCESS == ret_) ? left.get_start_key().compare(right.get_start_key(), *datum_utils_, cmp_ret) : ret_;
-    return cmp_ret < 0;
-  }
-public:
-  int ret_;
-  const ObStorageDatumUtils *datum_utils_;
-};
-#endif
 
 int ObComplementDataParam::prepare_task_ranges()
 {
@@ -337,28 +319,6 @@ int ObComplementDataParam::split_task_ranges(
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("tablet service is nullptr", K(ret));
     } else {
-#ifdef OB_BUILD_SHARED_STORAGE
-      if (OB_SUCC(ret) && ObDDLUtil::use_idempotent_mode()) {
-        storage::ObTabletHandle tablet_handle;
-        if (OB_FAIL(ObDDLUtil::ddl_get_tablet(ls_handle, tablet_id, tablet_handle))) {
-          LOG_WARN("get tablet failed", K(ret), K(ls_handle), K(tablet_id));
-        } else {
-          DatumRangeCompare cmp(&tablet_handle.get_obj()->get_rowkey_read_info().get_datum_utils());
-          lib::ob_sort(ranges_.begin(), ranges_.end(), cmp);
-          if (OB_FAIL(cmp.ret_)) {
-            LOG_WARN("sort ranges failed", K(ret), K(task_id), K(tablet_id));
-          } else if (!ranges_.at(0).get_start_key().is_min_rowkey()
-              || !ranges_.at(ranges_.count() - 1).get_end_key().is_max_rowkey()) {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("sorted range not correct", K(ret), K(ranges_.count()),
-                "first_range", ranges_.at(0), "last_range", ranges_.at(ranges_.count() - 1));
-          } else if (OB_FAIL(rootserver::ObDDLTaskRecordOperator::get_or_insert_tablet_schedule_info(
-                  MTL_ID(), task_id, tablet_id, allocator_, ranges_))) {
-            LOG_WARN("get or insert tablet schedule info failed", K(ret), "tenant_id", MTL_ID(), K(task_id), K(tablet_id), K(ranges_));
-          }
-        }
-      }
-#endif
       if (OB_SUCC(ret)) {
         concurrent_cnt_ = ranges_.count();
         FLOG_INFO("succeed to get concurrent cnt", K(ret), K(task_id), K(tablet_id));
@@ -572,7 +532,6 @@ ObComplementDataDag::ObComplementDataDag()
   : ObIDag(ObDagType::DAG_TYPE_DDL), is_inited_(false), param_(), context_()
 {
 }
-
 
 ObComplementDataDag::~ObComplementDataDag()
 {
@@ -1974,10 +1933,6 @@ int ObLocalScan::construct_access_param(
     access_param_.iter_param_.table_id_ = data_table_schema.get_table_id();
     access_param_.iter_param_.out_cols_project_ = &output_projector;
     access_param_.iter_param_.read_info_ = &read_info_;
-    if (GCTX.is_shared_storage_mode()) {
-      access_param_.iter_param_.table_scan_opt_.io_read_batch_size_ = 1024L * 1024L * 2L; // 2M
-      access_param_.iter_param_.table_scan_opt_.io_read_gap_size_ = 0;
-    }
     if (OB_FAIL(access_param_.iter_param_.refresh_lob_column_out_status())) {
       STORAGE_LOG(WARN, "Failed to refresh lob column", K(ret), K(access_param_.iter_param_));
     } else {

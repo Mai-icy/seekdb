@@ -2518,20 +2518,6 @@ int ObDDLResolver::resolve_table_option(const ParseNode *option_node, const bool
         }
         break;
       }
-      case T_STORAGE_CACHE_POLICY_ATTRIBUTE_LIST: {
-        if (!GCTX.is_shared_storage_mode()) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("storage cache policy is not supported in shared storage mode", K(ret));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "storage cache policy is not supported in shared storage mode");
-        } else if (OB_ISNULL(option_node->children_[0])) {
-          ret = OB_ERR_UNEXPECTED;
-          SQL_RESV_LOG(WARN, "the children of option_node for storage_cache_policy is null",
-              K(option_node->children_[0]), K(ret));
-        } else if (OB_FAIL(resolve_storage_cache_attribute(option_node->children_[0], params_))) {
-          LOG_WARN("fail to resolve storage cache policy attribute", K(ret));
-        }
-        break;
-      }
       case T_TTL_DEFINITION: {
         if (!is_index_option) {
           if (OB_ISNULL(option_node->children_)) {
@@ -9759,7 +9745,7 @@ int ObDDLResolver::resolve_auto_partition_with_tenant_config(ObCreateTableStmt *
         LOG_USER_ERROR(OB_NOT_SUPPORTED, "auto-partition table with domain index is");
       }
     }
-  } else if (!stmt->use_auto_partition_clause() && !GCTX.is_shared_storage_mode() &&
+  } else if (!stmt->use_auto_partition_clause() &&
              OB_FAIL(try_set_auto_partition_by_config(node, stmt->get_index_arg_list(), table_schema))) {
     LOG_WARN("fail to try to set auto_partition by config", KR(ret), K(table_schema), KPC(stmt));
   }
@@ -9883,10 +9869,6 @@ int ObDDLResolver::resolve_auto_partition(ObPartitionedStmt *stmt, ParseNode *no
       ret = OB_NOT_SUPPORTED;
       LOG_WARN("not allow heap organizated table to set auto-partition clause", KR(ret), K(table_schema.get_table_type()));
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "using auto-partition clause for heap organizated table is");
-    } else if (GCTX.is_shared_storage_mode()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not allow to set auto-partition clause in shared_storage_mode", KR(ret), K(table_schema));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "using auto-partition clause in shared storage mode is");
     } else { // table_schema.is_user_table() && stmt->use_auto_partition_clause()
       if (!SET_PARTITION_DEFINITION &&
           OB_FAIL(resolve_presetting_partition_key(node, table_schema))) {
