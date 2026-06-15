@@ -323,7 +323,16 @@ public:
   uint64_t dec_mem_used(uint64_t mem_delta)
   {
     SQL_PC_LOG(DEBUG, "before dec mem_used, mem_used", K(mem_used_));
-    return ATOMIC_FAA((uint64_t *)&mem_used_, -mem_delta);
+    int64_t old_val = 0;
+    int64_t new_val = 0;
+    do {
+      old_val = ATOMIC_LOAD(&mem_used_);
+      if (old_val <= 0) {
+        return 0;
+      }
+      new_val = (static_cast<uint64_t>(old_val) > mem_delta) ? (old_val - static_cast<int64_t>(mem_delta)) : 0;
+    } while (!ATOMIC_BCAS(&mem_used_, old_val, new_val));
+    return static_cast<uint64_t>(old_val);
   };
 
   int64_t get_mem_used() const
@@ -352,6 +361,7 @@ public:
   //evict plan, adjust mem between hwm and lwm
   int cache_evict();
   int cache_evict_by_glitch_node();
+  int cache_evict_by_idle();
   int cache_evict_plan_by_sql_id(uint64_t db_id, common::ObString sql_id);
   int cache_evict_by_ns(ObLibCacheNameSpace ns);
   template<typename CallBack = ObKVEntryTraverseOp>
@@ -479,6 +489,11 @@ private:
   CacheKeyNodeMap cache_key_node_map_;
   ObPlanCacheEliminationTask evict_task_;
   int tg_id_;
+  int64_t idle_scan_cursor_;
+  bool idle_evict_done_round_;
+  static const int64_t IDLE_SCAN_MAX_NODES = 1000;
+  static const int64_t IDLE_SCAN_MAX_BUCKETS = 5000;
+  static const int64_t IDLE_EVICT_THRESHOLD_US = 30L * 1000L * 1000L; // 30s
 };
 
 template<typename _callback>
