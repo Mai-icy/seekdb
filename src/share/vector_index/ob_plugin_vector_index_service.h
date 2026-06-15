@@ -25,7 +25,6 @@
 #include "share/rc/ob_tenant_base.h"
 #include "share/vector_index/ob_plugin_vector_index_adaptor.h"
 #include "share/vector_index/ob_plugin_vector_index_scheduler.h"
-#include "observer/table/ttl/ob_tenant_ttl_manager.h"
 #include "share/vector_index/ob_plugin_vector_index_util.h"
 #include "share/vector_type/ob_vector_common_util.h"
 #include "share/vector_index/ob_tenant_vector_index_async_task.h"

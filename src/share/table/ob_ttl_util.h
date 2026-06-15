@@ -20,7 +20,6 @@
 #include "lib/mysqlclient/ob_mysql_proxy.h"
 #include "rpc/frame/ob_req_transport.h"
 #include "share/ob_rpc_struct.h"
-#include "share/table/redis/ob_redis_common.h"
 
 namespace oceanbase
 {
@@ -280,7 +279,6 @@ public:
       max_version_(0), 
       is_disable_(false),
       is_redis_ttl_(false), 
-      redis_model_(table::ObRedisDataModel::MODEL_MAX),
       created_by_admin_(false)
   {}
   bool is_ttl_table() const;
@@ -290,7 +288,7 @@ public:
   }
   OB_INLINE bool is_empty() const { return type_ == ObTTLTableType::INVALID; }
   OB_INLINE bool is_created_by_admin() const { return type_ == ObTTLTableType::HBASE && created_by_admin_; }
-  TO_STRING_KV(K_(type), K_(ttl), K_(max_version), K_(is_disable), K_(is_redis_ttl), K_(redis_model), K_(created_by_admin));
+  TO_STRING_KV(K_(type), K_(ttl), K_(max_version), K_(is_disable), K_(is_redis_ttl), K_(created_by_admin));
 
   ObTTLTableType type_;
 
@@ -300,7 +298,6 @@ public:
   bool     is_disable_;
   // for redis
   bool is_redis_ttl_;
-  table::ObRedisDataModel redis_model_;
   bool created_by_admin_;
 };
 
@@ -387,25 +384,13 @@ public:
 
   static int get_ttl_columns(const ObString &ttl_definition, ObIArray<ObString> &ttl_columns);
   static bool is_ttl_column(const ObString &orig_column_name, const ObIArray<ObString> &ttl_columns);
-  static int check_kv_attributes(const share::schema::ObTableSchema &table_schema, bool by_admin = false);
-  static int check_kv_attributes(const ObString &kv_attributes,
-                                 const share::schema::ObTableSchema &table_schema,
-                                 ObPartitionLevel part_level,
-                                 bool by_admin = false);
-  static int check_htable_ddl_supported(const share::schema::ObTableSchema &table_schema,
-                                        bool by_admin,
-                                        obcall::ObHTableDDLType ddl_type = obcall::ObHTableDDLType::INVALID,
-                                        const ObString &table_name = ObString());
-  static int check_htable_ddl_supported(share::schema::ObSchemaGetterGuard &schema_guard,
-                                        const uint64_t tenant_id,
-                                        const common::ObIArray<share::schema::ObDependencyInfo> &dep_infos);
+
   const static uint64_t TTL_TENNAT_TASK_TABLET_ID = -1;
   const static uint64_t TTL_TENNAT_TASK_TABLE_ID = -1;
   const static uint64_t TTL_ROWKEY_TASK_TABLET_ID = -2;
   const static uint64_t TTL_ROWKEY_TASK_TABLE_ID = -2;
   const static uint64_t TTL_THREAD_MAX_SCORE = 100;
-private:
-  static int check_is_htable_ttl_(const ObTableSchema &table_schema, bool allow_timeseries_table, bool &is_ttl_table);
+ private:
   static int check_htable_ddl_supported_(const ObKVAttr &attr, bool by_admin);
 private:
   static bool extract_val(const char* ptr, uint64_t len, int& val);

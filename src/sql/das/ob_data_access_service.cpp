@@ -21,6 +21,7 @@
 #include "sql/das/ob_das_parallel_handler.h"
 #include "observer/mysql/ob_query_retry_ctrl.h"
 #include "observer/omt/ob_multi_tenant.h"
+#include "observer/omt/ob_tenant.h"
 #include "sql/das/ob_das_extra_data.h"
 
 namespace oceanbase

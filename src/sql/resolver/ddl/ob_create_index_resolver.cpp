@@ -666,8 +666,6 @@ if (OB_SUCC(ret) &&
     if (OB_ISNULL(data_tbl_schema)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("unexpected null data table schema", K(ret));
-    } else if (OB_FAIL(ObTTLUtil::check_htable_ddl_supported(*data_tbl_schema, false/*by_admin*/))) {
-      LOG_WARN("failed to check htable ddl supported", K(ret));
     }
   }
 

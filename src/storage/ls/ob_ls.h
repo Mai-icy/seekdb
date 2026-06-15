@@ -55,8 +55,8 @@
 #include "logservice/leader_coordinator/election_priority_impl/election_priority_impl.h"
 #include "storage/tx_storage/ob_tablet_gc_service.h"
 #include "storage/tx_storage/ob_empty_shell_task.h"
-#include "observer/table/ttl/ob_tenant_tablet_ttl_mgr.h"
 #include "storage/mview/ob_major_mv_merge_info.h"
+#include "share/vector_index/ob_plugin_vector_index_scheduler.h"
 #include "storage/ls/ob_freezer_define.h"
 
 namespace oceanbase
@@ -955,7 +955,9 @@ private:
   ObLSReservedSnapshotMgr reserved_snapshot_mgr_;
   ObLSResvSnapClogHandler reserved_snapshot_clog_handler_;
   ObMediumCompactionClogHandler medium_compaction_clog_handler_;
-  table::ObTenantTabletTTLMgr tablet_ttl_mgr_;
+  // vector index scheduler (previously hosted in ObTenantTabletTTLMgr)
+  int vec_tg_id_;
+  share::ObPluginVectorIndexLoadScheduler vector_idx_scheduler_;
 private:
   bool is_inited_;
   uint64_t tenant_id_;

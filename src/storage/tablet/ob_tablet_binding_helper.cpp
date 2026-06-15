@@ -22,6 +22,7 @@
 #include "share/tablet/ob_tablet_to_ls_operator.h"
 #include "storage/tx_storage/ob_ls_service.h"
 #include "observer/ob_inner_sql_connection.h"
+#include "rootserver/ob_ddl_service.h"
 
 using namespace oceanbase::obcall;
 using namespace oceanbase::common;
