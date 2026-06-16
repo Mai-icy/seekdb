@@ -123,7 +123,7 @@ select substr(c3, 1, 10) from pt_lob;
 drop table pt_lob;
 
 
---echo test split one tablet into multiple tablets such that the memory usage would be greater than tenant mem limit
+--echo test split one tablet into multiple tablets such that the memory usage would be greater than tenant mem limit 
 
 --disable_warnings
 drop table if exists t88;

@@ -75,14 +75,10 @@ public:
             || RPC_STREAM_COMPRESS_ZSTD_138 == mode);
   }
 
-  static ObRpcCompressMode get_compress_mode_from_type(oceanbase::common::ObCompressorType type) 
+  static ObRpcCompressMode get_compress_mode_from_type(oceanbase::common::ObCompressorType type)
   {
     ObRpcCompressMode compress_mode = RPC_STREAM_COMPRESS_NONE;
-    if (common::STREAM_LZ4_COMPRESSOR == type) {
-      compress_mode = RPC_STREAM_COMPRESS_LZ4;
-    } else if (common::STREAM_ZSTD_COMPRESSOR == type) {
-      compress_mode = RPC_STREAM_COMPRESS_ZSTD;
-    } else if (common::STREAM_ZSTD_1_3_8_COMPRESSOR == type) {
+    if (common::STREAM_ZSTD_1_3_8_COMPRESSOR == type) {
       compress_mode = RPC_STREAM_COMPRESS_ZSTD_138;
     } else {
       compress_mode = RPC_STREAM_COMPRESS_NONE;

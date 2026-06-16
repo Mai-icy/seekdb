@@ -334,7 +334,7 @@ void ObLibXml2SaxHandler::entity_reference(void *ctx, const xmlChar *name)
   }
 }
 #if defined(__APPLE__) || defined(__ANDROID__)
-void ObLibXml2SaxHandler::structured_error(void *ctx, xmlError *error)
+void ObLibXml2SaxHandler::structured_error(void *ctx, xmlError *error) 
 #else
 void ObLibXml2SaxHandler::structured_error(void *ctx, const xmlError *error)
 #endif

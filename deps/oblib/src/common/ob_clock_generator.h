@@ -127,7 +127,6 @@ inline void ObClockGenerator::usleep(const int64_t us)
     struct timespec ts;
     ts.tv_sec = us / 1000000;
     ts.tv_nsec = (us % 1000000) * 1000;
-    ObBKGDSessInActiveGuard inactive_guard;
     (void)nanosleep(&ts, nullptr);
   }
 }

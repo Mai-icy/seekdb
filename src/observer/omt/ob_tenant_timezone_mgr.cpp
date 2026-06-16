@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX SERVER_OMT
 #include "ob_tenant_timezone_mgr.h"
 #include "observer/ob_server.h"
+#include "share/ob_internal_table_change_notifier.h"
 
 using namespace oceanbase::common;
 
@@ -29,9 +30,12 @@ void ObTenantTimezoneMgr::UpdateTenantTZTask::runTimerTask()
   int ret = OB_SUCCESS;
   if (OB_ISNULL(tenant_tz_mgr_)) {
     ret = OB_ERR_UNEXPECTED;
-    LOG_ERROR("update tenant task, tenant tz mgr is null", K(ret));
+    LOG_WARN("update tenant task, tenant tz mgr is null", K(ret));
   } else if (OB_FAIL(tenant_tz_mgr_->refresh_timezone_info())) {
-    LOG_WARN("update tenant time zone failed", K(ret));
+    LOG_WARN("update tenant time zone failed, rescheduling", K(ret));
+    tenant_tz_mgr_->schedule_retry();
+  } else {
+    LOG_INFO("[TIMEZONE] retry timer succeeded");
   }
 }
 
@@ -67,22 +71,23 @@ int ObTenantTimezoneMgr::init(ObMySQLProxy &sql_proxy, const ObAddr &server,
     LOG_WARN("init timezone info failed", K(ret));
   } else {
     tenant_tz_map_getter_ = ObTenantTimezoneMgr::get_tenant_timezone_static;
+    // Register with notifier. Role-change-driven switch_to_leader will
+    // trigger the initial refresh after LS promotion; import path triggers
+    // via notify().
+    share::ObInternalTableChangeNotifier::get_instance().register_module(
+        table::ObModuleDataArg::TIMEZONE,
+        [](uint64_t /*tenant_id*/) -> int {
+          LOG_INFO("[TIMEZONE_NOTIFIER] scheduling async refresh");
+          OTTZ_MGR.schedule_retry();
+          return OB_SUCCESS;
+        });
   }
   return ret;
 }
 
 int ObTenantTimezoneMgr::start()
 {
-  int ret = OB_SUCCESS;
-  const int64_t delay = SLEEP_USECONDS;
-  const bool repeat = true;
-  const bool immediate = false;
-  if (OB_FAIL(TG_START(lib::TGDefIDs::TIMEZONE_MGR))) {
-    LOG_WARN("fail to start timer", K(ret));
-  } else if (OB_FAIL(TG_SCHEDULE(lib::TGDefIDs::TIMEZONE_MGR, update_task_, delay, repeat, immediate))) {
-    LOG_WARN("schedual time zone mgr failed", K(ret));
-  }
-  return ret;
+  return OB_SUCCESS;
 }
 
 void ObTenantTimezoneMgr::init(tenant_timezone_map_getter tz_map_getter)
@@ -93,17 +98,14 @@ void ObTenantTimezoneMgr::init(tenant_timezone_map_getter tz_map_getter)
 
 void ObTenantTimezoneMgr::stop()
 {
-  TG_STOP(lib::TGDefIDs::TIMEZONE_MGR);
 }
 
 void ObTenantTimezoneMgr::wait()
 {
-  TG_WAIT(lib::TGDefIDs::TIMEZONE_MGR);
 }
 
 void ObTenantTimezoneMgr::destroy()
 {
-  TG_DESTROY(lib::TGDefIDs::TIMEZONE_MGR);
   ob_delete(timezone_);
 }
 
@@ -139,9 +141,24 @@ int ObTenantTimezoneMgr::refresh_timezone_info()
     LOG_WARN("tenant tz is null", K(ret));
   } else if (OB_FAIL(timezone_->get_tz_mgr().fetch_time_zone_info())) {
     LOG_WARN("fail to update time zone info", K(ret));
+  } else {
+    LOG_INFO("[TIMEZONE_NOTIFIER] refresh_timezone_info success");
   }
   return ret;
 }
+
+int ObTenantTimezoneMgr::schedule_retry()
+{
+  int ret = OB_SUCCESS;
+  if (OB_FAIL(TG_SCHEDULE(MTL(omt::ObSharedTimer*)->get_tg_id(),
+                          update_task_, 1000000, false))) {
+    LOG_WARN("schedule timezone retry timer failed", K(ret));
+  } else {
+    LOG_INFO("[TIMEZONE] retry timer scheduled");
+  }
+  return ret;
+}
+
 int ObTenantTimezoneMgr::get_tenant_timezone(const uint64_t /*tenant_id*/,
                                              ObTZMapWrap &timezone_wrap,
                                              ObTimeZoneInfoManager *&tz_info_mgr)

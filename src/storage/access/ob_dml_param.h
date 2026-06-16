@@ -231,7 +231,7 @@ public:
   ObMdsReadInfoCollector *mds_collector_; // used for collect mds info when query mds sstable
   uint64_t *row_scan_cnt_;
   bool enable_new_false_range_;
-
+  
   DECLARE_VIRTUAL_TO_STRING;
 private:
   DISALLOW_COPY_AND_ASSIGN(ObTableScanParam);

@@ -39,8 +39,8 @@ ObCreateIndexHelper::ObCreateIndexHelper(
     share::schema::ObMultiVersionSchemaService *schema_service,
     const uint64_t tenant_id,
     rootserver::ObDDLService &ddl_service,
-    const obrpc::ObCreateIndexArg &arg,
-    obrpc::ObAlterTableRes &res)
+    const obcall::ObCreateIndexArg &arg,
+    obcall::ObAlterTableRes &res)
   : ObDDLHelper(schema_service, tenant_id, "[parallel create index]"),
     arg_(arg),
     new_arg_(nullptr),
@@ -277,8 +277,6 @@ int ObCreateIndexHelper::check_table_legitimacy_()
     LOG_WARN("fail to check table udt exist", KR(ret));
   } else if (OB_FAIL(check_fk_related_table_ddl_(*orig_data_table_schema_, ObDDLType::DDL_CREATE_INDEX))) {
     LOG_WARN("check whether the forign key related table is executing ddl failed", KR(ret));
-  } else if (OB_FAIL(ObTTLUtil::check_htable_ddl_supported(*orig_data_table_schema_, false/*by_admin*/))) {
-    LOG_WARN("failed to check htable ddl supported", KR(ret));
   }
   RS_TRACE(check_schemas);
   return ret;
@@ -323,10 +321,10 @@ int ObCreateIndexHelper::generate_index_schema_()
   HEAP_VAR(ObTableSchema, tmp_index_schema){
   if (OB_FAIL(check_inner_stat_())) {
     LOG_WARN("fail to check inner stat", KR(ret));
-  } else if (OB_ISNULL(new_arg_ptr = allocator_.alloc(sizeof(obrpc::ObCreateIndexArg)))) {
+  } else if (OB_ISNULL(new_arg_ptr = allocator_.alloc(sizeof(obcall::ObCreateIndexArg)))) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("fail alloc memory", KR(ret), KP(new_arg_ptr));
-  } else if (FALSE_IT(new_arg_ = new (new_arg_ptr)obrpc::ObCreateIndexArg)) {
+  } else if (FALSE_IT(new_arg_ = new (new_arg_ptr)obcall::ObCreateIndexArg)) {
   } else if (OB_ISNULL(new_arg_)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("new_arg_ is null", KR(ret));
@@ -621,7 +619,7 @@ int ObCreateIndexHelper::create_tablets_()
     LOG_WARN("fail to get frozen status for create tablet", KR(ret), K_(tenant_id));
   } else if (OB_FAIL(schema_service_->get_tenant_schema_guard(tenant_id_, schema_guard))) {
     LOG_WARN("fail to get tenant schema guard", KR(ret), K_(tenant_id));
-  } else if (create_index_on_empty_table_opt_
+  } else if (create_index_on_empty_table_opt_ 
              && OB_FAIL(ObCreateIndexOnEmptyTableHelper::get_major_frozen_scn(tenant_id_, frozen_scn))) {
     // we will create empty major when create index on empty table, so we need to get timestamp as major version to make sure data in the index table is consistent with the data table.
     LOG_WARN("fail to get wait major frozen scn", KR(ret));

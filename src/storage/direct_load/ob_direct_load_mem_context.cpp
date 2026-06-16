@@ -158,7 +158,7 @@ int ObDirectLoadMemContext::init_enc_params(const ObIArray<ObColDesc> &column_de
         LOG_WARN("fail to push back", KR(ret));
       }
     }
-
+    
     if (OB_SUCC(ret)) {
       for (int i = 0; i < enc_params.count(); i++) {
         if (!ObOrderPerservingEncoder::can_encode_sortkey(enc_params.at(i).type_, enc_params.at(i).cs_type_)) {

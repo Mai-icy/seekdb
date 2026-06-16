@@ -1415,7 +1415,7 @@ int ObSchemaRetrieveUtils::fill_table_schema(
         int64_t, true/*skip null error*/, ignore_column_error, 0);
     EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
       result, dynamic_partition_policy, table_schema, true/*skip_null_error*/, true/*skip_column_error*/, "");
-    EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, external_location_id, table_schema,
+    EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, external_location_id, table_schema, 
                                                         uint64_t, true, true, common::OB_INVALID_ID);
     EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
       result, external_sub_path, table_schema, true/*skip null*/, true/*ignore column error*/, empty_str);
@@ -2162,9 +2162,9 @@ int ObSchemaRetrieveUtils::fill_obj_priv_schema(
 
 template<typename T>
 int ObSchemaRetrieveUtils::fill_obj_mysql_priv_schema (
-                            const uint64_t tenant_id,
-                            T &result,
-                            ObObjMysqlPriv &obj_mysql_priv,
+                            const uint64_t tenant_id, 
+                            T &result, 
+                            ObObjMysqlPriv &obj_mysql_priv, 
                             bool &is_deleted)
 {
   int ret = common::OB_SUCCESS;
@@ -3528,14 +3528,6 @@ int ObSchemaRetrieveUtils::fill_table_schema(
     ObString tmp_storage_cache_policy;
     EXTRACT_VARCHAR_FIELD_MYSQL_WITH_DEFAULT_VALUE(
       result, "storage_cache_policy", tmp_storage_cache_policy, true/*skip null*/, true/*ignore column error*/, OB_DEFAULT_STORAGE_CACHE_POLICY_STR);
-    if (OB_SUCC(ret) && GCTX.is_shared_storage_mode()) {
-      ObStorageCachePolicyType policy_type = ObStorageCachePolicyType::MAX_POLICY;
-      if (OB_FAIL(get_storage_cache_policy_type_from_str(tmp_storage_cache_policy, policy_type))) {
-        SHARE_SCHEMA_LOG(WARN, "fail to get storage cache policy type", K(ret), K(tmp_storage_cache_policy));
-      } else {
-        table_schema.set_storage_cache_policy_type(policy_type);
-      }
-    }
 
     ObString dynamic_partition_policy;
     EXTRACT_VARCHAR_FIELD_MYSQL_WITH_DEFAULT_VALUE(
@@ -3935,17 +3927,9 @@ int ObSchemaRetrieveUtils::fill_base_part_info(
     }
     if (OB_SUCC(ret)) {
       ObStorageCachePolicyType part_storage_cache_policy_type = ObStorageCachePolicyType::MAX_POLICY;
-      ObString tmp_part_storage_cache_policy; 
+      ObString tmp_part_storage_cache_policy;
       EXTRACT_VARCHAR_FIELD_MYSQL_WITH_DEFAULT_VALUE(
         result, "storage_cache_policy", tmp_part_storage_cache_policy, true, /* skip null error*/ true,/*skip column error*/ OB_DEFAULT_PART_STORAGE_CACHE_POLICY_STR);
-
-      if (OB_SUCC(ret) && GCTX.is_shared_storage_mode()) {
-        if (OB_FAIL(storage::get_storage_cache_policy_type_from_part_str(tmp_part_storage_cache_policy, part_storage_cache_policy_type))) {
-          SHARE_SCHEMA_LOG(WARN, "fail to get storage cache policy type from str", K(ret));
-        } else {
-          partition.set_part_storage_cache_policy_type(part_storage_cache_policy_type);
-        }
-      }
     }
   } else { }//do nothing
   return ret;

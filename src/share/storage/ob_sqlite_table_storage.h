@@ -40,23 +40,23 @@ class ObSQLiteConnectionGuard
 public:
   ObSQLiteConnectionGuard(ObSQLiteConnectionPool *pool);
   ~ObSQLiteConnectionGuard();
-
+  
   // Get the connection (nullptr if acquisition failed)
   ObSQLiteConnection *get_connection() const { return conn_; }
-
+  
   // Check if connection is valid
   bool is_valid() const { return nullptr != conn_; }
-
+  
   // Explicitly release connection early (normally done in destructor)
   void release();
-
+  
   // Operator overloads for convenience
   // operator->() allows direct access to connection methods: guard->query(...)
   ObSQLiteConnection *operator->() const { return conn_; }
-
+  
   // operator bool() allows if (guard) instead of if (guard.is_valid())
   explicit operator bool() const { return nullptr != conn_; }
-
+  
   // Disable copy
   DISALLOW_COPY_AND_ASSIGN(ObSQLiteConnectionGuard);
 
@@ -77,7 +77,7 @@ public:
 
   // Initialize with database path
   int init(const char *db_path);
-
+  
   void destroy();
   bool is_inited() const { return strlen(db_path_) > 0; }
 
@@ -85,14 +85,14 @@ public:
   // @param conn: output parameter for acquired connection
   // @return OB_SUCCESS on success
   int acquire_connection(ObSQLiteConnection *&conn);
-
+  
   // Release a connection
   void release_connection(ObSQLiteConnection *conn);
 
 private:
   char db_path_[OB_MAX_FILE_NAME_LENGTH];
   DISALLOW_COPY_AND_ASSIGN(ObSQLiteConnectionPool);
-
+  
   friend class ObSQLiteConnectionGuard;
 };
 

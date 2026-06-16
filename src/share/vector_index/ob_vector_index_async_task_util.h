@@ -352,7 +352,7 @@ private:
 class ObVecIndexAsyncTask : public ObVecIndexIAsyncTask
 {
 public:
-  ObVecIndexAsyncTask()
+  ObVecIndexAsyncTask() 
       : ObVecIndexIAsyncTask(ObMemAttr(MTL_ID(), "VecIdxASyTask"))
   {
   }

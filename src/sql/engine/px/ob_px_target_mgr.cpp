@@ -72,11 +72,6 @@ int ObPxTargetMgr::start()
   } else if (is_running_) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("ObPxTargetMgr is already running", K(ret));
-  } else if (OB_FAIL(TG_START(lib::TGDefIDs::PxTargetMgr))) {
-    LOG_WARN("PX global resource manager refresh worker timer start error", K(ret));
-  } else if (OB_FAIL(TG_SCHEDULE(lib::TGDefIDs::PxTargetMgr, timer_task_,
-                                 PX_REFRESH_TARGET_INTERVEL_US, true/*repeat*/, false/*immediate*/))) {
-    LOG_WARN("PX global resource manager refresh worker timer schdule error", K(ret));
   } else {
     is_running_ = true;
     LOG_INFO("ObPxTargetMgr start success");
@@ -86,12 +81,10 @@ int ObPxTargetMgr::start()
 
 void ObPxTargetMgr::stop()
 {
-  int ret = OB_SUCCESS;
   if (!is_inited_) {
-    ret = OB_NOT_INIT;
+    int ret = OB_NOT_INIT;
     LOG_WARN("ObPxTargetMgr is not inited", K(ret));
   } else {
-    TG_STOP(lib::TGDefIDs::PxTargetMgr);
     is_running_ = false;
     LOG_INFO("ObPxTargetMgr stop success");
   }
@@ -99,15 +92,13 @@ void ObPxTargetMgr::stop()
 
 void ObPxTargetMgr::wait()
 {
-  int ret = OB_SUCCESS;
   if (!is_inited_) {
-    ret = OB_NOT_INIT;
+    int ret = OB_NOT_INIT;
     LOG_WARN("ObPxTargetMgr is not inited", K(ret));
   } else if (is_running_) {
-    ret = OB_ERR_UNEXPECTED;
+    int ret = OB_ERR_UNEXPECTED;
     LOG_WARN("ObPxTargetMgr is running", K(ret));
   } else {
-    TG_WAIT(lib::TGDefIDs::PxTargetMgr);
     LOG_INFO("ObPxTargetMgr wait success");
   }
 }
@@ -122,14 +113,6 @@ void ObPxTargetMgr::destroy()
     is_inited_ = false;
     LOG_INFO("ObPxTargetMgr destroyed");
   }
-}
-
-void ObPxTargetMgr::run_timer_task()
-{
-  ObPxResRefreshFunctor px_res_refresh_funtor;
-
-  px_info_map_.for_each(px_res_refresh_funtor);
-  px_res_refresh_funtor.set_need_refresh_all(false);
 }
 
 int ObPxTargetMgr::add_tenant(const uint64_t tenant_id)
@@ -296,15 +279,10 @@ int ObPxTargetMgr::update_peer_target_used(uint64_t tenant_id, const ObAddr &ser
 int ObPxTargetMgr::gather_global_target_usage(uint64_t tenant_id, ObPxGlobalResGather &gather)
 {
   int ret = OB_SUCCESS;
-  const hash::ObHashMap<ObAddr, ServerTargetUsage> *global_target_usage = NULL;
   GET_TARGET_MONITOR(tenant_id, {
-    if (OB_FAIL(target_monitor->get_global_target_usage(global_target_usage))) {
-      LOG_WARN("get global target usage failed", K(ret), K(tenant_id));
-    } else if (OB_ISNULL(global_target_usage)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("global_target_usage is null", K(ret), K(tenant_id));
-    } else if (OB_FAIL(global_target_usage->foreach_refactored(gather))) {
-      LOG_WARN("gather global px resource usage failed", K(ret));
+    // Single-server: just report self usage, no hash map iteration needed
+    if (OB_FAIL(gather.result_.push_peer_target_usage(server_, target_monitor->get_px_target_used()))) {
+      LOG_WARN("push peer target usage failed", K(ret));
     }
   });
   return ret;

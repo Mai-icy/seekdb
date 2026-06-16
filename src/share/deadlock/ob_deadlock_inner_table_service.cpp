@@ -126,13 +126,13 @@ int ObDeadLockInnerTableService::insert_all(const ObIArray<ObDetectorInnerReport
   } else {
     const int64_t current_ts = ObClockGenerator::getRealClock();
     ObArray<ObDeadlockEventHistoryEntry> entries;
-
+    
     for (int64_t i = 0; OB_SUCC(ret) && i < infos.count(); ++i) {
       const ObDetectorInnerReportInfo &info = infos.at(i);
       const ObDetectorUserReportInfo &user_info = info.get_user_report_info();
       const ObIArray<ObString> &extra_names = user_info.get_extra_columns_names();
       const ObIArray<ObString> &extra_values = user_info.get_extra_columns_values();
-
+      
       ObDeadlockEventHistoryEntry entry;
       entry.tenant_id_ = info.get_tenant_id();
       entry.event_id_ = info.get_event_id();
@@ -167,7 +167,7 @@ int ObDeadLockInnerTableService::insert_all(const ObIArray<ObDetectorInnerReport
       if (extra_values.count() > 2) {
         entry.extra_value3_ = extra_values.at(2);
       }
-
+      
       if (CLICK() && OB_FAIL(entries.push_back(entry))) {
         DETECT_LOG(WARN, "failed to push back entry", KR(ret));
       }

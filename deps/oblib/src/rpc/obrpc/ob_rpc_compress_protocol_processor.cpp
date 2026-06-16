@@ -229,7 +229,7 @@ int ObRpcCompressProtocolProcessor::reset_compress_ctx_mode(easy_connection_t *e
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("compressor is NULL", K(compress_ctx), K(mode), K(*pkt), K(ret));
       } else if ((total_data_size_before_compress + net_pkt_size >= MAX_COMPRESS_DATA_SIZE)
-                  && ObCompressorType::ZSTD_COMPRESSOR == compressor->get_compressor_type()) {
+                  && ObCompressorType::ZSTD_1_3_8_COMPRESSOR == compressor->get_compressor_type()) {
         if (OB_FAIL(compressor->reset_compress_ctx(compress_ctx.cctx_))) {
           LOG_WARN("failed to reset compress ctx", K(compress_ctx), K(ret));
         } else {

@@ -175,7 +175,7 @@ int ObDagMicroBlockIterator::update_cg_block_offset_and_micro_idx()
   }
   return ret;
 }
-
+  
 
 }//end namespace blocksstable
 }//end namespace oceanbase

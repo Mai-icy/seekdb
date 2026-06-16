@@ -160,3 +160,4 @@ int ObColumnClusteredDag::update_tablet_range_count()
   }
   return ret;
 }
+

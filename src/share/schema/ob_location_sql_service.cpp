@@ -17,7 +17,7 @@
  #define USING_LOG_PREFIX SHARE_SCHEMA
  #include "share/schema/ob_location_sql_service.h"
  #include "share/inner_table/ob_inner_table_schema_constants.h"
-
+ 
  namespace oceanbase
  {
  namespace share
@@ -26,16 +26,16 @@
  {
  const char *ObLocationSqlService::LOCATION_TABLES[2] = {OB_ALL_TENANT_LOCATION_TNAME,
                                                            OB_ALL_TENANT_LOCATION_HISTORY_TNAME};
-
+ 
  ObLocationSqlService::ObLocationSqlService(ObSchemaService &schema_service)
    : ObDDLSqlService(schema_service)
  {
  }
-
+ 
  ObLocationSqlService::~ObLocationSqlService()
  {
  }
-
+ 
  int ObLocationSqlService::apply_new_schema(const ObLocationSchema &schema,
                                              ObISQLClient &sql_client,
                                              ObSchemaOperationType ddl_type,
@@ -56,7 +56,7 @@
      ret = OB_NOT_SUPPORTED;
      LOG_WARN("not supported ddl type", K(ret), K(ddl_type));
    }
-
+ 
    if (OB_FAIL(ret)) {
      LOG_WARN("fail to exec ddl sql", K(ret), K(schema), K(ddl_type));
    } else {
@@ -72,7 +72,7 @@
    }
    return ret;
  }
-
+ 
  int ObLocationSqlService::add_schema(ObISQLClient &sql_client, const ObLocationSchema &schema)
  {
    int ret = OB_SUCCESS;
@@ -112,7 +112,7 @@
    }
    return ret;
  }
-
+ 
  int ObLocationSqlService::alter_schema(ObISQLClient &sql_client, const ObLocationSchema &schema)
  {
    int ret = OB_SUCCESS;
@@ -154,7 +154,7 @@
    }
    return ret;
  }
-
+ 
  int ObLocationSqlService::drop_schema(ObISQLClient &sql_client, const ObLocationSchema &schema)
  {
     int ret = OB_SUCCESS;
@@ -206,7 +206,7 @@
     }
     return ret;
  }
-
+ 
  int ObLocationSqlService::gen_sql(common::ObSqlString &sql, common::ObSqlString &values, const ObLocationSchema &schema)
  {
    int ret = OB_SUCCESS;
@@ -225,3 +225,4 @@
  } // namespace schema
  } // namespace share
  } // namespace oceanbase
+

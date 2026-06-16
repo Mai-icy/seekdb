@@ -358,7 +358,7 @@ int ObDDLWriteMacroBlockBasePipeline::get_next_chunk(ObChunk *&next_chunk)
   }
   return ret;
 }
-
+  
 ObITask::ObITaskPriority ObDDLWriteMacroBlockBasePipeline::get_priority()
 {
   ObITask::ObITaskPriority priority = ObITask::get_priority();

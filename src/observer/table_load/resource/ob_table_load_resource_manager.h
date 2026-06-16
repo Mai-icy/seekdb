@@ -23,7 +23,7 @@
 #include "observer/table_load/ob_table_load_utils.h"
 #include "observer/table_load/ob_table_load_service.h"
 #include "observer/table_load/resource/ob_table_load_resource_rpc_struct.h"
-#include "observer/table_load/resource/ob_table_load_resource_rpc_proxy.h"
+#include "observer/table_load/resource/ob_table_load_resource_rpc.h"
 
 namespace oceanbase
 {
@@ -84,11 +84,11 @@ private:
 		ObDirectLoadResourceApplyArg apply_arg_;
 		uint64_t miss_counts_;
 	};
-	class ObInitResourceTask : public common::ObTimerTask
+	class ObInitResourceTask : public common::ObTimerTask 
 	{
 	public:
-		ObInitResourceTask(ObTableLoadResourceManager &manager)
-			: manager_(manager)
+		ObInitResourceTask(ObTableLoadResourceManager &manager) 
+			: manager_(manager) 
 		{
 		}
 		virtual ~ObInitResourceTask() = default;
@@ -100,7 +100,7 @@ private:
 	{
   public:
     ObRefreshAndCheckTask(ObTableLoadResourceManager &manager) 
-			: manager_(manager)
+			: manager_(manager) 
 		{
 		}
     virtual ~ObRefreshAndCheckTask() = default;

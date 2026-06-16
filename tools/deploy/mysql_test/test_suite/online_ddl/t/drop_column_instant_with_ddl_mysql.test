@@ -390,7 +390,7 @@ INSERT INTO xingrui_table_with_pk(C1, C2) VALUES(NULL, 'CD');
 --error 1235
 ALTER TABLE xingrui_table_with_pk DROP COLUMN C1;
 
---echo
+--echo 
 --echo to test with modify col.
 connection mysql;
 alter system set default_table_store_format = 'row';
@@ -421,8 +421,8 @@ connection sys;
 let $after_table_id = query_get_value(select table_id from __all_virtual_table where table_name = 'xingrui_modify_table', table_id, 1);
 if ($before_table_id == $after_table_id)
 {
-  --echo $before_table_id
-  --echo $after_table_id
+  --echo $before_table_id 
+  --echo $after_table_id 
   --echo "error drop column compound with other ddl should be offline"
 }
 connection mysql;
@@ -476,7 +476,7 @@ eval SELECT count(*) FROM `CDB_TAB_COLS_V\$` WHERE con_id = 1 AND OWNER = 'TEST'
 --enable_query_log
 connection mysql;
 
---echo
+--echo 
 --echo to test repartition.
 --error 0,1051
 drop table xingrui_repartition;
@@ -1044,3 +1044,7 @@ drop table xingrui_create_table_like;
 drop table xingrui_external_table;
 alter system set default_table_store_format = 'row';
 sleep 2;
+
+
+
+

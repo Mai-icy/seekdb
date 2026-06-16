@@ -13,7 +13,7 @@ wait_class#	bigint(20)	NO		NULL
 wait_class	varchar(64)	NO		NULL	
 desc v$event_name;
 Field	Type	Null	Key	Default	Extra
-CON_ID	bigint(1)	NO
+CON_ID	bigint(1)	NO			
 EVENT_ID	bigint(20)	NO		NULL	
 EVENT#	bigint(20)	NO		NULL	
 NAME	varchar(64)	NO		NULL	

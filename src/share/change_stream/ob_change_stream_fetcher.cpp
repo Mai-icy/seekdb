@@ -81,6 +81,8 @@ int ObCSFetcher::init(ObCSDispatcher *dispatcher)
   } else if (FALSE_IT(ObThreadPool::set_run_wrapper(MTL_CTX()))) {
   } else if (OB_FAIL(ObThreadPool::init())) {
     LOG_WARN("CSFetcher: fail to init thread pool", KR(ret));
+  } else if (OB_FAIL(idle_cond_.init(ObWaitEventIds::THREAD_IDLING_COND_WAIT))) {
+    LOG_WARN("CSFetcher: fail to init idle_cond", KR(ret));
   } else {
     dispatcher_ = dispatcher;
     current_scn_.set_min();
@@ -186,6 +188,8 @@ int ObCSFetcher::start()
 void ObCSFetcher::stop()
 {
   ObThreadPool::stop();
+  ObThreadCondGuard guard(idle_cond_);
+  idle_cond_.signal();
 }
 
 void ObCSFetcher::wait()
@@ -207,6 +211,7 @@ void ObCSFetcher::destroy()
       }
     }
     tx_info_.destroy();
+    idle_cond_.destroy();
     dispatcher_ = nullptr;
     current_lsn_.reset();
     current_scn_.reset();
@@ -474,8 +479,7 @@ void ObCSFetcher::try_advance_min_dep_lsn_()
 
 void ObCSFetcher::try_advance_refresh_scn_()
 {
-  if (!REACH_TIME_INTERVAL(CS_FETCHER_REFRESH_SCN_ADVANCE_INTERVAL_US)
-      || OB_ISNULL(GCTX.sql_proxy_)) {
+  if (!REACH_TIME_INTERVAL(CS_FETCHER_REFRESH_SCN_ADVANCE_INTERVAL_US)) {
     return;
   }
   int ret = OB_SUCCESS;
@@ -485,10 +489,12 @@ void ObCSFetcher::try_advance_refresh_scn_()
     return;
   }
   if (refresh_scn.is_valid()) {
-    int64_t affected = 0;
-    if (OB_FAIL(ObGlobalStatProxy::advance_change_stream_refresh_scn(
-                    *GCTX.sql_proxy_, MTL_ID(), refresh_scn, affected))) {
-      LOG_WARN("CSFetcher: fail to advance_change_stream_refresh_scn", KR(ret), K(refresh_scn));
+    if (OB_ISNULL(dispatcher_)) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("CSFetcher: dispatcher_ is null", KR(ret), K(refresh_scn));
+    } else if (OB_FAIL(dispatcher_->update_refresh_scn(
+                   static_cast<int64_t>(refresh_scn.get_val_for_gts())))) {
+      LOG_WARN("CSFetcher: fail to update_refresh_scn (idle gts)", KR(ret), K(refresh_scn));
     } else if (REACH_TIME_INTERVAL(10 * 1000 * 1000)) {
       LOG_INFO("CSFetcher: refresh_scn advanced",
                "mode", running_mode_ == ACTIVE ? "ACTIVE" : "IDLE",
@@ -508,6 +514,12 @@ int ObCSFetcher::release_committed_tx(int64_t tx_id)
     OB_DELETE(ObCSTxInfo, "CSTxInfo", tx);
   }
   return ret;
+}
+
+void ObCSFetcher::notify_schema_changed()
+{
+  ObThreadCondGuard guard(idle_cond_);
+  idle_cond_.signal();
 }
 
 // ---------------------------------------------------------------------------
@@ -843,9 +855,18 @@ void ObCSFetcher::run1()
     try_advance_min_dep_lsn_();
     try_advance_refresh_scn_();
 
-    // IDLE branch: no async-index tables — sleep and wait for schema change.
+    // IDLE branch: wait for schema change notification, with 10s timeout as fallback.
     if (IDLE == running_mode_) {
-      usleep(CS_FETCHER_IDLE_SLEEP_US);
+      ObThreadCondGuard guard(idle_cond_);
+      if (IDLE == running_mode_ && !has_set_stop()) {
+        int64_t current_version = 0;
+        if (OB_NOT_NULL(GCTX.schema_service_)) {
+          GCTX.schema_service_->get_tenant_refreshed_schema_version(MTL_ID(), current_version);
+        }
+        if (current_version == last_checked_schema_version_) {
+          idle_cond_.wait(CS_FETCHER_IDLE_COND_WAIT_MS);
+        }
+      }
       continue;
     }
 

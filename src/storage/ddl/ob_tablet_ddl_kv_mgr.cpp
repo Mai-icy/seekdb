@@ -323,7 +323,7 @@ int ObTabletDDLKvMgr::calc_idem_block_checksum(const ObDDLMacroBlockType block_t
   return ObDDLMacroIdemChecker::calc_block_checksum(block_type, direct_load_type, buf, buf_size, checksum);
 }
 /*
-* check macro block already exist in ddl kv
+* check macro block already exist in ddl kv 
 * parameters check logic are set in IdemChker
 */
 int ObTabletDDLKvMgr::check_idem_block_exist(const ObDDLMacroBlockType block_type,
@@ -865,11 +865,7 @@ ObDDLIdemKey::~ObDDLIdemKey()
 
 ObDDLIdemKey::ObDDLIdemKey(const ObDDLIdemKey &other)
 {
-  if (GCTX.is_shared_storage_mode()) {
-    key_.macro_block_id_ = other.key_.macro_block_id_;
-  } else {
-    key_.logic_block_id_ = other.key_.logic_block_id_;
-  }
+  key_.logic_block_id_ = other.key_.logic_block_id_;
   table_type_ = other.table_type_;
 }
 
@@ -880,20 +876,11 @@ int ObDDLIdemKey::init(const MacroBlockId &macro_block_id,
 {
   int ret = OB_SUCCESS;
   table_type_ = table_type;
-  if (GCTX.is_shared_storage_mode()) {
-    if (!macro_block_id.is_valid()) {
-      ret = OB_INVALID_ARGUMENT;
-      LOG_WARN("invalid macro block id", K(ret), K(macro_block_id));
-    } else {
-      key_.macro_block_id_ = macro_block_id;
-    }
+  if (!logic_block_id.is_valid()) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("invalid logic block id", K(ret), K(logic_block_id));
   } else {
-    if (!logic_block_id.is_valid()) {
-      ret = OB_INVALID_ARGUMENT;
-      LOG_WARN("invalid logic block id", K(ret), K(logic_block_id));
-    } else {
-      key_.logic_block_id_ = logic_block_id;
-    }
+    key_.logic_block_id_ = logic_block_id;
   }
   return ret;
 }
@@ -902,11 +889,7 @@ uint64_t ObDDLIdemKey::hash() const
 {
   uint64_t hash_val = 0;
   uint64_t idem_type = table_type_;
-  if (GCTX.is_shared_storage_mode()) {
-    hash_val = key_.macro_block_id_.hash();
-  } else{
-    hash_val = key_.logic_block_id_.hash();
-  }
+  hash_val = key_.logic_block_id_.hash();
   hash_val = murmurhash(&idem_type, sizeof(table_type_), hash_val);
   return hash_val;
 }
@@ -921,21 +904,13 @@ int ObDDLIdemKey::hash(uint64_t &hash_val) const
 bool ObDDLIdemKey::operator==(const ObDDLIdemKey &other) const
 {
   bool ret = false;
-  if (GCTX.is_shared_storage_mode()) {
-    ret = key_.macro_block_id_ == other.key_.macro_block_id_ && table_type_ == other.table_type_;
-  } else {
-    ret = key_.logic_block_id_ == other.key_.logic_block_id_ && table_type_ == other.table_type_;
-  }
+  ret = key_.logic_block_id_ == other.key_.logic_block_id_ && table_type_ == other.table_type_;
   return ret;
 }
 
 ObDDLIdemKey& ObDDLIdemKey::operator=(const ObDDLIdemKey &other)
 {
-  if (GCTX.is_shared_storage_mode()) {
-    key_.macro_block_id_ = other.key_.macro_block_id_;
-  } else {
-    key_.logic_block_id_ = other.key_.logic_block_id_;
-  }
+  key_.logic_block_id_ = other.key_.logic_block_id_;
   table_type_ = other.table_type_;
   return *this;
 }
@@ -966,20 +941,20 @@ bool ObDDLMacroIdemChecker::is_inited()
   return checksum_map_.created();
 }
 
-/*
+/* 
  * only idem type need check idempotence
  * but if it's empty block type,skip it
 */
 bool ObDDLMacroIdemChecker::need_check_block_checksum(const ObDDLMacroBlockType block_type, const ObDirectLoadType direct_load_type)
 {
-  return is_idem_type(direct_load_type) &&
+  return is_idem_type(direct_load_type) && 
          ObDDLMacroBlockType::DDL_MB_SS_EMPTY_DATA_TYPE != block_type;
 }
 
-int ObDDLMacroIdemChecker::calc_block_checksum(const ObDDLMacroBlockType block_type,
+int ObDDLMacroIdemChecker::calc_block_checksum(const ObDDLMacroBlockType block_type, 
                                                const ObDirectLoadType direct_load_type,
-                                               const char *buf,
-                                               const int64_t buf_size,
+                                               const char *buf, 
+                                               const int64_t buf_size, 
                                                int64_t &checksum)
 {
   int ret = OB_SUCCESS;
@@ -1005,7 +980,7 @@ int ObDDLMacroIdemChecker::calc_block_checksum(const ObDDLMacroBlockType block_t
 }
 
 
-int ObDDLMacroIdemChecker::check_block_exist(const ObDDLMacroBlockType block_type,
+int ObDDLMacroIdemChecker::check_block_exist(const ObDDLMacroBlockType block_type, 
                                              const ObDirectLoadType direct_load_type,
                                              const blocksstable::MacroBlockId &block_id,
                                              const blocksstable::ObLogicMacroBlockId &logic_id,
@@ -1042,7 +1017,7 @@ int ObDDLMacroIdemChecker::check_block_exist(const ObDDLMacroBlockType block_typ
   return ret;
 }
 
-int ObDDLMacroIdemChecker::set_block_checksum(const ObDDLMacroBlockType block_type,
+int ObDDLMacroIdemChecker::set_block_checksum(const ObDDLMacroBlockType block_type, 
                                               const ObDirectLoadType direct_load_type,
                                               const blocksstable::MacroBlockId &block_id,
                                               const blocksstable::ObLogicMacroBlockId &logic_id,

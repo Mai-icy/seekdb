@@ -1,4 +1,4 @@
-#owner: shouju.zyp
+#owner: shouju.zyp 
 #owner group: RS
 #tags: schema
 #description: check sys view definition in mysql
@@ -58,3 +58,4 @@ connection sys;
 --disable_query_log
 #drop tenant if exists yanmu_tenant force;
 --enable_query_log
+

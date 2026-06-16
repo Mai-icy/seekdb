@@ -1,6 +1,6 @@
 # SeekDB CI - 执行下沉版（Native）
 # setup 准备 observer → 4 个并行 mysqltest job（各独立容器）→ collect 合并结果
-name: SeekDB CI
+name: SeekDB CI 
 
 on:
   pull_request:

@@ -67,3 +67,4 @@ int ObAllServerInfo::add(AllServerRecord &record)
 
 } // namespace logservice
 } // namespace oceanbase
+

@@ -20,7 +20,6 @@
 #include "rpc/frame/ob_req_transport.h"                     // ObReqTransport
 #include "share/ob_thread_pool.h"                           // ObThreadPool
 #include "ob_remote_fetch_log.h"                            // ObRemoteFetchLogImpl
-#include "ob_log_restore_rpc.h"                             // ObLogResSvrRpc
 #include "ob_remote_fetch_log_worker.h"                     // ObRemoteFetchWorker
 #include "ob_remote_location_adaptor.h"                     // ObRemoteLocationAdaptor
 #include "ob_remote_error_reporter.h"                       // ObRemoteErrorReporter
@@ -53,24 +52,22 @@ class ObLogRestoreService : public share::ObThreadPool
 {
   const int64_t SCHEDULE_INTERVAL = 1000 * 1000L;   // 1s
   const int64_t UPDATE_RESTORE_UPPER_LIMIT_INTERVAL = 100 * 1000L;  // 100ms
-  const int64_t PRIMARY_THREAD_RUN_INTERVAL = 1000 * 1000L;   // 1s
-  const int64_t STANDBY_THREAD_RUN_INTERVAL = 100 * 1000L;  // 100ms
+  const int64_t IDLE_THREAD_RUN_INTERVAL = 1000 * 1000L;   // 1s
+  const int64_t ACTIVE_THREAD_RUN_INTERVAL = 100 * 1000L;  // 100ms
 public:
   ObLogRestoreService();
   ~ObLogRestoreService();
 
 public:
-  ObLogResSvrRpc *get_log_restore_proxy() { return &proxy_; }
-
-public:
-  int init(rpc::frame::ObReqTransport *transport,
-           ObLSService *ls_svr,
+  int init(           ObLSService *ls_svr,
            ObLogService *log_service);
   void destroy();
   int start();
   void stop();
   void wait();
   void signal();
+  void wait_on_cond(int64_t timeout_us) { cond_.timedwait(timeout_us); }
+  bool is_restore_active() const { return ATOMIC_LOAD(&is_restore_active_); }
   ObLogRestoreAllocator *get_log_restore_allocator() { return &allocator_;}
   ObLogRestoreNetDriver *get_net_driver() { return &net_driver_;}
 
@@ -89,7 +86,6 @@ private:
 private:
   bool inited_;
   ObLSService *ls_svr_;
-  ObLogResSvrRpc proxy_;
   ObRemoteLocationAdaptor location_adaptor_;
   ObLogRestoreArchiveDriver archive_driver_;
   ObLogRestoreNetDriver net_driver_;
@@ -100,6 +96,7 @@ private:
   ObLogRestoreAllocator allocator_;
   ObLogRestoreScheduler scheduler_;
   common::ObCond cond_;
+  bool is_restore_active_;
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObLogRestoreService);

@@ -316,12 +316,7 @@ private:
 
   bool is_hash_empty()
   {
-    bool is_empty = false;
-    {
-      CriticalGuard(get_qs());
-      is_empty = hash_.is_empty();
-    }
-    return is_empty;
+    return 0 == ATOMIC_LOAD(&total_wait_node_);
   }
 
   bool check_wakeup_seq(uint64_t hash, int64_t lock_seq, bool &standalone_task)

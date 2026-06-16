@@ -4,10 +4,10 @@ package logservice;
 service LogService {
   // Unary RPC: fetch log (GroupLogEntry)
   rpc fetch_log(FetchLogReq) returns (FetchLogRes);
-
+  
   // Unary RPC: fetch missing log
   rpc fetch_missing_log(FetchMissingLogReq) returns (FetchMissingLogRes);
-
+  
   // Unary RPC: fetch raw log
   rpc fetch_raw_log(FetchRawLogReq) returns (FetchRawLogRes);
 }
@@ -41,3 +41,4 @@ message FetchRawLogRes {
   bytes buf = 1;
   uint64 size = 2;
 }
+

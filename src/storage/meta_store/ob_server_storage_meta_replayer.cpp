@@ -65,7 +65,6 @@ int ObServerStorageMetaReplayer::start_replay()
   
 
 
-
   if (OB_FAIL(ret)) {
   } else if (OB_FAIL(finish_storage_meta_replay_())) {
     LOG_ERROR("fail to finish storage meta replay", KR(ret));

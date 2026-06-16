@@ -26,7 +26,7 @@ using namespace oceanbase::common;
 using namespace oceanbase::share;
 using namespace oceanbase::share::schema;
 using namespace oceanbase::rootserver;
-using namespace oceanbase::obrpc;
+using namespace oceanbase::obcall;
 using namespace oceanbase::transaction::tablelock;
 using namespace oceanbase::table;
 
@@ -451,8 +451,6 @@ int ObDropHTableHandler::init()
           if (OB_ISNULL(schema)) {
             ret = OB_ERR_UNEXPECTED;
             LOG_WARN("schema is null", KR(ret), K(i));
-          } else if (OB_FAIL(ObTTLUtil::check_htable_ddl_supported(*schema, true/*by_admin*/, get_ddl_type(), tablegroup_name))) {
-            LOG_WARN("failed to check htable ddl supoprted", KR(ret));
           } else if (OB_FAIL(ob_write_string(allocator_, schema->get_table_name_str(), table_name))) {
             LOG_WARN("failed to copy table name", KR(ret), KPC(schema));
           } else if (OB_FAIL(table_names_.push_back(table_name))) {
@@ -700,7 +698,7 @@ int ObHTableLockHelper::check_htable_exist(const ObString &tablegroup_name,
       uint64_t table_id = OB_INVALID_ID;
       ObTableType table_type = ObTableType::MAX_TABLE_TYPE;
       int64_t schema_version = OB_INVALID_VERSION;
-      if (OB_FAIL(schema_guard_wrapper_.get_table_id(database_id_, 0 /* sess_id */, table_name,
+      if (OB_FAIL(schema_guard_wrapper_.get_table_id(database_id_, 0 /* sess_id */, table_name, 
             table_id, table_type, schema_version))) {
         LOG_WARN("fail to get table id", KR(ret), K(database_id_), K(table_name));
       } else if (OB_INVALID_ID == table_id) {
@@ -743,7 +741,7 @@ int ObHTableLockHelper::check_htable_not_exist(const ObString &tablegroup_name,
       uint64_t parent_table_id = OB_INVALID_ID;
       ObTableType table_type = ObTableType::MAX_TABLE_TYPE;
       int64_t schema_version = OB_INVALID_VERSION;
-      if (OB_FAIL(schema_guard_wrapper_.get_table_id(database_id, 0 /* sess_id */, table_name,
+      if (OB_FAIL(schema_guard_wrapper_.get_table_id(database_id, 0 /* sess_id */, table_name, 
             table_id, table_type, schema_version))) {
         LOG_WARN("fail to get table id", KR(ret), K(database_id), K(table_name));
       } else if (OB_INVALID_ID != table_id) {
@@ -824,7 +822,7 @@ int ObHTableLockHelper::lock_htable_objects_by_id_()
     ObArray<ObString> latest_table_names;  // not used 
     if (OB_FAIL(ori_table_ids.assign(table_ids_))) {
       LOG_WARN("fail to assign origin table ids", KR(ret));
-    } else if (OB_FAIL(schema_guard_wrapper_.get_table_id_and_table_name_in_tablegroup(tablegroup_id_,
+    } else if (OB_FAIL(schema_guard_wrapper_.get_table_id_and_table_name_in_tablegroup(tablegroup_id_, 
         latest_table_names, latest_table_ids))) {
       LOG_WARN("failed to get table schemas in table group", KR(ret), K_(tablegroup_id));
     } else if (ori_table_ids.count() != latest_table_ids.count()) {

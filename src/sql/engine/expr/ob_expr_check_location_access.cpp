@@ -95,3 +95,4 @@ int ObExprCheckLocationAccess::cg_expr(ObExprCGCtx &op_cg_ctx, const ObRawExpr &
 
 }/* ns sql*/
 }/* ns oceanbase */
+

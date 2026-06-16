@@ -25,7 +25,7 @@ using namespace oceanbase::share::schema;
 using namespace oceanbase::common;
 using namespace oceanbase::common::hash;
 using namespace oceanbase::common::sqlclient;
-using namespace oceanbase::obrpc;
+using namespace oceanbase::obcall;
 
 int ObTenantUtils::get_tenant_ids(
     ObMultiVersionSchemaService *schema_service,
@@ -51,7 +51,7 @@ int ObRootUtils::get_rs_default_timeout_ctx(ObTimeoutCtx &ctx)
 #ifdef __APPLE__
   // On Mac, the system is significantly slower due to lack of O_DIRECT and software CRC.
   // Increase the default timeout to 10s to avoid bootstrap failure.
-  DEFAULT_TIMEOUT_US = std::max(DEFAULT_TIMEOUT_US, 10000000LL);
+  DEFAULT_TIMEOUT_US = std::max(DEFAULT_TIMEOUT_US, 10000000LL); 
 #endif
 
   if (OB_FAIL(ObShareUtil::set_default_timeout_ctx(ctx, DEFAULT_TIMEOUT_US))) {

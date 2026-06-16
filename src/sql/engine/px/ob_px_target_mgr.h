@@ -18,12 +18,12 @@
 #define __SQL_ENG_PX_TARGET_MGR_H__
 
 #include "share/ob_thread_pool.h"
+#include "sql/engine/px/ob_px_target_monitor_rpc.h"
 #include "share/ob_define.h"
 #include "ob_px_tenant_target_monitor.h"
 #include "lib/oblog/ob_log_module.h"
 #include "lib/utility/ob_macro_utils.h"
 #include "lib/hash/ob_link_hashmap.h"
-#include "ob_px_rpc_proxy.h"
 
 namespace oceanbase
 {
@@ -79,26 +79,16 @@ class ObPxGlobalResGather
 public:
   ObPxGlobalResGather(ObPxRpcFetchStatResponse &result) : result_(result) {}
   ~ObPxGlobalResGather() {}
-  int operator()(hash::HashMapPair<ObAddr, ServerTargetUsage> &entry)
-  {
-    int ret = common::OB_SUCCESS;
-    if (OB_FAIL(result_.push_peer_target_usage(entry.first, entry.second.get_peer_used()))) {
-      COMMON_LOG(WARN, "push_back peer_used failed", K(ret));
-    }
-    return ret;
-  }
   ObPxRpcFetchStatResponse &result_;
 };
 
 class ObPxTargetMgr
 {
 
-#define PX_REFRESH_TARGET_INTERVEL_US (500 * 1000)
-#define PX_REFRESH_CHECK_ALIVE_INTERVAL_US (10 * PX_REFRESH_TARGET_INTERVEL_US)
 #define PX_MAX_ALIVE_SERVER_NUM (2000)
 
 public:
-  ObPxTargetMgr() : timer_task_(*this) { reset(); }
+  ObPxTargetMgr() { reset(); }
   ~ObPxTargetMgr() { destroy(); }
   int init(const common::ObAddr &server);
   void reset();
@@ -106,7 +96,6 @@ public:
   void stop();
   void wait();
   void destroy();
-  void run_timer_task();
 public:
   static ObPxTargetMgr &get_instance();
 
@@ -135,48 +124,11 @@ public:
   int get_all_target_info(uint64_t tenant_id, common::ObIArray<ObPxTargetInfo> &target_info_array);
 
 private:
-  class TimerTask : public common::ObTimerTask
-  {
-  public:
-    TimerTask(ObPxTargetMgr &mgr) : mgr_(mgr) {}
-    virtual ~TimerTask() = default;
-    void runTimerTask() override { mgr_.run_timer_task(); }
-  private:
-    ObPxTargetMgr &mgr_;
-  };
-private:
   bool is_inited_;
   bool is_running_;
   common::ObAddr server_;
   ObPxInfoMap px_info_map_; // If considering deleting tenant, need to add lock
   hash::ObHashSet<ObAddr> alive_server_set_;
-  TimerTask timer_task_;
-};
-
-class ObPxResRefreshFunctor
-{
-public:
-  ObPxResRefreshFunctor() : need_refresh_all_(true) {}
-  ~ObPxResRefreshFunctor() {}
-  bool operator()(const ObPxTenantInfo &px_tenant_info, ObPxResInfo *px_res_info)
-  {
-    int ret = common::OB_SUCCESS;
-    if (OB_ISNULL(px_res_info)) {
-      ret = common::OB_ERR_UNEXPECTED;
-      COMMON_LOG(WARN, "px_res_info is null", K(ret), K(px_tenant_info));
-    } else if (OB_ISNULL(px_res_info->get_target_monitor())) {
-      ret = common::OB_ERR_UNEXPECTED;
-      COMMON_LOG(WARN, "target_monitor is null", K(ret), K(px_tenant_info));
-    } else if (OB_FAIL(px_res_info->get_target_monitor()->refresh_statistics(need_refresh_all_))) {
-      COMMON_LOG(WARN, "target monitor refresh statistics failed", K(ret), K(px_tenant_info), KPC(px_res_info->get_target_monitor()));
-    }
-    // Outside needs to traverse all tenants, here cannot return false
-    return true;
-  }
-
-  void set_need_refresh_all(bool need_refresh_all) { need_refresh_all_ = need_refresh_all; }
-
-  bool need_refresh_all_;
 };
 
 #define OB_PX_TARGET_MGR (::oceanbase::sql::ObPxTargetMgr::get_instance())

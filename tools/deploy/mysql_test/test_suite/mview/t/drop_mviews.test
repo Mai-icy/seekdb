@@ -1,8 +1,8 @@
 # owner: lana.lgx
 # owner group: data
 # tags:
-# descriotion:
-# 删除mv的测试
+# descriotion: 
+# 删除mv的测试 
 #
 
 --disable_query_log
@@ -83,3 +83,6 @@ create materialized view m1 as select * from t1;
 use test;
 
 drop database db_for_mv_test;
+
+
+

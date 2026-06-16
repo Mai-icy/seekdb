@@ -58,7 +58,7 @@ int ObDDLMergeGuardTask::init(const bool for_replay, const ObTabletID &tablet_id
       LOG_WARN("failed to lock tablet", K(ret), K(tablet_id));
     }
   }
-
+  
   if (OB_FAIL(ret)) {
   } else {
     tablet_id_ = tablet_id;
@@ -84,7 +84,7 @@ int ObDDLMergeGuardTask::process()
     FLOG_INFO("[DDL_MERGE_TASK] success to finish guard task", K(ret), K(tablet_id_));
     tablet_id_.reset();
   }
-  return ret;
+  return ret; 
 }
 
 ObDDLMergeGuardTask::~ObDDLMergeGuardTask()
@@ -167,8 +167,8 @@ int ObDDLMergePrepareTask::inner_process()
     LOG_INFO("guard task has been created", K(ret), K(merge_param_));
   } else if (OB_FAIL(dag->alloc_task(guard_task_))) {
     LOG_WARN("failed to alloc task", K(ret));
-  }
-
+  } 
+  
   if (OB_FAIL(ret)) {
   } else if (guard_task_->is_inited_) {
     LOG_INFO("gaurd task already init", K(tablet_id));
@@ -179,7 +179,7 @@ int ObDDLMergePrepareTask::inner_process()
   } else if (OB_FAIL(add_child(*guard_task_))) {
     LOG_WARN("failed to add child to prepare task", K(ret));
   }
-
+  
   /* pre-check before merge */
   bool need_merge = true;
   ObIDDLMergeHelper *merge_helper = nullptr;
@@ -193,9 +193,9 @@ int ObDDLMergePrepareTask::inner_process()
     LOG_WARN("failed to check need merge", KR(ret));
   }
 
-  /*
+  /* 
    * 1. calculate merge_cg_slice_task count
-   * 2. get_rec_scn for release ddl kvs
+   * 2. get_rec_scn for release ddl kvs 
   */
   if (OB_FAIL(ret) || !need_merge) {
   } else if (OB_FAIL(merge_helper->process_prepare_task(dag, merge_param_, cg_slices))) {
@@ -300,7 +300,7 @@ ObDDLMergeCgSliceTask::ObDDLMergeCgSliceTask():
 ObITask(ObITaskType::TASK_TYPE_DDL_MERGE_CG_SLICE), merge_param_(), cg_idx_(-1), start_slice_idx_(-1), end_slice_idx_(-1)
 {}
 
-int ObDDLMergeCgSliceTask::init(const ObDDLTabletMergeDagParamV2 &merge_param,
+int ObDDLMergeCgSliceTask::init(const ObDDLTabletMergeDagParamV2 &merge_param, 
                                 const int64_t cg_idx,
                                 const int64_t start_slice_idx,
                                 const int64_t end_slice_idx)
@@ -310,7 +310,7 @@ int ObDDLMergeCgSliceTask::init(const ObDDLTabletMergeDagParamV2 &merge_param,
   ObTabletID target_tablet_id;
   if (!merge_param.is_valid() || cg_idx < 0 || start_slice_idx < 0 || end_slice_idx < 0) {
     ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("invalid merge param", K(ret), K(merge_param), K(cg_idx), K(start_slice_idx), K(end_slice_idx));
+    LOG_WARN("invalid merge param", K(ret), K(merge_param), K(cg_idx), K(start_slice_idx), K(end_slice_idx));  
   } else {
     merge_param_     = merge_param;
     cg_idx_          = cg_idx;
@@ -328,7 +328,7 @@ int ObDDLMergeCgSliceTask::process()
   ObIDag *dag = get_dag();
   ObArenaAllocator allocator("MergeSlice");
   ObIDDLMergeHelper *merge_helper = nullptr;
-
+  
   if (OB_ISNULL(dag)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("dag should not be null", K(ret));
@@ -389,7 +389,7 @@ int ObDDLMergeAssembleTask::process()
   ObTabletID target_tablet_id;
   ObWriteTabletParam *tablet_param = nullptr;
   ObTabletHandle tablet_handle;
-  bool is_column_store_table = false;
+  bool is_column_store_table = false; 
 
   if (!is_inited_) {
     ret = OB_NOT_INIT;

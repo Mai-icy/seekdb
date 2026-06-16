@@ -158,8 +158,8 @@ int ObLocationMgr::add_location(const ObLocationSchema &schema, const ObNameCase
     LOG_WARN("failed to add location schema", K(ret));
   } else {
     int over_write = 1;
-    ObLocationNameHashKey hash_wrapper(new_schema->get_tenant_id(),
-                                       new_schema->get_name_case_mode(),
+    ObLocationNameHashKey hash_wrapper(new_schema->get_tenant_id(), 
+                                       new_schema->get_name_case_mode(), 
                                        new_schema->get_location_name_str());
     if (OB_FAIL(location_name_map_.set_refactored(hash_wrapper, new_schema, over_write))) {
       LOG_WARN("build location hash map failed", K(ret));
@@ -434,3 +434,4 @@ int ObLocationMgr::rebuild_location_hashmap()
 } // namespace schema
 } // namespace share
 } // namespace oceanbase
+

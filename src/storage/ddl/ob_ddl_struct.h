@@ -129,7 +129,6 @@ private:
   common::ObIAllocator *allocator_;
 };
 
-
 class ObTablet;
 class ObTabletDirectLoadMgrHandle;
 class ObDDLKVPendingGuard final
@@ -254,26 +253,6 @@ private:
   ObIAllocator *allocator;
 };
 
-#ifdef OB_BUILD_SHARED_STORAGE
-struct ObDDLFinishLogInfo 
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObDDLFinishLogInfo();
-  ~ObDDLFinishLogInfo() = default;
-  bool is_valid() const;
-  int assign(const ObDDLFinishLogInfo &other);
-  void reset();
-  TO_STRING_KV(K_(ls_id), K_(table_key), K_(data_buffer), K_(data_format_version), K_(macro_block_id));
-public:
-  share::ObLSID ls_id_;
-  storage::ObITable::TableKey table_key_;
-  ObString data_buffer_;
-  uint64_t data_format_version_;
-  blocksstable::MacroBlockId  macro_block_id_;
-};
-#endif
-
 class ObIDirectLoadRowIterator : public ObIStoreRowIterator 
 {
 public:
@@ -322,7 +301,7 @@ static ObDDLKVType convert_direct_load_type_to_ddl_kv_type(const ObDirectLoadTyp
       ddl_kv_type = ObDDLKVType::DDL_KV_INC_MAJOR;
       break;
     default:
-      ddl_kv_type = ObDDLKVType::DDL_KV_FULL;
+      ddl_kv_type = ObDDLKVType::DDL_KV_FULL; 
       break;
   }
   return ddl_kv_type;
@@ -367,7 +346,7 @@ public:
 struct ObDDLTaskParam
 {
 public:
-  ObDDLTaskParam() : tenant_data_version_(0), snapshot_version_(0), schema_version_(0), ddl_task_id_(0), execution_id_(0),
+  ObDDLTaskParam() : tenant_data_version_(0), snapshot_version_(0), schema_version_(0), ddl_task_id_(0), execution_id_(0), 
     target_table_id_(0),  is_no_logging_(false), max_batch_size_(0), is_offline_index_rebuild_(false) {}
   void reset()
   {
@@ -387,7 +366,7 @@ public:
   /* necessary param */
   int64_t tenant_data_version_;
   int64_t snapshot_version_;
-
+  
   /* optional param only used for leader major merge */
   int64_t schema_version_;
   int64_t ddl_task_id_;
@@ -554,7 +533,7 @@ public:
   TO_STRING_KV(K_(trans_id), K_(seq_no), K_(tx_desc));
 public:
   transaction::ObTxDesc *tx_desc_;
-  transaction::ObTransID trans_id_;
+  transaction::ObTransID trans_id_; 
   int64_t seq_no_;
 };
 

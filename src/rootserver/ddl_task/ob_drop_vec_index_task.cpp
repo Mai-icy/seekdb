@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX COMMON
 
 #include "rootserver/ddl_task/ob_drop_vec_index_task.h"
+#include "rootserver/ob_rs_serial_call.h"
 #include "sql/engine/cmd/ob_ddl_executor_util.h"
 
 using namespace oceanbase::share;
@@ -64,7 +65,7 @@ int ObDropVecIndexTask::init(
     const int64_t schema_version,
     const int64_t consumer_group_id,
     const uint64_t tenant_data_version,
-    const obrpc::ObDropIndexArg &drop_index_arg)
+    const obcall::ObDropIndexArg &drop_index_arg)
 {
   int ret = OB_SUCCESS;
 
@@ -199,7 +200,7 @@ int ObDropVecIndexTask::obtain_snapshot(const share::ObDDLTaskStatus next_task_s
   } else if (OB_FAIL(check_snapshot_table_exist(is_snapshot_table_exist))) {
     LOG_WARN("fail to check snapshot table exist", K(ret));
   }
-
+  
   // skip and success，switch to DROP_AUX_INDEX_TABLE
   if (OB_SUCC(ret) && !state_finished) {
     if (!is_snapshot_table_exist) { // snapshot table not exist, skip obtain snapshot
@@ -217,13 +218,13 @@ int ObDropVecIndexTask::obtain_snapshot(const share::ObDDLTaskStatus next_task_s
     } else if (snapshot_version_ <= 0) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("snapshot version is invalid", K(ret), K(snapshot_version_));
-    } else if (OB_FAIL(update_task_message())) {
+    } else if (OB_FAIL(update_task_message())) { 
       LOG_WARN("fail to snapshot_version_ to __all_ddl_task_status", K(ret));
     } else {
       state_finished = true;
     }
   }
-
+  
 #ifdef ERRSIM
   if (OB_SUCC(ret)) {
     ret = OB_E(common::EventTable::EN_VEC_INDEX_OBTAIN_SNAPSHOT_ERR) OB_SUCCESS;
@@ -400,8 +401,8 @@ int ObDropVecIndexTask::process()
 }
 
 int ObDropVecIndexTask::deep_copy_index_arg(common::ObIAllocator &allocator,
-                                            const obrpc::ObDropIndexArg &src_index_arg,
-                                            obrpc::ObDropIndexArg &dst_index_arg)
+                                            const obcall::ObDropIndexArg &src_index_arg,
+                                            obcall::ObDropIndexArg &dst_index_arg)
 {
   int ret = OB_SUCCESS;
   int64_t pos = 0;
@@ -461,7 +462,7 @@ int ObDropVecIndexTask::deserialize_params_from_message(
     int64_t &pos)
 {
   int ret = OB_SUCCESS;
-  obrpc::ObDropIndexArg tmp_drop_index_arg;
+  obcall::ObDropIndexArg tmp_drop_index_arg;
   ObVecIndexDDLChildTaskInfo tmp_info;
   if (OB_UNLIKELY(!is_valid_tenant_id(tenant_id) || nullptr == buf || buf_size <= 0)) {
     ret = OB_INVALID_ARGUMENT;
@@ -653,7 +654,7 @@ int ObDropVecIndexTask::drop_aux_index_table(const share::ObDDLTaskStatus &new_s
     LOG_WARN("fail to create drop index task", K(ret), K(vec_index_snapshot_data_));
   } else if (0 == hybrid_embedded_vec_.task_id_ && hybrid_embedded_vec_.is_valid()
       && OB_FAIL(create_drop_index_task(schema_guard, hybrid_embedded_vec_.table_id_, hybrid_embedded_vec_.index_name_, hybrid_embedded_vec_.task_id_))) {
-    LOG_WARN("fail to create drop index task", K(ret), K(hybrid_embedded_vec_));
+    LOG_WARN("fail to create drop index task", K(ret), K(hybrid_embedded_vec_)); 
   } else if (OB_FAIL(update_task_message())) {
     LOG_WARN("fail to update domain_index_, vec_index_id_, vec_index_snapshot_data_, hybrid_embedded_vec_ to __all_ddl_task_status", K(ret));
   } else if (OB_FAIL(wait_none_share_index_child_task_finish(has_finished))) {
@@ -841,7 +842,7 @@ int ObDropVecIndexTask::create_drop_index_task(
   } else if (OB_UNLIKELY(nullptr == database_schema || nullptr == data_table_schema)) {
     if (OB_ISNULL(data_table_schema) && drop_index_arg_.is_hidden_) {
       task_id = -1;
-      LOG_INFO("hidden data_table maybe removed when offline ddl is failed, skip drop",
+      LOG_INFO("hidden data_table maybe removed when offline ddl is failed, skip drop", 
         K(ret), K(index_tid), K(index_name));
     } else {
       ret = OB_ERR_UNEXPECTED;
@@ -851,8 +852,8 @@ int ObDropVecIndexTask::create_drop_index_task(
     LOG_WARN("assign user drop index sql failed", K(ret));
   } else {
     int64_t ddl_rpc_timeout_us = 0;
-    obrpc::ObDropIndexArg arg;
-    obrpc::ObDropIndexRes res;
+    obcall::ObDropIndexArg arg;
+    obcall::ObDropIndexRes res;
     arg.is_inner_            = true;
     arg.tenant_id_           = tenant_id_;
     arg.exec_tenant_id_      = tenant_id_;
@@ -861,7 +862,7 @@ int ObDropVecIndexTask::create_drop_index_task(
     arg.index_name_          = index_name;
     arg.table_name_          = data_table_schema->get_table_name();
     arg.database_name_       = database_schema->get_database_name_str();
-    arg.index_action_type_   = obrpc::ObIndexArg::DROP_INDEX;
+    arg.index_action_type_   = obcall::ObIndexArg::DROP_INDEX;
     arg.ddl_stmt_str_        = drop_index_sql.string();
     arg.is_add_to_scheduler_ = true;
     arg.task_id_             = task_id_;
@@ -869,10 +870,8 @@ int ObDropVecIndexTask::create_drop_index_task(
     if (OB_FAIL(ObDDLUtil::get_ddl_rpc_timeout(
             index_schema->get_all_part_num() + data_table_schema->get_all_part_num(), ddl_rpc_timeout_us))) {
       LOG_WARN("fail to get ddl rpc timeout", K(ret));
-    } else if (OB_ISNULL(GCTX.rs_rpc_proxy_)) {
       ret = OB_INVALID_ARGUMENT;
-      LOG_WARN("invalid argument", KR(ret), KP(GCTX.rs_rpc_proxy_));
-    } else if (OB_FAIL(GCTX.rs_rpc_proxy_->timeout(ddl_rpc_timeout_us).drop_index(arg, res))) {
+    } else if (OB_FAIL(rootserver::serial_call([&]{ return GCTX.root_service_->drop_index(arg, res); }))) {
       LOG_WARN("fail to drop index", K(ret), K(ddl_rpc_timeout_us), K(arg), K(res.task_id_));
     } else {
       task_id = res.task_id_;

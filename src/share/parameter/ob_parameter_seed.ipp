@@ -1750,14 +1750,14 @@ DEF_PARAM(_enable_hgby_llc_ndv_adaptive, BOOL, OB_CLUSTER_PARAMETER, "True",
 DEF_PARAM(_enable_reserved_user_dcl_restriction, BOOL, OB_CLUSTER_PARAMETER, "False",
          "specifies whether to forbid non-reserved user to modify reserved users",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(rpc_client_authentication_method, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "NONE", common::ObRpcClientAuthMethodChecker,
+DEF_PARAM(rpc_client_authentication_method, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "NONE", common::ObCallClientAuthMethodChecker,
         "specifies rpc client authentication method. "
         "NONE: without authentication. "
         "SSL_NO_ENCRYPT: authentication by SSL handshake but not encrypt the communication channel. "
         "SSL_IO: authentication by SSL handshake and encrypt the communication channel",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE),
         "NONE, SSL_NO_ENCRYPT, SSL_IO");
-DEF_PARAM(rpc_server_authentication_method, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "ALL", common::ObRpcServerAuthMethodChecker,
+DEF_PARAM(rpc_server_authentication_method, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "ALL", common::ObCallServerAuthMethodChecker,
         "specifies rpc server authentication method. "
         "ALL: support all authentication methods. "
         "NONE: without authentication. "
@@ -1882,7 +1882,7 @@ DEF_PARAM(_ob_sqlstat_enable, BOOL, OB_CLUSTER_PARAMETER, "True", "enable/disabl
 
 DEF_PARAM(_enable_inner_session_mgr, BOOL, OB_CLUSTER_PARAMETER, "True", "enable/disable inner session mgr",
          ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_enable_trace_tablet_leak, BOOL, OB_CLUSTER_PARAMETER, "False",
+DEF_PARAM(_enable_trace_tablet_leak, BOOL, OB_CLUSTER_PARAMETER, "False", 
         "enable t3m tablet leak checker. The default value is False",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::STATIC_EFFECTIVE));
 DEF_PARAM(enable_auto_split, BOOL_WITH_CHECKER, OB_CLUSTER_PARAMETER, "False",
@@ -2031,7 +2031,7 @@ DEF_PARAM(max_partition_num, INT, OB_CLUSTER_PARAMETER, "8192", "[8192, 65536]",
 DEF_PARAM(json_document_max_depth, INT, OB_CLUSTER_PARAMETER, "100", "[100,1024]",
         "maximum nesting depth allowed in a JSON document",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_multimodel_memory_trace_level, INT, OB_CLUSTER_PARAMETER, "0", "[0,100)",
+DEF_PARAM(_multimodel_memory_trace_level, INT, OB_CLUSTER_PARAMETER, "0", "[0,100)", 
         "Multi-mode memory tracking mechanism",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 // automatically faststack

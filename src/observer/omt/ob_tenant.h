@@ -272,6 +272,7 @@ public:
   int try_rdlock();
   int try_wrlock();
   virtual int unlock() override;
+  virtual void on_schema_publish() override;
 
   // get request from request queue, waiting at most TIMEOUT us.
   // if IN_HIGH_PRIORITY is set, get request from hp queue.
@@ -281,7 +282,7 @@ public:
   int recv_request(rpc::ObRequest &req);
   int push_retry_queue(rpc::ObRequest &req, const uint64_t idx);
   void handle_retry_req(bool need_clear = false);
-  void update_queue_size();
+  void set_queue_limit(int64_t limit) { req_queue_.set_limit(limit); }
 
   int timeup();
   int get_default_group_throttled_time(int64_t &default_group_throttled_time);
@@ -312,8 +313,8 @@ public:
 
   OB_INLINE void disable_user_sched() { disable_user_sched_ = true; }
   OB_INLINE bool user_sched_enabled() const { return !disable_user_sched_; }
-  OB_INLINE double get_token_usage() const { return token_usage_; }
-  OB_INLINE int64_t get_worker_time() const { return ATOMIC_LOAD(&worker_us_); }
+  OB_INLINE double get_token_usage() const { return 0; }
+  OB_INLINE int64_t get_worker_time() const { return 0; }
   int64_t get_cpu_time() const;
   // sql throttle
   void update_sql_throttle_metrics(const ObSqlThrottleMetrics &metrics)
@@ -346,8 +347,6 @@ public:
 private:
   static void sleep_and_warn(ObTenant* tenant);
   static void* wait(void* tenant);
-  // update CPU usage
-  void update_token_usage();
   // acquire workers if tenant doesn't have sufficient worker.
   void check_worker_count();
 
@@ -406,8 +405,6 @@ public:
 
   bool disable_user_sched_;
 
-  double token_usage_;
-  int64_t token_usage_check_ts_;
   int64_t token_change_ts_ CACHE_ALIGNED;
   std::atomic<int64_t> completion_cnt_;
 
@@ -415,8 +412,6 @@ public:
 
   ObSqlThrottleMetrics st_metrics_;
   lib::ObQueryRateLimiter sql_limiter_;
-  // idle time between two checkpoints
-  int64_t worker_us_;
   int64_t default_group_throttled_time_us_;
 }; // end of class ObTenant
 

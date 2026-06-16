@@ -1801,7 +1801,7 @@ int ObShowResolver::resolve(const ParseNode &parse_tree)
           }
           if (OB_SUCC(ret)) {
             GEN_SQL_STEP_1(ObShowSqlSet::SHOW_CREATE_LOCATION);
-            GEN_SQL_STEP_2(ObShowSqlSet::SHOW_CREATE_LOCATION, OB_SYS_DATABASE_NAME,
+            GEN_SQL_STEP_2(ObShowSqlSet::SHOW_CREATE_LOCATION, OB_SYS_DATABASE_NAME, 
                            OB_TENANT_VIRTUAL_SHOW_CREATE_LOCATION_TNAME, location_id);
           }
         }
@@ -1872,7 +1872,7 @@ int ObShowResolver::resolve(const ParseNode &parse_tree)
             pattern = tmp_pattern.string();
           }
           GEN_SQL_STEP_1(ObShowSqlSet::LOCATION_UTILS_LIST);
-          GEN_SQL_STEP_2(ObShowSqlSet::LOCATION_UTILS_LIST,
+          GEN_SQL_STEP_2(ObShowSqlSet::LOCATION_UTILS_LIST, 
                         OB_SYS_DATABASE_NAME,
                         OB_TENANT_VIRTUAL_LIST_FILE_TNAME,
                         location_id,

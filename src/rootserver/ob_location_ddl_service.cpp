@@ -24,10 +24,10 @@ namespace oceanbase
 {
 using namespace common;
 using namespace share;
-using namespace obrpc;
+using namespace obcall;
 namespace rootserver
 {
-int ObLocationDDLService::create_location(const obrpc::ObCreateLocationArg &arg,
+int ObLocationDDLService::create_location(const obcall::ObCreateLocationArg &arg,
                                           const ObString *ddl_stmt_str)
 {
   int ret = OB_SUCCESS;
@@ -107,7 +107,7 @@ int ObLocationDDLService::create_location(const obrpc::ObCreateLocationArg &arg,
   return ret;
 }
 
-int ObLocationDDLService::drop_location(const obrpc::ObDropLocationArg &arg,
+int ObLocationDDLService::drop_location(const obcall::ObDropLocationArg &arg,
                                         const ObString *ddl_stmt_str)
 {
   int ret = OB_SUCCESS;
@@ -180,9 +180,9 @@ int ObLocationDDLService::check_location_constraint(const ObTableSchema &schema)
   } else if (is_odps_external_table) {
     // do nothing
   } else {
-    if ((!schema.get_external_file_location().empty()
+    if ((!schema.get_external_file_location().empty() 
       && OB_INVALID_ID != schema.get_external_location_id())
-      || (schema.get_external_file_location().empty()
+      || (schema.get_external_file_location().empty() 
           && OB_INVALID_ID == schema.get_external_location_id())) {
       ret = OB_INVALID_ARGUMENT;
       LOG_WARN("both file location and location id are valid", KR(ret), K(schema));
@@ -192,3 +192,4 @@ int ObLocationDDLService::check_location_constraint(const ObTableSchema &schema)
 }
 } // end namespace rootserver
 } // end namespace oceanbase
+

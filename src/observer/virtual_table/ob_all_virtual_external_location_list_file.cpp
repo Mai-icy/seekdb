@@ -76,9 +76,9 @@ int ObAllVirtualExternalLocationListFile::inner_open()
     OZ (session_->get_regexp_session_vars(regexp_vars));
     ObSqlString full_path;
     OZ (full_path.append(location_schema->get_location_url_str()));
-    if (OB_SUCC(ret) && full_path.length() > 0
-        && *(full_path.ptr() + full_path.length() - 1) != '/'
-        && !sub_path.empty()
+    if (OB_SUCC(ret) && full_path.length() > 0 
+        && *(full_path.ptr() + full_path.length() - 1) != '/' 
+        && !sub_path.empty() 
         && sub_path[0] != '/') {
       OZ (full_path.append("/"));
     }
@@ -106,7 +106,7 @@ int ObAllVirtualExternalLocationListFile::inner_open()
           LOG_WARN("fail to fill row cells", K(ret), K(file_url));
         } else if (OB_FAIL(scanner_.add_row(cur_row_))) {
           LOG_WARN("fail to add row", K(ret), K(cur_row_));
-        }
+        } 
       }
     } else {
       if (file_urls.count() != file_sizes.count()) {
@@ -148,7 +148,7 @@ int ObAllVirtualExternalLocationListFile::resolve_param(uint64_t &location_id, O
       if (OB_UNLIKELY(NULL == start_key_obj_ptr || NULL == end_key_obj_ptr)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("key obj ptr is NULL", K(ret), K(start_key_obj_ptr), K(end_key_obj_ptr));
-      } else{
+      } else{ 
         if (start_key_obj_ptr[0] == end_key_obj_ptr[0]
             && ObIntType == start_key_obj_ptr[0].get_type()) {
           location_id = start_key_obj_ptr[0].get_int();
@@ -167,7 +167,7 @@ int ObAllVirtualExternalLocationListFile::resolve_param(uint64_t &location_id, O
   return ret;
 }
 
-int ObAllVirtualExternalLocationListFile::fill_row_cells(uint64_t location_id,
+int ObAllVirtualExternalLocationListFile::fill_row_cells(uint64_t location_id, 
                                const ObString &sub_path,
                                const ObString &pattern,
                                const ObString &file_url,
@@ -254,3 +254,4 @@ int ObAllVirtualExternalLocationListFile::fill_row_cells(uint64_t location_id,
 }
 }/* ns observer*/
 }/* ns oceanbase */
+

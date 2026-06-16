@@ -52,7 +52,7 @@ public:
   KeyValueArray       parameters_;
   KeyValueArray       variables_;
   const char *        devname_ = nullptr;
-
+  
   // Primary-Standby configuration
   common::ObSqlString role_;      // PRIMARY or STANDBY
 

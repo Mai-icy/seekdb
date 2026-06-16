@@ -33,7 +33,7 @@ class ObBatchDatumRows;
 struct ObDatumRow;
 }
 
-namespace common
+namespace common 
 {
 class ObIVector;
 }
@@ -147,3 +147,4 @@ protected:
 }  // end namespace storage
 }  // end namespace oceanbase
 #endif//_OCEANBASE_STORAGE_DDL_OB_PIPELINE_H_
+

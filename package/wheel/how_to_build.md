@@ -82,3 +82,4 @@ pip install twine
 在境外机器构建需要把build\_python.sh中的INDEX_URL注释掉，否则会从境内的链接拉取数据。
 
 如果要从gitlab上的代码构建的话，还需要把代码、deps/3rd提前下载后复制过去。manylinux_2_28_aarch64镜像使用的deps是 oceanbase.el8.aarch64.deps。
+

@@ -18,7 +18,7 @@
 #define OCEANBASE_LOGSERVICE_LOG_MGR_
 #include <sys/types.h>
 #include "common/ob_member_list.h"
-#include "lib/hash/ob_link_hashmap.h"
+
 #include "lib/lock/ob_mutex.h"
 #include "lib/lock/ob_spin_lock.h"
 #include "lib/ob_define.h"
@@ -54,10 +54,6 @@ namespace frame
 class ObReqTransport;
 }
 }
-namespace obrpc
-{
-class ObBatchRpc;
-}
 namespace share
 {
 class ObLocalDevice;
@@ -77,19 +73,6 @@ public:
   static void free(IPalfHandleImpl *palf_handle_impl);
 };
 
-class PalfHandleImplAlloc
-{
-public:
-  typedef common::LinkHashNode<LSKey> Node;
-
-  static PalfHandleImpl *alloc_value();
-
-  static void free_value(IPalfHandleImpl *palf_handle_impl);
-
-  static Node *alloc_node(IPalfHandleImpl *palf_handle_impl);
-
-  static void free_node(Node *node);
-};
 
 class PalfDiskOptionsWrapper {
 public:
@@ -184,7 +167,6 @@ private:
   mutable ObSpinLock disk_opts_lock_;
 };
 
-typedef common::ObLinkHashMap<LSKey, IPalfHandleImpl, PalfHandleImplAlloc> PalfHandleImplMap;
 
 class IPalfHandleImplGuard;
 class IPalfEnvImpl
@@ -232,8 +214,6 @@ public:
            const common::ObAddr &self,
            const int64_t cluster_id,
            const int64_t tenant_id,
-           rpc::frame::ObReqTransport *transport,
-           obrpc::ObBatchRpc *batch_rpc,
            common::ObILogAllocator *alloc_mgr,
            ILogBlockPool *log_block_pool,
            PalfMonitorCb *monitor,
@@ -308,28 +288,6 @@ private:
   };
   int reload_palf_handle_impl_(const int64_t palf_id);
 
-  struct LogGetRecycableFileCandidate {
-    LogGetRecycableFileCandidate();
-    ~LogGetRecycableFileCandidate();
-    bool operator() (const LSKey &palf_id, IPalfHandleImpl *palf_handle_impl);
-    int64_t id_;
-    block_id_t min_block_id_;
-    block_id_t min_using_block_id_;
-    int ret_code_;
-    TO_STRING_KV(K_(id), K_(min_block_id), K_(min_using_block_id), K_(ret_code));
-  };
-  struct GetTotalUsedDiskSpace
-  {
-    GetTotalUsedDiskSpace();
-    ~GetTotalUsedDiskSpace();
-    bool operator() (const LSKey &palf_id, IPalfHandleImpl *palf_handle_impl);
-    TO_STRING_KV(K_(total_used_disk_space), K_(total_unrecyclable_disk_space), K_(ret_code));
-    int64_t total_used_disk_space_;
-    int64_t total_unrecyclable_disk_space_;
-    int64_t maximum_used_size_;
-    int64_t palf_id_;
-    int ret_code_;
-  };
   struct RemoveStaleIncompletePalfFunctor : public ObBaseDirFunctor {
     RemoveStaleIncompletePalfFunctor(PalfEnvImpl *palf_env_impl);
     ~RemoveStaleIncompletePalfFunctor();
@@ -393,7 +351,7 @@ private:
   char tmp_log_dir_[common::MAX_PATH_SIZE];
   common::ObAddr self_;
 
-  PalfHandleImplMap palf_handle_impl_map_;
+  IPalfHandleImpl *single_palf_handle_;
   LogLoopThread log_loop_thread_;
 
   // last_palf_epoch_ is used to assign increasing epoch for each palf instance.

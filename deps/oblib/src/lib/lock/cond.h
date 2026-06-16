@@ -91,7 +91,7 @@ Cond::wait_impl(const M& mutex) const
   mutex.unlock(state);
   oceanbase::common::ObWaitEventGuard
       wait_guard(oceanbase::common::ObWaitEventIds::DEFAULT_COND_WAIT, 0, reinterpret_cast<uint64_t>(this));
-  const int rc = ob_pthread_cond_wait(&_cond, state.mutex);
+  const int rc = pthread_cond_wait(&_cond, state.mutex);
   mutex.lock(state);
 
   if ( 0 != rc ) {

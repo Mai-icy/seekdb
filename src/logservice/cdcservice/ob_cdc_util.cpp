@@ -46,3 +46,4 @@ bool ObExtRpcQit::should_hurry_quit() const
 }
 } // namespace cdc
 } // namespace oceanbase
+

@@ -75,3 +75,4 @@ private:
 } // end namespace oceanbase
 
 #endif//_OCEANBASE_STORAGE_DDL_OB_GROUP_WRTIE_MACRO_BLOCK_TASK_H_
+

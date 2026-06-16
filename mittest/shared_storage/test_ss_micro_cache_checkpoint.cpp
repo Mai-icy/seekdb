@@ -109,7 +109,7 @@ TEST_F(TestSSMicroCacheCheckpoint, test_compress_micro_ckpt)
   ObSSLinkedPhyBlockItemWriter item_writer;
   ObSSLinkedPhyBlockItemWriter item_comp_writer;
   ASSERT_EQ(OB_SUCCESS, item_writer.init(tenant_id, phy_blk_mgr, ObSSPhyBlockType::SS_MICRO_META_CKPT_BLK));
-  ASSERT_EQ(OB_SUCCESS, item_comp_writer.init(tenant_id, phy_blk_mgr, ObSSPhyBlockType::SS_MICRO_META_CKPT_BLK, ObCompressorType::SNAPPY_COMPRESSOR));
+  ASSERT_EQ(OB_SUCCESS, item_comp_writer.init(tenant_id, phy_blk_mgr, ObSSPhyBlockType::SS_MICRO_META_CKPT_BLK, ObCompressorType::ZSTD_1_3_8_COMPRESSOR));
   int64_t total_micro_item_cnt = 0;
   for (int64_t i = 0; i < macro_cnt; ++i) {
     MacroBlockId macro_id = TestSSCommonUtil::gen_macro_block_id(2000 + i);
@@ -163,11 +163,9 @@ TEST_F(TestSSMicroCacheCheckpoint, test_compress_micro_ckpt)
     all_ckpt_item_len = block_size - pos;
   }
 
-  // 4. compress micro_meta ckpt data
-  const uint8_t start_type = static_cast<uint8_t>(ObCompressorType::LZ4_COMPRESSOR);
-  const uint8_t end_type = static_cast<uint8_t>(ObCompressorType::ZSTD_COMPRESSOR);
-  for (uint8_t i = start_type; i <= end_type; ++i) {
-    ObCompressorType comp_type = static_cast<ObCompressorType>(i);
+  // 4. compress micro_meta ckpt data with ZSTD_1_3_8
+  {
+    ObCompressorType comp_type = ObCompressorType::ZSTD_1_3_8_COMPRESSOR;
     ObCompressor *compressor = nullptr;
     ASSERT_EQ(OB_SUCCESS, ObCompressorPool::get_instance().get_compressor(comp_type, compressor));
     ASSERT_NE(nullptr, compressor);
@@ -180,7 +178,7 @@ TEST_F(TestSSMicroCacheCheckpoint, test_compress_micro_ckpt)
     const int64_t start_us = ObTimeUtility::current_time();
     ASSERT_EQ(OB_SUCCESS, compressor->compress(all_ckpt_item, all_ckpt_item_len, out_io_buf, out_io_buf_size, compressed_len));
     const int64_t cost_us = ObTimeUtility::current_time() - start_us;
-    LOG_INFO("finish current round micro_meta ckpt compress", K(all_compressor_name[i]), K(all_ckpt_item_len), K(compressed_len), K(cost_us));
+    LOG_INFO("finish current round micro_meta ckpt compress", "compressor", "zstd_1.3.8", K(all_ckpt_item_len), K(compressed_len), K(cost_us));
   }
 
   // 5. execute reading micro_meta ckpt

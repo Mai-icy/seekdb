@@ -34,8 +34,8 @@ const char* ObSetKvAttributeHelper::ALTER_KV_ATTRIBUTE_FORMAT_STR = "ALTER TABLE
 
 ObSetKvAttributeHelper::ObSetKvAttributeHelper(
   share::schema::ObMultiVersionSchemaService *schema_service,
-  const obrpc::ObHTableDDLArg &arg,
-  obrpc::ObParallelDDLRes &res)
+  const obcall::ObHTableDDLArg &arg,
+  obcall::ObParallelDDLRes &res)
   : ObDDLHelper(schema_service, arg.exec_tenant_id_, "[paralle set kv_attribute]"),
   arg_(arg),
   res_(res),
@@ -199,7 +199,7 @@ int ObSetKvAttributeHelper::lock_objects_by_name_()
     if (database_id_ == OB_INVALID_ID) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("database id is invalid", KR(ret));
-    } else if (OB_FAIL(schema_guard_wrapper_.get_table_id_and_table_name_in_tablegroup(tablegroup_id_,
+    } else if (OB_FAIL(schema_guard_wrapper_.get_table_id_and_table_name_in_tablegroup(tablegroup_id_, 
         table_names_, table_ids_))) {
       LOG_WARN("failed to get table schemas in table group", KR(ret), K_(tablegroup_id));
     } else if (table_names_.count() != table_ids_.count()) {
@@ -262,7 +262,7 @@ int ObSetKvAttributeHelper::lock_objects_by_id_()
     ObArray<ObString> latest_table_names;  // not used 
     if (OB_FAIL(ori_table_ids.assign(table_ids_))) {
       LOG_WARN("fail to assign origin table ids", KR(ret));
-    } else if (OB_FAIL(schema_guard_wrapper_.get_table_id_and_table_name_in_tablegroup(tablegroup_id_,
+    } else if (OB_FAIL(schema_guard_wrapper_.get_table_id_and_table_name_in_tablegroup(tablegroup_id_, 
         latest_table_names, latest_table_ids))) {
       LOG_WARN("failed to get table schemas in table group", KR(ret), K_(tablegroup_id));
     } else if (ori_table_ids.count() != latest_table_ids.count()) {
@@ -353,8 +353,6 @@ int ObSetKvAttributeHelper::check_table_legitimacy_()
       } else if (OB_UNLIKELY(is_exist)) {
         ret = OB_OP_NOT_ALLOW;
         LOG_WARN("restore point exist, cannot alter ", KR(ret), K_(tenant_id), K(orig_table_schema->get_table_id()));
-      } else if (OB_FAIL(ObTTLUtil::check_htable_ddl_supported(*orig_table_schema, true/*by_admin*/))) {
-        LOG_WARN("failed to check htable ddl supoprted", KR(ret));
       }
     }
   }

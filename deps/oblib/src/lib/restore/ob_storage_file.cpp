@@ -69,18 +69,18 @@ static inline ssize_t posix_pread(int fd, void* buf, size_t count, off_t offset)
     if (orig_pos == -1) {
         return -1;
     }
-
+    
     // Seek to offset
     if (_lseeki64(fd, offset, SEEK_SET) == -1) {
         return -1;
     }
-
+    
     // Read
     int bytes_read = _read(fd, buf, (unsigned int)count);
-
+    
     // Restore position
     _lseeki64(fd, orig_pos, SEEK_SET);
-
+    
     return bytes_read;
 }
 
@@ -91,18 +91,18 @@ static inline ssize_t posix_pwrite(int fd, const void* buf, size_t count, off_t 
     if (orig_pos == -1) {
         return -1;
     }
-
+    
     // Seek to offset
     if (_lseeki64(fd, offset, SEEK_SET) == -1) {
         return -1;
     }
-
+    
     // Write
     int bytes_written = _write(fd, buf, (unsigned int)count);
-
+    
     // Restore position
     _lseeki64(fd, orig_pos, SEEK_SET);
-
+    
     return bytes_written;
 }
 

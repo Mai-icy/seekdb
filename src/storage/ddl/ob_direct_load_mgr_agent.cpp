@@ -183,8 +183,8 @@ int ObDirectLoadMgrAgent::open_sstable_slice(
       data_writer_.reset();
       if (OB_FAIL(mgr_handle_.get_base_obj()->prepare_index_builder())) {
         LOG_WARN("failed to prepare index builder", K(ret));
-      } else if (OB_FAIL(data_writer_.init(mgr_handle_.get_base_obj(),
-                                           start_seq,
+      } else if (OB_FAIL(data_writer_.init(mgr_handle_.get_base_obj(), 
+                                           start_seq, 
                                            slice_info.slice_idx_,
                                            slice_info.merge_slice_idx_))) {
         LOG_WARN("failed to init data writer", K(ret));
@@ -194,8 +194,8 @@ int ObDirectLoadMgrAgent::open_sstable_slice(
       if (OB_FAIL(lob_mgr_handle_.get_base_obj()->prepare_index_builder())) {
         LOG_WARN("failed to prepare index builder", K(ret));
       } else if (OB_FAIL(lob_writer_.init(lob_mgr_handle_.get_base_obj(),
-                                          start_seq,
-                                          slice_info.slice_idx_,
+                                          start_seq, 
+                                          slice_info.slice_idx_, 
                                           slice_info.merge_slice_idx_))) {
         LOG_WARN("failed to init lob writer", K(ret), K(idem_start_seq_));
       }
@@ -727,15 +727,6 @@ int ObDirectLoadMgrAgent::update_max_lob_id(const int64_t lob_id)
   } else if (OB_UNLIKELY(!mgr_handle_.is_valid())) {
     ret = OB_ERR_SYS;
     LOG_WARN("error sys", K(ret), KPC(this));
-  } else if (is_idem_type(direct_load_type_) && GCTX.is_shared_storage_mode()) {
-    ObTabletDirectLoadMgrHandle lob_handle;
-    if (OB_FAIL(get_lob_mgr_handle(lob_handle))) {
-      LOG_WARN("failed to get lob mgr handle", K(ret));
-    } else if (!lob_handle.is_valid()) {
-      /* lob handle not exist, skip*/
-    } else if (OB_FAIL(lob_handle.get_base_obj()->update_max_lob_id(lob_id))) {
-      LOG_WARN("update max lob id failed", K(ret), K(lob_id));
-    }
   }
   return ret;
 }
@@ -801,8 +792,7 @@ int ObDirectLoadMgrAgent::create_tablet_direct_load_mgr(int64_t tenant_id,
 }
 
 ObDirectLoadType ObDirectLoadMgrAgent::load_data_get_direct_load_type(const bool is_incremental,
-                                                                      const uint64_t data_format_version,
-                                                                      const bool shared_storage_mode)
+                                                                      const uint64_t data_format_version)
 {
-  return ObDirectLoadMgrUtil::load_data_get_direct_load_type(is_incremental, data_format_version, shared_storage_mode);
+  return ObDirectLoadMgrUtil::load_data_get_direct_load_type(is_incremental, data_format_version);
 }

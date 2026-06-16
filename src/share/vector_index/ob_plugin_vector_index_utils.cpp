@@ -256,12 +256,12 @@ int ObPluginVectorIndexUtils::read_object_from_vid_rowkey_table_iter(ObObj *inpu
   return ret;
 }
 
-int ObPluginVectorIndexUtils::read_object_from_embedded_table_iter(ObObj *&input_obj,
+int ObPluginVectorIndexUtils::read_object_from_embedded_table_iter(ObObj *&input_obj, 
                                                                    int32_t data_table_rowkey_count,
-                                                                   uint64_t table_id,
-                                                                   storage::ObTableScanParam &scan_param,
+                                                                   uint64_t table_id, 
+                                                                   storage::ObTableScanParam &scan_param, 
                                                                    common::ObNewRowIterator *iter,
-                                                                   ObIAllocator &allocator,
+                                                                   ObIAllocator &allocator, 
                                                                    ObObj &output_vec_obj,
                                                                    int64_t extra_column_count,
                                                                    ObVecExtraInfoObj *output_extra_info_objs,
@@ -269,7 +269,7 @@ int ObPluginVectorIndexUtils::read_object_from_embedded_table_iter(ObObj *&input
 {
   INIT_SUCC(ret);
   ObRowkey rowkey(input_obj, data_table_rowkey_count + 1);
-
+  
   if (OB_FAIL(add_key_ranges(table_id, rowkey, scan_param))) {
     LOG_WARN("failed to set vid id key", K(ret));
   } else if (OB_FAIL(iter_table_rescan(scan_param, iter))) {
@@ -277,7 +277,7 @@ int ObPluginVectorIndexUtils::read_object_from_embedded_table_iter(ObObj *&input
   } else {
     blocksstable::ObDatumRow *datum_row = nullptr;
     storage::ObTableScanIterator *scan_iter = dynamic_cast<storage::ObTableScanIterator *>(iter);
-
+    
     if (OB_ISNULL(scan_iter)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("failed to cast to vid iter.", K(ret));
@@ -556,9 +556,9 @@ int ObPluginVectorIndexUtils::read_vector_info(ObPluginVectorIndexAdaptor *adapt
             }
           } else if (is_hybrid_vector && OB_FAIL(read_object_from_embedded_table_iter(obj_ptr,
                                                                                        data_table_rowkey_count,
-                                                                                       data_table_table_id,
-                                                                                       data_scan_param,
-                                                                                       data_iter,
+                                                                                       data_table_table_id, 
+                                                                                       data_scan_param, 
+                                                                                       data_iter, 
                                                                                        batch_temp_allocator,
                                                                                        output_vec_obj[i],
                                                                                        extra_column_count,
@@ -597,7 +597,7 @@ int ObPluginVectorIndexUtils::read_vector_info(ObPluginVectorIndexAdaptor *adapt
     } else if (!adapter->get_is_need_vid()) {
       bool get_data = false;
       int32_t data_table_rowkey_count = 1;
-
+      
       for (int64_t j = 0; OB_SUCC(ret) && j < ada_ctx.get_count(); j += ObVectorParamData::VI_PARAM_DATA_BATCH_SIZE) {
         batch_temp_allocator.reuse();
         int64_t vec_cnt = ada_ctx.get_vec_cnt();
@@ -619,9 +619,9 @@ int ObPluginVectorIndexUtils::read_vector_info(ObPluginVectorIndexAdaptor *adapt
             LOG_WARN("failed to read obj from data table.", K(ret));
           } else if (is_hybrid_vector && OB_FAIL(read_object_from_embedded_table_iter(input_obj,
                                                                                        0,
-                                                                                       data_table_table_id,
-                                                                                       data_scan_param,
-                                                                                       data_iter,
+                                                                                       data_table_table_id, 
+                                                                                       data_scan_param, 
+                                                                                       data_iter, 
                                                                                        batch_temp_allocator,
                                                                                        output_vec_obj[i],
                                                                                        extra_column_count,
@@ -629,7 +629,7 @@ int ObPluginVectorIndexUtils::read_vector_info(ObPluginVectorIndexAdaptor *adapt
                                                                                        get_data))) {
             LOG_WARN("failed to read obj from embedded table.", K(ret));
           }
-        }
+        } 
 
         if (OB_ITER_END == ret) {
           ret = OB_SUCCESS;
@@ -1841,7 +1841,7 @@ ObAdapterCreateType ObPluginVectorIndexUtils::index_type_to_create_type(schema::
 }
 
 int ObPluginVectorIndexUtils::get_vector_index_prefix_inner(const ObTableSchema &index_schema,
-                                                      const ObString index_name,
+                                                      const ObString index_name, 
                                                       ObString &prefix)
 {
   int ret = OB_SUCCESS;

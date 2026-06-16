@@ -90,7 +90,7 @@ int ObCompleteRestoreCtx::fill_comment(char *buf, const int64_t buf_len) const
   } else {
     int64_t pos = 0;
     ObCStringHelper helper;
-    if (OB_FAIL(databuff_printf(buf, buf_len, pos, "task_id=%s, task_type=%s",
+    if (OB_FAIL(databuff_printf(buf, buf_len, pos, "task_id=%s, task_type=%s", 
                                   helper.convert(task_.task_id_), ObRestoreTaskType::get_str(task_.type_)))) {
       LOG_WARN("failed to fill comment", K(ret), KPC(this));
     }
@@ -151,7 +151,7 @@ int ObCompleteRestoreDagNet::init_by_param(const share::ObIDagInitParam *param)
     if (OB_SUCCESS != init_param->result_) {
       if (OB_FAIL(ctx_.set_result(init_param->result_, false /*allow_retry*/))) {
         LOG_WARN("failed to set complete restore ctx result", K(ret), KPC(&ctx_));
-      }
+      } 
     }
     if (OB_SUCC(ret)) {
       is_inited_ = true;
@@ -317,12 +317,12 @@ int ObCompleteRestoreDagNet::clear_dag_net_ctx()
   } else {
     if (OB_TMP_FAIL(update_restore_status_(ls))) {
       LOG_WARN("failed to finalize update restore status", K(ret), K(tmp_ret), KPC(&ctx_));
-    }
+    } 
     if (OB_FAIL(ctx_.get_result(result))) {
       LOG_WARN("failed to get ls complate migration ctx result", K(ret), K(ctx_));
     } else if (OB_FAIL(handler_->set_result(result))) {
       LOG_WARN("failed to set result", K(ret), K(result), K(ctx_));
-    }
+    } 
     ctx_.finish_ts_ = ObTimeUtil::current_time();
     const int64_t cost_ts = ctx_.finish_ts_ - ctx_.start_ts_;
     FLOG_INFO("finish complete restore dag net", "task_id", ctx_.task_.task_id_,
@@ -787,7 +787,7 @@ int ObWaitDataReadyRestoreDag::fill_dag_key(char *buf, const int64_t buf_len) co
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid args", K(ret), KP(buf), K(buf_len));
   } else if (OB_FAIL(databuff_printf(buf, buf_len, "ObWaitDataReadyRestoreDag: task_id = %s, task_type = %s",
-                                        helper.convert(self_ctx->task_.task_id_),
+                                        helper.convert(self_ctx->task_.task_id_), 
                                         ObRestoreTaskType::get_str(self_ctx->task_.type_)))) {
     LOG_WARN("failed to fill dag key", K(ret), KPC(self_ctx));
   }
@@ -1129,7 +1129,7 @@ int ObWaitDataReadyRestoreTask::update_ls_restore_status_wait_()
     LOG_WARN("ls should not be null", K(ret));
   } else if (OB_FAIL(ls->set_restore_status(restore_status))) {
     LOG_WARN("failed to get migration status", K(ret), KPC(ls));
-  }
+  } 
   return ret;
 }
 
@@ -1229,7 +1229,7 @@ int ObWaitDataReadyRestoreTask::check_tablet_ready_(
           if (minor_sstables.empty()) {
             max_minor_end_scn_ = MAX(max_minor_end_scn_, tablet->get_tablet_meta().get_max_replayed_scn());
           } else {
-            max_minor_end_scn_ = MAX3(max_minor_end_scn_,
+            max_minor_end_scn_ = MAX3(max_minor_end_scn_, 
                                      minor_sstables.get_boundary_table(true)->get_end_scn(),
                                      tablet->get_tablet_meta().get_max_replayed_scn());
           }
@@ -1424,7 +1424,7 @@ int ObFinishCompleteRestoreDag::fill_dag_key(char *buf, const int64_t buf_len) c
   } else if (OB_ISNULL(buf) || buf_len <= 0) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid args", K(ret), KP(buf), K(buf_len));
-  } else if (OB_FAIL(databuff_printf(buf, buf_len,
+  } else if (OB_FAIL(databuff_printf(buf, buf_len, 
                                         "ObFinishCompleteRestoreDag: task_id = %s, task_type = %s, src_info = %s",
                                         helper.convert(self_ctx->task_.task_id_),
                                         ObRestoreTaskType::get_str(self_ctx->task_.type_),
@@ -1562,7 +1562,7 @@ int ObFinishCompleteRestoreTask::generate_initial_complete_restore_dag_()
   } else if (OB_ISNULL(scheduler = MTL(ObTenantDagScheduler*))) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("failed to get ObTenantDagScheduler from MTL", K(ret));
-  } else if (OB_ISNULL(dag_net = dag->get_dag_net())
+  } else if (OB_ISNULL(dag_net = dag->get_dag_net()) 
                 || ObDagNetType::DAG_NET_TYPE_RESTORE_COMPLETE != dag_net->get_type()) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("dag net should not be NULL or type is unexpected", K(ret), KP(dag_net));

@@ -26,7 +26,7 @@
 namespace oceanbase
 {
 using namespace common;
-using namespace obrpc;
+using namespace obcall;
 using namespace share;
 using namespace share::schema;
 namespace rootserver
@@ -44,7 +44,7 @@ ObPartitionExchange::~ObPartitionExchange()
 {
 }
 
-int ObPartitionExchange::check_and_exchange_partition(const obrpc::ObExchangePartitionArg &arg, obrpc::ObAlterTableRes &res, ObSchemaGetterGuard &schema_guard)
+int ObPartitionExchange::check_and_exchange_partition(const obcall::ObExchangePartitionArg &arg, obcall::ObAlterTableRes &res, ObSchemaGetterGuard &schema_guard)
 {
   int ret = OB_SUCCESS;
   const uint64_t tenant_id = arg.tenant_id_;
@@ -359,7 +359,7 @@ int ObPartitionExchange::inner_init(
 }
 
 int ObPartitionExchange::check_partition_exchange_conditions_(
-    const obrpc::ObExchangePartitionArg &arg,
+    const obcall::ObExchangePartitionArg &arg,
     const ObTableSchema &base_table_schema,
     const ObTableSchema &inc_table_schema,
     const bool is_oracle_mode,
@@ -440,8 +440,8 @@ int ObPartitionExchange::check_partition_exchange_conditions_(
 }
 
 int ObPartitionExchange::do_exchange_partitions_(
-    const obrpc::ObExchangePartitionArg &arg,
-    obrpc::ObAlterTableRes &res,
+    const obcall::ObExchangePartitionArg &arg,
+    obcall::ObAlterTableRes &res,
     const ObTableSchema &base_table_schema,
     const ObTableSchema &inc_table_schema,
     const bool is_oracle_mode,
@@ -2854,7 +2854,7 @@ int ObPartitionExchange::update_table_all_monitor_modified_(const uint64_t tenan
   if (OB_UNLIKELY(OB_INVALID_TENANT_ID == tenant_id || OB_INVALID_ID == new_table_id || !tablet_id.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(tenant_id), K(new_table_id), K(tablet_id));
-  } else if (OB_FAIL(monitor_modified_read_sql_string.assign_fmt("SELECT last_inserts, last_updates, last_deletes, inserts, updates, deletes FROM %s WHERE table_id = %ld and tablet_id = %ld",
+  } else if (OB_FAIL(monitor_modified_read_sql_string.assign_fmt("SELECT last_inserts, last_updates, last_deletes, inserts, updates, deletes FROM %s WHERE table_id = %ld and tablet_id = %ld", 
              OB_ALL_MONITOR_MODIFIED_TNAME, orig_table_schema.get_table_id(), tablet_id.id()))) {
     LOG_WARN("fail to assign sql string", K(ret), K(tenant_id), K(orig_table_schema.get_table_id()), K(tablet_id));
   } else {

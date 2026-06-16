@@ -23,7 +23,7 @@
 #include "lib/mysqlclient/ob_isql_connection.h"
 #include "storage/tx/ob_multi_data_source.h"
 
-using namespace oceanbase::obrpc;
+using namespace oceanbase::obcall;
 using namespace oceanbase::common;
 using namespace oceanbase::share;
 using namespace oceanbase::transaction;
@@ -115,7 +115,7 @@ void ObTabletForkMdsArg::reset()
   allocator_.reset();
 }
 
-int ObTabletForkMdsArg::set_autoinc_seq_arg(const obrpc::ObBatchSetTabletAutoincSeqArg &arg)
+int ObTabletForkMdsArg::set_autoinc_seq_arg(const obcall::ObBatchSetTabletAutoincSeqArg &arg)
 {
   int ret = OB_SUCCESS;
   if (OB_UNLIKELY(!arg.is_valid())) {
@@ -138,7 +138,7 @@ int ObTabletForkMdsArg::set_truncate_arg(const rootserver::ObTruncateTabletArg &
     const int64_t buf_len = arg.get_serialize_size();
     int64_t pos = 0;
     char *buf = nullptr;
-
+    
     if (OB_ISNULL(buf = static_cast<char *>(tmp_allocator.alloc(buf_len)))) {
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("fail alloc memory", K(ret), K(buf_len));
@@ -279,3 +279,4 @@ int ObTabletForkMdsHelper::modify(
 
 } // namespace storage
 } // namespace oceanbase
+

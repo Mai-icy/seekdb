@@ -165,7 +165,7 @@ void ObPluginVectorIndexLoadScheduler::clean_deprecated_adapters()
             } else {
               ret = OB_SUCCESS; // not found, moved from this ls
               if (OB_FAIL(delete_tablet_id_array.push_back(tablet_id))) {
-                LOG_WARN("push back table id failed",
+                LOG_WARN("push back table id failed", 
                   K(delete_tablet_id_array.count()), K(adapter->get_inc_tablet_id()), KR(ret));
               }
             }
@@ -184,28 +184,28 @@ void ObPluginVectorIndexLoadScheduler::clean_deprecated_adapters()
                 adapter->inc_idle();
                 if (adapter->is_deprecated()) {
                   if (OB_FAIL(delete_tablet_id_array.push_back(tablet_id))) {
-                    LOG_WARN("push back table id failed",
+                    LOG_WARN("push back table id failed", 
                       K(delete_tablet_id_array.count()), K(adapter->get_inc_tablet_id()), KR(ret));
                   }
                 }
               }
             } else {
               LOG_WARN("fail to check exist refactored", K(ret));
-            }
+            }  
           } else {
             // tablet exist, but it may in recyclebin, cannot check schema if it is partial adapter from dml
             // add count here if more then 3 loops not merged, remove them.
             adapter->inc_idle();
             if (adapter->is_deprecated()) {
               if (OB_FAIL(delete_tablet_id_array.push_back(tablet_id))) {
-                LOG_WARN("push back table id failed",
+                LOG_WARN("push back table id failed", 
                   K(delete_tablet_id_array.count()), K(adapter->get_inc_tablet_id()), KR(ret));
               }
             }
           }
         }
       }
-    }
+    } 
 
     if (delete_tablet_id_array.count() > 0) {
       LOG_INFO("try erase partial vector index adapter", 
@@ -327,7 +327,7 @@ int ObPluginVectorIndexLoadScheduler::acquire_adapter_in_maintenance(
   } else {
     ObTabletHandle tablet_handle;
     ObVectorIndexSharedTableInfo info;
-
+    
     for (int64_t i = 0; OB_SUCC(ret) && i < tablet_ids.count(); i++) {
       if (OB_FAIL(ls_->get_tablet_svr()->get_tablet(tablet_ids.at(i), tablet_handle))) {
         if (OB_TABLET_NOT_EXIST != ret) {
@@ -368,7 +368,7 @@ int ObPluginVectorIndexLoadScheduler::acquire_adapter_in_maintenance(
         } else {
           adapter_guard.get_adatper()->reset_idle();
         }
-
+        
         if (OB_SUCC(ret)) {
           if (OB_FAIL(shared_table_info_map.get_refactored(data_tablet_id, info))) {
             if (OB_HASH_NOT_EXIST != ret) {
@@ -386,7 +386,7 @@ int ObPluginVectorIndexLoadScheduler::acquire_adapter_in_maintenance(
             if (OB_FAIL(shared_table_info_map.set_refactored(data_tablet_id, info, overwrite))) {
               LOG_WARN("fail to set shared table info", K(ret), K(data_tablet_id));
             }
-          }
+          } 
         }
       }
     }
@@ -581,6 +581,11 @@ int read_tenant_task_status(uint64_t tenant_id,
 int ObPluginVectorIndexLoadScheduler::check_and_load_task_executors(bool &has_ivf_index)
 {
   int ret = OB_SUCCESS;
+  bool need_schedule = can_schedule(ObVectorTaskScheduleType::HNSW_OPTIMIZE)
+                    || can_schedule(ObVectorTaskScheduleType::IVF_TASK);
+  if (!need_schedule) {
+    return ret;
+  }
   uint64_t task_trace_base_num = 0;
   bool schema_changed = false;
 
@@ -592,7 +597,8 @@ int ObPluginVectorIndexLoadScheduler::check_and_load_task_executors(bool &has_iv
     LOG_WARN("fail to load index async task", K(ret));
   } else if (can_schedule(ObVectorTaskScheduleType::HNSW_OPTIMIZE) && OB_FAIL(async_task_exec_.load_task(task_trace_base_num))) {
     LOG_WARN("fail to load tenant sync task", K(ret));
-  } else if (OB_FAIL(embedding_task_exec_.load_task(task_trace_base_num))) {
+  } else if (can_schedule(ObVectorTaskScheduleType::HNSW_OPTIMIZE)
+             && OB_FAIL(embedding_task_exec_.load_task(task_trace_base_num))) {
     LOG_WARN("fail to load tenant sync task", K(ret));
   } else if (can_schedule(ObVectorTaskScheduleType::IVF_TASK)) {
     if (OB_FAIL(ivf_task_exec_.check_schema_version_changed(schema_changed))) {
@@ -1151,7 +1157,8 @@ int ObPluginVectorIndexLoadScheduler::start_task_executors()
     LOG_WARN("fail to start index async task", K(ret));
   } else if (can_schedule(ObVectorTaskScheduleType::IVF_TASK) && OB_FAIL(ivf_task_exec_.start_task())) {
     LOG_WARN("fail to start index async task", K(ret));
-  } else if (OB_FAIL(embedding_task_exec_.start_task())) {
+  } else if (can_schedule(ObVectorTaskScheduleType::HNSW_OPTIMIZE)
+             && OB_FAIL(embedding_task_exec_.start_task())) {
     LOG_WARN("fail to start hybrid index async task", K(ret));
   }
   return ret;
@@ -1244,6 +1251,12 @@ void ObPluginVectorIndexLoadScheduler::run_task()
     }
   } else if (check_can_do_work()){
     check_can_schedule();
+    if (!can_schedule(ObVectorTaskScheduleType::ADAPTER_MAINTENANCE)
+        && !can_schedule(ObVectorTaskScheduleType::FOLLOWER_SYNC)
+        && !can_schedule(ObVectorTaskScheduleType::HNSW_OPTIMIZE)
+        && !can_schedule(ObVectorTaskScheduleType::IVF_TASK)) {
+      return;
+    }
     bool has_ivf_index = false;
     ObSEArray<uint64_t, DEFAULT_TABLE_ARRAY_SIZE> vec_table_id_array;
     if (OB_FAIL(check_tenant_memory())) {
@@ -1508,19 +1521,23 @@ int ObPluginVectorIndexLoadScheduler::safe_to_destroy(bool &is_safe)
   return ret;
 }
 
-void ObPluginVectorIndexLoadScheduler::stop() 
-{ 
+void ObPluginVectorIndexLoadScheduler::stop()
+{
   int ret = OB_SUCCESS;
-  is_stopped_= true; 
+  is_stopped_= true;
   ObPluginVectorIndexMgr *index_ls_mgr = nullptr;
-  if (OB_NOT_NULL(vector_index_service_)) {
+  if (OB_NOT_NULL(vector_index_service_) && OB_NOT_NULL(ls_)) {
     if (OB_FAIL(vector_index_service_->get_ls_index_mgr_map().get_refactored(ls_->get_ls_id(), index_ls_mgr))) {
       LOG_WARN("fail to get vector index ls mgr", KR(ret), K(tenant_id_), K(ls_->get_ls_id()));
     } else if (OB_NOT_NULL(index_ls_mgr)) {
       index_ls_mgr->get_async_task_opt().set_stop();
     }
   }
-  FLOG_INFO("vector index task scheduler stop", K(ls_->get_ls_id()), KP(index_ls_mgr));
+  if (OB_NOT_NULL(ls_)) {
+    FLOG_INFO("vector index task scheduler stop", K(ls_->get_ls_id()), KP(index_ls_mgr));
+  } else {
+    FLOG_INFO("vector index task scheduler stop, ls is null", KP(index_ls_mgr));
+  }
 };
 
 void ObPluginVectorIndexLoadScheduler::destroy()

@@ -93,7 +93,7 @@ int ObTabletDDLCompleteArg::set_storage_schema(const ObStorageSchema &other)
   } else {
     storage_schema_ = new (buf) ObStorageSchema();
   }
-
+  
   if (OB_FAIL(ret)) {
   } else if (OB_FAIL(storage_schema_->assign(allocator_, other))) {
     LOG_WARN("failed to assign storage schema", K(ret));
@@ -179,7 +179,7 @@ int ObTabletDDLCompleteArg::deserialize(const char *buf, const int64_t data_len,
         storage_schema_ = new (buf) ObStorageSchema();
       }
     }
-  }
+  } 
   if (OB_FAIL(ret)) {
   } else if (!has_complete_) {
   } else if (OB_FAIL(storage_schema_->deserialize(allocator_, buf, data_len, pos))) {

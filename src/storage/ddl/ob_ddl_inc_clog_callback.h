@@ -20,12 +20,12 @@
  #include "storage/ddl/ob_ddl_struct.h"
  #include "storage/ddl/ob_ddl_inc_clog.h"
  #include "storage/meta_mem/ob_tablet_handle.h"
-
+ 
  namespace oceanbase
  {
  namespace storage
  {
-
+ 
  class ObDDLIncClogCb : public logservice::AppendCb
  {
  public:
@@ -43,7 +43,7 @@
  protected:
    ObDDLClogCbStatus status_;
  };
-
+ 
  class ObDDLIncStartClogCb : public ObDDLIncClogCb
  {
  public:
@@ -60,7 +60,7 @@
    share::ObLSID ls_id_;
    ObDDLIncLogBasic log_basic_;
  };
-
+ 
  class ObDDLIncRedoClogCb : public ObDDLIncClogCb
  {
  public:
@@ -83,7 +83,7 @@
    bool is_data_buffer_freed_;
    storage::ObTabletHandle tablet_handle_;
  };
-
+ 
  class ObDDLIncCommitClogCb : public ObDDLIncClogCb
  {
  public:
@@ -100,6 +100,7 @@
    share::ObLSID ls_id_;
    ObDDLIncLogBasic log_basic_;
  };
-
+ 
  } // namespace storage
  } // namespace oceanbase
+ 

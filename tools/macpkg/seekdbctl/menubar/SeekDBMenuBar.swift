@@ -23,12 +23,16 @@ struct SeekDBStatus {
     var processRunning = false
     var pid = ""
     var portOpen = false
+    var launchdLoaded = false
 
     var state: ServiceState {
-        if processRunning && portOpen { return .active }
-        if processRunning && !portOpen { return .starting }
-        if !processRunning && portOpen { return .stopping }
-        return .stopped
+        if launchdLoaded {
+            if processRunning && portOpen { return .active }
+            return .starting
+        } else {
+            if processRunning || portOpen { return .stopping }
+            return .stopped
+        }
     }
 
     var summary: String {
@@ -66,6 +70,8 @@ struct SeekDBStatus {
                         .replacingOccurrences(of: "(pid ", with: "")
                         .replacingOccurrences(of: ")", with: "")
                 }
+            } else if lower.hasPrefix("launchd") {
+                s.launchdLoaded = value == "loaded"
             }
         }
         return s
@@ -511,7 +517,7 @@ class MainWindowController: NSObject, NSWindowDelegate {
         addSectionLabel("Logs")
         addRow([
             makeButton("View Logs", #selector(SeekDBMenuBarApp.viewLogs)),
-            makeButton("Follow Logs", #selector(SeekDBMenuBarApp.followLogs))
+            makeButton("Save Logs to…", #selector(SeekDBMenuBarApp.saveLogs))
         ])
 
         addSectionLabel("Configuration")
@@ -581,6 +587,9 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     let launchedFromInstalledApp = Bundle.main.bundleURL.standardizedFileURL.path == MONITOR_APP_PATH
     var uninstallingAfterAppRemoval = false
     var serviceOperationInProgress = false
+    var startingStateStartTime: Date? = nil
+    var startupFailureShown = false
+    let STARTUP_FAILURE_TIMEOUT: TimeInterval = 30.0
 
     // menu items that update dynamically
     var statusMenuItem: NSMenuItem!
@@ -669,9 +678,9 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
         logsItem.target = self
         menu.addItem(logsItem)
 
-        let followItem = NSMenuItem(title: "Follow Logs...", action: #selector(followLogs), keyEquivalent: "")
-        followItem.target = self
-        menu.addItem(followItem)
+        let saveLogsItem = NSMenuItem(title: "Save Logs to…", action: #selector(saveLogs), keyEquivalent: "")
+        saveLogsItem.target = self
+        menu.addItem(saveLogsItem)
 
         menu.addItem(.separator())
 
@@ -713,8 +722,39 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applyButtonState() {
+        startItem.isEnabled = false
+        stopItem.isEnabled = false
+        restartItem.isEnabled = false
+        settingsItem.isEnabled = false
+        setupItem.isEnabled = false
+        mainWindowController.update(currentStatus, locked: true)
+    }
+
     func applyStatus(_ status: SeekDBStatus) {
         currentStatus = status
+
+        // Detect startup failure: launchd loaded but process keeps crashing.
+        // Process running → reset timer (normal startup in progress).
+        // Process not running → timer accumulates (crash loop).
+        if status.state == .starting && !serviceOperationInProgress {
+            if status.processRunning {
+                startingStateStartTime = Date()
+                startupFailureShown = false
+            } else if startingStateStartTime == nil {
+                startingStateStartTime = Date()
+            }
+            if !startupFailureShown,
+               let since = startingStateStartTime,
+               Date().timeIntervalSince(since) > STARTUP_FAILURE_TIMEOUT {
+                startupFailureShown = true
+                showStartupFailure()
+            }
+        } else {
+            startingStateStartTime = nil
+            startupFailureShown = false
+        }
+
         statusItem.button?.image = makeStatusIcon(status.state)
         statusMenuItem.title = "seekdb: \(status.summary)"
         portMenuItem.title = "Port: \(status.port.isEmpty ? "--" : status.port)"
@@ -765,12 +805,14 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
         let installedBundleMissing = launchedFromInstalledApp
             && !FileManager.default.fileExists(atPath: MONITOR_APP_PATH)
 
-        let uninstallPending = uninstallMarkerExists()
+        // Only react to the app being moved to trash or its installed location disappearing.
+        // Do NOT check uninstall markers in the data directory — the path may be under
+        // a TCC-protected directory (~/Downloads, ~/Documents, etc.), and accessing it
+        // causes macOS to terminate the monitor process.
+        guard currentBundleInTrash || installedBundleMissing else { return }
 
-        guard currentBundleInTrash || installedBundleMissing || uninstallPending else { return }
-
-        if uninstallPending || (installedBundleMissing && !currentBundleInTrash
-            && (seekdbctlOperationInProgress() || seekdbCoreInstallMissing())) {
+        if installedBundleMissing && !currentBundleInTrash
+            && (seekdbctlOperationInProgress() || seekdbCoreInstallMissing()) {
             appRemovalTimer?.invalidate()
             statusTimer?.invalidate()
             NSApp.terminate(nil)
@@ -804,6 +846,24 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
         alert.runModal()
     }
 
+    func showStartupFailure() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "seekdb Failed to Start"
+        alert.informativeText = "The service has not started after \(Int(STARTUP_FAILURE_TIMEOUT)) seconds. The process may be crashing on startup.\n\n\(logDetailsText())"
+        alert.alertStyle = .critical
+        alert.addButton(withTitle: "Stop Service")
+        alert.addButton(withTitle: "View Logs and Stop")
+        let response = alert.runModal()
+        if response == .alertSecondButtonReturn {
+            viewLogs()
+        }
+        // Stop directly via XPC without requiring password — the service already failed
+        runPrivileged(command: "stop") { [weak self] _, _ in
+            self?.refreshStatus()
+        }
+    }
+
     func confirmAction(message: String, info: String) -> Bool {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
@@ -820,33 +880,48 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
     @objc func startService() {
         guard !serviceOperationInProgress else { return }
         guard authorizeAdmin(prompt: "seekdb Monitor needs your password to start the database service.") else { return }
+        serviceOperationInProgress = true
+        statusTimer?.invalidate()
         statusItem.button?.image = makeStatusIcon(.starting)
         statusMenuItem.title = "seekdb: Starting…"
+        applyButtonState()
         runPrivileged(command: "start") { [weak self] success, output in
-            if !success { self?.showResult(success: false, output: output, title: "Start Failed") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self?.refreshStatus() }
+            guard let self = self else { return }
+            self.serviceOperationInProgress = false
+            if !success { self.showResult(success: false, output: output, title: "Start Failed") }
+            self.refreshStatus()
         }
     }
 
     @objc func stopService() {
         guard !serviceOperationInProgress else { return }
         guard authorizeAdmin(prompt: "seekdb Monitor needs your password to stop the database service.") else { return }
+        serviceOperationInProgress = true
+        statusTimer?.invalidate()
         statusItem.button?.image = makeStatusIcon(.stopping)
         statusMenuItem.title = "seekdb: Stopping…"
+        applyButtonState()
         runPrivileged(command: "stop") { [weak self] success, output in
-            if !success { self?.showResult(success: false, output: output, title: "Stop Failed") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self?.refreshStatus() }
+            guard let self = self else { return }
+            self.serviceOperationInProgress = false
+            if !success { self.showResult(success: false, output: output, title: "Stop Failed") }
+            self.refreshStatus()
         }
     }
 
     @objc func restartService() {
         guard !serviceOperationInProgress else { return }
         guard authorizeAdmin(prompt: "seekdb Monitor needs your password to restart the database service.") else { return }
+        serviceOperationInProgress = true
+        statusTimer?.invalidate()
         statusItem.button?.image = makeStatusIcon(.starting)
         statusMenuItem.title = "seekdb: Restarting…"
+        applyButtonState()
         runPrivileged(command: "restart") { [weak self] success, output in
-            if !success { self?.showResult(success: false, output: output, title: "Restart Failed") }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self?.refreshStatus() }
+            guard let self = self else { return }
+            self.serviceOperationInProgress = false
+            if !success { self.showResult(success: false, output: output, title: "Restart Failed") }
+            self.refreshStatus()
         }
     }
 
@@ -856,8 +931,30 @@ class SeekDBMenuBarApp: NSObject, NSApplicationDelegate {
         openTerminal("\(shellQuote(SEEKDBCTL)) logs; echo '\\nPress any key to close'; read -n1")
     }
 
-    @objc func followLogs() {
-        openTerminal("\(shellQuote(SEEKDBCTL)) logs -f")
+    @objc func saveLogs() {
+        let panel = NSSavePanel()
+        panel.title = "Save seekdb Logs"
+        panel.nameFieldStringValue = "seekdb-logs"
+        panel.canCreateDirectories = true
+        panel.allowedContentTypes = []
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let dest = panel.url else { return }
+
+        let logDir = readRuntimeBaseDir() + "/log"
+        let src = URL(fileURLWithPath: logDir)
+        do {
+            if FileManager.default.fileExists(atPath: dest.path) {
+                try FileManager.default.removeItem(at: dest)
+            }
+            try FileManager.default.copyItem(at: src, to: dest)
+            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: dest.path)
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Failed to save logs"
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle = .warning
+            alert.runModal()
+        }
     }
 
     // MARK: - Settings

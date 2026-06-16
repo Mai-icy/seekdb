@@ -258,7 +258,7 @@ int ObShowGrants::inner_get_next_row(common::ObNewRow *&row)
           for (PRIV_MAP::const_iterator iter = priv_map.begin(); OB_SUCC(ret) && iter != priv_map.end(); ++iter) {
             const PrivKey &priv_key = iter->first;
             const ObPrivSet &privs = iter->second;
-            if (priv_key.catalog_name_.empty()
+            if (priv_key.catalog_name_.empty() 
                 && priv_key.db_name_.empty()
                 && ObObjectType::INVALID == priv_key.obj_type_) {
               pos = 0;

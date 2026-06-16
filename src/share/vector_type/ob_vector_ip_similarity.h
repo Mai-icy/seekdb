@@ -32,7 +32,7 @@ struct ObVectorIPSimilarity
 };
 
 template <typename T>
-OB_INLINE double ObVectorIPSimilarity<T>::get_ip_similarity(double distance)
+OB_INLINE double ObVectorIPSimilarity<T>::get_ip_similarity(double distance) 
 {
   return (1 + distance) / 2;
 }

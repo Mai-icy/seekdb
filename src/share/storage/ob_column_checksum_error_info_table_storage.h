@@ -66,3 +66,4 @@ private:
 } // namespace oceanbase
 
 #endif // OCEANBASE_SHARE_STORAGE_OB_COLUMN_CHECKSUM_ERROR_INFO_TABLE_STORAGE_H_
+

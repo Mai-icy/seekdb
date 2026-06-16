@@ -158,3 +158,4 @@ public:
 } // namespace oceanbase
 
 #endif // OCEANBASE_SHARE_OB_FORK_TABLE_UTIL_H
+

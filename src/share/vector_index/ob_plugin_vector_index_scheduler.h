@@ -23,7 +23,7 @@
 #include "share/vector_index/ob_plugin_vector_index_adaptor.h"
 #include "share/vector_index/ob_vector_index_async_task.h"
 #include "share/vector_index/ob_hybrid_vector_refresh_task.h"
-#include "observer/table/ttl/ob_tenant_ttl_manager.h"
+#include "share/table/ob_ttl_util.h"
 #include "logservice/ob_append_callback.h"
 #include "logservice/ob_log_base_type.h"
 #include "logservice/ob_log_handler.h"
@@ -257,7 +257,7 @@ public:
 
   // core interfaces
   int execute_adapter_maintenance(ObIArray<uint64_t> &vec_table_id_array);
-  int acquire_adapter_in_maintenance(const int64_t table_id,
+  int acquire_adapter_in_maintenance(const int64_t table_id, 
                                      const ObTableSchema *table_schema,
                                      ObVecIdxSharedTableInfoMap &shared_table_info_map);
   int set_shared_table_info_in_maintenance(const int64_t table_id, 
@@ -325,12 +325,12 @@ private:
   int start_task_executors();
   int resume_task_executors();
   bool can_schedule(ObVectorTaskScheduleType task_type) { return can_schedule_[task_type]; }
-  void check_can_schedule() {
+  void check_can_schedule() { 
     for (int i = 0; i < ObVectorTaskScheduleType::SCHEDULE_MAX; i++) {
-      can_schedule_[i] = (ObTimeUtility::fast_current_time() - last_schedule_time_[i] > schedule_interval[i]);
+      can_schedule_[i] = (ObTimeUtility::fast_current_time() - last_schedule_time_[i] > schedule_interval[i]); 
     }
   }
-  void schedule_finish() {
+  void schedule_finish() { 
     for (int i = 0; i < ObVectorTaskScheduleType::SCHEDULE_MAX; i++) {
       if (can_schedule_[i]) {
         last_schedule_time_[i] = ObTimeUtility::fast_current_time();

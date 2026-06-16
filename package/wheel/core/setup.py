@@ -32,7 +32,7 @@ def __package_name():
 def get_package_data():
     """Get package data files"""
     return {
-        f"{__package_name()}": [
+        f"{__package_name()}": [ 
             #"dummy.so",
             "libaio.so.1",
             f"{__library_name()}.so.1.gz",

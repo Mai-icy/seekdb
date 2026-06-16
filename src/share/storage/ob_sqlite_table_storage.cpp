@@ -232,7 +232,7 @@ int ObSQLiteConnectionPool::acquire_connection(ObSQLiteConnection *&conn)
 {
   int ret = OB_SUCCESS;
   conn = nullptr;
-
+  
   if (strlen(db_path_) == 0) {
     ret = OB_NOT_INIT;
     LOG_WARN("storage not initialized", K(ret));
@@ -253,7 +253,7 @@ int ObSQLiteConnectionPool::acquire_connection(ObSQLiteConnection *&conn)
       }
     }
   }
-
+  
   return ret;
 }
 
@@ -276,3 +276,4 @@ void ObSQLiteConnectionPool::destroy()
 
 } // namespace share
 } // namespace oceanbase
+

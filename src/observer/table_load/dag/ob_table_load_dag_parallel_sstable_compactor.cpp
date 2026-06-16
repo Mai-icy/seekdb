@@ -88,7 +88,7 @@ ObTableLoadDagSSTableCompare::ObTableLoadDagSSTableCompare() : result_code_(OB_S
 
 ObTableLoadDagSSTableCompare::~ObTableLoadDagSSTableCompare() {}
 
-bool ObTableLoadDagSSTableCompare::operator()(const ObDirectLoadTableHandle lhs,
+bool ObTableLoadDagSSTableCompare::operator()(const ObDirectLoadTableHandle lhs, 
                                            const ObDirectLoadTableHandle rhs)
 {
   int ret = OB_SUCCESS;
@@ -133,7 +133,7 @@ ObTableLoadDagParallelSSTableCompactor::~ObTableLoadDagParallelSSTableCompactor(
   tablet_ctx_map_.destroy();
 }
 
-int ObTableLoadDagParallelSSTableCompactor::init(ObTableLoadStoreCtx *store_ctx,
+int ObTableLoadDagParallelSSTableCompactor::init(ObTableLoadStoreCtx *store_ctx, 
                                               ObTableLoadTableOpCtx *op_ctx)
 {
   int ret = OB_SUCCESS;

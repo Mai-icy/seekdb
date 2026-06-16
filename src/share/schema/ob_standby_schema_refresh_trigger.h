@@ -31,7 +31,7 @@ class ObStandbySchemaRefreshTrigger : public common::ObTimerTask
 public:
   ObStandbySchemaRefreshTrigger() : is_inited_(false), is_scheduled_(false) {}
   virtual ~ObStandbySchemaRefreshTrigger() {}
-
+  
   int init();
   int stop();
   int wait();
@@ -43,7 +43,7 @@ private:
   int check_inner_stat_();
   int submit_tenant_refresh_schema_task_();
   static const int64_t DEFAULT_IDLE_TIME = 1000 * 1000;  // 1s
-
+  
   bool is_inited_;
   bool is_scheduled_;
 };

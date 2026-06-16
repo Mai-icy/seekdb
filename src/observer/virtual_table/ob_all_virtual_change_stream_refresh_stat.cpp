@@ -77,7 +77,7 @@ int ObAllVirtualChangeStreamRefreshStat::process_curr_tenant(ObNewRow *&row)
 {
   LOG_INFO("select from dba_ob_change_stream_refresh_stat", K(MTL_ID()));
   int ret = OB_SUCCESS;
-
+  
   if (row_produced_) {
     ret = OB_ITER_END;
   } else if (OB_ISNULL(cur_row_.cells_)) {
@@ -93,19 +93,10 @@ int ObAllVirtualChangeStreamRefreshStat::process_curr_tenant(ObNewRow *&row)
     int64_t fetch_lsn = 0;
     int64_t fetch_scn = 0;
 
-    // Get refresh_scn from global_stat
-    SCN refresh_scn;
-    if (OB_FAIL(ObGlobalStatProxy::get_change_stream_refresh_scn(
-            *GCTX.sql_proxy_, MTL_ID(), false, refresh_scn))) {
-      if (OB_ENTRY_NOT_EXIST == ret) {
-        // Change stream not initialized yet, use default value
-        ret = OB_SUCCESS;
-        refresh_scn_val = 0;
-      } else {
-        SERVER_LOG(WARN, "fail to get change_stream_refresh_scn", K(ret), K(MTL_ID()));
-      }
-    } else {
-      refresh_scn_val = refresh_scn.get_val_for_inner_table_field();
+    // Get refresh_scn from in-memory manager state
+    ObChangeStreamMgr *cs_mgr = MTL(ObChangeStreamMgr*);
+    if (OB_NOT_NULL(cs_mgr) && cs_mgr->is_inited()) {
+      refresh_scn_val = cs_mgr->get_dispatcher().get_refresh_scn();
     }
 
     // Get min_dep_lsn from global_stat

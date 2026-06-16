@@ -1150,7 +1150,7 @@ int ObAllVirtualProxySchema::fill_row_(
           cells[cell_idx].set_int(replica.get_property().get_memstore_percent());
           break;
         }
-
+        
         case SPARE1: { 
           cells[cell_idx].set_int(static_cast<int64_t>(replica.get_server().get_port()));
           break;

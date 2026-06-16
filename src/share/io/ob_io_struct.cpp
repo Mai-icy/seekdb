@@ -21,9 +21,6 @@
 #include "observer/ob_server.h"
 #include "common/storage/ob_fd_simulator.h"
 
-#ifdef OB_BUILD_SHARED_STORAGE
-#include "storage/shared_storage/ob_file_manager.h"
-#endif
 
 #ifdef _WIN32
 
@@ -32,7 +29,7 @@ static inline void usage_to_timeval(FILETIME *ft, struct timeval *tv)
     ULARGE_INTEGER time;
     time.LowPart = ft->dwLowDateTime;
     time.HighPart = ft->dwHighDateTime;
-
+    
     // Convert 100-nanosecond intervals to seconds and microseconds
     tv->tv_sec = (long)(time.QuadPart / 10000000);
     tv->tv_usec = (long)((time.QuadPart % 10000000) / 10);
@@ -45,38 +42,38 @@ inline int getrusage(int who, struct rusage *usage)
 #endif
 {
     FILETIME ctime, etime, stime, utime;
-
+    
     memset(usage, 0, sizeof(struct rusage));
-
+    
     if (who == RUSAGE_SELF) {
         PROCESS_MEMORY_COUNTERS pmc;
         HANDLE proc = GetCurrentProcess();
-
+        
         if (!GetProcessTimes(proc, &ctime, &etime, &stime, &utime)) {
             return -1;
         }
         if (!GetProcessMemoryInfo(proc, &pmc, sizeof(pmc))) {
             return -1;
         }
-
+        
         usage_to_timeval(&stime, &usage->ru_stime);
         usage_to_timeval(&utime, &usage->ru_utime);
-
+        
         usage->ru_majflt = pmc.PageFaultCount;
         usage->ru_maxrss = pmc.PeakWorkingSetSize / 1024;
-
+        
         return 0;
     } else if (who == RUSAGE_THREAD) {
         if (!GetThreadTimes(GetCurrentThread(), &ctime, &etime, &stime, &utime)) {
             return -1;
         }
-
+        
         usage_to_timeval(&stime, &usage->ru_stime);
         usage_to_timeval(&utime, &usage->ru_utime);
-
+        
         return 0;
     }
-
+    
     return -1;
 }
 #endif
@@ -805,7 +802,7 @@ void ObIOTuner::run1()
     // print interval must <= 1s, for ensuring real_iops >= 1 in gv$ob_io_quota.
     if (REACH_TIME_INTERVAL(1000L * 1000L * 1L)) {
       OB_IO_MANAGER.print_status();
-      if (!GCTX.is_shared_storage_mode() && OB_FAIL(send_detect_task())) {
+      if (OB_FAIL(send_detect_task())) {
         LOG_WARN("fail to send detect task", K(ret));
       }
     }
@@ -912,7 +909,6 @@ static inline int check_io_hang_errsim()
       LOG_WARN("errsim: EN_IO_HANG_ERROR is ignored", K(ret), K(tmp_ret), K(hang_ms));
     }
     while (hang_ms > 0 && 0 == ATOMIC_LOAD(&clear_io_hang_errsim) % 2) {
-      oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT_FOR_LOCAL_RETRY);
       ObClockGenerator::msleep(10);
       hang_ms = hang_ms - 10;
     }
@@ -1399,7 +1395,7 @@ int ObSyncIOChannel::submit(ObIORequest &req)
 {
   int ret = OB_SUCCESS;
   const int64_t current_ts = ObTimeUtility::current_time();
-  const int64_t io_depth = get_io_depth(min(max(GMEMCONF.get_server_memory_limit() / 10, static_cast<int64_t>(500LL * 1024LL * 1024LL)), static_cast<int64_t>(4LL * 1024LL * 1024LL * 1024LL)));
+  const int64_t io_depth = get_io_depth(min(max(GMEMCONF.get_server_memory_limit() / 10, static_cast<int64_t>(500LL * 1024LL * 1024LL)), static_cast<int64_t>(4LL * 1024LL * 1024LL * 1024LL))); 
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     LOG_WARN("not init", K(ret), K(is_inited_));
@@ -1847,7 +1843,7 @@ int ObIOCallbackManager::enqueue_callback(ObIORequest &req)
     LOG_WARN("Not init", K(ret));
   } else if (OB_UNLIKELY(current_ts > req.timeout_ts())) {
     ret = OB_TIMEOUT;
-    LOG_WARN("io timeout because current time is larger than timeout timestamp", K(ret), K(current_ts), K(req));
+    LOG_WARN("io timeout because current time is larger than timeout timestamp", K(ret), K(current_ts), K(req));  
   } else if (OB_NOT_NULL(req.io_result_)) {
     ObThreadCondGuard guard(req.io_result_->get_cond());
     if (OB_FAIL(guard.get_ret())) {
@@ -2239,34 +2235,6 @@ bool ObIOFaultDetector::is_supported_detect_read_(const uint64_t tenant_id, cons
 {
   bool bret = true;
   int ret = OB_SUCCESS;
-#ifdef OB_BUILD_SHARED_STORAGE
-  if (GCTX.is_shared_storage_mode()) {
-    if (OB_UNLIKELY(!is_valid_tenant_id(tenant_id))) {
-      bret = false;
-    } else if (is_virtual_tenant_id(tenant_id)) {
-      // In SS mode, server tenant does not have micro cache file,
-      // thus it's unnecessary to execute detect tasks
-      bret = false;
-    } else {
-      MAKE_TENANT_SWITCH_SCOPE_GUARD(guard);
-      if (OB_SUCC(guard.switch_to(tenant_id, false/*need_check_allow*/))) {
-        ObTenantFileManager *tenant_file_mgr = MTL(ObTenantFileManager*);
-        const int micro_cache_file_fd = tenant_file_mgr->get_micro_cache_file_fd();
-        if (micro_cache_file_fd == OB_INVALID_FD) {
-          // micro cache file not exist
-          bret = false;
-        } else if (micro_cache_file_fd != fd.second_id_) {
-          ret = OB_NOT_SUPPORTED;
-          bret = false;
-          LOG_INFO("in shared_storage mode, only micro_cache_file reads are supported for detection",
-              KR(ret), K(tenant_id), K(fd), K(micro_cache_file_fd));
-        }
-      } else {
-        bret = false;
-      }
-    }
-  }
-#endif
   return bret;
 }
 

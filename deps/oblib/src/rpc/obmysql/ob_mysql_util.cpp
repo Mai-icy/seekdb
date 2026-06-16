@@ -125,7 +125,7 @@ int ObMySQLUtil::get_length(const char *&pos, uint64_t &length)
           }
           *header_len = 9;
           return static_cast<ulong>(uint4korr(packet + 1));
-
+      
           OceanBase length parsing compatible with mysql, so we don't look at the second
           4 bytes. But still we need to obey the protocol hence 9 in the
           assignment below.

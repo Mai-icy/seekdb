@@ -83,7 +83,7 @@ int ObAllVirtualPxTargetMonitor::inner_get_next_row(common::ObNewRow *&row)
     for (uint64_t i = 0; OB_SUCC(ret) && i < col_count; ++i) {
       uint64_t col_id = output_column_ids_.at(i);
       switch (col_id) {
-
+        
         case IS_LEADER: {
           cur_row_.cells_[i].set_bool(target_info.is_leader_);
           break;

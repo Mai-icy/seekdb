@@ -38,12 +38,12 @@ def get_package_data():
 
 class CustomBdistWheel(_bdist_wheel):
     """Custom bdist_wheel to specify non-pure Python wheel"""
-
+    
     def finalize_options(self):
         super().finalize_options()
         # Mark as not pure Python (contains compiled extensions)
         self.root_is_pure = False
-
+    
     def get_tag(self):
         # Get platform-specific tags
         return super().get_tag()

@@ -858,7 +858,7 @@ int ObMultiRangeSplitContext::on_inner_node(const ObMicroIndexInfo &index_row,
 
   int64_t &curr_row_count = ranges_.at(curr_range_idx_).row_count_;
   int64_t inc_row_count = 0;
-
+  
   if (is_coverd_by_range) {
     inc_row_count = index_row.get_row_count();
     operation = curr_row_count + inc_row_count > split_row_upper_limit_ ? GOTO_NEXT_LEVEL : NOTHING;
@@ -1376,7 +1376,7 @@ int ObPartitionMultiRangeSpliter::split_ranges_for_memtable(
   if (OB_ISNULL(iter = heap_element_iters.alloc_place_holder())) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("Fail to alloc place holder", KR(ret));
-  }
+  } 
 
   // step 1. estimate rows
   int64_t sample_step = max(1, 100 / range_precision);
@@ -1428,7 +1428,7 @@ int ObPartitionMultiRangeSpliter::split_ranges_for_memtable(
         LOG_WARN("Fail to push back to store ranges", KR(ret));
       }
     }
-
+    
     if (OB_FAIL(ret)) {
     } else {
       for (int j = 0; OB_SUCC(ret) && j < store_ranges.count(); j++) {

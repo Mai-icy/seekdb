@@ -18,21 +18,21 @@
 
  #include "storage/ddl/ob_ddl_inc_clog_callback.h"
  #include "storage/tx_storage/ob_ls_service.h"
-
+ 
  namespace oceanbase
  {
  namespace storage
  {
-
+ 
  using namespace blocksstable;
  using namespace share;
  using namespace common;
-
+ 
  ObDDLIncStartClogCb::ObDDLIncStartClogCb()
    : is_inited_(false), ls_id_(), log_basic_()
  {
  }
-
+ 
  int ObDDLIncStartClogCb::init(const ObLSID &ls_id, const ObDDLIncLogBasic &log_basic)
  {
    int ret = OB_SUCCESS;
@@ -47,10 +47,10 @@
      log_basic_ = log_basic;
      is_inited_ = true;
    }
-
+ 
    return ret;
  }
-
+ 
  int ObDDLIncStartClogCb::on_success()
  {
    int ret = OB_SUCCESS;
@@ -62,16 +62,16 @@
    try_release();
    return OB_SUCCESS;
  }
-
+ 
  int ObDDLIncStartClogCb::on_failure()
  {
    int ret = OB_SUCCESS;
    status_.set_state(STATE_FAILED);
    try_release();
-
+ 
    return OB_SUCCESS;
  }
-
+ 
  void ObDDLIncStartClogCb::try_release()
  {
    if (status_.try_set_release_flag()) {
@@ -80,14 +80,14 @@
      ob_delete(cb);
    }
  }
-
+ 
  ObDDLIncRedoClogCb::ObDDLIncRedoClogCb()
    : is_inited_(false), ls_id_(), redo_info_(), macro_block_id_(),
      data_buffer_lock_(), is_data_buffer_freed_(false)
  {
-
+ 
  }
-
+ 
  ObDDLIncRedoClogCb::~ObDDLIncRedoClogCb()
  {
    int ret = OB_SUCCESS;
@@ -96,7 +96,7 @@
    }
    macro_block_id_.reset();
  }
-
+ 
  int ObDDLIncRedoClogCb::init(const share::ObLSID &ls_id,
                                  const storage::ObDDLMacroBlockRedoInfo &redo_info,
                                  const blocksstable::MacroBlockId &macro_block_id,
@@ -119,7 +119,7 @@
    }
    return ret;
  }
-
+ 
  void ObDDLIncRedoClogCb::try_release()
  {
    {
@@ -132,7 +132,7 @@
      ob_delete(cb);
    }
  }
-
+ 
  int ObDDLIncRedoClogCb::on_success()
  {
    int ret = OB_SUCCESS;
@@ -144,16 +144,16 @@
        LOG_INFO("data buffer is freed, do not need to callback");
      } else if (OB_FAIL(macro_block.block_handle_.set_block_id(macro_block_id_))) {
        LOG_WARN("set macro block id failed", K(ret), K(macro_block_id_));
-     } else if (OB_FAIL(macro_block.set_data_macro_meta(macro_block_id_,
-                                                        redo_info_.data_buffer_.ptr(),
+     } else if (OB_FAIL(macro_block.set_data_macro_meta(macro_block_id_, 
+                                                        redo_info_.data_buffer_.ptr(), 
                                                         redo_info_.data_buffer_.length(),
                                                         redo_info_.block_type_,
                                                         true))) {
-       LOG_WARN("fail to set data macro meta", K(ret), K(macro_block_id_),
-                                                       KP(redo_info_.data_buffer_.ptr()),
+       LOG_WARN("fail to set data macro meta", K(ret), K(macro_block_id_), 
+                                                       KP(redo_info_.data_buffer_.ptr()), 
                                                        K(redo_info_.data_buffer_.length()),
                                                        K(redo_info_.block_type_));
-
+ 
      } else {
        macro_block.block_type_ = redo_info_.block_type_;
        macro_block.logic_id_ = redo_info_.logic_id_;
@@ -173,22 +173,22 @@
    status_.set_ret_code(ret);
    status_.set_state(STATE_SUCCESS);
    try_release();
-
+   
    return OB_SUCCESS; // force return success
  }
-
+ 
  int ObDDLIncRedoClogCb::on_failure()
  {
    status_.set_state(STATE_FAILED);
    try_release();
    return OB_SUCCESS;
  }
-
+ 
  ObDDLIncCommitClogCb::ObDDLIncCommitClogCb()
    : is_inited_(false), ls_id_(), log_basic_()
  {
  }
-
+ 
  int ObDDLIncCommitClogCb::init(const ObLSID &ls_id, const ObDDLIncLogBasic &log_basic)
  {
    int ret = OB_SUCCESS;
@@ -203,10 +203,10 @@
      log_basic_ = log_basic;
      is_inited_ = true;
    }
-
+ 
    return ret;
  }
-
+ 
  int ObDDLIncCommitClogCb::on_success()
  {
    int ret = OB_SUCCESS;
@@ -235,23 +235,23 @@
      SCN scn = __get_scn();
      FLOG_INFO("write ddl inc commit log success", K(ls_id_), K(scn), K(log_basic_));
    }
-
+ 
    status_.set_ret_code(ret);
    status_.set_state(STATE_SUCCESS);
    try_release();
-
+ 
    return OB_SUCCESS;
  }
-
+ 
  int ObDDLIncCommitClogCb::on_failure()
  {
    int ret = OB_SUCCESS;
    status_.set_state(STATE_FAILED);
    try_release();
-
+ 
    return OB_SUCCESS;
  }
-
+ 
  void ObDDLIncCommitClogCb::try_release()
  {
    if (status_.try_set_release_flag()) {
@@ -260,6 +260,7 @@
      ob_delete(cb);
    }
  }
-
+ 
  } // namespace storage
  } // namespace oceanbase
+ 

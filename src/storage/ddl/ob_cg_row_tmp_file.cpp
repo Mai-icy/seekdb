@@ -338,7 +338,7 @@ int ObCGRowFilesGenerater::append_batch(
     cg_rows.mvcc_row_flag_ = bdrs.mvcc_row_flag_;
     cg_rows.row_count_ = bdrs.row_count_;
     cg_rows.trans_id_ = bdrs.trans_id_;
-
+    
     for (int64_t cg_idx = 0; OB_SUCC(ret) && cg_idx < cg_schemas.count(); ++cg_idx) {
       ObCGRowFile *cg_row_file = nullptr;
       const ObStorageColumnGroupSchema &cg_schema = cg_schemas.at(cg_idx);

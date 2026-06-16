@@ -314,7 +314,7 @@ int TestSSCommonUtil::alloc_micro_block_meta(ObSSMicroBlockMeta *&micro_meta)
 ObCompressorType TestSSCommonUtil::get_random_compress_type()
 {
   const int64_t random_val = ObRandom::rand(1, 2);
-  const ObCompressorType compress_type = (random_val % 2 == 0) ? ObCompressorType::SNAPPY_COMPRESSOR : ObCompressorType::NONE_COMPRESSOR;
+  const ObCompressorType compress_type = (random_val % 2 == 0) ? ObCompressorType::ZSTD_1_3_8_COMPRESSOR : ObCompressorType::NONE_COMPRESSOR;
   return compress_type;
 }
 

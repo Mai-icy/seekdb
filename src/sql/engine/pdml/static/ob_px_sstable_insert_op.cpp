@@ -762,7 +762,7 @@ int ObPxMultiPartSSTableInsertOp::write_ordered_slice_by_batch()
   bool need_update_tablet_range_count = true;
   int64_t unused_row_scan_cnt = 0;
   ObInsertMonitor insert_monitor(unused_row_scan_cnt, op_monitor_info_.otherstat_2_value_, op_monitor_info_.otherstat_1_value_);
-
+  
   while (OB_SUCC(ret) && !is_all_partition_finished_) {
     int64_t offset = 0;
     int64_t row_count = 0;
@@ -836,7 +836,7 @@ int ObPxMultiPartSSTableInsertOp::write_ordered_slice_by_row()
   bool need_update_tablet_range_count = true;
   int64_t unused_row_scan_cnt = 0;
   ObInsertMonitor insert_monitor(unused_row_scan_cnt, op_monitor_info_.otherstat_2_value_, op_monitor_info_.otherstat_1_value_);
-
+ 
   while (OB_SUCC(ret) && !is_all_partition_finished_) {
     if (OB_FAIL(get_next_row_from_child(&insert_monitor))) {
       if (OB_ITER_END != ret) {
@@ -905,7 +905,7 @@ int ObPxMultiPartSSTableInsertOp::switch_slice_if_need(
         slice_writer = nullptr;
       }
     }
-
+    
     ObWriteMacroParam write_param;
     if (OB_FAIL(ret)) {
     } else if (OB_FAIL(ObDDLUtil::fill_writer_param(tablet_id, slice_idx, -1/*cg_idx*/, ddl_dag_, 0/*max_batch_size*/, write_param))) {
@@ -1081,3 +1081,4 @@ int ObPxMultiPartSSTableInsertOp::sync_table_level_autoinc_value()
   }
   return ret;
 }
+

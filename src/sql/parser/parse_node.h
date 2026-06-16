@@ -142,7 +142,7 @@ typedef struct _ParseNode
       uint32_t is_column_varchar_ : 1; // Is the projection column a constant string, used for select item constant parameterization
       uint32_t is_trans_from_minus_: 1; // Whether the negative constant node is transformed from a minus operation, e.g., 1 - 2, the lexical stage will generate a -2
       uint32_t is_assigned_from_child_: 1; // Is the constant node assigned from a child node, used for handling int64_min
-      uint32_t is_num_must_be_pos_: 1; //
+      uint32_t is_num_must_be_pos_: 1; // 
       uint32_t is_date_unit_ : 1; // 1 indicates it is a date unit constant, which needs to be reversed to a string during reverse parsing
       uint32_t is_literal_bool_ : 1; // indicate node is a literal TRUE/FALSE
       uint32_t is_empty_ : 1; // indicates whether the node is default, 1 means default, 0 means not default, used in opt_asc_desc node

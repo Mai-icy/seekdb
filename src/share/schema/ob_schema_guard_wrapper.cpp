@@ -551,6 +551,6 @@ int ObSchemaGuardWrapper::get_sys_variable_schema(const ObSysVariableSchema *&sy
       LOG_WARN("fail to get sys variable schema", KR(ret), K(tenant_id_));
     }
   }
-
+    
   return ret;
 }

@@ -38,7 +38,7 @@ public:
   virtual void reset();
 private:
   int resolve_param(uint64_t &location_id, ObString &sub_path, ObString &pattern);
-  int fill_row_cells(uint64_t location_id,
+  int fill_row_cells(uint64_t location_id, 
                      const ObString &sub_path,
                      const ObString &pattern,
                      const ObString &file_url,
@@ -49,3 +49,4 @@ private:
 }
 }
 #endif /* OCEANBASE_OBSERVER_OB_ALL_VIRTUAL_EXTERNAL_LOCATION_LIST_FILE_ */
+

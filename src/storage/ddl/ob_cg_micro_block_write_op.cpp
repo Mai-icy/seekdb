@@ -374,3 +374,4 @@ int ObCGMicroBlockWriteOp::try_generate_output_chunk(
 
 } //end storage
 } // end oceanbase
+

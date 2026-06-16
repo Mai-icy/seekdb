@@ -235,7 +235,7 @@ int ObMaxIdFetcher::fetch_new_max_id(const uint64_t tenant_id,
   } else if (OB_FAIL(check_use_max_id_cache_(fetch_max_id_type, use_cache))) {
     LOG_WARN("failed to check use max id cache", KR(ret), K(fetch_max_id_type), K(max_id_type));
   } else {
-    if (use_cache && OB_INVALID_ID == id &&
+    if (use_cache && OB_INVALID_ID == id && 
         OB_SUCC(fetch_max_id_from_cache_(tenant_id, fetch_max_id_type, id, size))) {
       LOG_INFO("succeed to fetch max id from cache", KR(ret), K(id), K(size), K(fetch_max_id_type), K(tenant_id));
       // ignore error code if fetch from cache failed
@@ -323,8 +323,8 @@ int ObMaxIdFetcher::fetch_new_max_id_from_inner_table_(const uint64_t tenant_id,
       LOG_WARN("failed to end trans", K(is_commit), K(temp_ret));
       ret = (OB_SUCCESS == ret) ? temp_ret : ret;
     }
-  }
-
+  }  
+  
   return ret;
 }
 
@@ -365,8 +365,8 @@ int ObMaxIdFetcher::check_use_max_id_cache_(const ObMaxIdType &max_id_type, bool
   } else if (max_id_type != OB_MAX_USED_OBJECT_ID_TYPE && OB_MAX_USED_OBJECT_ID_TYPE == real_type) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("this function should use real type", KR(ret), K(max_id_type));
-  } else if (OB_MAX_USED_OBJECT_ID_TYPE == max_id_type
-      || OB_MAX_USED_NORMAL_ROWID_TABLE_TABLET_ID_TYPE == max_id_type
+  } else if (OB_MAX_USED_OBJECT_ID_TYPE == max_id_type 
+      || OB_MAX_USED_NORMAL_ROWID_TABLE_TABLET_ID_TYPE == max_id_type 
       || OB_MAX_USED_EXTENDED_ROWID_TABLE_TABLET_ID_TYPE == max_id_type) {
     use_cache = true;
   } else {

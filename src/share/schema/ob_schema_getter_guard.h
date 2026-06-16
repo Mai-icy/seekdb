@@ -797,7 +797,7 @@ public:
   int get_directory_schemas_in_tenant(const uint64_t tenant_id,
                                       common::ObIArray<const ObDirectorySchema *> &directory_schemas);
   // directory function end
-
+  
   // location function begin
   int get_location_schema_by_name(const uint64_t tenant_id,
                                   const common::ObString &name,

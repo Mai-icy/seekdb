@@ -18,28 +18,28 @@
  #include "observer/virtual_table/ob_show_create_location.h"
  #include "share/schema/ob_schema_printer.h"
  #include "sql/session/ob_sql_session_info.h"
-
+ 
  using namespace oceanbase::common;
  using namespace oceanbase::share::schema;
  namespace oceanbase
  {
  namespace observer
  {
-
+ 
  ObShowCreateLocation::ObShowCreateLocation()
      : ObVirtualTableScannerIterator()
  {
  }
-
+ 
  ObShowCreateLocation::~ObShowCreateLocation()
  {
  }
-
+ 
  void ObShowCreateLocation::reset()
  {
    ObVirtualTableScannerIterator::reset();
  }
-
+ 
  int ObShowCreateLocation::inner_get_next_row(common::ObNewRow *&row)
  {
    int ret = OB_SUCCESS;
@@ -85,7 +85,7 @@
    }
    return ret;
  }
-
+ 
  int ObShowCreateLocation::calc_show_location_id(uint64_t &show_location_id)
  {
    int ret = OB_SUCCESS;
@@ -107,7 +107,7 @@
    }
    return ret;
  }
-
+ 
  int ObShowCreateLocation::fill_row_cells(uint64_t show_location_id,
                                           const ObString &location_name)
  {
@@ -191,6 +191,7 @@
    }
    return ret;
  }
-
+ 
  }/* ns observer*/
  }/* ns oceanbase */
+ 

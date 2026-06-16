@@ -21,7 +21,6 @@
 #include "common/ob_smart_var.h"
 #include "lib/alloc/ob_malloc_sample_struct.h"
 #include "lib/utility/ob_tracepoint.h"
-#include "lib/alloc/ob_malloc_time_monitor.h"
 #include "lib/resource/ob_affinity_ctrl.h"
 
 // ob_backtrace is implemented in ob_backtrace.cpp for Windows

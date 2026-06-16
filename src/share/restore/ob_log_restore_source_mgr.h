@@ -70,12 +70,12 @@ public:
   static int get_backup_dest(const ObLogRestoreSourceItem &item, ObBackupDest& dest);
 private:
   const int64_t OB_DEFAULT_LOG_RESTORE_SOURCE_ID = 1;
-
+  
   // Helper methods for KV storage
   static int get_kv_key_(const uint64_t tenant_id, ObString &key);
   static int serialize_to_kv_(const ObLogRestoreSourceItem &item, ObString &value, common::ObIAllocator &allocator);
   static int deserialize_from_kv_(const ObString &value, ObLogRestoreSourceItem &item);
-
+  
 private:
   bool is_inited_;
   uint64_t tenant_id_;       // user tenant id

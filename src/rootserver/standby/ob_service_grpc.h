@@ -64,7 +64,7 @@ public:
   grpc::Status get_tenant_info(grpc::ServerContext* context,
                                 const serverservice::GetTenantInfoReq* request,
                                 serverservice::GetTenantInfoRes* response) override;
-
+  
   grpc::Status get_max_log_info(grpc::ServerContext* context,
                                  const serverservice::GetMaxLogInfoReq* request,
                                  serverservice::GetMaxLogInfoRes* response) override;

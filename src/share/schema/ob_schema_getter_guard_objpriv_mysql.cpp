@@ -97,3 +97,4 @@ int ObSchemaGetterGuard::get_obj_mysql_priv_with_obj_name(const uint64_t tenant_
 }
 }
 }
+

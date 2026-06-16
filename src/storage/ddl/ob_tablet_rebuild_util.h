@@ -138,3 +138,5 @@ public:
 } // namespace oceanbase
 
 #endif // OCEANBASE_STORAGE_DDL_OB_TABLET_REBUILD_UTIL_H_
+
+

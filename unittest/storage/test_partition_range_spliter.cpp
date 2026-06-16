@@ -94,7 +94,7 @@ void TestRangeSpliter::SetUpTestCase()
   ASSERT_EQ(OB_SUCCESS, ls_svr->get_ls(ls_id, ls_handle, ObLSGetMod::STORAGE_MOD));
 
   // create tablet
-  obrpc::ObBatchCreateTabletArg create_tablet_arg;
+  obcall::ObBatchCreateTabletArg create_tablet_arg;
   share::schema::ObTableSchema table_schema;
   ASSERT_EQ(OB_SUCCESS, gen_create_tablet_arg(tenant_id_, ls_id, tablet_id, create_tablet_arg, 1, &table_schema));
 
@@ -302,7 +302,7 @@ void TestRangeSpliter::prepare_sstable_handle(ObTableHandleV2 &handle,
       "bigint   var   bigint  bigint flag    multi_version_row_flag\n"
       "29       var1    -8     0      EXIST   L\n"
       "30       var1    -9    0     EXIST   CLF\n";
-
+  
   int schema_rowkey_cnt = 2;
   ObScnRange scn_range;
   scn_range.start_scn_.set_min();

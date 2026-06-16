@@ -18,6 +18,7 @@
 // for materialized view
 #include "ob_multi_version_schema_service.h"
 #include "observer/ob_server.h"
+#include "share/rc/ob_tenant_base.h"
 #ifdef __APPLE__
 #include <unistd.h> // For useconds_t on macOS
 #endif
@@ -2545,6 +2546,10 @@ int ObMultiVersionSchemaService::publish_schema(const uint64_t tenant_id)
   } else if (OB_FAIL(add_schema(tenant_id, force_add))) {
     LOG_WARN("fail to add schema", K(ret), K(tenant_id));
   }
+  ObTenantSwitchGuard guard = _make_tenant_switch_guard();
+  if (OB_SUCCESS == guard.switch_to(tenant_id)) {
+    MTL_CTX()->on_schema_publish();
+  }
   return ret;
 }
 
@@ -4194,7 +4199,7 @@ int ObMultiVersionSchemaService::get_tablet_to_table_history(
 
 // cal purge recyclebin need timeout
 int ObMultiVersionSchemaService::cal_purge_need_timeout(
-    const obrpc::ObPurgeRecycleBinArg &purge_recyclebin_arg,
+    const obcall::ObPurgeRecycleBinArg &purge_recyclebin_arg,
     int64_t &cal_timeout)
 {
   int ret = OB_SUCCESS;

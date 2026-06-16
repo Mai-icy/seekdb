@@ -2067,7 +2067,7 @@ int ObPrivMgr::add_obj_mysql_priv(const ObObjMysqlPriv &obj_mysql_priv)
   return ret;
 }
 
-int ObPrivMgr::del_obj_mysql_priv(const ObObjMysqlPrivSortKey &obj_mysql_priv_key)
+int ObPrivMgr::del_obj_mysql_priv(const ObObjMysqlPrivSortKey &obj_mysql_priv_key) 
 {
   int ret = OB_SUCCESS;
 
@@ -2102,7 +2102,7 @@ int ObPrivMgr::get_obj_mysql_priv(const ObObjMysqlPrivSortKey &obj_mysql_priv_ke
   obj_mysql_priv = NULL;
   ObObjMysqlPriv *tmp_obj_mysql_priv = NULL;
   int hash_ret = obj_mysql_priv_map_.get_refactored(obj_mysql_priv_key, tmp_obj_mysql_priv);
-
+  
   if (OB_SUCCESS == hash_ret) {
     if (OB_ISNULL(tmp_obj_mysql_priv)) {
       ret = OB_ERR_UNEXPECTED;
@@ -2117,8 +2117,8 @@ int ObPrivMgr::get_obj_mysql_priv(const ObObjMysqlPrivSortKey &obj_mysql_priv_ke
   return ret;
 }
 
-int ObPrivMgr::get_obj_mysql_priv_set(const ObObjMysqlPrivSortKey &obj_mysql_priv_key,
-                                      ObPrivSet &priv_set) const
+int ObPrivMgr::get_obj_mysql_priv_set(const ObObjMysqlPrivSortKey &obj_mysql_priv_key, 
+                                      ObPrivSet &priv_set) const 
 {
   int ret = OB_SUCCESS;
   priv_set = OB_PRIV_SET_EMPTY;

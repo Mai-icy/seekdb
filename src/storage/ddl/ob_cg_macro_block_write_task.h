@@ -63,7 +63,7 @@ public:
   int process() override;
 
 private:
-  int project_cg_row(const ObStorageColumnGroupSchema &cg_schema,
+  int project_cg_row(const ObStorageColumnGroupSchema &cg_schema, 
                      const blocksstable::ObDatumRow &row,
                      blocksstable::ObDatumRow &cg_row);
   DISABLE_COPY_ASSIGN(ObCgMacroBlockWriteTask);
@@ -229,3 +229,4 @@ protected:
 } // end namespace oceanbase
 
 #endif//OCEANBASE_STORAGE_DDL_OB_CG_MACRO_BLOCK_WRITE_TASK_H_
+

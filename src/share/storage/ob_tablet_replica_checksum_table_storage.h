@@ -149,3 +149,4 @@ private:
 } // namespace oceanbase
 
 #endif // OCEANBASE_SHARE_STORAGE_OB_TABLET_REPLICA_CHECKSUM_TABLE_STORAGE_H_
+

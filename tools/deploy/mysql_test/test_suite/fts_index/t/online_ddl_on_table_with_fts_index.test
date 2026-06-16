@@ -137,7 +137,7 @@ SELECT name FROM fts_table_2 WHERE MATCH (title) AGAINST ("title") order by name
 
 DROP TABLE fts_table_2;
 DROP TABLE fts_fk_table;
-
+ 
 # 4. table related ddl
 --disable_warnings
 DROP TABLE IF EXISTS fts_table_3;
@@ -156,7 +156,7 @@ ALTER TABLE fts_table_3 BLOCK_SIZE=2048;
 SHOW CREATE TABLE fts_table_3;
 SELECT name FROM fts_table_3 WHERE MATCH (titles) AGAINST ("title") order by name;
 
-ALTER TABLE fts_table_3 COMPRESSION='lz4_1.0';
+ALTER TABLE fts_table_3 COMPRESSION='zstd_1.3.8';
 --replace_regex /REPLICA_NUM = [0-9]*/REPLICA_NUM = replica_num/g
 SHOW CREATE TABLE fts_table_3;
 SELECT name FROM fts_table_3 WHERE MATCH (titles) AGAINST ("title") order by name;
@@ -185,3 +185,4 @@ show create table fts_table;
 drop table fts_table;
 
 disconnect sys_conn;
+

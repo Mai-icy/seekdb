@@ -23,7 +23,7 @@ namespace oceanbase
 namespace sql
 {
 using namespace common;
-using namespace obrpc;
+using namespace obcall;
 using namespace share;
 using namespace share::schema;
 
@@ -50,9 +50,9 @@ int ObSwitchRoleResolver::resolve_switch_role(const ParseNode &parse_tree)
 {
   int ret = OB_SUCCESS;
   ObSwitchRoleStmt *stmt = create_stmt<ObSwitchRoleStmt>();
-  obrpc::ObSwitchRoleArg::OpType op_type = obrpc::ObSwitchRoleArg::OpType::INVALID;
+  obcall::ObSwitchRoleArg::OpType op_type = obcall::ObSwitchRoleArg::OpType::INVALID;
   bool is_verify = false;
-
+  
   if (OB_ISNULL(stmt)) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("create stmt fail", KR(ret));

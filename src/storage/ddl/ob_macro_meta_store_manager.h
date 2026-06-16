@@ -70,3 +70,4 @@ private:
 }  // end namespace storage
 }  // end namespace oceanbase
 #endif//_OCEANBASE_STORAGE_DDL_OB_MACRO_META_STORE_MANAGER_H_
+

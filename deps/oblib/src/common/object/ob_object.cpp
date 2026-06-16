@@ -2501,3 +2501,4 @@ int ObObjCharacterUtil::print_safe_hex_represent(const ObObj &obj, char* buf, co
   return ret;
 }
 
+ 

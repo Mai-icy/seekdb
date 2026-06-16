@@ -8,11 +8,11 @@ age int
 create materialized view log on t1 with primary key (age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	NO	PRI	NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
+id	int(11)	NO	PRI	NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
 alter table mlog$_t1 add column new_col varchar(20);
 ERROR 0A000: alter materialized view log is not supported
 rename table mlog$_t1 to mlog2;

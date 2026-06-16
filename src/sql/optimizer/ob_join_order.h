@@ -42,10 +42,6 @@ class TestJoinOrder_ob_join_order_src_Test;
 
 namespace oceanbase
 {
-namespace obrpc
-{
-class ObSrvRpcProxy;
-}
 namespace share
 {
 namespace schema
@@ -1324,7 +1320,7 @@ class Path
 
     ObAddr addr_;
     ObBitSet<> path_id_set_;
-    obrpc::ObEstPartArg *est_arg_;
+    obcall::ObEstPartArg *est_arg_;
 
     TO_STRING_KV(K_(addr),
                  K_(path_id_set));
@@ -1556,9 +1552,9 @@ struct NullAwareAntiJoinInfo {
     int get_matched_inv_index_tid(ObMatchFunRawExpr *match_expr, 
                                   uint64_t ref_table_id,
                                   uint64_t &inv_idx_tid);
-    int get_matched_inv_index_tids(ObMatchFunRawExpr *match_expr,
+    int get_matched_inv_index_tids(ObMatchFunRawExpr *match_expr, 
                                    uint64_t ref_table_id,
-                                   ObIArray<uint64_t> &inv_idx_tids);
+                                   ObIArray<uint64_t> &inv_idx_tids); 
     int get_vector_index_tid_from_expr(ObSqlSchemaGuard *schema_guard,
                                       ObRawExpr *vector_expr,
                                       const uint64_t table_id,
@@ -2823,9 +2819,9 @@ struct NullAwareAntiJoinInfo {
     int add_valid_fts_index_ids_for_dml(const PathHelper &helper, 
                                         const uint64_t table_id,
                                         ObIArray<uint64_t> &valid_index_ids);
-    int add_valid_fts_index_ids_for_dml_and_es_match(const PathHelper &helper,
+    int add_valid_fts_index_ids_for_dml_and_es_match(const PathHelper &helper, 
                                          const uint64_t table_id,
-                                         ObIArray<uint64_t> &valid_index_ids);
+                                         ObIArray<uint64_t> &valid_index_ids);                   
     int add_valid_vec_index_ids(const ObDMLStmt &stmt,
                                 ObSqlSchemaGuard *schema_guard,
                                 const uint64_t table_id,

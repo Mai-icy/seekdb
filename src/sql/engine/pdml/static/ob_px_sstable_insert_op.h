@@ -145,7 +145,7 @@ protected:
                            ObISliceWriter *&slice_writer, ObDDLAutoincParam *autoinc_param = nullptr);
   int get_continue_slice(const ObIVector *tablet_id_vector, const ObIVector *slice_info_vector_, const ObBatchRows &brs,
                          ObTabletID &tablet_id, int64_t &slice_idx, int64_t &offset, int64_t &row_count);
-
+  
 protected:
   static const uint64_t MAP_HASH_BUCKET_NUM = 1543L;
   common::ObArenaAllocator allocator_;

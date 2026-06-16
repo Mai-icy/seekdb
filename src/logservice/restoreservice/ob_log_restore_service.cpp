@@ -30,7 +30,6 @@ using namespace oceanbase::palf;
 ObLogRestoreService::ObLogRestoreService() :
   inited_(false),
   ls_svr_(NULL),
-  proxy_(),
   location_adaptor_(),
   archive_driver_(),
   net_driver_(),
@@ -40,7 +39,8 @@ ObLogRestoreService::ObLogRestoreService() :
   error_reporter_(),
   allocator_(),
   scheduler_(),
-  cond_()
+  cond_(),
+  is_restore_active_(false)
 {}
 
 ObLogRestoreService::~ObLogRestoreService()
@@ -48,8 +48,7 @@ ObLogRestoreService::~ObLogRestoreService()
   destroy();
 }
 
-int ObLogRestoreService::init(rpc::frame::ObReqTransport *transport,
-    ObLSService *ls_svr,
+int ObLogRestoreService::init(ObLSService *ls_svr,
     ObLogService *log_service)
 {
   int ret = OB_SUCCESS;
@@ -57,11 +56,9 @@ int ObLogRestoreService::init(rpc::frame::ObReqTransport *transport,
   if (OB_UNLIKELY(inited_)) {
     ret = OB_INIT_TWICE;
     LOG_WARN("ObLogRestoreService init twice", K(ret), K(inited_));
-  } else if (OB_ISNULL(transport) || OB_ISNULL(ls_svr) || OB_ISNULL(log_service)) {
+  } else if (OB_ISNULL(ls_svr) || OB_ISNULL(log_service)) {
     ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret), K(transport), K(ls_svr), K(log_service));
-  } else if (OB_FAIL(proxy_.init(transport))) {
-    LOG_WARN("proxy_ init failed", K(ret));
+    LOG_WARN("invalid argument", K(ret), K(ls_svr), K(log_service));
   } else if (OB_FAIL(net_driver_.init(tenant_id, ls_svr, log_service))) {
     LOG_WARN("net_driver_ init failed");
   } else if (OB_FAIL(location_adaptor_.init(tenant_id, ls_svr, &net_driver_))) {
@@ -100,7 +97,6 @@ void ObLogRestoreService::destroy()
   net_driver_.destroy();
   fetch_log_impl_.destroy();
   error_reporter_.destroy();
-  proxy_.destroy();
   allocator_.destroy();
   scheduler_.destroy();
   ls_svr_ = NULL;
@@ -160,8 +156,8 @@ void ObLogRestoreService::run1()
   } else {
     while (! has_set_stop()) {
       int64_t begin_stamp = ObTimeUtility::fast_current_time();
-      const bool is_primary = MTL_GET_TENANT_ROLE_CACHE() == share::ObTenantRole::PRIMARY_TENANT;
-      const int64_t thread_interval = is_primary ? PRIMARY_THREAD_RUN_INTERVAL : STANDBY_THREAD_RUN_INTERVAL;
+      const int64_t thread_interval = ATOMIC_LOAD(&is_restore_active_) ?
+          ACTIVE_THREAD_RUN_INTERVAL : IDLE_THREAD_RUN_INTERVAL;
       do_thread_task_();
       int64_t end_tstamp = ObTimeUtility::fast_current_time();
       int64_t wait_interval = thread_interval - (end_tstamp - begin_stamp);
@@ -194,14 +190,30 @@ void ObLogRestoreService::do_thread_task_()
     clean_resource_();
   }
 
-  {
+  // Update is_restore_active_ based on whether a restore source exists,
+  // so that the writer thread can adjust its polling interval accordingly.
+  bool was_active = ATOMIC_LOAD(&is_restore_active_);
+  const bool need_full_ops = source_exist || was_active;
+  if (need_full_ops) {
     ObDIActionGuard(ObDIActionGuard::NS_ACTION, "SourceType[%s]", ObLogRestoreSourceItem::get_source_type_str(source.type_));
     schedule_resource_(source.type_);
+    report_error_();
+    if (source_exist) {
+      update_restore_upper_limit_();
+      refresh_error_context_();
+      set_compressor_type_();
+    }
   }
-  report_error_();
-  update_restore_upper_limit_();
-  refresh_error_context_();
-  set_compressor_type_();
+
+  if (source_exist != was_active) {
+    ATOMIC_STORE(&is_restore_active_, source_exist);
+    if (source_exist) {
+      LOG_INFO("ObLogRestoreService activate, restore source found", "tenant_id", MTL_ID());
+      cond_.signal();
+    } else {
+      LOG_INFO("ObLogRestoreService deactivate, no restore source", "tenant_id", MTL_ID());
+    }
+  }
 }
 
 int ObLogRestoreService::update_upstream_(share::ObLogRestoreSourceItem &source, bool &source_exist)

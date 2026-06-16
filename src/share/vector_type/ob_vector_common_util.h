@@ -81,7 +81,7 @@ public:
   {}
   
   ~ObSPIVFixedSizeHeap() = default;
-
+  
   int push(T &item)
   {
     int ret = OB_SUCCESS;
@@ -668,7 +668,7 @@ bool ObVectorCenterClusterHelper<VEC_T, CENTER_T>::is_satify_similarity_threshol
     SHARE_LOG(WARN, "get similarity from distance fail", K(ret));
   } else if (similarity < similarity_threshold_){
     is_satify = false;
-  }
+  } 
   return is_satify;
 }
 

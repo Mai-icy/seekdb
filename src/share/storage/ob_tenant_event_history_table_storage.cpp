@@ -227,3 +227,4 @@ int ObTenantEventHistoryTableStorage::delete_expired(int64_t gmt_create_before, 
 
 } // namespace share
 } // namespace oceanbase
+

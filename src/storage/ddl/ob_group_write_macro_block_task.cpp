@@ -327,7 +327,7 @@ int ObGroupCGBlockFileWriteTask::process()
                 write_param.row_offset_ = row_offset;
                 write_param.start_sequence_ = cg_writer.get_last_macro_seq();
                 cg_writer.reset();
-              }
+              } 
             }
             if (FAILEDx(cg_writer.open(write_param))) {
               LOG_WARN("dag cg writer open failed", K(ret), K(write_param));

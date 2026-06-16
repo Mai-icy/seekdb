@@ -17,7 +17,7 @@
 #define USING_LOG_PREFIX RS
 #include "rootserver/ob_ai_model_ddl_operator.h"
 #include "share/schema/ob_ai_model_sql_service.h"
-
+ 
 namespace oceanbase
 {
 namespace rootserver

@@ -28,6 +28,7 @@
 #include "share/scn.h"
 #include "share/ob_ls_id.h"
 #include "share/ob_thread_pool.h"
+#include "lib/lock/ob_thread_cond.h"
 #include "logservice/palf/lsn.h"
 #include "logservice/palf/log_entry.h"
 #include "logservice/palf/palf_iterator.h"
@@ -52,8 +53,8 @@ static constexpr int64_t CS_FETCHER_PROGRESS_LOG_INTERVAL_US = 10 * 1000 * 1000;
 static constexpr int64_t CS_FETCHER_INIT_RETRY_SLEEP_US = 500 * 1000;
 /// Sleep when init_consumption_position_ fails.
 static constexpr int64_t CS_FETCHER_INIT_FAIL_SLEEP_US = 1000 * 1000;
-/// Sleep interval in IDLE mode (no async-index tables).
-static constexpr int64_t CS_FETCHER_IDLE_SLEEP_US = 10 * 1000;
+/// Cond wait timeout in IDLE mode (no async-index tables). 10s fallback; schema changes wake immediately.
+static constexpr int64_t CS_FETCHER_IDLE_COND_WAIT_MS = 10 * 1000;
 /// Sleep when caught up (OB_ITER_END).
 static constexpr int64_t CS_FETCHER_ITER_END_SLEEP_US = 200 * 1000;
 /// Sleep when iter.next/get_entry fails.
@@ -151,6 +152,9 @@ public:
   /// Thread-safe: ObHashMap uses bucket-level locking.
   int release_committed_tx(int64_t tx_id);
 
+  /// Called by publish_schema to wake Fetcher from IDLE cond_wait.
+  void notify_schema_changed();
+
 protected:
   void run1() override;
 
@@ -192,6 +196,7 @@ private:
   bool has_async_index_tables_;        // Cached result of check_has_async_index_tables_().
   int64_t last_checked_schema_version_; // Schema version at last mode check.
   transaction::ObTransID current_processing_tx_id_;
+  common::ObThreadCond idle_cond_;     // Condvar for IDLE wait; signaled by publish_schema or stop().
 };
 
 }  // namespace share

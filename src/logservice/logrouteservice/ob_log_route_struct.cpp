@@ -140,3 +140,4 @@ void ObLSRouterValue::refresh_ls_svr_list(const LSSvrList &svr_list)
 
 } // namespace logservice
 } // namespace oceanbase
+

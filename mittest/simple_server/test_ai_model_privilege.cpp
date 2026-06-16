@@ -54,14 +54,14 @@ TEST_F(TestAIServiceEndpointPrivilege, test_ai_model_privilege)
 {
   int ret = OB_SUCCESS;
   SERVER_LOG(INFO, "test_ai_model_privilege start");
-
+  
   ASSERT_EQ(OB_SUCCESS, create_tenant());
   ASSERT_EQ(OB_SUCCESS, get_tenant_id(RunCtx.tenant_id_));
   ASSERT_NE(0, RunCtx.tenant_id_);
   ASSERT_EQ(OB_SUCCESS, get_curr_simple_server().init_sql_proxy2());
-
+  
   common::ObMySQLProxy &sql_proxy = get_curr_simple_server().get_sql_proxy2();
-
+  
   {
     OB_LOG(INFO, "create test user start");
     ObSqlString sql;
@@ -70,7 +70,7 @@ TEST_F(TestAIServiceEndpointPrivilege, test_ai_model_privilege)
     ASSERT_EQ(OB_SUCCESS, sql_proxy.write(sql.ptr(), affected_rows));
     OB_LOG(INFO, "create test user succ");
   }
-
+  
   {
     OB_LOG(INFO, "check initial privileges start");
     ObSqlString sql;
@@ -86,29 +86,29 @@ TEST_F(TestAIServiceEndpointPrivilege, test_ai_model_privilege)
     }
     OB_LOG(INFO, "check initial privileges succ");
   }
-
+  
   {
     OB_LOG(INFO, "grant AI MODEL privileges start");
     ObSqlString sql;
     sql.assign_fmt("GRANT CREATE AI MODEL ON *.* TO test_ai_user@'%%'");
     int64_t affected_rows = 0;
     ASSERT_EQ(OB_SUCCESS, sql_proxy.write(sql.ptr(), affected_rows));
-
+    
     sql.reset();
     sql.assign_fmt("GRANT ALTER AI MODEL ON *.* TO test_ai_user@'%%'");
     ASSERT_EQ(OB_SUCCESS, sql_proxy.write(sql.ptr(), affected_rows));
-
+    
     sql.reset();
     sql.assign_fmt("GRANT DROP AI MODEL ON *.* TO test_ai_user@'%%'");
     ASSERT_EQ(OB_SUCCESS, sql_proxy.write(sql.ptr(), affected_rows));
-
+    
     sql.reset();
     sql.assign_fmt("GRANT ACCESS AI MODEL ON *.* TO test_ai_user@'%%'");
     ASSERT_EQ(OB_SUCCESS, sql_proxy.write(sql.ptr(), affected_rows));
-
+    
     OB_LOG(INFO, "grant AI MODEL privileges succ");
   }
-
+  
   {
     OB_LOG(INFO, "verify granted privileges start");
     ObSqlString sql;
@@ -121,25 +121,25 @@ TEST_F(TestAIServiceEndpointPrivilege, test_ai_model_privilege)
       ObString grants;
       ASSERT_EQ(OB_SUCCESS, result->get_varchar("Grants for test_ai_user@%", grants));
       OB_LOG(INFO, "granted privileges", K(grants));
-
+      
       ObString grants_str(grants);
       ASSERT_TRUE(grants_str.prefix_match("GRANT CREATE AI MODEL, ALTER AI MODEL, DROP AI MODEL, ACCESS AI MODEL ON *.* TO 'test_ai_user'"));
     }
     OB_LOG(INFO, "verify granted privileges succ");
   }
-
+  
   {
     OB_LOG(INFO, "test privilege check functions start");
-
+    
     observer::ObServer& observer = get_curr_observer();
-
+    
     share::schema::ObSchemaGetterGuard schema_guard;
     ASSERT_EQ(OB_SUCCESS, observer.get_schema_service().get_tenant_schema_guard(RunCtx.tenant_id_, schema_guard));
-
+    
     const share::schema::ObUserInfo *user_info = nullptr;
     ASSERT_EQ(OB_SUCCESS, schema_guard.get_user_info(RunCtx.tenant_id_, "test_ai_user", "%", user_info));
     ASSERT_NE(nullptr, user_info);
-
+    
     share::schema::ObSessionPrivInfo session_priv;
     session_priv.tenant_id_ = RunCtx.tenant_id_;
     session_priv.user_id_ = user_info->get_user_id();
@@ -147,48 +147,48 @@ TEST_F(TestAIServiceEndpointPrivilege, test_ai_model_privilege)
     session_priv.host_name_ = user_info->get_host_name_str();
     session_priv.user_priv_set_ = user_info->get_priv_set();
     common::ObArenaAllocator allocator;
-
+    
     ObAIServiceEndpointPrivUtil priv_util(schema_guard);
-
+    
     bool has_priv = false;
-
+    
     ASSERT_EQ(OB_SUCCESS, priv_util.check_create_ai_model_priv(
         allocator, session_priv, has_priv));
     ASSERT_TRUE(has_priv);
     OB_LOG(INFO, "CREATE AI MODEL privilege check passed");
-
+    
     ASSERT_EQ(OB_SUCCESS, priv_util.check_alter_ai_model_priv(
         allocator, session_priv, has_priv));
     ASSERT_TRUE(has_priv);
     OB_LOG(INFO, "ALTER AI MODEL privilege check passed");
-
+    
     ASSERT_EQ(OB_SUCCESS, priv_util.check_drop_ai_model_priv(
         allocator, session_priv, has_priv));
     ASSERT_TRUE(has_priv);
     OB_LOG(INFO, "DROP AI MODEL privilege check passed");
-
+    
     ASSERT_EQ(OB_SUCCESS, priv_util.check_access_ai_model_priv(
         allocator, session_priv, has_priv));
     ASSERT_TRUE(has_priv);
     OB_LOG(INFO, "ACCESS AI MODEL privilege check passed");
-
+    
     OB_LOG(INFO, "test privilege check functions succ");
   }
-
+  
   {
     OB_LOG(INFO, "revoke partial privileges start");
     ObSqlString sql;
     sql.assign_fmt("REVOKE ALTER AI MODEL ON *.* FROM test_ai_user@'%%'");
     int64_t affected_rows = 0;
     ASSERT_EQ(OB_SUCCESS, sql_proxy.write(sql.ptr(), affected_rows));
-
+    
     sql.reset();
     sql.assign_fmt("REVOKE DROP AI MODEL ON *.* FROM test_ai_user@'%%'");
     ASSERT_EQ(OB_SUCCESS, sql_proxy.write(sql.ptr(), affected_rows));
-
+    
     OB_LOG(INFO, "revoke partial privileges succ");
   }
-
+  
   {
     OB_LOG(INFO, "verify revoked privileges start");
     ObSqlString sql;
@@ -201,62 +201,62 @@ TEST_F(TestAIServiceEndpointPrivilege, test_ai_model_privilege)
       ObString grants;
       ASSERT_EQ(OB_SUCCESS, result->get_varchar("Grants for test_ai_user@%", grants));
       OB_LOG(INFO, "remaining privileges after revoke", K(grants));
-
+      
       ObString grants_str(grants);
       ASSERT_TRUE(grants_str.prefix_match("GRANT CREATE AI MODEL, ACCESS AI MODEL ON *.* TO 'test_ai_user'"));
     }
     OB_LOG(INFO, "verify revoked privileges succ");
   }
-
+  
   {
     OB_LOG(INFO, "test privilege check functions after revoke start");
     observer::ObServer& observer = get_curr_observer();
-
+    
     share::schema::ObSchemaGetterGuard schema_guard;
     ASSERT_EQ(OB_SUCCESS, observer.get_schema_service().get_tenant_schema_guard(RunCtx.tenant_id_, schema_guard));
-
+    
     const share::schema::ObUserInfo *user_info = nullptr;
     ASSERT_EQ(OB_SUCCESS, schema_guard.get_user_info(RunCtx.tenant_id_, "test_ai_user", "%", user_info));
     ASSERT_NE(nullptr, user_info);
-
+    
     share::schema::ObSessionPrivInfo session_priv;
     session_priv.tenant_id_ = RunCtx.tenant_id_;
     session_priv.user_id_ = user_info->get_user_id();
     session_priv.user_name_ = user_info->get_user_name_str();
     session_priv.host_name_ = user_info->get_host_name_str();
     session_priv.user_priv_set_ = user_info->get_priv_set();
-
+    
     common::ObArenaAllocator allocator;
-
+    
     ObAIServiceEndpointPrivUtil priv_util(schema_guard);
-
+    
     bool has_priv = false;
-
+    
     ASSERT_EQ(OB_SUCCESS, priv_util.check_create_ai_model_priv(
         allocator, session_priv, has_priv));
     ASSERT_TRUE(has_priv);
     OB_LOG(INFO, "CREATE AI MODEL privilege check passed after revoke");
-
+    
     ASSERT_EQ(OB_SUCCESS, priv_util.check_alter_ai_model_priv(
         allocator, session_priv, has_priv));
     OB_LOG(INFO, "ALTER AI MODEL privilege check result", K(has_priv), K(session_priv.user_priv_set_));
     ASSERT_FALSE(has_priv);
     OB_LOG(INFO, "ALTER AI MODEL privilege check failed as expected after revoke");
-
+    
     ASSERT_EQ(OB_SUCCESS, priv_util.check_drop_ai_model_priv(
         allocator, session_priv, has_priv));
     OB_LOG(INFO, "DROP AI MODEL privilege check result", K(has_priv), K(session_priv.user_priv_set_));
     ASSERT_FALSE(has_priv);
     OB_LOG(INFO, "DROP AI MODEL privilege check failed as expected after revoke");
-
+    
     ASSERT_EQ(OB_SUCCESS, priv_util.check_access_ai_model_priv(
         allocator, session_priv, has_priv));
     ASSERT_TRUE(has_priv);
     OB_LOG(INFO, "ACCESS AI MODEL privilege check passed after revoke");
-
+    
     OB_LOG(INFO, "test privilege check functions after revoke succ");
   }
-
+  
   {
     OB_LOG(INFO, "cleanup test user start");
     ObSqlString sql;
@@ -265,7 +265,7 @@ TEST_F(TestAIServiceEndpointPrivilege, test_ai_model_privilege)
     ASSERT_EQ(OB_SUCCESS, sql_proxy.write(sql.ptr(), affected_rows));
     OB_LOG(INFO, "cleanup test user succ");
   }
-
+  
   SERVER_LOG(INFO, "test_ai_model_privilege end");
 }
 
@@ -305,4 +305,4 @@ int main(int argc, char **argv)
   oceanbase::unittest::RunCtx.time_sec_ = time_sec;
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
-}
+} 

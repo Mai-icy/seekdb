@@ -64,7 +64,7 @@ public:
     return tablet_id_;
   }
   virtual int64_t get_max_batch_size() const override { return max_batch_size_;}
-
+  
 private:
   bool is_inited_;
   ObTabletID tablet_id_;
@@ -152,7 +152,7 @@ int ObMockRowIter::get_next_row(const blocksstable::ObDatumRow *&row)
   } else {
     is_need_next_batch_ = false;
   }
-
+ 
   if (FAILEDx(bdrs_.to_datum_row(curr_idx_, row_))) {
     LOG_WARN("fail to convert datum row", K(ret), K(curr_idx_));
   } else {

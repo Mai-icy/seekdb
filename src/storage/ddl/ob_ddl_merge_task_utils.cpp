@@ -48,12 +48,9 @@ int ObDDLMergeTaskUtils::check_idempodency(const ObIArray<ObDDLBlockMeta> &input
   hash::ObHashMap<ObLogicMacroBlockId, int64_t> id_checksum_map;
   if (nullptr != write_stat) {
     write_stat->reset();
-  }
+  } 
 
-  if (GCTX.is_shared_storage_mode()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("shared storage mode do not need idempodency checker", K(ret), K(lbt()));
-  } else if (input_metas.count() > 0 && OB_FAIL(id_checksum_map.create(input_metas.count(), ObMemAttr(MTL_ID(), "DDL_MER_IDEM")))) {
+  if (input_metas.count() > 0 && OB_FAIL(id_checksum_map.create(input_metas.count(), ObMemAttr(MTL_ID(), "DDL_MER_IDEM")))) {
     LOG_WARN("failed to create checksum map", K(ret), K(input_metas.count()));
   }
   for (int64_t i = 0; OB_SUCC(ret) && i < input_metas.count(); ++i) {
@@ -227,13 +224,13 @@ int ObDDLMergeTaskUtils::get_ddl_memtables(const ObIArray<ObDDLKVHandle> &frozen
   return ret;
 }
 
-int ObDDLMergeTaskUtils::freeze_ddl_kv(const ObLSID &ls_id,
-                                           const ObTabletID &tablet_id,
+int ObDDLMergeTaskUtils::freeze_ddl_kv(const ObLSID &ls_id, 
+                                           const ObTabletID &tablet_id, 
                                            const ObDirectLoadType &direct_load_type,
                                            const share::SCN start_scn,
                                            const int64_t snapshot_version,
                                            const uint64_t tenant_data_version)
-
+    
 {
   int ret = OB_SUCCESS;
   ObLSService *ls_service = MTL(ObLSService *);
@@ -278,14 +275,14 @@ int ObDDLMergeTaskUtils::freeze_ddl_kv(const ObLSID &ls_id,
 
 
 int ObDDLMergeTaskUtils::get_ddl_tables_from_ddl_kvs(
-    const ObArray<ObDDLKVHandle> &frozen_ddl_kvs,
+    const ObArray<ObDDLKVHandle> &frozen_ddl_kvs, 
     const int64_t cg_idx,
     const int64_t start_slice_idx,
     const int64_t end_slice_idx,
     ObIArray<ObSSTable*> &ddl_sstable)
 {
   int ret = OB_SUCCESS;
-  if (OB_UNLIKELY((cg_idx < 0) ||
+  if (OB_UNLIKELY((cg_idx < 0) || 
                   (start_slice_idx < 0 || end_slice_idx < 0) ||
                   (start_slice_idx > end_slice_idx))) {
     ret = OB_INVALID_ARGUMENT;
@@ -335,9 +332,9 @@ int sort_and_push_metas(ObArray<ObDDLBlockMeta> &meta_array, ObStorageDatumUtils
 
 
 int ObDDLMergeTaskUtils::get_ddl_tables_from_dump_tables(
-    const bool for_row_store,
+    const bool for_row_store, 
     ObTableStoreIterator &ddl_sstable_iter,
-    const int64_t cg_idx,
+    const int64_t cg_idx, 
     const int64_t start_slice_idx,
     const int64_t end_slice_idx,
     ObIArray<ObSSTable*> &ddl_sstable,
@@ -376,10 +373,10 @@ int ObDDLMergeTaskUtils::get_ddl_tables_from_dump_tables(
       if (OB_FAIL(ddl_sstable.push_back(static_cast<ObSSTable *>(table)))) {
          LOG_WARN("push back target sstable failed", K(ret));
       }
-    }
+    } 
 
     /* for column store
-     * get sstable according to cg idx
+     * get sstable according to cg idx 
      * check not null before
     */
     if (OB_FAIL(ret)) {
@@ -424,7 +421,7 @@ int ObDDLMergeTaskUtils::update_tablet_table_store(ObDDLTabletMergeDagParamV2 &d
   ObTabletID target_tablet_id;
   ObWriteTabletParam *tablet_param = nullptr;
   bool for_major = dag_merge_param.for_major_;
-
+  
   ObLSHandle ls_handle;
   ObLSService *ls_service = MTL(ObLSService*);
   ObTabletHandle tablet_handle, new_tablet_handle;
@@ -512,7 +509,7 @@ int ObDDLMergeTaskUtils::build_sstable(ObDDLTabletMergeDagParamV2 &dag_merge_par
   hash::ObHashMap<int64_t, ObArray<ObTableHandleV2>*> *slice_idx_cg_sstables = nullptr;
 
   bool is_column_store_table = false;
-
+  
   if (!dag_merge_param.is_valid()) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(dag_merge_param));
@@ -529,11 +526,11 @@ int ObDDLMergeTaskUtils::build_sstable(ObDDLTabletMergeDagParamV2 &dag_merge_par
                                                                          &dag_merge_param.get_tablet_ctx()->merge_ctx_.slice_cg_sstables_)) {
   } else {
     for (hash::ObHashMap<int64_t, ObArray<ObTableHandleV2>*>::const_iterator iter = slice_idx_cg_sstables->begin();
-         OB_SUCC(ret) && iter != slice_idx_cg_sstables->end();
+         OB_SUCC(ret) && iter != slice_idx_cg_sstables->end(); 
          iter++) {
       int64_t start_slice_idx = iter->first;
       ObArray<ObTableHandleV2> *sstable_handles = iter->second;
-
+      
       /* get root sstable */
       ObTableHandleV2 &root_sstable  = sstable_handles->at(dag_merge_param.table_key_.get_column_group_id());
       ObArray<ObITable*> cg_sstables;
@@ -545,8 +542,8 @@ int ObDDLMergeTaskUtils::build_sstable(ObDDLTabletMergeDagParamV2 &dag_merge_par
       }
       /* fill cg sstable when sstable is not empty*/
       if (OB_FAIL(ret)) {
-      } else if (is_column_store_table &&
-                 !static_cast<ObCOSSTableV2*>(root_sstable.get_table())->is_cgs_empty_co_table() &&
+      } else if (is_column_store_table && 
+                 !static_cast<ObCOSSTableV2*>(root_sstable.get_table())->is_cgs_empty_co_table() && 
                  OB_FAIL(static_cast<ObCOSSTableV2*>(root_sstable.get_table())->fill_cg_sstables(cg_sstables))) {
         LOG_WARN("failed to fill cg sstable", K(ret));
       } else if (OB_FAIL(co_sstable_array.add_table(root_sstable))) {

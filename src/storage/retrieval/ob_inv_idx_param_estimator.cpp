@@ -92,7 +92,7 @@ int ObTextAvgDocLenEstimator::estimate_avg_doc_len(
     } else if (OB_FAIL(cast_number_to_double(result_num, avg_doc_token_cnt))) {
       LOG_WARN("failed to cast number to double", K(ret), K(result_num));
     }
-
+    
     if (OB_SUCC(ret)) {
       const double default_avg_doc_token_cnt = sql::ObExprBM25::DEFAULT_AVG_DOC_TOKEN_CNT;
       result = avg_doc_token_cnt > default_avg_doc_token_cnt ? avg_doc_token_cnt : default_avg_doc_token_cnt;
@@ -111,7 +111,7 @@ int ObTextAvgDocLenEstimator::cast_number_to_double(const number::ObNumber &num,
   result = 0.0;
   ObObj src_obj, dest_obj;
   src_obj.set_number(num);
-
+  
   ObArenaAllocator alloc("TxtNum2Dbl", OB_MALLOC_NORMAL_BLOCK_SIZE, MTL_ID());
   ObCastCtx cast_ctx(&alloc, nullptr, CM_NONE, ObCharset::get_system_collation());
   if (OB_FAIL(ObObjCaster::to_type(ObDoubleType, cast_ctx, src_obj, dest_obj))) {

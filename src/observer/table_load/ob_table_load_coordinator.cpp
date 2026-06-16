@@ -49,7 +49,7 @@ using namespace omt;
 
 #define TABLE_LOAD_CONTROL_RPC_CALL(name, addr, arg, ...)                         \
   ({                                                                              \
-    ObTableLoadControlRpcProxy proxy(*GCTX.srv_rpc_proxy_);                       \
+    ObTableLoadControlRpcProxy proxy;                       \
     ObTimeoutCtx ctx;                                                             \
     if (OB_FAIL(ObShareUtil::set_default_timeout_ctx(ctx, DEFAULT_TIMEOUT_US))) { \
       LOG_WARN("fail to set default timeout ctx", KR(ret));                       \
@@ -424,7 +424,7 @@ int ObTableLoadCoordinator::calc_memory_size(
       task_need_sort = true;
     }
   }
-
+  
   for (int64_t i = 0; OB_SUCC(ret) && i < store_server_count; i++) {
     ObDirectLoadResourceUnit &unit = apply_arg.apply_array_[i];
     int64_t min_memory = MIN(min_part_memory *  unit.thread_count_, memory_limit); // Minimum memory that needs to be allocated

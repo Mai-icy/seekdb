@@ -37,8 +37,8 @@
 ObCreateViewHelper::ObCreateViewHelper(
     share::schema::ObMultiVersionSchemaService *schema_service,
     const uint64_t tenant_id,
-    const obrpc::ObCreateTableArg &arg_,
-    obrpc::ObCreateTableRes &res,
+    const obcall::ObCreateTableArg &arg_,
+    obcall::ObCreateTableRes &res,
     ObDDLSQLTransaction *external_trans,
     bool enable_ddl_parallel)
   : ObDDLHelper(schema_service, tenant_id, "[parallel create view]", external_trans, enable_ddl_parallel),
@@ -398,9 +398,9 @@ int ObCreateViewHelper::check_parallel_ddl_conflict_()
           case ObObjectType::TABLE:
           case ObObjectType::VIEW:
             // create view v1 as select * from odps_catalog.default.table;
-            // catalog table should not check
+            // catalog table should not check 
             // because  resolver gen table schema temporarily
-            // this schema will not store in rs do not need
+            // this schema will not store in rs do not need 
             // to check check_max_dependency_version_
             if (!is_external_object_id(dep.get_ref_obj_id())) {
               if (OB_FAIL(table_ids.push_back(dep.get_ref_obj_id()))) {

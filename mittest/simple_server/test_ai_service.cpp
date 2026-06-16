@@ -1,4 +1,4 @@
-// owner: shenyunlong.syl
+// owner: shenyunlong.syl 
 // owner group: shenzhen
 
 /*
@@ -25,7 +25,7 @@
 #include "env/ob_simple_cluster_test_base.h"
 #include "observer/omt/ob_tenant_ai_service.h"
 #include "share/schema/ob_tenant_schema_service.h"
-
+ 
 using namespace oceanbase::observer;
 using namespace oceanbase::share;
 using namespace oceanbase::omt;
@@ -76,7 +76,7 @@ void check_ai_model_endpoint(const ObAiModelEndpointInfo &endpoint_info,
   ObString unencrypted_access_key;
   ASSERT_EQ(OB_SUCCESS, endpoint_info.get_unencrypted_access_key(allocator, unencrypted_access_key));
   ASSERT_EQ(access_key, unencrypted_access_key);
-  ASSERT_EQ(provider, endpoint_info.get_provider());
+  ASSERT_EQ(provider, endpoint_info.get_provider()); 
   ASSERT_EQ(request_model_name, endpoint_info.get_request_model_name());
   ASSERT_EQ(parameters, endpoint_info.get_parameters());
   ASSERT_EQ(request_transform_fn, endpoint_info.get_request_transform_fn());
@@ -104,7 +104,7 @@ TEST_F(TestAiService, test_ai_model_endpoint)
   ObSqlString sql;
 
   // 1. create ai model endpoint
-  std::string json_str = R"({"url": ")";
+  std::string json_str = R"({"url": ")"; 
   json_str += url.ptr();
   json_str += R"(", "access_key": ")";
   json_str += access_key.ptr();
@@ -144,7 +144,7 @@ TEST_F(TestAiService, test_ai_model_endpoint)
   access_key = "my_new_access_key_1234567890";
   provider = "openai";
 
-  json_str = R"({"access_key": ")";
+  json_str = R"({"access_key": ")"; 
   json_str += access_key.ptr();
   json_str += R"(", "provider": ")";
   json_str += provider.ptr();

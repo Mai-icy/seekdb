@@ -307,7 +307,7 @@ int ObTabletChecksumOperator::construct_load_sql_str_(
         LOG_WARN("fail to assign sql string", KR(ret), K(tenant_id), K(batch_cnt), K(compaction_scn));
       }
     } else { // compaction_scn == 0: get records with all compaction_scn
-      if (OB_FAIL(sql.append_fmt("SELECT * FROM %s WHERE tablet_id > '%lu' ",
+      if (OB_FAIL(sql.append_fmt("SELECT * FROM %s WHERE tablet_id > '%lu' ", 
           OB_ALL_TABLET_CHECKSUM_TNAME, start_pair.get_tablet_id().id()))) {
         LOG_WARN("fail to assign sql", KR(ret), K(tenant_id), K(start_pair), K(compaction_scn));
       } else if (OB_FAIL(sql.append_fmt(" ORDER BY tablet_id, compaction_scn limit %ld",

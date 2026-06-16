@@ -341,7 +341,7 @@ int ObLogRouteService::get_restore_source_addr_(common::ObAddr &addr) const
 {
   int ret = OB_SUCCESS;
   const common::ObString config_value = GCONF.log_restore_source.str();
-
+  
   if (config_value.empty()) {
     ret = OB_ENTRY_NOT_EXIST;
   } else {
@@ -627,3 +627,4 @@ void ObLogRouteService::ObLSRouteTimerTask::runTimerTask()
 
 } // namespace logservice
 } // namespace oceanbase
+

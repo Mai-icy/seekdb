@@ -16,6 +16,7 @@
 
 #define USING_LOG_PREFIX STORAGE
 #include "ob_build_index_task.h"
+#include "rootserver/ob_root_service.h"
 #include "share/ob_ddl_checksum.h"
 #include "share/ob_ddl_error_message_table_operator.h"
 #include "share/schema/ob_tenant_schema_service.h"
@@ -331,7 +332,7 @@ int ObUniqueIndexChecker::scan_main_table_with_column_checksum(
     param.output_projector_ = &output_projector;
     param.is_scan_index_ = false;
     param.task_id_ = task_id;
-
+    
     STORAGE_LOG(INFO, "scan main table column checksum", K(col_ids), K(org_col_ids));
     if (OB_FAIL(scan_table_with_column_checksum(param, column_checksum, row_count))) {
       STORAGE_LOG(WARN, "fail to scan table with column checksum", K(ret));
@@ -469,7 +470,7 @@ int ObUniqueIndexChecker::check_unique_index(ObIDag *dag, const int64_t task_id)
     int report_ret_code = OB_SUCCESS;
     const ObAddr &self_addr = GCTX.self_addr();
     bool keep_report_err_msg = true;
-    LOG_INFO("begin to report build index status & ddl error message", K(param_->index_schema_->get_table_id()), K(*(param_->index_schema_)),
+    LOG_INFO("begin to report build index status & ddl error message", K(param_->index_schema_->get_table_id()), K(*(param_->index_schema_)), 
               K(param_->tablet_id_), K(task_id));
     while (!dag->has_set_stop() && keep_report_err_msg) {
       ObDDLErrorMessageTableOperator::ObDDLErrorInfo info;
@@ -573,9 +574,9 @@ int ObUniqueCheckingDag::init(
   if (OB_UNLIKELY(is_inited_)) {
     ret = OB_INIT_TWICE;
     STORAGE_LOG(WARN, "ObUniqueCheckingDag has already been inited", K(ret));
-  } else if (OB_FAIL(param_.init(tenant_id, ls_id, tablet_id, is_scan_index, index_table_id,
+  } else if (OB_FAIL(param_.init(tenant_id, ls_id, tablet_id, is_scan_index, index_table_id, 
                      schema_version, task_id, execution_id, snapshot_version, user_parallelism))) {
-    STORAGE_LOG(WARN, "fail to init ObUniqueCheckingParam", KR(ret), K_(param));
+    STORAGE_LOG(WARN, "fail to init ObUniqueCheckingParam", KR(ret), K_(param));  
   } else if (OB_UNLIKELY(!param_.is_valid())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("error unexpected", K(ret), K(param_));
@@ -950,7 +951,7 @@ int ObUniqueCheckingMergeTask::process()
         ObDDLChecksumItem item;
         item.execution_id_ = param_->execution_id_;
         item.tenant_id_ = param_->tenant_id_;
-        item.table_id_ = param_->is_scan_index_ ? param_->index_schema_->get_table_id() :
+        item.table_id_ = param_->is_scan_index_ ? param_->index_schema_->get_table_id() : 
         param_->data_table_schema_->get_table_id();
         item.tablet_id_ = param_->tablet_id_.id();
         item.ddl_task_id_ = param_->task_id_;
@@ -995,7 +996,7 @@ ObGlobalUniqueIndexCallback::ObGlobalUniqueIndexCallback(
 int ObGlobalUniqueIndexCallback::operator()(const int ret_code)
 {
   int ret = OB_SUCCESS;
-  obrpc::ObCalcColumnChecksumResponseArg arg;
+  obcall::ObCalcColumnChecksumResponseArg arg;
   ObAddr rs_addr = GCTX.self_addr();
   arg.tablet_id_ = tablet_id_;
   arg.target_table_id_ = index_id_;
@@ -1011,10 +1012,7 @@ int ObGlobalUniqueIndexCallback::operator()(const int ret_code)
     }
 #endif
   if (OB_FAIL(ret)) {
-  } else if (OB_ISNULL(GCTX.rs_rpc_proxy_)) {
-    ret = OB_ERR_SYS;
-    STORAGE_LOG(WARN, "innner system error, rootserver rpc proxy or rs mgr must not be NULL", K(ret), K(GCTX));
-  } else if (OB_FAIL(GCTX.rs_rpc_proxy_->to(rs_addr).calc_column_checksum_response(arg))) {
+  } else if (OB_FAIL(GCTX.root_service_->calc_column_checksum_repsonse(arg))) {
     STORAGE_LOG(WARN, "fail to check unique index response", K(ret), K(arg));
   } else {
     STORAGE_LOG(INFO, "send column checksum response", K(arg));
@@ -1190,3 +1188,4 @@ int ObUniqueCheckingContext::get_column_checksum_and_id(ObIArray<int64_t> &repor
   }
   return ret;
 }
+

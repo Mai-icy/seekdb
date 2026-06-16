@@ -44,7 +44,7 @@ struct TaskDesc
 class ObDDLTransController : public lib::ThreadPool
 {
 public:
-  ObDDLTransController() : inited_(false), schema_service_(NULL) {}
+  ObDDLTransController() : inited_(false), schema_service_(NULL), need_refresh_(false) {}
   ~ObDDLTransController();
   int init(share::schema::ObMultiVersionSchemaService *schema_service);
   void stop();
@@ -72,7 +72,7 @@ private:
   common::SpinRWLock lock_;
   share::schema::ObMultiVersionSchemaService *schema_service_;
 
-  common::hash::ObHashSet<uint64_t> tenants_;
+  bool need_refresh_;
 
 
   common::ObCond wait_cond_;

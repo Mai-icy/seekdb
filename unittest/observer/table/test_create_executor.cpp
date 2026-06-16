@@ -45,7 +45,7 @@ void fill_table_schema(ObTableSchema &table)
   table.set_index_column_num(0);
   table.set_rowkey_split_pos(11);
   table.set_progressive_merge_num(11);
-  table.set_compress_func_name(ObString::make_string("snappy_1.0"));
+  table.set_compress_func_name(ObString::make_string("zstd_1.3.8"));
   table.set_autoinc_column_id(0);
   table.set_auto_increment(1);
   table.set_load_type(TABLE_LOAD_TYPE_IN_DISK);

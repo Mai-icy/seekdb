@@ -43,7 +43,7 @@ int ObTabletReorganizeHistoryTableOperator::check_tablet_has_reorganized(
       sqlclient::ObMySQLResult *result = NULL;
       const uint64_t zero_tenant_id = 0;
       if (OB_FAIL(sql.assign_fmt(
-        "select * from %s where src_tablet_id = %ld",
+        "select * from %s where src_tablet_id = %ld", 
         OB_ALL_TABLET_REORGANIZE_HISTORY_TNAME, tablet_id.id()))) {
         LOG_WARN("failed to assign sql", K(ret), K(sql), K(tablet_id));  
       } else if (OB_FAIL(proxy.read(res, tenant_id, sql.ptr()))) {
@@ -190,7 +190,7 @@ int ObTabletReorganizeHistoryTableOperator::get_split_tablet_pairs_by_dest(
       sqlclient::ObMySQLResult *result = NULL;
       const uint64_t zero_tenant_id = 0;
       if (OB_FAIL(sql.assign_fmt(
-        "select * from %s where dest_tablet_id = %ld",
+        "select * from %s where dest_tablet_id = %ld", 
         OB_ALL_TABLET_REORGANIZE_HISTORY_TNAME, tablet_id.id()))) {
         LOG_WARN("failed to assign sql", K(ret), K(sql), K(tablet_id));  
       } else if (OB_FAIL(sql_proxy.read(res, tenant_id, sql.ptr()))) {
@@ -270,7 +270,7 @@ int ObTabletReorganizeHistoryTableOperator::insert_(
 int ObTabletReorganizeHistoryTableOperator::batch_insert(
     ObISQLClient &sql_proxy,
     const uint64_t tenant_id,
-    const obrpc::ObPartitionSplitArg &split_arg,
+    const obcall::ObPartitionSplitArg &split_arg,
     const int64 start_time,
     const int64 finish_time)
 {

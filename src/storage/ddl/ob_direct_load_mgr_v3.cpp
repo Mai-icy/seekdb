@@ -37,8 +37,8 @@ using namespace oceanbase::share::schema;
 using namespace oceanbase::sql;
 
 ObTabletDirectLoadMgrV3::ObTabletDirectLoadMgrV3():
-  ObBaseTabletDirectLoadMgr(), arena_allocator_("TDL_V3_INIT", OB_MALLOC_NORMAL_BLOCK_SIZE, MTL_ID()), execution_id_(0), storage_schema_(nullptr), micro_index_clustered_(false),
-  dir_id_(-1), task_finish_count_(0), schema_item_(), column_items_(), lob_column_idxs_(), lob_col_types_(), data_block_desc_(), index_builder_(nullptr), build_param_(),
+  ObBaseTabletDirectLoadMgr(), arena_allocator_("TDL_V3_INIT", OB_MALLOC_NORMAL_BLOCK_SIZE, MTL_ID()), execution_id_(0), storage_schema_(nullptr), micro_index_clustered_(false), 
+  dir_id_(-1), task_finish_count_(0), schema_item_(), column_items_(), lob_column_idxs_(), lob_col_types_(), data_block_desc_(), index_builder_(nullptr), build_param_(), 
   seq_interval_task_id_(0), role_(ObDirectLoadMgrRole::INVALID_TYPE), is_schema_item_ready_(false), is_inited_(false)
 {
   column_items_.set_attr(ObMemAttr(MTL_ID(), "DL_COL_SCHEMA"));
@@ -328,7 +328,7 @@ int ObTabletDirectLoadMgrV3::init_v2(const ObTabletDirectLoadInsertParam &build_
   return ret;
 }
 
-int ObTabletDirectLoadMgrV3::prepare_index_builder()
+int ObTabletDirectLoadMgrV3::prepare_index_builder() 
 {
   int ret = OB_SUCCESS;
   ObSchemaGetterGuard schema_guard;
@@ -366,7 +366,7 @@ int ObTabletDirectLoadMgrV3::prepare_index_builder()
   if (0 != lock_tid) {
     unlock(lock_tid);
   }
-  return ret;
+  return ret;  
 }
 
 int ObTabletDirectLoadMgrV3::prepare_lob_param(const ObTabletDirectLoadInsertParam &build_param, ObTabletDirectLoadInsertParam &lob_param)
@@ -897,7 +897,7 @@ int ObSSTabletDirectLoadMgr::init_v2(const ObTabletDirectLoadInsertParam &build_
   } else if (OB_FAIL(ObTabletDirectLoadMgrV3::init_v2(build_param, execution_id, role))) {
     LOG_WARN("failed to init direct load mgr", K(ret));
   } else if (OB_FAIL(ObDirectLoadMgrUtil::get_tablet_handle(build_param.common_param_.ls_id_, build_param.common_param_.tablet_id_, tablet_handle))) {
-    LOG_WARN("failed to get tablet handle", K(ret), K(build_param));
+    LOG_WARN("failed to get tablet handle", K(ret), K(build_param)); 
   } else if (!tablet_handle.is_valid()) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("invalid tablet handle", K(ret));
@@ -910,7 +910,7 @@ int ObSSTabletDirectLoadMgr::init_v2(const ObTabletDirectLoadInsertParam &build_
 void ObSSTabletDirectLoadMgr::update_max_data_macro_seq(const int64_t cur_data_seq)
 {
   ObLatchWGuard guard(lock_, ObLatchIds::TABLET_DIRECT_LOAD_MGR_LOCK);
-  last_data_seq_ = max(last_data_seq_, cur_data_seq);
+  last_data_seq_ = max(last_data_seq_, cur_data_seq); 
 }
 
 void ObSSTabletDirectLoadMgr::update_max_meta_macro_seq(const int64_t cur_meta_seq)
@@ -921,7 +921,7 @@ void ObSSTabletDirectLoadMgr::update_max_meta_macro_seq(const int64_t cur_meta_s
 
 int ObSSTabletDirectLoadMgr::fill_sstable_slice_v2(const ObDirectLoadSliceInfo &slice_info,
                                                    ObIStoreRowIterator *iter,
-                                                   ObDirectLoadSliceWriter &slice_writer,
+                                                   ObDirectLoadSliceWriter &slice_writer, 
                                                    blocksstable::ObMacroDataSeq &next_seq,
                                                    ObInsertMonitor *insert_monitor,
                                                    int64_t &affected_row)
@@ -929,8 +929,8 @@ int ObSSTabletDirectLoadMgr::fill_sstable_slice_v2(const ObDirectLoadSliceInfo &
   int ret = OB_SUCCESS;
   if (OB_FAIL(ObTabletDirectLoadMgrV3::fill_sstable_slice_v2(slice_info, iter, slice_writer, next_seq, insert_monitor, affected_row))){
     LOG_WARN("failed to fill sstable slice", K(ret));
-  } else if (FALSE_IT(update_max_data_macro_seq(next_seq.data_seq_))){
-  } else {
+  } else if (FALSE_IT(update_max_data_macro_seq(next_seq.data_seq_))){ 
+  } else { 
     ATOMIC_AAF(&total_slice_cnt_, 1);
     FLOG_INFO("inc total slice cnt", K(ret), K(execution_id_));
   }
@@ -964,7 +964,7 @@ int ObSSTabletDirectLoadMgr::create_ddl_ro_sstable(ObTablet &tablet,
   if (OB_ISNULL(index_builder_) || OB_UNLIKELY(!index_builder_->is_inited() || OB_ISNULL(storage_schema_) || !table_key_.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), KPC(index_builder_), KP(storage_schema_), K(table_key_));
-  } else if (table_key_.table_type_ != ObITable::MAJOR_SSTABLE) {
+  } else if (table_key_.table_type_ != ObITable::MAJOR_SSTABLE) {      
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("invalid cg idx", K(ret), K(table_key_));
   } else {
@@ -999,7 +999,7 @@ int ObSSTabletDirectLoadMgr::create_ddl_ro_sstable(ObTablet &tablet,
         LOG_WARN("index builder has been closed already", K(ret));
       } else  if (OB_FAIL(flush_callback.init(init_param))) {
         // The row_id_offset of cg index_macro_block has no effect, so set 0 to pass the defensive check.
-        LOG_WARN("fail to init redo log writer callback", K(ret), K(init_param));
+        LOG_WARN("fail to init redo log writer callback", K(ret), K(init_param)); 
       } else  if (OB_FAIL(index_builder_->close_with_macro_seq(
                    res, tmp_seq.macro_data_seq_,
                    OB_DEFAULT_MACRO_BLOCK_SIZE /*nested_size*/,
@@ -1054,7 +1054,7 @@ int ObSSTabletDirectLoadMgr::inner_close()
     LOG_WARN("failed to get tablet handle", K(ret), K(tablet_handle));
   } else if (OB_FAIL(create_ddl_ro_sstable(*tablet_handle.get_obj(), arena_allocator_, sstable_handle))) {
     LOG_WARN("failed to create ddl ro sstable ", K(ret));
-  }
+  } 
 
   // update table store
   if (OB_FAIL(ret)) {
@@ -1062,8 +1062,8 @@ int ObSSTabletDirectLoadMgr::inner_close()
     LOG_WARN("failed to get sstable", K(ret));
   } else if (OB_FAIL(update_table_store(ddl_major_sstable, storage_schema_, table_key_, *(tablet_handle.get_obj())))) {
     LOG_WARN("failed to update table store", K(ret));
-  }
-
+  } 
+  
   // sync max lob id
   if (OB_FAIL(ret) || ObDirectLoadMgrRole::LOB_TABLET_TYPE!= role_) {
   } else if (OB_FAIL(ObDDLUtil::set_tablet_autoinc_seq(ls_id_,tablet_id_, last_lob_id_))) {

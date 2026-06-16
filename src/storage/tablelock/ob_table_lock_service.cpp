@@ -16,6 +16,7 @@
 
 #define USING_LOG_PREFIX TABLELOCK
 #include "storage/tablelock/ob_table_lock_service.h"
+#include "storage/tablelock/ob_table_lock_local_executor.h"
 
 #include "storage/tx/ob_trans_service.h"
 #include "storage/tablelock/ob_lock_utils.h" // ObInnerTableLockUtil
@@ -558,7 +559,6 @@ int ObTableLockService::lock_table(const uint64_t table_id,
     int64_t abs_timeout_ts = (0 == timeout_us)
       ? ObTimeUtility::current_time() + DEFAULT_TIMEOUT_US
       : ObTimeUtility::current_time() + timeout_us;
-    Thread::WaitGuard guard(Thread::WAIT);
     do {
       if (timeout_us != 0) {
         retry_timeout_us = abs_timeout_ts - ObTimeUtility::current_time();
@@ -604,7 +604,6 @@ int ObTableLockService::unlock_table(const uint64_t table_id,
     int64_t abs_timeout_ts = (0 == timeout_us)
       ? ObTimeUtility::current_time() + DEFAULT_TIMEOUT_US
       : ObTimeUtility::current_time() + timeout_us;
-    Thread::WaitGuard guard(Thread::WAIT);
     do {
       if (timeout_us != 0) {
         retry_timeout_us = abs_timeout_ts - ObTimeUtility::current_time();
@@ -652,7 +651,6 @@ int ObTableLockService::lock_tablet(const uint64_t table_id,
     int64_t abs_timeout_ts = (0 == timeout_us)
       ? ObTimeUtility::current_time() + DEFAULT_TIMEOUT_US
       : ObTimeUtility::current_time() + timeout_us;
-    Thread::WaitGuard guard(Thread::WAIT);
     do {
       if (timeout_us != 0) {
         retry_timeout_us = abs_timeout_ts - ObTimeUtility::current_time();
@@ -704,7 +702,6 @@ int ObTableLockService::unlock_tablet(const uint64_t table_id,
     int64_t abs_timeout_ts = (0 == timeout_us)
       ? ObTimeUtility::current_time() + DEFAULT_TIMEOUT_US
       : ObTimeUtility::current_time() + timeout_us;
-    Thread::WaitGuard guard(Thread::WAIT);
     do {
       if (timeout_us != 0) {
         retry_timeout_us = abs_timeout_ts - ObTimeUtility::current_time();
@@ -744,7 +741,6 @@ int ObTableLockService::lock_partition_or_subpartition(ObTxDesc &tx_desc,
   } else if (OB_FAIL(get_table_partition_level_(arg.table_id_, part_level))) {
     LOG_WARN("can not get table partition level", K(ret), K(arg));
   } else {
-    Thread::WaitGuard guard(Thread::WAIT);
     if (PARTITION_LEVEL_TWO == part_level) {
       arg.is_sub_part_ = true;
     }
@@ -772,7 +768,6 @@ int ObTableLockService::lock(ObTxDesc &tx_desc,
     LOG_WARN("invalid argument", K(ret), K(tx_desc), K(arg), K(tx_desc.is_valid()),
              K(tx_param.is_valid()), K(arg.is_valid()));
   } else {
-    Thread::WaitGuard guard(Thread::WAIT);
     ObTableLockCtx ctx;
     if (OB_FAIL(ctx.set_by_lock_req(arg))) {
       LOG_WARN("set ObTableLockCtx failed", K(ret), K(arg));
@@ -822,7 +817,6 @@ int ObTableLockService::replace_lock(ObTxDesc &tx_desc,
     LOG_WARN("invalid argument", K(ret), K(tx_desc), K(replace_req), K(tx_desc.is_valid()),
              K(tx_param.is_valid()), K(replace_req.is_valid()));
   } else {
-    Thread::WaitGuard guard(Thread::WAIT);
     ObReplaceTableLockCtx ctx;
     if (OB_FAIL(ctx.set_by_lock_req(*replace_req.unlock_req_, true))) {
       LOG_WARN("fail to set unlock_ctx", K(ret), K(replace_req));
@@ -1382,9 +1376,8 @@ int ObTableLockService::batch_pre_check_lock_(ObTableLockCtx &ctx,
   int last_ret = OB_SUCCESS;
   int64_t USLEEP_TIME = 100; // 0.1 ms
   bool need_retry = false;
-  obrpc::ObSrvRpcProxy rpc_proxy(*GCTX.srv_rpc_proxy_);
-  rpc_proxy.set_detect_session_killed(true);
-  ObBatchLockProxy proxy_batch(rpc_proxy, &obrpc::ObSrvRpcProxy::batch_lock_obj);
+  observer::ObLocalBatchLockProxy<ObLockTaskBatchRequest<ObLockParam>> proxy_batch(
+      observer::handle_batch_lock_task);
   // only used in LOCK_TABLE/LOCK_PARTITION
   if (LOCK_TABLE == ctx.task_type_ ||
       LOCK_PARTITION == ctx.task_type_) {
@@ -1666,7 +1659,7 @@ int ObTableLockService::pack_and_call_rpc_(RpcProxy &proxy_batch,
 }
 
 template <>
-int ObTableLockService::pack_and_call_rpc_(obrpc::ObBatchReplaceLockProxy &proxy_batch,
+int ObTableLockService::pack_and_call_rpc_(observer::ObLocalBatchLockProxy<ObLockTaskBatchRequest<ObReplaceLockParam>> &proxy_batch,
                                            ObTableLockCtx &ctx,
                                            const share::ObLSID &ls_id,
                                            const ObLockIDArray &lock_ids,
@@ -1772,16 +1765,17 @@ int ObTableLockService::inner_process_obj_lock_batch_(ObTableLockCtx &ctx,
                                                       const ObLSLockMap &lock_map)
 {
   int ret = OB_SUCCESS;
-  obrpc::ObSrvRpcProxy rpc_proxy(*GCTX.srv_rpc_proxy_);
-  rpc_proxy.set_detect_session_killed(true);
   if (ctx.is_unlock_task()) {
-    ObHighPriorityBatchLockProxy proxy_batch(rpc_proxy, &obrpc::ObSrvRpcProxy::batch_unlock_obj);
+    observer::ObLocalBatchLockProxy<ObLockTaskBatchRequest<ObLockParam>> proxy_batch(
+        observer::handle_high_priority_batch_lock_task);
     ret = batch_rpc_handle_(proxy_batch, ctx, lock_map);
   } else if (ctx.is_replace_task()) {
-    ObBatchReplaceLockProxy  proxy_batch(rpc_proxy, &obrpc::ObSrvRpcProxy::batch_replace_lock_obj);
+    observer::ObLocalBatchLockProxy<ObLockTaskBatchRequest<ObReplaceLockParam>> proxy_batch(
+        observer::handle_batch_replace_lock_task);
     ret = batch_rpc_handle_(proxy_batch, ctx, lock_map);
   } else {
-    ObBatchLockProxy proxy_batch(rpc_proxy, &obrpc::ObSrvRpcProxy::batch_lock_obj);
+    observer::ObLocalBatchLockProxy<ObLockTaskBatchRequest<ObLockParam>> proxy_batch(
+        observer::handle_batch_lock_task);
     ret = batch_rpc_handle_(proxy_batch, ctx, lock_map);
   }
   return ret;

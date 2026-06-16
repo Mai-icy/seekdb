@@ -22,7 +22,6 @@
 #include "rootserver/ob_ddl_operator.h"
 #include "share/ob_ddl_common.h"
 #include "share/schema/ob_schema_getter_guard.h"
-#include "rootserver/ob_rs_async_rpc_proxy.h"
 #include "share/location_cache/ob_location_service.h"
 #include "share/schema/ob_multi_version_schema_service.h"
 #include "share/ob_ddl_task_executor.h"
@@ -56,7 +55,7 @@ namespace oceanbase
 using namespace common;
 using namespace share;
 using namespace share::schema;
-using namespace obrpc;
+using namespace obcall;
 using namespace transaction::tablelock;
 
 namespace rootserver
@@ -82,7 +81,7 @@ int ObForkTableTask::init(
     const share::schema::ObTableSchema *dst_table_schema,
     const int64_t schema_version,
     const int64_t snapshot_version,
-    const obrpc::ObForkTableArg &fork_table_arg,
+    const obcall::ObForkTableArg &fork_table_arg,
     const int64_t parent_task_id)
 {
   int ret = OB_SUCCESS;
@@ -177,7 +176,7 @@ int ObForkTableTask::init(const ObDDLTaskRecord &task_record)
       ddl_tracing_.open_for_recovery();
     }
   }
-
+  
   LOG_INFO("init fork table task finished", K(ret), KPC(this));
   return ret;
 }
@@ -306,7 +305,7 @@ int ObForkTableTask::serialize_params_to_message(char *buf, const int64_t buf_si
 int ObForkTableTask::deserialize_params_from_message(const uint64_t tenant_id, const char *buf, const int64_t buf_size, int64_t &pos)
 {
   int ret = OB_SUCCESS;
-  SMART_VAR(obrpc::ObForkTableArg, tmp_arg) {
+  SMART_VAR(obcall::ObForkTableArg, tmp_arg) {
     if (OB_UNLIKELY(!is_valid_tenant_id(tenant_id) || nullptr == buf || buf_size <= 0)) {
       ret = OB_INVALID_ARGUMENT;
       LOG_WARN("invalid arguments", K(ret), K(tenant_id), KP(buf), K(buf_size));
@@ -333,7 +332,7 @@ int64_t ObForkTableTask::get_serialize_param_size() const
   return len;
 }
 
-int ObForkTableTask::deep_copy_fork_table_arg(const obrpc::ObForkTableArg &arg)
+int ObForkTableTask::deep_copy_fork_table_arg(const obcall::ObForkTableArg &arg)
 {
   int ret = OB_SUCCESS;
   fork_table_arg_.tenant_id_ = arg.tenant_id_;
@@ -356,9 +355,9 @@ int ObForkTableTask::wait_freeze_end(const ObDDLTaskStatus next_task_status)
 {
   int ret = OB_SUCCESS;
   ObSchemaGetterGuard schema_guard;
-  ObSEArray<ObTabletID, 4> src_tablet_ids;
+  ObSEArray<ObTabletID, 4> src_tablet_ids;  
   const int64_t start_ts = ObTimeUtility::current_time();
-
+  
   if (OB_FAIL(get_schema_guard(schema_guard))) {
     LOG_WARN("fail to get schema guard", K(ret));
   } else if (OB_FAIL(ObForkTableUtil::collect_tablet_ids_from_table(schema_guard, tenant_id_, object_id_, src_tablet_ids))) {
@@ -415,7 +414,7 @@ int ObForkTableTask::build_data(const ObDDLTaskStatus next_task_status)
     LOG_WARN("fail to get dst tablet ids", K(ret));
   } else if (src_tablet_ids.count() != dst_tablet_ids.count()) {
     ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("tablet count mismatch", K(ret),
+    LOG_WARN("tablet count mismatch", K(ret), 
              K(src_tablet_ids.count()), K(dst_tablet_ids.count()));
   } else if (OB_FAIL(build_fork_info(src_tablet_ids, dst_tablet_ids, fork_info))) {
     LOG_WARN("fail to build fork info", K(ret));
@@ -483,7 +482,7 @@ int ObForkTableTask::wait_data_complement(const ObDDLTaskStatus next_task_status
         break;
       }
     }
-
+    
     if (OB_SUCC(ret)) {
       is_data_complement_ = all_complete;
       if (all_complete) {
@@ -504,7 +503,7 @@ int ObForkTableTask::wait_data_complement(const ObDDLTaskStatus next_task_status
       LOG_WARN("fail to get src tablet ids", K(ret));
     } else if (OB_UNLIKELY(src_tablet_ids.count() != dst_tablet_ids.count())) {
       ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("src and dst tablet count mismatch", K(ret),
+      LOG_WARN("src and dst tablet count mismatch", K(ret), 
                K(src_tablet_ids.count()), K(dst_tablet_ids.count()));
     } else {
       storage::ObTableForkInfo fork_info;
@@ -613,7 +612,7 @@ int ObForkTableTask::cleanup_impl()
       ObTableLockOwnerID lock_owner;
       ObMySQLTransaction trans;
       ObTimeoutCtx ctx;
-
+      
       if (OB_FAIL(GCTX.schema_service_->get_tenant_schema_guard(tenant_id_, schema_guard))) {
         LOG_WARN("get tenant schema guard failed", K(ret), K(tenant_id_));
       } else if (OB_FAIL(schema_guard.get_table_schema(tenant_id_, object_id_, src_table_schema))) {
@@ -670,7 +669,7 @@ int ObForkTableTask::cleanup_impl()
           need_retry_ = false;  // clean succ, stop the task
         }
       }
-
+      
       if (trans.is_started()) {
         bool commit = (OB_SUCCESS == ret);
         int tmp_ret = trans.end(commit);
@@ -725,7 +724,7 @@ int ObForkTableTask::build_fork_info(
         consumer_group_id_,
         src_tablet_ids,
         dst_tablet_ids);
-
+    
     if (OB_UNLIKELY(!fork_info.is_valid())) {
       ret = OB_INVALID_ARGUMENT;
       LOG_WARN("invalid fork info", K(ret), K(fork_info));
@@ -736,3 +735,6 @@ int ObForkTableTask::build_fork_info(
 
 }  // namespace rootserver
 }  // namespace oceanbase
+
+
+

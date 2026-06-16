@@ -154,15 +154,6 @@ int ObTabletMeta::init(
     }
 
     if (OB_FAIL(ret)) {
-    } else if (GCTX.is_shared_storage_mode()) {
-      /* for shared stoage mode, ddl start scn not used, mock a value */
-      if (OB_FAIL(ddl_start_scn_.convert_for_tx(SS_DDL_START_SCN_VAL))) {
-        LOG_WARN("failed to convert from ts", K(ret));
-      } else if (OB_FAIL(ddl_checkpoint_scn_.convert_for_tx(SS_DDL_START_SCN_VAL))) {
-        LOG_WARN("failed to convert from ts", K(ret));
-      } else {
-        ddl_execution_id_ = 1; /* not used in ss, using valid value*/
-      }
     } else {
       /* for shared nothing mode, ddl start scn default is min() */
       ddl_start_scn_.set_min();
@@ -293,7 +284,7 @@ int ObTabletMeta::init(
       || OB_UNLIKELY(!clog_checkpoint_scn.is_valid())
       || OB_UNLIKELY(!mds_checkpoint_scn.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid args", K(ret), K(old_tablet_meta), K(max_sync_storage_schema_version),
+    LOG_WARN("invalid args", K(ret), K(old_tablet_meta), K(max_sync_storage_schema_version), 
         K(clog_checkpoint_scn), K(mds_checkpoint_scn));
   } else {
     version_ = TABLET_META_VERSION;

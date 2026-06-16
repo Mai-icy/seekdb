@@ -267,7 +267,7 @@ int ObDirectLoadVectorUtils::check_rowkey_length(const ObDirectLoadBatchRows &ba
       for (int64_t col_idx = 0; OB_SUCC(ret) && col_idx < rowkey_column_count; col_idx++) {
         ObDirectLoadVector *vector = batch_rows.get_vectors().at(col_idx);
         const share::schema::ObColDesc &col_desc = col_descs.at(col_idx);
-
+        
         if (col_desc.col_type_.is_lob_storage()) {
           // For LOB columns, use the new sum_lob_length method
           if (OB_FAIL(vector->sum_lob_length(rowkey_len, row_count))) {

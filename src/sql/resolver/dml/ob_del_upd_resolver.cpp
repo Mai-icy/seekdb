@@ -714,7 +714,7 @@ int ObDelUpdResolver::resolve_additional_assignments(ObIArray<ObTableAssignment>
         LOG_WARN("failed to check table has vector index", K(ret));
       } else if (has_vec_index && table_schema->is_table_with_hidden_pk_column()) {
         if (OB_FAIL(build_hidden_pk_assignment(assigns.at(i), table_item, table_schema))) {
-          LOG_WARN("fail to build hidden_pk assignment for insert on duplicate key update with vector index",
+          LOG_WARN("fail to build hidden_pk assignment for insert on duplicate key update with vector index", 
                   K(ret), K(i), "assigns", assigns.at(i));
         }
       } else if (OB_FAIL(check_heap_table_update(assigns.at(i)))) {
@@ -3209,7 +3209,7 @@ int ObDelUpdResolver::check_vec_hnsw_index_vid_opt(const ObTableAssignment &ta,
                                                                              column_expr->get_column_id()))) {
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("get null column item", K(ret), KPC(column_expr));
-        } else if (OB_FAIL(ObVectorIndexUtil::check_column_has_vector_index(*table_schema, *schema_guard, column_item->base_cid_,
+        } else if (OB_FAIL(ObVectorIndexUtil::check_column_has_vector_index(*table_schema, *schema_guard, column_item->base_cid_, 
                                                                             is_col_has_vec_idx, index_type))) {
           LOG_WARN("failed to check column has vector index", K(ret));
         } else if (is_col_has_vec_idx) {

@@ -16,6 +16,7 @@
 #ifndef OB_STORAGE_COMPACTION_COMPACTION_SCHEDUL_ITERATOR_H_
 #define OB_STORAGE_COMPACTION_COMPACTION_SCHEDUL_ITERATOR_H_
 #include "storage/ls/ob_ls_get_mod.h"
+#include "storage/tablet/ob_tablet_common.h"
 #include "lib/container/ob_se_array.h"
 #include "lib/literals/ob_literals.h"
 #include "storage/tx_storage/ob_ls_handle.h"
@@ -124,6 +125,7 @@ public:
   int build_iter(const int64_t schedule_batch_size);
   void set_report_scn_flag() { report_scn_flag_ = true; }
   bool need_report_scn() const { return report_scn_flag_; }
+  void set_tablet_get_mode(const storage::ObMDSGetTabletMode mode) { tablet_get_mode_ = mode; }
   void reset();
 protected:
   virtual int get_cur_ls_handle(storage::ObLSHandle &ls_handle) override;
@@ -133,6 +135,7 @@ protected:
   static const int64_t CHECK_REPORT_SCN_INTERVAL = 5_min;
   bool is_major_;
   bool report_scn_flag_;
+  storage::ObMDSGetTabletMode tablet_get_mode_;
 };
 
 } // namespace compaction

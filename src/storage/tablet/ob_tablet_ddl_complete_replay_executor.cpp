@@ -102,7 +102,7 @@ int ObTabletDDLCompleteReplayExecutor::freeze_ddl_kv(ObTablet &tablet, const ObT
     LOG_WARN("failed freeze ddl kv", K(ret), K(user_data));
   } else if (OB_FAIL(ddl_kv_mgr_handle.get_obj()->remove_idempotence_checker())) {
     LOG_WARN("remove idempotence checker failed", K(ret));
-  }
+  } 
   return ret;
 }
 

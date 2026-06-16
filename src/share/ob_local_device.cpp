@@ -1332,7 +1332,6 @@ int ObLocalDevice::io_getevents(
   } else {
     int sys_ret = 0;
     {
-      oceanbase::lib::Thread::WaitGuard guard(oceanbase::lib::Thread::WAIT_FOR_IO_EVENT);
       common::ObBKGDSessInActiveGuard inactive_guard;
       while ((sys_ret = ::io_getevents(
           local_io_context->io_context_,
@@ -1605,7 +1604,7 @@ int ObLocalDevice::resize_block_file(const int64_t new_size)
     }
 #endif
   }
-
+  
   if (OB_SUCC(ret)) {
     if (OB_ISNULL(new_free_block_array
         = (int64_t *) ob_malloc(sizeof(int64_t) * new_total_block_cnt, mem_attr))) {

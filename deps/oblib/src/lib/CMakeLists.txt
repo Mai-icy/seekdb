@@ -80,10 +80,6 @@ ob_set_subtarget(oblib_lib charset
   charset/ob_ctype_extra.cc
 )
 
-ob_set_subtarget(oblib_lib sched
-  tc/ob_tc_wrapper.cpp
-)
-
 
 ob_set_subtarget(oblib_lib common
   ob_abort.cpp
@@ -344,6 +340,7 @@ ob_set_subtarget(oblib_lib oblog
   oblog/ob_async_log_struct.cpp
   oblog/ob_base_log_buffer.cpp
   oblog/ob_base_log_writer.cpp
+  oblog/ob_ringbuf_log_writer.cpp
   oblog/ob_log.cpp
   oblog/ob_log_compressor.cpp
   oblog/ob_log_dba_event.cpp
@@ -390,7 +387,6 @@ ob_set_subtarget(oblib_lib utility
   utility/ob_backtrace.cpp
   utility/ob_proto_trans_util.cpp
   utility/ob_unify_serialize.cpp
-  utility/ob_rpc_authentication_utility.cpp
   utility/ob_hyperloglog.cpp
 )
 
@@ -432,7 +428,6 @@ ob_set_subtarget(ob_malloc_object_list common_alloc
   alloc/ob_malloc_allocator.cpp
   alloc/ob_malloc_callback.cpp
   alloc/ob_malloc_sample_struct.cpp
-  alloc/ob_malloc_time_monitor.cpp
   alloc/ob_tenant_ctx_allocator.cpp
   alloc/object_mgr.cpp
   alloc/object_set.cpp

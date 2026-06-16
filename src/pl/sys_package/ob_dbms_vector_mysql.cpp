@@ -516,7 +516,7 @@ int ObDBMSVectorMySql::get_estimate_memory_str(ObVectorIndexParam index_param,
       }
       break;
     }
-    case ObVectorIndexAlgorithmType::VIAT_SPIV:
+    case ObVectorIndexAlgorithmType::VIAT_SPIV: 
     {
       ret = OB_NOT_SUPPORTED;
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "esitamte sparse vector memory is");

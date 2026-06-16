@@ -239,12 +239,12 @@ const int64_t MAX_DISKGROUP_NAME = 128;
 const int64_t DEFAULT_BUF_LENGTH = 4096;
 const int64_t MAX_SINGLE_MEMBER_LENGTH = (MAX_IP_PORT_LENGTH + 17 /* timestamp length*/  + 1);
 const int64_t MAX_MEMBER_LIST_LENGTH = MAX_ZONE_NUM * (MAX_IP_PORT_LENGTH + 17 /* timestamp length*/  + 1);
-const int64_t OB_MAX_MEMBER_NUMBER = 7;
+const int64_t OB_MAX_MEMBER_NUMBER = 1;
 const int64_t OB_MAX_GLOBAL_LEARNER_NUMBER = 2000;
 const int64_t MAX_LEARNER_LIST_LENGTH = OB_MAX_GLOBAL_LEARNER_NUMBER * (MAX_IP_PORT_LENGTH + 17 /* timestamp length*/  + 1);
 const int64_t OB_MAX_CHILD_MEMBER_NUMBER = 15;
 const int64_t OB_MAX_CHILD_MEMBER_NUMBER_IN_FOLLOWER = 5;
-const int64_t OB_DEFAULT_MEMBER_NUMBER = 3;
+const int64_t OB_DEFAULT_MEMBER_NUMBER = 1;
 const int64_t MAX_VALUE_LENGTH = 4096;
 const int64_t MAX_LLC_BITMAP_LENGTH = 4096;
 const int64_t MAX_CLUSTER_EVENT_NAME_LENGTH = 256;
@@ -595,11 +595,11 @@ const int64_t OB_MAX_SERVER_TENANT_CNT = 5; // for sys,500,508,509
 const int64_t OB_RECYCLE_MACRO_BLOCK_DURATION = 10 * 60 * 1000 * 1000LL; // 10 minutes
 const int64_t OB_MINOR_FREEZE_TEAM_UP_INTERVAL = 2LL * 60 * 60 * 1000 * 1000; // 2 hours
 // for define
-const int64_t OB_MAX_SPECIAL_LS_NUM = 1 + 1; // 1 for broadcast ls and 1 for sys ls
+const int64_t OB_MAX_SPECIAL_LS_NUM = 1; // 1 for sys ls
 const int64_t OB_MAX_LS_NUM_PER_TENANT_PER_SERVER_CAN_BE_SET = 1024; // the maximum of _max_ls_cnt_per_server
 const int64_t OB_MAX_LS_NUM_PER_TENANT_PER_SERVER = (10 * (OB_MAX_SPECIAL_LS_NUM + OB_MAX_MEMBER_NUMBER) > OB_MAX_LS_NUM_PER_TENANT_PER_SERVER_CAN_BE_SET ?
                                                      OB_MAX_LS_NUM_PER_TENANT_PER_SERVER_CAN_BE_SET : 10 * (OB_MAX_SPECIAL_LS_NUM + OB_MAX_MEMBER_NUMBER)); // magnification is 10x
-const int64_t OB_MAX_LS_NUM_PER_TENANT_PER_SERVER_FOR_SMALL_TENANT = 8;   // the tenant that smaller than 4G will be limit to 8
+const int64_t OB_MAX_LS_NUM_PER_TENANT_PER_SERVER_FOR_SMALL_TENANT = 1;   // the tenant that smaller than 4G will be limit to 1
 const int64_t OB_MAX_TIME = 3020399000000;
 // Max add partition member timeout.
 // Used to make sure no member added after lease expired + %OB_MAX_ADD_MEMBER_TIMEOUT
@@ -614,6 +614,8 @@ const int64_t OB_MAX_PACKET_DECODE_TS = 10 * 1000L;
  */
 const uint32_t OB_NET_HEADER_LENGTH = 16;            // 16 bytes packet header
 const uint32_t OB_MAX_RPC_PACKET_LENGTH = (1L << 24);
+// Default RPC timeout (was obcall::ObCallProxy::MAX_RPC_TIMEOUT).
+const int64_t OB_DEFAULT_RPC_TIMEOUT = 9000 * 1000;  // 9s
 
 const int OB_TBNET_PACKET_FLAG = 0x416e4574;
 const int OB_SERVER_ADDR_STR_LEN = 128; //used for buffer size of easy_int_addr_to_str
@@ -2783,10 +2785,9 @@ OB_INLINE int64_t ob_gettid()
   return tid;
 }
 
-OB_INLINE uint64_t& ob_get_tenant_id()
+OB_INLINE uint64_t ob_get_tenant_id()
 {
-  thread_local uint64_t tenant_id = 0;
-  return tenant_id;
+  return oceanbase::OB_SYS_TENANT_ID;
 }
 
 OB_INLINE char* ob_get_tname()
@@ -2880,14 +2881,9 @@ inline bool is_x86() {
 #define DISABLE_WARNING_GCC_ATTRIBUTES DISABLE_WARNING_GCC("-Wattributes")
 
 extern "C" {
-extern int ob_pthread_cond_wait(pthread_cond_t *__restrict __cond,
-                                pthread_mutex_t *__restrict __mutex);
-extern int ob_pthread_cond_timedwait(pthread_cond_t *__restrict __cond,
-                                     pthread_mutex_t *__restrict __mutex,
-                                     const struct timespec *__restrict __abstime);
 // Portable timed wait with relative timeout in microseconds.
 // On macOS, uses pthread_cond_timedwait_relative_np to avoid clock drift issues.
-// On Linux, computes absolute time using the specified clock and uses ob_pthread_cond_timedwait.
+// On Linux, computes absolute time using the specified clock and uses pthread_cond_timedwait.
 // use_monotonic: true for CLOCK_MONOTONIC (when pthread_cond uses pthread_condattr_setclock),
 //                false for CLOCK_REALTIME (when pthread_cond uses default attr).
 extern int ob_pthread_cond_timedwait_us(pthread_cond_t *__restrict __cond,

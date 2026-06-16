@@ -29,7 +29,7 @@
 #include <string>
 
 using namespace oceanbase::common;
-using namespace oceanbase::obrpc;
+using namespace oceanbase::obcall;
 using namespace oceanbase::obgrpc;
 using namespace oceanbase::storage;
 using namespace storageservice;
@@ -93,7 +93,7 @@ grpc::Status ObStorageGrpcServiceImpl::fetch_ls_view(
     auto fill_tablet_meta_f = [&context,
                                &writer,
                                &total_tablet_count]
-        (const obrpc::ObCopyTabletInfo &tablet_info, const ObTabletHandle &tablet_handle)->int {
+        (const obcall::ObCopyTabletInfo &tablet_info, const ObTabletHandle &tablet_handle)->int {
       int ret = OB_SUCCESS;
       UNUSED(tablet_handle);
       if (context->IsCancelled()) {
@@ -294,7 +294,7 @@ grpc::Status ObStorageGrpcServiceImpl::fetch_tablet_sstable_info(
       ObCopyTabletsSSTableInfoObProducer tablets_producer;
       ObLSHandle ls_handle;
       ObLSService *ls_service = nullptr;
-      obrpc::ObCopyTabletSSTableInfoArg tablet_arg;
+      obcall::ObCopyTabletSSTableInfoArg tablet_arg;
       ObLS *ls = nullptr;
       if (OB_FAIL(tablets_producer.init(arg.tenant_id_, arg.ls_id_, arg.tablet_sstable_info_arg_list_))) {
         LOG_WARN("failed to init copy tablets sstable info ob producer", K(ret), K(arg));
@@ -351,7 +351,7 @@ grpc::Status ObStorageGrpcServiceImpl::fetch_sstable_macro_info(
   } else {
     MTL_SWITCH(arg.tenant_id_) {
       ObCopySSTableMacroObProducer producer;
-      obrpc::ObCopySSTableMacroRangeInfoHeader header;
+      obcall::ObCopySSTableMacroRangeInfoHeader header;
       if (OB_FAIL(producer.init(arg.tenant_id_, arg.ls_id_, arg.tablet_id_,
           arg.copy_table_key_array_, arg.macro_range_max_marco_count_))) {
         LOG_WARN("failed to init copy sstable macro ob producer", K(ret), K(arg));
@@ -362,7 +362,7 @@ grpc::Status ObStorageGrpcServiceImpl::fetch_sstable_macro_info(
             LOG_WARN("client cancelled the request", K(ret));
             break;
           }
-
+          
           header.reset();
           if (OB_FAIL(producer.get_next_sstable_macro_range_info(header))) {
             if (OB_ITER_END == ret) {
@@ -404,7 +404,7 @@ grpc::Status ObStorageGrpcServiceImpl::fetch_macro_block(
       ObCopyMacroBlockObProducer *producer = nullptr;
       void *producer_buf = nullptr;
       blocksstable::ObBufferReader data;
-      obrpc::ObCopyMacroBlockHeader header;
+      obcall::ObCopyMacroBlockHeader header;
       FetchMacroBlockRes header_response;
       FetchMacroBlockRes data_response;
       if (OB_ISNULL(producer_buf = mtl_malloc(sizeof(ObCopyMacroBlockObProducer), "MacroBlockProd"))) {
@@ -475,13 +475,13 @@ grpc::Status ObStorageGrpcServiceImpl::check_restore_precondition(
     storageservice::CheckRestorePreconditionRes* response)
 {
   int ret = OB_SUCCESS;
-  obrpc::ObCheckRestorePreconditionResult result;
-
+  obcall::ObCheckRestorePreconditionResult result;
+  
   MTL_SWITCH(OB_SYS_TENANT_ID) {
     ObLSHandle ls_handle;
     ObLS *ls = nullptr;
     ObLSVTInfo ls_info;
-    share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
+    share::ObLSID ls_id(share::ObLSID::SYS_LS_ID); 
     if (OB_FAIL(MTL(ObLSService*)->get_ls(ls_id, ls_handle, ObLSGetMod::STORAGE_MOD))) {
       LOG_WARN("failed to get ls", K(ret), K(ls_id));
     } else if (OB_ISNULL(ls = ls_handle.get_ls())) {
@@ -491,7 +491,7 @@ grpc::Status ObStorageGrpcServiceImpl::check_restore_precondition(
       LOG_WARN("failed to get ls info", K(ret), K(ls_id));
     } else {
       result.required_disk_size_ = ls_info.required_data_disk_size_;
-      //check standby and primary node version match
+      //check standby and primary node version match 
       result.cluster_version_ = GET_MIN_CLUSTER_VERSION();
       ObLSTabletService *tablet_service = ls->get_tablet_svr();
       if (OB_ISNULL(tablet_service)) {
@@ -500,29 +500,29 @@ grpc::Status ObStorageGrpcServiceImpl::check_restore_precondition(
       } else if (OB_FAIL(tablet_service->get_ls_migration_required_size(result.total_tablet_size_))) {
         LOG_WARN("failed to get ls migration required size", K(ret), K(ls_id));
       } else {
-        LOG_INFO("calculated total tablet size for validation",
+        LOG_INFO("calculated total tablet size for validation", 
                  "ls_info_size", result.required_disk_size_,
                  "total_tablet_size", result.total_tablet_size_);
       }
     }
   }
-
+  
   if (OB_SUCC(ret)) {
     if (OB_FAIL(serialize_ob_to_proto(result, response))) {
       LOG_WARN("failed to serialize ObCheckRestorePreconditionResult", K(ret));
     } else {
-      share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
-      LOG_INFO("check_restore_precondition RPC handled successfully",
+      share::ObLSID ls_id(share::ObLSID::SYS_LS_ID); 
+      LOG_INFO("check_restore_precondition RPC handled successfully", 
                K(ls_id), K(result.required_disk_size_), K(result.cluster_version_));
     }
   }
-
+  
   return obgrpc::ob_error_to_grpc_status(ret);
 }
 
 int ObStorageGrpcServiceImpl::build_tablet_sstable_info_(
     grpc::ServerContext* context,
-    const obrpc::ObCopyTabletSSTableInfoArg &tablet_arg,
+    const obcall::ObCopyTabletSSTableInfoArg &tablet_arg,
     ObLS *ls,
     grpc::ServerWriter<FetchTabletSSTableInfoRes>* writer)
 {
@@ -578,8 +578,8 @@ int ObStorageGrpcServiceImpl::build_tablet_sstable_info_(
 
 int ObStorageGrpcServiceImpl::build_sstable_macro_info_(
     grpc::ServerContext* context,
-    const obrpc::ObCopySSTableMacroRangeInfoHeader &header,
-    const obrpc::ObCopySSTableMacroRangeInfoArg &arg,
+    const obcall::ObCopySSTableMacroRangeInfoHeader &header,
+    const obcall::ObCopySSTableMacroRangeInfoArg &arg,
     grpc::ServerWriter<FetchSSTableMacroInfoRes>* writer)
 {
   int ret = OB_SUCCESS;
@@ -626,7 +626,7 @@ int ObStorageGrpcServiceImpl::build_sstable_macro_info_(
               LOG_WARN("client cancelled the request", K(ret));
               break;
             }
-
+            
             macro_range_info.reuse();
             if (OB_FAIL(producer->get_next_macro_range_info(macro_range_info))) {
               if (OB_ITER_END == ret) {
@@ -660,7 +660,7 @@ int ObStorageGrpcServiceImpl::build_sstable_macro_info_(
 int ObStorageGrpcClient::init_tablet_sstable_info_stream(
     const common::ObAddr &src_addr,
     int64_t timeout,
-    const obrpc::ObCopyTabletsSSTableInfoArg &arg,
+    const obcall::ObCopyTabletsSSTableInfoArg &arg,
     common::ObIAllocator &allocator,
     restore::ObRestoreHelperSSTableInfoCtx &sstable_info_ctx)
 {
@@ -680,7 +680,7 @@ int ObStorageGrpcClient::init_tablet_sstable_info_stream(
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("failed to alloc grpc client context", K(ret));
     } else if (FALSE_IT(sstable_info_ctx.sstable_info_context_ = new (ctx_buf) grpc::ClientContext())) {
-    } else if (OB_FAIL(grpc_client->create_tablet_sstable_info_stream(arg, *sstable_info_ctx.sstable_info_context_,
+    } else if (OB_FAIL(grpc_client->create_tablet_sstable_info_stream(arg, *sstable_info_ctx.sstable_info_context_, 
                                                                           sstable_info_ctx.sstable_info_reader_))) {
         LOG_WARN("failed to create tablet sstable info stream", K(ret), K(arg), K(src_addr));
     } else {
@@ -709,7 +709,7 @@ int ObStorageGrpcClient::init_tablet_sstable_info_stream(
 int ObStorageGrpcClient::init_sstable_macro_info_stream(
     const common::ObAddr &src_addr,
     int64_t timeout,
-    const obrpc::ObCopySSTableMacroRangeInfoArg &arg,
+    const obcall::ObCopySSTableMacroRangeInfoArg &arg,
     common::ObIAllocator &allocator,
     restore::ObRestoreHelperSSTableMacroRangeCtx &macro_range_ctx)
 {
@@ -729,7 +729,7 @@ int ObStorageGrpcClient::init_sstable_macro_info_stream(
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("failed to alloc grpc client context", K(ret));
     } else if (FALSE_IT(macro_range_ctx.macro_info_context_ = new (ctx_buf) grpc::ClientContext())) {
-    } else if (OB_FAIL(grpc_client->create_sstable_macro_info_stream(arg, *macro_range_ctx.macro_info_context_,
+    } else if (OB_FAIL(grpc_client->create_sstable_macro_info_stream(arg, *macro_range_ctx.macro_info_context_, 
                                                                           macro_range_ctx.macro_info_reader_))) {
         LOG_WARN("failed to create sstable macro info stream", K(ret), K(arg), K(src_addr));
     } else {
@@ -758,7 +758,7 @@ int ObStorageGrpcClient::init_sstable_macro_info_stream(
 int ObStorageGrpcClient::init_macro_block_stream(
     const common::ObAddr &src_addr,
     int64_t timeout,
-    const obrpc::ObCopyMacroBlockRangeArg &arg,
+    const obcall::ObCopyMacroBlockRangeArg &arg,
     common::ObIAllocator &allocator,
     restore::ObRestoreHelperMacroBlockCtx &macro_block_ctx)
 {
@@ -778,7 +778,7 @@ int ObStorageGrpcClient::init_macro_block_stream(
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("failed to alloc grpc client context", K(ret));
     } else if (FALSE_IT(macro_block_ctx.macro_block_context_ = new (ctx_buf) grpc::ClientContext())) {
-    } else if (OB_FAIL(grpc_client->create_macro_block_stream(arg, *macro_block_ctx.macro_block_context_,
+    } else if (OB_FAIL(grpc_client->create_macro_block_stream(arg, *macro_block_ctx.macro_block_context_, 
                                                                   macro_block_ctx.macro_block_reader_))) {
         LOG_WARN("failed to create macro block stream", K(ret), K(arg), K(src_addr));
     } else {
@@ -807,7 +807,7 @@ int ObStorageGrpcClient::init_macro_block_stream(
 int ObStorageGrpcClient::init_tablet_info_stream(
     const common::ObAddr &src_addr,
     int64_t timeout,
-    const obrpc::ObCopyTabletInfoArg &arg,
+    const obcall::ObCopyTabletInfoArg &arg,
     common::ObIAllocator &allocator,
     restore::ObRestoreHelperTabletInfoCtx &tablet_info_ctx)
 {
@@ -827,7 +827,7 @@ int ObStorageGrpcClient::init_tablet_info_stream(
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("failed to alloc grpc client context", K(ret));
     } else if (FALSE_IT(tablet_info_ctx.tablet_info_context_ = new (ctx_buf) grpc::ClientContext())) {
-    } else if (OB_FAIL(grpc_client->create_tablet_info_stream(arg, *tablet_info_ctx.tablet_info_context_,
+    } else if (OB_FAIL(grpc_client->create_tablet_info_stream(arg, *tablet_info_ctx.tablet_info_context_, 
                                                                   tablet_info_ctx.tablet_info_reader_))) {
         LOG_WARN("failed to create tablet info stream", K(ret), K(arg), K(src_addr));
     } else {
@@ -911,7 +911,7 @@ int ObStorageGrpcClient::get_ls_view_tablet_count(ObGetLSViewTabletCountResult& 
 }
 
 int ObStorageGrpcClient::check_restore_precondition(
-    obrpc::ObCheckRestorePreconditionResult& result)
+    obcall::ObCheckRestorePreconditionResult& result)
 {
   int ret = OB_SUCCESS;
 
@@ -935,8 +935,8 @@ int ObStorageGrpcClient::check_restore_precondition(
 }
 
 int ObStorageGrpcClient::fetch_tablet_info(
-    const obrpc::ObCopyTabletInfoArg& arg,
-    std::function<int(const obrpc::ObCopyTabletInfo&)> callback)
+    const obcall::ObCopyTabletInfoArg& arg,
+    std::function<int(const obcall::ObCopyTabletInfo&)> callback)
 {
   int ret = OB_SUCCESS;
 
@@ -996,7 +996,7 @@ int ObStorageGrpcClient::fetch_tablet_info(
 }
 
 int ObStorageGrpcClient::create_tablet_info_stream(
-    const obrpc::ObCopyTabletInfoArg &arg,
+    const obcall::ObCopyTabletInfoArg &arg,
     grpc::ClientContext &context,
     std::unique_ptr<grpc::ClientReader<storageservice::FetchTabletInfoRes>> &reader)
 {
@@ -1044,7 +1044,7 @@ int ObStorageGrpcClient::create_ls_view_stream(
 }
 
 int ObStorageGrpcClient::create_tablet_sstable_info_stream(
-    const obrpc::ObCopyTabletsSSTableInfoArg &arg,
+    const obcall::ObCopyTabletsSSTableInfoArg &arg,
     grpc::ClientContext &context,
     std::unique_ptr<grpc::ClientReader<storageservice::FetchTabletSSTableInfoRes>> &reader)
 {
@@ -1072,7 +1072,7 @@ int ObStorageGrpcClient::create_tablet_sstable_info_stream(
 }
 
 int ObStorageGrpcClient::create_sstable_macro_info_stream(
-    const obrpc::ObCopySSTableMacroRangeInfoArg &arg,
+    const obcall::ObCopySSTableMacroRangeInfoArg &arg,
     grpc::ClientContext &context,
     std::unique_ptr<grpc::ClientReader<storageservice::FetchSSTableMacroInfoRes>> &reader)
 {
@@ -1100,7 +1100,7 @@ int ObStorageGrpcClient::create_sstable_macro_info_stream(
 }
 
 int ObStorageGrpcClient::create_macro_block_stream(
-    const obrpc::ObCopyMacroBlockRangeArg &arg,
+    const obcall::ObCopyMacroBlockRangeArg &arg,
     grpc::ClientContext &context,
     std::unique_ptr<grpc::ClientReader<storageservice::FetchMacroBlockRes>> &reader)
 {

@@ -25,7 +25,7 @@ namespace oceanbase
 namespace storage
 {
 
-/* TODO @ zhuoran.zzr
+/* TODO @ zhuoran.zzr 
  *        struct direct load mgr won't be used any more, wait to remove it
 */
 int ObDirectLoadMgrUtil::check_cs_replica_exist(const ObLSID &ls_id, const ObTabletID &tablet_id, bool &is_cs_replica_exist)
@@ -81,7 +81,7 @@ int ObDirectLoadMgrUtil::get_lob_tablet_id(const ObLSID &ls_id, const ObTabletID
 }
 
 /* use to check ddl need to do major merge,
-*  notice don't use it to judge whether major exist
+*  notice don't use it to judge whether major exist 
 */
 int ObDirectLoadMgrUtil::is_ddl_need_major_merge(const ObTablet &tablet, bool &ddl_need_merging)
 {
@@ -236,46 +236,28 @@ int ObDirectLoadMgrUtil::create_idem_tablet_direct_load_mgr(const uint64_t tenan
 }
 
 // TODO @zhuoran.zzr: is_column_store is set becacuese column store is not supported yet, wait to remove it later
-ObDirectLoadType ObDirectLoadMgrUtil::ddl_get_direct_load_type(const bool is_shared_storage_mode, const uint64_t data_format_version)
+ObDirectLoadType ObDirectLoadMgrUtil::ddl_get_direct_load_type(const uint64_t data_format_version)
 {
   ObDirectLoadType direct_load_type = ObDirectLoadType::DIRECT_LOAD_INVALID;
-  if (is_shared_storage_mode) {
-    if (data_format_version < DDL_IDEM_DATA_FORMAT_VERSION) {
-      direct_load_type =  ObDirectLoadType::DIRECT_LOAD_DDL_V2;
-    } else {
-      direct_load_type = ObDirectLoadType::SS_IDEM_DIRECT_LOAD_DDL;
-    }
+  if (data_format_version < DDL_IDEM_DATA_FORMAT_VERSION) {
+    direct_load_type = ObDirectLoadType::DIRECT_LOAD_DDL;
   } else {
-    if (data_format_version < DDL_IDEM_DATA_FORMAT_VERSION) {
-      direct_load_type = ObDirectLoadType::DIRECT_LOAD_DDL;
-    } else {
-      direct_load_type = ObDirectLoadType::SN_IDEM_DIRECT_LOAD_DDL;
-    }
+    direct_load_type = ObDirectLoadType::SN_IDEM_DIRECT_LOAD_DDL;
   }
   return direct_load_type;
 }
 
 ObDirectLoadType ObDirectLoadMgrUtil::load_data_get_direct_load_type(const bool is_incremental,
-                                                                     const uint64_t data_format_version,
-                                                                     const bool is_shared_storage_mode)
+                                                                     const uint64_t data_format_version)
 {
   ObDirectLoadType direct_load_type = ObDirectLoadType::DIRECT_LOAD_INVALID;
   if (is_incremental)  {
-    /* not supported yet, wait to replace with new type */
     direct_load_type = ObDirectLoadType::DIRECT_LOAD_INCREMENTAL;
   } else {
-    if (!is_shared_storage_mode) {
-      if (data_format_version >= DDL_IDEM_DATA_FORMAT_VERSION) {
-        direct_load_type = ObDirectLoadType::SN_IDEM_DIRECT_LOAD_DATA;
-      } else {
-        direct_load_type = ObDirectLoadType::DIRECT_LOAD_LOAD_DATA;
-      }
+    if (data_format_version >= DDL_IDEM_DATA_FORMAT_VERSION) {
+      direct_load_type = ObDirectLoadType::SN_IDEM_DIRECT_LOAD_DATA;
     } else {
-      if (data_format_version < DDL_IDEM_DATA_FORMAT_VERSION) {
-        direct_load_type =  ObDirectLoadType::DIRECT_LOAD_LOAD_DATA_V2;
-      } else {
-        direct_load_type = ObDirectLoadType::SS_IDEM_DIRECT_LOAD_DATA;
-      }
+      direct_load_type = ObDirectLoadType::DIRECT_LOAD_LOAD_DATA;
     }
   }
   return direct_load_type;
@@ -312,7 +294,7 @@ int ObDirectLoadMgrUtil::create_tablet_direct_load_mgr(const int64_t tenant_id,
       LOG_WARN("unexpected err", K(ret));
     } else if (OB_FAIL(tenant_direct_load_mgr->create_tablet_direct_load(context_id, execution_id, build_param))) {
       LOG_WARN("create tablet manager failed", K(ret));
-    }
+    } 
 
     if (OB_FAIL(ret)) {
     } else if (OB_ISNULL(ls_service = MTL(ObLSService *))) {
@@ -372,7 +354,7 @@ int ObDirectLoadMgrUtil::generate_merge_param(const ObTabletDDLCompleteMdsUserDa
     merge_param.snapshot_version_ =   data.snapshot_version_;
     merge_param.start_scn_ = mock_scn;
     merge_param.rec_scn_   = mock_scn;
-    merge_param.table_key_ = data.table_key_;
+    merge_param.table_key_ = data.table_key_; 
     merge_param.is_commit_ = true;
 
     if (OB_FAIL(merge_param.user_data_.assign(merge_param.arena_, data))) {

@@ -17,7 +17,6 @@
 #ifndef SRC_OBSERVER_OB_DBMS_SCHED_JOB_MASTER_H_
 #define SRC_OBSERVER_OB_DBMS_SCHED_JOB_MASTER_H_
 
-#include "ob_dbms_sched_job_rpc_proxy.h"
 #include "ob_dbms_sched_job_utils.h"
 #include "ob_dbms_sched_table_operator.h"
 
@@ -26,6 +25,7 @@
 #include "lib/allocator/page_arena.h"
 #include "lib/mysqlclient/ob_isql_client.h"
 #include "lib/lock/ob_spin_lock.h"
+#include "lib/lock/ob_thread_cond.h"
 #include "lib/thread/ob_simple_thread_pool.h"
 #include "lib/task/ob_timer.h"
 #include "lib/container/ob_iarray.h"
@@ -102,14 +102,13 @@ public:
     : inited_(false),
       stoped_(true),
       is_leader_(false),
+      wokeup_(false),
       tenant_id_(OB_INVALID_TENANT_ID),
       rand_(),
       schema_service_(NULL),
-      job_rpc_proxy_(NULL),
       self_addr_(),
       allocator_(ObMemAttr(MTL_ID(), "DbmsScheduler"), OB_MALLOC_NORMAL_BLOCK_SIZE, block_alloc_),
       alive_jobs_(),
-      tenant_server_cache_(),
       wait_vector_(0, NULL, ObModIds::VECTOR) {}
 
   virtual ~ObDBMSSchedJobMaster() { alive_jobs_.destroy(); };
@@ -125,6 +124,8 @@ public:
   bool is_leader() { return is_leader_; }
   int scheduler();
   int destroy();
+  void wakeup();
+  bool idle(int64_t deadline_us);
   int alloc_job_key(
     ObDBMSSchedJobKey *&job_key,
     uint64_t tenant_id, bool is_oracle_tenant, uint64_t job_id, const common::ObString &job_name);
@@ -138,6 +139,7 @@ public:
   int register_new_jobs(uint64_t tenant_id, bool is_oracle_tenant, ObIArray<ObDBMSSchedJobInfo> &job_infos);
   int register_job(ObDBMSSchedJobKey *job_key, int64_t next_date);
   int scheduler_job(ObDBMSSchedJobKey *job_key);
+  int schedule_due_jobs();
   int64_t calc_next_date(ObDBMSSchedJobInfo &job_info);
   int64_t run_job(ObDBMSSchedJobInfo &job_info, ObDBMSSchedJobKey *job_key, int64_t next_date);
   int purge_run_detail();
@@ -148,8 +150,6 @@ private:
   const static int MAX_READY_JOBS_CAPACITY = 1024 * 1024;
   const static int MIN_SCHEDULER_INTERVAL = 1 * 1000 * 1000;
   const static int CHECK_NEW_INTERVAL = 20 * 1000 * 1000;
-  const static int UPDATE_SERVER_CACHE_INTERVAL = 10 * 1000 * 1000;
-  const static int DEFAULT_ZONE_SIZE = 4;
   const static int FILTER_ZONE_SIZE = 1;
   const static int DEFALUT_SERVER_SIZE = 16;
 #ifdef _WIN32
@@ -162,11 +162,13 @@ private:
   bool inited_;
   bool stoped_;
   bool is_leader_;
+  bool wokeup_;
   uint64_t tenant_id_;
+
+  common::ObThreadCond thread_cond_;
 
   common::ObRandom rand_; // for random pick server
   share::schema::ObMultiVersionSchemaService *schema_service_; // for got all tenant info
-  obrpc::ObDBMSSchedJobRpcProxy *job_rpc_proxy_;
 
   common::ObAddr self_addr_;
   ObDBMSSchedTableOperator table_operator_;
@@ -175,10 +177,6 @@ private:
   common::ObVSliceAlloc allocator_;
 
   common::hash::ObHashSet<int64_t> alive_jobs_;
-
-  // server list cache
-  common::ObArray<ObAddr> tenant_server_cache_;
-  int update_tenant_server_cache();
 
   // wait list
   common::ObSortedVector<ObDBMSSchedJobKey *> wait_vector_;

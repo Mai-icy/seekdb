@@ -32,7 +32,7 @@ struct ObVectorL2Similarity
 };
 
 template <typename T>
-OB_INLINE double ObVectorL2Similarity<T>::get_l2_similarity(double distance)
+OB_INLINE double ObVectorL2Similarity<T>::get_l2_similarity(double distance) 
 {
   return 1 / (1 + distance);
 }

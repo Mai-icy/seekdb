@@ -373,3 +373,4 @@ drop table if exists t15_gidx;
 drop table if exists t16_cs;
 drop table if exists t16_cs2;
 drop database if exists db_fork_error;
+

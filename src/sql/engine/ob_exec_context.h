@@ -409,6 +409,8 @@ public:
   inline pl::ObPLPackageGuard* get_original_package_guard() { return package_guard_; }
   inline void set_package_guard(pl::ObPLPackageGuard* v) { package_guard_ = v; }
   int init_pl_ctx();
+  inline ObIAllocator* get_pl_expr_alloc() { return pl_expr_allocator_; }
+  inline void set_pl_expr_alloc(ObIAllocator *alloc) { pl_expr_allocator_ = alloc; }
 
   ObPartIdRowMapManager& get_part_row_manager() { return part_row_map_manager_; }
 
@@ -672,6 +674,7 @@ protected:
   //@todo: (linlin.xll) ObPLCtx is ambiguous with ObPLContext, need to rename it
   pl::ObPLCtx *pl_ctx_;
   pl::ObPLPackageGuard *package_guard_;
+  ObIAllocator *pl_expr_allocator_;
 
   ObPartIdRowMapManager part_row_map_manager_;
   const common::ObIArray<int64_t> *row_id_list_;
@@ -795,7 +798,7 @@ protected:
   bool force_local_plan_;
   ObDiagnosisManager diagnosis_manager_;
   common::ObArenaAllocator deterministic_udf_cache_allocator_;
-
+  
   // Granule type for current GI task
   ObGranuleType current_granule_type_;
 

@@ -425,7 +425,7 @@ select max(m) from t1;
 --error 1210
 select min(m) from t1;
 
-# materialized view
+# materialized view 
 --disable_warnings
 drop materialized view if exists mv1, mv2;
 --enable_warnings

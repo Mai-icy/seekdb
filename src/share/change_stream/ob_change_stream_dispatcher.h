@@ -25,6 +25,7 @@
 #include "lib/container/ob_se_array.h"
 #include "lib/container/ob_iarray.h"
 #include "lib/container/ob_ext_ring_buffer.h"
+#include "lib/atomic/ob_atomic.h"
 #include "lib/lock/ob_thread_cond.h"
 #include "common/ob_tablet_id.h"
 #include "common/rowkey/ob_store_rowkey.h"
@@ -165,9 +166,6 @@ public:
 
   int init();
   int start();
-  /// Initialize change_stream_refresh_scn entry in __all_global_stat.
-  /// Should be called after start() but before run1() begins processing.
-  int init_refresh_scn();
   void stop();
   void wait();
   void destroy();
@@ -175,7 +173,8 @@ public:
   /// Fetcher calls this when a transaction commits.
   int push(ObCSTxInfo *tx);
 
-  int64_t get_refresh_scn() const { return refresh_scn_; }
+  int64_t get_refresh_scn() const { return ATOMIC_LOAD(&refresh_scn_); }
+  int update_refresh_scn(const int64_t refresh_scn);
 
   int64_t get_next_commit_sn() const { return ATOMIC_LOAD(&next_commit_sn_); }
   void set_next_commit_sn(int64_t sn) { ATOMIC_STORE(&next_commit_sn_, sn); }
@@ -192,7 +191,7 @@ public:
 
   /// Called by the last Worker of a batch on SUCCESS path.
   /// Pops tx entries from ring buffer, releases ObCSTxInfo via Fetcher,
-  /// advances next_commit_sn_, and updates in-memory refresh_scn.
+  /// and advances next_commit_sn_.
   void release_batch(ObCSExecCtx *ctx);
 
 protected:
@@ -205,7 +204,7 @@ private:
 
   bool is_inited_;
   common::ObExtendibleRingBuffer<ObCSTxInfo> tx_ring_;  // Stores ObCSTxInfo*
-  int64_t refresh_scn_;                // Current refresh_scn loaded from __all_global_stat.
+  int64_t refresh_scn_;
   int64_t next_sn_;           // Serial number for ring buffer set (Fetcher side)
   int64_t dispatch_sn_;       // Next position to read from ring buffer (dispatch cursor).
                               // Always: begin_sn() <= dispatch_sn_ <= end_sn().

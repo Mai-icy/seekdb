@@ -996,3 +996,4 @@ bool ObBlockStatIterator::use_merged_range() const
 
 } // namespace storage
 } // namespace oceanbase
+

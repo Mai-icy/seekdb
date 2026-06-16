@@ -34,12 +34,12 @@ class ObLocationNameHashKey
 {
 public:
   ObLocationNameHashKey()
-    : tenant_id_(common::OB_INVALID_TENANT_ID),
+    : tenant_id_(common::OB_INVALID_TENANT_ID), 
     name_case_mode_(common::OB_NAME_CASE_INVALID),
     location_name_()
   {
   }
-  ObLocationNameHashKey(uint64_t tenant_id,
+  ObLocationNameHashKey(uint64_t tenant_id, 
                         const common::ObNameCaseMode mode,
                         common::ObString location_name)
     : tenant_id_(tenant_id), name_case_mode_(mode), location_name_(location_name)
@@ -59,8 +59,8 @@ public:
   bool operator == (const ObLocationNameHashKey &rv) const
   {
     ObCompareNameWithTenantID name_cmp(tenant_id_, name_case_mode_);
-    return (tenant_id_ == rv.tenant_id_)
-           && (name_case_mode_ == rv.name_case_mode_)
+    return (tenant_id_ == rv.tenant_id_) 
+           && (name_case_mode_ == rv.name_case_mode_) 
            && (0 == name_cmp.compare(location_name_ ,rv.location_name_));
   }
   void set_tenant_id(uint64_t tenant_id) { tenant_id_ = tenant_id; }
@@ -91,8 +91,8 @@ struct ObGetLocationKey<ObLocationNameHashKey, ObLocationSchema *>
   {
     return OB_ISNULL(schema) ?
           ObLocationNameHashKey()
-        : ObLocationNameHashKey(schema->get_tenant_id(),
-                                schema->get_name_case_mode(),
+        : ObLocationNameHashKey(schema->get_tenant_id(), 
+                                schema->get_name_case_mode(), 
                                 schema->get_location_name_str());
   }
 };
@@ -186,3 +186,4 @@ OB_INLINE bool ObLocationMgr::equal_to_tenant_location_id(const ObLocationSchema
 } // namespace oceanbase
 
 #endif // OCEANBASE_SHARE_SCHEMA_OB_LOCATION_MGR_H_
+

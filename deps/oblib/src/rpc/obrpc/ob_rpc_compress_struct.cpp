@@ -29,9 +29,9 @@ oceanbase::common::ObCompressorType ObRpcCompressCtx::get_compress_type(ObRpcCom
 {
   oceanbase::common::ObCompressorType type = NONE_COMPRESSOR;
   if (RPC_STREAM_COMPRESS_LZ4 == mode) {
-    type = STREAM_LZ4_COMPRESSOR;
+    type = STREAM_ZSTD_1_3_8_COMPRESSOR;
   } else if (RPC_STREAM_COMPRESS_ZSTD == mode) {
-    type = STREAM_ZSTD_COMPRESSOR;
+    type = STREAM_ZSTD_1_3_8_COMPRESSOR;
   } else if (RPC_STREAM_COMPRESS_ZSTD_138 == mode) {
     type = STREAM_ZSTD_1_3_8_COMPRESSOR;
   } else {

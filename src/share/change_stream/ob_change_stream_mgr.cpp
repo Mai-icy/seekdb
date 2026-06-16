@@ -20,7 +20,6 @@
 #include "share/rc/ob_tenant_base.h"
 #include "lib/thread/thread_define.h"
 #include "share/ob_thread_define.h"
-#include "share/ob_global_stat_proxy.h"
 #include "storage/tx/ob_ts_mgr.h"
 
 namespace oceanbase
@@ -129,9 +128,9 @@ int ObChangeStreamMgr::wait_refresh_scn(
     const uint64_t tenant_id,
     const int64_t timeout_us)
 {
+  UNUSED(sql_client);
   int ret = common::OB_SUCCESS;
   SCN safe_visible_scn;
-  SCN current_refresh_scn;
   const int64_t SLEEP_INTERVAL_US = 100 * 1000; // 100ms
   const int64_t abs_timeout_us = ObTimeUtility::current_time() + timeout_us;
 
@@ -139,16 +138,23 @@ int ObChangeStreamMgr::wait_refresh_scn(
                                      safe_visible_scn))) {
     LOG_WARN("get gts for safe visible scn failed", KR(ret), K(tenant_id));
   } else {
+    ObChangeStreamMgr *mgr = MTL(ObChangeStreamMgr *);
     bool is_satisfied = false;
     while (OB_SUCC(ret) && !is_satisfied) {
+      SCN current_refresh_scn;
       const int64_t now = ObTimeUtility::current_time();
+      ObCSDispatcher *dispatcher = (OB_NOT_NULL(mgr) ? &mgr->dispatcher_ : nullptr);
       if (now >= abs_timeout_us) {
         ret = OB_TIMEOUT;
         LOG_WARN("wait change stream refresh scn timeout", KR(ret),
                  K(tenant_id), K(safe_visible_scn), K(current_refresh_scn));
-      } else if (OB_FAIL(ObGlobalStatProxy::get_change_stream_refresh_scn(
-                     sql_client, tenant_id, false, current_refresh_scn))) {
-        LOG_WARN("get change stream refresh scn failed", KR(ret), K(tenant_id));
+      } else if (OB_ISNULL(mgr) || !mgr->is_inited()) {
+        ret = OB_NOT_INIT;
+        LOG_WARN("change stream mgr is not inited", KR(ret), K(tenant_id), KP(mgr));
+      } else if (OB_FAIL(current_refresh_scn.convert_for_tx(
+                     dispatcher->get_refresh_scn()))) {
+        LOG_WARN("failed to convert mgr refresh_scn", KR(ret), K(tenant_id),
+                 "mgr_refresh_scn", dispatcher->get_refresh_scn());
       } else if (current_refresh_scn >= safe_visible_scn) {
         is_satisfied = true;
         LOG_INFO("change stream refresh scn caught up",

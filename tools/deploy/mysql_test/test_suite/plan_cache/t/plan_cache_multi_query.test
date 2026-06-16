@@ -38,3 +38,4 @@ select  hit_count from oceanbase.GV$OB_PLAN_CACHE_PLAN_STAT where statement like
 --enable_warnings
 
 drop table t1;
+

@@ -74,3 +74,4 @@ public:
 } // namespace oceanbase
 
 #endif // OCEANBASE_STORAGE_DDL_OB_TABLE_FORK_INFO_H_
+

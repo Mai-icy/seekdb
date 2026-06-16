@@ -524,7 +524,7 @@ int ObEventResolver::get_event_time_node_value(const ParseNode *parse_node, int6
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("time node is null", K(ret));
   } else if (T_VARCHAR == parse_node->type_) {
-    if(OB_FAIL(sql.assign_fmt("select TIME_TO_USEC (\'%.*s\') as time",  /* If input is a pure string, SQL parsing will remove ' need to add it back */
+    if(OB_FAIL(sql.assign_fmt("select TIME_TO_USEC (\'%.*s\') as time",  /* If input is a pure string, SQL parsing will remove ' need to add it back */ 
                                                                         (int)parse_node->str_len_, 
                                                                         parse_node->str_value_))) {
      LOG_WARN("time node is not vaild", K(ret));

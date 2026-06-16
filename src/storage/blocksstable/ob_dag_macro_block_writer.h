@@ -88,7 +88,7 @@ public:
       ObSSTablePrivateObjectCleaner &object_cleaner,
       ObIMacroBlockFlushCallback *callback);
   int append_cg_block(ObCGBlock &cg_block, const int64_t macro_block_fill_ratio);
-
+  
   using ObMacroBlockWriter::close;
   using ObMacroBlockWriter::get_last_macro_seq;
   OB_INLINE int64_t get_written_row_count() const { return macro_blocks_[current_index_].get_row_count(); }

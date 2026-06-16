@@ -16,11 +16,11 @@ ERROR 0A000: create materialized view log excluding new values is not supported
 create materialized view log on t1 with primary key (age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	NO	PRI	NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
+id	int(11)	NO	PRI	NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
 select count(*) from t1;
 count(*)
 0
@@ -44,11 +44,11 @@ insert into t1 values (1, 'Andy', 20), (2, 'Lucy', 18), (3, 'Mary', 24), (4, 'Ja
 create materialized view log on t1 with primary key (age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	NO	PRI	NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
+id	int(11)	NO	PRI	NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
 select count(*) from t1;
 count(*)
 10
@@ -71,62 +71,62 @@ age int
 create materialized view log on t1 with (id, age);
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	YES		NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
-M_ROW$$	bigint unsigned	NO	PRI	NULL
+id	int(11)	YES		NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
+M_ROW$$	bigint unsigned	NO	PRI	NULL	
 drop materialized view log on t1;
 create materialized view log on t1 with (id, age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	YES		NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
-M_ROW$$	bigint unsigned	NO	PRI	NULL
+id	int(11)	YES		NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
+M_ROW$$	bigint unsigned	NO	PRI	NULL	
 drop materialized view log on t1;
 create materialized view log on t1 with primary key (id, age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	YES		NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
-M_ROW$$	bigint unsigned	NO	PRI	NULL
+id	int(11)	YES		NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
+M_ROW$$	bigint unsigned	NO	PRI	NULL	
 drop materialized view log on t1;
 create materialized view log on t1 with rowid (id, age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	YES		NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
-M_ROW$$	bigint unsigned	NO	PRI	NULL
+id	int(11)	YES		NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
+M_ROW$$	bigint unsigned	NO	PRI	NULL	
 drop materialized view log on t1;
 create materialized view log on t1 with sequence (id, age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	YES		NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
-M_ROW$$	bigint unsigned	NO	PRI	NULL
+id	int(11)	YES		NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
+M_ROW$$	bigint unsigned	NO	PRI	NULL	
 drop materialized view log on t1;
 create materialized view log on t1 parallel 4 with (id, age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	YES		NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
-M_ROW$$	bigint unsigned	NO	PRI	NULL
+id	int(11)	YES		NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
+M_ROW$$	bigint unsigned	NO	PRI	NULL	
 drop table t1;
 ERROR 0A000: drop table with materialized view log is not supported
 drop materialized view log on t1;
@@ -141,12 +141,12 @@ insert into t1 values (1, 'Andy', 20), (2, 'Lucy', 18), (3, 'Mary', 24), (4, 'Ja
 create materialized view log on t1 with sequence, rowid (id, age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	YES		NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
-M_ROW$$	bigint unsigned	NO	PRI	NULL
+id	int(11)	YES		NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
+M_ROW$$	bigint unsigned	NO	PRI	NULL	
 select count(*) from t1;
 count(*)
 10
@@ -171,12 +171,12 @@ primary key (id1, id2)
 create materialized view log on t1 with primary key (age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id1	int(11)	NO	PRI	NULL
-age	int(11)	YES		NULL
-id2	int(11)	NO	PRI	NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
+id1	int(11)	NO	PRI	NULL	
+age	int(11)	YES		NULL	
+id2	int(11)	NO	PRI	NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
 select count(*) from t1;
 count(*)
 0
@@ -207,12 +207,12 @@ partition p5 values less than(50)
 create materialized view log on t1 with primary key (id, age) including new values;
 desc mlog$_t1;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	YES		NULL
-age	int(11)	YES		NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
-M_ROW$$	bigint unsigned	NO	PRI	NULL
+id	int(11)	YES		NULL	
+age	int(11)	YES		NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
+M_ROW$$	bigint unsigned	NO	PRI	NULL	
 select count(*) from oceanbase.__all_mlog where mlog_id in (select table_id from oceanbase.__all_table where table_name='mlog$_t1');
 count(*)
 1
@@ -307,10 +307,10 @@ age int
 create materialized view log on t1234567890123456789012345678901234567890123456789012len58;
 desc mlog$_t1234567890123456789012345678901234567890123456789012len58;
 Field	Type	Null	Key	Default	Extra
-id	int(11)	NO	PRI	NULL
-SEQUENCE$$	bigint(20)	NO	PRI	NULL
-DMLTYPE$$	varchar(1)	NO		NULL
-OLD_NEW$$	varchar(1)	NO		NULL
+id	int(11)	NO	PRI	NULL	
+SEQUENCE$$	bigint(20)	NO	PRI	NULL	
+DMLTYPE$$	varchar(1)	NO		NULL	
+OLD_NEW$$	varchar(1)	NO		NULL	
 drop materialized view log on t1234567890123456789012345678901234567890123456789012len58;
 drop table t1234567890123456789012345678901234567890123456789012len58;
 create table t12345678901234567890123456789012345678901234567890123len59 (

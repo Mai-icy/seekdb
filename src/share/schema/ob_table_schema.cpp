@@ -15,6 +15,7 @@
  */
 
 #include "share/ob_fts_index_builder_util.h"
+#include "share/table/ob_ttl_util.h"
 #define USING_LOG_PREFIX SHARE_SCHEMA
 #include "ob_table_schema.h"
 #include "share/schema/ob_part_mgr_util.h"
@@ -4791,7 +4792,7 @@ int ObTableSchema::check_alter_column_in_index(const ObColumnSchemaV2 &src_colum
   ObSEArray<ObAuxTableMetaInfo, 16> simple_index_infos;
 
   // Vector index dependency validation: （start）
-  // The logical rule is that if a vector index exists on a column, no modifications to the column are allowed.
+  // The logical rule is that if a vector index exists on a column, no modifications to the column are allowed. 
   // To accommodate potential user operations where the data type remains consistent before and after the change,
   // an additional conditional check has been implemented.
   bool is_column_has_vector_index = false;
@@ -4815,7 +4816,7 @@ int ObTableSchema::check_alter_column_in_index(const ObColumnSchemaV2 &src_colum
     if (OB_SUCC(ret) && !is_same_type) {
       ret = OB_NOT_SUPPORTED;
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "For columns with vector indexes, altering the column type is");
-      LOG_WARN("column type modification is not supported because it is depended by vector index",
+      LOG_WARN("column type modification is not supported because it is depended by vector index", 
                K(column_id), K(ret), K(src_column.get_data_type()), K(dst_column.get_data_type()));
     }
   }
@@ -6797,7 +6798,7 @@ OB_DEF_SERIALIZE(ObTableSchema)
    * // !!! FOR STATIC CHECKER END
    * ```
    * formatted comments and code to remind the serialization check script to ignore this section of code
-   * Detailed documentation:
+   * Detailed documentation: 
    */
   return ret;
 }
@@ -7041,7 +7042,7 @@ OB_DEF_DESERIALIZE(ObTableSchema)
    * // !!! FOR STATIC CHECKER END
    * ```
    * formatted comments and code to remind the serialization check script to ignore this segment of code
-   * Detailed documentation:
+   * Detailed documentation: 
    */
   return ret;
 }
@@ -7182,7 +7183,7 @@ OB_DEF_SERIALIZE_SIZE(ObTableSchema)
    * // !!! FOR STATIC CHECKER END
    * ```
    * formatted comments and code to remind the serialization check script to ignore this section of code
-   * Detailed documentation:
+   * Detailed documentation: 
    */
   return len;
 }
@@ -8409,7 +8410,7 @@ int ObTableSchema::is_hbase_table(bool &is_h_table) const
   const int64_t HBASE_TABLE_COLUMN_COUNT = 4;
   is_h_table = false;
   ObKVAttr kv_attr;
-  if (OB_FAIL(ObTTLUtil::parse_kv_attributes(get_kv_attributes(), kv_attr))) {
+  if (OB_FAIL(common::ObTTLUtil::parse_kv_attributes(get_kv_attributes(), kv_attr))) {
     LOG_WARN("fail to parse kv attributes", KR(ret), K(get_kv_attributes()));
   } else if (kv_attr.type_ == common::ObKVAttr::ObTTLTableType::HBASE) {
     is_h_table = true;

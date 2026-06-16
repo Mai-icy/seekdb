@@ -21,6 +21,7 @@
 #include "lib/utility/ob_print_utils.h"
 #include "lib/mysqlclient/ob_mysql_result.h"  // ObMySQLResult
 #include "share/schema/ob_schema_getter_guard.h"  // ObSchemaGetterGuard
+#include "share/ob_schema_status_proxy.h"  // ObSchemaStatusProxy
 #include "share/ob_all_tenant_info.h"  // ObAllTenantInfo, ObAllTenantInfoProxy
 #include "observer/ob_service.h"  // ObService
 #include "lib/ob_running_mode.h"
@@ -95,7 +96,7 @@ int ObStandbySchemaRefreshTrigger::schedule_()
 void ObStandbySchemaRefreshTrigger::runTimerTask()
 {
   int ret = OB_SUCCESS;
-
+  
   if (OB_FAIL(check_inner_stat_())) {
     LOG_WARN("inner stat error", KR(ret), K_(is_inited));
   } else {
@@ -120,7 +121,7 @@ int ObStandbySchemaRefreshTrigger::submit_tenant_refresh_schema_task_()
 {
   int ret = OB_SUCCESS;
   ObAllTenantInfo tenant_info;
-
+  
   // Check if tenant is standby cluster
   if (GCTX.is_standby_cluster()) {
     // Tenant is standby and in normal status, proceed with schema refresh
@@ -141,7 +142,7 @@ int ObStandbySchemaRefreshTrigger::submit_tenant_refresh_schema_task_()
                KR(ret), K(schema_version));
     }
   }
-
+  
   return ret;
 }
 

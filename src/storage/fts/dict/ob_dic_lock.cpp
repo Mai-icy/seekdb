@@ -54,9 +54,9 @@ int ObDicLock::lock_dic_tables_out_trans(
 }
 
 int ObDicLock::lock_dic_tables_out_trans(
-    const uint64_t tenant_id,
-    const ObTenantDicLoader &dic_loader,
-    const transaction::tablelock::ObTableLockMode lock_mode,
+    const uint64_t tenant_id, 
+    const ObTenantDicLoader &dic_loader, 
+    const transaction::tablelock::ObTableLockMode lock_mode, 
     const transaction::tablelock::ObTableLockOwnerID &lock_owner,
     ObMySQLTransaction &trans)
 {

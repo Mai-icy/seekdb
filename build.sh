@@ -273,7 +273,7 @@ function build
       xerrsim)
         do_build "$@" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOB_ERRSIM=ON -DOB_USE_LLD=$LLD_OPTION
         ;;
-      xrpm) 
+      xrpm)
         build_package "$@" -DCMAKE_BUILD_RPM=ON
         ;;
       xtgz)

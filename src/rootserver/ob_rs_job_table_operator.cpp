@@ -262,3 +262,4 @@ ObRsJobTableOperator &ObRsJobTableOperatorSingleton::get_instance()
   static ObRsJobTableOperator the_one;
   return the_one;
 }
+

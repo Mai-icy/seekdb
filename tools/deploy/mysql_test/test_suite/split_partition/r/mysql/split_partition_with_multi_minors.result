@@ -10,8 +10,8 @@ create sequence seq_small INCREMENT BY 1 start with 1 minvalue 1 maxvalue 100000
 create sequence seq_large INCREMENT BY 1 start with 5001 minvalue 1 maxvalue 100000 nocycle noorder nocache;
 create table test_mult_sstables(c1 bigint, c2 bigint, c3 longtext, primary key(c1))
 partition by range(c1) (
-partition p0 values less than (1),
-partition p1 values less than (10000),
+partition p0 values less than (1), 
+partition p1 values less than (10000), 
 partition p2 values less than MAXVALUE);
 insert into test_mult_sstables select seq_small.nextval, random(), randstr(10000, random()) from table(generator(30));
 insert into test_mult_sstables select seq_large.nextval, random(), randstr(10000, random()) from table(generator(30));
@@ -59,8 +59,8 @@ create sequence seq_small INCREMENT BY 1 start with 1 minvalue 1 maxvalue 100000
 create sequence seq_large INCREMENT BY 1 start with 5001 minvalue 1 maxvalue 100000 nocycle noorder nocache;
 create table test_mult_sstables(c1 bigint, c2 bigint, c3 longtext, primary key(c1))
 partition by range(c1) (
-partition p0 values less than (1),
-partition p1 values less than (10000),
+partition p0 values less than (1), 
+partition p1 values less than (10000), 
 partition p2 values less than MAXVALUE);
 insert into test_mult_sstables select seq_small.nextval, random(), randstr(10000, random()) from table(generator(30));
 alter system minor freeze;

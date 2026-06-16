@@ -96,7 +96,7 @@ int ObReservedSnapshotTableStorage::insert_or_update(
         "ON CONFLICT(snapshot_type) DO UPDATE SET "
         "create_time = excluded.create_time, "
         "snapshot_version = excluded.snapshot_version;";
-
+      
       // Begin transaction for batch insert
       if (OB_FAIL(guard->begin_transaction())) {
         LOG_WARN("failed to begin transaction", K(ret));
@@ -114,16 +114,16 @@ int ObReservedSnapshotTableStorage::insert_or_update(
               b.bind_int64(entry.status_);
               return OB_SUCCESS;
             };
-
+            
             int64_t affected_rows = 0;
             if (OB_FAIL(guard->step_execute(stmt, binder, &affected_rows))) {
               LOG_WARN("failed to step execute", K(ret), K(i));
             }
           }
-
+          
           // Finalize statement
           guard->finalize_execute(stmt);
-
+          
           // Commit or rollback transaction
           if (OB_FAIL(ret)) {
             int rollback_ret = guard->rollback();
@@ -162,12 +162,12 @@ int ObReservedSnapshotTableStorage::update_status(
       const char *update_sql =
         "UPDATE __all_reserved_snapshot "
         "SET status = ?;";
-
+      
       auto binder = [status](ObSQLiteBinder &b) -> int {
         b.bind_int64(status);
         return OB_SUCCESS;
       };
-
+      
       int64_t affected_rows = 0;
       if (OB_FAIL(guard->execute(update_sql, binder, &affected_rows))) {
         LOG_WARN("failed to execute update", K(ret));
@@ -200,12 +200,12 @@ int ObReservedSnapshotTableStorage::get(
         "       create_time, snapshot_version, status "
         "FROM __all_reserved_snapshot "
         "WHERE snapshot_type = ?;";
-
+      
       auto binder = [snapshot_type](ObSQLiteBinder &b) -> int {
         b.bind_int64(snapshot_type);
         return OB_SUCCESS;
       };
-
+      
       auto row_processor = [&entry, &svr_addr](ObSQLiteRowReader &reader) -> int {
         int ret = OB_SUCCESS;
         entry.snapshot_type_ = reader.get_int64();
@@ -216,7 +216,7 @@ int ObReservedSnapshotTableStorage::get(
         entry.svr_addr_ = svr_addr;
         return ret;
       };
-
+      
       if (OB_FAIL(guard->query(select_sql, binder, row_processor))) {
         if (OB_ITER_END != ret) {
           LOG_WARN("failed to query", K(ret));
@@ -250,7 +250,7 @@ int ObReservedSnapshotTableStorage::get_all(
         "       create_time, snapshot_version, status "
         "FROM __all_reserved_snapshot "
         "ORDER BY snapshot_type;";
-
+      
       ObSQLiteStmt *stmt = nullptr;
       if (OB_FAIL(guard->prepare_query(select_sql, nullptr, stmt))) {
         LOG_WARN("failed to prepare query", K(ret));
@@ -271,13 +271,13 @@ int ObReservedSnapshotTableStorage::get_all(
             entry.status_ = reader.get_int64();
             // svr_addr_ is no longer stored in table, reset to invalid
             entry.svr_addr_.reset();
-
+            
             if (OB_FAIL(entries.push_back(entry))) {
               LOG_WARN("failed to push back entry", K(ret));
             }
           }
         }
-
+        
         if (stmt) {
           guard->finalize_query(stmt);
         }
@@ -304,7 +304,7 @@ int ObReservedSnapshotTableStorage::delete_expired(
       LOG_WARN("failed to acquire connection", K(ret));
     } else {
       const char *delete_sql = "DELETE FROM __all_reserved_snapshot;";
-
+      
       int64_t affected_rows = 0;
       if (OB_FAIL(guard->execute(delete_sql, nullptr, &affected_rows))) {
         LOG_WARN("failed to execute delete", K(ret));
@@ -316,3 +316,4 @@ int ObReservedSnapshotTableStorage::delete_expired(
 
 } // namespace share
 } // namespace oceanbase
+

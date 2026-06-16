@@ -53,13 +53,13 @@ public:
                                    ObIAllocator &allocator,
                                    ObArray<ObDDLBlockMeta> &sorted_metas);
 
-  static int freeze_ddl_kv(const ObLSID &ls_id,
-                           const ObTabletID &tablet_id,
+  static int freeze_ddl_kv(const ObLSID &ls_id, 
+                           const ObTabletID &tablet_id, 
                            const ObDirectLoadType &direct_load_type,
                            const share::SCN start_scn,
                            const int64_t snapshot_version,
                            const uint64_t tenant_data_version);
-
+    
   /*
    * the return value it's  < slice_idx, cg_sstable_array<sstable_handle>> pairs, required cg sstable sorted as cg_idx
   */
@@ -86,14 +86,14 @@ public:
                                    ObArenaAllocator &allocator,
                                    ObStorageSchema *&storage_schema,
                                    const ObIArray<ObDDLKVHandle> &frozen_ddl_kvs);
-  static int get_ddl_tables_from_ddl_kvs(const ObArray<ObDDLKVHandle> &frozen_ddl_kvs,
+  static int get_ddl_tables_from_ddl_kvs(const ObArray<ObDDLKVHandle> &frozen_ddl_kvs, 
                                          const int64_t cg_idx,
                                          const int64_t start_slice_idx,
                                          const int64_t end_slice_idx,
                                          ObIArray<ObSSTable*> &ddl_sstable);
-  static int get_ddl_tables_from_dump_tables(const bool for_row_store,
+  static int get_ddl_tables_from_dump_tables(const bool for_row_store, 
                                              ObTableStoreIterator &ddl_sstable_iter,
-                                             const int64_t cg_idx,
+                                             const int64_t cg_idx, 
                                              const int64_t start_slice_idx,
                                              const int64_t end_slice_idx,
                                              ObIArray<ObSSTable*> &ddl_sstable,

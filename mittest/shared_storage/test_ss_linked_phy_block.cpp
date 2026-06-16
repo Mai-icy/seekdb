@@ -301,22 +301,22 @@ TEST_F(TestSSLinkedPhyBlock, test_basic_rw)
   {
     LOG_INFO("=========================================One Small Item=========================================");
     std::vector<int64_t> item_buf_len_arr = {1};
-    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::SNAPPY_COMPRESSOR));
+    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::ZSTD_1_3_8_COMPRESSOR));
   }
   {
     LOG_INFO("=========================================Partial Block=========================================");
     std::vector<int64_t> item_buf_len_arr = {1, 2, 4, 8, 16, 8, 4};
-    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::LZ4_COMPRESSOR));
+    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::ZSTD_1_3_8_COMPRESSOR));
   }
   {
     LOG_INFO("=========================================One Item Fill Single Block=========================================");
     std::vector<int64_t> item_buf_len_arr = {max_item_size};
-    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::ZLIB_COMPRESSOR));
+    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::ZSTD_1_3_8_COMPRESSOR));
   }
   {
     LOG_INFO("=========================================One Item Less Than Block=========================================");
     std::vector<int64_t> item_buf_len_arr = {max_item_size - 1};
-    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::ZSTD_COMPRESSOR));
+    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::ZSTD_1_3_8_COMPRESSOR));
   }
   {
     LOG_INFO("=========================================Exact Block=========================================");
@@ -327,7 +327,7 @@ TEST_F(TestSSLinkedPhyBlock, test_basic_rw)
     const int64_t seg_num = block_buf_len_for_item / total_seg_size;
     const int64_t item_num = seg_num * seg_item_num;
     std::vector<int64_t> item_buf_len_arr(item_num, buf_len);
-    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::SNAPPY_COMPRESSOR));
+    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::ZSTD_1_3_8_COMPRESSOR));
   }
   {
     LOG_INFO("=========================================Multiple Blocks=========================================");
@@ -339,7 +339,7 @@ TEST_F(TestSSLinkedPhyBlock, test_basic_rw)
       item_buf_len_arr.push_back(cur_item_size);
       reamin_size -= cur_item_size;
     }
-    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::SNAPPY_COMPRESSOR));
+    ASSERT_EQ(OB_SUCCESS, check_rw(*phy_blk_mgr_, item_buf_len_arr, ObCompressorType::ZSTD_1_3_8_COMPRESSOR));
   }
 
   allocator.clear();

@@ -108,3 +108,4 @@ private:
 } // namespace oceanbase
 
 #endif // OCEANBASE_SHARE_STORAGE_OB_RESERVED_SNAPSHOT_TABLE_STORAGE_H_
+

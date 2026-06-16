@@ -27,7 +27,7 @@ namespace share
 {
 // schedule vector tasks for a ls
 class ObPluginVectorIndexMgr;
-class ObVecAsyncTaskExector : public ObVecITaskExecutor
+class ObVecAsyncTaskExector : public ObVecITaskExecutor 
 {
 public: 
   ObVecAsyncTaskExector() 
@@ -43,7 +43,7 @@ private:
 class ObVecTaskManager
 {
 public:
-  ObVecTaskManager(uint64_t tenant_id, int64_t index_table_id, ObVecIndexAsyncTaskType task_type)
+  ObVecTaskManager(uint64_t tenant_id, int64_t index_table_id, ObVecIndexAsyncTaskType task_type) 
       : tenant_id_(tenant_id),
         index_table_id_(index_table_id),
         task_type_(task_type),
