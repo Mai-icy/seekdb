@@ -51,9 +51,6 @@ add_executable(ob_admin
 
   archiveservice_utils/utils.cpp
 
-  backup_tool/ob_admin_dump_backup_data_executor.h
-  backup_tool/ob_admin_dump_backup_data_executor.cpp
-
   io_bench/task_executor.h
   io_bench/task_executor.cpp
   io_bench/ob_admin_io_adapter_bench.h

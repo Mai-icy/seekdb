@@ -32,11 +32,9 @@
 #include "ob_log_handler.h"  // ILogFetcherHandler
 #include "logservice/logrouteservice/ob_log_route_service.h" // ObLogRouteService
 #include "ob_log_fetcher_user.h"  // LogFetcherUser
-#include "ob_log_fetching_mode.h"
 #include "ob_log_progress_info.h"               // ProgressInfo
 #include "ob_log_fetcher_start_parameters.h"    // ObLogFetcherStartParameters
 #include "ob_log_fetcher_err_handler.h"         // IObLogErrHandler
-#include "logservice/ob_log_external_storage_handler.h" // ObLogExternalStorageHandler
 #include "ob_log_fetcher_bg_worker.h"
 
 namespace oceanbase
@@ -74,12 +72,6 @@ public:
 
   // Get Tenant ID
   virtual uint64_t get_source_tenant_id() const = 0;
-
-  // Update assign region to fetch log
-  virtual int update_preferred_upstream_log_region(const common::ObRegion &region) = 0;
-
-  // Get assign region
-  virtual int get_preferred_upstream_log_region(common::ObRegion &region) = 0;
 
   // Add the log stream
   //
@@ -139,8 +131,6 @@ public:
 
   virtual int get_large_buffer_pool(archive::LargeBufferPool *&large_buffer_pool) = 0;
 
-  virtual int get_log_ext_handler(logservice::ObLogExternalStorageHandler *&log_ext_handler) = 0;
-
   virtual int get_fetcher_config(const ObLogFetcherConfig *&cfg) = 0;
 
   // Checks if the sys progress of specified tenant exceeds the timestamp
@@ -193,8 +183,6 @@ public:
   // @param  [in]   cluster_id    Cluster id of the source cluster
   // @param  [in]   tenant_id     Tenant id of the source cluster
   // @param  [in]   is_loading_data_dict_baseline_data  Set it to false, except for data dictionary
-  // @param  [in]   fetching_mode Set it to INTEGRATED_MODE or DIRECT_MODE
-  // @param  [in]   archive_dest  Archive dest info for DIRECT_MODE, set it to empty for INTEGRATED_MODE
   // @param  [in]   cfg           Configuration
   // @param  [in]   proxy         SQL Client
   // @param  [in]   error_handler Interface for error handler
@@ -207,8 +195,6 @@ public:
       const uint64_t source_tenant_id,
       const uint64_t self_tenant_id,
       const bool is_loading_data_dict_baseline_data,
-      const ClientFetchingMode fetching_mode,
-      const ObBackupPathString &archive_dest,
       const ObLogFetcherConfig &cfg,
       ObILogFetcherLSCtxFactory &ls_ctx_factory,
       ObILogFetcherLSCtxAddInfoFactory &ls_ctx_add_info_factory,
@@ -228,9 +214,6 @@ public:
 
   virtual int64_t get_cluster_id() const { return cluster_id_; }
   virtual uint64_t get_source_tenant_id() const { return source_tenant_id_; }
-
-  virtual int update_preferred_upstream_log_region(const common::ObRegion &region);
-  virtual int get_preferred_upstream_log_region(common::ObRegion &region);
 
   virtual int add_ls(
       const share::ObLSID &ls_id,
@@ -261,8 +244,6 @@ public:
   virtual int get_log_route_service(logservice::ObLogRouteService *&log_route_service);
 
   virtual int get_large_buffer_pool(archive::LargeBufferPool *&large_buffer_pool);
-
-  virtual int get_log_ext_handler(logservice::ObLogExternalStorageHandler *&log_ext_handler);
 
   virtual int get_fetcher_config(const ObLogFetcherConfig *&cfg);
 
@@ -317,11 +298,7 @@ private:
   const ObLogFetcherConfig                 *cfg_;
 
   bool                                     is_loading_data_dict_baseline_data_;
-  ClientFetchingMode                       fetching_mode_;
-  ObBackupPathString                       archive_dest_;
   archive::LargeBufferPool                 large_buffer_pool_;
-  int64_t                                  log_ext_handler_concurrency_;
-  logservice::ObLogExternalStorageHandler  log_ext_handler_;
   ObILogFetcherLSCtxAddInfoFactory         *ls_ctx_add_info_factory_;
   IObLogErrHandler                         *err_handler_;
 

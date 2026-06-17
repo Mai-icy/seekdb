@@ -157,7 +157,6 @@ public:
 private:
   // Determine if the server needs to be blacklisted,
   // NEED_SWITCH_SERVER and DISCARDED do not need to be added, all others do
-  bool need_add_into_blacklist_(const KickOutReason reason);
 
 private:
   void handle_when_leave_(const char *leave_reason) const;
@@ -214,7 +213,6 @@ private:
       bool &need_hibernate,
       bool &is_stream_valid);
   int handle_fetch_log_task_(volatile bool &stop_flag);
-  int handle_fetch_archive_task_(volatile bool &stop_flag);
 
   void update_fetch_stat_info_(
       FetchLogRpcResult &result,

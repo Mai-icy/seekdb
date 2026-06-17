@@ -23,7 +23,6 @@
 #include "storage/tablelock/ob_table_lock_rpc_struct.h"
 #include "observer/ob_uniq_task_queue.h"
 #include "observer/report/ob_tablet_table_updater.h"
-#include "src/share/backup/ob_log_restore_struct.h"
 #include "src/share/schema/ob_standby_schema_refresh_trigger.h"
 
 namespace oceanbase
@@ -123,18 +122,6 @@ public:
       const obcall::ObBroadcastConsensusVersionArg &arg,
       obcall::ObBroadcastConsensusVersionRes &result);
   ////////////////////////////////////////////////////////////////
-  int backup_ls_data(const obcall::ObBackupDataArg &arg);
-  int backup_completing_log(const obcall::ObBackupComplLogArg &arg);
-  int backup_build_index(const obcall::ObBackupBuildIdxArg &arg);
-  int backup_fuse_tablet_meta(const obcall::ObBackupFuseTabletMetaArg &arg);
-  int check_backup_dest_connectivity(const obcall::ObCheckBackupConnectivityArg &arg);
-  int backup_meta(const obcall::ObBackupMetaArg &arg);
-  int check_backup_task_exist(const obcall::ObBackupCheckTaskArg &arg, bool &res);
-  int delete_backup_ls_task(const obcall::ObLSBackupCleanArg &arg);
-  int notify_archive(const obcall::ObNotifyArchiveArg &arg);
-  int report_backup_over(const obcall::ObBackupTaskRes &res);
-  int report_backup_clean_over(const obcall::ObBackupTaskRes &res);
-
   int get_ls_sync_scn(const obcall::ObGetLSSyncScnArg &arg,
                            obcall::ObGetLSSyncScnRes &result);
   int force_set_ls_as_single_replica(const obcall::ObForceSetLSAsSingleReplicaArg &arg);
@@ -216,13 +203,10 @@ public:
       const obcall::ObInitTenantConfigArg &arg,
       obcall::ObInitTenantConfigRes &result);
   int check_server_empty(bool &server_empty);
-  int change_external_storage_dest(obcall::ObAdminSetConfigArg &arg);
 
 private:
   int bootstrap();
   int bootstrap_standby();
-  int build_restore_source_attr(const common::ObAddr &primary_addr,
-                                 share::ObRestoreSourceServiceAttr &source_attr);
   int schedule_standby_restore_task();
   int create_sys_ls();
   int init_tenant_merge_info_(const uint64_t tenant_id);

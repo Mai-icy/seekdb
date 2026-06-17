@@ -21,7 +21,6 @@
 #include "rootserver/ob_cluster_event.h"          // CLUSTER_EVENT_ADD_CONTROL
 #include "rootserver/ob_tenant_event_def.h" // TENANT_EVENT
 // Removed ObLSServiceHelper include - simplified for single LS scenario
-#include "share/backup/ob_backup_config.h" // ObBackupConfigParserMgr
 #include "share/ob_all_tenant_info.h"       // ObAllTenantInfo, ObAllTenantInfoProxy
 
 ERRSIM_POINT_DEF(ERRSIM_AFTER_PERSIST_PREP_SW_TO_STANDBY);

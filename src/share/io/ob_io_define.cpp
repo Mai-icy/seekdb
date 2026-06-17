@@ -17,7 +17,7 @@
 #define USING_LOG_PREFIX COMMON
 #include "ob_io_define.h"
 #include "share/io/ob_io_manager.h"
-#include "storage/backup/ob_backup_factory.h"
+#include "lib/restore/ob_object_device.h"
 #include "src/storage/ob_file_system_router.h"
 #include "src/observer/ob_server.h"
 using namespace oceanbase::lib;
@@ -874,17 +874,14 @@ void ObIOResult::finish(const ObIORetCode &ret_code, ObIORequest *req)
           }
         }
         tenant_io_mgr_->io_func_infos_.accumulate(*req);
-        // do not detect backup io
-        if (!req->fd_.is_backup_block_file()) {
-          // record io error
-          if (OB_UNLIKELY(OB_IO_ERROR == ret_code_.io_ret_)) {
-            OB_IO_MANAGER.get_device_health_detector().record_io_error(*this, *req); 
-          }
-          // record timeout
-          if (OB_UNLIKELY(ObTimeUtility::current_time() > req->timeout_ts())) {
-            OB_IO_MANAGER.get_device_health_detector().record_io_timeout(*this, *req);
-          }
-	      }
+        // record io error
+        if (OB_UNLIKELY(OB_IO_ERROR == ret_code_.io_ret_)) {
+          OB_IO_MANAGER.get_device_health_detector().record_io_error(*this, *req);
+        }
+        // record timeout
+        if (OB_UNLIKELY(ObTimeUtility::current_time() > req->timeout_ts())) {
+          OB_IO_MANAGER.get_device_health_detector().record_io_timeout(*this, *req);
+        }
       }
       if (OB_FAIL(guard.get_ret())) {
         LOG_ERROR("lock io result condition failed", K(ret), K(*this));
@@ -1095,11 +1092,6 @@ void ObIORequest::reset() //only for test, not dec resut_ref
 {
   int ret = OB_SUCCESS;
   retry_count_ = 0;
-  // only read need destroy here
-  // TODO(yanfeng): works now, need refactor
-  if (fd_.is_backup_block_file() && nullptr != io_result_ && io_result_->flag_.is_read()) {
-    backup::ObLSBackupFactory::free(static_cast<backup::ObBackupWrapperIODevice *>(fd_.device_handle_));
-  }
   if (nullptr != control_block_ && nullptr != fd_.device_handle_) {
     fd_.device_handle_->free_iocb(control_block_);
     control_block_ = nullptr;
@@ -1402,9 +1394,7 @@ int ObIORequest::prepare(char *next_buffer, int64_t next_size, int64_t next_offs
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("io result is null", K(ret));
   } else {
-    if (fd_.is_backup_block_file()) {
-      // ignore
-    } else if (io_result_->flag_.is_read()) {
+    if (io_result_->flag_.is_read()) {
       if (OB_FAIL(fd_.device_handle_->io_prepare_pread(
               fd_,
               io_buf,
