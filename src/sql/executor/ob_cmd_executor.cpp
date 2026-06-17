@@ -76,8 +76,6 @@
 #include "sql/resolver/ddl/ob_drop_func_stmt.h"
 #include "src/sql/resolver/ddl/ob_sequence_stmt.h"
 #include "sql/resolver/ddl/ob_optimize_stmt.h"
-#include "sql/resolver/cmd/ob_create_restore_point_stmt.h"
-#include "sql/resolver/cmd/ob_drop_restore_point_stmt.h"
 #include "sql/resolver/ddl/ob_create_directory_stmt.h"
 #include "sql/resolver/ddl/ob_drop_directory_stmt.h"
 #include "sql/resolver/ddl/ob_create_location_stmt.h"
@@ -751,22 +749,6 @@ int ObCmdExecutor::execute(ObExecContext &ctx, ObICmd &cmd)
         DEFINE_EXECUTE_CMD(ObAlterRoleStmt, ObAlterRoleExecutor);
         break;
       }
-      case stmt::T_ARCHIVE_LOG: {
-        DEFINE_EXECUTE_CMD(ObArchiveLogStmt, ObArchiveLogExecutor);
-        break;
-      }
-      case stmt::T_BACKUP_DATABASE: {
-        DEFINE_EXECUTE_CMD(ObBackupDatabaseStmt, ObBackupDatabaseExecutor);
-        break;
-      }
-      case stmt::T_CANCEL_RESTORE: {
-        DEFINE_EXECUTE_CMD(ObCancelRestoreStmt, ObCancelRestoreExecutor);
-        break;
-      }
-      case stmt::T_RECOVER_TABLE: {
-        DEFINE_EXECUTE_CMD(ObRecoverTableStmt, ObRecoverTableExecutor);
-        break;
-      }
       case stmt::T_ACTIVATE_STANDBY: {
         DEFINE_EXECUTE_CMD(ObSwitchRoleStmt, ObSwitchRoleExecutor);
         break;
@@ -779,52 +761,12 @@ int ObCmdExecutor::execute(ObExecContext &ctx, ObICmd &cmd)
         DEFINE_EXECUTE_CMD(ObSwitchRoleStmt, ObSwitchRoleExecutor);
         break;
       }
-      case stmt::T_BACKUP_MANAGE: {
-        DEFINE_EXECUTE_CMD(ObBackupManageStmt, ObBackupManageExecutor);
-        break;
-      }
-      case stmt::T_BACKUP_CLEAN: {
-        DEFINE_EXECUTE_CMD(ObBackupCleanStmt, ObBackupCleanExecutor);
-        break;
-      }
-      case stmt::T_DELETE_POLICY: {
-        DEFINE_EXECUTE_CMD(ObDeletePolicyStmt, ObDeletePolicyExecutor);
-        break;
-      }
-      case stmt::T_BACKUP_CLUSTER_PARAMETERS: {
-        DEFINE_EXECUTE_CMD(ObBackupClusterParamStmt, ObBackupClusterParamExecutor);
-        break;
-      }
-      case stmt::T_BACKUP_BACKUPSET: {
-        DEFINE_EXECUTE_CMD(ObBackupBackupsetStmt, ObBackupBackupsetExecutor);
-        break;
-      }
-      case stmt::T_BACKUP_ARCHIVELOG: {
-        DEFINE_EXECUTE_CMD(ObBackupArchiveLogStmt, ObBackupArchiveLogExecutor);
-        break;
-      }
-      case stmt::T_BACKUP_SET_ENCRYPTION: {
-        DEFINE_EXECUTE_CMD(ObBackupSetEncryptionStmt, ObBackupSetEncryptionExecutor);
-        break;
-      }
-      case stmt::T_BACKUP_SET_DECRYPTION: {
-        DEFINE_EXECUTE_CMD(ObBackupSetDecryptionStmt, ObBackupSetDecryptionExecutor);
-        break;
-      }
       case stmt::T_ENABLE_SQL_THROTTLE: {
         DEFINE_EXECUTE_CMD(ObEnableSqlThrottleStmt, ObEnableSqlThrottleExecutor);
         break;
       }
       case stmt::T_DISABLE_SQL_THROTTLE: {
         DEFINE_EXECUTE_CMD(ObDisableSqlThrottleStmt, ObDisableSqlThrottleExecutor);
-        break;
-      }
-      case stmt::T_CREATE_RESTORE_POINT: {
-        DEFINE_EXECUTE_CMD(ObCreateRestorePointStmt, ObCreateRestorePointExecutor);
-        break;
-      }
-      case stmt::T_DROP_RESTORE_POINT: {
-        DEFINE_EXECUTE_CMD(ObDropRestorePointStmt, ObDropRestorePointExecutor);
         break;
       }
       case stmt::T_CREATE_DIRECTORY: {
@@ -848,18 +790,6 @@ int ObCmdExecutor::execute(ObExecContext &ctx, ObICmd &cmd)
         DEFINE_EXECUTE_CMD(ObLocationUtilsStmt, ObLocationUtilsExecutor);
         break;
       }
-      case stmt::T_BACKUP_BACKUPPIECE: {
-        DEFINE_EXECUTE_CMD(ObBackupBackupPieceStmt, ObBackupBackupPieceExecutor);
-        break;
-      }
-      case stmt::T_ADD_RESTORE_SOURCE: {
-        DEFINE_EXECUTE_CMD(ObAddRestoreSourceStmt, ObAddRestoreSourceExecutor);
-        break;
-      }
-      case stmt::T_CLEAR_RESTORE_SOURCE: {
-        DEFINE_EXECUTE_CMD(ObClearRestoreSourceStmt, ObClearRestoreSourceExecutor);
-        break;
-      }
       case stmt::T_CREATE_CONTEXT: {
         DEFINE_EXECUTE_CMD(ObCreateContextStmt, ObCreateContextExecutor);
         break;
@@ -878,10 +808,6 @@ int ObCmdExecutor::execute(ObExecContext &ctx, ObICmd &cmd)
       }
       case stmt::T_ALTER_SYSTEM_RESET_PARAMETER: {
         DEFINE_EXECUTE_CMD(ObResetConfigStmt, ObResetConfigExecutor);
-        break;
-      }
-      case stmt::T_CHANGE_EXTERNAL_STORAGE_DEST: {
-        DEFINE_EXECUTE_CMD(ObChangeExternalStorageDestStmt, ObChangeExternalStorageDestExecutor);
         break;
       }
       case stmt::T_OLAP_ASYNC_JOB_CANCEL: {

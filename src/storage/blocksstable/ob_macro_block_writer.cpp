@@ -20,7 +20,6 @@
 #include "src/storage/blocksstable/index_block/ob_sstable_sec_meta_iterator.h"
 #include "storage/blocksstable/cs_encoding/ob_micro_block_cs_encoder.h"
 #include "src/storage/ddl/ob_ddl_clog.h"
-#include "storage/backup/ob_backup_data_struct.h"
 #include "share/ob_io_device_helper.h"
 namespace oceanbase
 {
@@ -401,11 +400,7 @@ int ObMacroBlockWriter::ObDefaultMacroBlockFlusher::write_disk(ObMacroBlock& mac
     object_info.offset_ = 0;
     const int64_t data_buf_size = upper_align(macro_block.get_data_size(), DIO_ALIGN_SIZE);
     {
-      if (backup::ObBackupDeviceMacroBlockId::is_backup_block_file(macro_handle_->get_macro_id().first_id())) {
-        object_info.size_ = macro_block.get_data_capacity();
-      } else {
-        object_info.size_ = data_buf_size;
-      }
+      object_info.size_ = data_buf_size;
       object_info.mtl_tenant_id_ = MTL_ID();
       object_info.io_desc_.set_wait_event(ObWaitEventIds::DB_FILE_COMPACT_WRITE);
       object_info.io_desc_.set_sealed();

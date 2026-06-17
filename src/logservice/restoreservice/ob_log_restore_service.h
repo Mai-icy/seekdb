@@ -26,7 +26,6 @@
 #include "ob_log_restore_allocator.h"                       // ObLogRestoreAllocator
 #include "ob_log_restore_scheduler.h"                       // ObLogRestoreScheduler
 #include "ob_log_restore_net_driver.h"                      // ObLogRestoreNetDriver
-#include "ob_log_restore_archive_driver.h"                  // ObLogRestoreArchiveDriver
 #include "ob_remote_log_writer.h"                           // ObRemoteLogWriter
 
 namespace oceanbase
@@ -87,7 +86,6 @@ private:
   bool inited_;
   ObLSService *ls_svr_;
   ObRemoteLocationAdaptor location_adaptor_;
-  ObLogRestoreArchiveDriver archive_driver_;
   ObLogRestoreNetDriver net_driver_;
   ObRemoteFetchLogImpl fetch_log_impl_;
   ObRemoteFetchWorker fetch_log_worker_;

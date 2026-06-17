@@ -31,7 +31,6 @@ ObLogRestoreService::ObLogRestoreService() :
   inited_(false),
   ls_svr_(NULL),
   location_adaptor_(),
-  archive_driver_(),
   net_driver_(),
   fetch_log_impl_(),
   fetch_log_worker_(),
@@ -63,9 +62,7 @@ int ObLogRestoreService::init(ObLSService *ls_svr,
     LOG_WARN("net_driver_ init failed");
   } else if (OB_FAIL(location_adaptor_.init(tenant_id, ls_svr, &net_driver_))) {
     LOG_WARN("location_adaptor_ init failed", K(ret));
-  } else if (OB_FAIL(archive_driver_.init(tenant_id, ls_svr, log_service, &fetch_log_worker_))) {
-    LOG_WARN("archive_driver_ init failed");
-  } else if (OB_FAIL(fetch_log_impl_.init(tenant_id, &archive_driver_, &net_driver_))) {
+  } else if (OB_FAIL(fetch_log_impl_.init(tenant_id, &net_driver_))) {
     LOG_WARN("fetch_log_impl_ init failed", K(ret));
   } else if (OB_FAIL(fetch_log_worker_.init(tenant_id, &allocator_, this, ls_svr))) {
     LOG_WARN("fetch_log_worker_ init failed", K(ret));
@@ -93,7 +90,6 @@ void ObLogRestoreService::destroy()
   stop();
   wait();
   location_adaptor_.destroy();
-  archive_driver_.destroy();
   net_driver_.destroy();
   fetch_log_impl_.destroy();
   error_reporter_.destroy();

@@ -214,7 +214,7 @@ int ObLSWorker::dispatch_fetch_task(LSFetchCtx &task, const char *dispatch_reaso
     if (OB_FAIL(dead_pool_->push(&task))) {
       LOG_ERROR("push task into dead pool fail", KR(ret), K(task));
     }
-  } else if (is_integrated_fetching_mode(task.get_fetching_mode())) {
+  } else {
     ObAddr request_svr;
     request_svr.reset();
     bool found_valid_svr = false;
@@ -225,24 +225,6 @@ int ObLSWorker::dispatch_fetch_task(LSFetchCtx &task, const char *dispatch_reaso
     // Get the next valid server for the service log
     while (OB_SUCCESS == ret && ! found_valid_svr && OB_SUCC(task.next_server(request_svr))) {
       found_valid_svr = true;
-      if (! found_valid_svr) {
-        //  server is not available, blacklisted
-        int64_t svr_service_time = 0;
-        int64_t survival_time = ATOMIC_LOAD(&g_blacklist_survival_time);
-        if (OB_FAIL(task.add_into_blacklist(request_svr, svr_service_time, survival_time))) {
-          // add server to blacklist
-          LOG_ERROR("not-avail server, task add into blacklist fail", KR(ret), K(task), K(request_svr),
-                    "svr_service_time", TVAL_TO_STR(svr_service_time),
-                    "survival_time", TVAL_TO_STR(survival_time));
-        } else {
-          LOG_TRACE("not-avail server, task add into blacklist succ", KR(ret), K(task), K(request_svr),
-                    "svr_service_time", TVAL_TO_STR(svr_service_time),
-                    "survival_time", TVAL_TO_STR(survival_time));
-        }
-
-        LOG_WARN("[STAT] [STREAM_WORKER] [DISPATCH_FETCH_TASK] ignore not-avail server",
-            K(request_svr), "tls_id", task.get_tls_id());
-      }
     }
 
     // The server list is iterated over
@@ -269,14 +251,6 @@ int ObLSWorker::dispatch_fetch_task(LSFetchCtx &task, const char *dispatch_reaso
         }
       }
     }
-  } else if (is_direct_fetching_mode(task.get_fetching_mode())) {
-    ObAddr dummy_addr(ObAddr::IPV4, "127.0.0.1", 1);
-    if (OB_FAIL(dispatch_fetch_task_to_svr_(task, dummy_addr))) {
-      LOG_ERROR("dispatch fetch task to invalid server fail", KR(ret), K(task), K(dummy_addr));
-    }
-  } else {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_ERROR("the fetching mode of task is invalid", K(task));
   }
 
   return ret;

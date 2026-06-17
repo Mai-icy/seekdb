@@ -648,19 +648,9 @@ int ObTabletPersister::calc_tablet_space_usage_(
     ObTabletSpaceUsage &space_usage)
 {
   int ret = OB_SUCCESS;
-  backup::ObBackupDeviceMacroBlockId tmp_back_block_id;
   int64_t clustered_sstable_size = 0;
   int64_t backup_block_size = 0; // for sstable has backup_block and local_block;
   int64_t pure_backup_sstable_size = 0; // for sstable has no local_block
-  for (ObBlockInfoSet::SetIterator iter = block_info_set.backup_block_info_set_.begin();
-      OB_SUCC(ret) && iter != block_info_set.backup_block_info_set_.end();
-      ++iter) {
-    if (OB_FAIL(tmp_back_block_id.set(iter->first))) {
-      LOG_WARN("failed to get backup block_id");
-    } else {
-      backup_block_size += tmp_back_block_id.get_length();
-    }
-  }
   for (ObBlockInfoSet::MapIterator iter = block_info_set.clustered_data_block_info_map_.begin();
       iter != block_info_set.clustered_data_block_info_map_.end();
       ++iter) {
