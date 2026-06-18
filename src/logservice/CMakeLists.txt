@@ -134,7 +134,6 @@ ob_set_subtarget(ob_logservice logfetcher
   logfetcher/ob_log_fetcher_ls_ctx_default_factory.cpp
   logfetcher/ob_log_fetcher_switch_info.cpp
   logfetcher/ob_log_fetcher.cpp
-  logfetcher/ob_log_fetching_mode.cpp
   logfetcher/ob_log_file_buffer_pool.cpp
   logfetcher/ob_log_ls_fetch_ctx.cpp
   logfetcher/ob_log_ls_fetch_mgr.cpp
@@ -167,7 +166,6 @@ ob_set_subtarget(ob_logservice restoreservice
   restoreservice/ob_log_restore_scheduler.cpp
   restoreservice/ob_log_restore_driver_base.cpp
   restoreservice/ob_log_restore_net_driver.cpp
-  restoreservice/ob_log_restore_archive_driver.cpp
   restoreservice/ob_restore_log_function.cpp
   restoreservice/ob_remote_log_writer.cpp
   restoreservice/ob_remote_log_raw_reader.cpp
@@ -184,19 +182,7 @@ ob_set_subtarget(ob_logservice data_dictionary
 )
 
 ob_set_subtarget(ob_logservice logrouteservice
-  logrouteservice/ob_all_server_info.cpp
-  logrouteservice/ob_all_zone_info.cpp
-  logrouteservice/ob_all_units_info.cpp
-  logrouteservice/ob_external_server_blacklist.cpp
-  logrouteservice/ob_log_all_svr_cache.cpp
-  logrouteservice/ob_log_route_key.cpp
   logrouteservice/ob_log_route_service.cpp
-  logrouteservice/ob_log_route_struct.cpp
-  logrouteservice/ob_log_systable_queryer.cpp
-  logrouteservice/ob_ls_log_stat_info.cpp
-  logrouteservice/ob_ls_server_list.cpp
-  logrouteservice/ob_server_blacklist.cpp
-  logrouteservice/ob_server_priority.cpp
 )
 
 ob_set_subtarget(ob_logservice archiveservice

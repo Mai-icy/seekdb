@@ -438,7 +438,6 @@ int ObHisRestoreJobPersistInfo::parse_from(common::sqlclient::ObMySQLResult &res
     }
   }
 
-  EXTRACT_INT_FIELD_MYSQL(result, "backup_cluster_version", backup_cluster_version_, int64_t);
   //TODO start time and finish time
 
   RETRIEVE_STR_VALUE(restore_tenant_name);
@@ -552,7 +551,6 @@ int ObHisRestoreJobPersistInfo::fill_dml(ObDMLSqlSplicer &dml) const
   ADD_LONG_STR_COLUMN_DML(remap_database_list);
   ADD_LONG_STR_COLUMN_DML(backup_piece_list);
   ADD_LONG_STR_COLUMN_DML(backup_set_list);
-  ADD_COMMON_COLUMN_DML(backup_cluster_version);
 
   ADD_COMMON_COLUMN_DML(ls_count);
   ADD_COMMON_COLUMN_DML(finish_ls_count);
@@ -612,24 +610,6 @@ int ObHisRestoreJobPersistInfo::init_with_job(const share::ObPhysicalRestoreJob 
     LOG_WARN("failed to assign description", KR(ret), K(job));
   } else if (OB_FAIL(comment_.assign(job.get_comment()))) {
     LOG_WARN("failed to assign commit", KR(ret), K(job));
-  } else {
-    ObArenaAllocator allocator;
-    ObString backup_set_list;
-    ObString backup_piece_list;
-    const ObPhysicalRestoreBackupDestList &dest_list =
-        job.get_multi_restore_path_list();
-    if (OB_FAIL(dest_list.get_backup_set_list_format_str(allocator,
-                                                         backup_set_list))) {
-      LOG_WARN("fail to get format str", KR(ret), K(dest_list));
-    } else if (OB_FAIL(dest_list.get_backup_piece_list_format_str(
-                   allocator, backup_piece_list))) {
-      LOG_WARN("fail to get format str", KR(ret), K(dest_list));
-    } else if (OB_FAIL(backup_piece_list_.assign(backup_piece_list))) {
-      LOG_WARN("failed to assign backup piece list", KR(ret),
-               K(backup_piece_list_));
-    } else if (OB_FAIL(backup_set_list_.assign(backup_set_list))) {
-      LOG_WARN("failed to assign backup set list", KR(ret), K(backup_set_list));
-    }
   }
   
   if (OB_SUCC(ret)) {
@@ -642,8 +622,7 @@ int ObHisRestoreJobPersistInfo::init_with_job(const share::ObPhysicalRestoreJob 
     restore_tenant_id_ = job.get_tenant_id();
     backup_tenant_id_ = job.get_backup_tenant_id();
     restore_scn_ = job.get_restore_scn();
-    backup_cluster_version_ = job.get_source_cluster_version(); 
-    
+
     if (PHYSICAL_RESTORE_SUCCESS == job.get_status()) {
       set_success();
     } else {
@@ -930,14 +909,6 @@ int ObRestorePersistHelper::record_restore_info(common::ObMySQLTransaction &tran
   return ret;
 }
 
-int ObRestorePersistHelper::get_backup_dest_list_from_restore_info(
-    common::ObISQLClient &proxy, 
-    int64_t &job_id, 
-    ObPhysicalRestoreBackupDestList &backup_dest_list) const
-{
-  int ret = OB_NOT_SUPPORTED;
-  return ret;
-}
 
 int ObRestorePersistHelper::set_ls_total_bytes(
     common::ObISQLClient &proxy, const ObLSRestoreJobPersistKey &ls_key,

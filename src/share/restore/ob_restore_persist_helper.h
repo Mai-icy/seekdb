@@ -18,6 +18,7 @@
 #define OCEANBASE_SHARE_OB_RESTORE_PERSIST_HELPER_H_
 
 #include "common/ob_role.h"
+#include "share/backup/ob_backup_struct.h"
 #include "share/ob_define.h"
 #include "share/ob_ls_id.h"
 #include "share/ob_delegate.h"
@@ -25,7 +26,6 @@
 #include "share/restore/ob_ls_restore_status.h"
 #include "share/restore/ob_restore_type.h"
 #include "share/scn.h"
-#include "share/backup/ob_backup_struct.h"
 
 namespace oceanbase
 {
@@ -311,8 +311,6 @@ struct ObHisRestoreJobPersistInfo final : public ObIInnerTableRow
   LongString backup_piece_list_;
   LongString backup_set_list_;
 
-  int64_t backup_cluster_version_;
-
   int64_t ls_count_;
   int64_t start_time_; // job handle time
   int64_t finish_time_; // job finish time
@@ -336,7 +334,6 @@ struct ObHisRestoreJobPersistInfo final : public ObIInnerTableRow
     backup_tenant_id_ = OB_INVALID_TENANT_ID;
     
     restore_scn_ = share::SCN::min_scn();
-    backup_cluster_version_ = 0;
 
     ls_count_ = 0;
     finish_ls_count_ = 0;
@@ -401,7 +398,7 @@ struct ObHisRestoreJobPersistInfo final : public ObIInnerTableRow
   TO_STRING_KV(K_(key), K_(start_time), K_(finish_time), K_(restore_type), 
     K_(restore_tenant_name), K_(restore_tenant_id), K_(backup_tenant_id), K_(backup_dest),
     K_(restore_scn), K_(restore_option), K_(table_list), K_(remap_table_list), 
-    K_(database_list), K_(remap_database_list), K_(backup_piece_list), K_(backup_set_list), K_(backup_cluster_version),
+    K_(database_list), K_(remap_database_list), K_(backup_piece_list), K_(backup_set_list),
     K_(ls_count), K_(finish_ls_count), K_(tablet_count), K_(finish_tablet_count), K_(total_bytes), 
     K_(finish_bytes), K_(status), K_(description), K_(comment), K_(initiator_job_id), K_(initiator_tenant_id));
 
@@ -515,10 +512,6 @@ public:
 
   int move_ls_restore_progress_to_history(common::ObMySQLTransaction &trans) const;
   int record_restore_info(common::ObMySQLTransaction &trans) const;
-  int get_backup_dest_list_from_restore_info(
-      common::ObISQLClient &proxy, 
-      int64_t &job_id, 
-      ObPhysicalRestoreBackupDestList &backup_dest_list) const;
 
   int set_ls_total_bytes(
       common::ObISQLClient &proxy, const ObLSRestoreJobPersistKey &ls_key,

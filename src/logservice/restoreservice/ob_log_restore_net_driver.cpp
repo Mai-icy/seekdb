@@ -265,7 +265,6 @@ int ObLogRestoreNetDriver::scan_ls(const share::ObLogRestoreSourceType &type)
   }
   delete_fetcher_if_needed_with_lock_();
   update_config_();
-  update_standby_preferred_upstream_log_region_();
   return ret;
 }
 
@@ -415,15 +414,13 @@ int ObLogRestoreNetDriver::init_fetcher_if_needed_(const int64_t cluster_id, con
   } else {
     const logfetcher::LogFetcherUser log_fetcher_user = logfetcher::LogFetcherUser::STANDBY;
     const bool is_loading_data_dict_baseline_data = false;
-    const logfetcher::ClientFetchingMode fetching_mode = logfetcher::ClientFetchingMode::FETCHING_MODE_INTEGRATED;
-    share::ObBackupPathString archive_dest;
     omt::ObTenantConfigGuard tenant_config(TENANT_CONF(MTL_ID()));
     cfg_.fetch_log_rpc_timeout_sec = get_rpc_timeout_sec_();
     cfg_.logfetcher_parallel_log_transport = tenant_config.is_valid() ?
         tenant_config->_ob_enable_standby_db_parallel_log_transport : 0;
 
     if (OB_FAIL(fetcher_->init(log_fetcher_user, cluster_id, tenant_id, MTL_ID(),
-            is_loading_data_dict_baseline_data, fetching_mode, archive_dest,
+            is_loading_data_dict_baseline_data,
             cfg_, ls_ctx_factory_, ls_ctx_add_info_factory_,
             restore_function_, nullptr/*proxy*/, &error_handler_))) {
       CLOG_LOG(WARN, "fetcher init failed");
@@ -486,19 +483,6 @@ int64_t ObLogRestoreNetDriver::get_rpc_timeout_sec_()
     rpc_timeout = tenant_config->standby_db_fetch_log_rpc_timeout / 1000 / 1000L;
   }
   return rpc_timeout;
-}
-
-void ObLogRestoreNetDriver::update_standby_preferred_upstream_log_region_()
-{
-  omt::ObTenantConfigGuard tenant_config(TENANT_CONF(tenant_id_));
-
-  if (! tenant_config.is_valid()) {
-  } else {
-    if (nullptr != fetcher_) {
-      const char *region_string = tenant_config->standby_db_preferred_upstream_log_region;
-      fetcher_->update_preferred_upstream_log_region(common::ObRegion(region_string));
-    }
-  }
 }
 
 bool ObLogRestoreNetDriver::is_fetcher_stale_(const share::ObRestoreSourceServiceAttr &source)

@@ -262,7 +262,6 @@ DEF_TO_STRING(ObPhysicalRestoreJob)
     K_(kms_encrypt),
     K_(concurrency),
     K_(passwd_array),
-    K_(multi_restore_path_list),
     K_(white_list),
     K_(recover_table),
     K_(using_complement_log),
@@ -331,8 +330,6 @@ int ObPhysicalRestoreJob::assign(const ObPhysicalRestoreJob &other)
       LOG_WARN("failed to copy string", KR(ret), K(other));
     } else if (OB_FAIL(deep_copy_ob_string(allocator_, other.backup_cluster_name_, backup_cluster_name_))) {
       LOG_WARN("failed to copy string", KR(ret), K(other));
-    } else if (OB_FAIL(multi_restore_path_list_.assign(other.multi_restore_path_list_))) {
-      LOG_WARN("failed to assign path list", KR(ret), K(other));
     } else if (OB_FAIL(white_list_.assign(other.white_list_))) {
       LOG_WARN("failed to assign white list", KR(ret), K(other));
     } else if (OB_FAIL(deep_copy_ob_string(allocator_, other.sts_credential_, sts_credential_))) {
@@ -383,7 +380,6 @@ void ObPhysicalRestoreJob::reset()
   sts_credential_.reset();
 
   passwd_array_.reset();
-  multi_restore_path_list_.reset();
   white_list_.reset();
   allocator_.reset();
   progress_display_mode_ = TABLET_CNT_DISPLAY_MODE;
@@ -400,8 +396,6 @@ int ObPhysicalRestoreJob::copy_to(ObSimplePhysicalRestoreJob &simple_job_info) c
   } else if (OB_UNLIKELY(pos >= len)) {
     ret = OB_BUF_NOT_ENOUGH;
     LOG_WARN("buf not enough", KR(ret), K(pos), K(len), K(backup_dest_));
-  } else if (OB_FAIL(simple_job_info.restore_info_.multi_restore_path_list_.assign(multi_restore_path_list_))) {
-    LOG_WARN("failed to assign multi path", KR(ret), K(multi_restore_path_list_));
   } else {
     simple_job_info.job_id_ = restore_key_.job_id_;
     simple_job_info.restore_info_.backup_dest_[share::OB_MAX_BACKUP_DEST_LENGTH - 1] = '\0';
