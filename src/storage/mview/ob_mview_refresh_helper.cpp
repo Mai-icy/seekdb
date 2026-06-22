@@ -114,7 +114,6 @@ int ObMViewRefreshHelper::generate_purge_mlog_sql(ObSchemaGetterGuard &schema_gu
   sql_string.reuse();
   const ObTableSchema *table_schema = nullptr;
   const ObDatabaseSchema *database_schema = nullptr;
-  bool is_oracle_mode = false;
   if (OB_UNLIKELY(OB_INVALID_TENANT_ID == tenant_id || OB_INVALID_ID == mlog_id ||
                   !purge_scn.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
@@ -133,40 +132,26 @@ int ObMViewRefreshHelper::generate_purge_mlog_sql(ObSchemaGetterGuard &schema_gu
   } else if (OB_ISNULL(database_schema)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("database schema is nullptr", KR(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(tenant_id, mlog_id,
-                                                                            is_oracle_mode))) {
-    LOG_WARN("check if oracle mode failed", KR(ret), K(mlog_id));
   } else {
     ObArenaAllocator allocator("ObMVRefTmp");
     ObString database_name;
     ObString table_name;
     if (OB_FAIL(ObSQLUtils::generate_new_name_with_escape_character(
-          allocator, database_schema->get_database_name_str(), database_name, is_oracle_mode))) {
+          allocator, database_schema->get_database_name_str(), database_name))) {
       LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(database_schema->get_database_name_str()), K(is_oracle_mode));
+               K(database_schema->get_database_name_str()));
     } else if (OB_FAIL(ObSQLUtils::generate_new_name_with_escape_character(
-                 allocator, table_schema->get_table_name_str(), table_name, is_oracle_mode))) {
+                 allocator, table_schema->get_table_name_str(), table_name))) {
       LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(table_schema->get_table_name_str()), K(is_oracle_mode));
+               K(table_schema->get_table_name_str()));
     } else {
-      if (is_oracle_mode) {
-        if (OB_FAIL(sql_string.assign_fmt("DELETE /*+ ENABLE_PARALLEL_DML PARALLEL(%d)*/ FROM \"%.*s\".\"%.*s\" WHERE ora_rowscn <= %lu;",
+      if (OB_FAIL(sql_string.assign_fmt("DELETE /*+ ENABLE_PARALLEL_DML PARALLEL(%d)*/ FROM `%.*s`.`%.*s` WHERE ora_rowscn <= %lu;",
                                           static_cast<int>(purge_log_parallel),
                                           static_cast<int>(database_name.length()),
                                           database_name.ptr(),
                                           static_cast<int>(table_name.length()), table_name.ptr(),
                                           purge_scn.get_val_for_sql()))) {
           LOG_WARN("fail to assign sql", KR(ret));
-        }
-      } else {
-        if (OB_FAIL(sql_string.assign_fmt("DELETE /*+ ENABLE_PARALLEL_DML PARALLEL(%d)*/ FROM `%.*s`.`%.*s` WHERE ora_rowscn <= %lu;",
-                                          static_cast<int>(purge_log_parallel),
-                                          static_cast<int>(database_name.length()),
-                                          database_name.ptr(),
-                                          static_cast<int>(table_name.length()), table_name.ptr(),
-                                          purge_scn.get_val_for_sql()))) {
-          LOG_WARN("fail to assign sql", KR(ret));
-        }
       }
     }
   }
@@ -181,7 +166,6 @@ int ObMViewRefreshHelper::get_table_row_num(ObMViewTransaction &trans, const uin
   ObSchemaGetterGuard schema_guard;
   const ObTableSchema *table_schema = nullptr;
   const ObDatabaseSchema *database_schema = nullptr;
-  bool is_oracle_mode = false;
   if (OB_ISNULL(GCTX.schema_service_)) {
     ret = OB_ERR_SYS;
     LOG_WARN("schema service is null", KR(ret));
@@ -198,55 +182,37 @@ int ObMViewRefreshHelper::get_table_row_num(ObMViewTransaction &trans, const uin
   } else if (OB_ISNULL(database_schema)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("database schema is nullptr", KR(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(tenant_id, table_id,
-                                                                            is_oracle_mode))) {
-    LOG_WARN("check if oracle mode failed", KR(ret), K(table_id));
   } else {
     ObArenaAllocator allocator("ObMVRefTmp");
     ObString database_name;
     ObString table_name;
     if (OB_FAIL(ObSQLUtils::generate_new_name_with_escape_character(
-          allocator, database_schema->get_database_name_str(), database_name, is_oracle_mode))) {
+          allocator, database_schema->get_database_name_str(), database_name))) {
       LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(database_schema->get_database_name_str()), K(is_oracle_mode));
+               K(database_schema->get_database_name_str()));
     } else if (OB_FAIL(ObSQLUtils::generate_new_name_with_escape_character(
-                 allocator, table_schema->get_table_name_str(), table_name, is_oracle_mode))) {
+                 allocator, table_schema->get_table_name_str(), table_name))) {
       LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(table_schema->get_table_name_str()), K(is_oracle_mode));
+               K(table_schema->get_table_name_str()));
     } else {
       SMART_VAR(ObMySQLProxy::MySQLResult, res)
       {
         ObSqlString sql;
         sqlclient::ObMySQLResult *sql_result = nullptr;
         int64_t count = 0;
-        if (is_oracle_mode) {
-          if (OB_FAIL(sql.assign_fmt("select count(*) as COUNT from \"%.*s\".\"%.*s\"",
-                                     static_cast<int>(database_name.length()), database_name.ptr(),
-                                     static_cast<int>(table_name.length()), table_name.ptr()))) {
-            LOG_WARN("fail to assign sql", KR(ret));
-          } else if (scn.is_valid() &&
-                     OB_FAIL(sql.append_fmt(" as of scn %ld", scn.get_val_for_sql()))) {
-            LOG_WARN("fail to append sql", KR(ret));
-          }
-        } else {
-          if (OB_FAIL(sql.assign_fmt("select count(*) as COUNT from `%.*s`.`%.*s`",
-                                     static_cast<int>(database_name.length()), database_name.ptr(),
-                                     static_cast<int>(table_name.length()), table_name.ptr()))) {
-            LOG_WARN("fail to assign sql", KR(ret));
-          } else if (scn.is_valid() &&
-                     OB_FAIL(sql.append_fmt(" as of snapshot %ld", scn.get_val_for_sql()))) {
-            LOG_WARN("fail to append sql", KR(ret));
-          }
+        if (OB_FAIL(sql.assign_fmt("select count(*) as COUNT from `%.*s`.`%.*s`",
+                                   static_cast<int>(database_name.length()), database_name.ptr(),
+                                   static_cast<int>(table_name.length()), table_name.ptr()))) {
+          LOG_WARN("fail to assign sql", KR(ret));
+        } else if (scn.is_valid() &&
+                   OB_FAIL(sql.append_fmt(" as of snapshot %ld", scn.get_val_for_sql()))) {
+          LOG_WARN("fail to append sql", KR(ret));
         }
         OZ(trans.read(res, tenant_id, sql.ptr()), sql);
         CK(OB_NOT_NULL(res.get_result()));
         OX(sql_result = res.get_result());
         OZ(sql_result->next());
-        if (is_oracle_mode) {
-          EXTRACT_INT_FIELD_FROM_NUMBER_MYSQL(*sql_result, COUNT, count);
-        } else {
-          EXTRACT_INT_FIELD_MYSQL(*sql_result, "COUNT", count, int64_t);
-        }
+        EXTRACT_INT_FIELD_MYSQL(*sql_result, "COUNT", count, int64_t);
         OX(num_rows = count);
       }
     }
@@ -263,7 +229,6 @@ int ObMViewRefreshHelper::get_mlog_dml_row_num(ObMViewTransaction &trans, const 
   ObSchemaGetterGuard schema_guard;
   const ObTableSchema *table_schema = nullptr;
   const ObDatabaseSchema *database_schema = nullptr;
-  bool is_oracle_mode = false;
   if (OB_ISNULL(GCTX.schema_service_)) {
     ret = OB_ERR_SYS;
     LOG_WARN("schema service is null", KR(ret));
@@ -283,21 +248,18 @@ int ObMViewRefreshHelper::get_mlog_dml_row_num(ObMViewTransaction &trans, const 
   } else if (OB_ISNULL(database_schema)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("database schema is nullptr", KR(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(tenant_id, table_id,
-                                                                            is_oracle_mode))) {
-    LOG_WARN("check if oracle mode failed", KR(ret), K(table_id));
   } else {
     ObArenaAllocator allocator("ObMVRefTmp");
     ObString database_name;
     ObString table_name;
     if (OB_FAIL(ObSQLUtils::generate_new_name_with_escape_character(
-          allocator, database_schema->get_database_name_str(), database_name, is_oracle_mode))) {
+          allocator, database_schema->get_database_name_str(), database_name))) {
       LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(database_schema->get_database_name_str()), K(is_oracle_mode));
+               K(database_schema->get_database_name_str()));
     } else if (OB_FAIL(ObSQLUtils::generate_new_name_with_escape_character(
-                 allocator, table_schema->get_table_name_str(), table_name, is_oracle_mode))) {
+                 allocator, table_schema->get_table_name_str(), table_name))) {
       LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(table_schema->get_table_name_str()), K(is_oracle_mode));
+               K(table_schema->get_table_name_str()));
     } else {
       SMART_VAR(ObMySQLProxy::MySQLResult, res)
       {
@@ -305,42 +267,22 @@ int ObMViewRefreshHelper::get_mlog_dml_row_num(ObMViewTransaction &trans, const 
         sqlclient::ObMySQLResult *sql_result = nullptr;
         ObString dml_type;
         int64_t count = 0;
-        if (is_oracle_mode) {
-          if (scn_range.start_scn_.is_valid()) {
-            OZ(sql.assign_fmt(
-              "select DMLTYPE$$, count(*) as COUNT from \"%.*s\".\"%.*s\""
-              " where ora_rowscn > %lu and ora_rowscn <= %lu"
-              " group by DMLTYPE$$;",
-              static_cast<int>(database_name.length()), database_name.ptr(),
-              static_cast<int>(table_name.length()), table_name.ptr(),
-              scn_range.start_scn_.get_val_for_sql(), scn_range.end_scn_.get_val_for_sql()));
-          } else {
-            OZ(
-              sql.assign_fmt("select DMLTYPE$$, count(*) as COUNT from \"%.*s\".\"%.*s\""
-                             " where ora_rowscn <= %lu"
-                             " group by DMLTYPE$$;",
-                             static_cast<int>(database_name.length()), database_name.ptr(),
-                             static_cast<int>(table_name.length()), table_name.ptr(),
-                             scn_range.end_scn_.get_val_for_sql()));
-          }
+        if (scn_range.start_scn_.is_valid()) {
+          OZ(sql.assign_fmt(
+            "select DMLTYPE$$, count(*) as COUNT from `%.*s`.`%.*s`"
+            " where ora_rowscn > %lu and ora_rowscn <= %lu"
+            " group by DMLTYPE$$;",
+            static_cast<int>(database_name.length()), database_name.ptr(),
+            static_cast<int>(table_name.length()), table_name.ptr(),
+            scn_range.start_scn_.get_val_for_sql(), scn_range.end_scn_.get_val_for_sql()));
         } else {
-          if (scn_range.start_scn_.is_valid()) {
-            OZ(sql.assign_fmt(
-              "select DMLTYPE$$, count(*) as COUNT from `%.*s`.`%.*s`"
-              " where ora_rowscn > %lu and ora_rowscn <= %lu"
-              " group by DMLTYPE$$;",
-              static_cast<int>(database_name.length()), database_name.ptr(),
-              static_cast<int>(table_name.length()), table_name.ptr(),
-              scn_range.start_scn_.get_val_for_sql(), scn_range.end_scn_.get_val_for_sql()));
-          } else {
-            OZ(
-              sql.assign_fmt("select DMLTYPE$$, count(*) as COUNT from `%.*s`.`%.*s`"
-                             " where ora_rowscn <= %lu"
-                             " group by DMLTYPE$$;",
-                             static_cast<int>(database_name.length()), database_name.ptr(),
-                             static_cast<int>(table_name.length()), table_name.ptr(),
-                             scn_range.end_scn_.get_val_for_sql()));
-          }
+          OZ(
+            sql.assign_fmt("select DMLTYPE$$, count(*) as COUNT from `%.*s`.`%.*s`"
+                           " where ora_rowscn <= %lu"
+                           " group by DMLTYPE$$;",
+                           static_cast<int>(database_name.length()), database_name.ptr(),
+                           static_cast<int>(table_name.length()), table_name.ptr(),
+                           scn_range.end_scn_.get_val_for_sql()));
         }
         OZ(trans.read(res, tenant_id, sql.ptr()), sql);
         CK(OB_NOT_NULL(res.get_result()));
@@ -355,11 +297,7 @@ int ObMViewRefreshHelper::get_mlog_dml_row_num(ObMViewTransaction &trans, const 
             }
           } else {
             OZ(sql_result->get_varchar("DMLTYPE$$", dml_type));
-            if (is_oracle_mode) {
-              EXTRACT_INT_FIELD_FROM_NUMBER_MYSQL(*sql_result, COUNT, count);
-            } else {
-              EXTRACT_INT_FIELD_MYSQL(*sql_result, "COUNT", count, int64_t);
-            }
+            EXTRACT_INT_FIELD_MYSQL(*sql_result, "COUNT", count, int64_t);
             CK(dml_type.length() == 1);
             if (OB_SUCC(ret)) {
               switch (dml_type.ptr()[0]) {
@@ -516,8 +454,7 @@ int ObMViewRefreshHelper::check_dep_mviews_satisfy_target_scn(
                           const share::SCN &read_snapshot,
                           const ObIArray<uint64_t> &dep_mview_ids,
                           common::ObISQLClient &sql_proxy,
-                          bool &satisfy,
-                          bool oracle_mode)
+                          bool &satisfy)
 {
   int ret = OB_SUCCESS;
   satisfy = true;
@@ -533,7 +470,7 @@ int ObMViewRefreshHelper::check_dep_mviews_satisfy_target_scn(
       satisfy = true;
       LOG_INFO("no dep mview");
     } else if (OB_FAIL(ObMViewInfo::bacth_fetch_mview_infos(sql_proxy, tenant_id,
-                       read_snapshot.get_val_for_sql(), dep_mview_ids, dep_mview_infos, oracle_mode))) {
+                       read_snapshot.get_val_for_sql(), dep_mview_ids, dep_mview_infos))) {
       LOG_WARN("fail to batch fetch mview info", K(ret));
     } else {
       const uint64_t target_data_sync_ts = target_data_sync_scn.get_val_for_gts();
@@ -560,8 +497,7 @@ int ObMViewRefreshHelper::collect_deps_and_check_satisfy(
                           const uint64_t target_data_sync_ts,
                           const uint64_t snapshot_version,
                           common::ObISQLClient &sql_proxy,
-                          ObSchemaGetterGuard &schema_guard,
-                          bool oracle_mode)
+                          ObSchemaGetterGuard &schema_guard)
 {
   int ret = OB_SUCCESS;
   ObArray<ObDependencyInfo> dep_infos;
@@ -587,7 +523,7 @@ int ObMViewRefreshHelper::collect_deps_and_check_satisfy(
     LOG_WARN("fail to get dep mview ids", K(ret));
   } else if (OB_FAIL(ObMViewRefreshHelper::check_dep_mviews_satisfy_target_scn(
                      tenant_id, target_data_sync_scn, read_snapshot,
-                     dep_mview_ids, sql_proxy, satisfy, oracle_mode))) {
+                     dep_mview_ids, sql_proxy, satisfy))) {
     LOG_WARN("fail to target data sync scn satisfied", K(ret));
   } else if (!satisfy) {
     ret = OB_ERR_UNEXPECTED;
@@ -600,12 +536,12 @@ int ObMViewRefreshHelper::collect_deps_and_check_satisfy(
 int ObMViewRefreshHelper::replace_all_snapshot_zero(
                           const std::string &input,
                           const uint64_t snapshot_version,
-                          std::string &output,
-                          const bool oracle_mode)
+                          std::string &output)
 {
   int ret = OB_SUCCESS;
   output = input;
-  std::string search = oracle_mode ? "as of scn " : "as of snapshot ";
+  // Oracle mode removed - always use MySQL "as of snapshot" syntax
+  std::string search = "as of snapshot ";
   std::string new_value_str = std::to_string(snapshot_version);
 
   int64_t pos = 0;
@@ -626,7 +562,7 @@ int ObMViewRefreshHelper::replace_all_snapshot_zero(
     }
   }
   // for debug
-  LOG_DEBUG("print generate sql", K(input.c_str()), K(output.c_str()), K(oracle_mode));
+  LOG_DEBUG("print generate sql", K(input.c_str()), K(output.c_str()));
   return ret;
 }
 } // namespace storage

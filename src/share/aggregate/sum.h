@@ -180,7 +180,7 @@ public:
     } else {
       res_vec->set_null(output_idx);
     }
-    if (out_tc == VEC_TC_DEC_INT512 && OB_SUCC(ret) && lib::is_mysql_mode()) {
+    if (out_tc == VEC_TC_DEC_INT512 && OB_SUCC(ret)) {
       // check mysql decimal int overflow
       const int512_t &res = *reinterpret_cast<const int512_t *>(agg_cell);
       if (res <= wide::ObDecimalIntConstValue::MYSQL_DEC_INT_MIN
@@ -289,21 +289,17 @@ private:
     ret = add_overflow(lparam, rparam, res_buf, res_len);
     if (OB_FAIL(ret)) {
       if (ret == OB_OPERATE_OVERFLOW && out_tc == VEC_TC_FLOAT) {
-        if (!lib::is_oracle_mode()) {
-          char buf[OB_MAX_TWO_OPERATOR_EXPR_LENGTH] = {0};
-          int64_t buf_len = OB_MAX_TWO_OPERATOR_EXPR_LENGTH;
-          int64_t pos = 0;
-          BUF_PRINTF("'(");
-          BUF_PRINTO(lparam);
-          BUF_PRINTF(" + ");
-          BUF_PRINTO(rparam);
-          BUF_PRINTF(")'");
-          LOG_USER_ERROR(OB_OPERATE_OVERFLOW, (in_tc == VEC_TC_FLOAT ? "BINARY_FLOAT" : "DOUBLE"),
-                         buf);
-          SQL_LOG(WARN, "do_overflow failed", K(lparam), K(rparam), K(ret));
-        } else {
-          ret = OB_SUCCESS;
-        }
+        char buf[OB_MAX_TWO_OPERATOR_EXPR_LENGTH] = {0};
+        int64_t buf_len = OB_MAX_TWO_OPERATOR_EXPR_LENGTH;
+        int64_t pos = 0;
+        BUF_PRINTF("'(");
+        BUF_PRINTO(lparam);
+        BUF_PRINTF(" + ");
+        BUF_PRINTO(rparam);
+        BUF_PRINTF(")'");
+        LOG_USER_ERROR(OB_OPERATE_OVERFLOW, (in_tc == VEC_TC_FLOAT ? "BINARY_FLOAT" : "DOUBLE"),
+                       buf);
+        SQL_LOG(WARN, "do_overflow failed", K(lparam), K(rparam), K(ret));
       }
     }
     return ret;
@@ -600,7 +596,7 @@ public:
         }
       }
     } else if (agg_ctx.locate_aggr_info(agg_col_id).get_expr_type() == T_FUN_COUNT_SUM) {
-      if (lib::is_oracle_mode() || out_tc == VEC_TC_NUMBER) {
+      if (out_tc == VEC_TC_NUMBER) {
         number::ObNumber res_nmb;
         res_nmb.set_zero();
         res_vec->set_number(output_idx, res_nmb);
@@ -613,7 +609,7 @@ public:
     } else {
       static_cast<ColumnFmt *>(agg_expr.get_vector(ctx))->set_null(output_idx);
     }
-    if (out_tc == VEC_TC_DEC_INT512 && OB_SUCC(ret) && lib::is_mysql_mode()) {
+    if (out_tc == VEC_TC_DEC_INT512 && OB_SUCC(ret)) {
       // check mysql decimal int overflow
       const int512_t &res = *reinterpret_cast<const int512_t *>(agg_cell);
       if (res <= wide::ObDecimalIntConstValue::MYSQL_DEC_INT_MIN

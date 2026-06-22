@@ -41,6 +41,7 @@
 .review/
 .vscode/
 .cursor/
+.codegraph/
 /.obdev
 /.settings/
 BROWSE

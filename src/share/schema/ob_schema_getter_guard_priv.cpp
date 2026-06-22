@@ -611,7 +611,6 @@ int ObSchemaGetterGuard::check_user_priv(const ObSessionPrivInfo &session_priv,
   uint64_t tenant_id = session_priv.tenant_id_;
   const ObSchemaMgr *mgr = NULL;
   ObPrivSet user_priv_set = session_priv.user_priv_set_;
-  bool is_oracle_mode = false;
 
   if (OB_FAIL(check_tenant_schema_guard(tenant_id))) {
     LOG_WARN("fail to check tenant schema guard", KR(ret), K(tenant_id), K_(tenant_id));
@@ -624,9 +623,7 @@ int ObSchemaGetterGuard::check_user_priv(const ObSessionPrivInfo &session_priv,
         || priv_set == OB_PRIV_CREATE_RESOURCE_POOL
         || priv_set == OB_PRIV_CREATE_RESOURCE_UNIT)
         && (OB_TEST_PRIVS(user_priv_set, OB_PRIV_SUPER))) {
-    } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_oracle_mode))) {
-      LOG_WARN("fail to get compat mode", K(ret));
-    } else if (!is_oracle_mode) {
+    } else if (true) {
       ObNeedPriv need_priv("", "", OB_PRIV_USER_LEVEL, priv_set, false);
       ObNeedPriv collected_privs("", "", OB_PRIV_USER_LEVEL, OB_PRIV_SET_EMPTY, false);
       bool check_succ = false;
@@ -721,7 +718,6 @@ int ObSchemaGetterGuard::check_single_table_priv(const ObSessionPrivInfo &sessio
   int ret = OB_SUCCESS;
   uint64_t tenant_id = session_priv.tenant_id_;
   const ObSchemaMgr *mgr = NULL;
-  bool is_oracle_mode = false;
   if (OB_INVALID_ID == session_priv.tenant_id_ || OB_INVALID_ID == session_priv.user_id_) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("Invalid arguments", "tenant_id", session_priv.tenant_id_,
@@ -731,8 +727,6 @@ int ObSchemaGetterGuard::check_single_table_priv(const ObSessionPrivInfo &sessio
     LOG_WARN("fail to check tenant schema guard", KR(ret), K(tenant_id), K_(tenant_id));
   } else if (OB_FAIL(check_lazy_guard(tenant_id, mgr))) {
     LOG_WARN("fail to check lazy guard", KR(ret), K(tenant_id));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to get compat mode", K(ret));
   } else {
     //first:check user and db priv.
     //second:If user_db_priv_set has no enough privileges, check table priv.
@@ -756,7 +750,7 @@ int ObSchemaGetterGuard::check_single_table_priv(const ObSessionPrivInfo &sessio
           is_table_priv_empty = false;
         }
 
-        if (OB_SUCC(ret) && is_oracle_mode) {
+        if (OB_SUCC(ret) && false) {
           //2. fetch roles privs
           const ObUserInfo *user_info = NULL;
           if (OB_FAIL(get_user_info(tenant_id, session_priv.user_id_, user_info))) {
@@ -791,7 +785,7 @@ int ObSchemaGetterGuard::check_single_table_priv(const ObSessionPrivInfo &sessio
           }
         }
 
-        if (OB_SUCC(ret) && !is_oracle_mode) {
+        if (OB_SUCC(ret) && true) {
           is_table_priv_empty = false;
           ObNeedPriv collected_tb_privs(table_need_priv.db_, table_need_priv.table_,
                                         OB_PRIV_TABLE_LEVEL, OB_PRIV_SET_EMPTY, false);
@@ -846,7 +840,7 @@ int ObSchemaGetterGuard::check_single_table_priv(const ObSessionPrivInfo &sessio
               }
             }
 
-            if (OB_ERR_NO_COLUMN_PRIVILEGE == ret && !is_oracle_mode) {
+            if (OB_ERR_NO_COLUMN_PRIVILEGE == ret && true) {
               ret = OB_SUCCESS;
               ObNeedPriv collected_privs(table_need_priv.db_, table_need_priv.table_,
                                          OB_PRIV_TABLE_LEVEL, OB_PRIV_SET_EMPTY, false);
@@ -901,7 +895,7 @@ int ObSchemaGetterGuard::check_single_table_priv(const ObSessionPrivInfo &sessio
               }
             }
 
-            if (OB_ERR_NO_COLUMN_PRIVILEGE == ret && !is_oracle_mode) {
+            if (OB_ERR_NO_COLUMN_PRIVILEGE == ret && true) {
               ret = OB_SUCCESS;
               ObNeedPriv collected_privs(table_need_priv.db_, table_need_priv.table_,
                                          OB_PRIV_TABLE_LEVEL, OB_PRIV_SET_EMPTY, false);
@@ -1125,7 +1119,6 @@ int ObSchemaGetterGuard::check_catalog_priv(const ObSessionPrivInfo &session_pri
   const ObSchemaMgr *mgr = NULL;
   ObPrivSet catalog_priv_set = OB_PRIV_SET_EMPTY;
   ObPrivSet total_catalog_priv_set_role = OB_PRIV_SET_EMPTY;
-  bool is_oracle_mode = false;
   if (OB_INVALID_ID == session_priv.tenant_id_ || OB_INVALID_ID == session_priv.user_id_) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("Invalid arguments", "tenant_id", session_priv.tenant_id_,
@@ -1134,12 +1127,6 @@ int ObSchemaGetterGuard::check_catalog_priv(const ObSessionPrivInfo &session_pri
     LOG_WARN("fail to check tenant schema guard", K(ret), K(tenant_id), K_(tenant_id));
   } else if (OB_FAIL(check_lazy_guard(tenant_id, mgr))) {
     LOG_WARN("fail to check lazy guard", K(ret), K(tenant_id));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to get compat mode", K(ret));
-  } else if (is_oracle_mode) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "catalog level privilege in oracle mode");
-    LOG_WARN("catalog level privilege is not supported in oracle mode", K(ret));
   } else {
     const ObPrivMgr &priv_mgr = mgr->priv_mgr_;
     ObCatalogPrivSortKey catalog_priv_key(session_priv.tenant_id_, session_priv.user_id_, need_priv.catalog_);
@@ -1201,7 +1188,6 @@ int ObSchemaGetterGuard::check_db_priv(const ObSessionPrivInfo &session_priv,
   uint64_t tenant_id = session_priv.tenant_id_;
   const ObSchemaMgr *mgr = NULL;
   ObPrivSet total_db_priv_set_role = OB_PRIV_SET_EMPTY;
-  bool is_oracle_mode = false;
   if (OB_INVALID_ID == session_priv.tenant_id_ || OB_INVALID_ID == session_priv.user_id_) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("Invalid arguments", "tenant_id", session_priv.tenant_id_,
@@ -1211,8 +1197,6 @@ int ObSchemaGetterGuard::check_db_priv(const ObSessionPrivInfo &session_priv,
     LOG_WARN("fail to check tenant schema guard", KR(ret), K(tenant_id), K_(tenant_id));
   } else if (OB_FAIL(check_lazy_guard(tenant_id, mgr))) {
     LOG_WARN("fail to check lazy guard", KR(ret), K(tenant_id));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to get compat mode", K(ret));
   } else {
     ObPrivSet db_priv_set = 0;
     if (session_priv.db_.length() != 0 && (session_priv.db_ == db || 0 == db.length())) {
@@ -1225,7 +1209,7 @@ int ObSchemaGetterGuard::check_db_priv(const ObSessionPrivInfo &session_priv,
       }
     }
     /* load role db privs */
-    if (OB_SUCC(ret) && is_oracle_mode) {
+    if (OB_SUCC(ret) && false) {
       const ObUserInfo *user_info = NULL;
       //bool is_grant_role = false;
       OZ (get_user_info(tenant_id, session_priv.user_id_, user_info), session_priv.user_id_);
@@ -1260,7 +1244,7 @@ int ObSchemaGetterGuard::check_db_priv(const ObSessionPrivInfo &session_priv,
       }
     }
 
-    if (OB_SUCC(ret) && !is_oracle_mode) {
+    if (OB_SUCC(ret) && true) {
       ObNeedPriv need_priv(db, "", OB_PRIV_DB_LEVEL, OB_PRIV_SET_EMPTY, false);
       ObNeedPriv collected_privs(db, "", OB_PRIV_DB_LEVEL, OB_PRIV_SET_EMPTY, false);
       bool check_succ = false;

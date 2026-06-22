@@ -905,8 +905,6 @@ int ObPLDDLOperator::drop_trigger_in_drop_database(uint64_t tenant_id,
   } else if (OB_FAIL(schema_guard.get_trigger_ids_in_database(tenant_id, database_id, trigger_ids))) {
     LOG_WARN("get trigger infos in database failed", KR(ret), K(tenant_id), K(database_id));
   } else {
-    bool is_oracle_mode = false;
-    OZ (ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_oracle_mode));
     for (int64_t i = 0; OB_SUCC(ret) && i < trigger_ids.count(); i++) {
       const ObTriggerInfo *tg_info = NULL;
       const uint64_t trigger_id = trigger_ids.at(i);
@@ -919,7 +917,7 @@ int ObPLDDLOperator::drop_trigger_in_drop_database(uint64_t tenant_id,
         LOG_WARN("trigger info is NULL", K(ret));
       } else if (tg_info->is_system_type()) {
         ObArray<const ObUserInfo *> user_array;
-        CK (is_oracle_mode);
+        CK (false);
         OZ (schema_guard.get_user_info(tenant_id, db_schema.get_database_name_str(), user_array));
         OV (1 == user_array.count(), OB_ERR_UNEXPECTED, user_array.count());
         CK (OB_NOT_NULL(user_array.at(0)));
@@ -997,13 +995,9 @@ int ObPLDDLOperator::update_routine_info(share::schema::ObRoutineInfo &routine_i
     LOG_WARN("failed to fetch new_routine_id", K(tenant_id), K(ret));
   } else if (OB_FAIL(schema_service_.gen_new_schema_version(tenant_id, new_schema_version))) {
     LOG_WARN("fail to gen new schema_version", K(ret), K(tenant_id));
-  } else if (OB_FAIL(ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode))) {
-    LOG_WARN("fail to get tenant mode", K(ret));
   } else {
+    compat_mode = lib::Worker::CompatMode::MYSQL;
     routine_info.set_database_id(database_id);
-    if (lib::Worker::CompatMode::ORACLE == compat_mode) {
-      routine_info.set_owner_id(owner_id);
-    }
     routine_info.set_package_id(parent_id);
     routine_info.set_routine_id(new_routine_id);
     routine_info.set_schema_version(new_schema_version);

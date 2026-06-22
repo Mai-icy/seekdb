@@ -97,7 +97,7 @@ static int longtext2longtext(const ObObj &src, ObObj &dst, ObIAllocator &)
 }
 
 ObAgentVirtualTable::ObAgentVirtualTable() : general_tenant_id_(OB_INVALID_TENANT_ID), 
-                                             mode_(lib::Worker::CompatMode::ORACLE)
+                                             mode_(lib::Worker::CompatMode::MYSQL)
 {
 }
 
@@ -202,7 +202,6 @@ int ObAgentVirtualTable::init_non_exist_map_item(
 int ObAgentVirtualTable::add_extra_condition(common::ObSqlString &sql)
 {
   int ret = OB_SUCCESS;
-  lib::CompatModeGuard g(lib::Worker::CompatMode::MYSQL);
   uint64_t tenant_id = OB_SYS_TENANT_ID;
   if (NULL == table_schema_) {
     ret = OB_ERR_UNEXPECTED;

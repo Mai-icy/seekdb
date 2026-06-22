@@ -90,7 +90,6 @@ int ObSchemaUtils::cascaded_generated_column(ObTableSchema &table_schema,
   ObItemType root_expr_type = T_INVALID;
   ObArray<ObString> columns_names;
   ObColumnSchemaV2 *col_schema = NULL;
-  bool is_oracle_mode = false;
   if (column.is_generated_column()) {
     // If the dependent column of the generated column has a change column, the current default value
     // should be used instead of orig vaule
@@ -105,13 +104,6 @@ int ObSchemaUtils::cascaded_generated_column(ObTableSchema &table_schema,
     }
 
     if (OB_SUCC(ret)) {
-      if (OB_FAIL(table_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-        SHARE_SCHEMA_LOG(WARN, "failed to check if oracle mode", K(ret));
-      }
-    }
-    if (OB_SUCC(ret)) {
-      lib::Worker::CompatMode compat_mode = is_oracle_mode ? lib::Worker::CompatMode::ORACLE : lib::Worker::CompatMode::MYSQL;
-      lib::CompatModeGuard guard(compat_mode);
       if (OB_FAIL(ObResolverUtils::resolve_generated_column_info(col_def, allocator,
           root_expr_type, columns_names))) {
         LOG_WARN("get generated column expr failed", K(ret));
@@ -845,18 +837,14 @@ int ObSchemaUtils::build_column_group(
       cg_name.empty() || (cg_type >= ObColumnGroupType::MAX_COLUMN_GROUP)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument",K(table_schema), KR(ret), K(cg_name), K(cg_type), "column_id_cnt", column_ids.count());
-  } else if(OB_FAIL(ObCompatModeGetter::get_tenant_mode(tenant_id, mode))) {
-    LOG_WARN("fail to check if oralce mode", K(ret), K(table_schema));
   } else {
+    mode = lib::Worker::CompatMode::MYSQL;
     column_group.set_column_group_id(cg_id);
     column_group.set_column_group_type(cg_type);
     column_group.set_block_size(table_schema.get_block_size());
     column_group.set_compressor_type(table_schema.get_compressor_type());
     const ObStoreFormatType store_format = table_schema.get_store_format();
-    bool is_flat = lib::Worker::CompatMode::ORACLE == mode ? ((OB_STORE_FORMAT_NOCOMPRESS_ORACLE == store_format)
-                                            || (OB_STORE_FORMAT_BASIC_ORACLE == store_format)
-                                            || (OB_STORE_FORMAT_OLTP_ORACLE == store_format))
-                                         : ((OB_STORE_FORMAT_REDUNDANT_MYSQL == store_format)
+    bool is_flat = ((OB_STORE_FORMAT_REDUNDANT_MYSQL == store_format)
                                             || (OB_STORE_FORMAT_COMPACT_MYSQL == store_format));
     if (is_flat) {
       // use the encoding type according to the row format

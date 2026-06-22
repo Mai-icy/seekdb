@@ -503,7 +503,7 @@ private:
   common::ObConfigManager *config_mgr_;
 
   common::ObMySQLProxy sql_proxy_;
-  common::ObOracleSqlProxy oracle_sql_proxy_;
+  common::ObCommonSqlProxy oracle_sql_proxy_;
   observer::ObRestoreCtx *restore_ctx_;
   share::schema::ObMultiVersionSchemaService *schema_service_;
 

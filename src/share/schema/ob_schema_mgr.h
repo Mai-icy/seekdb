@@ -66,7 +66,6 @@ public:
                K_(tenant_name),
                K_(name_case_mode),
                K_(read_only),
-               K_(compatibility_mode),
                K_(gmt_modified),
                K_(status),
                K_(in_recyclebin));
@@ -85,9 +84,6 @@ public:
   inline common::ObNameCaseMode get_name_case_mode() const { return name_case_mode_; }
   inline void set_read_only(const bool read_only) { read_only_ = read_only; }
   inline bool get_read_only() const { return read_only_; }
-
-  inline void set_compatibility_mode(const common::ObCompatibilityMode compatibility_mode) { compatibility_mode_ = compatibility_mode; }
-  inline common::ObCompatibilityMode get_compatibility_mode() const { return compatibility_mode_; }
 
   inline void set_gmt_modified(const int64_t gmt_modified) { gmt_modified_ = gmt_modified; }
   inline int64_t get_gmt_modified() const { return gmt_modified_; }
@@ -108,7 +104,6 @@ private:
   common::ObString tenant_name_;
   common::ObNameCaseMode name_case_mode_; //deprecated
   bool read_only_;  // Subject to the value of the system variable
-  common::ObCompatibilityMode compatibility_mode_;
   int64_t gmt_modified_;
   ObTenantStatus status_;
   bool in_recyclebin_;
@@ -348,11 +343,7 @@ struct GetTableKeyV2<ObIndexSchemaHashWrapper, ObSimpleTableSchemaV2 *>
   ObIndexSchemaHashWrapper operator()(const ObSimpleTableSchemaV2 *index_schema) const
   {
     if (!OB_ISNULL(index_schema)) {
-      bool is_oracle_mode = false;
-      if (OB_UNLIKELY(OB_SUCCESS != index_schema->check_if_oracle_compat_mode(is_oracle_mode))) {
-        ObIndexSchemaHashWrapper null_wrap;
-        return null_wrap;
-      } else if (index_schema->is_in_recyclebin()) { // index is in recyclebin
+      if (index_schema->is_in_recyclebin()) { // index is in recyclebin
         ObIndexSchemaHashWrapper index_schema_hash_wrapper(
             index_schema->get_tenant_id(),
             index_schema->get_database_id(),
@@ -363,7 +354,7 @@ struct GetTableKeyV2<ObIndexSchemaHashWrapper, ObSimpleTableSchemaV2 *>
         ObIndexSchemaHashWrapper index_schema_hash_wrapper(
             index_schema->get_tenant_id(),
             index_schema->get_database_id(),
-            is_oracle_mode ? common::OB_INVALID_ID : index_schema->get_data_table_id(),
+            index_schema->get_data_table_id(),
             index_schema->get_origin_index_name_str());
         return index_schema_hash_wrapper;
       }

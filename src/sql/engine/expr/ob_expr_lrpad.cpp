@@ -141,13 +141,10 @@ int ObExprBaseLRpad::calc_type(ObExprResType &type,
   ObObjType len_type = ObNullType;
   int64_t max_len = OB_MAX_VARCHAR_LENGTH;
   int64_t text_len = text.get_length();
-  if (lib::is_mysql_mode()) {
+  {
     len_type = ObIntType;
     text_type = ObVarcharType;
     max_len = OB_MAX_VARCHAR_LENGTH;
-  } else {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("error compat mode", K(ret));
   }
 
   const ObSQLSessionInfo *session = type_ctx.get_session();
@@ -160,7 +157,7 @@ int ObExprBaseLRpad::calc_type(ObExprResType &type,
     ObString default_pad_str = ObString(" "); // default is ' '
     type.set_length(static_cast<ObLength>(max_len));
     len.set_calc_type(len_type);
-    if (is_mysql_mode()) {
+    {
       pad_obj = pad_text->get_param();
       ObSEArray<ObExprResType, 2> types;
       OZ(types.push_back(text));
@@ -190,19 +187,6 @@ int ObExprBaseLRpad::calc_type(ObExprResType &type,
           }
         }
       }
-    } else {
-      ObSEArray<ObExprResType*, 2> types;
-      OZ(types.push_back(&text));
-      OZ(aggregate_string_type_and_charset_oracle(*session, types, type,
-          PREFER_VAR_LEN_CHAR | PREFER_NLS_LENGTH_SEMANTICS));
-      if (NULL != pad_text) {
-        OZ(types.push_back(pad_text));
-        OX(pad_obj = pad_text->get_param());
-      } else {
-        OX(pad_obj.set_string(ObVarcharType, default_pad_str));
-        OX(pad_obj.set_collation_type(ObCharset::get_system_collation()));
-      }
-      OZ(deduce_string_param_calc_type_and_charset(*session, type, types));
     }
 
     const int64_t buf_len = pad_obj.is_character_type() ? pad_obj.get_string_len() * 4 : 0;

@@ -59,7 +59,6 @@ int ObAllVirtualProxyBaseIterator::inner_get_next_row(ObNewRow *&row)
 }
 
 int ObAllVirtualProxyBaseIterator::get_rowkey_str(
-    const bool is_oracle_mode,
     const ObRowkey &rowkey,
     ObObj &out_obj)
 {
@@ -75,7 +74,7 @@ int ObAllVirtualProxyBaseIterator::get_rowkey_str(
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_ERROR("alloc tmp_buf fail", KR(ret));
   } else if (OB_FAIL(ObPartitionUtils::convert_rowkey_to_sql_literal(
-             is_oracle_mode, rowkey, buf, buf_len, pos, false, TZ_INFO(session_)))) {
+             rowkey, buf, buf_len, pos, false, TZ_INFO(session_)))) {
     LOG_WARN("fail to get rowkey str", KR(ret));
   } else if (OB_UNLIKELY(pos >= buf_len) || pos < 0) {
     ret = OB_BUF_NOT_ENOUGH;
@@ -201,7 +200,6 @@ int ObAllVirtualProxyBaseIterator::get_obj_bin_str(const ObObj &obj, ObObj &out_
 }
 
 int ObAllVirtualProxyBaseIterator::get_rows_str(
-    const bool is_oracle_mode,
     const common::ObIArray<common::ObNewRow>& rows,
     ObObj &out_obj)
 {
@@ -216,7 +214,7 @@ int ObAllVirtualProxyBaseIterator::get_rows_str(
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_ERROR("alloc tmp_buf fail", KR(ret));
   } else if (OB_FAIL(ObPartitionUtils::convert_rows_to_sql_literal(
-             is_oracle_mode, rows, buf, buf_len, pos, false, TZ_INFO(session_)))) {
+             rows, buf, buf_len, pos, false, TZ_INFO(session_)))) {
     LOG_WARN("fail to get rows str", KR(ret));
   } else if (OB_UNLIKELY(pos >= buf_len) || pos < 0) {
     ret = OB_BUF_NOT_ENOUGH;
@@ -259,16 +257,15 @@ int ObAllVirtualProxyBaseIterator::get_rows_bin_str(const common::ObIArray<commo
 }
 
 int ObAllVirtualProxyBaseIterator::get_partition_value_str(
-    const bool is_oracle_mode,
     const ObPartitionFuncType type,
     const ObBasePartition &partition,
     ObObj &out_obj)
 {
   int ret = OB_SUCCESS;
   if (is_range_part(type)) {
-    ret = get_rowkey_str(is_oracle_mode, partition.get_high_bound_val(), out_obj);
+    ret = get_rowkey_str(partition.get_high_bound_val(), out_obj);
   } else if (is_list_part(type)) {
-    ret = get_rows_str(is_oracle_mode, partition.get_list_row_values(), out_obj);
+    ret = get_rows_str(partition.get_list_row_values(), out_obj);
   } else if (is_hash_like_part(type)) {
   } else {
     ret = OB_INVALID_ARGUMENT;

@@ -55,11 +55,7 @@ bool check_hidden_partition(const ObCheckPartitionMode check_partition_mode)
 
 lib::Worker::CompatMode get_worker_compat_mode(const ObCompatibilityMode &mode)
 {
-  lib::Worker::CompatMode worker_mode = lib::Worker::CompatMode::MYSQL;
-  if (ObCompatibilityMode::ORACLE_MODE == mode) {
-    worker_mode = lib::Worker::CompatMode::ORACLE;
-  }
-  return worker_mode;
+  return lib::Worker::CompatMode::MYSQL;
 }
 
 int ObIndexSchemaInfo::init(
@@ -469,32 +465,20 @@ int ObSysTableChecker::check_inner_table_exist(
   } else if (!is_tenant_table) {
     // case 1: sys table in sys tenant only
     exist = is_sys_tenant(tenant_id);
-  } else if (OB_FAIL(ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode))) {
-    LOG_WARN("fail to get tenant compat mode", K(ret), K(tenant_id));
   } else {
-    const bool is_oracle_mode = lib::Worker::CompatMode::ORACLE == compat_mode;
     // case 2: sys table in tenant space
     if (is_oceanbase_sys_database_id(database_id)) {
       if (is_sys_tenant(tenant_id) || is_meta_tenant(tenant_id)) {
         // case 2.1: sys/meta tenant has all inner tables in oceanbase.
         exist = true;
-      } else if (is_oracle_mode) {
-        // case 2.2: oracle tenant has non cluster private inner tables in oceanbase.
-        // mysql sys view in oracle tenant is not accessable.
-        exist = !is_mysql_sys_view_table(table_id) && !is_cluster_private_tenant_table(table_id);
       } else {
         // case 2.3: mysql tenant has non cluster private inner tables in oceanbase.
         exist = !is_cluster_private_tenant_table(table_id);
       }
     } else {
       // information_schema、mysql、sys
-      if (is_oracle_mode) {
-        // case 2.4: In Oracle tenant mode, there is no need to add MySQL related internal tables
-        exist = is_oracle_sys_database_id(database_id);
-      } else {
-        // case 2.5: In the MySQL tenant mode, there is no need to add Oracle related internal tables,
-        exist = is_mysql_sys_database_id(database_id);
-      }
+      // case 2.5: In the MySQL tenant mode, there is no need to add Oracle related internal tables,
+      exist = is_mysql_sys_database_id(database_id);
     }
   }
   return ret;
@@ -1209,19 +1193,6 @@ const ObSysVarSchema *ObSysVariableSchema::get_sysvar_schema(int64_t idx) const
   return ret;
 }
 
-int ObSysVariableSchema::get_oracle_mode(bool &is_oracle_mode) const
-{
-  int ret = OB_SUCCESS;
-  is_oracle_mode = false;
-  const ObSysVarSchema *sysvar_schema = nullptr;
-  if (OB_FAIL(get_sysvar_schema(SYS_VAR_OB_COMPATIBILITY_MODE, sysvar_schema))) {
-    LOG_WARN("failed to get ob_compatibility_mode", K(ret));
-  } else if (0 == (sysvar_schema->get_value()).case_compare("1")) {
-    is_oracle_mode = true;
-  }
-  return ret;
-}
-
 /*-------------------------------------------------------------------------------------------------
  * ------------------------------ObTenantSchema-------------------------------------------
  ----------------------------------------------------------------------------------------------------*/
@@ -1789,7 +1760,6 @@ ObTenantSchema& ObTenantSchema::operator =(const ObTenantSchema &src_schema)
     set_charset_type(src_schema.get_charset_type());
     set_name_case_mode(src_schema.name_case_mode_);
     set_default_tablegroup_id(src_schema.default_tablegroup_id_);
-    set_compatibility_mode(src_schema.compatibility_mode_);
     set_status(src_schema.status_);
     set_in_recyclebin(src_schema.in_recyclebin_);
     if (OB_FAIL(set_tenant_name(src_schema.tenant_name_))) {
@@ -1834,7 +1804,6 @@ void ObTenantSchema::reset()
   reset_string(comment_);
   default_tablegroup_id_ = OB_INVALID_ID;
   reset_string(default_tablegroup_name_);
-  compatibility_mode_ = ObCompatibilityMode::OCEANBASE_MODE;
   status_ = TENANT_STATUS_NORMAL;
   in_recyclebin_ = false;
   reset_physical_location_info();
@@ -1923,7 +1892,6 @@ OB_DEF_SERIALIZE(ObTenantSchema)
   LST_DO_CODE(OB_UNIS_ENCODE,
               default_tablegroup_id_,
               default_tablegroup_name_,
-              compatibility_mode_,
               status_,
               in_recyclebin_);
 
@@ -1951,7 +1919,6 @@ OB_DEF_DESERIALIZE(ObTenantSchema)
   LST_DO_CODE(OB_UNIS_DECODE,
               default_tablegroup_id_,
               default_tablegroup_name_,
-              compatibility_mode_,
               status_,
               in_recyclebin_);
 
@@ -1975,7 +1942,7 @@ OB_DEF_SERIALIZE_SIZE(ObTenantSchema)
               locked_, comment_, charset_type_, collation_type_, name_case_mode_,
               read_only_,
               default_tablegroup_id_, default_tablegroup_name_,
-              compatibility_mode_, status_, in_recyclebin_);
+              status_, in_recyclebin_);
   len += get_string_array_serialize_size(zone_list_);
   return len;
 }
@@ -2466,15 +2433,12 @@ int ObPartitionSchema::try_generate_hash_part()
   } else if (OB_NOT_NULL(get_part_array())) {
     // skip
   } else if (is_hash_like_part()) {
-    bool is_oracle_mode = false;
     const int64_t BUF_SIZE = OB_MAX_PARTITION_NAME_LENGTH;
     char buf[BUF_SIZE];
     const int64_t &first_part_num = get_first_part_num();
     if (OB_UNLIKELY(first_part_num <= 0)) {
       ret = OB_INVALID_ARGUMENT;
       LOG_WARN("part_option is invalid", KR(ret), KPC(this));
-    } else if (OB_FAIL(check_if_oracle_compat_mode(is_oracle_mode))) {
-      LOG_WARN("fail to check if oracle mode", KR(ret), KPC(this));
     } else if (OB_FAIL(preserve_array(partition_array_, partition_array_capacity_, first_part_num))) {
       LOG_WARN("fail to preserve partition array", KR(ret), KP(partition_array_), K(partition_array_capacity_), K(first_part_num));
     } else {
@@ -2484,7 +2448,7 @@ int ObPartitionSchema::try_generate_hash_part()
         part.reset();
         MEMSET(buf, 0, BUF_SIZE);
         if (OB_FAIL(ObPartitionSchema::gen_hash_part_name(
-            i, FIRST_PART, is_oracle_mode, buf, BUF_SIZE, NULL, NULL))) {
+            i, FIRST_PART, false, buf, BUF_SIZE, NULL, NULL))) {
           LOG_WARN("fail to get part name", KR(ret), K(i));
         } else if (FALSE_IT(part_name.assign_ptr(buf, static_cast<int32_t>(strlen(buf))))) {
         } else if (OB_FAIL(part.set_part_name(part_name))) {
@@ -2504,7 +2468,6 @@ int ObPartitionSchema::try_generate_hash_part()
 int ObPartitionSchema::try_generate_hash_subpart(bool &generated)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   const int64_t part_num = get_partition_num();
   ObPartition **part_array = get_part_array();
   const int64_t def_subpart_num = get_def_sub_part_num();
@@ -2526,8 +2489,6 @@ int ObPartitionSchema::try_generate_hash_subpart(bool &generated)
   } else if (def_subpart_num <= 0) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("def_subpart_num is invalid", KR(ret), KPC(this));
-  } else if (OB_FAIL(check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("fail to check if oracle mode", KR(ret), KPC(this));
   } else {
     const int64_t BUF_SIZE = OB_MAX_PARTITION_NAME_LENGTH;
     char buf[BUF_SIZE];
@@ -2542,7 +2503,7 @@ int ObPartitionSchema::try_generate_hash_subpart(bool &generated)
         ObString sub_part_name;
         subpart.reset();
         if (OB_FAIL(gen_hash_part_name(j, TEMPLATE_SUB_PART,
-                    is_oracle_mode, buf, BUF_SIZE, NULL, NULL))) {
+                    false, buf, BUF_SIZE, NULL, NULL))) {
           LOG_WARN("fail to get def subpart name", KR(ret), K(j));
         } else if (FALSE_IT(sub_part_name.assign_ptr(buf, static_cast<int32_t>(strlen(buf))))) {
         } else if (OB_FAIL(subpart.set_part_name(sub_part_name))) {
@@ -2565,7 +2526,6 @@ int ObPartitionSchema::try_generate_hash_subpart(bool &generated)
 int ObPartitionSchema::try_generate_subpart_by_template(bool &generated)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   const int64_t part_num = get_partition_num();
   ObPartition **part_array = get_part_array();
   const int64_t def_subpart_num = get_def_subpartition_num();
@@ -2586,8 +2546,6 @@ int ObPartitionSchema::try_generate_subpart_by_template(bool &generated)
   } else if (OB_ISNULL(def_subpart_array) || def_subpart_num <= 0) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("def_subpart_array is null or def_subpart_num is invalid", KR(ret), KPC(this));
-  } else if (OB_FAIL(check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("fail to check if oracle mode", KR(ret), KPC(this));
   } else {
     const int64_t BUF_SIZE = OB_MAX_PARTITION_NAME_LENGTH;
     char buf[BUF_SIZE];
@@ -2615,7 +2573,7 @@ int ObPartitionSchema::try_generate_subpart_by_template(bool &generated)
           } else if (OB_FAIL(subpart.assign(*def_subpart_array[j]))) {
             LOG_WARN("fail to assign subpart", KR(ret));
           } else if (OB_FAIL(databuff_printf(buf, BUF_SIZE, pos, "%s%s%s",
-                     part->get_part_name().ptr(), is_oracle_mode ? "S" : "s",
+                     part->get_part_name().ptr(), "s",
                      def_subpart_array[j]->get_part_name().ptr()))) {
             LOG_WARN("part name is too long", KR(ret), KPC(part), K(subpart));
           } else if (FALSE_IT(sub_part_name.assign_ptr(buf, static_cast<int32_t>(strlen(buf))))) {
@@ -3566,7 +3524,6 @@ int ObPartitionSchema::mock_list_partition_array()
 {
   int ret = OB_SUCCESS;
   const uint64_t table_id = get_table_id();
-  bool is_oracle_mode = false;
   if (!is_virtual_table(table_id)) {
     ret = OB_NOT_SUPPORTED;
     LOG_WARN("only virtual table need mock partition array", KR(ret), K(table_id));
@@ -3575,17 +3532,13 @@ int ObPartitionSchema::mock_list_partition_array()
              || 1 != get_first_part_num()) {
     ret = OB_NOT_SUPPORTED;
     LOG_WARN("invalid part option", KR(ret), K(table_id), K_(part_option));
-  } else if (OB_FAIL(check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K(table_id));
   } else {
     reset_partition_array();
     ObPartition partition;
     char buf[OB_MAX_PARTITION_NAME_LENGTH] = {'\0'};
     // inner table use pure schema id as part_id
     const int64_t part_id = table_id;
-    const char* part_name_str  = is_oracle_mode ?
-                                 ORACLE_NON_PARTITIONED_TABLE_PART_NAME :
-                                 MYSQL_NON_PARTITIONED_TABLE_PART_NAME;
+    const char* part_name_str  = MYSQL_NON_PARTITIONED_TABLE_PART_NAME;
     ObString part_name(strlen(part_name_str), part_name_str);
 
     partition.set_tenant_id(get_tenant_id());
@@ -4230,30 +4183,6 @@ int ObTablegroupSchema::calc_subpart_func_expr_num(int64_t &subpart_func_expr_nu
 {
   int ret = OB_SUCCESS;
   subpart_func_expr_num = sub_part_func_expr_num_;
-  return ret;
-}
-
-int ObTablegroupSchema::check_if_oracle_compat_mode(bool &is_oracle_mode) const
-
-{
-  int ret = OB_SUCCESS;
-  const uint64_t tenant_id = get_tenant_id();
-  const int64_t tablegroup_id = get_tablegroup_id();
-  is_oracle_mode = false;
-  lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
-
-  if (is_sys_tablegroup_id(tablegroup_id)) {
-    is_oracle_mode = false;
-  } else if (OB_FAIL(ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode))) {
-    LOG_WARN("fail to get tenant mode", KR(ret), K(tenant_id), K(tablegroup_id));
-  } else if (lib::Worker::CompatMode::ORACLE == compat_mode) {
-    is_oracle_mode = true;
-  } else if (lib::Worker::CompatMode::MYSQL == compat_mode) {
-    is_oracle_mode = false;
-  } else {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("compat_mode should not be INVALID.", KR(ret), K(tenant_id), K_(tablegroup_id));
-  }
   return ret;
 }
 
@@ -6755,24 +6684,10 @@ int ObPartitionUtils::calc_hash_part_idx(const uint64_t val,
   int64_t N = 0;
   int64_t powN = 0;
   const static int64_t max_part_num_log2 = 64;
-  // This function is used by SQL. Should ensure SQL runs in MySQL mode when query sys table.
-  if (lib::is_oracle_mode()) {
-    // 
-    // It will not be a negative number, so use forced conversion instead of floor
-    N = static_cast<int64_t>(std::log(part_num) / std::log(2));
-    if (N >= max_part_num_log2) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("result is too big", K(N), K(part_num), K(val));
-    } else {
-      powN = (1ULL << N);
-      partition_idx = val & (powN - 1); //pow(2, N));
-      if (partition_idx + powN < part_num && (val & powN) == powN) {
-        partition_idx += powN;
-      }
-    }
-  } else {
-    partition_idx = val % part_num;
-  }
+  UNUSED(N);
+  UNUSED(powN);
+  UNUSED(max_part_num_log2);
+  partition_idx = val % part_num;
   return ret;
 }
 
@@ -6789,7 +6704,6 @@ bool ObPartitionUtils::is_default_list_part(const ObPartition &part)
 
 ///special case: char and varchar && oracle mode int and numberic
 bool ObPartitionUtils::is_types_equal_for_partition_check(
-     const bool is_oracle_mode,
      const common::ObObjType &type1,
      const common::ObObjType &type2)
 {
@@ -6799,16 +6713,6 @@ bool ObPartitionUtils::is_types_equal_for_partition_check(
   } else if ((common::ObCharType == type1 || common::ObVarcharType == type1)
               && (common::ObCharType == type2 || common::ObVarcharType == type2)) {
     is_equal = true;
-  } else if (is_oracle_mode) {
-    if ((common::ObIntType == type1 || common::ObNumberType == type1)
-        && (common::ObIntType == type2 || common::ObNumberType == type2)) {
-      is_equal = true;
-    } else if (common::ObNumberType == type1
-               && common::ObNumberType == type2) {
-      is_equal = true;
-    } else {
-      is_equal = false;
-    }
   } else {
     is_equal = false;
   }
@@ -6816,7 +6720,6 @@ bool ObPartitionUtils::is_types_equal_for_partition_check(
 }
 
 int ObPartitionUtils::convert_rows_to_sql_literal(
-    const bool is_oracle_mode,
     const common::ObIArray<common::ObNewRow>& rows,
     char *buf,
     const int64_t buf_len,
@@ -6875,7 +6778,6 @@ int ObPartitionUtils::convert_rows_to_sql_literal(
 
 
 int ObPartitionUtils::convert_rowkey_to_sql_literal(
-    const bool is_oracle_mode,
     const ObRowkey &rowkey,
     char *buf,
     const int64_t buf_len,
@@ -6981,7 +6883,6 @@ int ObPartitionUtils::convert_rowkey_to_hex(
 }
 
 int ObPartitionUtils::set_low_bound_val_by_interval_range_by_innersql(
-    const bool is_oracle_mode,
     ObPartition &p,
     const ObRowkey &interval_range_val)
 {
@@ -7011,13 +6912,11 @@ int ObPartitionUtils::set_low_bound_val_by_interval_range_by_innersql(
     } else if (OB_FAIL(OTTZ_MGR.get_tenant_tz(p.get_tenant_id(), tz_info.get_tz_map_wrap()))) {
       LOG_WARN("get tenant timezone map failed", KR(ret), K(p.get_tenant_id()));
     } else if (OB_FAIL(ObPartitionUtils::convert_rowkey_to_sql_literal(
-               is_oracle_mode,
                p.get_high_bound_val(), high_bound_val_str,
                OB_MAX_B_HIGH_BOUND_VAL_LENGTH,
                high_bound_val_len, false, &tz_info))) {
       LOG_WARN("Failed to convert rowkey to sql text", K(tz_info), KR(ret));
     } else if (OB_FAIL(ObPartitionUtils::convert_rowkey_to_sql_literal(
-               is_oracle_mode,
                interval_range_val, interval_range_str,
                OB_MAX_B_HIGH_BOUND_VAL_LENGTH,
                interval_range_len, false, &tz_info))) {
@@ -8391,8 +8290,7 @@ const char *PART_TYPE_STR[PARTITION_FUNC_TYPE_MAX + 1] =
   "unknown"
 };
 
-int get_part_type_str(const bool is_oracle_mode,
-                      ObPartitionFuncType type,
+int get_part_type_str(ObPartitionFuncType type,
                       common::ObString &str)
 {
   int ret = common::OB_SUCCESS;
@@ -8400,14 +8298,6 @@ int get_part_type_str(const bool is_oracle_mode,
     ret = common::OB_INVALID_ARGUMENT;
     SHARE_SCHEMA_LOG(WARN, "invalid partition function type", K(type));
   } else {
-    if (is_oracle_mode) {
-      if (PARTITION_FUNC_TYPE_RANGE_COLUMNS == type
-         || PARTITION_FUNC_TYPE_INTERVAL == type) {
-        type = PARTITION_FUNC_TYPE_RANGE;
-      } else if (PARTITION_FUNC_TYPE_LIST_COLUMNS == type) {
-        type = PARTITION_FUNC_TYPE_LIST;
-      }
-    }
     str = common::ObString::make_string(PART_TYPE_STR[type]);
   }
   return ret;
@@ -10165,24 +10055,16 @@ OB_SERIALIZE_MEMBER(ObSimpleConstraintInfo,
 int ObCompareNameWithTenantID::compare(const common::ObString &str1, const common::ObString &str2)
 {
   common::ObCollationType cs_type = common::CS_TYPE_UTF8MB4_GENERAL_CI;
-  lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
   if (tenant_id_ != OB_INVALID_ID &&
       database_id_ != OB_INVALID_ID &&
       is_mysql_sys_database_id(database_id_)) {
     // If it is the oceanbase database, no matter what the tenant, I hope that it is not case sensitive
     cs_type = common::CS_TYPE_UTF8MB4_GENERAL_CI;
-  } else if (lib::is_oracle_mode()) {
-    cs_type = common::CS_TYPE_UTF8MB4_BIN;
   } else if (tenant_id_ == OB_INVALID_ID) {
-    // Used for scenarios that do not require the tenant id to be case sensitive, such as column, only rely on is_oracle_mode()
-    /* ^-^ */
+    // tenant_id unknown, keep default case-insensitive
   } else {
     if (name_case_mode_ != OB_NAME_CASE_INVALID) {
       cs_type = ObSchema::get_cs_type_with_cmp_mode(name_case_mode_);
-    }
-    (void) ObCompatModeGetter::get_tenant_mode(tenant_id_, compat_mode);
-    if (compat_mode == lib::Worker::CompatMode::ORACLE) {
-      cs_type = common::CS_TYPE_UTF8MB4_BIN;
     }
   }
   return common::ObCharset::strcmp(cs_type, str1, str2);
@@ -11193,12 +11075,7 @@ ObIndexSchemaHashWrapper GetIndexNameKey<ObIndexSchemaHashWrapper, ObIndexNameIn
   const ObIndexNameInfo *index_name_info) const
 {
   if (OB_NOT_NULL(index_name_info)) {
-    bool is_oracle_mode = false;
-    if (OB_UNLIKELY(OB_SUCCESS != ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-        index_name_info->get_tenant_id(), index_name_info->get_index_id(), is_oracle_mode))) {
-      ObIndexSchemaHashWrapper null_wrap;
-      return null_wrap;
-    } else if (is_recyclebin_database_id(index_name_info->get_database_id())) {
+    if (is_recyclebin_database_id(index_name_info->get_database_id())) {
       ObIndexSchemaHashWrapper index_schema_hash_wrapper(
           index_name_info->get_tenant_id(),
           index_name_info->get_database_id(),
@@ -11209,7 +11086,7 @@ ObIndexSchemaHashWrapper GetIndexNameKey<ObIndexSchemaHashWrapper, ObIndexNameIn
       ObIndexSchemaHashWrapper index_schema_hash_wrapper(
           index_name_info->get_tenant_id(),
           index_name_info->get_database_id(),
-          is_oracle_mode ? common::OB_INVALID_ID : index_name_info->get_data_table_id(),
+          index_name_info->get_data_table_id(),
           index_name_info->get_original_index_name());
       return index_schema_hash_wrapper;
     }
@@ -11266,8 +11143,7 @@ int ObIndexNameInfo::init(
   return ret;
 }
 
-bool check_can_drop_column_instant(const uint64_t tenant_id,
-                                   const bool is_oracle_mode)
+bool check_can_drop_column_instant(const uint64_t tenant_id)
 {
   int ret = OB_SUCCESS;
   bool can_drop_column_instant = true;

@@ -364,7 +364,7 @@ int ObPLCodeGenerateVisitor::visit(const ObPLDeclareVarStmt &s)
         }
       }
     }
-    if (lib::is_mysql_mode()) {
+    {
       ObLLVMValue ret_err;
       ObSEArray<ObLLVMValue, 1> args;
       OZ (args.push_back(generator_.get_vars().at(generator_.CTX_IDX)));
@@ -453,7 +453,7 @@ int ObPLCodeGenerateVisitor::visit(const ObPLAssignStmt &s)
                                                  p_result_obj))) {
               LOG_WARN("failed to generate calc_expr func", K(ret));
             }
-            if (lib::is_mysql_mode()) {
+            {
               ObLLVMValue ret_err;
               ObSEArray<ObLLVMValue, 1> args;
               OZ (args.push_back(generator_.get_vars().at(generator_.CTX_IDX)));
@@ -1986,7 +1986,7 @@ int ObPLCodeGenerateVisitor::visit(const ObPLSignalStmt &s)
       OZ (generator_.set_current(normal));
     } else {
       ObLLVMValue type, ob_err_code, err_code, sql_state, str_len, is_signal, stmt_id, loc;
-      if (lib::is_mysql_mode() && (s.is_resignal_stmt() || s.get_cond_type() != ERROR_CODE)) {
+      if (s.is_resignal_stmt() || s.get_cond_type() != ERROR_CODE) {
         ObLLVMValue int_value;
         ObLLVMType int32_type, int32_type_ptr;
         ObSEArray<ObLLVMValue, 5> args;
@@ -2413,7 +2413,7 @@ int ObPLCodeGenerateVisitor::visit(const ObPLFetchStmt &s)
                                                 s.get_user_type(),
                                                 ret_err))) {
       LOG_WARN("failed to generate fetch", K(ret));
-    } else if (lib::is_mysql_mode()) { //MySQL mode directly check and throw exception
+    } else if (true) { //MySQL mode directly check and throw exception
       OZ (generator_.check_success(
         ret_err, s.get_stmt_id(), s.get_block()->in_notfound(), s.get_block()->in_warning(), true));
     } else { // Oracle mode if it is an OB_READ_NOTHING error, swallow the exception and do not throw it
@@ -3670,9 +3670,7 @@ int ObPLCodeGenerator::init_eh_service()
 
   if (OB_SUCC(ret)) {
     arg_types.reset();
-    if (OB_FAIL(arg_types.push_back(int8_type))) {
-      LOG_WARN("push_back error", K(ret));
-    } else if (OB_FAIL(arg_types.push_back(int32_type))) {
+    if (OB_FAIL(arg_types.push_back(int32_type))) {
       LOG_WARN("push_back error", K(ret));
     } else if (OB_FAIL(arg_types.push_back(int_pointer_type))) {
       LOG_WARN("push_back error", K(ret));
@@ -4539,7 +4537,7 @@ int ObPLCodeGenerator::generate_after_sql(const ObPLSqlStmt &s, ObLLVMValue &ret
   } else {
     OZ (check_success(ret_err, s.get_stmt_id(), s.get_block()->in_notfound(), s.get_block()->in_warning()));
     OZ (generate_into_restore(s.get_into(), s.get_exprs(), s.get_symbol_table()));
-    if (OB_SUCC(ret) && lib::is_mysql_mode()) {
+    if (OB_SUCC(ret)) {
       ObLLVMValue is_not_found;
       ObLLVMBasicBlock normal_end;
       ObLLVMBasicBlock reset_ret;
@@ -5832,7 +5830,7 @@ int ObPLCodeGenerator::raise_exception(ObLLVMValue &exception,
   if (OB_SUCC(ret)) {
     OZ (set_current(current));
     if (OB_FAIL(ret)) {
-    } else if (lib::is_mysql_mode()) {
+    } else if (true) {
       ObLLVMBasicBlock normal_raise_block, reset_ret_block;
       ObLLVMValue exception_class;
       ObLLVMSwitch switch_inst1;
@@ -5939,14 +5937,9 @@ int ObPLCodeGenerator::check_success(jit::ObLLVMValue &ret_err, int64_t stmt_id,
         LOG_WARN("failed to get_int_buffer", K(ret));
       } else {
         ObSEArray<ObLLVMValue, 2> args;
-        ObLLVMValue oracle_mode;
         ObLLVMValue ret_err;
-        if (OB_FAIL(helper_.get_int8(false, oracle_mode))) {
-          LOG_WARN("helper get int8 failed", K(ret));
-        } else if (OB_FAIL(helper_.create_load(ObString("load_ret"), vars_.at(RET_IDX), ret_err))) {
+        if (OB_FAIL(helper_.create_load(ObString("load_ret"), vars_.at(RET_IDX), ret_err))) {
           LOG_WARN("failed to load ret_err from vars_.at(RET_IDX)", K(ret));
-        } else if (OB_FAIL(args.push_back(oracle_mode))) {
-          LOG_WARN("push_back error", K(ret));
         } else if (OB_FAIL(args.push_back(ret_err))) {
           LOG_WARN("push_back error", K(ret));
         } else if (OB_FAIL(args.push_back(type_ptr))) {

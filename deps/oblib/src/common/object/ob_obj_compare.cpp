@@ -24,27 +24,11 @@ namespace oceanbase
 namespace common
 {
 
-bool is_calc_with_end_space(ObObjType type1, ObObjType type2,
-                            bool is_oracle_mode,
-                            ObCollationType cs_type1,
-                            ObCollationType cs_type2)
-{
-  return is_oracle_mode && ( (ObVarcharType == type1 && CS_TYPE_BINARY != cs_type1)
-                             || (ObVarcharType == type2 && CS_TYPE_BINARY != cs_type2));
-}
 #define OBJ_TYPE_CLASS_CHECK(obj, tc)\
   if (OB_UNLIKELY(obj.get_type_class() != tc)) { \
     LOG_ERROR_RET(common::OB_ERR_UNEXPECTED, "unexpected error. mismatch function for comparison", K(obj), K(tc));\
     right_to_die_or_duty_to_live();\
   }
-
-#define CALC_WITH_END_SPACE(ob1, ob2, cmctx)                 \
-  is_calc_with_end_space(ob1.get_type(),                     \
-                          ob2.get_type(),                    \
-                          lib::is_oracle_mode(),             \
-                          ob1.get_collation_type(),          \
-                          ob2.get_collation_type()           \
-                          )
 
 #define DEFINE_CMP_OP_FUNC(tc, type, op, op_str) \
   template <> inline \
@@ -298,8 +282,7 @@ bool is_calc_with_end_space(ObObjType type1, ObObjType type2,
              : CR_EQ; \
   }
 
-#define IS_FIXED_DOUBLE_CMP obj1.is_fixed_double() && obj2.is_fixed_double() && \
-  lib::is_mysql_mode()
+#define IS_FIXED_DOUBLE_CMP (obj1.is_fixed_double() && obj2.is_fixed_double())
 
 #define DEFINE_CMP_OP_FUNC_REAL_REAL_EQ(real1_tc, real1_type, real2_tc, real2_type) \
   template <> inline \
@@ -724,7 +707,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetTC, ObUIntTC>(const ObObj &obj1, \
     } \
 	  return CS_TYPE_INVALID != cs_type \
            ? static_cast<int>(ObCharset::strcmpsp(cs_type, obj1.v_.string_, obj1.val_len_, \
-                                                  obj2.v_.string_, obj2.val_len_, CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx)) op_str 0) \
+                                                  obj2.v_.string_, obj2.val_len_, false) op_str 0) \
            : CR_OB_ERROR; \
   }
 
@@ -747,7 +730,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetTC, ObUIntTC>(const ObObj &obj1, \
     } \
     return CS_TYPE_INVALID != cs_type \
            ? INT_TO_CR(ObCharset::strcmpsp(cs_type, obj1.v_.string_, obj1.val_len_, \
-                                           obj2.v_.string_, obj2.val_len_, CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx))) \
+                                           obj2.v_.string_, obj2.val_len_, false)) \
            : CR_OB_ERROR; \
   }
 
@@ -765,7 +748,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetTC, ObUIntTC>(const ObObj &obj1, \
       LOG_ERROR_RET(common::OB_ERR_UNEXPECTED, "invalid collation", K(obj1.get_collation_type()), K(obj2.get_collation_type()), K(cmp_ctx.cmp_cs_type_)); \
     } else { \
       ret = static_cast<int>(ObCharset::strcmpsp(CS_TYPE_BINARY, obj1.v_.string_, obj1.val_len_, \
-                                                 obj2.v_.string_, obj2.val_len_, CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx)) op_str 0); \
+                                                 obj2.v_.string_, obj2.val_len_, false) op_str 0); \
     } \
     return ret; \
   }
@@ -784,7 +767,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetTC, ObUIntTC>(const ObObj &obj1, \
       LOG_ERROR_RET(common::OB_ERR_UNEXPECTED, "invalid collation", K(obj1.get_collation_type()), K(obj2.get_collation_type()), K(cmp_ctx.cmp_cs_type_)); \
     } else { \
       ret = INT_TO_CR(ObCharset::strcmpsp(CS_TYPE_BINARY, obj1.v_.string_, obj1.val_len_, \
-                                          obj2.v_.string_, obj2.val_len_, CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx))); \
+                                          obj2.v_.string_, obj2.val_len_, false)); \
     } \
     return ret; \
   }
@@ -822,7 +805,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetTC, ObUIntTC>(const ObObj &obj1, \
       ret = CS_TYPE_INVALID != cs_type \
             ? static_cast<int>(ObCharset::strcmpsp(cs_type, obj1.v_.string_, obj1.val_len_, \
                                                    data_str.ptr(), data_str.length(), \
-                                                   CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx)) op_str 0) \
+                                                   false) op_str 0) \
             : CR_OB_ERROR; \
     } \
     return ret; \
@@ -855,7 +838,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetTC, ObUIntTC>(const ObObj &obj1, \
       ret = CS_TYPE_INVALID != cs_type \
             ? INT_TO_CR(ObCharset::strcmpsp(cs_type, obj1.v_.string_, obj1.val_len_, \
                                             data_str.ptr(), data_str.length(), \
-                                            CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx))) \
+                                            false)) \
             : CR_OB_ERROR; \
     } \
     return ret; \
@@ -913,7 +896,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetTC, ObUIntTC>(const ObObj &obj1, \
       ret = CS_TYPE_INVALID != cs_type \
             ? static_cast<int>(ObCharset::strcmpsp(cs_type, data_str1.ptr(), data_str1.length(), \
                                                    data_str2.ptr(), data_str2.length(), \
-                                                   CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx)) op_str 0) \
+                                                   false) op_str 0) \
             : CR_OB_ERROR; \
     } \
     return ret; \
@@ -950,7 +933,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetTC, ObUIntTC>(const ObObj &obj1, \
       ret = CS_TYPE_INVALID != cs_type \
             ? INT_TO_CR(ObCharset::strcmpsp(cs_type, data_str1.ptr(), data_str1.length(), \
                                                    data_str2.ptr(), data_str2.length(), \
-                                                   CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx))) \
+                                                   false)) \
             : CR_OB_ERROR; \
     } \
     return ret; \
@@ -1895,7 +1878,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetInnerTC, real_tc>(const ObObj &obj1, \
     } \
 	  return CS_TYPE_INVALID != cs_type \
            ? static_cast<int>(ObCharset::strcmpsp(cs_type, obj1.v_.string_, obj1.val_len_, \
-                                                  obj2.v_.string_, obj2.val_len_, CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx)) op_str 0) \
+                                                  obj2.v_.string_, obj2.val_len_, false) op_str 0) \
            : CR_OB_ERROR; \
   }
 
@@ -1918,7 +1901,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetInnerTC, real_tc>(const ObObj &obj1, \
     } \
     return CS_TYPE_INVALID != cs_type \
            ? INT_TO_CR(ObCharset::strcmpsp(cs_type, obj1.v_.string_, obj1.val_len_, \
-                                           obj2.v_.string_, obj2.val_len_, CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx))) \
+                                           obj2.v_.string_, obj2.val_len_, false)) \
            : CR_OB_ERROR; \
   }
 
@@ -1953,7 +1936,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetInnerTC, real_tc>(const ObObj &obj1, \
       ret = CS_TYPE_INVALID != cs_type \
             ? static_cast<int>(ObCharset::strcmpsp(cs_type, data_str1.ptr(), data_str1.length(), \
                                                    data_str2.ptr(), data_str2.length(), \
-                                                   CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx)) op_str 0) \
+                                                   false) op_str 0) \
             : CR_OB_ERROR; \
     } \
     return ret; \
@@ -1989,7 +1972,7 @@ int ObObjCmpFuncs::cmp_func<ObEnumSetInnerTC, real_tc>(const ObObj &obj1, \
       ret = CS_TYPE_INVALID != cs_type \
             ? INT_TO_CR(ObCharset::strcmpsp(cs_type, data_str1.ptr(), data_str1.length(), \
                                                    data_str2.ptr(), data_str2.length(), \
-                                                   CALC_WITH_END_SPACE(obj1, obj2, cmp_ctx))) \
+                                                   false)) \
             : CR_OB_ERROR; \
     } \
     return ret; \
@@ -3910,7 +3893,7 @@ int ObObjCmpFuncs::compare(const ObObj &obj1,
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("obj1 and obj2 can't compare", K(obj1), K(obj2), K(obj1.get_meta()), K(obj2.get_meta()));
   } else {
-    ObCompareCtx cmp_ctx(ObMaxType, cs_type, true, INVALID_TZ_OFF, lib::is_oracle_mode() ? NULL_LAST : NULL_FIRST);
+    ObCompareCtx cmp_ctx(ObMaxType, cs_type, true, INVALID_TZ_OFF, NULL_FIRST);
     if (OB_UNLIKELY(CR_OB_ERROR == (cmp = cmp_func(obj1, obj2, cmp_ctx)))) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("failed to compare obj1 and obj2", K(obj1), K(obj2), K(obj1.get_meta()), K(obj2.get_meta()));
@@ -3933,7 +3916,7 @@ int ObObjCmpFuncs::compare_nullsafe(const ObObj &obj1,
     LOG_ERROR_RET(common::OB_ERR_UNEXPECTED, "obj1 and obj2 can't compare", K(obj1), K(obj2), K(obj1.get_meta()), K(obj2.get_meta()));
     right_to_die_or_duty_to_live();
   } else {
-    ObCompareCtx cmp_ctx(ObMaxType, cs_type, true, INVALID_TZ_OFF, lib::is_oracle_mode() ? NULL_LAST : NULL_FIRST);
+    ObCompareCtx cmp_ctx(ObMaxType, cs_type, true, INVALID_TZ_OFF, NULL_FIRST);
     if (OB_UNLIKELY(CR_OB_ERROR == (cmp = cmp_func(obj1, obj2, cmp_ctx)))) {
       LOG_ERROR_RET(common::OB_ERR_UNEXPECTED, "failed to compare obj1 and obj2", K(obj1), K(obj2), K(obj1.get_meta()), K(obj2.get_meta()));
       right_to_die_or_duty_to_live();

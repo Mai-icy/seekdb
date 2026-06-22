@@ -3001,8 +3001,7 @@ typedef enum ObOutlineType
 #define IS_CONST_TYPE(op) ((op) > T_INVALID && (op) < T_MAX_CONST)
 #define IS_FUN_SYS_TYPE(op) (((op) >= T_FUN_SYS && (op) < T_FUN_SYS_END) \
                             || ((op) > T_MIN_OP && (op) <= T_OP_CONST_VAL) \
-                            || T_OP_CONNECT_BY_ROOT == (op) \
-                            || (lib::is_oracle_mode() && (op) == T_OP_BIT_AND))
+                            || T_OP_CONNECT_BY_ROOT == (op))
 
 #define IS_FUN_STYLE(op) (((op) >= T_FUN_SYS && (op) < T_FUN_SYS_END) \
     || ((op) >= T_FUN_MAX && (op) <= T_FUN_APPROX_COUNT_DISTINCT_SYNOPSIS_MERGE) \

@@ -244,6 +244,7 @@ int ObCopiedSSTableCreator::check_sstable_param_for_init_(const ObMigrationSSTab
 }
 
 
+
 // ObSSTableCopyFinishTask
 ObSSTableCopyFinishTask::ObSSTableCopyFinishTask()
   : ObITask(TASK_TYPE_MIGRATE_FINISH_PHYSICAL),

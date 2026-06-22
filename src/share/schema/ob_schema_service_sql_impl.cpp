@@ -2552,7 +2552,6 @@ int ObSchemaServiceSQLImpl::construct_tenant_schema_(
     simple_tenant_schema.set_read_only(tenant_schema.is_read_only());
     simple_tenant_schema.set_status(tenant_schema.get_status());
     simple_tenant_schema.set_in_recyclebin(tenant_schema.is_in_recyclebin());
-    simple_tenant_schema.set_compatibility_mode(tenant_schema.get_compatibility_mode());
     simple_tenant_schema.set_gmt_modified(0); // not used
     if (OB_FAIL(simple_tenant_schema.set_tenant_name(tenant_schema.get_tenant_name()))) {
       LOG_WARN("fail to set tenant name", KR(ret));
@@ -4439,7 +4438,6 @@ int ObSchemaServiceSQLImpl::fetch_role_grantee_map_info(
   SMART_VAR(ObMySQLProxy::MySQLResult, res) {
     ObMySQLResult *result = NULL;
     ObSqlString sql;
-    bool is_oracle_mode = false;
     const bool is_full_schema = (NULL != user_keys && users_size > 0) ? false : true;
     const int64_t snapshot_timestamp = schema_status.snapshot_timestamp_;
     const uint64_t exec_tenant_id = fill_exec_tenant_id(schema_status);
@@ -4447,8 +4445,6 @@ int ObSchemaServiceSQLImpl::fetch_role_grantee_map_info(
     if (OB_FAIL(sql.append_fmt(FETCH_ALL_ROLE_GRANTEE_MAP_HISTORY_SQL, OB_ALL_TENANT_ROLE_GRANTEE_MAP_HISTORY_TNAME,
                                ObSchemaUtils::get_extract_tenant_id(exec_tenant_id, tenant_id)))) {
       LOG_WARN("append sql failed", K(ret));
-    } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_oracle_mode))) {
-      LOG_WARN("failed to get oracle mode", K(ret));
     } else if (!is_full_schema) {
       for (int64_t i = 0; OB_SUCC(ret) && i < users_size; ++i) {
         const uint64_t user_id = ObSchemaUtils::get_extract_schema_id(exec_tenant_id, user_keys[i]);
@@ -4463,9 +4459,7 @@ int ObSchemaServiceSQLImpl::fetch_role_grantee_map_info(
             LOG_WARN("append sql failed", K(ret), K(i), K(user_id));
           }
         } else {
-          if (!user_array.at(i).is_role() && is_oracle_mode) {
-            // skip, user_array.at(i) is user, it's no need to fetch grantee ids
-          } else {
+          {
             if (!is_need_inc_fetch) {
               if (OB_FAIL(sql.append_fmt(" AND role_id IN (%lu", user_id))) {
                 LOG_WARN("append sql failed", K(ret), K(user_id));
@@ -5711,21 +5705,10 @@ int ObSchemaServiceSQLImpl::sort_table_partition_info(
     SCHEMA &table_schema)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   if (!table_schema.is_valid()) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid table_schema", KR(ret), K(table_schema));
-  } else if (OB_FAIL(table_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret),
-             "tenant_id", table_schema.get_tenant_id(), "table_id", table_schema.get_table_id());
   } else {
-    // Value comparsion is differ from mysql and oracle. eg:
-    // mysql: min < null < other < max
-    // oracle: min < other < null < max
-    // To make sorted result stable, compat guard should be used.
-    lib::CompatModeGuard g(is_oracle_mode ?
-                      lib::Worker::CompatMode::ORACLE :
-                      lib::Worker::CompatMode::MYSQL);
     if (OB_FAIL(try_mock_partition_array(table_schema))) {
       LOG_WARN("fail to mock partition array", KR(ret), K(table_schema));
     } else if (OB_FAIL(ObSchemaServiceSQLImpl::sort_partition_array(table_schema))) {
@@ -5786,24 +5769,10 @@ int ObSchemaServiceSQLImpl::try_mock_default_column_group(
 int ObSchemaServiceSQLImpl::sort_tablegroup_partition_info(ObTablegroupSchema &tablegroup_schema)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
-  if (OB_FAIL(tablegroup_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret),
-             "tenant_id", tablegroup_schema.get_tenant_id(),
-             "tablegroup_id", tablegroup_schema.get_tablegroup_id());
-  } else {
-    // Value comparsion is differ from mysql and oracle. eg:
-    // mysql: min < null < other < max
-    // oracle: min < other < null < max
-    // To make sorted result stable, compat guard should be used.
-    lib::CompatModeGuard g(is_oracle_mode ?
-                      lib::Worker::CompatMode::ORACLE :
-                      lib::Worker::CompatMode::MYSQL);
-    if (OB_FAIL(ObSchemaServiceSQLImpl::sort_partition_array(tablegroup_schema))) {
-      LOG_WARN("failed to sort partition array", KR(ret), K(tablegroup_schema));
-    } else if (OB_FAIL(ObSchemaServiceSQLImpl::sort_subpartition_array(tablegroup_schema))) {
-      LOG_WARN("failed to sort subpartition array", KR(ret), K(tablegroup_schema));
-    }
+  if (OB_FAIL(ObSchemaServiceSQLImpl::sort_partition_array(tablegroup_schema))) {
+    LOG_WARN("failed to sort partition array", KR(ret), K(tablegroup_schema));
+  } else if (OB_FAIL(ObSchemaServiceSQLImpl::sort_subpartition_array(tablegroup_schema))) {
+    LOG_WARN("failed to sort subpartition array", KR(ret), K(tablegroup_schema));
   }
   LOG_TRACE("fetch partition info", KR(ret), K(tablegroup_schema));
   return ret;
@@ -7551,21 +7520,10 @@ int ObSchemaServiceSQLImpl::sort_table_partition_info_v2(
     ObTableSchema &table_schema)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   if (!table_schema.is_valid()) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid table_schema", KR(ret), K(table_schema));
-  } else if (OB_FAIL(table_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret),
-             "tenant_id", table_schema.get_tenant_id(), "table_id", table_schema.get_table_id());
   } else {
-    // Value comparsion is differ from mysql and oracle. eg:
-    // mysql: min < null < other < max
-    // oracle: min < other < null < max
-    // To make sorted result stable, compat guard should be used.
-    lib::CompatModeGuard g(is_oracle_mode ?
-                      lib::Worker::CompatMode::ORACLE :
-                      lib::Worker::CompatMode::MYSQL);
     if (OB_FAIL(ObSchemaServiceSQLImpl::sort_partition_array(table_schema))) {
       LOG_WARN("failed to sort partition array", KR(ret), K(table_schema));
     } else if (OB_FAIL(ObSchemaServiceSQLImpl::sort_subpartition_array(table_schema))) {
@@ -8125,7 +8083,6 @@ int ObSchemaServiceSQLImpl::get_index_id(
   const bool use_oracle_mode = false;
   ObCStringHelper helper;
   const char* idx_name = helper.convert(ObHexEscapeSqlStr(index_name, skip_escape, use_oracle_mode));
-  bool is_oracle_mode = false;
   bool case_compare = false;
   const bool compare_with_collation = true;
   index_id = OB_INVALID_ID;
@@ -8143,10 +8100,7 @@ int ObSchemaServiceSQLImpl::get_index_id(
   } else if (OB_ISNULL(idx_name)) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("alloc idx_name failed", KR(ret), K(tenant_id), K(index_name));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(
-             tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K(tenant_id));
-  } else if (FALSE_IT(case_compare = (!is_oracle_mode
+  } else if (FALSE_IT(case_compare = (true
              || is_mysql_sys_database_id(database_id)))) {
   } else if (is_oceanbase_sys_database_id(database_id)) {
     if (OB_FAIL(sql.assign_fmt(
@@ -8244,7 +8198,6 @@ int ObSchemaServiceSQLImpl::get_constraint_id(
     uint64_t &constraint_id)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   const bool skip_escape = false;
   const bool use_oracle_mode = false;
   constraint_id = OB_INVALID_ID;
@@ -8261,9 +8214,6 @@ int ObSchemaServiceSQLImpl::get_constraint_id(
   } else if (OB_ISNULL(cst_name)) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("alloc cst_name failed", KR(ret), K(tenant_id), K(constraint_name));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(
-             tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K(tenant_id));
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
     ObSqlString sql;
@@ -8287,7 +8237,7 @@ int ObSchemaServiceSQLImpl::get_constraint_id(
     ObTableMode tmp_table_mode;
     // 1. mysql tenant: case insensitive
     // 2. oracle tenant: case sensitive
-    const bool case_compare = !is_oracle_mode;
+    const bool case_compare = true;
     const bool compare_with_collation = true;
     while (OB_SUCC(ret)) {
       if (OB_FAIL(result->next())) {
@@ -8337,7 +8287,6 @@ int ObSchemaServiceSQLImpl::get_foreign_key_id(
     uint64_t &foreign_key_id)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   const bool skip_escape = false;
   const bool use_oracle_mode = false;
   foreign_key_id = OB_INVALID_ID;
@@ -8354,9 +8303,6 @@ int ObSchemaServiceSQLImpl::get_foreign_key_id(
   } else if (OB_ISNULL(fk_name)) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("alloc fk_name failed", KR(ret), K(tenant_id), K(foreign_key_name));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(
-             tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K(tenant_id));
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
     ObSqlString sql;
@@ -8380,7 +8326,7 @@ int ObSchemaServiceSQLImpl::get_foreign_key_id(
     ObTableMode tmp_table_mode;
     // 1. mysql tenant: case insensitive
     // 2. oracle tenant: case sensitive
-    const bool case_compare = !is_oracle_mode;
+    const bool case_compare = true;
     const bool compare_with_collation = true;
     while (OB_SUCC(ret)) {
       if (OB_FAIL(result->next())) {
@@ -8508,7 +8454,6 @@ int ObSchemaServiceSQLImpl::get_package_id(
     uint64_t &package_id)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   ObSqlString sql;
   bool case_compare = false;
   const bool compare_with_collation = true;
@@ -8531,10 +8476,7 @@ int ObSchemaServiceSQLImpl::get_package_id(
   } else if (OB_ISNULL(pkg_name)) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("alloc pkg_name failed", KR(ret), K(tenant_id), K(package_name));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(
-             tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K(tenant_id));
-  } else if (FALSE_IT(case_compare = !is_oracle_mode)) {
+  } else if (FALSE_IT(case_compare = true)) {
   } else if (OB_FAIL(sql.assign_fmt(
              "SELECT package_id, package_name FROM %s "
              "WHERE database_id = %lu AND package_name = '%s' "
@@ -8570,7 +8512,6 @@ int ObSchemaServiceSQLImpl::get_routine_id(
     common::ObIArray<std::pair<uint64_t, share::schema::ObRoutineType>> &routine_pairs)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   const bool skip_escape = false;
   const bool use_oracle_mode = false;
   ObCStringHelper helper;
@@ -8587,9 +8528,6 @@ int ObSchemaServiceSQLImpl::get_routine_id(
   } else if (OB_ISNULL(rt_name)) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("alloc rt_name failed", KR(ret), K(tenant_id), K(routine_name));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(
-             tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K(tenant_id));
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
     ObSqlString sql;
@@ -8609,7 +8547,7 @@ int ObSchemaServiceSQLImpl::get_routine_id(
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("result is null", KR(ret), K(tenant_id));
     } else {
-      const bool case_compare = !is_oracle_mode;
+      const bool case_compare = true;
       const bool compare_with_collation = true;
       uint64_t tmp_routine_id = OB_INVALID_ID;
       ObString tmp_routine_name;

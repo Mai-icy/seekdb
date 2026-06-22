@@ -630,8 +630,7 @@ int ObMViewInfo::bacth_fetch_mview_infos(ObISQLClient &sql_client,
                                          const uint64_t tenant_id,
                                          const uint64_t refresh_scn,
                                          const ObIArray<uint64_t> &mview_ids,
-                                         ObIArray<ObMViewInfo> &mview_infos,
-                                         bool oracle_mode)
+                                         ObIArray<ObMViewInfo> &mview_infos)
 {
   int ret = OB_SUCCESS;
   if (mview_ids.empty() || tenant_id == OB_INVALID_TENANT_ID) {
@@ -650,14 +649,12 @@ int ObMViewInfo::bacth_fetch_mview_infos(ObISQLClient &sql_client,
       common::sqlclient::ObMySQLResult *result = nullptr;
       ObSqlString sql;
       if (OB_SUCC(ret)) {
-        if (!oracle_mode) {
-          if (OB_FAIL(sql.assign_fmt("SELECT * FROM %s.%s ",
-                            OB_SYS_DATABASE_NAME, OB_ALL_MVIEW_TNAME))) {
-            LOG_WARN("fail to assign sql", K(ret));
-          } else if (OB_INVALID_SCN_VAL != refresh_scn &&
-                    OB_FAIL(sql.append_fmt(" AS OF SNAPSHOT %ld ", refresh_scn))) {
-            LOG_WARN("fail to append fmt sql", K(ret));
-          }
+        if (OB_FAIL(sql.assign_fmt("SELECT * FROM %s.%s ",
+                          OB_SYS_DATABASE_NAME, OB_ALL_MVIEW_TNAME))) {
+          LOG_WARN("fail to assign sql", K(ret));
+        } else if (OB_INVALID_SCN_VAL != refresh_scn &&
+                  OB_FAIL(sql.append_fmt(" AS OF SNAPSHOT %ld ", refresh_scn))) {
+          LOG_WARN("fail to append fmt sql", K(ret));
         }
       }
       if (OB_FAIL(ret)) {

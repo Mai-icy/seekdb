@@ -1815,11 +1815,6 @@ int ObSetConfigResolver::resolve(const ParseNode &parse_tree)
                             } else if (!valid) {
                               ret = OB_OP_NOT_ALLOW;
                               LOG_WARN("can not set default_table_organization", "item", item, K(ret), "tenant_id", item.exec_tenant_id_);
-                            } else if (lib::Worker::CompatMode::ORACLE == compat_mode) {
-                              LOG_WARN("can not set default_table_organization in oracle tenant",
-                                       "item", item, K(i), K(tenant_id), K(compat_mode));
-                              LOG_USER_NOTE(OB_NOT_SUPPORTED, 
-                                            "'ALTER SYSTEM SET DEFAULT_TABLE_ORGANIZATION' syntax in oracle tenant is");
                             }
                           }
                         }

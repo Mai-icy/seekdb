@@ -53,7 +53,7 @@ int ObVectorIndexSchedJobUtils::add_scheduler_job(
       job_info.lowner_ = ObString("oceanbase");
       job_info.cowner_ = ObString("oceanbase");
       job_info.powner_ =
-          lib::is_oracle_mode() ? ObString("SYS") : ObString("root@%");
+          ObString("root@%");
       job_info.job_style_ = ObString("regular");
       job_info.job_type_ = ObString("PLSQL_BLOCK");
       job_info.job_class_ = ObString("DEFAULT_JOB_CLASS");
@@ -197,8 +197,8 @@ int ObVectorIndexSchedJobUtils::get_vector_index_job_info(common::ObISQLClient &
     LOG_ERROR("tenant schema is null", K(tenant_id)); // skip
   } else if (OB_FAIL(refresh_job_name.assign_fmt("%lu_refresh", vidx_table_id))) {
     LOG_WARN("failed to generate refresh job name", K(ret));
-  } else if (OB_FAIL(ObDBMSSchedJobUtils::get_dbms_sched_job_info(sql_client, tenant_id, 
-                                                                  tenant_schema->is_oracle_tenant(),
+  } else if (OB_FAIL(ObDBMSSchedJobUtils::get_dbms_sched_job_info(sql_client, tenant_id,
+                                                                  false /*is_oracle_tenant*/,
                                                                   refresh_job_name.string(), 
                                                                   allocator,
                                                                   job_info))) {

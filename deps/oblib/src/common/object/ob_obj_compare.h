@@ -25,11 +25,6 @@ namespace oceanbase
 namespace common
 {
 
-bool is_calc_with_end_space(ObObjType type1, ObObjType type2,
-                            bool is_oracle_mode,
-                            ObCollationType cs_type1,
-                            ObCollationType cs_type2);
-
 enum ObCmpOp
 {
   CO_EQ = 0,

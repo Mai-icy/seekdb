@@ -15,7 +15,6 @@
  */
 
 #include "lib/worker.h"
-#include "share/ob_get_compat_mode.h"
 #include "share/schema/ob_udf_mgr.h"
 #include "share/schema/ob_schema_mgr.h"
 #include "share/storage_cache_policy/ob_storage_cache_common.h"
@@ -465,13 +464,10 @@ int ObSchemaRetrieveHelperBase<TABLE_SCHEMA, ObPartition>::add_schema(TABLE_SCHE
     const ObRowkey &high_bound_val = p.get_high_bound_val();
     if (high_bound_val > transition_point) {
       const ObRowkey &interval_range = table_schema.get_interval_range();
-      bool is_oracle_mode = false;
-      if (OB_FAIL(table_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-        SHARE_SCHEMA_LOG(WARN, "fail to check oracle mode", KR(ret), K(table_schema));
-      } else if (OB_FAIL(ObPartitionUtils::set_low_bound_val_by_interval_range_by_innersql(
-          is_oracle_mode, p, interval_range))) {
+      if (OB_FAIL(ObPartitionUtils::set_low_bound_val_by_interval_range_by_innersql(
+          p, interval_range))) {
         SHARE_SCHEMA_LOG(WARN, "fail to set_low_bound_val_by_interval_range", K(interval_range),
-            K(is_oracle_mode), K(p), K(ret));
+            K(p), K(ret));
       }
     }
   }
@@ -1437,15 +1433,6 @@ int fill_column_schema_default_value(T &result,
                                      const uint64_t tenant_id)
 {
   int ret = common::OB_SUCCESS;
-  lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
-  bool is_oracle_mode = false;
-  if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-          column.get_tenant_id(), column.get_table_id(), is_oracle_mode))) {
-    SHARE_SCHEMA_LOG(WARN, "failed to get oracle mode", K(ret));
-  } else if (is_oracle_mode) {
-    compat_mode = lib::Worker::CompatMode::ORACLE;
-  }
-  lib::CompatModeGuard guard(compat_mode);
   EXTRACT_DEFAULT_VALUE_FIELD_MYSQL(result, orig_default_value, default_type,
                                     column,false, false, tenant_id);
   EXTRACT_DEFAULT_VALUE_FIELD_MYSQL_V2(result, default_type,
@@ -3900,17 +3887,7 @@ int ObSchemaRetrieveUtils::fill_base_part_info(
       } else {
         // bugfix: issue/48579037
         // In 4.x, tablegroup_id/table_id is in the same scope, so we can distinguish table and tablegroup based on object_id.
-        bool is_oracle_mode = false;
         const uint64_t table_id = partition.get_table_id();
-        if (is_sys_tablegroup_id(table_id)) {
-          is_oracle_mode = false;
-        } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-                   tenant_id, table_id, is_oracle_mode))) {
-          LOG_WARN("fail to check oracle mode", KR(ret), K(tenant_id), K(table_id));
-        }
-        lib::CompatModeGuard guard(is_oracle_mode ?
-                                   lib::Worker::CompatMode::ORACLE :
-                                   lib::Worker::CompatMode::MYSQL);
         if (FAILEDx(partition.set_list_vector_values_with_hex_str(blist_val))) {
           SHARE_SCHEMA_LOG(WARN, "Failed to set list val to partition", K(ret));
         }

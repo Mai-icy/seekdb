@@ -181,7 +181,6 @@ int ObShowCreateCatalog::print_catalog_definition(const uint64_t tenant_id,
 {
   int ret = OB_SUCCESS;
   const ObCatalogSchema *catalog_schema = NULL;
-  bool is_oracle_mode = lib::is_oracle_mode();
   ObArenaAllocator allocator(ObModIds::OB_SCHEMA);
   ObSchemaPrinter schema_printer(*schema_guard_);
   if (OB_FAIL(schema_guard_->get_catalog_schema_by_id(tenant_id, catalog_id, catalog_schema))) {
@@ -192,16 +191,14 @@ int ObShowCreateCatalog::print_catalog_definition(const uint64_t tenant_id,
   } else if (OB_FAIL(databuff_printf(buf,
                                      buf_len,
                                      pos,
-                                     is_oracle_mode ? "CREATE EXTERNAL CATALOG "
-                                                    : "CREATE EXTERNAL CATALOG IF NOT EXISTS "))) {
+                                     "CREATE EXTERNAL CATALOG IF NOT EXISTS "))) {
     LOG_WARN("failed to print create catalog prefix",
              K(ret),
              K(catalog_schema->get_catalog_name()));
   } else if (OB_FAIL(schema_printer.print_identifier(buf,
                                                      buf_len,
                                                      pos,
-                                                     catalog_schema->get_catalog_name(),
-                                                     is_oracle_mode))) {
+                                                     catalog_schema->get_catalog_name()))) {
     LOG_WARN("failed to print create catalog prefix",
              K(ret),
              K(catalog_schema->get_catalog_name()));

@@ -245,12 +245,9 @@ int ObColumnNameMap::init(const ObTableSchema &orig_table_schema,
                           const AlterTableSchema &alter_table_schema)
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL(ObCompatModeGetter::get_table_compat_mode(orig_table_schema.get_tenant_id(), orig_table_schema.get_table_id(), compat_mode_))) {
-    LOG_WARN("failed to get table compat mode", K(ret));
-  } else if (OB_FAIL(col_name_map_.create(32, "ColNameMap"))) {
+  if (OB_FAIL(col_name_map_.create(32, "ColNameMap"))) {
     LOG_WARN("failed to create column name map", K(ret));
   } else {
-    lib::CompatModeGuard guard(compat_mode_);
     for (ObTableSchema::const_column_iterator it = orig_table_schema.column_begin();
         OB_SUCC(ret) && it != orig_table_schema.column_end(); it++) {
       ObColumnSchemaV2 *column = *it;
@@ -327,7 +324,6 @@ int ObColumnNameMap::assign(const ObColumnNameMap &other)
   }
   if (OB_SUCC(ret)) {
     allocator_.reuse();
-    compat_mode_ = other.compat_mode_;
     for (common::hash::ObHashMap<ObColumnNameHashWrapper, ObString>::const_iterator it = other.col_name_map_.begin();
         OB_SUCC(ret) && it != other.col_name_map_.end(); it++) {
       if (OB_FAIL(set(it->first.column_name_, it->second))) {
@@ -343,7 +339,6 @@ int ObColumnNameMap::set(const ObString &orig_column_name, const ObString &new_c
   int ret = OB_SUCCESS;
   ObString orig_name;
   ObString new_name;
-  lib::CompatModeGuard guard(compat_mode_);
   if (OB_FAIL(deep_copy_ob_string(allocator_, orig_column_name, orig_name))) {
     LOG_WARN("failed to copy string", K(ret));
   } else if (OB_FAIL(deep_copy_ob_string(allocator_, new_column_name, new_name))) {
@@ -357,7 +352,6 @@ int ObColumnNameMap::set(const ObString &orig_column_name, const ObString &new_c
 int ObColumnNameMap::get(const ObString &orig_column_name, ObString &new_column_name) const
 {
   int ret = OB_SUCCESS;
-  lib::CompatModeGuard guard(compat_mode_);
   ret = col_name_map_.get_refactored(ObColumnNameHashWrapper(orig_column_name), new_column_name);
   if (OB_HASH_NOT_EXIST == ret) {
     ret = OB_ENTRY_NOT_EXIST;
@@ -368,7 +362,6 @@ int ObColumnNameMap::get(const ObString &orig_column_name, ObString &new_column_
 int ObColumnNameMap::get_orig_column_name(const ObString &new_column_name, ObString &orig_column_name) const
 {
   int ret = OB_SUCCESS;
-  lib::CompatModeGuard guard(compat_mode_);
   if (OB_UNLIKELY(!col_name_map_.created())) {
     ret = OB_NOT_INIT;
     LOG_WARN("invalid column name map", K(ret));
@@ -649,7 +642,6 @@ int ObDDLUtil::refresh_alter_table_arg(
 
 int ObDDLUtil::generate_column_name_str(
     const common::ObIArray<ObColumnNameInfo> &column_names,
-    const bool is_oracle_mode,
     const bool with_origin_name,
     const bool with_alias_name,
     const bool use_heap_table_ddl_plan,
@@ -663,7 +655,7 @@ int ObDDLUtil::generate_column_name_str(
     bool with_comma = false;
     for (int64_t i = 0; OB_SUCC(ret) && i < column_names.count(); ++i) {
       if (use_heap_table_ddl_plan && column_names.at(i).column_name_ == OB_HIDDEN_PK_INCREMENT_COLUMN_NAME) {
-      } else if (OB_FAIL(generate_column_name_str(column_names.at(i), is_oracle_mode, with_origin_name, with_alias_name, with_comma, sql_string))) {
+      } else if (OB_FAIL(generate_column_name_str(column_names.at(i), with_origin_name, with_alias_name, with_comma, sql_string))) {
         LOG_WARN("generate column name string failed", K(ret));
       } else {
         with_comma = true;
@@ -704,14 +696,13 @@ int ObDDLUtil::generate_order_by_str(
 
 int ObDDLUtil::generate_column_name_str(
     const ObColumnNameInfo &column_name_info,
-    const bool is_oracle_mode,
     const bool with_origin_name,
     const bool with_alias_name,
     const bool with_comma,
     ObSqlString &sql_string)
 {
   int ret = OB_SUCCESS;
-  const char *split_char = is_oracle_mode ? "\"" : "`";
+  const char *split_char = "`";
   // append comma
   if (with_comma) {
     if (OB_FAIL(sql_string.append_fmt(", "))) {
@@ -748,20 +739,12 @@ int ObDDLUtil::generate_column_name_str(
 int ObDDLUtil::generate_ddl_schema_hint_str(
     const ObString &table_name,
     const int64_t schema_version,
-    const bool is_oracle_mode,
     ObSqlString &sql_string)
 {
   int ret = OB_SUCCESS;
-  if (is_oracle_mode) {
-    if (OB_FAIL(sql_string.append_fmt("ob_ddl_schema_version(\"%.*s\", %ld)",
-        static_cast<int>(table_name.length()), table_name.ptr(), schema_version))) {
-      LOG_WARN("append origin column name failed", K(ret));
-    }
-  } else {
-    if (OB_FAIL(sql_string.append_fmt("ob_ddl_schema_version(`%.*s`, %ld)",
-        static_cast<int>(table_name.length()), table_name.ptr(), schema_version))) {
-      LOG_WARN("append origin column name failed", K(ret));
-    }
+  if (OB_FAIL(sql_string.append_fmt("ob_ddl_schema_version(`%.*s`, %ld)",
+      static_cast<int>(table_name.length()), table_name.ptr(), schema_version))) {
+    LOG_WARN("append origin column name failed", K(ret));
   }
   return ret;
 }
@@ -771,7 +754,6 @@ int ObDDLUtil::generate_mview_ddl_schema_hint_str(
     const uint64_t mview_table_id,
     share::schema::ObSchemaGetterGuard &schema_guard,
     const ObIArray<ObBasedSchemaObjectInfo> &based_schema_object_infos,
-    const bool is_oracle_mode,
     ObSqlString &sql_string)
 {
   int ret = OB_SUCCESS;
@@ -798,21 +780,13 @@ int ObDDLUtil::generate_mview_ddl_schema_hint_str(
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("error unexpected, database schema must not be nullptr", KR(ret));
     } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
-                 allocator, database_schema->get_database_name_str(), database_name,
-                 is_oracle_mode))) {
+                 allocator, database_schema->get_database_name_str(), database_name))) {
       LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(database_schema->get_database_name_str()), K(is_oracle_mode));
+               K(database_schema->get_database_name_str()));
     } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
-                 allocator, table_schema->get_table_name_str(), table_name, is_oracle_mode))) {
+                 allocator, table_schema->get_table_name_str(), table_name))) {
       LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(table_schema->get_table_name_str()), K(is_oracle_mode));
-    } else if (is_oracle_mode) {
-      if (OB_FAIL(sql_string.append_fmt("ob_ddl_schema_version(\"%.*s\".\"%.*s\", %ld) ",
-                                        static_cast<int>(database_name.length()), database_name.ptr(),
-                                        static_cast<int>(table_name.length()), table_name.ptr(),
-                                        based_info.schema_version_))) {
-        LOG_WARN("append sql string failed", KR(ret));
-      }
+               K(table_schema->get_table_name_str()));
     } else {
       if (OB_FAIL(sql_string.append_fmt("ob_ddl_schema_version(`%.*s`.`%.*s`, %ld) ",
                                         static_cast<int>(database_name.length()), database_name.ptr(),
@@ -952,7 +926,6 @@ int ObDDLUtil::generate_build_replica_sql(
   ObSchemaGetterGuard schema_guard;
   const ObTableSchema *source_table_schema = nullptr;
   const ObTableSchema *dest_table_schema = nullptr;
-  bool oracle_mode = false;
   if (OB_UNLIKELY(OB_INVALID_ID == tenant_id || OB_INVALID_ID == data_table_id || OB_INVALID_ID == dest_table_id
       || schema_version <= 0 || snapshot_version <= 0 || execution_id < 0 || task_id <= 0)) {
     ret = OB_INVALID_ARGUMENT;
@@ -973,8 +946,6 @@ int ObDDLUtil::generate_build_replica_sql(
     ret = OB_TABLE_NOT_EXIST;
     LOG_WARN("fail to get table schema", K(ret), KP(source_table_schema), KP(dest_table_schema),
       K(tenant_id), K(data_table_id), K(dest_table_id));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(tenant_id, data_table_id, oracle_mode))) {
-    LOG_WARN("check if oracle mode failed", K(ret), K(data_table_id));
   } else {
     ObArray<ObColDesc> column_ids;
     ObArray<ObColumnNameInfo> column_names;
@@ -1159,9 +1130,9 @@ int ObDDLUtil::generate_build_replica_sql(
         }
 
         if (OB_FAIL(ret)) {
-        } else if (OB_FAIL(generate_column_name_str(column_names, oracle_mode, true/*with origin name*/, true/*with alias name*/, use_heap_table_ddl_plan, query_column_sql_string))) {
+        } else if (OB_FAIL(generate_column_name_str(column_names, true/*with origin name*/, true/*with alias name*/, use_heap_table_ddl_plan, query_column_sql_string))) {
           LOG_WARN("fail to generate column name str", K(ret));
-        } else if (OB_FAIL(generate_column_name_str(insert_column_names, oracle_mode, true/*with origin name*/, false/*with alias name*/, use_heap_table_ddl_plan, insert_column_sql_string))) {
+        } else if (OB_FAIL(generate_column_name_str(insert_column_names, true/*with origin name*/, false/*with alias name*/, use_heap_table_ddl_plan, insert_column_sql_string))) {
           LOG_WARN("generate column name str failed", K(ret));
         } else if (!use_heap_table_ddl_plan && OB_FAIL(generate_order_by_str(select_column_ids, order_column_ids, rowkey_column_sql_string))) {
           LOG_WARN("generate order by string failed", K(ret));
@@ -1178,33 +1149,29 @@ int ObDDLUtil::generate_build_replica_sql(
         if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
               allocator,
               dest_database_name,
-              new_dest_database_name,
-              oracle_mode))) {
+              new_dest_database_name))) {
           LOG_WARN("fail to generate new name with escape character",
                     K(ret), K(dest_database_name));
         } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
               allocator,
               dest_table_name,
-              new_dest_table_name,
-              oracle_mode))) {
+              new_dest_table_name))) {
           LOG_WARN("fail to generate new name with escape character",
                     K(ret), K(dest_table_name));
         } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
               allocator,
               source_database_name,
-              new_source_database_name,
-              oracle_mode))) {
+              new_source_database_name))) {
           LOG_WARN("fail to generate new name with escape character",
                     K(ret), K(source_database_name));
         } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
               allocator,
               source_table_name,
-              new_source_table_name,
-              oracle_mode))) {
+              new_source_table_name))) {
           LOG_WARN("fail to generate new name with escape character",
                     K(ret), K(source_table_name));
         } else if (use_schema_version_hint_for_src_table) {
-          if (OB_FAIL(generate_ddl_schema_hint_str(new_source_table_name, schema_version, oracle_mode, src_table_schema_version_hint_sql_string))) {
+          if (OB_FAIL(generate_ddl_schema_hint_str(new_source_table_name, schema_version, src_table_schema_version_hint_sql_string))) {
             LOG_WARN("failed to generated ddl schema hint", K(ret));
           }
         }
@@ -1213,21 +1180,6 @@ int ObDDLUtil::generate_build_replica_sql(
           src_table_schema_version_hint_sql_string.reset();
         }
         if (OB_FAIL(ret)) {
-        } else if (oracle_mode) {
-          if (OB_FAIL(sql_string.assign_fmt("INSERT /*+ monitor enable_parallel_dml parallel(%ld) opt_param('ddl_execution_id', %ld) opt_param('ddl_task_id', %ld) opt_param('enable_newsort', 'false') %.*s use_px */INTO \"%.*s\".\"%.*s\" %.*s(%.*s) SELECT /*+ index(\"%.*s\" primary) %.*s */ %.*s from \"%.*s\".\"%.*s\" %.*s as of scn %ld %.*s",
-              real_parallelism, execution_id, task_id,
-              static_cast<int>(strlen(io_read_hint)), io_read_hint,
-              static_cast<int>(new_dest_database_name.length()), new_dest_database_name.ptr(), static_cast<int>(new_dest_table_name.length()), new_dest_table_name.ptr(),
-              static_cast<int>(partition_names.length()), partition_names.ptr(),
-              static_cast<int>(insert_column_sql_string.length()), insert_column_sql_string.ptr(),
-              static_cast<int>(new_source_table_name.length()), new_source_table_name.ptr(),
-              static_cast<int>(src_table_schema_version_hint_sql_string.length()), src_table_schema_version_hint_sql_string.ptr(),
-              static_cast<int>(query_column_sql_string.length()), query_column_sql_string.ptr(),
-              static_cast<int>(new_source_database_name.length()), new_source_database_name.ptr(), static_cast<int>(new_source_table_name.length()), new_source_table_name.ptr(),
-              static_cast<int>(partition_names.length()), partition_names.ptr(),
-              snapshot_version, static_cast<int>(rowkey_column_sql_string.length()), rowkey_column_sql_string.ptr()))) {
-            LOG_WARN("fail to assign sql string", K(ret));
-          }
         } else {
           if (OB_FAIL(sql_string.assign_fmt("INSERT /*+ monitor enable_parallel_dml parallel(%ld) opt_param('ddl_execution_id', %ld) opt_param('ddl_task_id', %ld) opt_param('enable_newsort', 'false') %.*s use_px */INTO `%.*s`.`%.*s` %.*s(%.*s) SELECT /*+ index(`%.*s` primary) %.*s */ %.*s from `%.*s`.`%.*s` %.*s as of snapshot %ld %.*s",
               real_parallelism, execution_id, task_id,
@@ -1277,7 +1229,6 @@ int ObDDLUtil::generate_build_mview_replica_sql(
     const ObTableSchema *mview_table_schema = nullptr;
     const ObTableSchema *container_table_schema = nullptr;
     const ObDatabaseSchema *database_schema = nullptr;
-    bool is_oracle_mode = false;
     if (OB_FAIL(schema_guard.get_table_schema(tenant_id, mview_table_id, mview_table_schema))) {
       LOG_WARN("fail to get table schema", KR(ret), K(tenant_id), K(mview_table_id));
     } else if (OB_ISNULL(mview_table_schema)) {
@@ -1289,9 +1240,6 @@ int ObDDLUtil::generate_build_mview_replica_sql(
     } else if (OB_ISNULL(container_table_schema)) {
       ret = OB_TABLE_NOT_EXIST;
       LOG_WARN("fail to get table schema", KR(ret), K(container_table_id));
-    } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-                 tenant_id, mview_table_id, is_oracle_mode))) {
-      LOG_WARN("check if oracle mode failed", KR(ret), K(mview_table_id));
     } else if (OB_FAIL(schema_guard.get_database_schema(
                  tenant_id, mview_table_schema->get_database_id(), database_schema))) {
       LOG_WARN("fail to get database schema", KR(ret), K(tenant_id),
@@ -1306,14 +1254,13 @@ int ObDDLUtil::generate_build_mview_replica_sql(
       ObSqlString src_table_schema_version_hint;
       ObSqlString rowkey_column_sql_string;
       if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
-            allocator, database_schema->get_database_name_str(), database_name, is_oracle_mode))) {
+            allocator, database_schema->get_database_name_str(), database_name))) {
         LOG_WARN("fail to generate new name with escape character", KR(ret),
-                 K(database_schema->get_database_name_str()), K(is_oracle_mode));
+                 K(database_schema->get_database_name_str()));
       } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
-                   allocator, container_table_schema->get_table_name_str(), container_table_name,
-                   is_oracle_mode))) {
+                   allocator, container_table_schema->get_table_name_str(), container_table_name))) {
         LOG_WARN("fail to generate new name with escape character", KR(ret),
-                 K(container_table_schema->get_table_name_str()), K(is_oracle_mode));
+                 K(container_table_schema->get_table_name_str()));
       } else if (use_schema_version_hint_for_src_table) {
         int64_t based_schema_version = OB_INVALID_VERSION;
         for (int64_t i = 0; OB_SUCC(ret) && i < based_schema_object_infos.count(); ++i) {
@@ -1335,7 +1282,7 @@ int ObDDLUtil::generate_build_mview_replica_sql(
         if (OB_FAIL(ret)) {
         } else if (OB_FAIL(generate_mview_ddl_schema_hint_str(
                      tenant_id, mview_table_id, schema_guard, based_schema_object_infos,
-                     is_oracle_mode, src_table_schema_version_hint))) {
+                     src_table_schema_version_hint))) {
           LOG_WARN("failed to generated mview ddl schema hint", KR(ret));
         }
       }
@@ -1344,30 +1291,16 @@ int ObDDLUtil::generate_build_mview_replica_sql(
       if (OB_FAIL(ret)) {
       } else if (!nested_consistent_refresh) {
         const ObString &select_sql_string = mview_table_schema->get_view_schema().get_view_definition_str();
-        if (is_oracle_mode) {
-          if (OB_FAIL(sql_string.assign_fmt("INSERT /*+ append monitor enable_parallel_dml parallel(%ld) opt_param('ddl_execution_id', %ld) opt_param('ddl_task_id', %ld) use_px */ INTO \"%.*s\".\"%.*s\""
-                                            " SELECT /*+ %.*s */ * from (%.*s) as of scn %ld %.*s;",
-              real_parallelism, execution_id, task_id,
-              static_cast<int>(database_name.length()), database_name.ptr(),
-              static_cast<int>(container_table_name.length()), container_table_name.ptr(),
-              static_cast<int>(src_table_schema_version_hint.length()), src_table_schema_version_hint.ptr(),
-              static_cast<int>(select_sql_string.length()), select_sql_string.ptr(),
-              snapshot_version,
-              static_cast<int>(rowkey_column_sql_string.length()), rowkey_column_sql_string.ptr()))) {
-            LOG_WARN("fail to assign sql string", KR(ret));
-          }
-        } else {
-          if (OB_FAIL(sql_string.assign_fmt("INSERT /*+ append monitor enable_parallel_dml parallel(%ld) opt_param('ddl_execution_id', %ld) opt_param('ddl_task_id', %ld) use_px */ INTO `%.*s`.`%.*s`"
-                                            " SELECT /*+ %.*s */ * from (%.*s) as of snapshot %ld %.*s;",
-              real_parallelism, execution_id, task_id,
-              static_cast<int>(database_name.length()), database_name.ptr(),
-              static_cast<int>(container_table_name.length()), container_table_name.ptr(),
-              static_cast<int>(src_table_schema_version_hint.length()), src_table_schema_version_hint.ptr(),
-              static_cast<int>(select_sql_string.length()), select_sql_string.ptr(),
-              snapshot_version,
-              static_cast<int>(rowkey_column_sql_string.length()), rowkey_column_sql_string.ptr()))) {
-            LOG_WARN("fail to assign sql string", KR(ret));
-          }
+        if (OB_FAIL(sql_string.assign_fmt("INSERT /*+ append monitor enable_parallel_dml parallel(%ld) opt_param('ddl_execution_id', %ld) opt_param('ddl_task_id', %ld) use_px */ INTO `%.*s`.`%.*s`"
+                                          " SELECT /*+ %.*s */ * from (%.*s) as of snapshot %ld %.*s;",
+            real_parallelism, execution_id, task_id,
+            static_cast<int>(database_name.length()), database_name.ptr(),
+            static_cast<int>(container_table_name.length()), container_table_name.ptr(),
+            static_cast<int>(src_table_schema_version_hint.length()), src_table_schema_version_hint.ptr(),
+            static_cast<int>(select_sql_string.length()), select_sql_string.ptr(),
+            snapshot_version,
+            static_cast<int>(rowkey_column_sql_string.length()), rowkey_column_sql_string.ptr()))) {
+          LOG_WARN("fail to assign sql string", KR(ret));
         }
       } else if (nested_consistent_refresh) {
         std::string select_sql(mview_select_sql.ptr());
@@ -1376,23 +1309,12 @@ int ObDDLUtil::generate_build_mview_replica_sql(
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("nested sync refresh with empty sql string", K(mview_select_sql), K(mview_table_id));
         } else if (OB_FAIL(ObMViewRefreshHelper::replace_all_snapshot_zero(
-                           select_sql, snapshot_version, real_sql, is_oracle_mode))) {
+                           select_sql, snapshot_version, real_sql))) {
           LOG_WARN("fail to replace snapshot", K(ret));
-        } else if (!is_oracle_mode) {
+        } else {
           if (OB_FAIL(sql_string.assign_fmt("INSERT /*+ append monitor enable_parallel_dml parallel(%ld) opt_param('ddl_execution_id', %ld) "
                                               " opt_param('ddl_task_id', %ld) use_px */ INTO `%.*s`.`%.*s`"
                                               " SELECT /*+ %.*s */ * from (%.*s);",
-                                            real_parallelism, execution_id, task_id,
-                                            static_cast<int>(database_name.length()), database_name.ptr(),
-                                            static_cast<int>(container_table_name.length()), container_table_name.ptr(),
-                                            static_cast<int>(src_table_schema_version_hint.length()), src_table_schema_version_hint.ptr(),
-                                            static_cast<int>(real_sql.length()), real_sql.c_str()))) {
-            LOG_WARN("fail to assign sql string", KR(ret));
-          }
-        } else if (is_oracle_mode) {
-          if (OB_FAIL(sql_string.assign_fmt("INSERT /*+ append monitor enable_parallel_dml parallel(%ld) opt_param('ddl_execution_id', %ld) "
-                                            " opt_param('ddl_task_id', %ld) use_px */ INTO \"%.*s\".\"%.*s\" "
-                                            " SELECT /*+ %.*s */ * from (%.*s);",
                                             real_parallelism, execution_id, task_id,
                                             static_cast<int>(database_name.length()), database_name.ptr(),
                                             static_cast<int>(container_table_name.length()), container_table_name.ptr(),
@@ -1514,7 +1436,7 @@ int ObDDLUtil::find_table_scan_table_id(const ObOpSpec *spec, uint64_t &table_id
 
 bool ObDDLUtil::need_reshape(const ObObjMeta &col_type)
 {
-  return col_type.is_binary() || col_type.is_fixed_len_char_type() || (lib::is_oracle_mode() && col_type.is_character_type());
+  return col_type.is_binary() || col_type.is_fixed_len_char_type();
 }
 
 int ObDDLUtil::check_null_and_length(
@@ -3916,10 +3838,10 @@ int ObDDLUtil::get_ls_host_left_disk_space(
   return ret;
 }
 
-int ObDDLUtil::generate_partition_names(const common::ObIArray<ObString> &partition_names_array, const bool is_oracle_mode, common::ObIAllocator &allocator, ObString &partition_names)
+int ObDDLUtil::generate_partition_names(const common::ObIArray<ObString> &partition_names_array, common::ObIAllocator &allocator, ObString &partition_names)
 {
   int ret = OB_SUCCESS;
-  const char quote = is_oracle_mode ? '"' : '`';
+  const char quote = '`';
   ObArenaAllocator tmp_allocator("ObDDLTmp");
   partition_names.reset();
   ObSqlString sql_partition_names;
@@ -3933,7 +3855,7 @@ int ObDDLUtil::generate_partition_names(const common::ObIArray<ObString> &partit
       for (int64_t i = 0; i < partition_nums && OB_SUCC(ret); i++) {
         ObString part_name;
         tmp_allocator.reuse();
-        if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(tmp_allocator, partition_names_array.at(i), part_name, is_oracle_mode))) {
+        if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(tmp_allocator, partition_names_array.at(i), part_name))) {
           LOG_WARN("failed to generate new name", K(ret), K(partition_names_array.at(i)));
         } else if (i == partition_nums - 1) {
           if (OB_FAIL(sql_partition_names.append_fmt("%c%.*s%c)", quote, static_cast<int>(part_name.length()), part_name.ptr(), quote))) {
@@ -3958,10 +3880,10 @@ int ObDDLUtil::generate_partition_names(const common::ObIArray<ObString> &partit
   return ret;
 }
 
-int ObDDLUtil::check_target_partition_is_running(const ObString &running_sql_info, const ObString &partition_name, const bool is_oracle_mode, common::ObIAllocator &allocator, bool &is_running_status)
+int ObDDLUtil::check_target_partition_is_running(const ObString &running_sql_info, const ObString &partition_name, common::ObIAllocator &allocator, bool &is_running_status)
 {
   int ret = OB_SUCCESS;
-  const char quote = is_oracle_mode ? '"' : '`';
+  const char quote = '`';
   ObArenaAllocator tmp_allocator("ObDDLTmp");
   ObString escaped_partition_name;
   ObSqlString sql_partition_name;
@@ -3970,7 +3892,7 @@ int ObDDLUtil::check_target_partition_is_running(const ObString &running_sql_inf
   if (OB_UNLIKELY(running_sql_info.empty() || partition_name.empty())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", KR(ret), K(running_sql_info), K(partition_name));
-  } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(tmp_allocator, partition_name, escaped_partition_name, is_oracle_mode))) {
+  } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(tmp_allocator, partition_name, escaped_partition_name))) {
     LOG_WARN("failed to generate new name", K(ret), K(partition_name));
   } else if (OB_FAIL(sql_partition_name.append_fmt("%c%.*s%c,", quote, static_cast<int>(escaped_partition_name.length()), escaped_partition_name.ptr(), quote))) {
     LOG_WARN("append partition names failed", K(ret), K(escaped_partition_name), K(sql_partition_name));
@@ -4680,7 +4602,6 @@ int ObDDLUtil::check_table_empty(
 {
   int ret = OB_SUCCESS;
   is_table_empty = false;
-  bool is_oracle_mode = false;
   uint64_t table_id = OB_INVALID_ID;
   if (!table_schema.is_valid() || database_name.empty()) {
     ret = OB_INVALID_ARGUMENT;
@@ -4689,8 +4610,6 @@ int ObDDLUtil::check_table_empty(
   } else if (OB_INVALID_ID == table_id) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(table_id));
-  } else if (OB_FAIL(table_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("fail to check is oracle mode", K(ret), K(table_schema));
   } else {
     const ObString &table_name = table_schema.get_table_name_str();
     ObSqlString sql_string;
@@ -4706,17 +4625,11 @@ int ObDDLUtil::check_table_empty(
     ObTimeoutCtx timeout_ctx;
     const char* format_str = nullptr;
     const uint64_t tenant_id = table_schema.get_tenant_id();
-    ObOracleSqlProxy oracle_sql_proxy(*GCTX.sql_proxy_);
     ObSingleConnectionProxy single_conn_proxy;
     sqlclient::ObISQLConnection *connection = nullptr;
     const ObSysVarSchema *var_schema = nullptr;
 
-    if (is_oracle_mode) {
-      format_str = "SELECT /*+ %.*s */ 1 FROM \"%.*s\".\"%.*s\" WHERE NOT 1 != 1 AND ROWNUM = 1";
-      if (OB_FAIL(single_conn_proxy.connect(tenant_id, 0/*group_id*/, &oracle_sql_proxy))) {
-        LOG_WARN("failed to get mysql connect", KR(ret), K(tenant_id));
-      }
-    } else {
+    {
       format_str = "SELECT /*+ %.*s */ 1 FROM `%.*s`.`%.*s` WHERE NOT 1 != 1 LIMIT 1";
       if (OB_FAIL(single_conn_proxy.connect(tenant_id, 0/*group_id*/, GCTX.sql_proxy_))) {
         LOG_WARN("failed to get mysql connect", KR(ret), K(tenant_id));
@@ -4745,15 +4658,13 @@ int ObDDLUtil::check_table_empty(
       } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
                   allocator,
                   database_name,
-                  new_database_name,
-                  is_oracle_mode))) {
+                  new_database_name))) {
         LOG_WARN("fail to generate new name with escape character",
                   K(ret), K(database_name));
       } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
                          allocator,
                          table_name,
-                         new_table_name,
-                         is_oracle_mode))) {
+                         new_table_name))) {
         LOG_WARN("fail to generate new name with escape character",
                   K(ret), K(table_name));
       } else if (OB_FAIL(session_param.ddl_info_.init(ddl_info, table_schema.get_session_id()))) {
@@ -4762,7 +4673,7 @@ int ObDDLUtil::check_table_empty(
         LOG_WARN("failed to set default timeout ctx", K(ret), K(timeout_ctx));
       } else if (OB_FAIL(connection->set_ddl_info(&session_param.ddl_info_))) {
         LOG_WARN("fail to set ddl info", K(ret), K(session_param.ddl_info_));
-      } else if (OB_FAIL(ObDDLUtil::generate_ddl_schema_hint_str(table_name, table_schema.get_schema_version(), true, ddl_schema_hint_str))) {
+      } else if (OB_FAIL(ObDDLUtil::generate_ddl_schema_hint_str(table_name, table_schema.get_schema_version(), ddl_schema_hint_str))) {
         LOG_WARN("failed to generate ddl schema hint str", K(ret));
       } else if (OB_FAIL(sql_string.assign_fmt(
                          format_str,
@@ -4993,12 +4904,8 @@ int ObDDLUtil::convert_to_storage_schema(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid args", K(ret), KP(table_schema));
   } else {
-    bool is_oracle_mode = false;
     Worker::CompatMode compat_mode;
-    if (OB_FAIL(table_schema->check_if_oracle_compat_mode(is_oracle_mode))) {
-      LOG_WARN("fail to check if oracle compat mode", K(ret), KPC(table_schema));
-    } else if (FALSE_IT(compat_mode = is_oracle_mode ? Worker::CompatMode::ORACLE
-                                                     : Worker::CompatMode::MYSQL)) {
+    if (FALSE_IT(compat_mode = Worker::CompatMode::MYSQL)) {
     } else if (OB_FAIL(ObTabletObjLoadHelper::alloc_and_new(allocator, storage_schema))) {
       LOG_WARN("alloc and new failed", K(ret));
     } else if (OB_FAIL(storage_schema->init(allocator, *table_schema, compat_mode))) {

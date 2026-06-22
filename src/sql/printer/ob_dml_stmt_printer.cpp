@@ -197,8 +197,6 @@ int ObDMLStmtPrinter::print_table(const TableItem *table_item,
         if (OB_FAIL(print_base_table(table_item))) {
           LOG_WARN("failed to print base table", K(ret), K(*table_item));
         } else if (!no_print_alias && !table_item->alias_name_.empty()) {
-          //DATA_PRINTF(lib::is_oracle_mode() ? " \"%.*s\"" : " `%.*s`",
-          //            LEN_AND_PTR(table_item->alias_name_));
           DATA_PRINTF(" ");
           PRINT_IDENT_WITH_QUOT(table_item->alias_name_);
         }
@@ -208,8 +206,6 @@ int ObDMLStmtPrinter::print_table(const TableItem *table_item,
         if (OB_FAIL(print_base_table(table_item))) {
           LOG_WARN("failed to print base table", K(ret), K(*table_item));
         } else if (!no_print_alias && !table_item->alias_name_.empty()) {
-          //DATA_PRINTF(lib::is_oracle_mode() ? " \"%.*s\"" : " `%.*s`",
-          //            LEN_AND_PTR(table_item->alias_name_));
           DATA_PRINTF(" ");
           PRINT_IDENT_WITH_QUOT(table_item->alias_name_);
         }
@@ -625,7 +621,7 @@ int ObDMLStmtPrinter::print_values_table_to_union_all(const TableItem &table_ite
 int ObDMLStmtPrinter::print_json_return_type(int64_t value, ObDataType data_type)
 {
   int ret = OB_SUCCESS;
-  if (lib::is_mysql_mode()) {
+  if (true) {
     if (OB_FAIL(print_mysql_json_return_type(value, data_type))) {
       LOG_WARN("fail to print json table column in mysql mode", K(ret));
     }
@@ -1869,19 +1865,11 @@ int ObDMLStmtPrinter::print_order_by()
         const OrderItem &order_item = stmt_->get_order_item(i);
         if (OB_FAIL(print_expr_except_const_number(order_item.expr_, T_ORDER_SCOPE))) {
           LOG_WARN("fail to print order by expr", K(ret));
-        } else if (lib::is_mysql_mode()) {
+        } else {
           if (is_descending_direction(order_item.order_type_)) {
             DATA_PRINTF("desc");
           }
-        } else if (order_item.order_type_ == NULLS_FIRST_ASC) {
-          DATA_PRINTF("asc nulls first");
-        } else if (order_item.order_type_ == NULLS_LAST_ASC) {//use default value
-          /*do nothing*/
-        } else if (order_item.order_type_ == NULLS_FIRST_DESC) {//use default value
-          DATA_PRINTF("desc");
-        } else if (order_item.order_type_ == NULLS_LAST_DESC) {
-          DATA_PRINTF("desc nulls last");
-        } else {/*do nothing*/}
+        }
         DATA_PRINTF(",");
       }
       if (OB_SUCC(ret)) {

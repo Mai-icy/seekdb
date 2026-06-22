@@ -3987,9 +3987,7 @@ int ObTableLocation::send_add_interval_partition_rpc(
       MEMSET(high_bound_buf, 0, OB_MAX_DEFAULT_VALUE_LENGTH);
       int64_t high_bound_buf_pos = 0;
 
-      bool is_oracle_mode = false;
-      OZ (ObPartitionUtils::convert_rowkey_to_sql_literal(is_oracle_mode,
-                                                      high_bound_rowkey,
+      OZ (ObPartitionUtils::convert_rowkey_to_sql_literal(high_bound_rowkey,
                                                       high_bound_buf,
                                                       OB_MAX_DEFAULT_VALUE_LENGTH,
                                                       high_bound_buf_pos,
@@ -4007,7 +4005,7 @@ int ObTableLocation::send_add_interval_partition_rpc(
                               ));
       OX (sql_proxy = GCTX.sql_proxy_);
       CK (OB_NOT_NULL(sql_proxy));
-      OZ (sql_proxy->write(table_schema->get_tenant_id(), sql.ptr(), affected_rows, ORACLE_MODE));
+      OZ (sql_proxy->write(table_schema->get_tenant_id(), sql.ptr(), affected_rows, MYSQL_MODE));
     }
   }
   return ret;
@@ -4068,10 +4066,8 @@ int ObTableLocation::send_add_interval_partition_rpc_new_engine(
       MEMSET(high_bound_buf, 0, OB_MAX_DEFAULT_VALUE_LENGTH);
       int64_t high_bound_buf_pos = 0;
 
-      bool is_oracle_mode = false;
       int64_t max_part_id = OB_INVALID_ID;
-      OZ (ObPartitionUtils::convert_rowkey_to_sql_literal(is_oracle_mode,
-                                                          high_bound_rowkey,
+      OZ (ObPartitionUtils::convert_rowkey_to_sql_literal(high_bound_rowkey,
                                                           high_bound_buf,
                                                           OB_MAX_DEFAULT_VALUE_LENGTH,
                                                           high_bound_buf_pos,
@@ -4090,7 +4086,7 @@ int ObTableLocation::send_add_interval_partition_rpc_new_engine(
                               ));
       OX (sql_proxy = GCTX.sql_proxy_);
       CK (OB_NOT_NULL(sql_proxy));
-      OZ (sql_proxy->write(table_schema->get_tenant_id(), sql.ptr(), affected_rows, ORACLE_MODE));
+      OZ (sql_proxy->write(table_schema->get_tenant_id(), sql.ptr(), affected_rows, MYSQL_MODE));
     }
   }
   return ret;

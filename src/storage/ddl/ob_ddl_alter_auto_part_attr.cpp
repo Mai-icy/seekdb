@@ -32,7 +32,6 @@ ObAlterAutoPartAttrOp::ObAlterAutoPartAttrOp(rootserver::ObDDLService &ddl_servi
 int ObAlterAutoPartAttrOp::check_alter_table_partition_attr(
     const obcall::ObAlterTableArg &alter_table_arg,
     const share::schema::ObTableSchema &orig_table_schema,
-    const bool is_oracle_mode,
     share::ObDDLType &ddl_type)
 {
   int ret = OB_SUCCESS;
@@ -46,12 +45,7 @@ int ObAlterAutoPartAttrOp::check_alter_table_partition_attr(
     ret = OB_NOT_SUPPORTED;
     LOG_USER_ERROR(OB_NOT_SUPPORTED, "There are several mutually exclusive DDL in single statement");
   } else if (obcall::ObAlterTableArg::REPARTITION_TABLE == alter_table_arg.alter_part_type_) {
-    if (is_oracle_mode && PARTITION_LEVEL_ZERO != part_level && OB_NOT_NULL(alter_part_array)) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "re-partition a patitioned table");
-    } else {
-      ddl_type = ObDDLType::DDL_ALTER_PARTITION_BY;
-    }
+    ddl_type = ObDDLType::DDL_ALTER_PARTITION_BY;
   } else {
     ddl_type = ObDDLType::DDL_NORMAL_TYPE;
   }
@@ -355,13 +349,6 @@ int ObAlterAutoPartAttrOp::check_and_set_table_auto_part_func(
         ObString in_old_expr_str = old_expr_strs.at(i).trim();
         ObString out_new_expr_str = in_new_expr_str;
         ObString out_old_expr_str = in_old_expr_str;
-        if (lib::is_oracle_mode()) {
-          if (OB_FAIL(ob_simple_low_to_up(allocator, in_new_expr_str, out_new_expr_str))) {
-            LOG_WARN("failed to transfer low to up column name", K(ret));
-          } else if (OB_FAIL(ob_simple_low_to_up(allocator, in_old_expr_str, out_old_expr_str))) {
-            LOG_WARN("failed to transfer low to up column name", K(ret));
-          }
-        }
         if (OB_SUCC(ret) && (out_new_expr_str != out_old_expr_str)) {
           ret = OB_NOT_SUPPORTED;
           LOG_WARN("fail to alter table partition, ori table func expr is diff from alter partition func expr", 

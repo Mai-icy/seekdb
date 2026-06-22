@@ -195,11 +195,9 @@ int ObAllVirtualProxySchema::convert_output_row(ObNewRow *&cur_row)
 }
 
 int ObAllVirtualProxySchema::gen_column_value(char *&buf, int64_t len,
-                                              const ObString &str, const bool is_oracle_mode)
+                                              const ObString &str)
 {
   int ret = OB_SUCCESS;
-  lib::CompatModeGuard guard(is_oracle_mode ? lib::Worker::CompatMode::ORACLE :
-                             lib::Worker::CompatMode::MYSQL);
   ObObj col_obj;
   col_obj.set_varchar(str);
   int64_t pos = 0;
@@ -299,7 +297,7 @@ int ObAllVirtualProxySchema::inner_open()
             LOG_TRACE("tenant not exist", K(tenant_name)); // skip
           } else {
             tenant_id = tenant_schema->get_tenant_id();
-            is_oracle_tenant = tenant_schema->is_oracle_tenant();
+            is_oracle_tenant = false;
             if (OB_UNLIKELY(!is_valid_tenant_id(effective_tenant_id_))) {
               ret = OB_ERR_UNEXPECTED;
               LOG_WARN("invalid effective_tenant_id", KR(ret), K_(effective_tenant_id));
@@ -403,13 +401,11 @@ int ObAllVirtualProxySchema::inner_open()
           if (OB_FAIL(sql.append_fmt(" (TENANT_NAME, DATABASE_NAME, TABLE_NAME, TABLET_ID) = ('%.*s'",
                                      input_tenant_name_.length(), input_tenant_name_.ptr()))) {
             LOG_WARN("fail to append_fmt", K(ret));
-          } else if (OB_FAIL(gen_column_value(value_buf, OB_MAX_SQL_LENGTH, input_db_name_,
-                                              is_oracle_tenant))) {
+          } else if (OB_FAIL(gen_column_value(value_buf, OB_MAX_SQL_LENGTH, input_db_name_))) {
             LOG_WARN("fail to gen_column_value", K(ret));
           } else if (OB_FAIL(sql.append_fmt(", %s", value_buf))) {
             LOG_WARN("fail to append_fmt", K(ret));
-          } else if (OB_FAIL(gen_column_value(value_buf, OB_MAX_SQL_LENGTH, table_name,
-                                              is_oracle_tenant))) {
+          } else if (OB_FAIL(gen_column_value(value_buf, OB_MAX_SQL_LENGTH, table_name))) {
             LOG_WARN("fail to gen_column_value", K(ret));
           } else if (OB_FAIL(sql.append_fmt(", %s", value_buf))) {
             LOG_WARN("fail to append_fmt", K(ret));
@@ -420,13 +416,11 @@ int ObAllVirtualProxySchema::inner_open()
           if (OB_FAIL(sql.append_fmt(" (TENANT_NAME, DATABASE_NAME, TABLE_NAME) = ('%.*s'",
                                      input_tenant_name_.length(), input_tenant_name_.ptr()))) {
             LOG_WARN("fail to append_fmt", K(ret));
-          } else if (OB_FAIL(gen_column_value(value_buf, OB_MAX_SQL_LENGTH, input_db_name_,
-                                              is_oracle_tenant))) {
+          } else if (OB_FAIL(gen_column_value(value_buf, OB_MAX_SQL_LENGTH, input_db_name_))) {
             LOG_WARN("fail to gen_column_value", K(ret));
           } else if (OB_FAIL(sql.append_fmt(", %s", value_buf))) {
             LOG_WARN("fail to append_fmt", K(ret));
-          } else if (OB_FAIL(gen_column_value(value_buf, OB_MAX_SQL_LENGTH, table_name,
-                                              is_oracle_tenant))) {
+          } else if (OB_FAIL(gen_column_value(value_buf, OB_MAX_SQL_LENGTH, table_name))) {
             LOG_WARN("fail to gen_column_value", K(ret));
           } else if (OB_FAIL(sql.append_fmt(", %s)", value_buf))) {
             LOG_WARN("fail to append_fmt", K(ret));
@@ -434,14 +428,9 @@ int ObAllVirtualProxySchema::inner_open()
         }
       }
       if (OB_SUCC(ret)) {
-        common::ObCommonSqlProxy *user_sql_proxy = NULL;
-        common::ObOracleSqlProxy oracle_sql_proxy;
+        common::ObCommonSqlProxy *user_sql_proxy = GCTX.sql_proxy_;
         common::ObMySQLProxy::MySQLResult *sql_res = NULL;
-        if (OB_FAIL(oracle_sql_proxy.init(GCTX.sql_proxy_->get_pool()))) {
-          LOG_WARN("fail to init oracle sql proxy", K(ret));
-        } else if (FALSE_IT(user_sql_proxy = is_oracle_tenant ?
-                            (common::ObCommonSqlProxy*)&oracle_sql_proxy : GCTX.sql_proxy_)) {
-        } else if (OB_ISNULL(sql_res = OB_NEWx(ObMySQLProxy::MySQLResult, (&inner_alloc_)))) {
+        if (OB_ISNULL(sql_res = OB_NEWx(ObMySQLProxy::MySQLResult, (&inner_alloc_)))) {
           ret = OB_ALLOCATE_MEMORY_FAILED;
           LOG_WARN("allocate result failed", K(ret));
         } else if (OB_FAIL(user_sql_proxy->read(*sql_res, exec_tenant_id, sql.ptr()))) {
@@ -519,13 +508,9 @@ int ObAllVirtualProxySchema::init_data_(
                 K_(level1_decoded_db_name), K_(level1_decoded_table_name), KPC(table_schema));
       const common::ObString &view_definition = table_schema->get_view_schema().get_view_definition_str();
       const ObTableSchema *new_table_schema = NULL;
-      bool is_oracle_mode = false;
-      if (OB_FAIL(table_schema->check_if_oracle_compat_mode(is_oracle_mode))) {
-        LOG_WARN("fail to check oracle mode", KR(ret), KPC(table_schema));
-      } else if (OB_FAIL(get_view_decoded_schema_(tenant_id,
+      if (OB_FAIL(get_view_decoded_schema_(tenant_id,
                                                   tenant_name,
                                                   view_definition,
-                                                  is_oracle_mode,
                                                   new_table_schema,
                                                   database_name))) {
         LOG_WARN("get_view_decoded_schema failed", KR(ret));
@@ -653,7 +638,6 @@ int ObAllVirtualProxySchema::get_view_decoded_schema_(
     const uint64_t tenant_id,
     const common::ObString &tenant_name,
     const common::ObString &view_definition,
-    const bool is_oracle_mode,
     const ObTableSchema *&new_table_schema,
     const common::ObString &database_name)
 {
@@ -672,26 +656,13 @@ int ObAllVirtualProxySchema::get_view_decoded_schema_(
     } else if (OB_FAIL(empty_session.init_tenant(tenant_name, tenant_id))) {
       LOG_WARN("fail to set tenant", KR(ret), K(tenant_name), K(tenant_id));
     } else {
-      lib::Worker::CompatMode compat_mode = is_oracle_mode ?
-                                         lib::Worker::CompatMode::ORACLE :
-                                         lib::Worker::CompatMode::MYSQL;
+      lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
       empty_session.set_compatibility_mode(static_cast<ObCompatibilityMode>(compat_mode));
       empty_session.set_sql_mode(ob_compatibility_mode_to_sql_mode(static_cast<ObCompatibilityMode>(compat_mode)));
       empty_session.set_inner_session();
-      if (is_oracle_mode) {
-        uint64_t database_id = OB_INVALID_ID;
-        if (OB_FAIL(schema_guard_.get_database_id(tenant_id, database_name, database_id))) {
-          LOG_WARN("failed to get database id", K(ret));
-        } else if (OB_FAIL(empty_session.set_default_database(database_name))) {
-          LOG_WARN("failed to set default database name", K(ret));
-        } else {
-          empty_session.set_database_id(database_id);
-        }
-      }
       ParseResult parse_result;
       sql::ObParser parser(*allocator_, empty_session.get_sql_mode());
       sql::ObSchemaChecker schema_checker;
-      lib::CompatModeGuard tmp_guard(compat_mode);
       //FIXME: Resolve view definition directly may failed when sys views are involved.
       //       Select sql is needed here like int ObTableColumns::resolve_view_definition().
       if (OB_FAIL(ret)) {
@@ -779,7 +750,7 @@ int ObAllVirtualProxySchema::get_view_decoded_schema_(
             }
           }
         }
-      }//end of lib::CompatModeGuard
+      }
     }
 
     if (OB_SUCC(ret) && orig_complex_table_type != complex_table_type_) {

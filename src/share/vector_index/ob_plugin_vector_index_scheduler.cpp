@@ -231,14 +231,6 @@ bool ObPluginVectorIndexLoadScheduler::check_can_do_work()
 {
   bool bret = true;
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
-  
-  if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id_, is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K_(tenant_id));
-  } else if (is_oracle_mode) {
-    bret = false;
-    LOG_DEBUG("vector index not support oracle mode", K_(tenant_id));
-  }
   return bret;
 }
 

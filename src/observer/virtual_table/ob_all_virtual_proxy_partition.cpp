@@ -175,16 +175,10 @@ int ObAllVirtualProxyPartition::fill_row_(const ObPartition &partition)
   ObCollationType coll_type = ObCharset::get_default_collation(ObCharset::get_default_charset());
   const int64_t table_id = partition.get_table_id();
   const uint64_t tenant_id = partition.get_tenant_id();
-  bool is_oracle_mode = false;
   const ObTableSchema *table_schema = NULL;
   if (OB_ISNULL(cells)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("cur row cell is NULL", KR(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-      tenant_id,
-      table_id,
-      is_oracle_mode))) {
-    LOG_WARN("fail to get oracle mode", KR(ret), K(partition));
   } else if (OB_FAIL(tenant_schema_guard_.get_table_schema(
       tenant_id, 
       table_id, 
@@ -230,7 +224,7 @@ int ObAllVirtualProxyPartition::fill_row_(const ObPartition &partition)
         break;
       }
     case HIGH_BOUND_VAL: {
-        if (OB_FAIL(get_partition_value_str(is_oracle_mode, part_func_type_, partition, cells[i]))) {
+        if (OB_FAIL(get_partition_value_str(part_func_type_, partition, cells[i]))) {
           LOG_WARN("fail to get str", K(partition), KR(ret));
         } else {
           cells[i].set_collation_type(coll_type);

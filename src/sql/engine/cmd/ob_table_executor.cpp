@@ -199,7 +199,6 @@ int ObCreateTableExecutor::prepare_ins_arg(ObCreateTableStmt &stmt,
   char *buf = static_cast<char*>(allocator.alloc(OB_MAX_SQL_LENGTH));
   int64_t buf_len = OB_MAX_SQL_LENGTH;
   int64_t pos1 = 0;
-  bool is_oracle_mode = false;
   bool no_osg_hint = false;
   bool online_sys_var = false;
   ObSelectStmt *select_stmt = stmt.get_sub_select();
@@ -312,7 +311,7 @@ int ObCreateTableExecutor::prepare_drop_arg(const ObCreateTableStmt &stmt,
   drop_table_arg.exec_tenant_id_ = my_session->get_effective_tenant_id();
   int64_t foreign_key_checks = 0;
   my_session->get_foreign_key_checks(foreign_key_checks);
-  drop_table_arg.foreign_key_checks_ = (is_mysql_mode() && foreign_key_checks);
+  drop_table_arg.foreign_key_checks_ = foreign_key_checks;
   table_item.database_name_ = db_name;
   table_item.table_name_ = tab_name;
   if (OB_FAIL(my_session->get_name_case_mode(table_item.mode_))) {
@@ -332,7 +331,6 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
   int64_t affected_rows = 0;
   ObMySQLProxy *sql_proxy = ctx.get_sql_proxy();
   common::ObCommonSqlProxy *user_sql_proxy;
-  common::ObOracleSqlProxy oracle_sql_proxy;
   ObSQLSessionInfo *my_session = ctx.get_my_session();
   ObPhysicalPlanCtx *plan_ctx = ctx.get_physical_plan_ctx();
   ObArenaAllocator allocator("CreateTableExec");
@@ -362,8 +360,6 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
       if (OB_ISNULL(pool)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("pool is null", K(ret));
-      } else if (OB_FAIL(oracle_sql_proxy.init(pool))) {
-        LOG_WARN("init oracle sql proxy failed", K(ret));
       } else if (OB_FAIL(prepare_stmt(stmt, *my_session, create_table_name))) {
         LOG_WARN("failed to prepare stmt", K(ret));
       } else if (OB_FAIL(prepare_ins_arg(stmt, my_session, ctx.get_sql_ctx()->schema_guard_, &plan_ctx->get_param_store(), ins_sql))) { //1, parameter preparation;
@@ -462,15 +458,12 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
         //4, refresh schema, reset table's sess id to 0
         if (OB_SUCC(ret)) {
           obcall::ObAlterTableRes res;
-          alter_table_arg.compat_mode_ = ORACLE_MODE == my_session->get_compatibility_mode() ?
-            lib::Worker::CompatMode::ORACLE : lib::Worker::CompatMode::MYSQL;
+          alter_table_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL;
           bool finish = false;
           while (OB_SUCC(ret) && !finish) {
             if (OB_FAIL(rootserver::serial_call([&]{ return GCTX.root_service_->alter_table(alter_table_arg, res); }))) {
               LOG_WARN("failed to update table session", K(ret), K(alter_table_arg));
-              if (alter_table_arg.compat_mode_ == lib::Worker::CompatMode::ORACLE && OB_ERR_TABLE_EXIST == ret) {
-                ret = OB_ERR_EXIST_OBJECT;
-              } else if (OB_EAGAIN == ret) {
+              if (OB_EAGAIN == ret) {
                 ret = OB_SUCCESS; // maybe table lock conflict, retry
                 if (OB_UNLIKELY(THIS_WORKER.get_timeout_remain() <= 0)) {
                   ret = OB_TIMEOUT;
@@ -490,8 +483,7 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
           if (OB_LIKELY(need_clean)) {
             int tmp_ret = OB_SUCCESS;
             obcall::ObDDLRes res;
-            drop_table_arg.compat_mode_ = ORACLE_MODE == my_session->get_compatibility_mode() ?
-              lib::Worker::CompatMode::ORACLE : lib::Worker::CompatMode::MYSQL;
+            drop_table_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL;
             if (OB_SUCCESS != (tmp_ret = rootserver::serial_call([&]{ return GCTX.root_service_->drop_table(drop_table_arg, res); }))) {
               LOG_WARN("failed to drop table", K(drop_table_arg), K(ret));
             } else {
@@ -780,8 +772,7 @@ int ObAlterTableExecutor::alter_table_rpc_v2(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret));
   } else {
-    alter_table_arg.compat_mode_ = ORACLE_MODE == my_session->get_compatibility_mode() ?
-            lib::Worker::CompatMode::ORACLE : lib::Worker::CompatMode::MYSQL;
+    alter_table_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL;
   }
   for (int64_t i = 0; OB_SUCC(ret) && i < index_arg_list.size(); ++i) {
     obcall::ObIndexArg *index_arg = index_arg_list.at(i);
@@ -1071,7 +1062,6 @@ int ObAlterTableExecutor::execute(ObExecContext &ctx, ObAlterTableStmt &stmt)
     bool need_modify_fk_validate = false;
     bool need_check = false;
     bool need_modify_notnull_validate = false;
-    bool is_oracle_mode = false;
     const int64_t tenant_id = alter_table_arg.alter_table_schema_.get_tenant_id();
     ObArenaAllocator allocator(ObModIds::OB_SQL_EXECUTOR);
     if (OB_FAIL(stmt.get_first_stmt(first_stmt))) {
@@ -1089,9 +1079,7 @@ int ObAlterTableExecutor::execute(ObExecContext &ctx, ObAlterTableStmt &stmt)
       } else if (FALSE_IT(alter_table_arg.consumer_group_id_ = THIS_WORKER.get_group_id())) {
       } else if (OB_FAIL(check_alter_partition(ctx, stmt, alter_table_arg))) {
         LOG_WARN("check alter partition failed", K(ret));
-      } else if (OB_FAIL(alter_table_arg.alter_table_schema_.check_if_oracle_compat_mode(is_oracle_mode))) {
-        LOG_WARN("fail to check if tenant mode is oracle mode", K(ret));
-      } else if (!is_oracle_mode && OB_FAIL(check_alter_part_key(ctx, alter_table_arg))) {
+      } else if (OB_FAIL(check_alter_part_key(ctx, alter_table_arg))) {
         LOG_WARN("check alter part key failed", K(ret));
       } else if (OB_FAIL(set_index_arg_list(ctx, stmt))) {
         LOG_WARN("fail to set index_arg_list", K(ret));
@@ -1104,7 +1092,7 @@ int ObAlterTableExecutor::execute(ObExecContext &ctx, ObAlterTableStmt &stmt)
       } else {
         int64_t foreign_key_checks = 0;
         my_session->get_foreign_key_checks(foreign_key_checks);
-        alter_table_arg.foreign_key_checks_ = is_oracle_mode || (!is_oracle_mode && foreign_key_checks);
+        alter_table_arg.foreign_key_checks_ = foreign_key_checks;
         if ((obcall::ObAlterTableArg::ADD_CONSTRAINT == alter_table_arg.alter_constraint_type_
             || (obcall::ObAlterTableArg::ALTER_CONSTRAINT_STATE == alter_table_arg.alter_constraint_type_))) {
           if (OB_FAIL(need_check_constraint_validity(alter_table_arg, need_check))) {
@@ -1698,7 +1686,6 @@ int ObAlterTableExecutor::check_alter_part_key(ObExecContext &ctx,
     const share::schema::ObTableSchema *orig_table_schema = NULL;
     AlterColumnSchema *alter_column_schema = NULL;
     const ObColumnSchemaV2 *orig_column_schema = NULL;
-    bool is_oracle_mode = false;
     CK (!origin_database_name.empty() && !origin_table_name.empty());
     CK (OB_NOT_NULL(my_session));
     OZ (ObMultiVersionSchemaService::get_instance().get_tenant_schema_guard(
@@ -1712,10 +1699,6 @@ int ObAlterTableExecutor::check_alter_part_key(ObExecContext &ctx,
     } else if (OB_ISNULL(orig_table_schema)) {
       ret = OB_TABLE_NOT_EXIST;
       LOG_WARN("table is not exist", KR(ret), K(tenant_id), K(origin_database_name), K(origin_table_name));
-    } else if (OB_FAIL(orig_table_schema->check_if_oracle_compat_mode(is_oracle_mode))) {
-      LOG_WARN("fail to check oracle mode", KR(ret), KPC(orig_table_schema));
-    } else if (is_oracle_mode) {
-      // skip
     } else {
       OZ (table_schema.assign_partition_schema(*orig_table_schema));
       for(;OB_SUCC(ret) && it_begin != it_end; it_begin++) {
@@ -2072,9 +2055,8 @@ int ObDropTableExecutor::execute(ObExecContext &ctx, ObDropTableStmt &stmt)
                && FALSE_IT(tmp_arg.session_id_ = my_session->get_sessid_for_table())) {
       //impossible
     } else if (FALSE_IT(my_session->get_foreign_key_checks(foreign_key_checks))) {
-    } else if (FALSE_IT(tmp_arg.foreign_key_checks_ = (is_mysql_mode() && foreign_key_checks))) {
-    } else if (FALSE_IT(tmp_arg.compat_mode_ = ORACLE_MODE == my_session->get_compatibility_mode() ?
-        lib::Worker::CompatMode::ORACLE : lib::Worker::CompatMode::MYSQL)) {
+    } else if (FALSE_IT(tmp_arg.foreign_key_checks_ = foreign_key_checks)) {
+    } else if (FALSE_IT(tmp_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL)) {
     } else {
       bool is_parallel_drop = false;
       if (!ObSchemaUtils::is_support_parallel_drop(table_type)) {
@@ -2239,9 +2221,8 @@ int ObTruncateTableExecutor::execute(ObExecContext &ctx, ObTruncateTableStmt &st
     } else {
       int64_t foreign_key_checks = 0;
       my_session->get_foreign_key_checks(foreign_key_checks);
-      tmp_arg.foreign_key_checks_ = (is_mysql_mode() && foreign_key_checks);
-      tmp_arg.compat_mode_ = ORACLE_MODE == my_session->get_compatibility_mode()
-        ? lib::Worker::CompatMode::ORACLE : lib::Worker::CompatMode::MYSQL;
+      tmp_arg.foreign_key_checks_ = foreign_key_checks;
+      tmp_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL;
       int64_t affected_rows = 0;
       bool use_parallel_truncate = false;
       const uint64_t tenant_id = truncate_table_arg.tenant_id_;

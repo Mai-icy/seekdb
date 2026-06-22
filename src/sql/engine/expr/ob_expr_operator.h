@@ -549,7 +549,6 @@ public:
   static int aggregate_max_length_for_string_result(ObExprResType &type,
                                              const ObExprResType *types,
                                              int64_t param_num,
-                                             bool is_oracle_mode,
                                              const common::ObLengthSemantics default_length_semantics,
                                              bool need_merge_type = TRUE,
                                              bool skip_null = FALSE,
@@ -572,7 +571,6 @@ public:
     ObExprResType &type,
     const ObExprResType *types,
     int64_t param_num,
-    bool is_oracle_mode,
     common::ObExprTypeCtx &type_ctx,
     bool need_merge_type = TRUE,
     bool skip_null = FALSE,
@@ -581,7 +579,6 @@ public:
     ObExprResType &type,
     const ObExprResType *types,
     int64_t param_num,
-    bool is_oracle_mode,
     common::ObExprTypeCtx &type_ctx,
     bool need_merge_type = TRUE,
     bool skip_null = FALSE,
@@ -634,8 +631,7 @@ public:
   static int is_same_kind_type_for_case(const ObExprResType &type1, const ObExprResType &type2, bool &match);
   static int aggregate_numeric_accuracy_for_merge(ObExprResType &type,
                                                   const ObExprResType *types,
-                                                  int64_t param_num,
-                                                  bool is_oracle_mode);
+                                                  int64_t param_num);
 
   static int aggregate_temporal_accuracy_for_merge(ObExprResType &type,
                                                    const ObExprResType *types,
@@ -1169,7 +1165,7 @@ public:
   /**
    * compare with cast.
    * use this func if you are SURE the compare always NEED cast.
-   * like ObExprBetween / ObExprNotBetween / ObExprField / ObExprStrcmp / ObExprOracleDecode.
+   * like ObExprBetween / ObExprNotBetween / ObExprField / ObExprStrcmp.
    * @param[out] result: true / false / -1 / 0 / 1 / null.
    * @param[in] obj1
    * @param[in] obj2
@@ -2318,7 +2314,7 @@ private:
   ObCollationType cast_coll_type = CS_TYPE_INVALID;                        \
   ObCastMode cp_cast_mode_ = (expr_ctx).cast_mode_ | (cast_mode);          \
   if (NULL != (expr_ctx).my_session_) {                                    \
-    if (lib::is_mysql_mode()) {                                            \
+    {                                            \
       if (common::OB_SUCCESS != (expr_ctx).my_session_->                   \
           get_collation_connection(cast_coll_type)) {                      \
         SQL_LOG_RET(ERROR, common::OB_ERR_UNEXPECTED, "fail to get collation_connection, "                \

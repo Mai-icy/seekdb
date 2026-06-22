@@ -79,10 +79,7 @@ int ObDBMSSchedJobExecutor::init_session(
   ObPCMemPctConf pc_mem_conf;
   ObObj compatibility_mode;
   ObObj sql_mode;
-  if (job_info.is_oracle_tenant_) {
-    compatibility_mode.set_int(1);
-    sql_mode.set_uint(ObUInt64Type, DEFAULT_ORACLE_MODE);
-  } else {
+  {
     compatibility_mode.set_int(0);
     sql_mode.set_uint(ObUInt64Type, DEFAULT_MYSQL_MODE);
   }
@@ -474,8 +471,8 @@ int ObDBMSSchedJobExecutor::run_dbms_sched_job(uint64_t tenant_id, bool is_oracl
       } else {
         ObString errmsg = common::ob_get_tsi_err_msg(ret);
         if (errmsg.empty() && ret != OB_SUCCESS) {
-          errmsg = ObString(strlen(ob_errpkt_strerror(ret, lib::is_oracle_mode())),
-                            ob_errpkt_strerror(ret, lib::is_oracle_mode()));
+          errmsg = ObString(strlen(ob_errpkt_strerror(ret)),
+                            ob_errpkt_strerror(ret));
         }
         if ((OB_TMP_FAIL(table_operator_.update_for_end(job_info, ret, errmsg)))) {
           LOG_WARN("update dbms sched job failed", K(tmp_ret), K(ret));
