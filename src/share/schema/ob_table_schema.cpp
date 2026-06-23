@@ -4261,30 +4261,28 @@ int ObTableSchema::check_alter_column_in_foreign_key(const ObColumnSchemaV2 &src
     // if the column type class is ObFloatTC or ObDoubleTC, which supports changing the precision
     // if the column type class is VARCHAR, which supports changing to a larger size, but does
     // not support changing to a smaller size
-    {
-      if (dst_column.get_data_type_class() == ObFloatTC ||
-          dst_column.get_data_type_class() == ObDoubleTC) {
-        if (src_column.get_meta_type().is_float() || src_column.get_meta_type().is_double()) {
-          dst_col_type = dst_accuracy.get_precision() >= 25 ? ObDoubleType : ObFloatType;
-          src_col_type = src_accuracy.get_precision() >= 25 ? ObDoubleType : ObFloatType;
-        } else {
-          dst_col_type = dst_accuracy.get_precision() >= 25 ? ObUDoubleType : ObUFloatType;
-          src_col_type = src_accuracy.get_precision() >= 25 ? ObUDoubleType : ObUFloatType;
-        }
-      }
-      if (src_col_type != dst_col_type) {
-        ret = OB_NOT_SUPPORTED;
-        LOG_USER_ERROR(OB_NOT_SUPPORTED, "Alter the type of foreign key columns");
+    if (dst_column.get_data_type_class() == ObFloatTC ||
+        dst_column.get_data_type_class() == ObDoubleTC) {
+      if (src_column.get_meta_type().is_float() || src_column.get_meta_type().is_double()) {
+        dst_col_type = dst_accuracy.get_precision() >= 25 ? ObDoubleType : ObFloatType;
+        src_col_type = src_accuracy.get_precision() >= 25 ? ObDoubleType : ObFloatType;
       } else {
-        if (src_column.get_data_type_class() != ObFloatTC &&
-            src_column.get_data_type_class() != ObDoubleTC &&
-            (!src_column.get_meta_type().is_varchar() ||
-            dst_accuracy.get_length() < src_accuracy.get_length())) {
-          ret = OB_NOT_SUPPORTED;
-          (void)snprintf(err_msg, sizeof(err_msg), "Alter the precision of foreign key columns,"
-          "column type %s", ob_obj_type_str(src_col_type));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, err_msg);
-        }
+        dst_col_type = dst_accuracy.get_precision() >= 25 ? ObUDoubleType : ObUFloatType;
+        src_col_type = src_accuracy.get_precision() >= 25 ? ObUDoubleType : ObUFloatType;
+      }
+    }
+    if (src_col_type != dst_col_type) {
+      ret = OB_NOT_SUPPORTED;
+      LOG_USER_ERROR(OB_NOT_SUPPORTED, "Alter the type of foreign key columns");
+    } else {
+      if (src_column.get_data_type_class() != ObFloatTC &&
+          src_column.get_data_type_class() != ObDoubleTC &&
+          (!src_column.get_meta_type().is_varchar() ||
+          dst_accuracy.get_length() < src_accuracy.get_length())) {
+        ret = OB_NOT_SUPPORTED;
+        (void)snprintf(err_msg, sizeof(err_msg), "Alter the precision of foreign key columns,"
+        "column type %s", ob_obj_type_str(src_col_type));
+        LOG_USER_ERROR(OB_NOT_SUPPORTED, err_msg);
       }
     }
   }
@@ -4537,7 +4535,6 @@ int ObTableSchema::check_prohibition_rules(const ObColumnSchemaV2 &src_schema,
   bool is_enable = false;
   bool is_same = false;
   bool has_prefix_idx_col_deps = false;
-  bool is_tbl_part_key = false;
   bool is_column_in_fk = is_column_in_foreign_key(src_schema.get_column_id());
   if (OB_FAIL(check_is_exactly_same_type(src_schema, dst_schema, is_same))) {
     LOG_WARN("failed to check is exactly same type", K(ret));
@@ -4546,21 +4543,10 @@ int ObTableSchema::check_prohibition_rules(const ObColumnSchemaV2 &src_schema,
   } else if (OB_FAIL(check_alter_column_in_foreign_key(src_schema, dst_schema))) {
     LOG_WARN("failed to check alter column in foreign key", K(ret));
   } else if (is_column_in_check_constraint(src_schema.get_column_id())
-            && !common::is_match_alter_integer_column_online_ddl_rules(src_schema.get_meta_type(), dst_schema.get_meta_type())) {
+             && !common::is_match_alter_integer_column_online_ddl_rules(src_schema.get_meta_type(), dst_schema.get_meta_type())) {
   // The column contains the check constraint to prohibit modification of the type in mysql mode
     ret = OB_NOT_SUPPORTED;
     LOG_USER_ERROR(OB_NOT_SUPPORTED, "Alter column with check constraint");
-  } else if (false && OB_FAIL(is_tbl_partition_key(src_schema, is_tbl_part_key,
-                                                            false /* ignore_presetting_key */))) {
-    LOG_WARN("fail to check partition key", KR(ret), K(src_schema));
-  } else if (false && is_tbl_part_key) {
-  // Partition key prohibited to modify the type in oracle mode
-    ret = OB_NOT_SUPPORTED;
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "Alter column with partition key");
-  } else if (false && src_schema.has_generated_column_deps()) {
-  // It is forbidden to modify the type when the modified column is referenced by the generated column
-    ret = OB_NOT_SUPPORTED;
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "Alter column that the generated column depends on");
   } else if (is_offline
     && OB_FAIL(check_prefix_index_columns_depend(src_schema, schema_guard, has_prefix_idx_col_deps))) {
     LOG_WARN("check prefix index columns cascaded failed", K(ret));
@@ -4782,17 +4768,6 @@ int ObTableSchema::check_alter_column_is_offline(const ObColumnSchemaV2 *src_col
   } else {
     int32_t src_col_byte_len = src_column->get_data_length();
     int32_t dst_col_byte_len = dst_column->get_data_length();
-    // oracle mode the column length of char semantics needs to be converted into the length of byte semantics for comparison
-    if (OB_SUCC(ret) && false
-                && src_column->get_meta_type().is_character_type()
-                && dst_column->get_meta_type().is_character_type()
-                && src_column->get_length_semantics() != dst_column->get_length_semantics()) {
-      if (OB_FAIL(convert_char_to_byte_semantics(src_column, src_col_byte_len))) {
-        LOG_WARN("failed to convert char to byte semantics", K(ret));
-      } else if (OB_FAIL(convert_char_to_byte_semantics(dst_column, dst_col_byte_len))) {
-        LOG_WARN("failed to convert char to byte semantics", K(ret));
-      }
-    }
     if (OB_SUCC(ret)) {
       if (OB_FAIL(check_alter_column_accuracy(*src_column, *dst_column, src_col_byte_len,
                   dst_col_byte_len, is_offline))) {
@@ -4889,17 +4864,6 @@ int ObTableSchema::check_column_can_be_altered_offline(
     const ObAccuracy &dst_accuracy = dst_column->get_accuracy();
     char err_msg[number::ObNumber::MAX_PRINTABLE_SIZE] = {0};
     LOG_DEBUG("check column schema can be altered", KPC(src_column), KPC(dst_column));
-    // oracle mode the column length of char semantics needs to be converted into the length of byte semantics for comparison
-    if (OB_SUCC(ret) && false
-                && src_column->get_meta_type().is_character_type()
-                && dst_column->get_meta_type().is_character_type()
-                && src_column->get_length_semantics() != dst_column->get_length_semantics()) {
-      if (OB_FAIL(convert_char_to_byte_semantics(src_column, src_col_byte_len))) {
-        LOG_WARN("failed to convert char to byte semantics", K(ret));
-      } else if (OB_FAIL(convert_char_to_byte_semantics(dst_column, dst_col_byte_len))) {
-        LOG_WARN("failed to convert char to byte semantics", K(ret));
-      }
-    }
     if (OB_SUCC(ret)) {
       if (OB_FAIL(check_alter_column_accuracy(*src_column, *dst_column, src_col_byte_len,
                   dst_col_byte_len, is_offline))) {
@@ -5059,31 +5023,6 @@ int ObTableSchema::check_column_can_be_altered_online(
           }
           if (OB_FAIL(check_rowkey_column_can_be_altered(src_schema, dst_schema))) {
             LOG_WARN("Row key column can not be altered", K(ret));
-          }
-        }
-        if (OB_SUCC(ret) && false
-                   && src_schema->get_meta_type().is_character_type()
-                   && dst_schema->get_meta_type().is_character_type()
-                   && src_schema->get_length_semantics() != dst_schema->get_length_semantics()) {
-          // oracle mode the column length of char semantics needs to be converted into the length of byte semantics for comparison,
-          // and it is not allowed to change it to a smaller value.
-          int64_t mbmaxlen = 0;
-          if (OB_FAIL(ObCharset::get_mbmaxlen_by_coll(
-                      src_schema->get_collation_type(), mbmaxlen))) {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("fail to get mbmaxlen", K(ret), K(src_schema->get_collation_type()));
-          } else if (0 >= mbmaxlen) {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("mbmaxlen is less than 0", K(ret), K(mbmaxlen));
-          } else {
-            int32_t src_col_byte_len = src_schema->get_data_length();
-            int32_t dst_col_byte_len = dst_schema->get_data_length();
-            src_col_byte_len = static_cast<int32_t>(src_col_byte_len * mbmaxlen);
-            if (src_col_byte_len > dst_col_byte_len) {
-              ret = OB_ERR_DECREASE_COLUMN_LENGTH;
-              LOG_WARN("The data of column schema can not be truncated",
-                       K(ret), K(mbmaxlen), K(src_col_byte_len), K(dst_col_byte_len));
-            }
           }
         }
         if (OB_SUCC(ret)) {

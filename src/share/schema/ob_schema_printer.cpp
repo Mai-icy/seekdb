@@ -162,7 +162,6 @@ int ObSchemaPrinter::print_table_definition_columns(const ObTableSchema &table_s
   ObColumnIterByPrevNextID iter(table_schema);
   const ObColumnSchemaV2 *col = NULL;
   ObArenaAllocator allocator(ObModIds::OB_SCHEMA);
-  hash::ObHashMap<uint64_t, uint64_t> not_null_cst_map;
   while (OB_SUCC(ret) && OB_SUCC(iter.next(col))) {
     if (OB_ISNULL(col)) {
       ret = OB_ERR_UNEXPECTED;
@@ -198,7 +197,6 @@ int ObSchemaPrinter::print_table_definition_columns(const ObTableSchema &table_s
         }
 
         if (OB_SUCC(ret)) {
-          int64_t start = pos;
           const uint64_t sub_type = static_cast<uint64_t>(col->get_geo_type());
           if (OB_FAIL(ob_sql_type_str(col->get_meta_type(),
                                       col->get_accuracy(),
@@ -236,7 +234,6 @@ int ObSchemaPrinter::print_table_definition_columns(const ObTableSchema &table_s
             }
             if (OB_SUCCESS == ret
                 && !is_agent_mode
-                && true
                 && !ObCharset::is_default_collation(col->get_collation_type())
                 && CS_TYPE_INVALID != col->get_collation_type()
                 && CS_TYPE_BINARY != col->get_collation_type()) {
@@ -276,14 +273,14 @@ int ObSchemaPrinter::print_table_definition_columns(const ObTableSchema &table_s
           }
         }
         // adapt mysql geometry column format:`g` linestring NOT NULL /*!80003 SRID 4326 */
-        if (OB_SUCC(ret) && true && ob_is_geometry(col->get_data_type())) {
+        if (OB_SUCC(ret) && ob_is_geometry(col->get_data_type())) {
           uint32_t srid = col->get_srid();
           if (!col->is_default_srid()
               && OB_FAIL(databuff_printf(buf, buf_len, pos, " /*!80003 SRID %u */", srid))) {
             SHARE_SCHEMA_LOG(WARN, "fail to print geometry srid", K(ret), K(srid));
           }
         }
-        if (OB_SUCC(ret) && true && !col->is_generated_column()) {
+        if (OB_SUCC(ret) && !col->is_generated_column()) {
           //if column is not permit null and default value does not specify , don't  display DEFAULT NULL
           if (OB_SUCC(ret)) {
             if (!(ObNullType == col->get_cur_default_value().get_type() && !col->is_nullable())
@@ -353,54 +350,10 @@ int ObSchemaPrinter::print_table_definition_columns(const ObTableSchema &table_s
             }
           }
         }
-        // oracle mode
-        if (OB_SUCC(ret) && false) {
-          //if column is not permit null and default value does not specify , don't  display DEFAULT NULL
-          if (!col->is_generated_column()
-              && !(ObNullType == col->get_cur_default_value().get_type() && col->has_not_null_constraint())
-              && col->is_default_expr_v2_column()) {
-            ObString default_value = col->get_cur_default_value().get_string();
-            if (OB_FAIL(databuff_printf(buf, buf_len, pos, " DEFAULT %.*s", default_value.length(), default_value.ptr()))) {
-              SHARE_SCHEMA_LOG(WARN, "fail to print sql literal", K(default_value), K(ret));
-            }
-          }
-          if (OB_SUCC(ret)) {
-            const ObConstraint *cst = NULL;
-            if (col->has_not_null_constraint()) {
-              uint64_t cst_id = OB_INVALID_ID;
-              if (OB_FAIL(not_null_cst_map.get_refactored(col->get_column_id(), cst_id))) {
-                if (OB_HASH_NOT_EXIST == ret) {
-                  if (OB_FAIL(databuff_printf(buf, buf_len, pos, " NOT NULL"))) {
-                    SHARE_SCHEMA_LOG(WARN, "fail to print NOT NULL", K(ret));
-                  } else if (print_constraint_stat(col->is_not_null_rely_column(),
-                            col->is_not_null_enable_column(), col->is_not_null_validate_column(),
-                            buf, buf_len, pos)) {
-                    LOG_WARN("print constraint state failed", K(ret));
-                  }
-                } else {
-                  LOG_WARN("get refactored failed", K(ret));
-                }
-              } else if (OB_ISNULL(cst = table_schema.get_constraint(cst_id))) {
-                ret = OB_ERR_UNEXPECTED;
-                LOG_WARN("get constraint failed", K(ret), K(cst_id));
-              } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, " CONSTRAINT \"%.*s\" NOT NULL",
-                                                cst->get_constraint_name_str().length(),
-                                                cst->get_constraint_name_str().ptr()))) {
-                SHARE_SCHEMA_LOG(WARN, "fail to print NOT NULL", K(ret));
-              }
-              if (OB_SUCC(ret) && 
-                  OB_FAIL(print_constraint_stat(col->is_not_null_rely_column(),
-                        col->is_not_null_enable_column(), col->is_not_null_validate_column(),
-                        buf, buf_len, pos))) {
-                LOG_WARN("print constraint state failed", K(ret));
-              }
-            }
-          }
-        }
-        if (OB_SUCC(ret) && true && OB_FAIL(print_column_lob_params(*col, buf, buf_len, pos))) {
+        if (OB_SUCC(ret) && OB_FAIL(print_column_lob_params(*col, buf, buf_len, pos))) {
           SHARE_SCHEMA_LOG(WARN, "fail to print lob params", K(ret));
         }
-        if (OB_SUCC(ret) && true && 0 < strlen(col->get_comment())) {
+        if (OB_SUCC(ret) && 0 < strlen(col->get_comment())) {
           if (OB_FAIL(databuff_print_multi_objs(buf, buf_len, pos,
               " COMMENT '", ObHexEscapeSqlStr(col->get_comment_str()), "'"))) {
             SHARE_SCHEMA_LOG(WARN, "fail to print comment", K(ret));
@@ -708,15 +661,7 @@ int ObSchemaPrinter::print_single_index_definition(const ObTableSchema *index_sc
         } // end of storing columns
         // print index options
         if (OB_SUCC(ret)) {
-          if (false && is_unique_index && index_schema->is_unique_index()) {
-            if (INDEX_TYPE_UNIQUE_LOCAL == index_schema->get_index_type()) {
-              if (OB_FAIL(databuff_printf(buf, buf_len, pos, " USING INDEX LOCAL"))) {
-                SHARE_SCHEMA_LOG(WARN, "fail to print USING INDEX LOCAL", K(ret));
-              }
-            } else {
-              // do nothing
-            }
-          } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, " "))) {
+          if (OB_FAIL(databuff_printf(buf, buf_len, pos, " "))) {
             SHARE_SCHEMA_LOG(WARN, "fail to print space", K(ret));
           } else if (OB_FAIL(print_table_definition_table_options(*index_schema, buf,
                 buf_len, pos, false, false, sql_mode))) {
@@ -774,10 +719,6 @@ int ObSchemaPrinter::print_table_definition_indexes(const ObTableSchema &table_s
     } else if (INDEX_TYPE_HEAP_ORGANIZED_TABLE_PRIMARY == index_schema->get_index_type()) {
       continue;
     } else if (index_schema->is_in_recyclebin()) {
-      continue;
-    } else if (false && is_unique_index && index_schema->is_partitioned_table()
-               && INDEX_TYPE_UNIQUE_LOCAL != index_schema->get_index_type()) {
-      // In oracle mode, only the non-partitioned unique index can be printed as an unique constraint, other unique indexes will not be printed.
       continue;
     } else if (strict_compat_ && (index_schema->is_global_index_table() ||
                                   index_schema->is_global_local_index_table())) {
@@ -874,25 +815,6 @@ int ObSchemaPrinter::print_table_definition_constraints(const ObTableSchema &tab
         if (OB_FAIL(databuff_printf(buf, buf_len, pos, "  NOT ENFORCED"))) {
           SHARE_SCHEMA_LOG(WARN, "fail to print constraint not enforced");
         }
-      }
-    } else if (false && CONSTRAINT_TYPE_CHECK == cst->get_constraint_type()) {
-      if (cst->is_sys_generated_name(false/*check_unknown*/)) {
-        if (OB_FAIL(databuff_printf(buf, buf_len, pos, ",\n "))) {
-          SHARE_SCHEMA_LOG(WARN, "fail to print", K(ret), K(*cst));
-        }
-      } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, ",\n  CONSTRAINT "))) {
-        SHARE_SCHEMA_LOG(WARN, "fail to print constraint", K(ret), K(*cst));
-      } else if (OB_FAIL(print_identifier(buf, buf_len, pos, new_cst_name))) {
-        SHARE_SCHEMA_LOG(WARN, "fail to print constraint", K(ret));
-      }
-      if (OB_FAIL(ret)) {
-      } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, " CHECK (%.*s)",
-                                         cst->get_check_expr_str().length(),
-                                         cst->get_check_expr_str().ptr()))) {
-        SHARE_SCHEMA_LOG(WARN, "fail to print constraint", K(ret));
-      } else if (OB_FAIL(print_constraint_stat(cst->get_rely_flag(), cst->get_enable_flag(),
-                                               cst->is_validated(), buf, buf_len, pos))) {
-        SHARE_SCHEMA_LOG(WARN, "fail to print constraint stat", K(ret), K(*cst));
       }
     }
   }
@@ -1252,12 +1174,11 @@ int ObSchemaPrinter::print_table_definition_rowkeys(const ObTableSchema &table_s
 {
   int ret = OB_SUCCESS;
   const ObRowkeyInfo& rowkey_info = table_schema.get_rowkey_info();
-  ObArenaAllocator allocator(ObModIds::OB_SCHEMA);
   if (table_schema.is_heap_organized_table()) {
     if (OB_FAIL(print_heap_table_pk_info(table_schema,
                                                 buf, buf_len, pos))) {
-      SHARE_SCHEMA_LOG(WARN, "fail to print heap table pk info", K(ret));
-    }
+    SHARE_SCHEMA_LOG(WARN, "fail to print heap table pk info", K(ret));
+  }
   } else if (table_schema.is_table_with_pk() && rowkey_info.get_size() > 0) {
     if (OB_SUCC(ret)) {
       //The following three cases print the pk constraint without printing the pk name
@@ -1277,7 +1198,7 @@ int ObSchemaPrinter::print_table_definition_rowkeys(const ObTableSchema &table_s
       SHARE_SCHEMA_LOG(WARN, "fail to print )", K(ret));
     }
     if (OB_SUCC(ret)) {
-      if (true && table_schema.get_pk_comment_str().length() > 0) {
+      if (table_schema.get_pk_comment_str().length() > 0) {
         if (OB_FAIL(databuff_print_multi_objs(buf, buf_len, pos, " COMMENT '" ,
             ObHexEscapeSqlStr(table_schema.get_pk_comment_str()), "'"))) {
           SHARE_SCHEMA_LOG(WARN, "fail to print primary key comment", K(ret), K(table_schema));
@@ -1405,11 +1326,7 @@ int ObSchemaPrinter::print_table_definition_foreign_keys(const ObTableSchema &ta
       ObString new_fk_name;
       // Only print the foreign key information of the child table, do not print the information as a parent table
       if (foreign_key_info->child_table_id_ == table_schema.get_table_id()) {
-        if (false && foreign_key_info->is_sys_generated_name(false/*check_unknown*/)) {
-          if (OB_FAIL(databuff_printf(buf, buf_len, pos, ",\n  "))) {
-            SHARE_SCHEMA_LOG(WARN, "fail to print CONSTRAINT", K(ret));
-          }
-        } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, ",\n  CONSTRAINT "))) {
+        if (OB_FAIL(databuff_printf(buf, buf_len, pos, ",\n  CONSTRAINT "))) {
           SHARE_SCHEMA_LOG(WARN, "fail to print CONSTRAINT", K(ret));
         } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
                    allocator,
@@ -1604,7 +1521,7 @@ int ObSchemaPrinter::print_table_definition_table_options(const ObTableSchema &t
       SHARE_SCHEMA_LOG(WARN, "fail to print default charset", K(ret), K(table_schema));
     }
   }
-  if (OB_SUCCESS == ret && true && !agent_mode && !is_for_table_status
+  if (OB_SUCCESS == ret && !agent_mode && !is_for_table_status
       && !is_index_tbl && !is_no_table_options(sql_mode) && CS_TYPE_INVALID != table_schema.get_collation_type()
       && !ObCharset::is_default_collation(table_schema.get_charset_type(), table_schema.get_collation_type())) {
     if (OB_FAIL(databuff_printf(buf, buf_len, pos, "COLLATE = %s ",
@@ -1736,7 +1653,7 @@ int ObSchemaPrinter::print_table_definition_table_options(const ObTableSchema &t
       SHARE_SCHEMA_LOG(WARN, "fail to print progressive merge num", K(ret), K(table_schema));
     }
   }
-  if (OB_SUCCESS == ret && true && !is_for_table_status && table_schema.get_comment_str().length() > 0) {
+  if (OB_SUCCESS == ret && !is_for_table_status && table_schema.get_comment_str().length() > 0) {
     if (OB_FAIL(databuff_print_multi_objs(buf, buf_len, pos,
                                 is_index_tbl ? "COMMENT '" : "COMMENT = '",
                                 ObHexEscapeSqlStr(table_schema.get_comment_str()),
@@ -1810,7 +1727,7 @@ int ObSchemaPrinter::print_table_definition_table_options(const ObTableSchema &t
     }
   }
 
-  if (OB_SUCC(ret) && !strict_compat_ && true && !is_index_tbl) {
+  if (OB_SUCC(ret) && !strict_compat_ && !is_index_tbl) {
     if (OB_FAIL(print_table_definition_lob_params(table_schema, buf, buf_len, pos))) {
       SHARE_SCHEMA_LOG(WARN, "fail to print store format", K(ret), K(table_schema));
     }
@@ -1826,7 +1743,7 @@ int ObSchemaPrinter::print_table_definition_table_options(const ObTableSchema &t
     }
   }
 
-  if (OB_SUCC(ret) && !strict_compat_ && true && !is_index_tbl) {
+  if (OB_SUCC(ret) && !strict_compat_ && !is_index_tbl) {
     if (OB_FAIL(print_semistruct_encodng_options(table_schema, buf, buf_len, pos))) {
       SHARE_SCHEMA_LOG(WARN, "fail to print semistruct encodng options", K(ret), K(table_schema));
     }
@@ -2149,12 +2066,6 @@ int ObSchemaPrinter::print_table_definition_table_options(
                              ? "GLOBAL " : "LOCAL ";
     if (OB_FAIL(databuff_printf(buf, buf_len, pos, "%s", local_flag))) {
       OB_LOG(WARN, "fail to print global/local", K(ret), K(table_schema));
-    }
-  }
-  if (OB_SUCC(ret) && !strict_compat_
-      && is_index_tbl && false && !table_schema.is_index_visible()) {
-    if (OB_FAIL(databuff_printf(buf, buf_len, pos, "INVISIBLE"))) {
-      OB_LOG(WARN, "fail to print invisible option", K(ret), K(table_schema));
     }
   }
   if (OB_SUCC(ret) && !strict_compat_ && !is_index_tbl) {
@@ -2688,8 +2599,7 @@ int ObSchemaPrinter::print_view_definiton(
     } else if (NULL == table_schema) {
       ret = OB_TABLE_NOT_EXIST;
       SHARE_SCHEMA_LOG(WARN, "Unknow table", K(ret), K(table_id));
-    } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, "CREATE %sVIEW ",
-            false && table_schema->is_view_created_by_or_replace_force() ? "OR REPLACE FORCE " : ""))) {
+    } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, "CREATE VIEW "))) {
       SHARE_SCHEMA_LOG(WARN, "fail to print view definition", K(ret));
     } else if (OB_FAIL(print_identifier(buf, buf_len, pos, table_schema->get_table_name()))) {
       SHARE_SCHEMA_LOG(WARN, "fail to print view definition", K(ret));
@@ -2697,7 +2607,7 @@ int ObSchemaPrinter::print_view_definiton(
 
     if (OB_FAIL(ret)) {
       // pass
-    } else if (FALSE_IT(need_print_column_list = (false && !is_inner_table(table_id)))) {
+    } else if (FALSE_IT(need_print_column_list = false)) {
     } else if (need_print_column_list && OB_FAIL(databuff_printf(buf, buf_len, pos, " ("))) {
       SHARE_SCHEMA_LOG(WARN, "fail to print view definition", K(ret));
     } else if (need_print_column_list && OB_FAIL(table_schema->get_column_ids(column_ids))) {
@@ -2712,13 +2622,6 @@ int ObSchemaPrinter::print_view_definiton(
     } else if (OB_FAIL(print_view_define_str(buf, buf_len, pos,
                                              table_schema->get_view_schema().get_view_definition_str()))) {
       SHARE_SCHEMA_LOG(WARN, "fail to print view definition", K(ret));
-    } else if (!table_schema->get_view_schema().get_view_is_updatable() && false) {
-      // with read only is only supported in syntax in oracle mode, but some inner system view is
-      // nonupdatable, so we have to check compatible mode here.
-      // view in oracle mode can't be both with read only and with check option.
-      if (OB_FAIL(databuff_printf(buf, buf_len, pos, " WITH READ ONLY"))) {
-        SHARE_SCHEMA_LOG(WARN, "fail to print view definition with read only", K(ret));
-      }
     } else if (VIEW_CHECK_OPTION_CASCADED == table_schema->get_view_schema().get_view_check_option()) {
       if (OB_FAIL(databuff_printf(buf, buf_len, pos, " WITH CHECK OPTION"))) {
         SHARE_SCHEMA_LOG(WARN, "fail to print view definition with check option", K(ret));
@@ -2777,7 +2680,7 @@ int ObSchemaPrinter::print_materialized_view_definition(
       SHARE_SCHEMA_LOG(WARN, "fail to print materialized view name", KR(ret));
     } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, " "))) {
       SHARE_SCHEMA_LOG(WARN, "fail to print space", KR(ret));
-    } else if (FALSE_IT(need_print_column_list = (false && !is_inner_table(table_id)))) {
+    } else if (FALSE_IT(need_print_column_list = false)) {
 
     } else if (need_print_column_list && OB_FAIL(databuff_printf(buf, buf_len, pos, "("))) {
       SHARE_SCHEMA_LOG(WARN, "fail to print view definition", K(ret));
@@ -2916,13 +2819,6 @@ int ObSchemaPrinter::print_materialized_view_definition(
       } else if (OB_FAIL(print_view_define_str(buf, buf_len, pos,
                                               table_schema->get_view_schema().get_view_definition_str()))) {
         SHARE_SCHEMA_LOG(WARN, "fail to print view definition", K(ret));
-      } else if (!table_schema->get_view_schema().get_view_is_updatable() && false) {
-        // with read only is only supported in syntax in oracle mode, but some inner system view is
-        // nonupdatable, so we have to check compatible mode here.
-        // view in oracle mode can't be both with read only and with check option.
-        if (OB_FAIL(databuff_printf(buf, buf_len, pos, " WITH READ ONLY"))) {
-          SHARE_SCHEMA_LOG(WARN, "fail to print view definition with read only", K(ret));
-        }
       } else if (VIEW_CHECK_OPTION_CASCADED == table_schema->get_view_schema().get_view_check_option()) {
         if (OB_FAIL(databuff_printf(buf, buf_len, pos, " WITH CHECK OPTION"))) {
           SHARE_SCHEMA_LOG(WARN, "fail to print view definition with check option", K(ret));
@@ -3859,6 +3755,7 @@ int ObSchemaPrinter::print_routine_definition_param_v1(const ObRoutineInfo &rout
 {
   int ret = OB_SUCCESS;
   bool is_first_param = true;
+  UNUSED(param_list);
 
   for(int64_t i = 0; OB_SUCC(ret) && i < routine_info.get_param_count(); ++i) {
     ObRoutineParam *param = NULL;
@@ -3874,7 +3771,7 @@ int ObSchemaPrinter::print_routine_definition_param_v1(const ObRoutineInfo &rout
       }
     }
 
-    if (OB_SUCC(ret) && true && !routine_info.is_function()) {
+    if (OB_SUCC(ret) && !routine_info.is_function()) {
       if (param->is_out_sp_param() || param->is_inout_sp_param()) {
         OZ (databuff_printf(buf, buf_len, pos, param->is_out_sp_param() ? " OUT" : " INOUT"));
       } else {
@@ -3887,14 +3784,6 @@ int ObSchemaPrinter::print_routine_definition_param_v1(const ObRoutineInfo &rout
         LOG_WARN("failed to print const str", K(ret));
       } else if (OB_FAIL(print_identifier(buf, buf_len, pos, param->get_param_name()))) {
         LOG_WARN("failed to print param", K(ret));
-      }
-    }
-
-    if (OB_SUCC(ret) && false) {
-      if (param->is_out_sp_param() || param->is_inout_sp_param()) {
-        OZ (databuff_printf(buf, buf_len, pos, param->is_out_sp_param() ? " OUT" : " IN OUT"));
-      } else {
-        OZ (databuff_printf(buf, buf_len, pos, " IN"));
       }
     }
 
@@ -5190,10 +5079,8 @@ int ObSchemaPrinter::print_heap_table_pk_info(const ObTableSchema &table_schema,
   }
   
   if (OB_SUCC(ret) && has_pk) {
-    if (true) {
-      if (OB_FAIL(databuff_printf(buf, buf_len, pos, ",\n  PRIMARY KEY ("))) {
-        SHARE_SCHEMA_LOG(WARN, "fail to print PRIMARY KEY(", K(ret));
-      }
+    if (OB_FAIL(databuff_printf(buf, buf_len, pos, ",\n  PRIMARY KEY ("))) {
+      SHARE_SCHEMA_LOG(WARN, "fail to print PRIMARY KEY(", K(ret));
     }
 
     const ObRowkeyInfo &rowkey_info = index_schema->get_rowkey_info();

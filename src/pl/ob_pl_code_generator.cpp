@@ -2413,34 +2413,9 @@ int ObPLCodeGenerateVisitor::visit(const ObPLFetchStmt &s)
                                                 s.get_user_type(),
                                                 ret_err))) {
       LOG_WARN("failed to generate fetch", K(ret));
-    } else if (true) { //MySQL mode directly check and throw exception
+    } else {
       OZ (generator_.check_success(
         ret_err, s.get_stmt_id(), s.get_block()->in_notfound(), s.get_block()->in_warning(), true));
-    } else { // Oracle mode if it is an OB_READ_NOTHING error, swallow the exception and do not throw it
-      ObLLVMValue is_not_found;
-      ObLLVMBasicBlock fetch_end;
-      ObLLVMBasicBlock fetch_check_success;
-      if (OB_FAIL(generator_.get_helper().create_block(ObString("fetch_end"), generator_.get_func(), fetch_end))) {
-        LOG_WARN("failed to create block", K(s), K(ret));
-      } else if (OB_FAIL(generator_.get_helper().create_block(ObString("fetch_check_success"), generator_.get_func(), fetch_check_success))) {
-        LOG_WARN("failed to create block", K(s), K(ret));
-      } else if (OB_FAIL(generator_.get_helper().create_icmp_eq(ret_err, OB_READ_NOTHING, is_not_found))) {
-        LOG_WARN("failed to create_icmp_eq", K(ret));
-      } else if (OB_FAIL(generator_.get_helper().create_cond_br(is_not_found, fetch_end, fetch_check_success))) {
-        LOG_WARN("failed to create_cond_br", K(ret));
-      } else { /*do nothing*/ }
-
-      if (OB_SUCC(ret)) {
-        if (OB_FAIL(generator_.set_current(fetch_check_success))) {
-          LOG_WARN("failed to set current", K(ret));
-        } else if (OB_FAIL(generator_.check_success(ret_err, s.get_stmt_id(), s.get_block()->in_notfound(), s.get_block()->in_warning()))) {
-          LOG_WARN("failed to check success", K(ret));
-        } else if (OB_FAIL(generator_.get_helper().create_br(fetch_end))) {
-          LOG_WARN("failed to create_br", K(ret));
-        } else if (OB_FAIL(generator_.set_current(fetch_end))) {
-          LOG_WARN("failed to set current", K(ret));
-        } else { /*do nothing*/ }
-      }
     }
     if (OB_SUCC(ret)) {
       if (OB_FAIL(generator_.generate_into_restore(s.get_into(), s.get_exprs(), s.get_symbol_table()))) {

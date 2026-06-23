@@ -2443,8 +2443,7 @@ int ObSchemaGetterGuard::check_db_access(
           ObPrivSet total_db_priv_set_role = OB_PRIV_SET_EMPTY;
           ObArray<uint64_t> role_id_array;
 
-          if (OB_FAIL(role_id_array.assign(false ? user_info->get_role_id_array()
-                                                          : enable_role_id_array))) {
+          if (OB_FAIL(role_id_array.assign(enable_role_id_array))) {
             LOG_WARN("fail to assign role ids", K(ret));
           }
           for (int i = 0; OB_SUCC(ret) && i < role_id_array.count(); ++i) {

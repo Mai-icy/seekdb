@@ -3162,13 +3162,6 @@ int ObDDLService::create_hidden_table_with_pk_changed(
   } else if (!create_user_hidden_table_now) {
   } else if (OB_FAIL(adjust_cg_for_offline(new_table_schema))) {
     LOG_WARN("failed to adjust for create hiddent table with pk changed", K(ret));
-  } else if (OB_FAIL(get_add_pk_index_name(origin_table_schema,
-                                           new_table_schema,
-                                           index_action_type,
-                                           alter_table_arg.index_arg_list_,
-                                           schema_guard,
-                                           index_name))) {
-    LOG_WARN("fail to rename hidden table's pk constraint", K(ret));
   } else if (OB_FAIL(create_user_hidden_table(origin_table_schema,
                                               new_table_schema,
                                               &alter_table_arg.sequence_ddl_arg_,
@@ -3182,18 +3175,6 @@ int ObDDLService::create_hidden_table_with_pk_changed(
                                               index_name))) {
     LOG_WARN("failed to alter table offline", K(ret));
   }
-  return ret;
-}
-
-int ObDDLService::get_add_pk_index_name(const ObTableSchema &origin_table_schema,
-                                        ObTableSchema &new_table_schema,
-                                        const ObIndexArg::IndexActionType &index_action_type,
-                                        const ObIArray<ObIndexArg *> &index_arg_list,
-                                        ObSchemaGetterGuard &schema_guard,
-                                        ObString &index_name)
-{
-  int ret = OB_SUCCESS;
-
   return ret;
 }
 
@@ -20542,10 +20523,6 @@ int ObDDLService::reconstruct_index_schema(obcall::ObAlterTableArg &alter_table_
             K(new_index_table_name), K(ret));
           } else if (OB_FAIL(new_index_schema.set_table_name(new_index_table_name))) {
             LOG_WARN("set table name failed", K(ret), K(new_index_table_name));
-          } else if (is_recover_restore_table && false
-            && OB_FAIL(check_and_replace_default_index_name_on_demand(allocator, hidden_table_schema,
-              alter_table_arg.alter_table_schema_.get_table_name_str(), new_index_schema))) {
-            LOG_WARN("replace sys default name failed", K(ret));
           } else if (hidden_table_schema.get_part_level() > 0 && new_index_schema.is_index_local_storage()) {
             if (INDEX_TYPE_NORMAL_GLOBAL_LOCAL_STORAGE == new_index_schema.get_index_type()) {
               new_index_schema.set_index_type(INDEX_TYPE_NORMAL_GLOBAL);
