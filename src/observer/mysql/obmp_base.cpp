@@ -111,8 +111,7 @@ int ObMPBase::update_proxy_and_client_sys_vars(ObSQLSessionInfo &session)
 int ObMPBase::after_process(int error_code)
 {
   int ret = OB_SUCCESS;
-  if (!lib::is_diagnose_info_enabled()) {
-  } else {
+  {
     NG_TRACE_EXT(process_end, OB_ID(run_ts), get_run_timestamp());
     const int64_t elapsed_time = common::ObTimeUtility::current_time() - get_receive_timestamp();
     bool is_slow = (elapsed_time > GCONF.trace_log_slow_query_watermark)
@@ -388,7 +387,7 @@ int ObMPBase::record_flt_trace(sql::ObSQLSessionInfo &session) const
 {
   int ret = OB_SUCCESS;
   //trace end
-  if (lib::is_diagnose_info_enabled()) {
+  {
     NG_TRACE(query_end);
 
     if (session.is_use_trace_log()) {

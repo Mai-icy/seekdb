@@ -105,9 +105,6 @@ int ObMPStmtFetch::do_process(ObSQLSessionInfo &session,
   ObAuditRecordData &audit_record = session.get_raw_audit_record();
   ObExecutingSqlStatRecord sqlstat_record;
   audit_record.try_cnt_++;
-  const bool enable_perf_event = lib::is_diagnose_info_enabled();
-  const bool enable_sql_audit = GCONF.enable_sql_audit
-                                && session.get_local_ob_enable_sql_audit();
   const bool enable_sqlstat = session.is_sqlstat_enabled();
   single_process_timestamp_ = ObTimeUtility::current_time();
   ObPLCursorInfo *cursor = session.get_cursor(cursor_id_);
@@ -117,17 +114,13 @@ int ObMPStmtFetch::do_process(ObSQLSessionInfo &session,
     //If a cursor is not found during the fetch process for any reason, immediately disconnect and let the application handle the fault tolerance
     //disconnect();
   } else {
-    ObWaitEventStat total_wait_desc;
     int64_t fetch_limit = OB_INVALID_COUNT == fetch_rows_ ? INT64_MAX : fetch_rows_;
     int64_t true_row_num = 0;
     {
       //Record the execution wait time of sql_audit, which depends on the end of the lifecycle of max_wait_guard and total_wait_guard,
       //Therefore, the destructor of total_wait_guard should be called before the audit record statistics logic
       int64_t execution_id = 0;
-      ObMaxWaitGuard max_wait_guard(
-          enable_perf_event ? &audit_record.exec_record_.max_wait_event_ : nullptr);
-      ObTotalWaitGuard total_wait_guard(enable_perf_event ? &total_wait_desc : nullptr);
-      if (enable_perf_event) {
+      {
         audit_record.exec_record_.record_start();
       }
       if (enable_sqlstat) {
@@ -168,12 +161,10 @@ int ObMPStmtFetch::do_process(ObSQLSessionInfo &session,
     ObExecStatUtils::record_exec_timestamp(*this, first_record, audit_record.exec_timestamp_);
     audit_record.exec_timestamp_.update_stage_time();
 
-    if (enable_perf_event) {
+    {
       audit_record.exec_record_.record_end();
       record_stat(stmt::T_EXECUTE, exec_end_timestamp_);
       audit_record.stmt_type_ = stmt::T_EXECUTE;
-      audit_record.exec_record_.wait_time_end_ = total_wait_desc.time_waited_;
-      audit_record.exec_record_.wait_count_end_ = total_wait_desc.total_waits_;
       audit_record.update_event_stage_state();
     }
 
@@ -196,33 +187,10 @@ int ObMPStmtFetch::do_process(ObSQLSessionInfo &session,
       }
       sqlstat_record.move_to_sqlstat_cache(session, sql);
     }
-    if (enable_sql_audit) {
-      audit_record.affected_rows_ = fetch_limit;
-      audit_record.return_rows_ = true_row_num;
-      audit_record.ps_stmt_id_ = cursor_id_;
-      audit_record.is_perf_event_closed_ = !lib::is_diagnose_info_enabled();
-      if (OB_NOT_NULL(cursor)
-          && cursor->is_ps_cursor()) {
-        ObPsStmtInfoGuard guard;
-        ObPsStmtInfo *ps_info = NULL;
-        ObPsStmtId inner_stmt_id = OB_INVALID_ID;
-        if (OB_SUCC(session.get_inner_ps_stmt_id(cursor_id_, inner_stmt_id))
-              && OB_SUCC(session.get_ps_cache()->get_stmt_info_guard(inner_stmt_id, guard))
-              && OB_NOT_NULL(ps_info = guard.get_stmt_info())) {
-          audit_record.ps_inner_stmt_id_ = inner_stmt_id;
-          audit_record.sql_ = const_cast<char *>(ps_info->get_ps_sql().ptr());
-          audit_record.sql_len_ = min(ps_info->get_ps_sql().length(), OB_MAX_SQL_LENGTH);
-        } else {
-          LOG_WARN("get sql fail in fetch", K(ret), K(cursor_id_), K(cursor->get_id()));
-        }
-      }
-    }
     session.partition_hit().freeze();
     session.set_show_warnings_buf(ret); // TODO: Move this to a better place, reduce some wb copy
 
     clear_wb_content(session);
-    // Stream audit information is handled by dbms_cursor
-    ObSQLUtils::handle_audit_record(false/*no need retry*/, EXECUTE_PS_FETCH, session);
   }
   return ret;
 }
@@ -720,7 +688,7 @@ int ObMPStmtFetch::process()
 void ObMPStmtFetch::record_stat(const stmt::StmtType type, const int64_t end_time) const
 {
   UNUSED(type);
-  if (lib::is_diagnose_info_enabled()) {
+  {
     const int64_t time_cost = end_time - get_receive_timestamp();
     EVENT_INC(SQL_OTHER_COUNT);
     EVENT_ADD(SQL_OTHER_TIME, time_cost);

@@ -358,10 +358,6 @@ ob_set_subtarget(ob_share common_mixed
   longops_mgr/ob_ddl_longops.cpp
   longops_mgr/ob_i_longops.cpp
   longops_mgr/ob_longops_mgr.cpp
-  ash/ob_active_sess_hist_list.cpp
-  ash/ob_active_sess_hist_task.cpp
-  ash/ob_ash_refresh_task.cpp
-  ash/ob_di_util.cpp
   throttle/ob_share_throttle_define.cpp
   throttle/ob_throttle_common.cpp
   restore/ob_restore_data_mode.cpp
@@ -606,13 +602,6 @@ ob_set_subtarget(ob_share text_analysis
 
 ob_set_subtarget(ob_share throttle
   throttle/ob_throttle_common.cpp
-)
-
-ob_set_subtarget(ob_share wr
-  wr/ob_wr_service.cpp
-  wr/ob_wr_task.cpp
-  wr/ob_wr_snapshot_rpc_processor.cpp
-  wr/ob_wr_collector.cpp
 )
 
 ob_set_subtarget(ob_share object_storage

@@ -25,7 +25,6 @@
 #include "pl/ob_pl_package_state.h"
 #include "rpc/obmysql/ob_sql_sock_session.h"
 #include "sql/engine/expr/ob_expr_regexp_context.h"
-#include "lib/stat/ob_diagnostic_info_container.h"
 #include "observer/ob_server.h"
 #include "share/catalog/ob_catalog_utils.h"
 #include "lib/number/ob_number_v2.h"
@@ -690,7 +689,6 @@ int ObBasicSessionInfo::set_user(const ObString &user_name, const ObString &host
       LOG_WARN("fail to write user_at_host_name to string_buf_", K(tmp_string), K(ret));
     } else {
       user_id_ = user_id;
-      GET_DIAGNOSTIC_INFO->get_ash_stat().user_id_ = get_user_id();
     }
   }
   return ret;
@@ -2353,32 +2351,8 @@ int ObBasicSessionInfo::set_cur_phy_plan(const ObPhysicalPlan *cur_phy_plan)
     int64_t len = cur_phy_plan->stat_.sql_id_.length();
     MEMCPY(sql_id_, cur_phy_plan->stat_.sql_id_.ptr(), len);
     sql_id_[len] = '\0';
-
-    ObDiagnosticInfo *di = ObLocalDiagnosticInfo::get();
-    if (OB_NOT_NULL(di)) {
-      di->get_ash_stat().plan_id_ = plan_id_;
-      di->get_ash_stat().plan_hash_ = plan_hash_;
-      MEMMOVE(di->get_ash_stat().sql_id_, sql_id_,
-          min(static_cast<int64_t>(sizeof(di->get_ash_stat().sql_id_)), static_cast<int64_t>(sizeof(sql_id_))));
-      di->get_ash_stat().fixup_last_stat(*ObCurTraceId::get_trace_id(), di->get_ash_stat().session_id_, sql_id_, plan_id_, plan_hash_, stmt_type_);
-    }
   }
   return ret;
-}
-
-void ObBasicSessionInfo::set_ash_stat_value(ObActiveSessionStat &ash_stat)
-{
-  ash_stat.stmt_type_ = get_stmt_type();
-  ash_stat.plan_id_ = plan_id_;
-  ash_stat.plan_hash_ = plan_hash_;
-  MEMMOVE(ash_stat.sql_id_, sql_id_,
-      min(static_cast<int64_t>(sizeof(ash_stat.sql_id_)), static_cast<int64_t>(sizeof(sql_id_))));
-  ash_stat.tenant_id_ = tenant_id_;
-  ash_stat.user_id_ = get_user_id();
-  ash_stat.trace_id_ = get_current_trace_id();
-  ash_stat.tid_ = GETTID();
-  ash_stat.group_id_ = THIS_WORKER.get_group_id();
-  ash_stat.fixup_last_stat(*ObCurTraceId::get_trace_id(), ash_stat.session_id_, sql_id_, plan_id_, plan_hash_, stmt_type_);
 }
 
 void ObBasicSessionInfo::set_current_trace_id(common::ObCurTraceId::TraceId *trace_id)
@@ -2403,12 +2377,6 @@ void ObBasicSessionInfo::set_cur_sql_id(char *sql_id)
   } else {
     MEMCPY(sql_id_, sql_id, common::OB_MAX_SQL_ID_LENGTH);
     sql_id_[32] = '\0';
-    ObDiagnosticInfo *di = ObLocalDiagnosticInfo::get();
-    if (OB_NOT_NULL(di)) {
-      MEMMOVE(di->get_ash_stat().sql_id_, sql_id_,
-          min(static_cast<int64_t>(sizeof(di->get_ash_stat().sql_id_)), static_cast<int64_t>(sizeof(sql_id_))));
-      di->get_ash_stat().fixup_last_stat(*ObCurTraceId::get_trace_id(), di->get_ash_stat().session_id_, sql_id_, 0, 0, 0);
-    }
   }
 }
 
@@ -2751,12 +2719,6 @@ OB_INLINE int ObBasicSessionInfo::process_session_variable(ObSysVarClassType var
       int64_t int_val = 0;
       OZ (val.get_int(int_val), val);
       OX (sys_vars_cache_.set_cursor_sharing_mode(static_cast<ObCursorSharingMode>(int_val)));
-      break;
-    }
-    case SYS_VAR_OB_ENABLE_SQL_AUDIT: {
-      int64_t int_val = 0;
-      OZ (val.get_int(int_val), val);
-      OX (sys_vars_cache_.set_ob_enable_sql_audit(int_val != 0));
       break;
     }
     case SYS_VAR_NLS_LENGTH_SEMANTICS: {
@@ -3356,12 +3318,6 @@ int ObBasicSessionInfo::fill_sys_vars_cache_base_value(
       int64_t int_val = 0;
       OZ (val.get_int(int_val), val);
       OX (sys_vars_cache.set_base_cursor_sharing_mode(static_cast<ObCursorSharingMode>(int_val)));
-      break;
-    }
-    case SYS_VAR_OB_ENABLE_SQL_AUDIT: {
-      int64_t int_val = 0;
-      OZ (val.get_int(int_val), val);
-      OX (sys_vars_cache.set_base_ob_enable_sql_audit(int_val != 0));
       break;
     }
     case SYS_VAR_NLS_LENGTH_SEMANTICS: {
@@ -4679,7 +4635,6 @@ OB_DEF_SERIALIZE(ObBasicSessionInfo::SysVarsCacheData)
               ob_trx_idle_timeout_,
               nls_collation_,
               nls_nation_collation_,
-              ob_enable_sql_audit_,
               nls_length_semantics_,
               nls_formats_[NLS_DATE],
               nls_formats_[NLS_TIMESTAMP],
@@ -4712,7 +4667,6 @@ OB_DEF_DESERIALIZE(ObBasicSessionInfo::SysVarsCacheData)
               ob_trx_idle_timeout_,
               nls_collation_,
               nls_nation_collation_,
-              ob_enable_sql_audit_,
               nls_length_semantics_,
               nls_formats_[NLS_DATE],
               nls_formats_[NLS_TIMESTAMP],
@@ -4750,7 +4704,6 @@ OB_DEF_SERIALIZE_SIZE(ObBasicSessionInfo::SysVarsCacheData)
               ob_trx_idle_timeout_,
               nls_collation_,
               nls_nation_collation_,
-              ob_enable_sql_audit_,
               nls_length_semantics_,
               nls_formats_[NLS_DATE],
               nls_formats_[NLS_TIMESTAMP],
@@ -5622,7 +5575,6 @@ int ObBasicSessionInfo::is_sys_var_actully_changed(const ObSysVarClassType &sys_
       case SYS_VAR_TX_READ_ONLY:
       case SYS_VAR_OB_ENABLE_PL_CACHE:
       case SYS_VAR_OB_ENABLE_PLAN_CACHE:
-      case SYS_VAR_OB_ENABLE_SQL_AUDIT:
       case SYS_VAR_AUTOCOMMIT:
       case SYS_VAR_OB_ENABLE_SHOW_TRACE:
       case SYS_VAR_OB_ORG_CLUSTER_ID:
@@ -6450,11 +6402,6 @@ int ObBasicSessionInfo::set_session_active()
     LOG_WARN("fail to set session state", K(ret));
   } else {
     thread_data_.is_request_end_ = false;
-    ObDiagnosticInfo *di = ObLocalDiagnosticInfo::get();
-    if (OB_NOT_NULL(di)) {
-      set_ash_stat_value(di->get_ash_stat());
-      ObQueryRetryAshGuard::setup_info(get_retry_info_for_update().get_retry_ash_info());
-    }
   }
   return ret;
 }
@@ -6465,12 +6412,6 @@ void ObBasicSessionInfo::set_session_sleep()
   set_session_state_(SESSION_SLEEP);
   thread_data_.mysql_cmd_ = obmysql::COM_SLEEP;
   thread_id_ = 0;
-  ObDiagnosticInfo *di = ObLocalDiagnosticInfo::get();
-  if (OB_NOT_NULL(di)) {
-    di->get_ash_stat().end_retry_wait_event();
-    di->get_ash_stat().block_sessid_ = 0;
-    ObQueryRetryAshGuard::reset_info();
-  }
 }
 
 int ObBasicSessionInfo::base_save_session(BaseSavedValue &saved_value, bool skip_cur_stmt_tables)

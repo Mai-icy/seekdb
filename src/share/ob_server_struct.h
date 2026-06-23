@@ -120,7 +120,6 @@ class ObSchemaStatusProxy;
 class ObKVStorage;
 
 class ObCgroupCtrl;
-class ObWorkloadRepositoryService;
 
 namespace schema
 {
@@ -175,7 +174,7 @@ struct ObGlobalContext
   int64_t flashback_scn_;
   int64_t ssl_key_expired_time_;
   sql::ObConnectResourceMgr* conn_res_mgr_;
-  share::ObWorkloadRepositoryService *wr_service_;
+
   observer::ObStartupAccelTaskHandler* startup_accel_handler_;
   bool in_bootstrap_;
   bool sys_package_ready_;

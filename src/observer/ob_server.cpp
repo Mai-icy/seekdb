@@ -33,6 +33,7 @@
 #include "lib/task/ob_timer_service.h" // ObTimerService
 #include "observer/ob_server_utils.h"
 #include "observer/ob_server_options.h"
+#include "observer/omt/ob_tenant.h"
 #include "observer/omt/ob_tenant_timezone_mgr.h"
 #include "share/allocator/ob_tenant_mutil_allocator_mgr.h"
 #include "share/object_storage/ob_device_connectivity.h"
@@ -52,8 +53,6 @@
 #include "storage/tablet/ob_mds_schema_helper.h"
 #include "storage/ob_file_system_router.h"
 #include "storage/tablelock/ob_table_lock_rpc_client.h"
-#include "share/ash/ob_active_sess_hist_task.h"
-#include "share/ash/ob_active_sess_hist_list.h"
 #include "share/catalog/ob_cached_catalog_meta_getter.h"
 #include "share/ob_server_blacklist.h"
 #include "share/stat/ob_opt_stat_manager.h" // for ObOptStatManager
@@ -66,7 +65,6 @@
 #include "lib/xml/ob_libxml2_sax_handler.h"
 #include "share/vector_index/ob_plugin_vector_index_utils.h"
 #include "lib/roaringbitmap/ob_rb_memory_mgr.h"
-#include "lib/stat/ob_diagnostic_info_container.h"
 #include "storage/fts/dict/ob_ft_cache.h"
 #include "common/ob_target_specific.h"
 #include "storage/fts/dict/ob_gen_dic_loader.h"
@@ -177,8 +175,7 @@ ObServer::ObServer()
     conn_res_mgr_(),
     unix_domain_listener_(),
     disk_usage_report_task_(),
-    log_block_mgr_(),
-    wr_service_()
+    log_block_mgr_()
 {
 }
 
@@ -462,8 +459,7 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
       LOG_ERROR("init px target mgr failed", KR(ret));
     } else if (OB_FAIL(ObDictCache::get_instance().init("dict_cache"))) {
       LOG_ERROR("init dict cache failed", KR(ret));
-    } else if (OB_FAIL(ObActiveSessHistList::get_instance().init())) {
-      LOG_ERROR("init ASH failed", KR(ret));
+
 #ifndef OB_BUILD_LITE
     } else if (OB_FAIL(ObServerBlacklist::get_instance().init(self_addr_))) {
       LOG_ERROR("init server blacklist failed", KR(ret));
@@ -480,8 +476,6 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
     } else if (OB_FAIL(ObDDLSimPointMgr::get_instance().init())) {
       LOG_WARN("init ddl sim point mgr fail", KR(ret));
 #endif
-    } else if (OB_FAIL(wr_service_.init())) {
-      LOG_WARN("failed to init wr service", K(ret));
     } else {
       // GDS direct dispatch through GCTX.root_service_
     }
@@ -551,9 +545,6 @@ void ObServer::destroy()
     ObOptStatManager::get_instance().destroy();
     FLOG_INFO("opt stat manager destroyed");
 
-    FLOG_INFO("begin to destroy active session history task");
-    ObActiveSessHistTask::get_instance().destroy();
-    FLOG_INFO("active session history task destroyed");
 
     FLOG_INFO("begin to destroy timer monitor");
     ObTimerMonitor::get_instance().destroy();
@@ -741,11 +732,6 @@ void ObServer::destroy()
     ObClockGenerator::destroy();
     FLOG_INFO("clock generator destroyed");
 
-    FLOG_INFO("begin to destroy WR service");
-    wr_service_.destroy();
-    FLOG_INFO("WR service destroyed");
-
-    common::ObDiagnosticInfoContainer::clear_global_di_container();
 
     FLOG_INFO("begin to destroy cgroup service");
     cgroup_ctrl_.destroy();
@@ -836,11 +822,7 @@ int ObServer::start(bool embed_mode)
     } else {
       FLOG_INFO("success to start multi tenant");
     }
-    if (FAILEDx(wr_service_.start())) {
-      LOG_ERROR("failed to start wr service", K(ret));
-    } else {
-      LOG_INFO("success to start wr service");
-    }
+
     if (FAILEDx(SERVER_STORAGE_META_SERVICE.start())) {
       LOG_ERROR("fail to start server storage meta service", KR(ret));
     } else {
@@ -916,11 +898,6 @@ int ObServer::start(bool embed_mode)
       FLOG_INFO("success to start ObPxTargetMgr");
     }
 
-    if (FAILEDx(ObActiveSessHistTask::get_instance().start())) {
-      LOG_ERROR("fail to init active session history task", KR(ret));
-    } else {
-      FLOG_INFO("success to init active session history task");
-    }
 
     if (FAILEDx(location_service_.start())) {
       LOG_ERROR("fail to start location service", KR(ret));
@@ -1234,9 +1211,6 @@ int ObServer::stop()
     net_frame_.sql_nio_stop();
     FLOG_INFO("sql nio stopped");
 
-    FLOG_INFO("begin to stop active session history task");
-    ObActiveSessHistTask::get_instance().stop();
-    FLOG_INFO("active session history task stopped");
 
     FLOG_INFO("begin to stop unix domain listener");
     unix_domain_listener_.stop();
@@ -1354,9 +1328,6 @@ int ObServer::stop()
     ObIOManager::get_instance().stop();
     FLOG_INFO("io manager stopped");
 
-    FLOG_INFO("begin to stop WR service");
-    wr_service_.stop();
-    FLOG_INFO("WR service stopped");
 
     // net frame, ensure net_frame should stop after multi_tenant_
     // stopping.
@@ -1441,7 +1412,6 @@ int ObServer::wait()
 
   FLOG_INFO("begin to wait observer setted to stop");
   while (OB_SUCC(ret) && !stop_) {
-    common::ObBKGDSessInActiveGuard inactive_guard;
     SLEEP(3);
   }
   _Exit(0);
@@ -2276,7 +2246,7 @@ int ObServer::init_global_context()
   gctx_.disk_reporter_ = &disk_usage_report_task_;
   gctx_.log_block_mgr_ = &log_block_mgr_;
   (void)gctx_.set_upgrade_stage(obcall::OB_UPGRADE_STAGE_INVALID);
-  gctx_.wr_service_ = &wr_service_;
+
   gctx_.startup_accel_handler_ = &startup_accel_handler_;
 
   (void) gctx_.set_server_id(config_.observer_id);

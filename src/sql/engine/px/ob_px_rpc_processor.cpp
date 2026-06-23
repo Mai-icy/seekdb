@@ -63,7 +63,6 @@ void ObInitSqcP::destroy()
 
 int ObInitSqcP::process()
 {
-  GET_DIAGNOSTIC_INFO->get_ash_stat().in_px_execution_ = true;
   int ret = OB_SUCCESS;
   LOG_TRACE("receive dfo", K_(arg));
   ObPxSqcHandler *sqc_handler = arg_.sqc_handler_;
@@ -238,7 +237,6 @@ int ObInitSqcP::after_process(int error_code)
     session->set_session_sleep();
   }
 
-  GET_DIAGNOSTIC_INFO->get_ash_stat().in_px_execution_ = false;
   /**
    * Here we need to clean up interrupts and release the allocated number of threads and handler.
    * After the worker starts normally, its reference count is updated to
@@ -380,7 +378,6 @@ void ObInitFastSqcP::destroy()
 
 int ObInitFastSqcP::process()
 {
-  GET_DIAGNOSTIC_INFO->get_ash_stat().in_sql_execution_ = true;
   int ret = OB_SUCCESS;
   LOG_TRACE("receive dfo", K_(arg));
   ObPxSqcHandler *sqc_handler = arg_.sqc_handler_;
@@ -424,7 +421,6 @@ int ObInitFastSqcP::process()
     ObInterruptUtil::update_schema_error_code(&(sqc_handler->get_exec_ctx()), ret);
   }
 
-  GET_DIAGNOSTIC_INFO->get_ash_stat().in_sql_execution_ = false;
   if (OB_NOT_NULL(sqc_handler)) {
     // link channel before or during the link process may fail.
     // If sqc and qc ARE linked, the qc learns the outcome via the dtl

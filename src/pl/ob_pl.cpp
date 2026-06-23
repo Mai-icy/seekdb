@@ -657,12 +657,6 @@ int ObPLContext::init(ObSQLSessionInfo &session_info,
     OZ (session_info.store_top_query_string(cur_query_));
     OX (session_info.reset_query_string());
     OZ (recursion_ctx_.init(session_info));
-    // set top level sql id
-    ObDiagnosticInfo *di = ObLocalDiagnosticInfo::get();
-    if (OB_NOT_NULL(di) && di->get_ash_stat().top_level_sql_id_[0] == '\0') {
-      session_info.get_cur_sql_id(di->get_ash_stat().top_level_sql_id_,
-        sizeof(di->get_ash_stat().top_level_sql_id_));
-    }
     OX (session_info.set_pl_stack_ctx(this));
     OX (need_remove_top_stack = true);
     OX (session_info.set_pl_can_retry(true));
@@ -2295,17 +2289,6 @@ int ObPL::execute(ObExecContext &ctx,
         routine = static_cast<ObPLFunction*>(cacheobj_guard.get_cache_obj());
       }
       CK (OB_NOT_NULL(routine));
-      if (OB_SUCC(ret) && routine->get_package_id() != OB_INVALID_ID) { // update package_id
-        uint64_t pack_id = routine->get_package_id();
-        if (ObTriggerInfo::is_trigger_package_id(pack_id)) {
-          pack_id = ObTriggerInfo::get_package_trigger_id(pack_id);
-        }
-        if (guard.is_set_entry_info()) {
-          GET_DIAGNOSTIC_INFO->get_ash_stat().plsql_entry_object_id_ = OB_INVALID_ID != routine->get_package_id() ? pack_id : routine->get_routine_id();
-        } else {
-          GET_DIAGNOSTIC_INFO->get_ash_stat().plsql_object_id_ = OB_INVALID_ID != routine->get_package_id() ? pack_id : routine->get_routine_id();
-        }
-      }
       CK (OB_NOT_NULL(ctx.get_my_session()));
       OZ (ObPLContext::check_routine_legal(*routine, in_function,
                                           ctx.get_my_session()->is_for_trigger_package()));
@@ -5002,29 +4985,6 @@ ObPLASHGuard::ObPLASHGuard(ObPLASHStatus status)
       pl_ash_status_(ObPLASHStatus::INVALID_ASH_STATUS)
 {
   pl_ash_status_ = status;
-  ObDiagnosticInfo *di = ObLocalDiagnosticInfo::get();
-  if (OB_NOT_NULL(di)) {
-    switch (pl_ash_status_) {
-      case IS_PLSQL_COMPILATION: {
-        in_plsql_compilation_ = di->get_ash_stat().in_plsql_compilation_;
-        di->get_ash_stat().in_plsql_compilation_ = 1;
-        break;
-      }
-      case IS_PLSQL_EXECUTION: {
-        in_plsql_execution_ = di->get_ash_stat().in_plsql_execution_;
-        di->get_ash_stat().in_plsql_execution_ = 1;
-        break;
-      }
-      case IS_SQL_EXECUTION: {
-        in_plsql_execution_ = di->get_ash_stat().in_plsql_execution_;
-        di->get_ash_stat().in_plsql_execution_ = 0;
-        break;
-      }
-      default: {
-        // do nothing
-      }
-    }
-  }
 }
 
 ObPLASHGuard::ObPLASHGuard(int64_t package_id, int64_t routine_id)
@@ -5040,35 +5000,6 @@ ObPLASHGuard::ObPLASHGuard(int64_t package_id, int64_t routine_id)
       set_current_name_(0),
       pl_ash_status_(ObPLASHStatus::INVALID_ASH_STATUS)
 {
-  ObDiagnosticInfo *di = ObLocalDiagnosticInfo::get();
-  if (OB_NOT_NULL(di)) {
-    in_plsql_execution_ = di->get_ash_stat().in_plsql_execution_;
-    di->get_ash_stat().in_plsql_execution_ = 1;
-    pl_ash_status_ = INVALID_ASH_STATUS;
-
-  if (ObTriggerInfo::is_trigger_package_id(package_id)) {
-    package_id = ObTriggerInfo::get_package_trigger_id(package_id);
-  }
-
-    if (di->get_ash_stat().plsql_entry_object_id_ == OB_INVALID_ID ||
-      di->get_ash_stat().plsql_entry_object_id_ == ObPLResolver::ANONYMOUS_VIRTUAL_OBJECT_ID) {
-      set_entry_info_ = true;
-      di->get_ash_stat().plsql_entry_object_id_ =
-          OB_INVALID_ID == package_id ? routine_id : package_id;
-      di->get_ash_stat().plsql_entry_subprogram_id_ =
-          OB_INVALID_ID == package_id ? OB_INVALID_ID : routine_id;
-    } else {
-      plsql_current_object_id_ = di->get_ash_stat().plsql_object_id_;
-      plsql_current_subprogram_id_ = di->get_ash_stat().plsql_subprogram_id_;
-      MEMCPY(plsql_current_subprogram_name_,
-          di->get_ash_stat().plsql_subprogram_name_,
-          common::OB_MAX_ASH_PL_NAME_LENGTH);
-      di->get_ash_stat().plsql_object_id_ =
-          OB_INVALID_ID == package_id ? routine_id : package_id;
-      di->get_ash_stat().plsql_subprogram_id_ =
-          OB_INVALID_ID == package_id ? OB_INVALID_ID : routine_id;
-    }
-  }
 }
 
 ObPLASHGuard::ObPLASHGuard(int64_t package_id, int64_t routine_id, const ObString &routine_name)
@@ -5084,78 +5015,10 @@ ObPLASHGuard::ObPLASHGuard(int64_t package_id, int64_t routine_id, const ObStrin
       set_current_name_(0),
       pl_ash_status_(ObPLASHStatus::INVALID_ASH_STATUS)
 {
-  ObDiagnosticInfo *di = ObLocalDiagnosticInfo::get();
-  if (OB_NOT_NULL(di)) {
-    // set sub name
-    if (di->get_ash_stat().plsql_entry_object_id_ == package_id &&
-        di->get_ash_stat().plsql_entry_subprogram_id_ == routine_id) {
-      set_entry_name_ = true;
-      int64_t size = routine_name.length() > common::OB_MAX_ASH_PL_NAME_LENGTH
-                         ? common::OB_MAX_ASH_PL_NAME_LENGTH
-                         : routine_name.length();
-      MEMCPY(
-          di->get_ash_stat().plsql_entry_subprogram_name_, routine_name.ptr(), size);
-      di->get_ash_stat().plsql_entry_subprogram_name_[size] = '\0';
-    } else if (di->get_ash_stat().plsql_object_id_ == package_id &&
-               di->get_ash_stat().plsql_subprogram_id_ == routine_id) {
-      set_current_name_ = true;
-      MEMCPY(plsql_current_subprogram_name_,
-          di->get_ash_stat().plsql_subprogram_name_,
-          common::OB_MAX_ASH_PL_NAME_LENGTH);
-      if (OB_INVALID_ID != package_id) {
-        int64_t size = routine_name.length() > common::OB_MAX_ASH_PL_NAME_LENGTH
-                           ? common::OB_MAX_ASH_PL_NAME_LENGTH
-                           : routine_name.length();
-        MEMCPY(di->get_ash_stat().plsql_subprogram_name_, routine_name.ptr(), size);
-        di->get_ash_stat().plsql_subprogram_name_[size] = '\0';
-      }
-    } else { // curr routine is not package sub routine
-      di->get_ash_stat().plsql_subprogram_name_[0] = '\0';
-      set_current_name_ = false;
-    }
-  }
 }
 
 ObPLASHGuard::~ObPLASHGuard()
 {
-  ObDiagnosticInfo *di = ObLocalDiagnosticInfo::get();
-  if (OB_NOT_NULL(di)) {
-    if (set_entry_name_) {
-      di->get_ash_stat().plsql_entry_subprogram_name_[0] = '\0';
-    } else if (set_current_name_) {
-      MEMCPY(di->get_ash_stat().plsql_subprogram_name_,
-          plsql_current_subprogram_name_, common::OB_MAX_ASH_PL_NAME_LENGTH);
-    } else if (set_entry_info_) {
-      di->get_ash_stat().plsql_entry_object_id_ = -1;
-      di->get_ash_stat().plsql_entry_subprogram_id_ = -1;
-      di->get_ash_stat().plsql_object_id_ = -1;
-      di->get_ash_stat().plsql_subprogram_id_ = -1;
-      di->get_ash_stat().top_level_sql_id_[0] = '\0';
-      di->get_ash_stat().in_plsql_execution_ = in_plsql_execution_;
-    } else if (INVALID_ASH_STATUS == pl_ash_status_) {
-      di->get_ash_stat().plsql_object_id_ = plsql_current_object_id_;
-      di->get_ash_stat().plsql_subprogram_id_ = plsql_current_subprogram_id_;
-      di->get_ash_stat().in_plsql_execution_ = in_plsql_execution_;
-    } else {
-      switch (pl_ash_status_) {
-        case IS_PLSQL_COMPILATION: {
-          di->get_ash_stat().in_plsql_compilation_ = in_plsql_compilation_;
-          break;
-        }
-        case IS_PLSQL_EXECUTION: {
-          di->get_ash_stat().in_plsql_execution_ = in_plsql_execution_;
-          break;
-        }
-        case IS_SQL_EXECUTION: {
-          di->get_ash_stat().in_plsql_execution_ = in_plsql_execution_;
-          break;
-        }
-        default: {
-          // do nothing
-        }
-      }
-    }
-  }
 }
 
 } // namespace pl
