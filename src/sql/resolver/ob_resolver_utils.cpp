@@ -18,8 +18,8 @@
 
 #ifndef OB_BUILD_EMBED_MODE
 #include <parquet/arrow/schema.h>
-#include "sql/resolver/cmd/ob_load_data_stmt.h"
 #endif
+#include "sql/resolver/cmd/ob_load_data_stmt.h"
 
 #include "sql/resolver/ob_resolver_utils.h"
 #include "lib/utility/utility.h"
