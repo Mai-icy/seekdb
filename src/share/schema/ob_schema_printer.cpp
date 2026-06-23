@@ -3944,7 +3944,7 @@ int ObSchemaPrinter::print_routine_definition_v1(const ObRoutineInfo *routine_in
   OZ (print_identifier(buf, buf_len, pos, db_schema->get_database_name_str()),
                        K(routine_type), K(db_name), K(routine_info));
   OZ (databuff_printf(buf, buf_len, pos, "."));
-  OZ (print_identifier(buf, buf_len, pos, routine_info->get_routine_name()), 
+  OZ (print_identifier(buf, buf_len, pos, routine_info->get_routine_name()),
                        K(routine_type), K(db_name), K(routine_info));
   OZ (databuff_printf(buf, buf_len, pos, "\n"));
   if (OB_SUCC(ret) && routine_info->get_param_count() > 0) {

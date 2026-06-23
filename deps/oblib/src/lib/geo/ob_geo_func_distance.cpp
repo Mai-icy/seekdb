@@ -52,7 +52,7 @@ int eval_distance_with_point_strategy(const ObGeometry *g1,
     const GeoType2 *geo2 = reinterpret_cast<const GeoType2 *>(g2->val());
     bg::srs::spheroid<double> geog_sphere(srs->semi_major_axis(), srs->semi_minor_axis());
     bg::strategy::distance::andoyer<bg::srs::spheroid<double>> point_strategy(geog_sphere);
-    result = bg::distance(*geo1, *geo2, point_strategy);    
+    result = bg::distance(*geo1, *geo2, point_strategy);
   }
   return ret;
 }
