@@ -16,6 +16,7 @@
 
 #define USING_LOG_PREFIX COMMON
 #include "share/ob_virtual_table_iterator.h"
+#include "lib/stat/ob_diagnostic_info_guard.h"
 
 #include "share/external_table/ob_external_object_ctx.h"
 #include "sql/engine/expr/ob_expr_column_conv.h"

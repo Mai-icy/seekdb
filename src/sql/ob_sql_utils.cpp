@@ -3706,38 +3706,6 @@ void ObSQLUtils::record_execute_time(const ObPhyPlanType type,
   #undef ADD_EXECUTE_TIME
 }
 
-int ObSQLUtils::handle_audit_record(bool need_retry,
-                                    const ObExecuteMode exec_mode,
-                                    ObSQLSessionInfo &session,
-                                    bool is_sensitive)
-{
-  int ret = OB_SUCCESS;
-  if (need_retry) {
-    /*do nothing*/
-  } else if (GCONF.enable_sql_audit && session.get_local_ob_enable_sql_audit()) {
-    ObMySQLRequestManager *req_manager = session.get_request_manager();
-    if (OB_ISNULL(req_manager)) {
-      // failed to get request manager, maybe tenant has been dropped, NOT NEED TO record;
-    } else {
-      const ObAuditRecordData &audit_record = session.get_final_audit_record(exec_mode);
-      if (OB_FAIL(req_manager->record_request(audit_record,
-                                              session.enable_query_response_time_stats(),
-                                              session.get_tenant_query_record_size_limit(),
-                                              is_sensitive))) {
-        if (OB_SIZE_OVERFLOW == ret || OB_ALLOCATE_MEMORY_FAILED == ret) {
-          LOG_DEBUG("cannot allocate mem for record", K(ret));
-          ret = OB_SUCCESS;
-        }
-      }
-    }
-  }
-  if (lib::is_diagnose_info_enabled()) {
-    session.update_stat_from_exec_record();
-  }
-  session.update_stat_from_exec_timestamp();
-  session.reset_audit_record(need_retry);
-  return ret;
-}
 
 
 bool ObSQLUtils::is_oracle_empty_string(const ObObjParam &param)

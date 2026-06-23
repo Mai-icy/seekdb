@@ -409,3 +409,4 @@ test/var
 .claude/
 CLAUDE.md
 .omo/
+seekdb_data/

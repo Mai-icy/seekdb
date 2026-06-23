@@ -545,10 +545,6 @@ public:
                                                   common::ObString &view_definition);
   static void record_execute_time(const ObPhyPlanType type,
                                   const int64_t time_cost);
-  static int handle_audit_record(bool need_retry,
-                                 const ObExecuteMode exec_mode,
-                                 ObSQLSessionInfo &session,
-                                 bool is_sensitive = false);
   static int64_t get_query_record_size_limit(uint64_t tenant_id)
   {
     int64_t thredhold = OB_MAX_SQL_LENGTH;

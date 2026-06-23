@@ -26,7 +26,6 @@
 #include "share/ob_cluster_event_history_table_operator.h"//CLUSTER_EVENT_INSTANCE
 #include "sql/plan_cache/ob_plan_cache.h"
 #include "sql/plan_cache/ob_ps_cache.h"
-#include "observer/mysql/ob_mysql_request_manager.h"
 #include "share/rc/ob_tenant_base.h"
 #include "pl/ob_pl.h"
 #include "pl/pl_cache/ob_pl_cache_mgr.h"
@@ -923,44 +922,6 @@ int do_flush_cache_local(obcall::ObFlushCacheArg arg)
         MTL_SWITCH(arg.tenant_id_) {
           ObPlanCache* plan_cache = MTL(ObPlanCache*);
           ret = plan_cache->flush_plan_cache();
-        }
-      }
-      break;
-    }
-    case CACHE_TYPE_SQL_AUDIT: {
-      if (arg.is_all_tenant_) { // flush all tenant sql audit
-        ObArray<uint64_t> id_list;
-        if (OB_ISNULL(GCTX.omt_)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("unexpected null of omt", K(ret));
-        } else if (OB_FAIL(GCTX.omt_->get_mtl_tenant_ids(id_list))) {
-          LOG_WARN("get tenant ids", K(ret));
-        }
-        int tmp_ret = OB_SUCCESS;
-        if (OB_SUCC(ret)) {
-          for (int64_t i = 0; i < id_list.size(); i++) { // ignore ret
-            MTL_SWITCH(id_list.at(i)) {
-              ObMySQLRequestManager *req_mgr = MTL(ObMySQLRequestManager*);
-              if (nullptr == req_mgr) {
-                // do-nothing
-                // virtual tenant such as 50x do not maintain tenant local object, hence req_mgr could be null.
-              } else {
-                req_mgr->clear_queue();
-              }
-            }
-            // ignore errors at switching tenant
-            ret = OB_SUCCESS;
-          }
-        }
-      } else { // flush specified tenant sql audit
-        MTL_SWITCH(arg.tenant_id_) {
-          ObMySQLRequestManager *req_mgr = MTL(ObMySQLRequestManager*);
-          if (nullptr == req_mgr) {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("failed to get request manager", K(ret), K(req_mgr));
-          } else {
-            req_mgr->clear_queue();
-          }
         }
       }
       break;
