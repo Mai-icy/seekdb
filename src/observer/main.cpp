@@ -21,10 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-// Point the coverage runtime at <base_dir>/seekdb.profraw (continuous) from a priority-101
-// constructor, which runs before the runtime's own initializer, so counters go straight there
-// and no default.profraw is ever created.
-extern "C" void __llvm_profile_set_filename(const char *);
+// Set LLVM_PROFILE_FILE before the coverage runtime's constructor reads it, so counters go straight
+// to <base_dir>/seekdb.profraw (continuous) and no default.profraw is ever created.
 __attribute__((constructor(101)))
 static void seekdb_cov_init_profile_file(int argc, char **argv)
 {
@@ -43,8 +41,8 @@ static void seekdb_cov_init_profile_file(int argc, char **argv)
   }
   char val[1100];
   snprintf(val, sizeof(val), "%s/seekdb%%c.profraw", abs_base);
-  __llvm_profile_set_filename(val);
-  fprintf(stderr, "Coverage: set_filename('%s')\n", val);
+  setenv("LLVM_PROFILE_FILE", val, 1);
+  fprintf(stderr, "Coverage: LLVM_PROFILE_FILE='%s'\n", val);
 }
 #endif
 
