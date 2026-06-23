@@ -387,7 +387,6 @@ int ObMemtable::multi_set(
   } else if (OB_FAIL(guard.write_auth(*context.store_ctx_))) {
     TRANS_LOG(WARN, "not allow to write", K(*context.store_ctx_));
   } else {
-    lib::CompatModeGuard compat_guard(mode_);
 
     ret = multi_set_(param,
                      context,
@@ -560,7 +559,6 @@ int ObMemtable::set(
     } else if (OB_FAIL(memtable_key_generator.generate_memtable_key(*new_row))) {
       TRANS_LOG(WARN, "generate memtable key fail", K(ret), K(new_row));
     } else {
-      lib::CompatModeGuard compat_guard(mode_);
 
       ret = set_(param,
                  context,
@@ -1026,7 +1024,6 @@ int ObMemtable::replay_row(ObStoreCtx &ctx,
     ret = OB_ERR_UNEXPECTED;
     TRANS_LOG(ERROR, "Unexpected not exist trans node", K(ret), K(dml_flag), K(rowkey));
   } else {
-    lib::CompatModeGuard compat_guard(mode_);
     ObMemtableData mtd(dml_flag, row.size_, row.data_);
     ObMemtableKey mtk;
     ObRowData empty_old_row;

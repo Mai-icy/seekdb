@@ -1911,7 +1911,6 @@ int ObRootService::alter_table(const obcall::ObAlterTableArg &arg, obcall::ObAlt
 {
   LOG_DEBUG("receive alter table arg", K(arg));
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   ObSchemaGetterGuard schema_guard;
   const uint64_t tenant_id = arg.alter_table_schema_.get_tenant_id();
   ObAlterTableArg &nonconst_arg = const_cast<ObAlterTableArg &>(arg);
@@ -2558,7 +2557,6 @@ int ObRootService::send_auto_split_tablet_task_request(const obcall::ObAutoSplit
 int ObRootService::split_global_index_tablet(const obcall::ObAlterTableArg &arg)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   ObSchemaGetterGuard schema_guard;
   const uint64_t tenant_id = arg.alter_table_schema_.get_tenant_id();
   ObAlterTableArg &nonconst_arg = const_cast<ObAlterTableArg &>(arg);
@@ -2870,9 +2868,8 @@ int ObRootService::optimize_table(const ObOptimizeTableArg &arg)
   } else if (OB_ISNULL(schema_service_)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("error unexpected, schema service must not be NULL", K(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::get_tenant_mode(arg.tenant_id_, mode))) {
-    LOG_WARN("fail to get tenant mode", K(ret));
   } else {
+    mode = lib::Worker::CompatMode::MYSQL;
     const int64_t all_core_table_id = OB_ALL_CORE_TABLE_TID;
     for (int64_t i = 0; OB_SUCC(ret) && i < arg.tables_.count(); ++i) {
       SMART_VAR(obcall::ObAlterTableArg, alter_table_arg) {
@@ -2899,11 +2896,6 @@ int ObRootService::optimize_table(const ObOptimizeTableArg &arg)
             if (OB_FAIL(sql.append_fmt("OPTIMIZE TABLE `%.*s`",
                 table_item.table_name_.length(), table_item.table_name_.ptr()))) {
               LOG_WARN("fail to assign sql stmt", K(ret));
-            }
-          } else if (lib::Worker::CompatMode::ORACLE == mode) {
-            if (OB_FAIL(sql.append_fmt("ALTER TABLE \"%.*s\" SHRINK SPACE",
-                table_item.table_name_.length(), table_item.table_name_.ptr()))) {
-              LOG_WARN("fail to append fmt", K(ret));
             }
           } else {
             ret = OB_ERR_UNEXPECTED;
@@ -3602,22 +3594,7 @@ int ObRootService::revoke_table(const ObRevokeTableArg &arg)
   } else if (!arg.is_valid()) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arg", K(arg), K(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::get_tenant_mode(arg.tenant_id_, mode))) {
-    LOG_WARN("fail to get tenant mode", K(ret));
-  } else if (lib::Worker::CompatMode::ORACLE == mode) {
-    ObTablePrivSortKey table_priv_key(arg.tenant_id_, arg.user_id_, arg.db_, arg.table_);
-    ObObjPrivSortKey obj_priv_key(arg.tenant_id_,
-                                  arg.obj_id_,
-                                  arg.obj_type_,
-                                  OBJ_LEVEL_FOR_TAB_PRIV,
-                                  arg.grantor_id_,
-                                  arg.user_id_);
-    OZ (ddl_service_.revoke_table(arg,
-                                  table_priv_key,
-                                  arg.priv_set_,
-                                  obj_priv_key,
-                                  arg.obj_priv_array_,
-                                  arg.revoke_all_ora_));
+  } else if (FALSE_IT(mode = lib::Worker::CompatMode::MYSQL)) {
   } else if (lib::Worker::CompatMode::MYSQL == mode) {
     if (OB_FAIL(ddl_service_.revoke_table_and_column_mysql(arg))) {
       LOG_WARN("revoke table and col failed", K(ret));

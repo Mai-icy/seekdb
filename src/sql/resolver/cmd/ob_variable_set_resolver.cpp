@@ -202,7 +202,7 @@ int ObVariableSetResolver::resolve(const ParseNode &parse_tree)
               }
             }
           } else {
-            if (lib::is_mysql_mode() && check_var_name_length) {
+            if (check_var_name_length) {
               if (OB_FAIL(ObResolverUtils::check_user_variable_length(var_node.variable_name_.ptr(),
                                                                       var_node.variable_name_.length()))) {
                 LOG_WARN("check user variable length fail", K(ret));
@@ -297,12 +297,10 @@ int ObVariableSetResolver::resolve_value_expr(ParseNode &val_node, ObRawExpr *&v
         LOG_WARN("failed to formalize call expr", K(ret));
       }
     } else if (value_expr->has_flag(CNT_SUB_QUERY)) {
-      if (is_mysql_mode()) {
-        if (OB_FAIL(resolve_subquery_info(sub_query_info, value_expr))) {
-          LOG_WARN("failed to resolve subquery info", K(ret));
-        }
+      if (OB_FAIL(resolve_subquery_info(sub_query_info, value_expr))) {
+        LOG_WARN("failed to resolve subquery info", K(ret));
       }
-      LOG_TRACE("set user variable with subquery", K(sub_query_info.count()), K(is_mysql_mode()));
+      LOG_TRACE("set user variable with subquery", K(sub_query_info.count()));
     }
     if (OB_FAIL(ret)) {
     } else if (OB_FAIL(ObResolverUtils::resolve_columns_for_const_expr(value_expr, columns, params_))) {

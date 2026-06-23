@@ -74,14 +74,13 @@ int ObTabletSplitMdsUserData::init_no_split(const int64_t auto_part_size)
 int ObTabletSplitMdsUserData::init_range_part_split_src(
     const ObIArray<ObTabletID> &dst_tablet_ids,
     const ObIArray<uint64_t> &partkey_projector,
-    const ObTableSchema &table_schema,
-    const bool is_oracle_mode)
+    const ObTableSchema &table_schema)
 {
   int ret = OB_SUCCESS;
   reset();
   auto_part_size_ = OB_INVALID_SIZE; // split src tablet can no longer auto split
   status_ = RANGE_PART_SPLIT_SRC;
-  const lib::Worker::CompatMode compat_mode = is_oracle_mode ? lib::Worker::CompatMode::ORACLE : lib::Worker::CompatMode::MYSQL;
+  const lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
   if (OB_FAIL(ref_tablet_ids_.assign(dst_tablet_ids))) {
     LOG_WARN("failed to assign ref tablet ids", K(ret));
   } else if (OB_FAIL(partkey_projector_.assign(partkey_projector))) {

@@ -52,8 +52,6 @@ int ObDynamicPartitionManager::init(
     LOG_WARN("tenant id is invalid", KR(ret));
   } else if (OB_FAIL(str_to_dynamic_partition_policy_(table_schema->get_dynamic_partition_policy(), policy_))) {
     LOG_WARN("fail to convert str to dynamic partition policy", KR(ret), KPC(table_schema));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id_, is_oracle_mode_))) {
-    LOG_WARN("fail to check is oracle mode with tenant id", KR(ret), K_(tenant_id));
   } else if (OB_FAIL(check_is_supported(*table_schema))) {
     LOG_WARN("fail to check table schema is supported for dynamic partition", KR(ret), KPC(table_schema));
   } else if (OB_FAIL(check_is_valid(*table_schema))) {
@@ -181,7 +179,7 @@ int ObDynamicPartitionManager::write_ddl_(const ObSqlString &ddl)
     } else if (OB_FAIL(GCTX.sql_proxy_->write(tenant_id_,
                                               ddl.ptr(),
                                               affected_rows,
-                                              is_oracle_mode_ ? ObCompatibilityMode::ORACLE_MODE : ObCompatibilityMode::MYSQL_MODE,
+                                              ObCompatibilityMode::MYSQL_MODE,
                                               &session_param))) {
       LOG_WARN("fail to execute dynamic partition ddl", KR(ret), K_(tenant_id), K(ddl));
     }
@@ -216,14 +214,14 @@ int ObDynamicPartitionManager::build_add_partition_sql_(
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("database schema is null", KR(ret));
     } else {
-      const char *quote = is_oracle_mode_ ? "\"" : "`";
+      const char *quote = "`";
       if (OB_FAIL(sql.append_fmt("ALTER TABLE %s%s%s.%s%s%s ADD %s%.*s%s",
                                  quote, database_schema->get_database_name(), quote,
                                  quote, table_schema_->get_table_name(), quote,
-                                 is_oracle_mode_ ? "" : "PARTITION (",
+                                 "PARTITION (",
                                  static_cast<int32_t>(part_def_list.length()),
                                  part_def_list.ptr(),
-                                 is_oracle_mode_ ? "" : ")"))) {
+                                 ")"))) {
         LOG_WARN("fail to append sql", KR(ret));
       }
     }
@@ -256,7 +254,7 @@ int ObDynamicPartitionManager::build_drop_partition_sql_(
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("database schema is null", KR(ret));
     } else {
-      const char *quote = is_oracle_mode_ ? "\"" : "`";
+      const char *quote = "`";
       if (OB_FAIL(sql.append_fmt("ALTER TABLE %s%s%s.%s%s%s DROP PARTITION %.*s",
                                  quote, database_schema->get_database_name(), quote,
                                  quote, table_schema_->get_table_name(), quote,
@@ -343,7 +341,7 @@ int ObDynamicPartitionManager::build_expired_partition_name_list_(
       LOG_WARN("fail to add timestamp", KR(ret), K(-expire_time_num), K(expire_time_unit));
     } else {
       // keep at least one partition
-      const char *quote = is_oracle_mode_ ? "\"" : "`";
+      const char *quote = "`";
       for (int64_t i = 0; OB_SUCC(ret) && i < table_schema_->get_partition_num() - 1; i++) {
         const ObPartition *part = table_schema_->get_part_array()[i];
         int64_t high_bound_val_timestamp = 0;
@@ -411,7 +409,7 @@ int ObDynamicPartitionManager::build_part_name_(const int64_t timestamp, ObSqlSt
       int64_t pos = 0;
       bool res_null = false;
       ObString locale;
-      const char *quote = is_oracle_mode_ ? "\"" : "`";
+      const char *quote = "`";
       if (FAILEDx(ObTimeConverter::datetime_to_ob_time(timestamp, time_zone_info_wrap.get_time_zone_info(), ob_time))) {
         LOG_WARN("fail to convert timestamp to ob time", KR(ret), K(timestamp));
       } else if (OB_FAIL(ObTimeConverter::ob_time_to_str_format(ob_time,
@@ -497,14 +495,13 @@ int ObDynamicPartitionManager::build_high_bound_val_(const int64_t timestamp, Ob
         const int64_t len = OB_MAX_DEFAULT_VALUE_LENGTH;
         int64_t pos = 0;
         SMART_VAR(char[len], buf) {
-        if (FAILEDx(ObPartitionUtils::convert_rowkey_to_sql_literal(is_oracle_mode_,
-                                                                    high_bound_val_rowkey,
+        if (FAILEDx(ObPartitionUtils::convert_rowkey_to_sql_literal(high_bound_val_rowkey,
                                                                     buf,
                                                                     len,
                                                                     pos,
                                                                     false/*print_collation,*/,
                                                                     time_zone_info_wrap.get_time_zone_info()))) {
-          LOG_WARN("fail to convert rowkey to sql literal", KR(ret), K_(is_oracle_mode), K(high_bound_val_rowkey));
+          LOG_WARN("fail to convert rowkey to sql literal", KR(ret), K(high_bound_val_rowkey));
         } else if (OB_FAIL(str.assign(buf))) {
           LOG_WARN("fail to assign str", KR(ret));
         }
@@ -1380,7 +1377,7 @@ int ObDynamicPartitionManager::update_dynamic_partition_policy_with_str_(
             LOG_WARN("not support to alter dynamic partition time zone", KR(ret));
           } else {
             if (0 != v.case_compare(DEFAULT_DYNAMIC_PARTITION_TIME_ZONE_STR)
-                && OB_FAIL(ObTimeConverter::str_to_offset(v, offset, ret_more, false/*is_oracle_mode*/, true/*need_check_valid*/))) {
+                && OB_FAIL(ObTimeConverter::str_to_offset(v, offset, ret_more, true/*need_check_valid*/))) {
               LOG_WARN("fail to convert str to offset", KR(ret), K(k), K(v));
             } else {
               policy.time_zone_ = v;

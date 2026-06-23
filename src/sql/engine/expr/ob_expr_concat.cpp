@@ -115,7 +115,6 @@ int ObExprConcat::calc(common::ObObj &result,
                        const common::ObString obj1,
                        const common::ObString obj2,
                        ObIAllocator *allocator,
-                       bool is_oracle_mode,
                        const int64_t max_result_len)
 {
   int ret = OB_SUCCESS;
@@ -124,7 +123,7 @@ int ObExprConcat::calc(common::ObObj &result,
   ObString varchar;
   int64_t max_length = max_result_len;
   if (max_result_len <= 0) {
-    max_length = is_oracle_mode ? OB_MAX_ORACLE_VARCHAR_LENGTH : OB_MAX_VARCHAR_LENGTH;
+    max_length = OB_MAX_VARCHAR_LENGTH;
   }
   if (OB_UNLIKELY(this_len + other_len > max_length)) {
     //FIXME: The length of the merged string exceeds the maximum limit, the result is set to NULL
@@ -294,14 +293,7 @@ int ObExprConcat::eval_concat(const ObExpr &expr, ObEvalCtx &ctx, ObDatum &expr_
       }
     }
     int64_t max_len = 0;
-    if (is_mysql_mode()) {
-      max_len = OB_MAX_VARCHAR_LENGTH;
-    } else if (expr.is_called_in_sql_) { // SQL in oracle mode
-      max_len = OB_MAX_ORACLE_VARCHAR_LENGTH;
-    } else { // PL in oracle mode
-      const int64_t concat_res_max_len_in_pl = 65535;
-      max_len = concat_res_max_len_in_pl;
-    }
+    max_len = OB_MAX_VARCHAR_LENGTH;
     if (ob_is_text_tc(res_type)) {
       // FIXME bin.lb: mysql mode can not reach here, since result type is always varchar.
       // Seem to be a bug: 

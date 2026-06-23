@@ -173,13 +173,9 @@ int ObCreateTableHelper::lock_database_by_obj_name_()
 int ObCreateTableHelper::lock_objects_by_name_()
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   const int64_t start_ts =  ObTimeUtility::current_time();
   if (OB_FAIL(check_inner_stat_())) {
     LOG_WARN("fail to check inner stat", KR(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(
-             tenant_id_, is_oracle_mode))) {
-    LOG_WARN("fail to check is oracle mode", KR(ret));
   } else {
     const ObString &database_name = arg_.db_name_;
     const ObTableSchema &table = arg_.schema_;
@@ -189,19 +185,6 @@ int ObCreateTableHelper::lock_objects_by_name_()
     if (OB_FAIL(add_lock_object_by_name_(database_name, table_name,
         share::schema::TABLE_SCHEMA, transaction::tablelock::EXCLUSIVE))) {
       LOG_WARN("fail to lock object by table name", KR(ret), K_(tenant_id), K(database_name), K(table_name));
-    }
-
-    // 2. index (oracle) :
-    // 1) oracle mode: index name is unique in user(database)
-    // 2) mysql mode: index name is unique in table
-    if (OB_SUCC(ret) && is_oracle_mode) {
-      for (int64_t i = 0; OB_SUCC(ret) && i < arg_.index_arg_list_.size(); i++) {
-        const ObString &index_name = arg_.index_arg_list_.at(i).index_name_; // original index name
-        if (OB_FAIL(add_lock_object_by_name_(database_name, index_name,
-            share::schema::TABLE_SCHEMA, transaction::tablelock::EXCLUSIVE))) {
-          LOG_WARN("fail to lock object by index name", KR(ret), K_(tenant_id), K(database_name), K(index_name));
-        }
-      } // end for
     }
 
     // 3. constraint
@@ -517,7 +500,6 @@ int ObCreateTableHelper::check_and_set_database_id_()
 int ObCreateTableHelper::check_table_name_()
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   const ObTableSchema &table = arg_.schema_;
   const uint64_t database_id = table.get_database_id();
   const ObString &table_name = table.get_table_name();
@@ -526,15 +508,6 @@ int ObCreateTableHelper::check_table_name_()
   bool if_not_exist = arg_.if_not_exist_;
   if (OB_FAIL(check_inner_stat_())) {
     LOG_WARN("fail to check inner stat", KR(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id_, is_oracle_mode))) {
-    LOG_WARN("fail to check is oracle mode", KR(ret));
-  } else if (is_oracle_mode) {
-    if (OB_FAIL(schema_guard_wrapper_.check_oracle_object_exist(
-        database_id, session_id, table_name, TABLE_SCHEMA,
-        INVALID_ROUTINE_TYPE, if_not_exist))) {
-      LOG_WARN("fail to check oracle object exist", KR(ret),
-               K(database_id), K(session_id), K(table_name), K(if_not_exist));
-    }
   } else {
     uint64_t table_id = OB_INVALID_ID;
     ObTableType table_type = MAX_TABLE_TYPE;
@@ -805,15 +778,12 @@ int ObCreateTableHelper::generate_foreign_keys_()
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("invalid table cnt", KR(ret), "table_cnt", new_tables_.count());
   } else {
-    bool is_oracle_mode = false;
     ObTableSchema &data_table = new_tables_.at(0);
     const uint64_t session_id = data_table.get_session_id();
     ObIDGenerator id_generator; // for foreign key
     const uint64_t object_cnt = arg_.foreign_key_arg_list_.count();
     if (OB_FAIL(gen_object_ids_(object_cnt, id_generator))) {
       LOG_WARN("fail to gen object ids", KR(ret), K_(tenant_id), K(object_cnt));
-    } else if (OB_FAIL(data_table.check_if_oracle_compat_mode(is_oracle_mode))) {
-      LOG_WARN("fail to check oracle mode", KR(ret));
     }
     // genernate foreign keys
     for (int64_t i = 0; OB_SUCC(ret) && i < arg_.foreign_key_arg_list_.count(); i++) {
@@ -828,15 +798,10 @@ int ObCreateTableHelper::generate_foreign_keys_()
       } else if (OB_FAIL(check_constraint_name_exist_(data_table, foreign_key_name, true /*is_foreign_key*/, fk_exist))) {
         LOG_WARN("fail to check foreign key name exist", KR(ret), K_(tenant_id), K(foreign_key_name));
       } else if (fk_exist) {
-        if (is_oracle_mode) {
-          ret = OB_ERR_CONSTRAINT_NAME_DUPLICATE;
-          LOG_WARN("fk name is duplicate", KR(ret), K(foreign_key_name));
-        } else { // mysql mode
-          ret = OB_ERR_DUP_KEY;
-          LOG_USER_ERROR(OB_ERR_DUP_KEY,
-                         data_table.get_table_name_str().length(),
-                         data_table.get_table_name_str().ptr());
-        }
+        ret = OB_ERR_DUP_KEY;
+        LOG_USER_ERROR(OB_ERR_DUP_KEY,
+                       data_table.get_table_name_str().length(),
+                       data_table.get_table_name_str().ptr());
       } else {
         const ObTableSchema *parent_table = NULL;
         ObMockFKParentTableSchema *new_mock_fk_parent_table = NULL;
@@ -850,24 +815,13 @@ int ObCreateTableHelper::generate_foreign_keys_()
           // check whether it belongs to self reference, if so, the parent schema is child schema.
           parent_table = &data_table;
           if (FK_REF_TYPE_PRIMARY_KEY == foreign_key_arg.fk_ref_type_) {
-            if (is_oracle_mode) {
-              ObTableSchema::const_constraint_iterator iter = parent_table->constraint_begin();
-              for ( ; iter != parent_table->constraint_end(); ++iter) {
-                if (CONSTRAINT_TYPE_PRIMARY_KEY == (*iter)->get_constraint_type()) {
-                  foreign_key_info.fk_ref_type_ = FK_REF_TYPE_PRIMARY_KEY;
-                  foreign_key_info.ref_cst_id_ = (*iter)->get_constraint_id();
-                  break;
-                }
-              } // end for
-            } else {
-              foreign_key_info.fk_ref_type_ = FK_REF_TYPE_PRIMARY_KEY;
-              foreign_key_info.ref_cst_id_ = common::OB_INVALID_ID;
-            }
+            foreign_key_info.fk_ref_type_ = FK_REF_TYPE_PRIMARY_KEY;
+            foreign_key_info.ref_cst_id_ = common::OB_INVALID_ID;
           } else if (FK_REF_TYPE_UNIQUE_KEY == foreign_key_arg.fk_ref_type_) {
             if (OB_FAIL(ddl_service_->get_uk_cst_id_for_self_ref(new_tables_, foreign_key_arg, foreign_key_info))) {
               LOG_WARN("failed to get uk cst id for self ref", KR(ret), K(foreign_key_arg));
             }
-          } else if (!lib::is_oracle_mode() && FK_REF_TYPE_NON_UNIQUE_KEY == foreign_key_arg.fk_ref_type_) {
+          } else if (FK_REF_TYPE_NON_UNIQUE_KEY == foreign_key_arg.fk_ref_type_) {
             if (OB_FAIL(ddl_service_->get_index_cst_id_for_self_ref(new_tables_, foreign_key_arg, foreign_key_info))) {
               LOG_WARN("failed to get index cst id for self ref", KR(ret), K(foreign_key_arg));
             }
@@ -1156,136 +1110,10 @@ int ObCreateTableHelper::get_mock_fk_parent_table_info_(
 int ObCreateTableHelper::generate_sequence_object_()
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   if (OB_FAIL(check_inner_stat_())) {
     LOG_WARN("fail to check inner stat", KR(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id_, is_oracle_mode))) {
-    LOG_WARN("fail to check is oracle mode", KR(ret));
-  } else if (!is_oracle_mode) {
-    // skip
-  } else if (OB_UNLIKELY(new_tables_.count() <= 0)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpected table cnt", KR(ret), K(new_tables_.count()));
-  } else if (!(new_tables_.at(0).is_user_table())) {
-    // skip
-  } else {
-    // 1. lock object name
-    // - Sequence object name for table is encoded with table_id which is determinated in generate_schemas_() stage,
-    // - so lock_objects_() stage will be delayed. And sequence_name won't be conficted for most cases since it's encoded.
-    const obcall::ObSequenceDDLArg &sequence_ddl_arg = arg_.sequence_ddl_arg_;
-    const ObTableSchema &data_table = new_tables_.at(0);
-    const uint64_t tenant_id = data_table.get_tenant_id();
-    const uint64_t database_id = data_table.get_database_id();
-    const uint64_t session_id = arg_.schema_.get_session_id();
-    const ObString &database_name = arg_.db_name_;
-    ObSequenceSchema *new_sequence = NULL;
-    char sequence_name[OB_MAX_SEQUENCE_NAME_LENGTH + 1] = { 0 };
-    const bool is_or_replace = false;
-    for (ObTableSchema::const_column_iterator iter = data_table.column_begin();
-         OB_SUCC(ret) && iter != data_table.column_end(); ++iter) {
-      ObColumnSchemaV2 *column_schema = *iter;
-      if (OB_ISNULL(column_schema)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("column is null", KR(ret));
-      } else if (!column_schema->is_identity_column()) {
-        continue;
-      } else if (OB_FAIL(ObSchemaUtils::alloc_schema(allocator_, new_sequence))) {
-        LOG_WARN("fail to alloc schema", KR(ret));
-      } else if (OB_FAIL(new_sequence->assign(sequence_ddl_arg.seq_schema_))) {
-        LOG_WARN("fail to assign sequence schema", KR(ret), K(sequence_ddl_arg));
-      } else {
-        ObSequenceOptionBuilder opt_builder;
-        int32_t len = snprintf(sequence_name, sizeof(sequence_name),
-                               "%s%lu%c%lu", IDENTITY_COLUMN_SEQUENCE_OBJECT_NAME_PREFIX,
-                                data_table.get_table_id(), '_', column_schema->get_column_id());
-        new_sequence->set_tenant_id(tenant_id);
-        new_sequence->set_database_id(database_id);
-        if (OB_UNLIKELY(len < 0)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("create sequence name fail", KR(ret), KPC(column_schema));
-        } else if (OB_FAIL(new_sequence->set_sequence_name(sequence_name))) {
-          LOG_WARN("fail to set sequence name", KR(ret), K(sequence_name));
-        } else if (OB_FAIL(opt_builder.build_create_sequence_option(
-          sequence_ddl_arg.option_bitset_, new_sequence->get_sequence_option()))) {
-          LOG_WARN("fail to build sequence_option", KR(ret), K(sequence_ddl_arg));
-        } else if (OB_FAIL(add_lock_object_by_name_(
-                   database_name, new_sequence->get_sequence_name(),
-                   share::schema::SEQUENCE_SCHEMA, transaction::tablelock::EXCLUSIVE))) {
-          LOG_WARN("fail to lock object by sequence name prefix", KR(ret), K_(tenant_id),
-                   K(database_name), KPC(new_sequence));
-        } else if (OB_FAIL(schema_guard_wrapper_.check_oracle_object_exist(
-                   new_sequence->get_database_id(), session_id,
-                   new_sequence->get_sequence_name(), SEQUENCE_SCHEMA,
-                   INVALID_ROUTINE_TYPE, is_or_replace))) {
-          LOG_WARN("fail to check oracle object exist", KR(ret), KPC(new_sequence));
-        } else if (OB_FAIL(new_sequences_.push_back(new_sequence))) {
-          LOG_WARN("fail to push back new sequence ptr", KR(ret));
-        }
-      }
-    } // end for
-
-    if (FAILEDx(lock_existed_objects_by_name_())) {
-      LOG_WARN("fail to lock objects by name", KR(ret), K_(tenant_id));
-    }
-
-    // 2. generate object ids
-    ObIDGenerator id_generator;
-    const uint64_t object_cnt = new_sequences_.count();
-    if (FAILEDx(gen_object_ids_(object_cnt, id_generator))) {
-      LOG_WARN("fail to gen object ids", KR(ret), K_(tenant_id), K(object_cnt));
-    }
-
-    // 3. generate schema
-    int64_t idx = 0;
-    uint64_t sequence_id = OB_INVALID_ID;
-    char sequence_string[OB_MAX_SEQUENCE_NAME_LENGTH + 1] = { 0 };
-    for (ObTableSchema::const_column_iterator iter = data_table.column_begin();
-         OB_SUCC(ret) && iter != data_table.column_end(); ++iter) {
-      ObColumnSchemaV2 *column_schema = *iter;
-      if (OB_ISNULL(column_schema)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("column is null", KR(ret));
-      } else if (!column_schema->is_identity_column()) {
-        continue;
-      } else if (OB_UNLIKELY(idx >= new_sequences_.count())) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("invalid idx", KR(ret), K(idx), K(new_sequences_.count()));
-      } else if (OB_ISNULL(new_sequence = new_sequences_.at(idx++))) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("sequence is null", KR(ret));
-      } else if (OB_FAIL(id_generator.next(sequence_id))) {
-        LOG_WARN("fail to get next object_id", KR(ret));
-      } else {
-        // 3.1. generate sequence id
-        new_sequence->set_sequence_id(sequence_id);
-        // 3.2. modify column schema
-        column_schema->set_sequence_id(sequence_id);
-        int32_t len = snprintf(sequence_string, sizeof(sequence_string), "%lu", sequence_id);
-        if (OB_UNLIKELY(len < 0)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("create sequence string fail", KR(ret), K(sequence_id));
-        } else {
-          ObObjParam cur_default_value;  // for desc table
-          ObObjParam orig_default_value; // for store pure_sequence_id
-          cur_default_value.set_varchar("SEQUENCE.NEXTVAL");
-          cur_default_value.set_collation_type(ObCharset::get_system_collation());
-          cur_default_value.set_collation_level(CS_LEVEL_IMPLICIT);
-          cur_default_value.set_param_meta();
-          orig_default_value.set_varchar(sequence_string);
-          orig_default_value.set_collation_type(ObCharset::get_system_collation());
-          orig_default_value.set_collation_level(CS_LEVEL_IMPLICIT);
-          orig_default_value.set_param_meta();
-          if (OB_FAIL(column_schema->set_cur_default_value(
-                cur_default_value,
-                column_schema->is_default_expr_v2_column()))) {
-            LOG_WARN("set current default value fail", KR(ret));
-          } else if (OB_FAIL(column_schema->set_orig_default_value(orig_default_value))) {
-            LOG_WARN("set origin default value fail", KR(ret), K(column_schema));
-          }
-        }
-      }
-    } // end for
   }
+  // seekdb is MySQL-only; Oracle identity column / sequence object generation is not applicable
   return ret;
 }
 

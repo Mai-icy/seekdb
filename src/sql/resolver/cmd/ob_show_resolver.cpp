@@ -202,7 +202,6 @@ int ObShowResolver::resolve(const ParseNode &parse_tree)
     ObStmtNeedPrivs stmt_need_privs;
     stmt_need_privs.need_privs_.set_allocator(&alloc);
     ObSqlStrGenerator sql_gen;
-    const bool is_oracle_mode = false;
     switch (parse_tree.type_) {
       case T_SHOW_TABLES: {
         if (OB_UNLIKELY(parse_tree.num_child_ != 3 || NULL == parse_tree.children_)) {
@@ -912,7 +911,7 @@ int ObShowResolver::resolve(const ParseNode &parse_tree)
       }
       case T_SHOW_GRANTS: {
         [&] {
-          if (OB_UNLIKELY(parse_tree.num_child_ != (lib::is_mysql_mode() ? 2 : 1)
+          if (OB_UNLIKELY(parse_tree.num_child_ != 2
                           || NULL == parse_tree.children_)) {
             ret = OB_ERR_UNEXPECTED;
             LOG_WARN("parse tree is wrong",
@@ -958,7 +957,6 @@ int ObShowResolver::resolve(const ParseNode &parse_tree)
               }
             }
             if (OB_SUCC(ret)
-                && lib::is_mysql_mode()
                 && OB_NOT_NULL(parse_tree.children_[1])
                 && parse_tree.children_[1]->num_child_ > 0) {
               ParseNode *role_list = parse_tree.children_[1];
@@ -992,7 +990,7 @@ int ObShowResolver::resolve(const ParseNode &parse_tree)
             }
             if (OB_SUCC(ret)) {
               GEN_SQL_STEP_1(ObShowSqlSet::SHOW_GRANTS, show_user_name.length(), show_user_name.ptr(), show_host_name.length(), show_host_name.ptr());
-              if (lib::is_mysql_mode() && role_list_str.length() > 0) {
+              if (role_list_str.length() > 0) {
                 GEN_SQL_STEP_2(ObShowSqlSet::SHOW_GRANTS_USING_ROLES,
                                OB_SYS_DATABASE_NAME,
                                OB_TENANT_VIRTUAL_PRIVILEGE_GRANT_TNAME,
@@ -1079,11 +1077,7 @@ int ObShowResolver::resolve(const ParseNode &parse_tree)
             } else {
               show_resv_ctx.stmt_type_ = stmt::T_SHOW_TABLE_STATUS;
               GEN_SQL_STEP_1(ObShowSqlSet::SHOW_TABLE_STATUS);
-              if (lib::is_mysql_mode()) {
-                GEN_SQL_STEP_2(ObShowSqlSet::SHOW_TABLE_STATUS, NEW_TABLE_STATUS_SQL, show_db_id);
-              } else {
-                GEN_SQL_STEP_2(ObShowSqlSet::SHOW_TABLE_STATUS, NEW_TABLE_STATUS_SQL_ORA, show_db_id);
-              }
+              GEN_SQL_STEP_2(ObShowSqlSet::SHOW_TABLE_STATUS, NEW_TABLE_STATUS_SQL, show_db_id);
             }
           }
         }();
@@ -1758,7 +1752,7 @@ int ObShowResolver::resolve(const ParseNode &parse_tree)
           LOG_WARN("parse tree is wrong", K(ret), K(parse_tree.num_child_));
         } else {
           show_resv_ctx.stmt_type_ = stmt::T_SHOW_LOCATIONS;
-          uint64_t tenant_id = is_oracle_mode ? session_info_->get_effective_tenant_id() : sql_tenant_id;
+          uint64_t tenant_id = sql_tenant_id;
           GEN_SQL_STEP_1(ObShowSqlSet::SHOW_LOCATIONS);
           GEN_SQL_STEP_2(ObShowSqlSet::SHOW_LOCATIONS,
                          OB_SYS_DATABASE_NAME,

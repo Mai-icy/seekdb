@@ -24,7 +24,6 @@
 #include "share/ob_all_tenant_info.h"  // ObAllTenantInfo, ObAllTenantInfoProxy
 #include "storage/tx/ob_timestamp_service.h"  // ObTimestampService
 #include "rootserver/standby/ob_standby_service.h" // ObStandbyService
-#include "share/oracle_errno.h"//oracle error code
 // Removed ob_service_name_command.h include - ObServiceName functionality not needed for single tenant/single LS scenario
 #include "share/restore/ob_log_restore_source.h" // ObLogRestoreSourceItem
 #include "share/config/ob_server_config.h" // GCONF
@@ -108,7 +107,7 @@ namespace rootserver
   switch (ret) {                                                                                                                          \
     case -ER_TABLEACCESS_DENIED_ERROR:                                                                                                    \
     case OB_ERR_NO_TABLE_PRIVILEGE:                                                                                                       \
-    case -OER_TABLE_OR_VIEW_NOT_EXIST:                                                                                                    \
+    case -942:                                                                                                    \
     case -ER_DBACCESS_DENIED_ERROR:                                                                                                       \
     case OB_ERR_NO_DB_PRIVILEGE:                                                                                                          \
     case OB_ERR_NULL_VALUE:                                                                                                               \
@@ -117,7 +116,7 @@ namespace rootserver
     case OB_PASSWORD_WRONG:                                                                                                               \
     case -ER_ACCESS_DENIED_ERROR:                                                                                                         \
     case OB_ERR_NO_LOGIN_PRIVILEGE:                                                                                                       \
-    case -OER_INTERNAL_ERROR_CODE:                                                                                                        \
+    case -600:                                                                                                        \
       if (OB_TMP_FAIL(str.assign_fmt("query primary failed(original error code: %d), switchover to primary is", ret))) {                         \
         LOG_WARN("tenant role trans user error str assign failed");                                                                       \
       } else {                                                                                                                            \

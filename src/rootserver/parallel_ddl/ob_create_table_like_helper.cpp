@@ -73,15 +73,8 @@ int ObCreateTableLikeHelper::check_schema_valid_(const ObTableSchema *&orig_tabl
   uint64_t new_table_id = OB_INVALID_ID;
   uint64_t orig_database_id = OB_INVALID_ID;
   uint64_t synonym_id = OB_INVALID_ID;
-  bool is_oracle_mode = false;
   if (OB_FAIL(check_inner_stat_())) {
     LOG_WARN("fail to check inner stat", KR(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(
-             tenant_id_, is_oracle_mode))) {
-    LOG_WARN("fail to check is oracle mode", KR(ret));
-  } else if (is_oracle_mode) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not supported in oracle mode", KR(ret), K_(tenant_id));
   } else if (OB_FAIL(check_database_legitimacy_(arg_.origin_db_name_, orig_database_id))) {
     LOG_WARN("fail to check database legitimacy", KR(ret), K_(tenant_id), K(arg_.origin_db_name_));
   } else if (OB_FAIL(schema_guard_wrapper_.get_table_id(orig_database_id, arg_.session_id_, arg_.origin_table_name_, orig_table_id_, table_type, orig_schema_version))) {
@@ -190,7 +183,7 @@ int ObCreateTableLikeHelper::generate_table_schema_()
           do {
             if (OB_FAIL(ObTableSchema::create_cons_name_automatically(
                         new_constraint_name, arg_.new_table_name_, allocator_,
-                        (*iter)->get_constraint_type(), false /*is_oracle_mode*/))) {
+                        (*iter)->get_constraint_type()))) {
               SQL_RESV_LOG(WARN, "create cons name automatically failed", KR(ret));
             } else if (OB_UNLIKELY(0 == new_constraint_name.case_compare((*iter_last)->get_constraint_name_str()))) {
               is_constraint_name_exist = true;

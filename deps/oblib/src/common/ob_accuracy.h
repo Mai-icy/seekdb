@@ -47,7 +47,6 @@ const static int16_t LS_INVALIED  = -1;//invalid
 
 const char *get_length_semantics_str(const ObLengthSemantics type);
 ObLengthSemantics get_length_semantics(const ObString &str);
-bool is_oracle_byte_length(const bool is_oracle_mode, const ObLengthSemantics type);
 
 
 inline const char *get_length_semantics_str(const ObLengthSemantics value)
@@ -78,11 +77,6 @@ inline ObLengthSemantics get_length_semantics(const ObString &str)
   return ret_ls;
 }
 
-inline bool is_oracle_byte_length(const bool is_oracle_mode, const ObLengthSemantics type)
-{
-  return is_oracle_mode && LS_BYTE == type;
-}
-
 class ObAccuracy
 {
 public:
@@ -96,12 +90,9 @@ public:
   OB_INLINE void set_length(const ObLength length) { length_ = length; }
 
   //set both length and length_semantics in case of someone forget it
-  OB_INLINE void set_full_length(const ObLength length, const ObLengthSemantics length_semantics, const bool is_oracle_mode)
+  OB_INLINE void set_full_length(const ObLength length, const ObLengthSemantics length_semantics)
   {
     length_ = length;
-    if (is_oracle_mode) {
-      length_semantics_ = length_semantics;
-    }
   }
   OB_INLINE void set_precision(const ObPrecision precision) { precision_ = precision; }
   OB_INLINE void set_length_semantics(const ObLengthSemantics length_semantics) { length_semantics_ = length_semantics; }

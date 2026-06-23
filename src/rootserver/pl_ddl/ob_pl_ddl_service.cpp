@@ -47,8 +47,8 @@ int ObPLDDLService::create_routine(const obcall::ObCreateRoutineArg &arg,
     const ObRoutineInfo* old_routine_info = NULL;
     uint64_t tenant_id = routine_info.get_tenant_id();
     ObString database_name = arg.db_name_;
-    bool is_or_replace = lib::is_oracle_mode() ? arg.is_or_replace_ : arg.is_need_alter_;
-    bool is_inner = lib::is_mysql_mode() ? arg.is_or_replace_ : false;
+    bool is_or_replace = arg.is_need_alter_;
+    bool is_inner = arg.is_or_replace_;
     const ObDatabaseSchema *db_schema = NULL;
     const ObUserInfo *user_info = NULL;
     if (OB_FAIL(schema_guard.get_database_schema(tenant_id, database_name, db_schema))) {
@@ -67,7 +67,7 @@ int ObPLDDLService::create_routine(const obcall::ObCreateRoutineArg &arg,
     }
     if (OB_SUCC(ret)
         && database_name.case_compare(OB_SYS_DATABASE_NAME) != 0
-        && lib::is_oracle_mode()) {
+        && false) {
       if (OB_FAIL(schema_guard.get_user_info(tenant_id, database_name, ObString(OB_DEFAULT_HOST_NAME), user_info))) {
         LOG_WARN("failed to get user info", K(ret), K(database_name));
       } else if (OB_ISNULL(user_info)) {
@@ -196,11 +196,9 @@ int ObPLDDLService::create_routine(ObRoutineInfo &routine_info,
         }
       }
     }
-    lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
+    lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
     if (OB_FAIL(ret)) {
     } else if (replace) {
-    } else if (OB_FAIL(ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode))) {
-      LOG_WARN("failed to get compat mode", K(ret), K(tenant_id));
     } else if (lib::Worker::CompatMode::MYSQL == compat_mode) {
       const ObSysVarSchema *sys_var = NULL;
       ObMalloc alloc(ObModIds::OB_TEMP_VARIABLES);
@@ -286,8 +284,7 @@ int ObPLDDLService::alter_routine(const obcall::ObCreateRoutineArg &arg,
       LOG_WARN("routine info is not exist!", K(ret), K(arg.routine_info_));
     }
     if (OB_FAIL(ret)) {
-    } else if ((lib::is_oracle_mode() && arg.is_or_replace_) ||
-                (lib::is_mysql_mode() && arg.is_need_alter_)) {
+    } else if (arg.is_need_alter_) {
       if (OB_FAIL(create_routine(arg, res, ddl_service))) {
         LOG_WARN("failed to alter routine with create", K(ret));
       }
@@ -480,10 +477,8 @@ int ObPLDDLService::drop_routine(const ObRoutineInfo &routine_info,
     } else if (OB_FAIL(pl_operator.drop_routine(routine_info, trans, error_info, ddl_stmt_str))) {
       LOG_WARN("drop procedure failed", K(ret), K(routine_info));
     } else {
-      lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
-      if (OB_FAIL(ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode))) {
-          LOG_WARN("failed to get compat mode", K(ret), K(tenant_id));
-      } else if (lib::Worker::CompatMode::MYSQL == compat_mode) {
+      lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
+      if (lib::Worker::CompatMode::MYSQL == compat_mode) {
         const ObSysVarSchema *sys_var = NULL;
         ObMalloc alloc(ObModIds::OB_TEMP_VARIABLES);
         ObObj val;
@@ -577,7 +572,7 @@ int ObPLDDLService::create_package(const obcall::ObCreatePackageArg &arg,
     }
     if (OB_SUCC(ret)
         && database_name.case_compare(OB_SYS_DATABASE_NAME) != 0
-        && lib::is_oracle_mode()) {
+        && false) {
       if (OB_FAIL(schema_guard.get_user_info(
         tenant_id, database_name, ObString(OB_DEFAULT_HOST_NAME), user_info))) {
         LOG_WARN("failed to get user info", K(ret), K(database_name));
@@ -1029,9 +1024,7 @@ int ObPLDDLService::drop_trigger(const obcall::ObDropTriggerArg &arg,
   const ObString &trigger_name = arg.trigger_name_;
   const ObTriggerInfo *trigger_info = NULL;
   bool is_ora_mode = false;
-  if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_ora_mode))) {
-    LOG_WARN("fail to check is oracle mode", K(ret));
-  } else if (OB_FAIL(check_env_before_ddl(schema_guard, arg, ddl_service))) {
+  if (OB_FAIL(check_env_before_ddl(schema_guard, arg, ddl_service))) {
     LOG_WARN("check env failed", K(ret));
   } else if (OB_FAIL(ddl_service.get_database_id(schema_guard, tenant_id, trigger_database, trigger_database_id))) {
     LOG_WARN("get database id failed", K(ret));
@@ -1343,10 +1336,8 @@ int ObPLDDLService::adjust_trigger_action_order(share::schema::ObSchemaGetterGua
   OX (copy_trg_info.set_action_order(new_action_order)); \
   OZ (pl_operator.alter_trigger(copy_trg_info, trans, NULL, false/*is_update_table_schema_version*/));
 
-  bool is_oracle_mode = false;
   const uint64_t tenant_id = trigger_info.get_tenant_id();
   common::ObSArray<uint64_t> trg_list;
-  OZ (ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_oracle_mode));
   if (OB_SUCC(ret)) {
     if (trigger_info.is_dml_type()) {
       const ObTableSchema *table_schema = NULL;
@@ -1373,21 +1364,6 @@ int ObPLDDLService::adjust_trigger_action_order(share::schema::ObSchemaGetterGua
           OV (OB_NOT_NULL(ref_trg_info));
         }
         if (OB_FAIL(ret)) {
-        } else if (is_oracle_mode) {
-          OZ (recursive_check_trigger_ref_cyclic(schema_guard, trigger_info, trg_list,
-                                                 trigger_info.get_trigger_name(), trigger_info.get_ref_trg_name()));
-          if (OB_SUCC(ret)) {
-            if (NULL != ref_trg_info) {
-              uint64_t ref_db_id = OB_INVALID_ID;
-              OZ (schema_guard.get_database_id(tenant_id, trigger_info.get_ref_trg_db_name(), ref_db_id));
-              OZ (schema_guard.get_trigger_info(tenant_id, ref_db_id, trigger_info.get_ref_trg_name(), ref_trg_info));
-              if (OB_SUCC(ret) && trigger_info.is_order_follows()) {
-                action_order = ref_trg_info->get_action_order() + 1;
-                }
-            }
-            OZ (recursive_alter_ref_trigger(schema_guard, trans, pl_operator, trigger_info,
-                                            trg_list, trigger_info.get_trigger_name(), action_order));
-          }
         } else {
           if (NULL == ref_trg_info) {
             for (int64_t i = 0; OB_SUCC(ret) && i < trg_list.count(); i++) {
@@ -1422,7 +1398,7 @@ int ObPLDDLService::adjust_trigger_action_order(share::schema::ObSchemaGetterGua
         }
       }
       OX (trigger_info.set_action_order(action_order));
-    } else if (!is_oracle_mode) {
+    } else if (true) {
       if (OB_SUCC(ret)) {
         for (int64_t i = 0; OB_SUCC(ret) && i < trg_list.count(); i++) {
           OZ (schema_guard.get_trigger_info(tenant_id, trg_list.at(i), old_trg_info));
@@ -1707,7 +1683,6 @@ int ObPLDDLService::check_and_construct_restore_trigger_info(
 {
   int ret = OB_SUCCESS;
   need_rebuild = true;
-  bool is_oracle_mode = false;
   const ObDatabaseSchema *src_db_schema = nullptr;
   const ObDatabaseSchema *dst_db_schema = nullptr;
   const uint64_t src_tenant_id = orig_table_schema.get_tenant_id();
@@ -1715,9 +1690,7 @@ int ObPLDDLService::check_and_construct_restore_trigger_info(
   if (OB_UNLIKELY(src_tenant_id == dst_tenant_id)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("tenant is same", K(ret), K(src_tenant_id), K(dst_tenant_id));
-  } else if (OB_FAIL(orig_table_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("failed to check if oralce compat mode", K(ret));
-  } else if (OB_FAIL(src_tenant_schema_guard.get_database_schema(src_tenant_id, 
+  } else if (OB_FAIL(src_tenant_schema_guard.get_database_schema(src_tenant_id,
       orig_table_schema.get_database_id(), src_db_schema))) {
     LOG_WARN("get db schema failed", K(ret), K(src_tenant_id), "db_id", orig_table_schema.get_database_id());
   } else if (OB_ISNULL(src_db_schema)) {

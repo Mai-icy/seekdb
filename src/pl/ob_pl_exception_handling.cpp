@@ -107,9 +107,8 @@ void ObPLEH::eh_debug_objparam(const char *name_ptr, int64_t name_len, const ObO
   LOG_DEBUG(">>>>>>>>>>0", K(ObString(name_len, name_ptr)), K(*object));
 }
 
-int ObPLEH::eh_convert_exception(bool oracle_mode, int oberr, ObPLConditionType *type, int64_t *error_code, const char **sql_state, int64_t *str_len)
+int ObPLEH::eh_convert_exception(int oberr, ObPLConditionType *type, int64_t *error_code, const char **sql_state, int64_t *str_len)
 {
-  UNUSED(oracle_mode);
   int ret = OB_SUCCESS;
   if (OB_ISNULL(type) || OB_ISNULL(error_code) || OB_ISNULL(sql_state)) {
     ret = OB_ERR_UNEXPECTED;
@@ -117,34 +116,30 @@ int ObPLEH::eh_convert_exception(bool oracle_mode, int oberr, ObPLConditionType 
   } else {
     *sql_state = ob_sqlstate(oberr);
     *str_len = STRLEN(*sql_state);
-    if (oracle_mode) {
-      *error_code = oberr;
-      *type = ERROR_CODE;
+    // Oracle mode branch removed (MySQL-only project)
+    if (OB_SP_RAISE_APPLICATION_ERROR == oberr) {
+      ObWarningBuffer *wb = NULL;
+      CK (OB_NOT_NULL(wb = common::ob_get_tsi_warning_buffer()));
+      OX (*error_code = wb->get_err_code());
+      OX (*sql_state = wb->get_sql_state());
+      OX (*str_len = STRLEN(*sql_state));
+      if (OB_FAIL(ret)) {
+      } else if (-1 == *error_code) {
+        *type = SQL_STATE;
+      } else {
+        *type = ERROR_CODE;
+      }
     } else {
-      if (OB_SP_RAISE_APPLICATION_ERROR == oberr) {
-        ObWarningBuffer *wb = NULL;
-        CK (OB_NOT_NULL(wb = common::ob_get_tsi_warning_buffer()));
-        OX (*error_code = wb->get_err_code());
-        OX (*sql_state = wb->get_sql_state());
-        OX (*str_len = STRLEN(*sql_state));
-        if (OB_FAIL(ret)) {
-        } else if (-1 == *error_code) {
+      if (oberr < 0) {
+        *error_code = ob_mysql_errno(oberr);
+        if (-1 == *error_code) {
           *type = SQL_STATE;
         } else {
           *type = ERROR_CODE;
         }
       } else {
-        if (oberr < 0) {
-          *error_code = ob_mysql_errno(oberr);
-          if (-1 == *error_code) {
-            *type = SQL_STATE;
-          } else {
-            *type = ERROR_CODE;
-          }
-        } else {
-          *error_code = oberr;
-          *type = SQL_STATE;
-        }
+        *error_code = oberr;
+        *type = SQL_STATE;
       }
     }
   }

@@ -136,12 +136,10 @@ int ObCatalogDDLOperator::grant_or_revoke_after_ddl(ObCatalogSchema &schema,
 {
   int ret = OB_SUCCESS;
   uint64_t tenant_id = schema.get_tenant_id();
-  lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
+  lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
   ObSchemaService *schema_sql_service = NULL;
   ObDDLOperator ddl_operator(schema_service_, sql_proxy_);
-  if (OB_FAIL(share::ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode))) {
-    LOG_WARN("fail to get tenant mode", K(ret));
-  } else if (OB_ISNULL(schema_sql_service = schema_service_.get_schema_service())) {
+  if (OB_ISNULL(schema_sql_service = schema_service_.get_schema_service())) {
     ret = OB_ERR_SYS;
     LOG_ERROR("schema_sql_service must not null", K(ret));
   }
@@ -171,11 +169,6 @@ int ObCatalogDDLOperator::grant_or_revoke_after_ddl(ObCatalogSchema &schema,
     }
   }
   if (OB_SUCC(ret) && ddl_type == OB_DDL_DROP_CATALOG) {
-    if (lib::Worker::CompatMode::ORACLE == compat_mode) {
-      OZ(ddl_operator.drop_obj_privs(tenant_id, schema.get_catalog_id(),
-                                     static_cast<uint64_t>(ObObjectType::CATALOG), trans,
-                                     schema_service_, schema_guard));
-    }
   }
   return ret;
 }

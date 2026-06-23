@@ -2235,11 +2235,9 @@ int ObFtsIndexBuilderUtil::try_load_dictionary_for_all_tenants()
       const uint64_t tenant_id = all_tenants.at(i);
       if (is_valid_tenant_id(tenant_id)
           && (is_user_tenant(tenant_id) || is_sys_tenant(tenant_id))) {
-        lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
+        lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
         // overwrite ret
-        if (OB_FAIL(ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode))) {
-          LOG_WARN("fail to get tenant mode", K(ret), K(tenant_id), K(compat_mode));
-        } else if (compat_mode == lib::Worker::CompatMode::MYSQL) {
+        if (compat_mode == lib::Worker::CompatMode::MYSQL) {
           ObTenantDicLoaderHandle dic_loader_handle;
           if (OB_FAIL(ObGenDicLoader::get_instance().get_dic_loader(tenant_id,
                                                                     ObFTSLiteral::PARSER_NAME_IK,
@@ -2516,7 +2514,6 @@ int ObFtsIndexBuilderUtil::get_index_column_ids_for_fts(
     common::ObIArray<uint64_t> &index_column_ids)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   ObString col_def;
   if (OB_UNLIKELY(!column_schema.is_valid() || !data_schema.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
@@ -2526,16 +2523,12 @@ int ObFtsIndexBuilderUtil::get_index_column_ids_for_fts(
     LOG_WARN("The column isn't a fulltext column", K(ret), K(column_schema));
   } else if (OB_FAIL(column_schema.get_cur_default_value().get_string(col_def))) {
     LOG_WARN("fail to get current default value", K(ret), K(column_schema));
-  } else if (OB_FAIL(data_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("fail to check if oracle mode", K(ret));
   } else {
     const uint64_t tenant_id = OB_INVALID_TENANT_ID == MTL_ID() ? common::OB_SERVER_TENANT_ID : MTL_ID();
     common::ObArenaAllocator allocator(common::ObMemAttr(tenant_id, "FtsIdxColIds"));
     ObItemType root_expr_type = T_INVALID;
     ObSEArray<ObString, 8> col_names;
     col_names.set_attr(ObMemAttr(tenant_id, "FtsIdxColNa"));
-    lib::Worker::CompatMode compat_mode = is_oracle_mode ? lib::Worker::CompatMode::ORACLE : lib::Worker::CompatMode::MYSQL;
-    lib::CompatModeGuard guard(compat_mode);
     if (OB_FAIL(ObResolverUtils::resolve_generated_column_info(col_def, allocator, root_expr_type, col_names))) {
       LOG_WARN("fail to resolve generated column info", K(ret));
     } else {
@@ -2923,14 +2916,7 @@ int ObMulValueIndexBuilderUtil::build_and_generate_multivalue_column_raw(
   ObIArray<ObColumnSortItem> &sort_items = arg.index_columns_;
   ObString expr_def_string;
 
-  bool is_oracle_mode = false;
   int is_add_column = 0;
-  if (OB_FAIL(data_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("check_if_oracle_compat_mode failed", K(ret));
-  } else if (is_oracle_mode) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("oracle mode create index not supported yet.", K(ret));
-  }
 
   int64_t expr_idx = 0;
   for (size_t i = 0; OB_SUCC(ret) && i < sort_items.count(); ++i) {
@@ -2948,7 +2934,7 @@ int ObMulValueIndexBuilderUtil::build_and_generate_multivalue_column_raw(
   }
 
   if (OB_FAIL(ret)) {
-  } else if (lib::is_mysql_mode() && is_add_column > 1) {
+  } else if (is_add_column > 1) {
     ret = OB_NOT_MULTIVALUE_SUPPORT;
     LOG_USER_ERROR(OB_NOT_MULTIVALUE_SUPPORT, "more than one multi-valued key part per index");
   } else if (expr_def_string.length() > 0) {

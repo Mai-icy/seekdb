@@ -671,16 +671,7 @@ int ObJsonSchemaTree::handle_keywords_with_specific_type(const ObString& key_wor
     if (OB_FAIL(generate_schema_and_record(key_word, node, schema_vec_stk, is_composition, comp_array))) {
       LOG_WARN( "fail to add type schema", K(key_word), K(ret));
     }
-  } /*else if (lib::is_oracle_mode()) {
-    if implement oracle json schema, check each keyword and its expect type, because:
-     a.in mysql mode:
-        1. if the keywords and its expect_type didn't match, mysql would ignore the keyword;
-        2. but if a composition/item keywords is array type, but its children aren't object, mysql would coredump;
-        (in this situation, raise error anyway)
-     b.in oracle mode:
-        1. if the keywords and its expect_type didn't match, oracle would return error "invalid JSON schema document";
-     c.but if an objects which key doesn't match key_words, both oracle and mysql would ignore. 
-  }*/
+  }
   return ret;
 }
 
@@ -1117,7 +1108,7 @@ int ObJsonSchemaTree::get_addition_pro_value(const ObJsonSubSchemaKeywords& key_
   ObJsonArray* pro_key_array = nullptr;
   ObJsonArray* pattern_key_array = nullptr;
   ObJsonNode* dep_node = origin_schema->get_value(ObJsonSchemaItem::DEPENDENCIES);
-  ObJsonNode* required_node = lib::is_mysql_mode() ? origin_schema->get_value(ObJsonSchemaItem::REQUIRED) : nullptr;
+  ObJsonNode* required_node = origin_schema->get_value(ObJsonSchemaItem::REQUIRED);
   if (OB_ISNULL(add_array = OB_NEWx(ObJsonArray, allocator_, allocator_))
     || OB_ISNULL(pro_key_array = OB_NEWx(ObJsonArray, allocator_, allocator_))
     || OB_ISNULL(pattern_key_array = OB_NEWx(ObJsonArray, allocator_, allocator_))) {
@@ -3804,21 +3795,10 @@ int ObJsonSchemaUtils::set_valid_number_type_by_mode(ObIJsonBase *json_doc, ObJs
     case ObJsonNodeType::J_ODOUBLE:  
     case ObJsonNodeType::J_ODECIMAL: 
     case ObJsonNodeType::J_OLONG: {
-      if (lib::is_mysql_mode()) {
+      {
         // in mysql mode, only check nodetype
         // all double is not integer, which does not meet the standards of json schema
         valid_type.number_ = 1;
-      } else {
-        // in oracle mode and json schema standard, will check the value of double
-        // for example, 1.0 is integer, but 1.1 is not integer
-        double json_val = 0.0;
-        if (OB_FAIL(ObJsonSchemaUtils::get_json_number(json_doc, json_val))) { 
-        } else if (fmod(json_val, 1.0) == 0) {
-          valid_type.integer_ = 1;
-          valid_type.number_ = 1;
-        } else {
-          valid_type.number_ = 1;
-        }
       }
       break;
     }

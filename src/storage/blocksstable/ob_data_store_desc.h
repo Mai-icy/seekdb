@@ -191,9 +191,6 @@ private:
   int add_col_desc_from_cg_schema(
     const share::schema::ObMergeSchema &merge_schema,
     const storage::ObStorageColumnGroupSchema &cg_schema);
-  static int get_compat_mode_from_schema(
-    const share::schema::ObMergeSchema &merge_schema,
-    bool &is_oracle_mode);
 public:
   bool is_row_store_;
   bool default_col_checksum_array_valid_;

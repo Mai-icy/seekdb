@@ -24,7 +24,6 @@
 #include "lib/string/ob_sql_string.h"
 #include "share/schema/ob_ddl_sql_service.h"
 #include "share/config/ob_server_config.h"
-#include "share/ob_get_compat_mode.h"
 #include "share/ob_partition_modify.h"
 #include "share/ob_rpc_struct.h"
 
@@ -841,8 +840,7 @@ private:
                                    const common::ObString &db_name,
                                    const uint64_t pure_db_id,
                                    const common::ObString &db_comment,
-                                   common::ObMySQLTransaction &trans,
-                                   const bool is_oracle_mode = false);
+                                   common::ObMySQLTransaction &trans);
   virtual int init_tenant_databases(const share::schema::ObTenantSchema &tenant_schema,
                                     const share::schema::ObSysVariableSchema &sys_variable,
                                     common::ObMySQLTransaction &trans);
@@ -853,8 +851,7 @@ private:
                                const common::ObString &user_comment,
                                common::ObMySQLTransaction &trans,
                                const bool set_locked = false,
-                               const bool is_user = true,
-                               const bool is_oracle_mode = false);
+                               const bool is_user = true);
   virtual int init_tenant_users(const share::schema::ObTenantSchema &tenant_schema,
                                 const share::schema::ObSysVariableSchema &sys_variable,
                                 common::ObMySQLTransaction &trans);
@@ -975,8 +972,7 @@ private:
   int init_inner_user_privs(
       const uint64_t tenant_id,
       share::schema::ObUserInfo &user,
-      common::ObMySQLTransaction &trans,
-      const bool is_oracle_mode);
+      common::ObMySQLTransaction &trans);
   int init_tenant_optimizer_stats_info(const share::schema::ObSysVariableSchema &sys_variable,
                                        uint64_t tenant_id,
                                        ObMySQLTransaction &trans);
@@ -1007,15 +1003,13 @@ int ObDDLOperator::construct_new_name_for_recyclebin(const T &schema,
     RS_LOG(WARN, "Failed to get TSIDDLVar", K(ret));
   } else {
     const common::ObString *ddl_id_str = tsi_value->ddl_id_str_;
-    lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
+    lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
     if (share::schema::ObSchemaService::g_liboblog_mode_) {
       // do nothing
-    } else if (OB_FAIL(share::ObCompatModeGetter::get_tenant_mode(schema.get_tenant_id(), compat_mode))) {
-      RS_LOG(WARN, "fail to get tenant mode", K(ret));
     }
     if (OB_SUCC(ret)) {
       if (OB_ISNULL(ddl_id_str)) {
-        ret = new_object_name.append_fmt((lib::Worker::CompatMode::ORACLE == compat_mode) ? "RECYCLE_$_%lu_%ld" : "__recycle_$_%lu_%ld",
+        ret = new_object_name.append_fmt("__recycle_$_%lu_%ld",
             GCONF.cluster_id.get_value(),
             schema.get_schema_version());
       } else if (is_aux_object(schema)) {
@@ -1026,19 +1020,19 @@ int ObDDLOperator::construct_new_name_for_recyclebin(const T &schema,
             RS_LOG(WARN, "failed to get index_name", K(ret));
           } else {
             // Specify ddl id, use ddl id
-            ret = new_object_name.append_fmt((lib::Worker::CompatMode::ORACLE == compat_mode) ? "RECYCLE_$_%.*s_%.*s" : "__recycle_$_%.*s_%.*s",
+            ret = new_object_name.append_fmt("__recycle_$_%.*s_%.*s",
                 ddl_id_str->length(), ddl_id_str->ptr(),
                 index_name.length(), index_name.ptr());
           }
         } else {
           // indexes or VP tables only need the current schema version
-          ret = new_object_name.append_fmt((lib::Worker::CompatMode::ORACLE == compat_mode) ? "RECYCLE_$_%lu_%ld" : "__recycle_$_%lu_%ld",
+          ret = new_object_name.append_fmt("__recycle_$_%lu_%ld",
               GCONF.cluster_id.get_value(),
               schema.get_schema_version());
         }
       } else {
         // Specify ddl id, then use ddl id to generate object name.
-        ret = new_object_name.append_fmt((lib::Worker::CompatMode::ORACLE == compat_mode) ? "RECYCLE_$_%.*s" : "__recycle_$_%.*s",
+        ret = new_object_name.append_fmt("__recycle_$_%.*s",
             ddl_id_str->length(),
             ddl_id_str->ptr());
       }
