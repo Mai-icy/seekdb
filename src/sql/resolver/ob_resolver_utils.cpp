@@ -21,6 +21,8 @@
 #endif
 #include "sql/resolver/cmd/ob_load_data_stmt.h"
 
+#include "sql/engine/cmd/ob_load_data_parser.h"
+#include "sql/resolver/cmd/ob_load_data_stmt.h"
 #include "sql/resolver/ob_resolver_utils.h"
 #include "lib/utility/utility.h"
 #include "sql/parser/parse_malloc.h"

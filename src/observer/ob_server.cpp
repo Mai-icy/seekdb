@@ -29,6 +29,7 @@
 #include "lib/alloc/memory_dump.h"
 #include "lib/oblog/ob_log_compressor.h"
 #include "lib/resource/ob_affinity_ctrl.h"
+#include "lib/ob_running_mode.h"
 #include "lib/task/ob_timer_monitor.h"
 #include "lib/task/ob_timer_service.h" // ObTimerService
 #include "observer/ob_server_utils.h"
@@ -792,11 +793,15 @@ int ObServer::start(bool embed_mode)
       FLOG_INFO("success to start ts mgr");
     }
 
-    // Services are registered once; start() is triggered by reload_config().
-    grpc_server_.register_service(&storage_grpc_service_impl_);
-    grpc_server_.register_service(&log_service_grpc_impl_);
-    grpc_server_.register_service(&service_grpc_service_impl_);
-    gctx_.grpc_server_ = &grpc_server_;
+    // gRPC is disabled in embed mode to avoid protobuf/grpc initialization overhead.
+    if (!lib::is_embed_mode()) {
+      grpc_server_.register_service(&storage_grpc_service_impl_);
+      grpc_server_.register_service(&log_service_grpc_impl_);
+      grpc_server_.register_service(&service_grpc_service_impl_);
+      gctx_.grpc_server_ = &grpc_server_;
+    } else {
+      gctx_.grpc_server_ = nullptr;
+    }
 
     if (FAILEDx(ObMdsSchemaHelper::get_instance().init())) {
       LOG_ERROR("fail to init mds schema helper", K(ret));
@@ -1769,7 +1774,7 @@ int ObServer::init_pre_setting()
     const int64_t default_stack_size = 1L << 18; // 256KB
     const int64_t stack_size = std::max(static_cast<int64_t>(default_stack_size), static_cast<int64_t>(GCONF.stack_size));
     LOG_INFO("set stack_size", K(stack_size));
-    global_thread_stack_size = stack_size - SIG_STACK_SIZE - ACHUNK_PRESERVE_SIZE;
+    global_thread_stack_size = stack_size - THREAD_STACK_RESERVED_SIZE - ACHUNK_PRESERVE_SIZE;
 #ifdef __APPLE__
     const int ps = getpagesize();
     global_thread_stack_size = (global_thread_stack_size + ps - 1) & ~(ps - 1);
@@ -2564,8 +2569,8 @@ int ObServer::reload_config()
     LOG_WARN("set bf_cache_miss_count_threshold fail", KR(ret));
   }
 
-  // Start the gRPC server when enable_rpc_service is first set to True.
-  if (GCONF.enable_rpc_service && !grpc_server_.is_running()) {
+  // Start the gRPC server only in non-embed mode.
+  if (!lib::is_embed_mode() && GCONF.enable_rpc_service && !grpc_server_.is_running()) {
     int tmp_ret = OB_SUCCESS;
     if (OB_TMP_FAIL(grpc_server_.start(config_.rpc_port))) {
       LOG_WARN("failed to start gRPC server on config reload", K(tmp_ret));

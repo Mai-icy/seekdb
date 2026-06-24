@@ -235,4 +235,3 @@ void ObMapQueueThreadPool::ThreadConf::destroy()
 
 } // namespace common
 } // namespace oceanbase
-

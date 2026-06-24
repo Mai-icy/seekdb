@@ -25,6 +25,7 @@
 #include "lib/lock/ob_spin_rwlock.h"
 
 extern int64_t global_thread_stack_size;
+extern const int64_t THREAD_STACK_RESERVED_SIZE;
 namespace oceanbase {
 namespace lib {
 class ObPThread;
@@ -84,8 +85,6 @@ public:
     IRunWrapper *run_wrapper = run_wrapper_;
     return OB_NOT_NULL(run_wrapper) ? run_wrapper : get_default_run_wrapper();
   }
-
-
   struct NumaInfo {
   public:
     NumaInfo(): numa_node_(OB_NUMA_SHARED_INDEX), num_nodes_(UINT32_MAX), interleave_(false) {}

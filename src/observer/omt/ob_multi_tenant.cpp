@@ -789,6 +789,7 @@ int ObMultiTenant::update_tenant_unit_no_lock(const ObUnitInfoGetter::ObTenantCo
   ObUnitInfoGetter::ObTenantConfig allowed_new_unit;
   ObUnitInfoGetter::ObTenantConfig old_unit;
   int64_t allowed_new_log_disk_size = 0;
+  bool need_persist_unit = false;
   if (IS_NOT_INIT) {
     ret = OB_NOT_INIT;
     LOG_WARN("not init", K(ret));
@@ -810,7 +811,9 @@ int ObMultiTenant::update_tenant_unit_no_lock(const ObUnitInfoGetter::ObTenantCo
                                                    allowed_new_unit))) {
     LOG_WARN("fail to construct_allowed_unit_config", K(allowed_new_log_disk_size),
              K(allowed_new_unit));
-  } else if (OB_FAIL(SERVER_STORAGE_META_PERSISTER.update_tenant_unit(tenant->get_epoch(), allowed_new_unit))) {
+  } else if (FALSE_IT(need_persist_unit = !(old_unit == allowed_new_unit))) {
+  } else if (need_persist_unit
+             && OB_FAIL(SERVER_STORAGE_META_PERSISTER.update_tenant_unit(tenant->get_epoch(), allowed_new_unit))) {
     LOG_WARN("fail to update tenant unit", K(ret), K(tenant_id));
   } else if (OB_FAIL(tenant->update_thread_cnt(max_cpu))) {
     LOG_WARN("fail to update mtl module thread_cnt", K(ret), K(tenant_id));
@@ -823,7 +826,7 @@ int ObMultiTenant::update_tenant_unit_no_lock(const ObUnitInfoGetter::ObTenantCo
       tenant->set_unit_max_cpu(max_cpu);
     }
     tenant->set_tenant_unit(allowed_new_unit);
-    LOG_INFO("succecc to set tenant unit config", K(allowed_new_unit));
+    LOG_INFO("succecc to set tenant unit config", K(need_persist_unit), K(allowed_new_unit));
   }
 
   return ret;
