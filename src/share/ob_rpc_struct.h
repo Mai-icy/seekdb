@@ -5503,14 +5503,6 @@ public:
   share::ObLSID ls_id_;
 };
 
-struct ObSetDiskValidArg
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObSetDiskValidArg() {}
-  bool is_valid() const { return true; }
-};
-
 struct ObAdminClearDRTaskArg
 {
   OB_UNIS_VERSION(1);

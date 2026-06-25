@@ -591,17 +591,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigPartitionBalanceStrategyFuncChecker);
 };
 
-class ObDataStorageErrorToleranceTimeChecker
-  : public ObConfigChecker
-{
-public:
-  ObDataStorageErrorToleranceTimeChecker() {}
-  virtual ~ObDataStorageErrorToleranceTimeChecker() {}
-  bool check(const ObConfigItem &t) const;
-private:
-  DISABLE_COPY_ASSIGN(ObDataStorageErrorToleranceTimeChecker);
-};
-
 class ObConfigAuditModeChecker
   : public ObConfigChecker
 {
