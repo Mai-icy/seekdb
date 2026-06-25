@@ -117,8 +117,6 @@ DEF_SIMPLE_CMD_RESOLVER(ObUpgradeVirtualSchemaResolver);
 
 DEF_SIMPLE_CMD_RESOLVER(ObCancelTaskResolver);
 
-
-
 DEF_SIMPLE_CMD_RESOLVER(ObAlterDiskgroupAddDiskResolver);
 DEF_SIMPLE_CMD_RESOLVER(ObAlterDiskgroupDropDiskResolver);
 

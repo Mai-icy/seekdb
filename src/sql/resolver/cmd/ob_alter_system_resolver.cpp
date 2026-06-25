@@ -1930,7 +1930,6 @@ int ObCancelTaskResolver::resolve(const ParseNode &parse_tree)
   return ret;
 }
 
-
 int ObAlterDiskgroupAddDiskResolver::resolve(const ParseNode &parse_tree)
 {
   int ret = OB_SUCCESS;

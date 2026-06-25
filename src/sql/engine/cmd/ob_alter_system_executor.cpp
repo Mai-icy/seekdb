@@ -748,7 +748,6 @@ int ObCancelTaskExecutor::parse_task_id(
 	return ret;
 }
 
-
 int ObAddDiskExecutor::execute(ObExecContext &ctx, ObAddDiskStmt &stmt)
 {
   int ret = OB_SUCCESS;

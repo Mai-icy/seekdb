@@ -281,7 +281,6 @@ private:
   common::ObString task_id_;
 };
 
-
 class ObAddDiskStmt : public ObSystemCmdStmt
 {
 public:

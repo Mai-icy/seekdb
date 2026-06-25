@@ -3976,7 +3976,6 @@ OB_SERIALIZE_MEMBER(ObNotifyTenantSnapshotSchedulerArg);
 
 OB_SERIALIZE_MEMBER(ObCancelTaskArg, task_id_);
 OB_SERIALIZE_MEMBER(ObReportSingleReplicaArg, ls_id_);
-OB_SERIALIZE_MEMBER(ObSetDiskValidArg);
 
 OB_SERIALIZE_MEMBER(ObAdminClearDRTaskArg, type_, zone_names_);
 
