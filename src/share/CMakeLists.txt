@@ -1,3 +1,28 @@
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+set(INNER_TABLE_SCRIPT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/inner_table)
+set(INNER_TABLE_GENERATOR ${INNER_TABLE_SCRIPT_DIR}/generate_inner_table_schema.py)
+set(INNER_TABLE_DEF_FILE ${INNER_TABLE_SCRIPT_DIR}/ob_inner_table_schema_def.py)
+set(INNER_TABLE_INIT_DATA ${INNER_TABLE_SCRIPT_DIR}/ob_inner_table_init_data.py)
+
+execute_process(
+  COMMAND ${Python3_EXECUTABLE} ${INNER_TABLE_GENERATOR}
+  WORKING_DIRECTORY ${INNER_TABLE_SCRIPT_DIR}
+  OUTPUT_VARIABLE INNER_TABLE_SCHEMA_CPP_RELATIVE_OUTPUT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  RESULT_VARIABLE INNER_TABLE_SCHEMA_CPP_LIST_RESULT
+)
+
+if (NOT INNER_TABLE_SCHEMA_CPP_LIST_RESULT EQUAL 0)
+  message(FATAL_ERROR "Failed to query inner table fixed schema cpp outputs")
+endif()
+
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  ${INNER_TABLE_GENERATOR}
+  ${INNER_TABLE_DEF_FILE}
+  ${INNER_TABLE_INIT_DATA}
+)
+
 ob_set_subtarget(ob_share_extra ALONE
   vector/ob_vector_base.cpp
   vector/vector_basic_op.cpp

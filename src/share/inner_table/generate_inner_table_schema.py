@@ -7,6 +7,7 @@
 #  shell> python3 generate_inner_table_schema.py
 #
 
+import argparse
 import copy
 from collections import OrderedDict
 from ob_inner_table_init_data import *
@@ -15,6 +16,14 @@ import re
 import os
 import glob
 import sys
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+share_output_dir = script_dir
+observer_output_dir = os.path.join(os.path.dirname(os.path.dirname(script_dir)), 'observer', 'virtual_table')
+generated_schema_cpp_files = []
+schema_cpp_handles = {}
+quiet_mode = False
+verbose_mode = False
 
 kv_core_table_id         = int(1)
 max_core_table_id        = int(100)
@@ -123,6 +132,41 @@ copyright = """/*
  * limitations under the License.
  */
 """
+
+def share_out_path(*parts):
+  return os.path.join(share_output_dir, *parts)
+
+def observer_out_path(*parts):
+  return os.path.join(observer_output_dir, *parts)
+
+def log_info(*args, **kwargs):
+  if not quiet_mode:
+    print(*args, **kwargs)
+
+def log_debug(*args, **kwargs):
+  if verbose_mode and not quiet_mode:
+    print(*args, **kwargs)
+
+def parse_args(argv):
+  parser = argparse.ArgumentParser(description='Generate inner table schema sources')
+  parser.add_argument('--def-file',
+                      default=os.path.join(script_dir, 'ob_inner_table_schema_def.py'),
+                      help='Path to the schema definition Python file')
+  parser.add_argument('--quiet',
+                      action='store_true',
+                      help='Suppress non-error output')
+  parser.add_argument('--verbose',
+                      action='store_true',
+                      help='Enable detailed debug output')
+  return parser.parse_args(argv)
+
+def configure_paths(args):
+  global quiet_mode
+  global verbose_mode
+  quiet_mode = args.quiet
+  verbose_mode = args.verbose
+  os.makedirs(share_output_dir, exist_ok=True)
+  os.makedirs(observer_output_dir, exist_ok=True)
 
 def print_method_start(table_name):
   global cpp_f
@@ -722,7 +766,7 @@ def add_column(column, rowkey_id, index_id, part_key_pos, column_id=0, is_hidden
   if len(column) >= 6:
     is_on_update_for_timestamp = column[5]
 
-  print(column_name, rowkey_id, index_id, part_key_pos, column_type, column_length, is_nullable, is_autoincrement, default_value) # remove
+  log_debug(column_name, rowkey_id, index_id, part_key_pos, column_type, column_length, is_nullable, is_autoincrement, default_value)
   if column_name.find("[discard]") == 0:
     print_discard_column(column_name)
   elif column_type == 'ObTimestampType':
@@ -986,7 +1030,7 @@ def copy_keywords(keywords):
   else:
     keywords["base_table_name2"] = ''
 
-  print("copy_keywords in: table_id=", tid, ",  table_name=" + tname, ", base_table_name=" + base_tname, ", base_table_name1=" + base_tname1, ", base_table_name2=" + base_tname2)
+  log_debug("copy_keywords in: table_id=", tid, ",  table_name=" + tname, ", base_table_name=" + base_tname, ", base_table_name1=" + base_tname1, ", base_table_name2=" + base_tname2)
   # Default base_table_name equals its table name
   # base_table_name[1,2] records the original base table name in the scenario of multi-layer schema nested definitions
   # For example: schema of table number 15118, which nestedly defines two layers of base tables:
@@ -1003,11 +1047,11 @@ def copy_keywords(keywords):
     base_tname2 = tname;
     keywords["base_table_name2"] = tname;
   elif base_tname1 != '' and base_tname2 != '' and tname != base_tname and tname != base_tname1 and tname != base_tname2:
-    print("ERROR: should not be here. need design new base_table_name")
+    log_info("ERROR: should not be here. need design new base_table_name")
   # Execute copy
   new_keywords = copy.deepcopy(keywords)
 
-  print("copy_keywords out: table_id=", tid, ",  table_name=" + tname, ", base_table_name=" + base_tname, ", base_table_name1=" + base_tname1, ", base_table_name2=" + base_tname2)
+  log_debug("copy_keywords out: table_id=", tid, ",  table_name=" + tname, ", base_table_name=" + base_tname, ", base_table_name1=" + base_tname1, ", base_table_name2=" + base_tname2)
 
   return new_keywords
 
@@ -1423,12 +1467,7 @@ def generate_unified_sqlite_virtual_table_h():
   All SQLite virtual table class definitions are in this file
   """
   global all_sqlite_virtual_tables
-  import os
-
-  script_dir = os.path.dirname(os.path.abspath(__file__))
-  project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
-  h_file = os.path.join(project_root, 'src/observer/virtual_table/ob_all_virtual_sqlite_tables.h')
-
+  h_file = observer_out_path('ob_all_virtual_sqlite_tables.h')
   h_dir = os.path.dirname(h_file)
   if not os.path.exists(h_dir):
     os.makedirs(h_dir)
@@ -1527,12 +1566,7 @@ def generate_unified_sqlite_virtual_table_cpp():
   All SQLite virtual table implementations are in this file
   """
   global all_sqlite_virtual_tables
-  import os
-
-  script_dir = os.path.dirname(os.path.abspath(__file__))
-  project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
-  cpp_file = os.path.join(project_root, 'src/observer/virtual_table/ob_all_virtual_sqlite_tables.cpp')
-
+  cpp_file = observer_out_path('ob_all_virtual_sqlite_tables.cpp')
   cpp_dir = os.path.dirname(cpp_file)
   if not os.path.exists(cpp_dir):
     os.makedirs(cpp_dir)
@@ -2847,17 +2881,17 @@ def check_split_file(tid):
   global cpp_f
   #sometimes cpp_f may modify to STRINGIO object
   if (isinstance(cpp_f, io.IOBase) and not isinstance(cpp_f, io.StringIO)) or cpp_f == None:
-    print("current schema cnt => %d" % __def_cnt)
+    log_debug("current schema cnt => %d" % __def_cnt)
     range_idx = tid // __split_size
     if range_idx > __current_range_idx:
       if cpp_f != None:
         end_generate_cpp()
       fname = "ob_inner_table_schema.%d_%d.cpp" % (range_idx * __split_size + 1, (range_idx + 1) * __split_size)
-      print("generate new file with name %s" % fname)
+      log_debug("generate new file with name %s" % fname)
       start_generate_cpp(fname)
       __current_range_idx = range_idx
     elif range_idx < __current_range_idx:
-      print("unexcept table id seq")
+      log_debug("unexcept table id seq")
       sys.exit(1)
     __def_cnt += 1
 
@@ -2931,7 +2965,7 @@ def def_table_schema(**keywords):
   if is_sys_view(tid):
     pattern = re.compile(r'^\s*SELECT\s+\*', re.IGNORECASE)
     if 'view_definition' in keywords and 0 != len(keywords['view_definition']) and pattern.match(keywords['view_definition'].upper().replace("\n", " ")):
-      print((keywords['view_definition']))
+      log_debug((keywords['view_definition']))
       raise Exception("The system view definition cannot start with select *. Please specify the column name explicitly, ", tid)
 
   fill_default_values(default_filed_values, keywords, missing_fields)
@@ -2964,9 +2998,9 @@ def def_table_schema(**keywords):
   if 'is_core_related' in keywords and keywords['is_core_related']:
     core_related_tables.append(int(keywords['table_id']))
 
-  print("\table_id=",  keywords['table_id'], ", table_name=" + keywords['table_name'], ", base_table_name=", keywords['base_table_name'], ", base_table_name1=" + keywords['base_table_name1'], ", base_table_name2=" + keywords['base_table_name2'])
+  log_debug("\table_id=",  keywords['table_id'], ", table_name=" + keywords['table_name'], ", base_table_name=", keywords['base_table_name'], ", base_table_name1=" + keywords['base_table_name1'], ", base_table_name2=" + keywords['base_table_name2'])
 
-  print("\nSTART TO GENERATE: " + keywords['table_name']+ keywords['name_postfix'])
+  log_debug("\nSTART TO GENERATE: " + keywords['table_name']+ keywords['name_postfix'])
   if True == is_ora_virtual_table(int(keywords['table_id'])):
     column_collation = 'CS_TYPE_UTF8MB4_BIN'
     is_oracle_sys_table = True
@@ -3145,7 +3179,7 @@ def def_table_schema(**keywords):
                    'is_cluster_private', 'is_real_virtual_table',
                    'owner', 'vtable_route_policy'):
       # do nothing
-      print("skip")
+      log_debug("skip")
     else:
       add_field(field, value)
 
@@ -3195,14 +3229,19 @@ def def_table_schema(**keywords):
     cpp_f.write(index_def)
 
 def clean_files(globstr):
-  print("clean files by glob [%s]" % globstr)
-  for f in glob.glob(os.path.join('.', globstr)):
-      print("remove  %s ..." % f)
-      os.remove(f)
+  log_debug("clean files by glob [%s]" % globstr)
+  for f in glob.glob(os.path.join(share_output_dir, globstr)):
+      log_debug("remove  %s ..." % f)
+      try:
+        os.remove(f)
+      except FileNotFoundError:
+        # Multiple build targets can trigger generation concurrently.
+        # If another generator already removed this file, treat it as clean.
+        pass
 
 def start_generate_cpp(cpp_file_name):
   global cpp_f
-  cpp_f = open(cpp_file_name, 'w')
+  cpp_f = open(share_out_path(cpp_file_name), 'w')
   head = copyright + """
 #define USING_LOG_PREFIX SHARE_SCHEMA
 #include "ob_inner_table_schema.h"
@@ -3224,7 +3263,7 @@ namespace share
 
 def start_generate_h(h_file_name):
   global h_f
-  h_f = open(h_file_name, 'w')
+  h_f = open(share_out_path(h_file_name), 'w')
   head = copyright + """
 #ifndef _OB_INNER_TABLE_SCHEMA_H_
 #define _OB_INNER_TABLE_SCHEMA_H_
@@ -3251,8 +3290,8 @@ namespace share
 def start_generate_constants_h(h_file_name):
   global constants_h_f
   global id_to_name_f
-  constants_h_f = open(h_file_name, 'w')
-  id_to_name_f = open("table_id_to_name", 'w')
+  constants_h_f = open(share_out_path(h_file_name), 'w')
+  id_to_name_f = open(share_out_path("table_id_to_name"), 'w')
   head = copyright + """
 #ifndef _OB_INNER_TABLE_SCHEMA_CONSTANTS_H_
 #define _OB_INNER_TABLE_SCHEMA_CONSTANTS_H_
@@ -3766,7 +3805,7 @@ def end_generate_constants_h():
 
 def write_vt_mapping_cpp(h_file_name):
   global cpp_f
-  cpp_f = open(h_file_name, 'w')
+  cpp_f = open(share_out_path(h_file_name), 'w')
   head = copyright + """
 #define USING_LOG_PREFIX SHARE_SCHEMA
 #include "ob_inner_table_schema.h"
@@ -3825,7 +3864,7 @@ namespace share
 
 def write_lob_mapping_cpp(h_file_name):
   global cpp_f
-  cpp_f = open(h_file_name, 'w')
+  cpp_f = open(share_out_path(h_file_name), 'w')
   head = copyright + """
 #define USING_LOG_PREFIX SHARE_SCHEMA
 #include "ob_inner_table_schema.h"
@@ -3867,12 +3906,14 @@ namespace share
 
 
 def start_generate_misc_data(fname):
-  f = open(fname, 'w')
+  f = open(share_out_path(fname), 'w')
   f.write(copyright)
   return f
 
 
 if __name__ == "__main__":
+  args = parse_args(sys.argv[1:])
+  configure_paths(args)
   global ob_virtual_index_table_id
   ob_virtual_index_table_id = max_ob_virtual_table_id - 1
   ora_virtual_index_table_id = max_ora_virtual_table_id - 1
@@ -3906,5 +3947,4 @@ if __name__ == "__main__":
 
   # Generate SQLite virtual table C++ files
   generate_sqlite_virtual_table_cpp_files()
-
-  print("\nSuccess\n")
+  log_info("Successfully generate C++ files for SQLite virtual tables.")
