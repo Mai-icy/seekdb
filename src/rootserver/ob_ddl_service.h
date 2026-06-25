@@ -682,12 +682,6 @@ public:
       common::ObArenaAllocator &allocator,
       const obcall::ObIndexArg::IndexActionType &index_action_type,
       const uint64_t tenant_data_version);
-  int get_add_pk_index_name(const share::schema::ObTableSchema &origin_table_schema,
-                            share::schema::ObTableSchema &new_table_schema,
-                            const obcall::ObIndexArg::IndexActionType &index_action_type,
-                            const common::ObIArray<obcall::ObIndexArg *> &index_arg_list,
-                            share::schema::ObSchemaGetterGuard &schema_guard,
-                            ObString &index_name);
   virtual int rename_table(const obcall::ObRenameTableArg &rename_table_arg);
   virtual int fork_table(const obcall::ObForkTableArg &fork_table_arg, obcall::ObDDLRes &res);
   virtual int fork_database(const obcall::ObForkDatabaseArg &fork_database_arg, obcall::ObDDLRes &res);

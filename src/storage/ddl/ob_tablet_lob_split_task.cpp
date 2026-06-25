@@ -1110,25 +1110,13 @@ int ObTabletLobWriteDataTask::process()
 int ObTabletLobWriteDataTask::generate_next_task(ObITask *&next_task)
 {
   int ret = OB_SUCCESS;
-  ObIDag *tmp_dag = get_dag();
-  ObTabletLobWriteDataTask *buildmap_task = nullptr;
-  const int64_t next_task_id = task_id_ + 1;
   next_task = nullptr;
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     LOG_WARN("ObTabletLobWriteDataTask has not been inited", K(ret));
-  } else if (true || next_task_id >= param_->parallelism_) { // not allow para now
-    ret = OB_ITER_END;
-  } else if (OB_ISNULL(tmp_dag)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("error unexpected, dag must not be NULL", K(ret));
-  } else if (OB_FAIL(tmp_dag->alloc_task(buildmap_task))) {
-    LOG_WARN("fail to alloc task", K(ret));
-  } else if (OB_FAIL(buildmap_task->init(next_task_id, *param_, *ctx_))) {
-    LOG_WARN("fail to init lob build map task", K(ret));
   } else {
-    next_task = buildmap_task;
-    LOG_INFO("generate next lob build map task", K(ret));
+    // Parallel LOB split write tasks are disabled for now.
+    ret = OB_ITER_END;
   }
   if (OB_FAIL(ret) && OB_NOT_NULL(ctx_)) {
     if (OB_ITER_END != ret) {

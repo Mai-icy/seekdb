@@ -50,7 +50,6 @@ int ObPLDDLService::create_routine(const obcall::ObCreateRoutineArg &arg,
     bool is_or_replace = arg.is_need_alter_;
     bool is_inner = arg.is_or_replace_;
     const ObDatabaseSchema *db_schema = NULL;
-    const ObUserInfo *user_info = NULL;
     if (OB_FAIL(schema_guard.get_database_schema(tenant_id, database_name, db_schema))) {
       LOG_WARN("get database schema failed", K(ret));
     } else if (NULL == db_schema) {
@@ -64,21 +63,6 @@ int ObPLDDLService::create_routine(const obcall::ObCreateRoutineArg &arg,
       LOG_WARN("database id is invalid", K(tenant_id), K(*db_schema), K(ret));
     } else {
       routine_info.set_database_id(db_schema->get_database_id());
-    }
-    if (OB_SUCC(ret)
-        && database_name.case_compare(OB_SYS_DATABASE_NAME) != 0
-        && false) {
-      if (OB_FAIL(schema_guard.get_user_info(tenant_id, database_name, ObString(OB_DEFAULT_HOST_NAME), user_info))) {
-        LOG_WARN("failed to get user info", K(ret), K(database_name));
-      } else if (OB_ISNULL(user_info)) {
-        ret = OB_USER_NOT_EXIST;
-        LOG_WARN("user is does not exist", K(ret), K(database_name));
-      } else if (OB_INVALID_ID == user_info->get_user_id()) {
-        ret = OB_USER_NOT_EXIST;
-        LOG_WARN("user id is invalid", K(ret), K(database_name));
-      } else {
-        routine_info.set_owner_id(user_info->get_user_id());
-      }
     }
     if (OB_SUCC(ret)) {
       ObArray<ObSchemaType> conflict_schema_types;
@@ -553,7 +537,6 @@ int ObPLDDLService::create_package(const obcall::ObCreatePackageArg &arg,
     uint64_t tenant_id = arg.package_info_.get_tenant_id();
     ObString database_name = arg.db_name_;
     const ObDatabaseSchema *db_schema = NULL;
-    const ObUserInfo *user_info = NULL;
     if (OB_FAIL(new_package_info.assign(arg.package_info_))) {
       LOG_WARN("fail to assign package info", K(ret));
     } else if (OB_FAIL(schema_guard.get_database_schema(tenant_id, database_name, db_schema))) {
@@ -569,22 +552,6 @@ int ObPLDDLService::create_package(const obcall::ObCreatePackageArg &arg,
       LOG_WARN("database id is invalid", K(tenant_id), K(*db_schema), K(ret));
     } else {
       new_package_info.set_database_id(db_schema->get_database_id());
-    }
-    if (OB_SUCC(ret)
-        && database_name.case_compare(OB_SYS_DATABASE_NAME) != 0
-        && false) {
-      if (OB_FAIL(schema_guard.get_user_info(
-        tenant_id, database_name, ObString(OB_DEFAULT_HOST_NAME), user_info))) {
-        LOG_WARN("failed to get user info", K(ret), K(database_name));
-      } else if (OB_ISNULL(user_info)) {
-        ret = OB_USER_NOT_EXIST;
-        LOG_WARN("user is does not exist", K(ret), K(database_name));
-      } else if (OB_INVALID_ID == user_info->get_user_id()) {
-        ret = OB_USER_NOT_EXIST;
-        LOG_WARN("user id is invalid", K(ret), K(database_name));
-      } else {
-        new_package_info.set_owner_id(user_info->get_user_id());
-      }
     }
     if (OB_SUCC(ret)) {
       ObArray<ObSchemaType> conflict_schema_types;
@@ -1398,7 +1365,7 @@ int ObPLDDLService::adjust_trigger_action_order(share::schema::ObSchemaGetterGua
         }
       }
       OX (trigger_info.set_action_order(action_order));
-    } else if (true) {
+    } else {
       if (OB_SUCC(ret)) {
         for (int64_t i = 0; OB_SUCC(ret) && i < trg_list.count(); i++) {
           OZ (schema_guard.get_trigger_info(tenant_id, trg_list.at(i), old_trg_info));

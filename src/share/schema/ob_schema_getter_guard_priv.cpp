@@ -623,7 +623,7 @@ int ObSchemaGetterGuard::check_user_priv(const ObSessionPrivInfo &session_priv,
         || priv_set == OB_PRIV_CREATE_RESOURCE_POOL
         || priv_set == OB_PRIV_CREATE_RESOURCE_UNIT)
         && (OB_TEST_PRIVS(user_priv_set, OB_PRIV_SUPER))) {
-    } else if (true) {
+    } else {
       ObNeedPriv need_priv("", "", OB_PRIV_USER_LEVEL, priv_set, false);
       ObNeedPriv collected_privs("", "", OB_PRIV_USER_LEVEL, OB_PRIV_SET_EMPTY, false);
       bool check_succ = false;
@@ -750,42 +750,7 @@ int ObSchemaGetterGuard::check_single_table_priv(const ObSessionPrivInfo &sessio
           is_table_priv_empty = false;
         }
 
-        if (OB_SUCC(ret) && false) {
-          //2. fetch roles privs
-          const ObUserInfo *user_info = NULL;
-          if (OB_FAIL(get_user_info(tenant_id, session_priv.user_id_, user_info))) {
-            LOG_WARN("failed to get user info", KR(ret), K(tenant_id), K(session_priv.user_id_));
-          } else if (NULL == user_info) {
-            ret = OB_USER_NOT_EXIST;
-            LOG_WARN("user info is null", KR(ret), K(session_priv.user_id_));
-          } else {
-            const ObSEArray<uint64_t, 8> &role_id_array = user_info->get_role_id_array();
-            for (int i = 0; OB_SUCC(ret) && i < role_id_array.count(); ++i) {
-              const ObUserInfo *role_info = NULL;
-              const ObTablePriv *role_table_priv = NULL;
-              if (OB_FAIL(get_user_info(tenant_id, role_id_array.at(i), role_info))) {
-                LOG_WARN("failed to get role ids", KR(ret), K(tenant_id), K(role_id_array.at(i)));
-              } else if (NULL == role_info) {
-                ret = OB_ERR_UNEXPECTED;
-                LOG_WARN("role info is null", KR(ret), K(role_id_array.at(i)));
-              } else {
-                ObTablePrivSortKey role_table_priv_key(session_priv.tenant_id_,
-                    role_info->get_user_id(),
-                    table_need_priv.db_,
-                    table_need_priv.table_);
-                if (OB_FAIL(priv_mgr.get_table_priv(role_table_priv_key, role_table_priv))) {
-                  LOG_WARN("get table priv failed", KR(ret), K(role_table_priv_key) );
-                } else if (NULL != role_table_priv) {
-                  is_table_priv_empty = false;
-                  // append additional role
-                  table_priv_set |= role_table_priv->get_priv_set();
-                }
-              }
-            }
-          }
-        }
-
-        if (OB_SUCC(ret) && true) {
+        if (OB_SUCC(ret)) {
           is_table_priv_empty = false;
           ObNeedPriv collected_tb_privs(table_need_priv.db_, table_need_priv.table_,
                                         OB_PRIV_TABLE_LEVEL, OB_PRIV_SET_EMPTY, false);
@@ -1208,43 +1173,7 @@ int ObSchemaGetterGuard::check_db_priv(const ObSessionPrivInfo &session_priv,
         LOG_WARN("get db priv set failed", K(db_priv_key), KR(ret));
       }
     }
-    /* load role db privs */
-    if (OB_SUCC(ret) && false) {
-      const ObUserInfo *user_info = NULL;
-      //bool is_grant_role = false;
-      OZ (get_user_info(tenant_id, session_priv.user_id_, user_info), session_priv.user_id_);
-      if (OB_SUCC(ret)) {
-        if (NULL == user_info) {
-          ret = OB_USER_NOT_EXIST;
-          LOG_WARN("user info is null", KR(ret), K(session_priv.user_id_));
-        }
-      }
-      if (OB_SUCC(ret)) {
-        const ObSEArray<uint64_t, 8> &role_id_array = user_info->get_role_id_array();
-        for (int i = 0; OB_SUCC(ret) && i < role_id_array.count(); ++i) {
-          const ObUserInfo *role_info = NULL;
-          if (OB_FAIL(get_user_info(tenant_id, role_id_array.at(i), role_info))) {
-            LOG_WARN("failed to get role ids", KR(ret), K(tenant_id), K(role_id_array.at(i)));
-          } else if (NULL == role_info) {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("role info is null", KR(ret), K(role_id_array.at(i)));
-          } else {
-            ObPrivSet db_priv_set_role = OB_PRIV_SET_EMPTY;
-            ObOriginalDBKey db_priv_key_role(session_priv.tenant_id_,
-                                            role_info->get_user_id(),
-                                            db);
-            if (OB_FAIL(get_db_priv_set(db_priv_key_role, db_priv_set_role))) {
-              LOG_WARN("get db priv set failed", KR(ret), K(db_priv_key_role));
-            } else {
-              // append db level privilege
-              total_db_priv_set_role |= db_priv_set_role;
-            }
-          }
-        }
-      }
-    }
-
-    if (OB_SUCC(ret) && true) {
+    if (OB_SUCC(ret)) {
       ObNeedPriv need_priv(db, "", OB_PRIV_DB_LEVEL, OB_PRIV_SET_EMPTY, false);
       ObNeedPriv collected_privs(db, "", OB_PRIV_DB_LEVEL, OB_PRIV_SET_EMPTY, false);
       bool check_succ = false;

@@ -7258,57 +7258,8 @@ int ObDDLOperator::revoke_table(
         if (OB_SUCC(ret) && revoke_all_ora) {
           OZ (revoke_table_all(schema_guard, tenant_id, obj_priv_key, ddl_sql, trans));
         }
-      } else if (true) {
-        //do nothing
       } else {
-        ObSqlString ddl_stmt_str;
-        ObString ddl_sql;
-        const ObUserInfo *user_info = NULL;
-        int64_t new_schema_version = OB_INVALID_VERSION;
-        share::ObRawObjPrivArray option_priv_array;
-        ObRawObjPrivArray raw_priv_array;
-        ObArray<bool> is_all;
-        ObArray<ObObjPrivSortKey> priv_key_array;
-        ObArray<ObPackedObjPriv> packed_privs_array;
-        ObRawObjPrivArray option_raw_array;
-        // In oracle mode, need to check revoke permission exists, only need to reclaim oracle permission
-        // Due to the existence of column permissions, one obj_priv_key is expanded into multiple,
-        // and each key represents a column
-        OZ (check_obj_privs_exists_including_col_privs(schema_guard, obj_priv_key,
-            obj_priv_array, priv_key_array, packed_privs_array, is_all));
-        OZ (schema_guard.get_user_info(tenant_id, table_priv_key.user_id_, user_info));
-        if (OB_SUCC(ret) && user_info == NULL) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("user not exist", K(table_priv_key), K(ret));
-        }
-
-        OZ (ObDDLSqlGenerator::gen_table_priv_sql_ora(
-            ObAccountArg(user_info->get_user_name_str(), user_info->get_host_name_str()),
-            table_priv_key,
-            revoke_all_ora,
-            obj_priv_array,
-            false,
-            ddl_stmt_str));
-        OX (ddl_sql = ddl_stmt_str.string());
-        if (OB_SUCC(ret)) {
-          if (revoke_all_ora) {
-            OZ (revoke_table_all(schema_guard, tenant_id, obj_priv_key, ddl_sql, trans));
-          } else if (obj_priv_array.count() > 0) {
-            // Revoke table permissions and column permissions one by one
-            for (int i = 0; OB_SUCC(ret) && i < priv_key_array.count(); ++i) {
-              const ObObjPrivSortKey &priv_key = priv_key_array.at(i);
-              OZ (ObPrivPacker::raw_obj_priv_from_pack(packed_privs_array.at(i), raw_priv_array));
-              OZ (schema_service_.gen_new_schema_version(tenant_id, new_schema_version));
-              OZ (schema_sql_service->get_priv_sql_service().revoke_table_ora(
-                priv_key, raw_priv_array, new_schema_version,
-                &ddl_sql, trans, is_all.at(i)));
-              OZ (ObPrivPacker::raw_option_obj_priv_from_pack(packed_privs_array.at(i),
-                  option_raw_array));
-              OZ (revoke_obj_cascade(schema_guard, priv_key.grantee_id_,
-                  trans, priv_key, option_raw_array));
-            }
-          }
-        }
+        // do nothing
       }
     }
   }
@@ -7478,21 +7429,17 @@ int ObDDLOperator::grant_revoke_role(
           } else if (NULL == role_info) {
             ret = OB_ERR_UNEXPECTED;
             LOG_WARN("role doesn't exist", K(ret), K(role_id));
-          } else if (false ?
-                       OB_FAIL(sql_string.append_fmt("%s", role_info->get_user_name()))
-                     : OB_FAIL(sql_string.append_fmt("`%s`@`%s`",
-                                                     role_info->get_user_name(),
-                                                     role_info->get_host_name()))) {
+          } else if (OB_FAIL(sql_string.append_fmt("`%s`@`%s`",
+                                                   role_info->get_user_name(),
+                                                   role_info->get_host_name()))) {
             LOG_WARN("append sql failed", K(ret));
           }
         }
       }
       if (OB_SUCC(ret)) {
-        if (false ? OB_FAIL(sql_string.append_fmt(is_grant ? " TO %s": " FROM %s",
-                                                           user_info.get_user_name()))
-                           : OB_FAIL(sql_string.append_fmt(is_grant ? " TO `%s`@`%s`": " FROM `%s`@`%s`",
-                                                           user_info.get_user_name(),
-                                                           user_info.get_host_name()))) {
+        if (OB_FAIL(sql_string.append_fmt(is_grant ? " TO `%s`@`%s`": " FROM `%s`@`%s`",
+                                          user_info.get_user_name(),
+                                          user_info.get_host_name()))) {
           LOG_WARN("append sql failed", K(ret));
         } else if (is_grant && option != NO_OPTION && OB_FAIL(sql_string.append_fmt(
                                                                           " WITH ADMIN OPTION"))) {
