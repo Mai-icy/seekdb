@@ -1139,7 +1139,6 @@ static const NonReservedKeyword Mysql_none_reserved_keywords[] =
   {"query_response_time",QUERY_RESPONSE_TIME},
   {"statement_id", STATEMENT_ID},
   {"TTL", TTL},
-  {"kv_attributes", KV_ATTRIBUTES},
   {"RESOURCE_POOL", RESOURCE_POOL},
   {"external_storage_dest", EXTERNAL_STORAGE_DEST},
   {"storage_cache_policy", STORAGE_CACHE_POLICY},

@@ -41,7 +41,6 @@ int ObCatalogSchemaCacheKey::deep_copy(char *buf, const int64_t buf_len, ObIKVCa
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("fail to allocate memory", K(ret));
   } else {
-
     new_value->catalog_id_ = catalog_id_;
     if (OB_FAIL(ob_write_string(allocator, namespace_name_, new_value->namespace_name_))) {
       LOG_WARN("failed to deep copy filter name", K(ret));
@@ -76,6 +75,7 @@ int ObCachedCatalogSchemaMgr::init()
   // OZ(file_cache_.init("catalog_files_cache"));
   return ret;
 }
+
 // In normal circumstances
 // schema_cache_ calls get() to obtain Schema -> check if the Schema is expired
 // If the Schema does not exist in the Cache, perform the following steps:
@@ -105,10 +105,9 @@ int ObCachedCatalogSchemaMgr::get_table_schema(ObCatalogMetaGetter *meta_getter,
     total_wait_secs += (LOCK_TIMEOUT / 1000000);
     LOG_WARN("ObCachedCatalogSchemaMgr cache wait", K(total_wait_secs));
   }
-  // Enter critical section
 
   const schema::ObSchemaCacheValue *cached_value = NULL;
-  const ObTableSchema *cached_table_schema = NULL;
+  const schema::ObTableSchema *cached_table_schema = NULL;
 
   bool is_cache_valid = false;
   if (OB_FAIL(schema_cache_.get(cache_key, cached_value, handle))) {
@@ -117,10 +116,11 @@ int ObCachedCatalogSchemaMgr::get_table_schema(ObCatalogMetaGetter *meta_getter,
     } else {
       ret = OB_SUCCESS;
     }
-  } else if (OB_ISNULL(cached_value) || OB_ISNULL(cached_value->schema_) || ObSchemaType::TABLE_SCHEMA != cached_value->schema_type_) {
+  } else if (OB_ISNULL(cached_value) || OB_ISNULL(cached_value->schema_)
+             || schema::ObSchemaType::TABLE_SCHEMA != cached_value->schema_type_) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get error cached value", K(ret), K(cache_key));
-  } else if (OB_FALSE_IT(cached_table_schema = static_cast<const ObTableSchema *>(cached_value->schema_))) {
+  } else if (OB_FALSE_IT(cached_table_schema = static_cast<const schema::ObTableSchema *>(cached_value->schema_))) {
   } else if (OB_FAIL(check_table_schema_cache_valid_(meta_getter,
                                                      cached_table_schema->get_schema_version(),
                                                      catalog_id,
@@ -130,16 +130,14 @@ int ObCachedCatalogSchemaMgr::get_table_schema(ObCatalogMetaGetter *meta_getter,
                                                      is_cache_valid))) {
     LOG_WARN("fail to check table cache valid", K(ret));
   } else if (is_cache_valid) {
-    // cache is valid
     OZ(table_schema.assign(*cached_table_schema));
   }
 
-  // cache not found, fetch from remote
   if ((OB_SUCC(ret) && !is_cache_valid)) {
     if (OB_FAIL(meta_getter->fetch_table_schema(catalog_id, ns_name, tbl_name, case_mode, table_schema))) {
       LOG_WARN("fail to fetch table schema from remote", K(ret), K(cache_key));
     } else {
-      ObSchemaCacheValue tmp_cache_value{ObSchemaType::TABLE_SCHEMA, &table_schema};
+      schema::ObSchemaCacheValue tmp_cache_value{schema::ObSchemaType::TABLE_SCHEMA, &table_schema};
       table_schema.set_schema_version(ObTimeUtil::current_time_s());
       OZ(schema_cache_.put(cache_key, tmp_cache_value, true));
     }
@@ -205,7 +203,8 @@ int ObCachedCatalogMetaGetter::fetch_table_schema(const uint64_t catalog_id,
   const uint64_t original_db_id = table_schema.get_database_id();
   const uint64_t original_tbl_id = table_schema.get_table_id();
   if (OB_UNLIKELY(!true || !is_external_catalog_id(catalog_id) || !is_external_object_id(original_db_id)
-                  || !is_external_object_id(original_tbl_id) || ns_name.empty() || tbl_name.empty() || OB_NAME_CASE_INVALID == case_mode)) {
+                  || !is_external_object_id(original_tbl_id) || ns_name.empty() || tbl_name.empty()
+                  || OB_NAME_CASE_INVALID == case_mode)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(catalog_id), K(ns_name), K(tbl_name), K(case_mode));
   } else if (OB_FAIL(ObCachedCatalogSchemaMgr::get_instance()

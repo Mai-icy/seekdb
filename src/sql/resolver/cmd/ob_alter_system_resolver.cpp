@@ -23,7 +23,6 @@
 #include "sql/resolver/cmd/ob_variable_set_stmt.h"
 #include "observer/ob_server.h"
 #include "observer/mysql/ob_query_response_time.h"
-#include "share/table/ob_table_config_util.h"
 
 namespace oceanbase
 {
@@ -362,13 +361,13 @@ int ObAlterSystemResolverUtil::resolve_tenant(
     if (OB_SUCC(ret) && (affect_all || affect_all_user || affect_all_meta)) {
       if (tenants_node.num_child_ > 1) {
         ret = OB_NOT_SUPPORTED;
-        LOG_WARN("all/all_user/all_meta must be used separately", 
+        LOG_WARN("all/all_user/all_meta must be used separately",
                  KR(ret), "tenant list count", tenants_node.num_child_);
-        LOG_USER_ERROR(OB_NOT_SUPPORTED, 
+        LOG_USER_ERROR(OB_NOT_SUPPORTED,
                        "all/all_user/all_meta in combination with other names is");
       }
     }
-    FLOG_INFO("resolve tenants", K(affect_all), K(affect_all_user), 
+    FLOG_INFO("resolve tenants", K(affect_all), K(affect_all_user),
               K(affect_all_meta));
   }
   return ret;
@@ -584,9 +583,9 @@ int ObFreezeResolver::resolve_tenant_ls_tablet_(ObFreezeStmt *freeze_stmt,
           (true == affect_all && true == affect_all_meta) ||
           (true == affect_all_user && true == affect_all_meta)) {
         ret = OB_NOT_SUPPORTED;
-        LOG_WARN("only one of affect_all,affect_all_user,affect_all_meta can be true", 
+        LOG_WARN("only one of affect_all,affect_all_user,affect_all_meta can be true",
                 KR(ret), K(affect_all), K(affect_all_user), K(affect_all_meta));
-        LOG_USER_ERROR(OB_NOT_SUPPORTED, 
+        LOG_USER_ERROR(OB_NOT_SUPPORTED,
                        "all/all_user/all_meta in combination with other names is");
       } else {
         if (affect_all) {
@@ -1099,9 +1098,9 @@ int ObAdminMergeResolver::resolve(const ParseNode &parse_tree)
                   (true == affect_all && true == affect_all_meta) ||
                   (true == affect_all_user && true == affect_all_meta)) {
                 ret = OB_NOT_SUPPORTED;
-                LOG_WARN("only one of affect_all,affect_all_user,affect_all_meta can be true", 
+                LOG_WARN("only one of affect_all,affect_all_user,affect_all_meta can be true",
                         KR(ret), K(affect_all), K(affect_all_user), K(affect_all_meta));
-                LOG_USER_ERROR(OB_NOT_SUPPORTED, 
+                LOG_USER_ERROR(OB_NOT_SUPPORTED,
                                "all/all_user/all_meta in combination with other names is");
               } else {
                 if (affect_all) {
@@ -1402,39 +1401,6 @@ int ObSetConfigResolver::resolve(const ParseNode &parse_tree)
                       if (OB_FAIL(item.tenant_name_.assign(tenant_name))) {
                         LOG_WARN("assign tenant name failed", K(tenant_name), K(ret));
                         break;
-                      } else if (0 == config_name.case_compare(ARCHIVE_LAG_TARGET)) {
-                        int64_t cfg_count = 0;
-                        bool affect_all;
-                        bool affect_all_user;
-                        bool affect_all_meta;
-                        if (OB_FAIL(ObAlterSystemResolverUtil::resolve_tenant(*n,
-                                                                              cfg_count,
-                                                                              affect_all,
-                                                                              affect_all_user,
-                                                                              affect_all_meta))) {
-                          LOG_WARN("fail to get reslove tenant", K(ret), "exec_tid", 1UL);
-                        } else if (affect_all || affect_all_meta) {
-                          ret = OB_NOT_SUPPORTED;
-                          LOG_WARN("all/all_meta is not supported by ALTER SYSTEM SET ARCHIVE_LAG_TARGET",
-                                  KR(ret), K(affect_all), K(affect_all_user), K(affect_all_meta));
-                          LOG_USER_ERROR(OB_NOT_SUPPORTED,
-                                        "use all/all_meta in 'ALTER SYSTEM SET ARCHIVE_LAG_TARGET' syntax is");
-                        } else if (affect_all_user) {
-                          // lite: no user tenant -> tenants stays empty, nothing to check
-                        } else if ((0 == cfg_count)) {
-                          cfg_count++;
-                        }
-                        if (OB_SUCC(ret) && !(0 == cfg_count)) {
-                          bool valid = true;
-                          for (int i = 0; i < cfg_count && valid; i++) {
-
-                            valid = valid && ObConfigArchiveLagTargetChecker::check(item);
-                            if (!valid) {
-                              ret = OB_OP_NOT_ALLOW; //log_user_error is handled in checker
-                              LOG_WARN("can not set archive_lag_target", "item", item, K(ret), K(i));
-                            }
-                          }
-                        }
                       } else if (0 == config_name.case_compare(DEFAULT_TABLE_ORGANIZATION)) {
                         int64_t cfg_count = 0;
                         bool affect_all = false;
@@ -1448,9 +1414,9 @@ int ObSetConfigResolver::resolve(const ParseNode &parse_tree)
                           LOG_WARN("fail to get reslove tenant", K(ret), "exec_tid", 1UL);
                         } else if (affect_all_meta) {
                           ret = OB_NOT_SUPPORTED;
-                          LOG_WARN("all_meta is not supported by ALTER SYSTEM SET DEFAULT_TABLE_ORGANIZATION", 
+                          LOG_WARN("all_meta is not supported by ALTER SYSTEM SET DEFAULT_TABLE_ORGANIZATION",
                                   KR(ret), K(affect_all), K(affect_all_user), K(affect_all_meta));
-                          LOG_USER_ERROR(OB_NOT_SUPPORTED, 
+                          LOG_USER_ERROR(OB_NOT_SUPPORTED,
                                         "use all_meta in 'ALTER SYSTEM SET DEFAULT_TABLE_ORGANIZATION' syntax is");
                         } else if ((0 == cfg_count)) {
                           if (!affect_all && !affect_all_user) {
@@ -1482,12 +1448,6 @@ int ObSetConfigResolver::resolve(const ParseNode &parse_tree)
                     ret = OB_ERR_UNEXPECTED;
                     LOG_WARN("resolve tenant name failed", K(ret));
                     break;
-                  }
-                } else if (OB_SUCC(ret) && (0 == STRCASECMP(item.name_.ptr(), ARCHIVE_LAG_TARGET))) {
-                  bool valid = ObConfigArchiveLagTargetChecker::check(item);
-                  if (!valid) {
-                    ret = OB_OP_NOT_ALLOW;
-                    LOG_WARN("can not set archive_lag_target", "item", item, K(ret));
                   }
                 } else if (OB_SUCC(ret) && (0 == STRCASECMP(item.name_.ptr(), DEFAULT_TABLE_ORGANIZATION))) {
                   bool valid = ObConfigDefaultTableOrganizationChecker::check(item);
@@ -1691,9 +1651,9 @@ int ObClearMergeErrorResolver::resolve(const ParseNode &parse_tree)
                   (true == affect_all && true == affect_all_meta) ||
                   (true == affect_all_user && true == affect_all_meta)) {
                 ret = OB_NOT_SUPPORTED;
-                LOG_WARN("only one of affect_all,affect_all_user,affect_all_meta can be true", 
+                LOG_WARN("only one of affect_all,affect_all_user,affect_all_meta can be true",
                         KR(ret), K(affect_all), K(affect_all_user), K(affect_all_meta));
-                LOG_USER_ERROR(OB_NOT_SUPPORTED, 
+                LOG_USER_ERROR(OB_NOT_SUPPORTED,
                                "all/all_user/all_meta in combination with other names is");
               } else {
                 if (affect_all) {
@@ -2144,12 +2104,6 @@ int ObAlterSystemSetResolver::resolve(const ParseNode &parse_tree)
                   if (OB_FAIL(alter_system_set_reset_constraint_check_and_add_item_oracle_mode(
                       setconfig_stmt->get_rpc_arg(), item, schema_checker_))) {
                     LOG_WARN("constraint check failed", K(ret));
-                  } else if (OB_SUCC(ret) && (0 == STRCASECMP(item.name_.ptr(), ARCHIVE_LAG_TARGET))) {
-                    bool valid = ObConfigArchiveLagTargetChecker::check(item);
-                    if (!valid) {
-                      ret = OB_OP_NOT_ALLOW;
-                      LOG_WARN("can not set archive_lag_target", "item", item, K(ret));
-                    }
                   } else if (OB_SUCC(ret) && (0 == STRCASECMP(item.name_.ptr(), DEFAULT_TABLE_ORGANIZATION))) {
                     LOG_WARN("can not set default_table_organization", "item", item);
                     LOG_USER_NOTE(OB_NOT_SUPPORTED, "'ALTER SYSTEM SET DEFAULT_TABLE_ORGANIZATION' syntax in the oracle tenant is");

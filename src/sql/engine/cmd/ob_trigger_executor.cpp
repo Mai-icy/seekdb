@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 #include "ob_trigger_executor.h"
 #include "rootserver/ob_rs_serial_call.h"
+#include "rootserver/ob_root_service.h"
 #include "pl/ob_pl_package.h"
 #include "pl/ob_pl_compile_utils.h"
 #include "sql/resolver/ddl/ob_trigger_resolver.h"

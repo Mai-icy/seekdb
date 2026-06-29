@@ -19,6 +19,8 @@
 #include "rootserver/mview/ob_mview_mds_op_task.h"
 #include "share/rc/ob_module_provider.h"
 #include "rootserver/mview/ob_mview_maintenance_service.h"
+#include "storage/ls/ob_ls.h"
+#include "storage/tx_storage/ob_ls_service.h"
 
 namespace oceanbase {
 namespace rootserver {

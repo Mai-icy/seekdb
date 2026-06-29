@@ -17,6 +17,8 @@
 #define USING_LOG_PREFIX SERVER
 
 #include "observer/mysql/obmp_stmt_prepare.h"
+#include "observer/mysql/ob_mysql_result_set.h"
+#include "lib/trace/ob_trace.h"
 
 #include "deps/oblib/src/rpc/obmysql/packet/ompk_prepare.h"
 #include "rpc/obmysql/packet/ompk_field.h"

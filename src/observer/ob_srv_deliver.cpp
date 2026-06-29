@@ -26,6 +26,8 @@
 #include "rpc/obmysql/ob_sql_nio_server.h"
 #include "rpc/frame/ob_net_easy.h"
 #include "observer/omt/ob_tenant.h"
+#include "lib/stat/ob_diagnostic_info_guard.h" // EVENT_INC, EVENT_ADD
+#include "lib/statistic_event/ob_stat_event.h"
 
 using namespace oceanbase::common;
 
@@ -190,7 +192,7 @@ int get_user_tenant(ObRequest &req, char *user_name_buf, char *tenant_name_buf)
   } else if (!tenant_name.empty()) {
     // use this tenant_name
   } else {
-    if (OB_TMP_FAIL(ObVTOAUtility::get_virtual_addr(fd, is_slb, vid, vaddr))) {
+    if (OB_TMP_FAIL(lib::ObVTOAUtility::get_virtual_addr(fd, is_slb, vid, vaddr))) {
       LOG_WARN("failed to get virtual addr", K(tmp_ret), K(fd));
     }
     if (is_slb) {
@@ -370,8 +372,8 @@ int ObSrvDeliver::deliver_mysql_request(ObRequest &req)
       const obmysql::ObMySQLRawPacket &pkt
           = reinterpret_cast<const obmysql::ObMySQLRawPacket &>(req.get_packet());
       if (need_update_stat) {
-        EVENT_INC(MYSQL_PACKET_IN);
-        EVENT_ADD(MYSQL_PACKET_IN_BYTES, pkt.get_clen() + OB_MYSQL_HEADER_LENGTH);
+        EVENT_INC(common::ObStatEventIds::MYSQL_PACKET_IN);
+        EVENT_ADD(common::ObStatEventIds::MYSQL_PACKET_IN_BYTES, pkt.get_clen() + OB_MYSQL_HEADER_LENGTH);
         conn->connect_in_bytes_ = pkt.get_clen() + OB_MYSQL_HEADER_LENGTH;
       }
 
@@ -379,7 +381,7 @@ int ObSrvDeliver::deliver_mysql_request(ObRequest &req)
         LOG_INFO("receive login request from unix domain socket");
         if (!diagnose_queue_->queue_.push(&req, MAX_QUEUE_LEN)) {
           ret = OB_QUEUE_OVERFLOW;
-          EVENT_INC(MYSQL_DELIVER_FAIL);
+          EVENT_INC(common::ObStatEventIds::MYSQL_DELIVER_FAIL);
           LOG_ERROR("deliver request fail", K(req));
         }
       } else {
@@ -409,8 +411,8 @@ int ObSrvDeliver::deliver_mysql_request(ObRequest &req)
           = reinterpret_cast<const obmysql::ObMySQLRawPacket &>(req.get_packet());
 
       if (need_update_stat) {
-        EVENT_INC(MYSQL_PACKET_IN);
-        EVENT_ADD(MYSQL_PACKET_IN_BYTES, pkt.get_clen() + OB_MYSQL_HEADER_LENGTH);
+        EVENT_INC(common::ObStatEventIds::MYSQL_PACKET_IN);
+        EVENT_ADD(common::ObStatEventIds::MYSQL_PACKET_IN_BYTES, pkt.get_clen() + OB_MYSQL_HEADER_LENGTH);
       }
       // The tenant check has been done in the recv_request method. For performance considerations, the check here is removed;
 
@@ -420,7 +422,7 @@ int ObSrvDeliver::deliver_mysql_request(ObRequest &req)
         ret = OB_TENANT_NOT_IN_SERVER;
         LOG_WARN("tenant is stopped", K(ret), K(tenant->id()));
       } else if (OB_FAIL(tenant->recv_request(req))) {
-        EVENT_INC(MYSQL_DELIVER_FAIL);
+        EVENT_INC(common::ObStatEventIds::MYSQL_DELIVER_FAIL);
         LOG_ERROR("deliver request fail", K(req), K(ret), K(*tenant));
         if (OB_SIZE_OVERFLOW == ret) {
           LOG_DBA_ERROR_V2(OB_TENANT_REQUEST_QUEUE_FULL, ret,

@@ -118,8 +118,6 @@ private:
   bool is_inited_;
   bool is_synced_;
   bool need_renew_location_;
-
-
   ObSEArray<ObTabletID, 1> orig_src_tablet_ids_;
   ObSEArray<ObTabletID, 1> src_tablet_ids_;
   ObSEArray<ObTabletID, 1> dest_tablet_ids_;

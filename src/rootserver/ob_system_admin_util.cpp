@@ -31,6 +31,7 @@
 #include "pl/pl_cache/ob_pl_cache_mgr.h"
 #include "share/cache/ob_cache_name_define.h"
 #include "observer/omt/ob_multi_tenant.h"
+#include "observer/ob_service.h"
 namespace oceanbase
 {
 using namespace common;

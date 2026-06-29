@@ -18,6 +18,7 @@
 #include "ob_tenant_srs.h"
 #include "observer/ob_sql_client_decorator.h"
 #include "src/share/ob_server_struct.h"
+#include "lib/stat/ob_diagnostic_info_guard.h"
 #include "share/ob_srs_importer.h"
 #include "share/ob_internal_table_change_notifier.h"
 #include "lib/geo/ob_geo_utils.h"

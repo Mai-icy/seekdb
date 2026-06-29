@@ -24,6 +24,8 @@
 #include "sql/privilege_check/ob_privilege_check.h"
 #include "rpc/obmysql/packet/ompk_auth_switch.h"
 #include "sql/engine/dml/ob_trigger_handler.h"
+#include "observer/mysql/ob_mysql_result_set.h"
+#include "observer/ob_service.h"
 
 using namespace oceanbase::share;
 using namespace oceanbase::common;

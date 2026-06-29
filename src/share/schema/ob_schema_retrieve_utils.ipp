@@ -1318,8 +1318,6 @@ int ObSchemaRetrieveUtils::fill_table_schema(const bool check_deleted,
     EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
       result, ttl_definition, table_schema, true, ignore_column_error, "");
     EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
-      result, kv_attributes, table_schema, true, ignore_column_error, "");
-    EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
       result, storage_cache_policy, table_schema, true/*skip null*/, true/*ignore column error*/, OB_DEFAULT_STORAGE_CACHE_POLICY_STR);
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, name_generated_type, table_schema, ObNameGeneratedType, true/*skip null*/, true/*ignore column error*/, GENERATED_TYPE_UNKNOWN);
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, lob_inrow_threshold, table_schema, 

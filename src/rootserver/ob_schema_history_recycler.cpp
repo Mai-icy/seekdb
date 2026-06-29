@@ -22,6 +22,7 @@
 #include "share/ob_global_merge_table_operator.h"
 #include "share/ob_zone_merge_info.h"
 #include "rootserver/ob_objpriv_mysql_schema_history_recycler.h"
+#include "rootserver/ob_rs_event_history_table_operator.h"
 
 namespace oceanbase
 {

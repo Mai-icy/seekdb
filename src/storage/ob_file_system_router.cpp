@@ -18,6 +18,7 @@
 #include "ob_file_system_router.h"
 #include "share/ob_io_device_helper.h"
 #include "lib/file/file_directory_utils.h"
+#include "lib/string/ob_sql_string.h"
 
 namespace oceanbase {
 using namespace common;

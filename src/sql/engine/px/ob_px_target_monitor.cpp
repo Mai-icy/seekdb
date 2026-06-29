@@ -16,6 +16,7 @@
 
 #define USING_LOG_PREFIX  SQL_ENG
 #include "ob_px_target_monitor.h"
+#include "share/ob_server_struct.h"
 
 namespace oceanbase
 {
@@ -28,8 +29,8 @@ namespace sql
 
 ObPxTargetMonitor &ObPxTargetMonitor::get_instance()
 {
-  static ObPxTargetMonitor monitor;
-  return monitor;
+  static ObPxTargetMonitor instance;
+  return instance;
 }
 
 int ObPxTargetMonitor::init(const ObAddr &server)
@@ -47,7 +48,6 @@ int ObPxTargetMonitor::init(const ObAddr &server)
     px_target_used_ = 0;
     is_init_ = true;
     parallel_session_count_ = 0;
-    LOG_INFO("ObPxTargetMonitor inited success", K(server_));
   }
   return ret;
 }
@@ -144,7 +144,6 @@ int ObPxTargetMonitor::get_all_target_info(common::ObIArray<ObPxTargetInfo> &tar
   target_info_array.reset();
   ObPxTargetInfo monitor_info;
   monitor_info.server_ = server_;
-
   monitor_info.is_leader_ = true;
   monitor_info.parallel_servers_target_ = parallel_servers_target_;
   monitor_info.peer_server_ = server_;

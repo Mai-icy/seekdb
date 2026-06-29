@@ -806,7 +806,7 @@ int ObDDLLock::check_has_dependent_task(const int64_t current_task_id,
 
   if (OB_FAIL(sql_string.assign_fmt("SELECT EXISTS(SELECT 1 FROM %s WHERE task_id != %ld AND ddl_type = %d "
                                     "AND (object_id = %lu OR target_object_id = %lu)) as has",
-      OB_ALL_DDL_TASK_STATUS_TNAME, current_task_id, share::ObDDLType::DDL_FORK_TABLE, table_id, table_id))) {
+      share::OB_ALL_DDL_TASK_STATUS_TNAME, current_task_id, share::ObDDLType::DDL_FORK_TABLE, table_id, table_id))) {
     LOG_WARN("assign sql string failed", K(ret));
   } else {
     ObInnerSQLConnection *iconn = static_cast<ObInnerSQLConnection *>(trans.get_connection());

@@ -479,18 +479,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigWorkAreaPolicyChecker);
 };
 
-class ObConfigLogArchiveOptionsChecker
-  : public ObConfigChecker
-{
-public:
-  ObConfigLogArchiveOptionsChecker() {}
-  virtual ~ObConfigLogArchiveOptionsChecker() {}
-  //TODO(yaoying.yyy): backup fix it
-  bool check(const ObConfigItem &t) const;
-private:
-  DISALLOW_COPY_AND_ASSIGN(ObConfigLogArchiveOptionsChecker);
-};
-
 class ObConfigRpcChecksumChecker
   : public ObConfigChecker
 {
@@ -882,19 +870,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigParser);
 };
 
-class ObKvFeatureModeParser : public ObConfigParser
-{
-public:
-  ObKvFeatureModeParser() {}
-  virtual ~ObKvFeatureModeParser() {}
-  virtual bool parse(const char *str, uint8_t *arr, int64_t len) override;
-public:
-  static const int16_t MODE_DEFAULT = 0b00;
-  static const int16_t MODE_ON = 0b01;
-  static const int16_t MODE_OFF = 0b10;
-  DISALLOW_COPY_AND_ASSIGN(ObKvFeatureModeParser);
-};
-
 class ObConfigIndexStatsModeChecker : public ObConfigChecker {
 public:
   ObConfigIndexStatsModeChecker(){}
@@ -920,16 +895,6 @@ class ObConfigDDLNoLoggingChecker: public ObConfigChecker {
     DISALLOW_COPY_AND_ASSIGN(ObConfigDDLNoLoggingChecker);
 };
 
-class ObConfigArchiveLagTargetChecker {
-public:
-  ObConfigArchiveLagTargetChecker(){}
-  virtual ~ObConfigArchiveLagTargetChecker(){}
-  static bool check(const obcall::ObAdminSetConfigItem &t);
-private:
-  DISALLOW_COPY_AND_ASSIGN(ObConfigArchiveLagTargetChecker);
-};
-
-
 class ObParallelDDLControlParser : public ObConfigParser
 {
 public:
@@ -942,17 +907,6 @@ public:
   static const uint8_t MODE_ON = 0b10;
 private:
   DISALLOW_COPY_AND_ASSIGN(ObParallelDDLControlParser);
-};
-
-class ObConfigKvGroupCommitRWModeChecker
-  : public ObConfigChecker
-{
-public:
-  ObConfigKvGroupCommitRWModeChecker() {}
-  virtual ~ObConfigKvGroupCommitRWModeChecker() {}
-  bool check(const ObConfigItem &t) const;
-private:
-  DISALLOW_COPY_AND_ASSIGN(ObConfigKvGroupCommitRWModeChecker);
 };
 
 class ObConfigRegexpEngineChecker

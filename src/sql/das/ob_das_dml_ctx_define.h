@@ -63,7 +63,6 @@ public:
                        K_(is_ignore),
                        K_(is_batch_stmt),
                        K_(is_insert_up),
-                       K_(is_table_api),
                        K_(is_main_table_in_fts_ddl),
                        K_(tz_info),
                        K_(table_param));
@@ -86,7 +85,7 @@ public:
       uint64_t is_ignore_                       : 1;
       uint64_t is_batch_stmt_                   : 1;
       uint64_t is_insert_up_                    : 1;
-      uint64_t is_table_api_                    : 1;
+      uint64_t reserved_compat_flag_0_          : 1;
       uint64_t is_access_mlog_as_master_table_  : 1;
       uint64_t is_access_vidx_as_master_table_  : 1; // FARM COMPAT WHITELIST for 4_2_1_release compatibility
       uint64_t is_update_partition_key_         : 1; // FARM COMPAT WHITELIST for 4_2_1_release compatibility
@@ -206,7 +205,7 @@ public:
   bool is_duplicated_;
   // used in direct-insert mode
   int64_t direct_insert_task_id_;
-  // use put, only use in obkv for overlay writting.
+  // use put semantics for overlay writing.
   bool use_put_;
   int64_t ddl_task_id_;
 };

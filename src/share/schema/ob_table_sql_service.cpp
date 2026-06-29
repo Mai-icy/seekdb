@@ -3105,8 +3105,6 @@ int ObTableSqlService::gen_table_dml_without_check(
   const int64_t sub_part_num = sub_part_option.get_part_num();
   const char *ttl_definition = table.get_ttl_definition().empty() ?
     "" : table.get_ttl_definition().ptr();
-  const char *kv_attributes = table.get_kv_attributes().empty() ?
-    "" : table.get_kv_attributes().ptr();
   const char *storage_cache_policy = table.get_storage_cache_policy().empty() ?
       OB_DEFAULT_STORAGE_CACHE_POLICY_STR : table.get_storage_cache_policy().ptr();
   ObString index_params = table.get_index_params().empty() ? empty_str : table.get_index_params();
@@ -3203,7 +3201,6 @@ int ObTableSqlService::gen_table_dml_without_check(
       || (OB_FAIL(dml.add_column("external_file_format", ObHexEscapeSqlStr(table.get_external_file_format()))))
       || (OB_FAIL(dml.add_column("external_file_pattern", ObHexEscapeSqlStr(table.get_external_file_pattern()))))
       || (OB_FAIL(dml.add_column("ttl_definition", ObHexEscapeSqlStr(ttl_definition))))
-      || (OB_FAIL(dml.add_column("kv_attributes", ObHexEscapeSqlStr(kv_attributes))))
       || (OB_FAIL(dml.add_column("name_generated_type", table.get_name_generated_type())))
       || (OB_FAIL(dml.add_column("lob_inrow_threshold", table.get_lob_inrow_threshold())))
       || (OB_FAIL(dml.add_column("max_used_column_group_id", table.get_max_used_column_group_id())))
@@ -5264,7 +5261,7 @@ int ObTableSqlService::check_table_options(const ObTableSchema &table)
   return ret;
 }
 
-// this interface have been used by parallel set comment and set kv_attribute(for hbase)
+// this interface is used by parallel table option updates.
 // since parallel ddl have to allocate schema version previously
 // any modification of this interface should think the times of generate schema version carefully
 int ObTableSqlService::only_update_table_options(ObISQLClient &sql_client,

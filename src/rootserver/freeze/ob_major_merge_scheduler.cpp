@@ -20,6 +20,7 @@
 #include "rootserver/ob_rs_event_history_table_operator.h" // for ROOTSERVICE_EVENT_ADD
 #include "share/ob_tablet_meta_table_compaction_operator.h"
 #include "share/ob_global_merge_table_operator.h"
+#include "rootserver/freeze/ob_major_merge_info_manager.h"
 
 namespace oceanbase
 {

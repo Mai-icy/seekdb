@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 #include "sql/engine/cmd/ob_table_executor.h"
 #include "rootserver/ob_rs_serial_call.h"
+#include "rootserver/ob_root_service.h"
 #include "sql/engine/expr/ob_expr_regexp_context.h"  // ObExprRegexpSessionVariables (unity regroup)
 #include "sql/engine/cmd/ob_index_executor.h"
 #include "sql/engine/cmd/ob_ddl_executor_util.h"

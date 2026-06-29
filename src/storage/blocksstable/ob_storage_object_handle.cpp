@@ -17,7 +17,11 @@
 #define USING_LOG_PREFIX STORAGE
 
 #include "ob_storage_object_handle.h"
+#include "storage/blocksstable/ob_block_manager.h"
 #include "share/ob_io_device_helper.h"
+#include "share/io/ob_io_manager.h"
+#include "share/config/ob_server_config.h"
+#include "share/rc/ob_tenant_base.h"
 
 namespace oceanbase
 {

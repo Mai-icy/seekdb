@@ -370,7 +370,7 @@ public:
       const ObDMLBaseParam &dml_param,
       const ObIArray<uint64_t> &column_ids,
       ObDatumRowIterator *row_iter,
-      int64_t &affected_rows); // for htable, insert or update
+      int64_t &affected_rows);
   int delete_rows(
       ObTabletHandle &tablet_handle,
       ObStoreCtx &ctx,

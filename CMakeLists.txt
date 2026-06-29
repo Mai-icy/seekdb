@@ -159,12 +159,6 @@ cmake_dependent_option(
   "NOT OB_BUILD_PACKAGE" ON
 )
 
-# OB_BUILD_PACKAGE => build OB_BUILD_LIBOBTABLE
-cmake_dependent_option(
-  OB_BUILD_LIBOBTABLE "Build liboblog" OFF
-  "NOT OB_BUILD_PACKAGE" ON
-)
-
 include(CTest)
 if (OB_BUILD_UNITTEST)
   add_subdirectory(unittest)

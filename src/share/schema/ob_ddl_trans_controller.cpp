@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX RS
 #include "ob_ddl_trans_controller.h"
 #include "rootserver/ob_root_service.h"
+#include "observer/ob_service.h"
 
 
 namespace oceanbase

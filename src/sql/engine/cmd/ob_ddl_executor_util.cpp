@@ -15,8 +15,10 @@
  */
 
 #define USING_LOG_PREFIX SQL_ENG
+#include "rootserver/ob_root_service.h"
 #include "ob_ddl_executor_util.h"
 #include "observer/ob_ex_rpc.h"
+#include "observer/ob_service.h"
 #include "observer/ob_server_event_history_table_operator.h"
 
 namespace oceanbase

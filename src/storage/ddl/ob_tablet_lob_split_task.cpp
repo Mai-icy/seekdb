@@ -20,6 +20,7 @@
 #include "storage/compaction/ob_schedule_dag_func.h"
 #include "share/scheduler/ob_dag_warning_history_mgr.h"
 #include "observer/ob_server_event_history_table_operator.h"
+#include "rootserver/ob_root_service.h"
 
 namespace oceanbase
 {

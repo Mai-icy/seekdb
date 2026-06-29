@@ -18,6 +18,7 @@
 // for materialized view
 #include "ob_multi_version_schema_service.h"
 #include "observer/ob_server.h"
+#include "observer/ob_service.h"
 #include "share/rc/ob_tenant_base.h"
 #ifdef __APPLE__
 #include <unistd.h> // For useconds_t on macOS

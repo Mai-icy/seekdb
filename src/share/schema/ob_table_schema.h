@@ -1469,7 +1469,6 @@ public:
   void forbid_auto_partition();
   void clear_constraint();
   int set_ttl_definition(const common::ObString &ttl_definition) { return deep_copy_str(ttl_definition, ttl_definition_); }
-  int set_kv_attributes(const common::ObString &kv_attributes) { return deep_copy_str(kv_attributes, kv_attributes_); }
   int set_index_params(const common::ObString &index_params) { return deep_copy_str(index_params, index_params_); }
   int set_exec_env(const common::ObString &exec_env) { return deep_copy_str(exec_env, exec_env_); }
   void set_lob_inrow_threshold(const int64_t lob_inrow_threshold) { lob_inrow_threshold_ = lob_inrow_threshold;}
@@ -1564,7 +1563,6 @@ public:
   inline ObViewSchema &get_view_schema() { return view_schema_; }
   inline const ObViewSchema &get_view_schema() const { return view_schema_; }
   inline const common::ObString &get_ttl_definition() const { return ttl_definition_; }
-  inline const common::ObString &get_kv_attributes() const { return kv_attributes_; }
   inline const common::ObString &get_index_params() const { return index_params_; }
   inline const common::ObString &get_exec_env() const { return exec_env_; }
   inline int64_t get_lob_inrow_threshold() const { return lob_inrow_threshold_; }
@@ -1873,8 +1871,6 @@ public:
 
   int get_fk_check_index_tid(ObSchemaGetterGuard &schema_guard, const common::ObIArray<uint64_t> &parent_column_ids, uint64_t &scan_index_tid) const;
   int check_rowkey_column(const common::ObIArray<uint64_t> &parent_column_ids, bool &is_rowkey) const;
-  int is_hbase_table(bool &is_h_table) const;
-
   // trigger
   inline const common::ObIArray<uint64_t> &get_trigger_list() const
   {
@@ -2245,8 +2241,6 @@ protected:
 
   // table ttl
   common::ObString ttl_definition_;
-  // kv attributes
-  common::ObString kv_attributes_;
   ObNameGeneratedType name_generated_type_;
   int64_t lob_inrow_threshold_;
   int64_t auto_increment_cache_size_;

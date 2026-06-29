@@ -72,8 +72,7 @@ public:
       OB_EASY_REQUEST_MPQUERY_PROCESS_DONE    = 12,
       OB_EASY_REQUEST_RPC_PROCESSOR_RUN_DONE  = 13,
       OB_EASY_REQUEST_RPC_ASYNC_RSP           = 14,
-      OB_EASY_REQUEST_TABLE_API_END_TRANS     = 15,
-      OB_EASY_REQUEST_TABLE_API_ACOM_TRANS    = 16,
+      // 15 and 16 are reserved for removed request states.
       OB_EASY_REQUEST_WAKEUP                  = 255,
       OB_FINISH_SQL_REQUEST                   = 256,
   };

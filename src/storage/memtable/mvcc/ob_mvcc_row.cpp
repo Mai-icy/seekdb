@@ -1025,7 +1025,7 @@ int ObMvccRow::mvcc_sanity_check_(const SCN snapshot_version,
 {
   int ret = OB_SUCCESS;
 
-  const bool compliant_with_sql_semantic = !write_flag.is_table_api();
+  const bool compliant_with_sql_semantic = true;
 
   if (NULL != prev) {
     if (blocksstable::ObDmlFlag::DF_INSERT == node.get_dml_flag()

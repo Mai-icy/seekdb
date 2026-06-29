@@ -17,6 +17,7 @@
 
 #include "log_io_worker.h"
 #include "palf_env_impl.h"                    // PalfEnvImpl
+#include "lib/stat/ob_diagnostic_info_guard.h" // EVENT_INC
 
 namespace oceanbase
 {

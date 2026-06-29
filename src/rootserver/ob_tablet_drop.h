@@ -17,12 +17,29 @@
 #ifndef OB_TABLE_DROP_H
 #define OB_TABLE_DROP_H
 
+#include "lib/container/ob_array.h"
+#include "lib/container/ob_iarray.h"
+#include "lib/allocator/ob_malloc.h"
+#include "lib/mysqlclient/ob_mysql_transaction.h"
+#include "share/ob_define.h"
+#include "common/ob_tablet_id.h"
+#include "share/ob_ls_id.h"
 
 namespace oceanbase
 {
+namespace share
+{
+namespace schema
+{
+class ObTableSchema;
+}
+
+class ObLSID;
+}
+
 namespace rpc
 {
-  class ObBatchRemoveTabletArg;
+class ObBatchRemoveTabletArg;
 }
 namespace rootserver
 {

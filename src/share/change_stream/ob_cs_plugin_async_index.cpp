@@ -756,7 +756,6 @@ int ObCSAsyncIndexProcessor::build_das_ins_ctdef_(common::ObArenaAllocator &allo
         }
         ins_ctdef->is_ignore_ = false;
         ins_ctdef->is_batch_stmt_ = false;
-        ins_ctdef->is_table_api_ = false;
         // Direct insert into index_id_table: bypass ObVecIndexDMLIterator which returns 0 rows for
         // is_no_need_update_vector_index() (vec_index_id_type). Use raw write_iter path instead.
         ins_ctdef->is_access_vidx_as_master_table_ = true;

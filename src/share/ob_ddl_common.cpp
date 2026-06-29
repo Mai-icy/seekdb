@@ -190,9 +190,6 @@ const char *oceanbase::share::get_ddl_type(ObDDLType ddl_type)
     case ObDDLType::DDL_DIRECT_LOAD_INSERT:
       ret_name = "DDL_DIRECT_LOAD_INSERT";
       break;
-    case ObDDLType::DDL_TABLE_RESTORE:
-      ret_name = "DDL_TABLE_RESTORE";
-      break;
     case ObDDLType::DDL_MVIEW_COMPLETE_REFRESH:
       ret_name = "DDL_MVIEW_COMPLETE_REFRESH";
       break;

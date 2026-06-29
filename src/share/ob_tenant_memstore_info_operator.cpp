@@ -21,6 +21,7 @@
 #include "lib/string/ob_sql_string.h"
 #include "lib/mysqlclient/ob_mysql_proxy.h"
 #include "src/share/inner_table/ob_inner_table_schema_constants.h"
+#include "share/ob_server_struct.h"
 
 namespace oceanbase
 {
@@ -101,4 +102,3 @@ int ObTenantMemstoreInfoOperator::get(
 
 }//end namespace share
 }//end namespace oceanbase
-

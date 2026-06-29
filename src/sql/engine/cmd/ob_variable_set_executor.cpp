@@ -19,6 +19,7 @@
 #include "observer/ob_sql_client_decorator.h"
 #include "sql/engine/cmd/ob_variable_set_executor.h"
 #include "rootserver/ob_rs_serial_call.h"
+#include "rootserver/ob_root_service.h"
 #include "observer/ob_server.h"
 #include "sql/resolver/expr/ob_raw_expr_util.h"
 #include "sql/rewrite/ob_transform_pre_process.h"

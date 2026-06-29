@@ -20,10 +20,7 @@
 #include "share/ob_resource_limit.h"
 #include "share/table/ob_ttl_util.h"
 #include "src/observer/ob_server.h"
-#include "share/config/ob_config_mode_name_def.h"
-#include "share/io/ob_backup_storage_info.h"
 #include "plugin/sys/ob_plugin_load_param.h"
-#include "share/table/ob_table_config_util.h"
 
 namespace oceanbase
 {
@@ -481,13 +478,6 @@ bool ObConfigWorkAreaPolicyChecker::check(const ObConfigItem &t) const
 {
   const ObString tmp_str(t.str());
   return ((0 == tmp_str.case_compare(MANUAL)) || (0 == tmp_str.case_compare(AUTO)));
-}
-
-bool ObConfigLogArchiveOptionsChecker::check(const ObConfigItem &t) const
-{
-  // Log archive removed; parameter retained for compatibility
-  UNUSED(t);
-  return true;
 }
 
 bool ObConfigRpcChecksumChecker::check(const ObConfigItem &t) const
@@ -1107,63 +1097,6 @@ int ObModeConfigParserUitl::get_kv_list(char *str, ObIArray<std::pair<ObString, 
   return ret;
 }
 
-bool ObKvFeatureModeParser::parse(const char *str, uint8_t *arr, int64_t len)
-{
-  bool bret = true;
-  if (str ==  NULL || arr == NULL) {
-    bret = false;
-    OB_LOG_RET(WARN, OB_ERR_UNEXPECTED, "Get mode config item fail, str or value arr is NULL!");
-  } else if (strlen(str) == 0) {
-    bret = true;
-    OB_LOG_RET(DEBUG, OB_SUCCESS, "strlen is 0");
-  } else {
-    int tmp_ret = OB_SUCCESS;
-    ObSEArray<std::pair<ObString, ObString>, 8> kv_list;
-    int64_t str_len = strlen(str);
-    const int64_t buf_len = 3 * str_len; // need replace ',' to ' , '
-    char buf[buf_len];
-    MEMSET(buf, 0, sizeof(buf));
-    MEMCPY(buf, str, str_len);
-    if (OB_SUCCESS != (tmp_ret = ObModeConfigParserUitl::format_mode_str(str, str_len, buf, buf_len))) {
-      bret = false;
-      OB_LOG_RET(WARN, tmp_ret, "fail to format mode str", K(str));
-    } else if (OB_SUCCESS != (tmp_ret = ObModeConfigParserUitl::get_kv_list(buf, kv_list))) {
-      bret = false;
-      OB_LOG_RET(WARN, tmp_ret, "fail to get kv list", K(str));
-    } else {
-      ObKVFeatureMode kv_mode;
-      for (int64_t i = 0; i < kv_list.count() && bret; i++) {
-        uint16_t mode = MODE_DEFAULT;
-        if (kv_list.at(i).second.case_compare(MODE_VAL_ON) == 0) {
-          mode = MODE_ON;
-        } else if (kv_list.at(i).second.case_compare(MODE_VAL_OFF) == 0) {
-          mode = MODE_OFF;
-        } else {
-          bret = false;
-          OB_LOG_RET(WARN, OB_INVALID_CONFIG, "unknown mode type", K(kv_list.at(i).second));
-        }
-        if (!bret) {
-        } else if (kv_list.at(i).first.case_compare(MODE_NAME_TTL) == 0) {
-          kv_mode.set_ttl_mode(mode);
-        } else if (kv_list.at(i).first.case_compare(MODE_NAME_REROUTING) == 0) {
-          kv_mode.set_rerouting_mode(mode);
-        } else if (kv_list.at(i).first.case_compare(MODE_NAME_HOTKEY) == 0) {
-          kv_mode.set_hotkey_mode(mode);
-        } else {
-          bret = false;
-          OB_LOG_RET(WARN, OB_INVALID_CONFIG, "unknown mode name", K(kv_list.at(i).first));
-        }
-      } // end for
-      if (bret) {
-        int16_t mode_value = kv_mode.get_value();
-        arr[0] = (mode_value & 0xFF);
-        arr[1] = ((mode_value >> 8) & 0xFF);
-      }
-    }
-  }
-  return bret;
-}
-
 bool ObConfigIndexStatsModeChecker::check(const ObConfigItem &t) const {
   const ObString tmp_str(t.str());
   return 0 == tmp_str.case_compare("SAMPLED") || 0 == tmp_str.case_compare("ALL");
@@ -1193,14 +1126,6 @@ bool ObConfigDDLNoLoggingChecker::check(const obcall::ObAdminSetConfigItem &t) {
     is_valid = false;
   }
   return is_valid;
-}
-
-bool ObConfigArchiveLagTargetChecker::check(const ObAdminSetConfigItem &t)
-{
-  // Log archive removed, log_archive_dest can never be set
-  UNUSED(t);
-  LOG_USER_ERROR(OB_OP_NOT_ALLOW, "log_archive_dest has not been set, set archive_lag_target is");
-  return false;
 }
 
 bool ObConfigSQLSpillCompressionCodecChecker::check(const ObConfigItem &t) const
@@ -1267,14 +1192,6 @@ bool ObParallelDDLControlParser::parse(const char *str, uint8_t *arr, int64_t le
     }
   }
   return bret;
-}
-
-bool ObConfigKvGroupCommitRWModeChecker::check(const ObConfigItem &t) const
-{
-  ObString v_str(t.str());
-  return 0 == v_str.case_compare("all")
-    || 0 == v_str.case_compare("read")
-    || 0 == v_str.case_compare("write");
 }
 
 bool ObConfigDegradationPolicyChecker::check(const ObConfigItem &t) const

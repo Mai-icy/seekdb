@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 #include "sql/engine/cmd/ob_user_cmd_executor.h"
 #include "rootserver/ob_rs_serial_call.h"
+#include "rootserver/ob_root_service.h"
 
 #include "lib/encrypt/ob_encrypted_helper.h"
 #include "sql/resolver/dcl/ob_create_user_stmt.h"

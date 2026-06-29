@@ -293,8 +293,6 @@ public:
 
 class ObTTLUtil
 {
-private:
-  static const char* HBASE_KV_ATTR_FORMAT_STR;
 public:
   static int parse(const char* str, ObTTLDutyDuration& duration);
   static bool current_in_duration(ObTTLDutyDuration& duration);
@@ -349,7 +347,6 @@ public:
   static bool check_can_process_tenant_tasks();
 
   static int parse_kv_attributes(const ObString &kv_attributes, ObKVAttr &kv_attr);
-  static int format_kv_attributes_to_json_str(ObIAllocator &allocator, const ObKVAttr &kv_attr, ObString &json_str);
   static int dispatch_ttl_cmd(const ObTTLParam &param);
   static int get_ttl_info(const ObTTLParam &param, ObIArray<ObSimpleTTLInfo> &ttl_info_array);
 
@@ -372,19 +369,12 @@ public:
                                  const share::schema::ObTableSchema &table_schema,
                                  ObPartitionLevel part_level,
                                  bool by_admin = false);
-  static int check_htable_ddl_supported(const share::schema::ObTableSchema &table_schema,
-                                        bool by_admin,
-                                        obcall::ObHTableDDLType ddl_type = obcall::ObHTableDDLType::INVALID,
-                                        const ObString &table_name = ObString());
-  static int check_htable_ddl_supported(share::schema::ObSchemaGetterGuard &schema_guard,
-                                        const common::ObIArray<share::schema::ObDependencyInfo> &dep_infos);
   const static uint64_t TTL_TENNAT_TASK_TABLET_ID = -1;
   const static uint64_t TTL_TENNAT_TASK_TABLE_ID = -1;
   const static uint64_t TTL_ROWKEY_TASK_TABLET_ID = -2;
   const static uint64_t TTL_ROWKEY_TASK_TABLE_ID = -2;
   const static uint64_t TTL_THREAD_MAX_SCORE = 100;
  private:
-  static int check_htable_ddl_supported_(const ObKVAttr &attr, bool by_admin);
   static int check_is_htable_ttl_(const ObTableSchema &table_schema, bool allow_timeseries_table, bool &is_ttl_table);
 private:
   static bool extract_val(const char* ptr, uint64_t len, int& val);
@@ -394,8 +384,6 @@ private:
                                      const ObSimpleTTLInfo &ttl_info);
   static int get_all_user_tenant_ttl(common::ObIArray<ObSimpleTTLInfo> &ttl_info_array);
   static int parse_kv_attributes_table(json::Value *ast);
-  static int parse_kv_attributes_hbase(json::Value *ast, ObKVAttr &kv_attr);
-  static int parse_kv_attributes_redis(json::Value *ast, ObKVAttr &kv_attr);
 private:
   DISALLOW_COPY_AND_ASSIGN(ObTTLUtil);
 };

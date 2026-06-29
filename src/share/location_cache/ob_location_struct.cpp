@@ -18,7 +18,10 @@
 
 #include "share/location_cache/ob_location_struct.h"
 #include "share/config/ob_server_config.h" // GCONF
+#include "share/ob_server_struct.h"
 #include "share/transfer/ob_transfer_info.h"
+#include "lib/stat/ob_diagnostic_info_guard.h"
+#include "lib/statistic_event/ob_stat_event.h"
 
 namespace oceanbase
 {
@@ -740,7 +743,6 @@ bool ObTabletLSKey::operator ==(const ObTabletLSKey &other) const
   return tablet_id_ == other.tablet_id_;
 }
 
-//TODO: Reserved for tableapi. Need remove.
 bool ObTabletLSCacheKey::operator ==(const ObIKVCacheKey &other) const
 {
   const ObTabletLSCacheKey &other_key

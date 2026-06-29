@@ -23,7 +23,6 @@
 #include "rootserver/ddl_task/ob_drop_lob_task.h"
 #include "rootserver/ddl_task/ob_build_mview_task.h"
 #include "rootserver/ddl_task/ob_fts_index_build_task.h"
-#include "rootserver/ddl_task/ob_recover_restore_table_task.h"
 #include "rootserver/ddl_task/ob_build_mview_task.h"
 #include "rootserver/ddl_task/ob_drop_vec_ivf_index_task.h"
 #include "rootserver/ddl_task/ob_rebuild_index_task.h"
@@ -1466,22 +1465,6 @@ int ObDDLScheduler::create_ddl_task(const ObCreateDDLTaskParam &param,
                                             *param.allocator_,
                                             task_record))) {
           LOG_WARN("fail to create build mview task", K(ret));
-        }
-        break;
-      case DDL_TABLE_RESTORE:
-        if (OB_FAIL(create_recover_restore_table_task(proxy,
-                                                   param.type_,
-                                                   param.src_table_schema_,
-                                                   param.dest_table_schema_,
-                                                   param.parallelism_,
-                                                   param.consumer_group_id_,
-                                                   param.task_id_,
-                                                   param.sub_task_trace_id_,
-                                                   static_cast<const obcall::ObAlterTableArg *>(param.ddl_arg_),
-                                                   param.tenant_data_version_,
-                                                   *param.allocator_,
-                                                   task_record))) {
-          LOG_WARN("fail to create recover restore table task", K(ret));
         }
         break;
       case DDL_DROP_PRIMARY_KEY:
@@ -2934,52 +2917,6 @@ int ObDDLScheduler::create_partition_split_task(
   return ret;
 }
 
-int ObDDLScheduler::create_recover_restore_table_task(
-    common::ObISQLClient &proxy,
-    const share::ObDDLType &type,
-    const share::schema::ObTableSchema *src_schema,
-    const share::schema::ObTableSchema *dest_schema,
-    const int64_t parallelism,
-    const int64_t consumer_group_id,
-    const int64_t task_id,
-    const int32_t sub_task_trace_id,
-    const obcall::ObAlterTableArg *alter_table_arg,
-    const uint64_t tenant_data_version,
-    ObIAllocator &allocator,
-    ObDDLTaskRecord &task_record)
-{
-  int ret = OB_SUCCESS;
-  int64_t target_cg_cnt = 0;
-  SMART_VAR(ObRecoverRestoreTableTask, redefinition_task) {
-    if (OB_UNLIKELY(!is_inited_)) {
-      ret = OB_NOT_INIT;
-      LOG_WARN("ObDDLScheduler has not been inited", K(ret));
-    } else if (OB_UNLIKELY(0 == task_id || tenant_data_version <= 0)
-        || OB_ISNULL(alter_table_arg) || OB_ISNULL(src_schema) || OB_ISNULL(dest_schema)) {
-      ret = OB_INVALID_ARGUMENT;
-      LOG_WARN("invalid arguments", K(ret), K(task_id), KP(alter_table_arg), KP(src_schema), KP(dest_schema), K(tenant_data_version));
-    } else if (OB_FAIL(dest_schema->get_store_column_group_count(target_cg_cnt))) {
-      LOG_WARN("fail to get store cg cnt", K(ret), KPC(dest_schema));
-    } else if (OB_FAIL(redefinition_task.init(src_schema,
-                                              dest_schema,
-                                              task_id,
-                                              type,
-                                              parallelism,
-                                              consumer_group_id,
-                                              sub_task_trace_id,
-                                              *alter_table_arg,
-                                              tenant_data_version))) {
-      LOG_WARN("fail to init redefinition task", K(ret));
-    } else if (OB_FAIL(redefinition_task.set_trace_id(*ObCurTraceId::get_trace_id()))) {
-      LOG_WARN("set trace id failed", K(ret));
-    } else if (OB_FAIL(insert_task_record(proxy, redefinition_task, allocator, task_record))) {
-      LOG_WARN("fail to insert task record", K(ret));
-    }
-    LOG_INFO("ddl_scheduler create table redefinition task finished", K(ret), K(redefinition_task), K(common::lbt()));
-  }
-  return ret;
-}
-
 int ObDDLScheduler::create_fork_table_task(
     common::ObISQLClient &proxy,
     const share::schema::ObTableSchema *src_table_schema,
@@ -3279,9 +3216,6 @@ int ObDDLScheduler::schedule_ddl_task(const ObDDLTaskRecord &record)
         if (OB_FAIL(schedule_partition_split_task(record))) {
           LOG_WARN("schedule partition split task failed", K(ret));
         }
-        break;
-      case DDL_TABLE_RESTORE:
-        ret = schedule_recover_restore_table_task(record);
         break;
       default: {
         ret = OB_NOT_SUPPORTED;
@@ -3818,32 +3752,6 @@ int ObDDLScheduler::schedule_drop_lob_task(const ObDDLTaskRecord &task_record)
   return ret;
 }
 
-int ObDDLScheduler::schedule_recover_restore_table_task(const ObDDLTaskRecord &task_record)
-{
-  int ret = OB_SUCCESS;
-  ObRecoverRestoreTableTask *redefinition_task = nullptr;
-  if (OB_UNLIKELY(!is_inited_)) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("ObDDLScheduler has not been inited", K(ret));
-  } else if (OB_FAIL(alloc_ddl_task(redefinition_task))) {
-    LOG_WARN("alloc ddl task failed", K(ret));
-  } else if (OB_FAIL(redefinition_task->init(task_record))) {
-    LOG_WARN("init table redefinition task failed", K(ret));
-  } else if (OB_FAIL(redefinition_task->set_trace_id(task_record.trace_id_))) {
-    LOG_WARN("set trace id failed", K(ret));
-  } else if (OB_FAIL(inner_schedule_ddl_task(redefinition_task, task_record))) {
-    if (OB_ENTRY_EXIST != ret) {
-      LOG_WARN("inner schedule task failed", K(ret), K(*redefinition_task));
-    }
-  }
-  if (OB_FAIL(ret) && nullptr != redefinition_task) {
-    redefinition_task->~ObRecoverRestoreTableTask();
-    allocator_.free(redefinition_task);
-    redefinition_task = nullptr;
-  }
-  return ret;
-}
-
 int ObDDLScheduler::schedule_fork_table_task(
     const ObDDLTaskRecord &task_record)
 {
@@ -4171,11 +4079,6 @@ int ObDDLScheduler::on_sstable_complement_job_reply(
           case ObDDLType::DDL_MODIFY_AUTO_INCREMENT_WITH_REDEFINITION:
           case ObDDLType::DDL_PARTITION_SPLIT_RECOVERY_TABLE_REDEFINITION:
             if (OB_FAIL(static_cast<ObTableRedefinitionTask *>(&task)->update_complete_sstable_job_status(tablet_id, svr, snapshot_version, execution_id, ret_code, addition_info))) {
-              LOG_WARN("update complete sstable job status", K(ret));
-            }
-            break;
-          case ObDDLType::DDL_TABLE_RESTORE:
-            if (OB_FAIL(static_cast<ObRecoverRestoreTableTask *>(&task)->update_complete_sstable_job_status(tablet_id, svr, snapshot_version, execution_id, ret_code, addition_info))) {
               LOG_WARN("update complete sstable job status", K(ret));
             }
             break;

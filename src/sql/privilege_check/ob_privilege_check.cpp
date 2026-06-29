@@ -1851,7 +1851,6 @@ int get_sys_tenant_alter_system_priv(
              stmt::T_CLEAR_MERGE_ERROR != basic_stmt->get_stmt_type() &&
              stmt::T_ADMIN_MERGE != basic_stmt->get_stmt_type() &&
              stmt::T_RECOVER != basic_stmt->get_stmt_type() &&
-             stmt::T_TABLE_TTL != basic_stmt->get_stmt_type() &&
              stmt::T_ALTER_SYSTEM_RESET_PARAMETER != basic_stmt->get_stmt_type() &&
              stmt::T_MODULE_DATA != basic_stmt->get_stmt_type() &&
              stmt::T_SERVICE_NAME != basic_stmt->get_stmt_type() &&

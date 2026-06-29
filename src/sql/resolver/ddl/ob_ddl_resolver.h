@@ -379,8 +379,6 @@ public:
       const share::schema::ObColumnSchemaV2 &column,
       common::ObObjCastParams &params, common::ObObj &def_val);
   int check_partition_name_duplicate(ParseNode *node);
-  static int check_hbase_tbl_auto_partkey(const ObIArray<ObString> &part_keys);
-  static int check_hbase_tbl_auto_partkey(const ObTableSchema &table_schema);
   static int check_text_column_length_and_promote(share::schema::ObColumnSchemaV2 &column,
                                                   int64_t table_id,
                                                   const bool is_byte_length = false);
@@ -1046,7 +1044,6 @@ protected:
   int64_t hash_subpart_num_;
   bool is_external_table_;
   common::ObString ttl_definition_;
-  common::ObString kv_attributes_;
   common::ObString storage_cache_policy_;
   ObNameGeneratedType name_generated_type_;
   bool have_generate_fts_arg_;

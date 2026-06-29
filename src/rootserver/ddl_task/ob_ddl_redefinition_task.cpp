@@ -635,7 +635,7 @@ int ObDDLRedefinitionTask::send_build_single_replica_request()
         LOG_WARN("fail to get tablets", K(ret), K(object_id_));
       } else if (OB_FAIL(ObDDLUtil::get_tablets(target_object_id_, param.dest_tablet_ids_))) {
         LOG_WARN("fail to get tablets", K(ret), K(target_object_id_));
-      } 
+      }
       const int64_t src_tablet_cnt = param.source_tablet_ids_.count();
       for (int64_t i = 0; OB_SUCC(ret) && i < src_tablet_cnt; ++i) {
         if (OB_FAIL(param.source_table_ids_.push_back(object_id_))) {
@@ -1090,7 +1090,7 @@ int ObDDLRedefinitionTask::sync_auto_increment_position()
       && dst_column_schema->is_autoincrement()) {
         // Worker timeout ts here is default value, i.e., INT64_MAX,
         // which leads to RPC-receiver worker timeout due to overflow when select val from __ALL_AUTO_INCREMENT.
-        // More details, refer to comments in 
+        // More details, refer to comments in
         const int64_t save_timeout_ts = THIS_WORKER.get_timeout_ts();
         THIS_WORKER.set_timeout_ts(ObTimeUtility::current_time() + max(GCONF.rpc_timeout, static_cast<int64_t>(1000 * 1000 * 20)));
         ObAutoincrementService &auto_inc_service = ObAutoincrementService::get_instance();
@@ -1118,14 +1118,7 @@ int ObDDLRedefinitionTask::sync_auto_increment_position()
         } else {
           for (int64_t retry_cnt = 100; OB_SUCC(ret) && retry_cnt > 0; retry_cnt--) {
             if (OB_FAIL(auto_inc_service.sync_insert_value_global(param))) {
-              if (DDL_TABLE_RESTORE == task_type_ && share::ObIDDLTask::in_ddl_retry_white_list(ret)) {
-                if (TC_REACH_TIME_INTERVAL(10L * 1000L * 1000L)) {
-                  LOG_INFO("set auto increment position failed, retry", K(ret), K(target_object_id_), K(cur_column_id), K(param));
-                }
-                ret = OB_SUCCESS;
-              } else {
-                LOG_WARN("set auto increment position failed", K(ret), K(target_object_id_), K(cur_column_id), K(param));
-              }
+              LOG_WARN("set auto increment position failed", K(ret), K(target_object_id_), K(cur_column_id), K(param));
             } else {
               break;
             }
@@ -1501,7 +1494,7 @@ bool ObDDLRedefinitionTask::check_need_sync_stats_history() {
 }
 
 bool ObDDLRedefinitionTask::check_need_sync_stats() {
-  // bugfix: 
+  // bugfix:
   // shouldn't sync stats if the ddl task is from load data's direct_load
   return ObDDLType::DDL_DIRECT_LOAD != task_type_
       && ObDDLType::DDL_DIRECT_LOAD_INSERT != task_type_
@@ -2430,8 +2423,8 @@ int ObDDLRedefinitionTask::check_need_check_table_empty(bool &need_check_table_e
 }
 
 int ObDDLRedefinitionTask::generate_rebuild_index_arg_list(
-    const int64_t table_id, 
-    ObSchemaGetterGuard &schema_guard, 
+    const int64_t table_id,
+    ObSchemaGetterGuard &schema_guard,
     obcall::ObAlterTableArg &alter_table_arg)
 {
   int ret = OB_SUCCESS;

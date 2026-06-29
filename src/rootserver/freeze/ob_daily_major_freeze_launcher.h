@@ -19,7 +19,7 @@
 
 #include "share/ob_define.h"
 #include "lib/net/ob_addr.h"
-#include "lib/thread/thread_mgr_interface.h"
+#include "lib/thread/thread_mgr.h"
 #include "share/scn.h"
 
 namespace oceanbase

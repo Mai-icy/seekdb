@@ -19,7 +19,6 @@
 #include "share/table/ob_ttl_util.h"
 #include "observer/omt/ob_tenant_timezone_mgr.h"
 #include "share/location_cache/ob_location_service.h"
-#include "share/table/ob_table_config_util.h"
 #include "lib/json/ob_json.h"
 #include "share/schema/ob_dependency_info.h"
 #include "observer/ob_ex_rpc.h"
@@ -63,8 +62,6 @@ bool ObKVAttr::is_ttl_table() const
   }
   return is_ttl;
 }
-
-const char* ObTTLUtil::HBASE_KV_ATTR_FORMAT_STR = "{\"Hbase\": {%s\"State\": \"%s\"}}";
 
 bool ObTTLUtil::extract_val(const char* ptr, uint64_t len, int& val)
 {
@@ -579,155 +576,6 @@ int ObTTLUtil::parse_kv_attributes_table(json::Value *ast)
   return ret;
 }
 
-// example: kv_attributes = {hbase: {maxversions: 3}}
-int ObTTLUtil::parse_kv_attributes_hbase(json::Value *ast, ObKVAttr &kv_attr)
-{
-  int ret = OB_SUCCESS;
-  bool time_to_live_appeared = false;
-  bool max_versions_appeared = false;
-  if (NULL == ast) {
-    // do nothing
-  } else if (ast->get_type() == json::JT_OBJECT) {
-    DLIST_FOREACH(elem, ast->get_object()) {
-      if (elem->name_.case_compare("TimeToLive") == 0) {
-        if (!time_to_live_appeared) {
-          time_to_live_appeared = true;
-          json::Value *ttl_val = elem->value_;
-          if (NULL == ttl_val) {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("TimeToLive value node is null", K(ret), KP(ttl_val));
-          } else {
-            if (ttl_val->get_type() == json::JT_NUMBER) {
-              if (ttl_val->get_number() <= 0) {
-                ret = OB_TTL_INVALID_HBASE_TTL; 
-                LOG_WARN("TimeToLive should greater than 0", K(ret), K(ttl_val->get_number()));
-                LOG_USER_ERROR(OB_TTL_INVALID_HBASE_TTL);
-              } else {
-                kv_attr.ttl_ = static_cast<int32_t>(ttl_val->get_number());
-              }
-            } else {
-              ret = OB_NOT_SUPPORTED;
-              LOG_WARN("TimeToLive value must be number", K(ret), K(ttl_val->get_type()));
-              LOG_USER_ERROR(OB_NOT_SUPPORTED, "TimeToLive value not number");
-            }
-          }
-        } else {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("repeatedly setting TimeToLive not supported", K(ret), K(time_to_live_appeared));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "repeatedly setting TimeToLive");
-        }
-      } else if (elem->name_.case_compare("MaxVersions") == 0) {
-        if (!max_versions_appeared) {
-          max_versions_appeared = true;
-          json::Value *max_versions_val = elem->value_;
-          if (NULL == max_versions_val) {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("MaxVersions value node is null", K(ret), KP(max_versions_val));
-          } else {
-            if (max_versions_val->get_type() == json::JT_NUMBER) {
-              if (max_versions_val->get_number() <= 0) {
-                ret = OB_TTL_INVALID_HBASE_MAXVERSIONS; 
-                LOG_WARN("MaxVersions should greater than 0", K(ret), K(max_versions_val->get_number()));
-                LOG_USER_ERROR(OB_TTL_INVALID_HBASE_MAXVERSIONS);
-              } else {
-                kv_attr.max_version_ = static_cast<int32_t>(max_versions_val->get_number());
-              }
-            } else {
-              ret = OB_NOT_SUPPORTED;
-              LOG_WARN("MaxVersions value must be number", K(ret), K(max_versions_val->get_type()));
-              LOG_USER_ERROR(OB_NOT_SUPPORTED, "MaxVersions value not number");
-            }
-          }
-        } else {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("repeatedly setting MaxVersions not supported", K(ret), K(max_versions_appeared));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "repeatedly setting MaxVersions");
-        }
-      } else if (elem->name_.case_compare("State") == 0) {
-        json::Value *state_val = elem->value_;
-        if (NULL != state_val && state_val->get_type() == json::JT_STRING) {
-          ObString state_str = state_val->get_string();
-          if (state_str.case_compare("disable") == 0) {
-            kv_attr.is_disable_ = true;
-          } else if (state_str.case_compare("enable") == 0) {
-            kv_attr.is_disable_ = false;
-          } else {
-            ret = OB_NOT_SUPPORTED;
-            LOG_WARN("not supported kv attribute", K(ret), K(state_str));
-            LOG_USER_ERROR(OB_NOT_SUPPORTED, "States other than 'disable' and 'enable'");
-          }
-        }
-      } else if (elem->name_.case_compare("CreatedBy") == 0) {
-        json::Value *created_by_val = elem->value_;
-        if (NULL != created_by_val && created_by_val->get_type() == json::JT_STRING) {
-          ObString created_by_str = created_by_val->get_string();
-          if (created_by_str.case_compare("Admin") == 0) {
-            kv_attr.created_by_admin_ = true;
-          } else {
-            ret = OB_NOT_SUPPORTED;
-            LOG_WARN("not supported kv attribute", K(ret), K(created_by_str));
-            LOG_USER_ERROR(OB_NOT_SUPPORTED, "CREATED BY other than 'ADMIN'");
-          }
-        }
-      } else {
-        ret = OB_NOT_SUPPORTED;
-        LOG_WARN("not supported kv attribute", K(ret), K(elem->name_));
-        LOG_USER_ERROR(OB_NOT_SUPPORTED, "kv attributes with wrong format");
-      }
-    }  // end foreach
-  } else {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not supported kv attribute", K(ret), K(ast->get_type()));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "kv attributes with wrong format");
-  }
-  return ret;
-}
-
-// "Redis": {"is_ttl": true, "model": "hash"}
-int ObTTLUtil::parse_kv_attributes_redis(json::Value *ast, ObKVAttr &kv_attr)
-{
-  int ret = OB_SUCCESS;
-  bool is_ttl_appeared = false;
-  bool model_appeared = false;
-  if (NULL == ast) {
-    // do nothing
-  } else if (ast->get_type() == json::JT_OBJECT) {
-    DLIST_FOREACH(elem, ast->get_object()) {
-      if (elem->name_.case_compare("IsTTL") == 0) {
-        if (!is_ttl_appeared) {
-          is_ttl_appeared = true;
-          json::Value *ttl_val = elem->value_;
-          if (NULL == ttl_val) {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("isTTL value node is null", K(ret), KP(ttl_val));
-          } else {
-            if (ttl_val->get_type() == json::JT_TRUE || ttl_val->get_type() == json::JT_FALSE) {
-              kv_attr.is_redis_ttl_ = (ttl_val->get_type() == json::JT_TRUE);
-            } else {
-              ret = OB_NOT_SUPPORTED;
-              LOG_WARN("isTTL value must be true or false", K(ret), K(ttl_val->get_type()));
-              LOG_USER_ERROR(OB_NOT_SUPPORTED, "isTTL value not true or false");
-            }
-          }
-        } else {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("repeatedly setting isTTL not supported", K(ret), K(is_ttl_appeared));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "repeatedly setting isTTL");
-        }
-      } else {
-        ret = OB_NOT_SUPPORTED;
-        LOG_WARN("not supported kv attribute", K(ret), K(elem->name_));
-        LOG_USER_ERROR(OB_NOT_SUPPORTED, "kv attributes with wrong format");
-      }
-    }  // end foreach
-  } else {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not supported kv attribute", K(ret), K(ast->get_type()));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "kv attributes with wrong format");
-  }
-  return ret;
-}
-
 int ObTTLUtil::parse_kv_attributes(const ObString &kv_attributes, ObKVAttr &kv_attr)
 {
   int ret = OB_SUCCESS;
@@ -745,19 +593,7 @@ int ObTTLUtil::parse_kv_attributes(const ObString &kv_attributes, ObKVAttr &kv_a
              && ast->get_object().get_size() == 1) {
     json::Pair *kv = ast->get_object().get_first();
     if (NULL != kv && kv != ast->get_object().get_header()) {
-      if (kv->name_.case_compare("HBASE") == 0) {
-        if (OB_FAIL(parse_kv_attributes_hbase(kv->value_, kv_attr))) {
-          LOG_WARN("fail to parse hbase kv attributes", K(ret), K(kv_attributes));
-        } else {
-          kv_attr.type_ = ObKVAttr::HBASE;
-        }
-      } else if (kv->name_.case_compare("REDIS") == 0) {
-        if (OB_FAIL(parse_kv_attributes_redis(kv->value_, kv_attr))) {
-          LOG_WARN("fail to parse redis kv attributes", K(ret), K(kv_attributes));
-        } else {
-          kv_attr.type_ = ObKVAttr::REDIS;
-        }
-      } else if (kv->name_.case_compare("TABLE") == 0) {
+      if (kv->name_.case_compare("TABLE") == 0) {
         if (OB_FAIL(parse_kv_attributes_table(kv->value_))) {
           LOG_WARN("failed to parse table kv attributes", K(ret), K(kv_attributes));
         } else {
@@ -773,50 +609,6 @@ int ObTTLUtil::parse_kv_attributes(const ObString &kv_attributes, ObKVAttr &kv_a
     ret = OB_NOT_SUPPORTED;
     LOG_WARN("not supported kv attribute", K(ret), K(kv_attributes), KPC(ast));
     LOG_USER_ERROR(OB_NOT_SUPPORTED, "kv attributes with wrong format");
-  }
-  return ret;
-}
-
-int ObTTLUtil::format_kv_attributes_to_json_str(ObIAllocator &allocator, const ObKVAttr &kv_attr, ObString &json_str)
-{
-  int ret = OB_SUCCESS;
-  char ttl_version_buf[64] = "";
-  int64_t buf_len = 64;
-  char *ttl_version_part = ttl_version_buf;
-  int64_t pos = 0;
-  if (kv_attr.ttl_ > 0) {
-    if (OB_FAIL(databuff_printf(ttl_version_part, buf_len, pos, allocator, "\"TimeToLive\": %d, ",
-              kv_attr.ttl_))) {
-      LOG_WARN("fail to print kv_attribute to json str", K(ret), K(kv_attr));
-    } 
-  }
-  if (OB_FAIL(ret)) {
-  } else if (kv_attr.max_version_ > 0) {
-    if (OB_FAIL(databuff_printf(ttl_version_part, buf_len, pos, allocator, "\"MaxVersions\": %d, ",
-              kv_attr.max_version_))) {
-      LOG_WARN("fail to print kv_attribute to json str", K(ret), K(kv_attr));
-    } 
-  }
-
-  if (OB_FAIL(ret)) {
-  } else if (kv_attr.is_created_by_admin()) {
-    if (OB_FAIL(databuff_printf(ttl_version_part, buf_len, pos, allocator, "\"CreatedBy\": \"Admin\", "))) {
-      LOG_WARN("fail to print kv_attribute to json str", K(ret), K(kv_attr));
-    } 
-  }
-
-  if (OB_SUCC(ret)) {
-    int64_t json_buf_len = 128; 
-    char json_buf[128] = "";
-    char* json_buf_ptr = json_buf;
-    const char* state_str = kv_attr.is_disable_ ? "disable" : "enable";
-    int64_t json_pos = 0;
-    if (OB_FAIL(databuff_printf(json_buf_ptr, json_buf_len, json_pos, allocator, HBASE_KV_ATTR_FORMAT_STR,
-            ttl_version_part, state_str))) {
-      LOG_WARN("fail to print kv_attribute to json str", K(ret), K(kv_attr));
-    } else if (OB_FAIL(ob_write_string(allocator, ObString(json_pos, json_buf_ptr), json_str))) {
-      LOG_WARN("fail to print kv_attribute to json str", K(ret));
-    }
   }
   return ret;
 }
@@ -1193,13 +985,6 @@ int ObTTLUtil::check_is_normal_ttl_table(const ObTableSchema &table_schema, bool
   if (table_schema.is_user_table() && !table_schema.is_in_recyclebin()) {
     if (!table_schema.get_ttl_definition().empty()) {
       is_ttl_table = true;
-    } else if (!is_ttl_table && !table_schema.get_kv_attributes().empty()) {
-      ObKVAttr kv_attr;  // for check validity
-      if (OB_FAIL(parse_kv_attributes(table_schema.get_kv_attributes(), kv_attr))) {
-        LOG_WARN("fail to parse kv attributes", KR(ret), "kv_attributes", table_schema.get_kv_attributes());
-      } else if (kv_attr.is_ttl_table()) {
-        is_ttl_table = true;
-      }
     }
   }
   return ret;
@@ -1238,9 +1023,7 @@ int ObTTLUtil::check_task_status_from_sys_table(common::ObISQLClient& proxy,
 
 bool ObTTLUtil::is_enable_ttl()
 {
-  return true &&
-         GCONF.enable_kv_ttl &&
-         ObKVFeatureModeUitl::is_ttl_enable();
+  return GCONF.enable_kv_ttl;
 }
 
 const char * ObTTLUtil::get_ttl_tenant_status_cstr(const ObTTLTaskStatus &status)
@@ -1316,8 +1099,8 @@ bool ObTTLUtil::is_ttl_column(const ObString &orig_column_name, const ObIArray<O
 
 int ObTTLUtil::check_kv_attributes(const schema::ObTableSchema &table_schema, bool by_admin)
 {
-  return ObTTLUtil::check_kv_attributes(table_schema.get_kv_attributes(), table_schema,
-    table_schema.ObPartitionSchema::get_part_level(), by_admin);
+  UNUSEDx(table_schema, by_admin);
+  return OB_SUCCESS;
 }
 
 int ObTTLUtil::check_kv_attributes(const ObString &kv_attributes,
@@ -1329,79 +1112,12 @@ int ObTTLUtil::check_kv_attributes(const ObString &kv_attributes,
   ObKVAttr attr;
   if (OB_FAIL(ObTTLUtil::parse_kv_attributes(kv_attributes, attr))) {
     LOG_WARN("fail to parse kv attributes", K(ret));
-  } else if (OB_FAIL(check_htable_ddl_supported_(attr, by_admin))) {
-    LOG_WARN("fail to check htable ddl supported", K(ret), K(attr), K(by_admin));
   } else if (attr.is_max_versions_valid()) {
     // table_api removed from build: hbase mode-type specific max-versions
     // restrictions are no longer checked.
   }
   return ret;
 }
-
-int ObTTLUtil::check_htable_ddl_supported_(const ObKVAttr &attr, bool by_admin)
-{
-  int ret = OB_SUCCESS;
-  if (!by_admin && attr.is_created_by_admin()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("table kv_attribute with '\"CreateBy\": \"Admin\"' is not supported", K(ret), K(attr), K(by_admin));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "table kv_attribute with '\"CreateBy\": \"Admin\"'");
-  } else if (by_admin && !attr.is_created_by_admin()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("table kv_attribute without '\"CreateBy\": \"Admin\"' is not supported", K(ret), K(attr), K(by_admin));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "table kv_attribute without '\"CreateBy\": \"Admin\"'");
-  }
-  return ret;
-}
-
-int ObTTLUtil::check_htable_ddl_supported(const schema::ObTableSchema &table_schema,
-                                          bool by_admin,
-                                          obcall::ObHTableDDLType ddl_type,
-                                          const ObString &table_name)
-{
-  int ret = OB_SUCCESS;
-  const ObString &kv_attributes = table_schema.get_kv_attributes();
-  ObKVAttr attr;
-  if (OB_FAIL(ObTTLUtil::parse_kv_attributes(kv_attributes, attr))) {
-    LOG_WARN("failed to parse kv attributes", K(ret));
-  } else if (OB_FAIL(check_htable_ddl_supported_(attr, by_admin))) {
-    LOG_WARN("failed to check htable ddl supported", K(ret));
-  } else {
-    if (ddl_type == obcall::ObHTableDDLType::DROP_TABLE) {
-      if (!attr.is_disable_) {
-        ret = OB_KV_TABLE_NOT_DISABLED;
-        LOG_WARN("table is not disabled, can't drop", K(ret), K(attr));
-        LOG_USER_ERROR(OB_KV_TABLE_NOT_DISABLED,  table_name.length(), table_name.ptr());
-      }
-    }
-  }
-  return ret;
-}
-
-// cannot create view dependent on hbase admin table
-int ObTTLUtil::check_htable_ddl_supported(share::schema::ObSchemaGetterGuard &schema_guard,
-                                          const common::ObIArray<share::schema::ObDependencyInfo> &dep_infos)
-{
-  int ret = OB_SUCCESS;
-  for (int i = 0; OB_SUCC(ret) && i < dep_infos.count(); i++) {
-    const ObDependencyInfo &dep_info = dep_infos.at(i);
-    if (dep_info.get_ref_obj_type() == ObObjectType::TABLE) {
-      const uint64_t table_id = dep_info.get_ref_obj_id();
-      const ObTableSchema *table_schema = NULL;
-      if (is_cte_table(table_id) || is_external_object_id(table_id)) {
-        // skip, cte table and external table has not table schema and will not be hbase admin table
-      } else if (OB_FAIL(schema_guard.get_table_schema( table_id, table_schema))) {
-        LOG_WARN("failed to get table schema", K(ret), K(table_id));
-      } else if (OB_ISNULL(table_schema)) {
-        ret = OB_TABLE_NOT_EXIST;
-        LOG_WARN("table schema is null, table not exists", K(ret), K(table_id));
-      } else if (OB_FAIL(check_htable_ddl_supported(*table_schema, false))) {
-        LOG_WARN("failed to check htable ddl supported", K(ret));
-      }
-    }
-  }
-  return ret;
-}
-
 
 } // end namespace rootserver
 } // end namespace oceanbase

@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX COMMON
 
 #include "ob_diagnose_info.h"
+#include "lib/hash/ob_hashutils.h"
 
 namespace oceanbase
 {
@@ -106,7 +107,7 @@ void ObLatchStatArray::reset()
 }
 
 static constexpr int NODE_NUM =
-    common::hash::NodeNumTraits<ObLatchStat, common::OB_MALLOC_MIDDLE_BLOCK_SIZE>::NODE_NUM;
+    hash::NodeNumTraits<ObLatchStat, OB_MALLOC_MIDDLE_BLOCK_SIZE>::NODE_NUM;
 using LatchStatAlloc = hash::SimpleAllocer<ObLatchStat, NODE_NUM>;
 
 LatchStatAlloc &get_latch_stat_alloc()

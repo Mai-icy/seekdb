@@ -28,6 +28,7 @@
 #include "src/rootserver/ob_root_service.h"
 #include "storage/tx_storage/ob_ls_service.h"
 #include "storage/ob_tablet_autoinc_seq_rpc_handler.h"
+#include "observer/ob_service.h"
 
 namespace oceanbase
 {

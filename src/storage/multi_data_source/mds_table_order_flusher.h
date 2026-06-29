@@ -26,6 +26,7 @@
 #include "meta_programming/ob_type_traits.h"
 #include "lib/hash/ob_linear_hash_map.h"
 #include "deps/oblib/src/lib/container/ob_array_iterator.h"
+#include "share/rc/ob_tenant_base.h"
 #include "mds_for_each_map_flush_operation.h"
 #include <algorithm>
 #include <exception>

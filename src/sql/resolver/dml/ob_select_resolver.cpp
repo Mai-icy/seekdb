@@ -24,6 +24,7 @@
 #include "sql/engine/expr/ob_expr_version.h"
 #include "sql/optimizer/ob_optimizer_util.h"
 #include "sql/rewrite/ob_transform_utils.h"
+#include "sql/resolver/cmd/ob_load_data_stmt.h"
 #include "sql/engine/expr/ob_expr_regexp_context.h"
 #include "sql/engine/expr/ob_json_param_type.h"
 #include "sql/parser/ob_parser_utils.h"
