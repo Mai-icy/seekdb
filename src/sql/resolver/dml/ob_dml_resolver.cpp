@@ -36,8 +36,6 @@
 #include "share/domain_id/ob_domain_id.h"
 #include "share/vector_index/ob_vector_index_util.h"
 #include "sql/engine/expr/ob_expr_regexp.h"
-#ifndef OB_BUILD_EMBED_MODE
-#endif
 #include "share/catalog/ob_catalog_utils.h"
 #include "sql/resolver/dcl/ob_dcl_resolver.h"
 #include "sql/resolver/ddl/ob_ddl_resolver.h"
