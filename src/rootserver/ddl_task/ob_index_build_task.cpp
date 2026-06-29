@@ -80,8 +80,6 @@ int ObIndexSSTableBuildTask::process()
   ObSchemaGetterGuard schema_guard;
   ObString partition_names;
   ObArray<ObString> batch_partition_names;
-  const ObSysVariableSchema *sys_variable_schema = NULL;
-  bool oracle_mode = false;
   ObTabletID unused_tablet_id;
   ObAddr unused_addr;
   const ObTableSchema *data_schema = nullptr;
@@ -110,17 +108,8 @@ int ObIndexSSTableBuildTask::process()
     LOG_WARN("fail to get tenant schema guard", K(ret), K(data_table_id_));
   } else if (OB_FAIL(schema_guard.check_formal_guard())) {
     LOG_WARN("fail to check formal guard", K(ret));
-  } else if (OB_FAIL(schema_guard.get_sys_variable_schema(
-      tenant_id_, sys_variable_schema))) {
-    LOG_WARN("get sys variable schema failed",
-        K(ret), K(tenant_id_));
-  } else if (NULL == sys_variable_schema) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("sys variable schema is NULL", K(ret));
   } else if (OB_FAIL(DDL_SIM(tenant_id_, task_id_, BUILD_REPLICA_ASYNC_TASK_FAILED))) {
     LOG_WARN("ddl sim failure", K(ret), K(tenant_id_), K(task_id_));
-  } else if (OB_FAIL(sys_variable_schema->get_oracle_mode(oracle_mode))) {
-    LOG_WARN("get oracle mode failed", K(ret));
   } else if (OB_FAIL(schema_guard.get_table_schema(tenant_id_, data_table_id_, data_schema))) {
     LOG_WARN("get table schema failed", K(ret), K(tenant_id_), K(data_table_id_));
   } else if (nullptr == data_schema) {
@@ -149,13 +138,10 @@ int ObIndexSSTableBuildTask::process()
     #endif
     if (OB_FAIL(ret)) {
     } else if (is_partitioned_local_index_task()) {
-      bool is_oracle_mode = false;
-      if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(tenant_id_, data_table_id_, is_oracle_mode))) {
-        LOG_WARN("check if oracle mode failed", K(ret), K(data_table_id_));
-      } else if (OB_FAIL(ObDDLUtil::get_index_table_batch_partition_names(tenant_id_, data_table_id_, dest_table_id_, addition_info_.partition_ids_, arena, batch_partition_names))) {
+      if (OB_FAIL(ObDDLUtil::get_index_table_batch_partition_names(tenant_id_, data_table_id_, dest_table_id_, addition_info_.partition_ids_, arena, batch_partition_names))) {
         LOG_WARN("fail to get index table batch partition names", K(ret), K(tenant_id_), K(data_table_id_), K(dest_table_id_), K(addition_info_.partition_ids_), K(batch_partition_names));
-      } else if (OB_FAIL(ObDDLUtil::generate_partition_names(batch_partition_names, is_oracle_mode, arena, partition_names))) {
-        LOG_WARN("fail to generate partition names", K(ret), K(batch_partition_names), K(is_oracle_mode), K(partition_names));
+      } else if (OB_FAIL(ObDDLUtil::generate_partition_names(batch_partition_names, arena, partition_names))) {
+        LOG_WARN("fail to generate partition names", K(ret), K(batch_partition_names), K(partition_names));
       }
     }
 
@@ -198,11 +184,7 @@ int ObIndexSSTableBuildTask::process()
           LOG_INFO("inner sql execute addr" , K(*sql_exec_addr));
         }
         int tmp_ret = OB_SUCCESS;
-        if (oracle_mode) {
-          user_sql_proxy = GCTX.ddl_oracle_sql_proxy_;
-        } else {
-          user_sql_proxy = GCTX.ddl_sql_proxy_;
-        }
+        user_sql_proxy = GCTX.ddl_sql_proxy_;
         DEBUG_SYNC(BEFORE_INDEX_SSTABLE_BUILD_TASK_SEND_SQL);
         ObTimeoutCtx timeout_ctx;
         const int64_t DDL_INNER_SQL_EXECUTE_TIMEOUT = ObDDLUtil::calc_inner_sql_execute_timeout();
@@ -216,7 +198,7 @@ int ObIndexSSTableBuildTask::process()
         } else if (OB_FAIL(DDL_SIM(tenant_id_, task_id_, CREATE_INDEX_BUILD_SSTABLE_FAILED))) {
           LOG_WARN("ddl sim failure: create index build sstable failed", K(ret), K(tenant_id_), K(task_id_));
         } else if (OB_FAIL(user_sql_proxy->write(tenant_id_, sql_string.ptr(), affected_rows,
-                    oracle_mode ? ObCompatibilityMode::ORACLE_MODE : ObCompatibilityMode::MYSQL_MODE, &session_param, sql_exec_addr))) {
+                    ObCompatibilityMode::MYSQL_MODE, &session_param, sql_exec_addr))) {
           LOG_WARN("fail to execute build replica sql", K(ret), K(tenant_id_));
         }
 
@@ -1735,7 +1717,6 @@ int ObIndexBuildTask::clean_on_failed()
         const ObTableSchema *data_table_schema = nullptr;
         const ObSysVariableSchema *sys_variable_schema = nullptr;
         ObSqlString drop_index_sql;
-        bool is_oracle_mode = false;
         ObString index_name;
         ObIndexArg::IndexActionType index_action_type = ObIndexArg::DROP_INDEX;
         if (OB_FAIL(schema_guard.get_database_schema(tenant_id_, index_schema->get_database_id(), database_schema))) {
@@ -1747,8 +1728,6 @@ int ObIndexBuildTask::clean_on_failed()
         } else if (OB_UNLIKELY(nullptr == sys_variable_schema || nullptr == database_schema || nullptr == data_table_schema)) {
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("get null schema", K(ret), KP(database_schema), KP(data_table_schema), KP(sys_variable_schema));
-        } else if (OB_FAIL(sys_variable_schema->get_oracle_mode(is_oracle_mode))) {
-          LOG_WARN("get oracle mode failed", K(ret));
         } else if (index_schema->is_in_recyclebin()) {
           // index is already in recyclebin, skip get index name, use a fake one, this is just to pass IndexArg validity check
           index_name = "__fake";
@@ -1769,10 +1748,6 @@ int ObIndexBuildTask::clean_on_failed()
           if (!create_index_arg_.ddl_stmt_str_.empty()) { // means create index syntax.
             // 1. rollback of alter table add index is completed by the following splicing sql.
             // 2. rollback of create index does nothing here because the stmt only be recorded when enabling index.
-          } else if (is_oracle_mode) {
-            if (OB_FAIL(drop_index_sql.append_fmt("drop index \"%.*s\"", index_name.length(), index_name.ptr()))) {
-              LOG_WARN("generate drop index sql failed", K(ret));
-            }
           } else {
             if (OB_FAIL(drop_index_sql.append_fmt("drop index %.*s on %.*s", index_name.length(), index_name.ptr(),
                     data_table_schema->get_table_name_str().length(), data_table_schema->get_table_name_str().ptr()))) {

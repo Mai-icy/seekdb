@@ -160,7 +160,6 @@ private:
   private:
     lib::ObMutex mutex_;
     ObFileAppender file_appender_;
-    bool is_oracle_mode_;
     char *buf_;
     bool is_create_log_succ_;
     int64_t err_cnt_;

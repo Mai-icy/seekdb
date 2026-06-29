@@ -275,11 +275,9 @@ int ObCreateTableResolver::resolve(const ParseNode &parse_tree)
             case T_TEMPORARY:
               if (create_table_node->children_[5] != NULL) { // Temporary table does not support partitioning
                 ret = OB_ERR_TEMPORARY_TABLE_WITH_PARTITION;
-              } else if (lib::is_mysql_mode()) {
+              } else {
                 ret = OB_NOT_SUPPORTED;
                 LOG_USER_ERROR(OB_NOT_SUPPORTED, "MySQL compatible temporary table");
-              } else {
-                is_temporary_table = true;
               }
               break;
             case T_EXTERNAL: {
@@ -1068,7 +1066,6 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
                                                                           // Second parsing non-column
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   const uint64_t tenant_id = session_info_->get_effective_tenant_id();
   if (OB_ISNULL(node)) {
    // do nothing, create table t as select ... will come here
@@ -1080,10 +1077,6 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
     ret = OB_INVALID_ARGUMENT;
     SQL_RESV_LOG(WARN, "invalid argument",
                  K(ret), K(node->type_), K(node->num_child_));
-  } else if (static_cast<int64_t>(table_id_) > 0
-             && OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-             session_info_->get_effective_tenant_id(), table_id_, is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K_(table_id));
   } else {
     ObSEArray<ObString, 4> gen_col_expr_arr;
     ParseNode *primary_node = NULL;
@@ -1194,18 +1187,18 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
             SQL_RESV_LOG(WARN, "failed to cast default value!", K(ret));
           } else if (column.is_string_type() || is_lob_storage(column.get_data_type())) {
             int64_t length = 0;
-            if (OB_FAIL(column.get_byte_length(length, is_oracle_mode, false))) {
-              SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret), K(is_oracle_mode));
+            if (OB_FAIL(column.get_byte_length(length, false))) {
+              SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret));
             } else if (ob_is_string_tc(column.get_data_type()) && length > OB_MAX_VARCHAR_LENGTH) {
               ret = OB_ERR_TOO_LONG_COLUMN_LENGTH;
               LOG_USER_ERROR(OB_ERR_TOO_LONG_COLUMN_LENGTH, column.get_column_name(), static_cast<int32_t>(OB_MAX_VARCHAR_LENGTH));
             } else if (is_lob_storage(column.get_data_type())) {
               ObLength max_length = 0;
-              max_length = ObAccuracy::MAX_ACCURACY2[is_oracle_mode][column.get_data_type()].get_length();
+              max_length = ObAccuracy::MAX_ACCURACY2[0][column.get_data_type()].get_length();
               if (length > max_length) {
                 ret = OB_ERR_TOO_LONG_COLUMN_LENGTH;
                 LOG_USER_ERROR(OB_ERR_TOO_LONG_COLUMN_LENGTH, column.get_column_name(),
-                    ObAccuracy::MAX_ACCURACY2[is_oracle_mode][column.get_data_type()].get_length());
+                    ObAccuracy::MAX_ACCURACY2[0][column.get_data_type()].get_length());
               } else {
                 // table lob inrow theshold has not been parsed, so use handle length check
                 // will recheck after parsing table lob inrow theshold
@@ -1225,7 +1218,7 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
           if (OB_SUCC(ret)){
             stat.column_id_ = column.get_column_id();
             if (stat.is_primary_key_) {
-              if (!is_oracle_mode && is_organization_set_to_heap()) {
+              if (is_organization_set_to_heap()) {
                 primary_key_set_in_heap_table = true;
                 if (OB_FAIL(uk_or_heap_table_pk_add_to_index_list(index_node_position_list, i))) {
                   SQL_RESV_LOG(WARN, "add heap table pk to index list failed", K(ret));
@@ -1241,8 +1234,8 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
                   ret = OB_ERR_PRIMARY_CANT_HAVE_NULL;
                 } else if (ob_is_string_tc(column.get_data_type()) && !column.is_string_lob()) {
                   int64_t length = 0;
-                  if (OB_FAIL(column.get_byte_length(length, is_oracle_mode, false))){
-                    SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret), K(is_oracle_mode));
+                  if (OB_FAIL(column.get_byte_length(length, false))){
+                    SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret));
                   } else if (pk_data_length += length > OB_MAX_VARCHAR_LENGTH_KEY) {
                     ret = OB_ERR_TOO_LONG_KEY_LENGTH;
                     LOG_USER_ERROR(OB_ERR_TOO_LONG_KEY_LENGTH, OB_MAX_VARCHAR_LENGTH_KEY);
@@ -1258,15 +1251,6 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
                     SQL_RESV_LOG(WARN, "add primary key failed");
                   } else {
                     column.set_rowkey_position(get_primary_key_size());
-                    // Determine if it is oracle mode, a constraint name needs to be given to the primary key only in oracle mode
-                    if (session_info_->is_oracle_compatible()) {
-                      ObCreateTableStmt *create_table_stmt = static_cast<ObCreateTableStmt*>(stmt_);
-                      ObSEArray<ObConstraint, 4> &csts = create_table_stmt->get_create_table_arg().constraint_list_;
-                      // Add pk to cst_list inside
-                      if (OB_FAIL(resolve_pk_constraint_node(*element, pk_name, csts))) {
-                        SQL_RESV_LOG(WARN, "resolve constraint failed", K(ret));
-                      }
-                    }
                   }
                 }
               }
@@ -1276,19 +1260,10 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
           }
 
           if (OB_SUCC(ret)) {
-            if (is_mysql_mode()) {
-              // In MySQL mode, when column definitions are provided in a CTAS,
-              // they are always complete (name,type,attri,...) and will ignore the deduced attributes from SELECT statement.
-              if (OB_FAIL(cols_with_nullable_specified_.push_back(column.get_column_name_str()))) {
-                SQL_RESV_LOG(WARN, "push back column with defination", K(ret));
-              }
-            } else if (is_oracle_mode) {
-              if (!stat.is_set_not_null_ && !stat.is_set_null_) {
-                // In Oracle mode, the column definitions provided in CTAS are incomplete (cannot specify column types).
-                // When column attributes are not explicitly specified, the values are derived from the SELECT statement.
-              } else if (OB_FAIL(cols_with_nullable_specified_.push_back(column.get_column_name_str()))) {
-                SQL_RESV_LOG(WARN, "push back column with defination", K(ret));
-              }
+            // In MySQL mode, when column definitions are provided in a CTAS,
+            // they are always complete (name,type,attri,...) and will ignore the deduced attributes from SELECT statement.
+            if (OB_FAIL(cols_with_nullable_specified_.push_back(column.get_column_name_str()))) {
+              SQL_RESV_LOG(WARN, "push back column with defination", K(ret));
             }
           }
 
@@ -1361,22 +1336,13 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
           ret = OB_ERR_PRIMARY_KEY_DUPLICATE;
           SQL_RESV_LOG(WARN, "multiple primary key defined");
         } else if (NULL == primary_node) {
-          if (!is_oracle_mode && is_organization_set_to_heap()) {
+          if (is_organization_set_to_heap()) {
             primary_node_in_heap_table = element;
             if (OB_FAIL(uk_or_heap_table_pk_add_to_index_list(index_node_position_list, i))) {
               SQL_RESV_LOG(WARN, "add heap table pk to index list failed", K(ret));
             }
           } else {
             primary_node = element;
-            if (session_info_->is_oracle_compatible()) {
-              ObCreateTableStmt *create_table_stmt = static_cast<ObCreateTableStmt*>(stmt_);
-              ObSEArray<ObConstraint, 4> &csts =
-                  create_table_stmt->get_create_table_arg().constraint_list_;
-              ObString pk_name;
-              if (OB_FAIL(resolve_pk_constraint_node(*element, pk_name, csts))) {
-                SQL_RESV_LOG(WARN, "resolve constraint failed", K(ret));
-              }
-            }
           }
         } else {
           ret = OB_ERR_PRIMARY_KEY_DUPLICATE;
@@ -1398,17 +1364,8 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
           SQL_RESV_LOG(WARN, "add foreign key node failed", K(ret));
         } else { /*do nothing*/ }
       } else if (T_CHECK_CONSTRAINT == element->type_) {
-        if (lib::is_mysql_mode()) {
-          // TODO:@xiaofeng.lby : do we also need to deal with constraints like this in oracle mode
-          if (OB_FAIL(table_level_constraint_list.push_back(i))) {
-            SQL_RESV_LOG(WARN, "add check constraint node failed", K(ret));
-          }
-        } else { // oracle mode
-          ObCreateTableStmt* create_table_stmt = static_cast<ObCreateTableStmt*>(stmt_);
-          ObSEArray<ObConstraint, 4>& csts = create_table_stmt->get_create_table_arg().constraint_list_;
-          if (OB_FAIL(resolve_check_constraint_node(*element, csts))) {
-            SQL_RESV_LOG(WARN, "resolve constraint failed", K(ret));
-          }
+        if (OB_FAIL(table_level_constraint_list.push_back(i))) {
+          SQL_RESV_LOG(WARN, "add check constraint node failed", K(ret));
         }
       } else if (T_EMPTY == element->type_) {
         // compatible with mysql 5.7 check (expr), do nothing
@@ -1467,7 +1424,7 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
       }
     }
     // MySQL mode, a table must have at least one non-hidden column
-    if (OB_SUCC(ret) && lib::is_mysql_mode()) {
+    if (OB_SUCC(ret)) {
       bool has_non_hidden_column = false;
       for (int64_t i = 0;
            OB_SUCC(ret) && !has_non_hidden_column && i < table_schema.get_column_count();
@@ -1530,7 +1487,7 @@ int ObCreateTableResolver::set_nullable_for_cta_column(ObSelectStmt *select_stmt
   if (OB_ISNULL(expr) || OB_ISNULL(select_stmt)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("unexpected null of expr and select stmt.", K(ret));
-  } else if (lib::is_mysql_mode()) {
+  } else {
     // scope set to FROM since it will not go deduce process with context,
     // such as null reject in where condition and having condition.
     // if is_not_null true, it will pass into full scope checking at next step.
@@ -1543,8 +1500,6 @@ int ObCreateTableResolver::set_nullable_for_cta_column(ObSelectStmt *select_stmt
                                                           NULL))) {
       LOG_WARN("failed to check expr not null", K(ret));
     }
-  } else if (expr->is_column_ref_expr()) {
-    is_not_null = expr->get_result_type().has_result_flag(HAS_NOT_NULL_VALIDATE_CONSTRAINT_FLAG);
   }
   if (OB_SUCC(ret) && is_not_null) {
     // deduce pre-condition: already not null
@@ -1627,8 +1582,7 @@ int ObCreateTableResolver::resolve_table_elements_from_select(const ParseNode &p
                                                    T_TABLE_ELEMENT_LIST == parse_tree.children_[3]->type_;
   // select layer should not see the insert stmt's attributes from the upper layer, so the upper scope stmt should be empty
   select_resolver.set_parent_namespace_resolver(NULL);
-  if (lib::is_mysql_mode()
-        && OB_NOT_NULL(params_.query_ctx_)
+  if (OB_NOT_NULL(params_.query_ctx_)
         && 0 != params_.query_ctx_->question_marks_count_
         && !params_.is_prepare_protocol_) {
     ret = OB_ERR_PARSER_SYNTAX;
@@ -1718,7 +1672,7 @@ int ObCreateTableResolver::resolve_table_elements_from_select(const ParseNode &p
                 K(ret), K(column.get_column_name_str()));
             }
           }
-          if (OB_SUCC(ret) && is_mysql_mode()) {
+          if (OB_SUCC(ret)) {
             if (new_table_item != NULL && new_table_item->is_basic_table()) {
               if (base_table_schema == NULL &&
                   OB_FAIL(schema_checker_->get_table_schema(session_info_->get_effective_tenant_id(),
@@ -1778,10 +1732,10 @@ int ObCreateTableResolver::resolve_table_elements_from_select(const ParseNode &p
                 LOG_WARN("failed to fill column with subschema", K(ret));
               }
             }
-            if (OB_SUCC(ret) && lib::is_mysql_mode() && ob_is_geometry(expr->get_result_type().get_type())) {
+            if (OB_SUCC(ret) && ob_is_geometry(expr->get_result_type().get_type())) {
               column.set_geo_type(static_cast<uint64_t>(expr->get_geo_expr_result_type()));
             }
-            OZ (adjust_string_column_length_within_max(column, false));
+            OZ (adjust_string_column_length_within_max(column));
             LOG_DEBUG("column expr debug", K(*expr));
           }
           if (OB_FAIL(ret)) { // do nothing.
@@ -1843,7 +1797,7 @@ int ObCreateTableResolver::resolve_table_elements_from_select(const ParseNode &p
                   if (OB_FAIL(check_text_column_length_and_promote(column, table_id_, true))) {
                     LOG_WARN("fail to check text or blob column length", K(ret), K(column));
                   }
-                } else if (OB_FAIL(check_string_column_length(column, false, params_.is_prepare_stage_))) {
+                } else if (OB_FAIL(check_string_column_length(column, params_.is_prepare_stage_))) {
                   LOG_WARN("fail to check string column length", K(ret), K(column));
                 }
               }
@@ -2161,7 +2115,6 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
 {
   int ret = OB_SUCCESS;
   ObString uk_name;
-  bool is_oracle_mode = false;
   const uint64_t tenant_id = session_info_->get_effective_tenant_id();
   bool is_index_part_specified = false;
   if (OB_ISNULL(node)) {
@@ -2178,10 +2131,6 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
   } else if (OB_ISNULL(node->children_)) {
     ret = OB_ERR_UNEXPECTED;
     SQL_RESV_LOG(WARN, "node->children_ is null.", K(ret));
-  } else if (static_cast<int64_t>(table_id_) > 0
-             && OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-             session_info_->get_effective_tenant_id(), table_id_, is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K_(table_id));
   } else {
     index_arg_.reset();
     ObColumnSortItem sort_item;
@@ -2337,11 +2286,6 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
                     LOG_WARN("add column name to map failed", K(column_schema->get_column_name_str()), K(ret));
                   }
                 }
-              } else if (is_oracle_mode) {
-                const ObColumnRefRawExpr *ref_expr = static_cast<const ObColumnRefRawExpr*>(expr);
-                sort_item.column_name_ = ref_expr->get_column_name();
-                sort_item.is_func_index_ = false;
-                column_schema = tbl_schema.get_column_schema(ref_expr->get_column_id());
               } else {
                 ret = OB_ERR_FUNCTIONAL_INDEX_ON_FIELD;
                 LOG_WARN("Functional index on a column is not supported.", K(ret), K(*expr));
@@ -2370,8 +2314,7 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
               }  else if (sort_item.prefix_len_ > column_schema->get_data_length()) {
                 ret = OB_WRONG_SUB_KEY;
                 SQL_RESV_LOG(WARN, "prefix length is longer than column length", K(sort_item), K(column_schema->get_data_length()), K(ret));
-              } else if (!is_oracle_mode // oracle mode is not support vector column yet
-                  && ob_is_collection_sql_type(column_schema->get_data_type())
+              } else if (ob_is_collection_sql_type(column_schema->get_data_type())
                   && static_cast<int64_t>(INDEX_KEYNAME::VEC_KEY) != node->value_) {
                 ret = OB_NOT_SUPPORTED;
                 LOG_WARN("index column is vector column, but is not vector index is not supported", K(ret));
@@ -2386,7 +2329,7 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
                   LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column_name.length(), column_name.ptr());
                 }
               } else if (OB_FAIL(resolve_spatial_index_constraint(*column_schema,
-                  index_column_list_node->num_child_, node->value_, is_oracle_mode,
+                  index_column_list_node->num_child_, node->value_, false/*false*/,
                   NULL != index_column_node->children_[2] && 1 != index_column_node->children_[2]->is_empty_))) {
                 SQL_RESV_LOG(WARN, "fail to resolve spatial index constraint", K(ret), K(column_name));
               } else if (OB_FAIL(resolve_vec_index_constraint(*column_schema,
@@ -2402,8 +2345,8 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
 
               if (OB_SUCC(ret) && ob_is_string_type(column_schema->get_data_type()) && !column_schema->is_string_lob()) {
                 int64_t length = 0;
-                if (OB_FAIL(column_schema->get_byte_length(length, is_oracle_mode, false))) {
-                  SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret), K(is_oracle_mode));
+                if (OB_FAIL(column_schema->get_byte_length(length, false))) {
+                  SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret));
                 } else if (sort_item.prefix_len_ > 0) {
                   length = length * sort_item.prefix_len_ / column_schema->get_data_length();
                 } else { /*do nothing*/ }
@@ -2427,13 +2370,7 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
             }
             if (OB_SUCC(ret)) {
               //column_order
-              if (is_oracle_mode && NULL != index_column_node->children_[2]
-                  && T_SORT_DESC == index_column_node->children_[2]->type_) {
-                // sort_item.order_type_ = common::ObOrderType::DESC;
-                ret = OB_NOT_SUPPORTED;
-                LOG_WARN("not support desc index now", K(ret));
-                LOG_USER_ERROR(OB_NOT_SUPPORTED, "desc index");
-              } else {
+              {
                 // Compatible with mysql5.7, descending index does not take effect and does not report an error
                 sort_item.order_type_ = common::ObOrderType::ASC;
               }
@@ -2472,7 +2409,7 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
           first_column_name = ObString::make_string("functional_index");
         }
       }
-    } else if (is_organization_set_to_heap() && ObItemType::T_PRIMARY_KEY == node->type_ && !is_oracle_mode) {
+    } else if (is_organization_set_to_heap() && ObItemType::T_PRIMARY_KEY == node->type_) {
       if (OB_FAIL(resolve_single_column_primary_key_node(node->children_[0], tbl_schema, process_heap_table_primary_key, first_column_name))) {
         SQL_RESV_LOG(WARN, "failed to resolve the single column primary key node in the heap table", K(ret));
       }
@@ -2501,8 +2438,8 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
               table_name_.length(), table_name_.ptr());
         } else if (ob_is_string_tc(column_schema->get_data_type()) && !column_schema->is_string_lob()) {
           int64_t length = 0;
-          if (OB_FAIL(column_schema->get_byte_length(length, is_oracle_mode, false))) {
-            SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret), K(is_oracle_mode));
+          if (OB_FAIL(column_schema->get_byte_length(length, false))) {
+            SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret));
           } else if (length > OB_MAX_USER_ROW_KEY_LENGTH) {
             ret = OB_ERR_TOO_LONG_KEY_LENGTH;
             LOG_USER_ERROR(OB_ERR_TOO_LONG_KEY_LENGTH, OB_MAX_USER_ROW_KEY_LENGTH);
@@ -2554,7 +2491,7 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
       } else if (ObItemType::T_INDEX == node->type_ && OB_FAIL(resolve_table_options(node->children_[2], true))) {
         SQL_RESV_LOG(WARN, "resolve index options failed", K(ret));
       }
-      if (OB_SUCC(ret) && lib::is_mysql_mode()) {
+      if (OB_SUCC(ret)) {
         if (ObItemType::T_INDEX == node->type_ && NULL != node->children_[4]) {
           if (1 != node->children_[4]->num_child_ || T_PARTITION_OPTION != node->children_[4]->type_) {
             ret = OB_NOT_SUPPORTED;
@@ -2573,7 +2510,7 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
       }
 
       // index column_group
-      if (OB_SUCC(ret) && lib::is_mysql_mode()) { //only mysql support create table with index
+      if (OB_SUCC(ret)) { //only mysql support create table with index
         if (node->num_child_ < 6) {
           // no cg, ignore
         } else if (ObItemType::T_INDEX == node->type_ && NULL != node->children_[5]) {
@@ -2874,7 +2811,7 @@ int ObCreateTableResolver::check_max_row_data_length(const ObTableSchema &table_
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("column is null", K(ret), K(table_schema));
     } else if (! column->is_string_type() && ! is_lob_storage(column->get_data_type()) ) { // skip non string or lob storage type
-    } else if (OB_FAIL(column->get_byte_length(length, false, false))) {
+    } else if (OB_FAIL(column->get_byte_length(length, false))) {
       SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret));
     } else if (ob_is_string_tc(column->get_data_type()) && length > OB_MAX_VARCHAR_LENGTH) {
       ret = OB_ERR_TOO_LONG_COLUMN_LENGTH;
@@ -3001,7 +2938,6 @@ int ObCreateTableResolver::resolve_primary_key_node_in_heap_table(const ParseNod
           int64_t length = 0;
           int64_t index_data_length = 0;
 
-          bool is_oracle_mode = false;
           if (OB_FAIL(ret)) {
           } else if (OB_ISNULL(create_table_stmt)) {
             ret = OB_NOT_INIT;
@@ -3009,10 +2945,6 @@ int ObCreateTableResolver::resolve_primary_key_node_in_heap_table(const ParseNod
           } else if (OB_ISNULL(session_info_)) {
             ret = OB_NOT_INIT;
             SQL_RESV_LOG(WARN, "session is null", KP(session_info_), K(ret));
-          } else if (static_cast<int64_t>(table_id_) > 0
-                    && OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-                    session_info_->get_effective_tenant_id(), table_id_, is_oracle_mode))) {
-            LOG_WARN("fail to check oracle mode", KR(ret), K_(table_id));
           } else if (OB_ISNULL(col = table_schema.get_column_schema(column_name))) {
             ret = OB_ERR_KEY_COLUMN_DOES_NOT_EXITS;
             LOG_USER_ERROR(OB_ERR_KEY_COLUMN_DOES_NOT_EXITS, column_name.length(), column_name.ptr());
@@ -3031,7 +2963,7 @@ int ObCreateTableResolver::resolve_primary_key_node_in_heap_table(const ParseNod
                   || OB_FALSE_IT(col->set_rowkey_position(0))){
           } else if (col->is_string_lob() || !col->is_string_type()) {
             /* do nothing */
-          } else if (OB_FAIL(col->get_byte_length(length, false, false))) {
+          } else if (OB_FAIL(col->get_byte_length(length, false))) {
             SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret));
           } else if ((index_data_length += length) > OB_MAX_USER_ROW_KEY_LENGTH) {
             ret = OB_ERR_TOO_LONG_KEY_LENGTH;
@@ -3114,8 +3046,8 @@ int ObCreateTableResolver::resolve_single_column_primary_key_node(const ParseNod
               table_name_.length(), table_name_.ptr());
         } else if (ob_is_string_tc(column_schema->get_data_type()) && !column_schema->is_string_lob()) {
           int64_t length = 0;
-          if (OB_FAIL(column_schema->get_byte_length(length, false, false))) {
-            SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret), K(is_oracle_mode));
+          if (OB_FAIL(column_schema->get_byte_length(length, false))) {
+            SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret));
           } else if (length > OB_MAX_USER_ROW_KEY_LENGTH) {
             ret = OB_ERR_TOO_LONG_KEY_LENGTH;
             LOG_USER_ERROR(OB_ERR_TOO_LONG_KEY_LENGTH, OB_MAX_USER_ROW_KEY_LENGTH);

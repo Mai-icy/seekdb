@@ -135,7 +135,7 @@ int ObMViewSchedJobUtils::add_scheduler_job(
       job_info.job_action_ = job_action;
       job_info.lowner_ = ObString("oceanbase");
       job_info.cowner_ = ObString("oceanbase");
-      job_info.powner_ = lib::is_oracle_mode() ? ObString("SYS") : ObString("root@%");
+      job_info.powner_ = ObString("root@%");
       job_info.job_style_ = ObString("regular");
       job_info.job_type_ = ObString("PLSQL_BLOCK");
       job_info.job_class_ = ObString("DEFAULT_JOB_CLASS");
@@ -473,13 +473,6 @@ int ObMViewSchedJobUtils::calc_date_expression(
         } else if (OB_FAIL(executor.init_env(job_info, session))) {
           LOG_WARN("failed to init env", KR(ret), K(job_info));
         } else {
-          bool is_oracle_mode = lib::is_oracle_mode();
-          bool is_oracle_tenant = false;
-          is_oracle_tenant = job_info.is_oracle_tenant_;
-          if (is_oracle_tenant && !is_oracle_mode) {
-            THIS_WORKER.set_compatibility_mode(Worker::CompatMode::ORACLE);
-          }
-
           int64_t current_time = ObTimeUtility::current_time() / 1000000L * 1000000L; // ignore micro seconds
           int64_t next_time = 0;
           if (OB_FAIL(calc_date_expr_from_str(session, tmp_allocator,
@@ -493,10 +486,6 @@ int ObMViewSchedJobUtils::calc_date_expression(
             LOG_USER_ERROR(OB_ERR_TIME_EARLIER_THAN_SYSDATE, "next date");
           } else {
             next_date_ts = next_time;
-          }
-
-          if (is_oracle_tenant && !is_oracle_mode) {
-            THIS_WORKER.set_compatibility_mode(Worker::CompatMode::MYSQL);
           }
         }
         exec_ctx.set_physical_plan_ctx(NULL);
@@ -623,7 +612,6 @@ int ObMViewSchedJobUtils::replace_mview_refresh_job(common::ObISQLClient &sql_cl
   // stop job use sys tenant, can not use trans as sql client
   if (!mview_info.get_refresh_job().empty()) {
     ObDBMSSchedJobInfo job_info;
-    bool is_oracle_mode = lib::is_oracle_mode();
     ObString job_name = mview_info.get_refresh_job();
     if (OB_ISNULL(GCTX.sql_proxy_)) {
       ret = OB_ERR_UNEXPECTED;
@@ -633,7 +621,7 @@ int ObMViewSchedJobUtils::replace_mview_refresh_job(common::ObISQLClient &sql_cl
       LOG_WARN("failed to remove dbms sched job", KR(ret), K(tenant_id),
              K(mview_info.get_refresh_job()));
     } else if (OB_FAIL(ObDBMSSchedJobUtils::get_dbms_sched_job_info(*GCTX.sql_proxy_, 
-                tenant_id, is_oracle_mode, job_name, allocator, job_info))) {
+                tenant_id, false, job_name, allocator, job_info))) {
       LOG_WARN("fail to get job info", K(tmp_ret));
     } else if (OB_TMP_FAIL(ObDBMSSchedJobUtils::stop_dbms_sched_job(
                            *GCTX.sql_proxy_, job_info, false))) {
@@ -710,12 +698,11 @@ int ObMViewSchedJobUtils::disable_and_stop_job(
     LOG_WARN("fail to fetch mview info", K(ret), K(mview_id));
   } else if (!mview_info.get_refresh_job().empty()) {
     ObDBMSSchedJobInfo job_info;
-    bool is_oracle_mode = lib::is_oracle_mode();
     ObString job_name = mview_info.get_refresh_job();
     ObObj obj;
     obj.set_bool(false);
     if (OB_FAIL(ObDBMSSchedJobUtils::get_dbms_sched_job_info(*GCTX.sql_proxy_, 
-                tenant_id, is_oracle_mode, job_name, allocator, job_info))) {
+                tenant_id, false, job_name, allocator, job_info))) {
       LOG_WARN("fail to get job info", K(ret));
     } else if (OB_FAIL(ObDBMSSchedJobUtils::update_dbms_sched_job_info(
                        *GCTX.sql_proxy_, job_info,  ObString("enabled"), obj))) {

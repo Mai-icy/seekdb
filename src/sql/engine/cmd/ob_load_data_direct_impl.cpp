@@ -123,8 +123,7 @@ const char *ObLoadDataDirectImpl::Logger::log_file_column_names =
 const char *ObLoadDataDirectImpl::Logger::log_file_row_fmt = "%.*s\t%ld\t%d\t%s\t\n";
 
 ObLoadDataDirectImpl::Logger::Logger()
-  : is_oracle_mode_(false),
-    buf_(nullptr),
+  : buf_(nullptr),
     is_create_log_succ_(false),
     err_cnt_(0),
     max_error_rows_(0),
@@ -159,7 +158,6 @@ int ObLoadDataDirectImpl::Logger::init(const ObString &load_info, int64_t max_er
     } else {
       is_create_log_succ_ = true;
     }
-    is_oracle_mode_ = false;
     max_error_rows_ = max_error_rows;
     is_inited_ = true;
   }
@@ -222,8 +220,8 @@ int ObLoadDataDirectImpl::Logger::log_error_line(const ObString &file_name, int6
   } else {
     if (is_create_log_succ_) {
       int tmp_ret = OB_SUCCESS;
-      const char *err_msg = ob_errpkt_strerror(err_code, is_oracle_mode_);
-      const int err_no = ob_errpkt_errno(err_code, is_oracle_mode_);
+      const char *err_msg = ob_errpkt_strerror(err_code);
+      const int err_no = ob_errpkt_errno(err_code);
       int64_t pos = 0;
       lib::ObMutexGuard guard(mutex_);
       if (OB_TMP_FAIL(databuff_printf(buf_, DEFAULT_BUF_LENGTH, pos, log_file_row_fmt,

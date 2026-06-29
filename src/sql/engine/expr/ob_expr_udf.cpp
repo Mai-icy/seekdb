@@ -131,7 +131,7 @@ int ObExprUDF::calc_result_typeN(ObExprResType &type,
         type.set_length(result_type_.get_length());
       }
     }
-    if (OB_SUCC(ret) && lib::is_mysql_mode()) {
+    if (OB_SUCC(ret)) {
       type_ctx.set_cast_mode(type_ctx.get_cast_mode() & ~CM_WARN_ON_FAIL);
     }
   }

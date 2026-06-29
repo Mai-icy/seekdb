@@ -69,14 +69,12 @@ int ObStatsEstimator::add_from_table(common::ObIAllocator &allocator,
   if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
               allocator,
               db_name,
-              new_db_name,
-              lib::is_oracle_mode()))) {
+              new_db_name))) {
     LOG_WARN("fail to generate new name with escape character", K(ret), K(db_name));
   } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
                     allocator,
                     table_name,
-                    new_tbl_name,
-                    lib::is_oracle_mode()))) {
+                    new_tbl_name))) {
     LOG_WARN("fail to generate new name with escape character", K(ret), K(table_name));
   } else {
     db_name_ = new_db_name;
@@ -91,9 +89,7 @@ int ObStatsEstimator::pack(ObSqlString &raw_sql_str)
   // SELECT <hint> <fields> FROM <table> <partition hint>
   if (OB_FAIL(gen_select_filed())) {
     LOG_WARN("failed to generate select filed", K(ret));
-  } else if (OB_FAIL(raw_sql_str.append_fmt(is_oracle_mode() ?
-                                            "SELECT %.*s %.*s FROM \"%.*s\".\"%.*s\" %.*s %.*s %.*s %.*s %.*s" :
-                                            "SELECT %.*s %.*s FROM `%.*s`.`%.*s` %.*s %.*s %.*s %.*s %.*s" ,
+  } else if (OB_FAIL(raw_sql_str.append_fmt("SELECT %.*s %.*s FROM `%.*s`.`%.*s` %.*s %.*s %.*s %.*s %.*s" ,
                                             other_hints_.length(),
                                             other_hints_.ptr(),
                                             static_cast<int32_t>(select_fields_.length()),
@@ -174,7 +170,7 @@ int ObStatsEstimator::fill_specify_scn_info(common::ObIAllocator &alloc,
 {
   int ret = OB_SUCCESS;
   if (sepcify_scn > 0) {
-    const char* fmt_str = lib::is_oracle_mode() ? "as of scn %lu" : "as of snapshot %lu";
+    const char* fmt_str = "as of snapshot %lu";
     char *buf = NULL;
     int64_t buf_len = strlen(fmt_str) + 30;//uint64_t:0 ~ 18446744073709551615,length no more than 20
     int64_t real_len = -1;
@@ -305,7 +301,7 @@ int ObStatsEstimator::fill_partition_info(ObIAllocator &allocator,
       if (OB_UNLIKELY(partition_infos.at(i).part_name_.empty())) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("partition name is empty", K(ret), K(partition_infos), K(i));
-      } else if (OB_FAIL(tmp_part_str.append_fmt(lib::is_oracle_mode() ? "%s\"%.*s\"%s" : "%s`%.*s`%s",
+      } else if (OB_FAIL(tmp_part_str.append_fmt("%s`%.*s`%s",
                                                 i == 0 ? "PARTITION(" : " ",
                                                 partition_infos.at(i).part_name_.length(),
                                                 partition_infos.at(i).part_name_.ptr(),
@@ -336,7 +332,7 @@ int ObStatsEstimator::fill_partition_info(ObIAllocator &allocator,
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("partition name is empty", K(ret), K(part_name));
   } else {
-    const char *fmt_str = lib::is_oracle_mode() ? "PARTITION (\"%.*s\")" : "PARTITION (`%.*s`)";
+    const char *fmt_str = "PARTITION (`%.*s`)";
     char *buf = NULL;
     const int64_t len = strlen(fmt_str) + part_name.length();
     int32_t real_len = -1;
@@ -362,8 +358,7 @@ int ObStatsEstimator::fill_group_by_info(ObIAllocator &allocator,
                                          ObString &calc_part_id_str)
 {
   int ret = OB_SUCCESS;
-  const char *fmt_str = lib::is_oracle_mode() ? "GROUP BY CALC_PARTITION_ID(\"%.*s\", %.*s)"
-                                                : "GROUP BY CALC_PARTITION_ID(`%.*s`, %.*s)";
+  const char *fmt_str = "GROUP BY CALC_PARTITION_ID(`%.*s`, %.*s)";
   char *buf = NULL;
   ObString type_str;
   if (param.stat_level_ == PARTITION_LEVEL) {
@@ -405,7 +400,6 @@ int ObStatsEstimator::do_estimate(const ObOptStatGatherParam &gather_param,
                                   ObIArray<ObOptStat> &dst_opt_stats)
 {
   int ret = OB_SUCCESS;
-  common::ObOracleSqlProxy oracle_proxy; // TODO, check the usage, is there any postprocess
   ObCommonSqlProxy *sql_proxy = ctx_.get_sql_proxy();
   ObArenaAllocator tmp_alloc("OptStatGather", OB_MALLOC_NORMAL_BLOCK_SIZE, gather_param.tenant_id_);
   sql::ObSQLSessionInfo::StmtSavedValue *session_value = NULL;
@@ -426,12 +420,6 @@ int ObStatsEstimator::do_estimate(const ObOptStatGatherParam &gather_param,
     } else if (session->is_in_external_catalog()
                && OB_FAIL(session->set_internal_catalog_db())) {
       LOG_WARN("failed to set catalog", K(ret));
-    } else if (lib::is_oracle_mode()) {
-      if (OB_FAIL(oracle_proxy.init(ctx_.get_sql_proxy()->get_pool()))) {
-        LOG_WARN("failed to init oracle proxy", K(ret));
-      } else {
-        sql_proxy = &oracle_proxy;
-      }
     }
   }
   if (OB_SUCC(ret)) {
@@ -443,7 +431,7 @@ int ObStatsEstimator::do_estimate(const ObOptStatGatherParam &gather_param,
     session->set_autocommit(true);
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      if (OB_FAIL(pool->acquire(session, conn, lib::is_oracle_mode()))) {
+      if (OB_FAIL(pool->acquire(session, conn))) {
         LOG_WARN("failed to acquire inner connection", K(ret));
       } else if (OB_ISNULL(conn)) {
         ret = OB_ERR_UNEXPECTED;

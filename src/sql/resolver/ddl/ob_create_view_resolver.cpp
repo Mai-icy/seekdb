@@ -288,8 +288,7 @@ int ObCreateViewResolver::resolve(const ParseNode &parse_tree)
                                             can_expand_star,
                                             add_undefined_columns))) {
         LOG_WARN("failed to check view columns", K(ret));
-      } else if ((lib::is_mysql_mode() || (resolve_succ && !add_undefined_columns))
-                 && OB_FAIL(add_column_infos(session_info_->get_effective_tenant_id(),
+      } else if (OB_FAIL(add_column_infos(session_info_->get_effective_tenant_id(),
                                              *select_stmt,
                                              table_schema,
                                              *allocator_,
@@ -1483,9 +1482,7 @@ int ObCreateViewResolver::add_column_infos(const uint64_t tenant_id,
                                                 column,
                                                 is_from_create_mview))) {
         LOG_WARN("failed to fill column meta infos", K(ret), K(column));
-      } else if (lib::is_mysql_mode() &&
-                 OB_FAIL(resolve_column_default_value(&select_stmt, select_item, column, alloc, session_info))) {
-        // oracle mode has default expr value, not support now
+      } else if (OB_FAIL(resolve_column_default_value(&select_stmt, select_item, column, alloc, session_info))) {
         LOG_WARN("add column to table_schema failed", K(ret), K(column));
       } else if (OB_FAIL(table_schema.add_column(column))) {
         LOG_WARN("add column to table_schema failed", K(ret), K(column));
@@ -1521,7 +1518,7 @@ int ObCreateViewResolver::fill_column_meta_infos(const ObRawExpr &expr,
   if (OB_FAIL(ret)) {
   } else if (OB_FAIL(fill_column_with_subschema(expr, session_info, column))) {
     LOG_WARN("fail to adjust enum set colum meta info", K(ret), K(expr));
-  } else if (OB_FAIL(adjust_string_column_length_within_max(column, false))) {
+  } else if (OB_FAIL(adjust_string_column_length_within_max(column))) {
     LOG_WARN("failed to adjust string column length within max", K(ret), K(expr));
   } else if (OB_FAIL(adjust_number_decimal_column_accuracy_within_max(column))) {
     LOG_WARN("failed to adjust number decimal column accuracy within max", K(ret), K(expr));

@@ -182,7 +182,7 @@ bool ObWktParser::is_number_beginning(char ch)
   int bret = false;
   if ('-' == ch || '.' == ch || isdigit(ch)) {
     bret = true;
-  } else if (!is_oracle_mode_ && '+' == ch ) {
+  } else if ('+' == ch ) {
     bret = true;
   }
   return bret;
@@ -311,12 +311,6 @@ int ObWktParser::parse_geo_type(ObGeoType &geo_type)
         }
       }
     }
-  }
-
-  if (is_oracle_mode_ && ObGeoTypeUtil::is_3d_geo_type(geo_type) && OB_SUCC(ret)) {
-    // wkt + z is not supported in oracle mode
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpected token type", K(ret));
   }
 
   return ret;
@@ -518,7 +512,7 @@ int ObWktParser::parse_linestring(bool is_ring)
             bool not_same_point = MEMCMP(wkb_buf_.ptr() + pos + sizeof(uint32_t),
               wkb_buf_.ptr() + wkb_buf_.length() - dim * sizeof(double), 2 * sizeof(double));
 
-            if (not_same_point && !lib::is_oracle_mode()) {
+            if (not_same_point) {
               ret = OB_ERR_PARSER_SYNTAX;
               LOG_WARN("first point and last point have to be the same in a ring", K(ret));
             }
@@ -644,12 +638,6 @@ int ObWktParser::parse_multipoint()
 {
   int ret = OB_SUCCESS;
   bool two_brac_beg = is_two_brac_beginning();
-  if (is_oracle_mode_) {
-    if (!two_brac_beg) {
-      ret = OB_ERR_PARSER_SYNTAX;
-      LOG_WARN("Oracle's Multipoint objects require brac around each point", K(ret));
-    }
-  }
   if (OB_SUCC(ret)) {
     ret = parse_multi_geom(ObGeoType::POINT, two_brac_beg);
   }

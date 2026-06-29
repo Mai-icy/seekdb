@@ -327,12 +327,6 @@ public:
   static int check_and_convert_table_name(const common::ObCollationType cs_type,
                                           const bool preserve_lettercase,
                                           common::ObString &name,
-                                          const bool is_oracle_mode,
-                                          const stmt::StmtType stmt_type = stmt::T_NONE,
-                                          const bool is_index_table = false);
-  static int check_and_convert_table_name(const common::ObCollationType cs_type,
-                                          const bool preserve_lettercase,
-                                          common::ObString &name,
                                           const stmt::StmtType stmt_type = stmt::T_NONE,
                                           const bool is_index_table = false);
   static int check_index_name(const common::ObCollationType cs_type, common::ObString &name);
@@ -540,8 +534,7 @@ public:
   static int generate_new_name_with_escape_character(
           common::ObIAllocator &allocator,
           const common::ObString &src,
-          common::ObString &dest,
-          bool is_oracle_mode);
+          common::ObString &dest);
   static int check_table_version(bool &equal,
             const DependenyTableStore &dependency_tables,
             share::schema::ObSchemaGetterGuard &schema_guard);
@@ -552,10 +545,6 @@ public:
                                                   common::ObString &view_definition);
   static void record_execute_time(const ObPhyPlanType type,
                                   const int64_t time_cost);
-  static int handle_audit_record(bool need_retry,
-                                 const ObExecuteMode exec_mode,
-                                 ObSQLSessionInfo &session,
-                                 bool is_sensitive = false);
   static int64_t get_query_record_size_limit(uint64_t tenant_id)
   {
     int64_t thredhold = OB_MAX_SQL_LENGTH;
@@ -595,8 +584,7 @@ public:
 
   static int print_identifier(char *buf, const int64_t buf_len, int64_t &pos,
                               common::ObCollationType connection_collation,
-                              const common::ObString &identifier_name,
-                              bool is_oracle_mode);
+                              const common::ObString &identifier_name);
   static bool is_one_part_table_can_skip_part_calc(const share::schema::ObTableSchema &schema);
 
   static int create_encode_sortkey_expr(ObRawExprFactory &expr_factory,

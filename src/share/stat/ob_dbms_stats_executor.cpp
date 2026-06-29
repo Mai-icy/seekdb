@@ -1541,7 +1541,6 @@ int ObDbmsStatsExecutor::update_online_stat(ObExecContext &ctx,
       bool need_reset_trx_lock_timeout = false;
       common::sqlclient::ObISQLConnection *conn = NULL;
       ctx.set_is_online_stats_gathering(true);
-      //lib::CompatModeGuard guard(lib::Worker::CompatMode::MYSQL);
       if (OB_FAIL(ObDbmsStatsUtils::cancel_async_gather_stats(ctx))) {
         LOG_WARN("failed to cancel async gather stats", K(ret));
       } else if (OB_FAIL(prepare_conn_and_store_session_for_online_stats(ctx.get_my_session(),
@@ -1588,7 +1587,6 @@ int ObDbmsStatsExecutor::update_online_stat(ObExecContext &ctx,
         LOG_INFO("update online stats occur lock conflict, just skip");
       }
       //release source
-      //guard.~CompatModeGuard();
       ctx.set_is_online_stats_gathering(false);
       if (OB_NOT_NULL(conn)) {
         int tmp_ret = OB_SUCCESS;
@@ -1695,17 +1693,7 @@ int ObDbmsStatsExecutor::restore_session_for_online_stat(sql::ObSQLSessionInfo *
     } else {
       session->set_nested_count(nested_count);
     }
-    //2.restore seesion compatible oracle mode
-    if (lib::is_oracle_mode()) {
-      ObObj oracle_mode;
-      oracle_mode.set_int(1);
-      int tmp_ret = session->update_sys_variable(share::SYS_VAR_OB_COMPATIBILITY_MODE, oracle_mode);
-      if (tmp_ret != OB_SUCCESS) {
-        ret = COVER_SUCC(tmp_ret);
-        LOG_WARN("failed to update sys variable for compatibility mode", K(tmp_ret));
-      }
-    }
-    //3.restore trx lock timeout
+    //2.restore trx lock timeout
     if (need_reset_trx_lock_timeout) {
       ObObj trx_lock_timeout;
       trx_lock_timeout.set_int(old_trx_lock_timeout);

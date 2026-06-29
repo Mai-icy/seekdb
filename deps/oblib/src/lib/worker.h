@@ -285,24 +285,6 @@ private:
   bool last_flag_;
 };
 
-class CompatModeGuard
-{
-public:
-  CompatModeGuard(Worker::CompatMode mode)
-  {
-    last_compat_mode_ = THIS_WORKER.get_compatibility_mode();
-    THIS_WORKER.set_compatibility_mode(mode);
-  }
-
-  ~CompatModeGuard()
-  {
-    THIS_WORKER.set_compatibility_mode(last_compat_mode_);
-  }
-
-private:
-  Worker::CompatMode last_compat_mode_;
-};
-
 
 #ifdef ERRSIM
 //set current errsim module in code snippet and set last errsim module when guard destructor
@@ -381,15 +363,6 @@ inline Worker::CompatMode get_compat_mode()
 inline void set_compat_mode(Worker::CompatMode mode)
 {
   get_ob_runtime_context().compat_mode_ = mode;
-}
-
-inline bool is_oracle_mode()
-{
-  return get_compat_mode() == Worker::CompatMode::ORACLE;
-}
-inline bool is_mysql_mode()
-{
-  return get_compat_mode() == Worker::CompatMode::MYSQL;
 }
 
 OB_INLINE void Worker::set_compatibility_mode(Worker::CompatMode mode)

@@ -321,7 +321,6 @@ int ObSetKvAttributeHelper::lock_for_common_ddl_()
 int ObSetKvAttributeHelper::check_table_legitimacy_()
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   int64_t schema_version = OB_INVALID_VERSION;
   bool is_exist = false;
   if (OB_FAIL(check_inner_stat_())) {
@@ -342,11 +341,6 @@ int ObSetKvAttributeHelper::check_table_legitimacy_()
       } else if (OB_UNLIKELY(orig_table_schema->is_in_splitting())) {
         ret = OB_OP_NOT_ALLOW;
         LOG_WARN("table is physical or logical split can not split", KR(ret), KPC(orig_table_schema));
-      } else if (OB_FAIL(orig_table_schema->check_if_oracle_compat_mode(is_oracle_mode))) {
-        LOG_WARN("fail to check oracle compat mode", KR(ret));
-      } else if (OB_UNLIKELY(is_oracle_mode)) {
-        ret = OB_NOT_SUPPORTED;
-        LOG_WARN("not support parallel set kv_attributes on oracle mode", KR(ret));
       } else if (OB_FAIL(ddl_service_->get_snapshot_mgr().check_restore_point(
         ddl_service_->get_sql_proxy(), tenant_id_, orig_table_schema->get_table_id(), is_exist))) {
         LOG_WARN("failed to check restore point", KR(ret), K_(tenant_id));

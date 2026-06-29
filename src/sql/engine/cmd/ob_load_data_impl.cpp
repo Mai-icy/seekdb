@@ -755,7 +755,7 @@ void ObCSVFormats::init(const ObDataInFileStruct &file_formats)
         INT64_MAX : file_formats.line_term_str_[0];
   enclose_char_ = file_formats.field_enclosed_char_;
   escape_char_ = file_formats.field_escaped_char_;
-  null_column_fill_zero_string_ = lib::is_mysql_mode();
+  null_column_fill_zero_string_ = true;
 
   if (!file_formats.field_term_str_.empty()
       && file_formats.line_term_str_.empty()) {
@@ -1472,9 +1472,9 @@ int ObLoadDataSPImpl::log_failed_line(ToolBox &box,
   } else {
     box.expr_buffer->reset();
     int64_t log_buf_pos = 0;
-    //int err_no = ob_errpkt_errno(err_code, box.is_oracle_mode);
+    //int err_no = ob_errpkt_errno(err_code);
     if (err_msg.empty()) {
-      err_msg = ob_errpkt_strerror(err_code, box.is_oracle_mode);
+      err_msg = ob_errpkt_strerror(err_code);
     }
     if (OB_FAIL(databuff_printf(box.expr_buffer->begin_ptr(),
                                 box.expr_buffer->get_buffer_size(),
@@ -2620,7 +2620,6 @@ int ObLoadDataSPImpl::ToolBox::init(ObExecContext &ctx, ObLoadDataStmt &load_stm
   formats.init(file_formats);
   self_addr = ctx.get_task_executor_ctx()->get_self_addr();
   //batch_row_count = DEFAULT_BUFFERRED_ROW_COUNT;
-  is_oracle_mode = false;
   tenant_id = load_args.tenant_id_;
   wait_secs_for_mem_release = 0;
   affected_rows = 0;

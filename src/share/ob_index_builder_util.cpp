@@ -375,12 +375,7 @@ int ObIndexBuilderUtil::set_index_table_columns(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(data_schema), K(ret));
   } else if (data_schema.is_valid()) {
-    bool is_oracle_mode = false;
-    if (OB_FAIL(data_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-      LOG_WARN("check_if_oracle_compat_mode failed", K(ret));
-    } else {
-      use_mysql_errno = !is_oracle_mode;
-    }
+    use_mysql_errno = true;
   }
   // no matter what index col of data table is, columns of 4 aux fts table is fixed
   if (OB_FAIL(ret)) {
@@ -749,8 +744,6 @@ int ObIndexBuilderUtil::adjust_ordinary_index_column_args(
   ObArray<ObColumnSortItem> new_sort_items;
   lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
   uint64_t tenant_id = data_schema.get_tenant_id();
-  ObCompatModeGetter::get_tenant_mode(tenant_id, compat_mode);
-  lib::CompatModeGuard compat_guard(compat_mode);
   for (int64_t i = 0; OB_SUCC(ret) && i < sort_items.count(); ++i) {
     int64_t old_cnt = data_schema.get_column_count();
     ObColumnSortItem new_sort_item = sort_items.at(i);
@@ -880,10 +873,6 @@ int ObIndexBuilderUtil::adjust_ordinary_index_column_args(
                 }
               }
             }
-          } else if (lib::Worker::CompatMode::ORACLE == compat_mode) {
-            const ObColumnRefRawExpr *ref_expr = static_cast<const ObColumnRefRawExpr*>(expr);
-            new_sort_item.column_name_ = ref_expr->get_column_name();
-            new_sort_item.is_func_index_ = false;
           } else {
             ret = OB_ERR_FUNCTIONAL_INDEX_ON_FIELD;
             LOG_WARN("Functional index on a column is not supported.", K(ret), K(*expr));
@@ -1170,12 +1159,7 @@ int ObIndexBuilderUtil::adjust_spatial_args(
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get invalid arguments", K(ret));
   } else if (OB_FAIL(generate_spatial_columns(sort_items.at(0).column_name_, data_schema, spatial_cols))) {
-    if (lib::is_oracle_mode() && ret == OB_ERR_COLUMN_DUPLICATE) { // error code adaptation
-      ret = OB_ERR_DOMAIN_COLUMN_DUPLICATE;
-      LOG_WARN("cannot create multiple domain indexes on a column list using same", K(ret));
-    } else {
-      LOG_WARN("generate spatial column failed", K(ret));
-    }
+    LOG_WARN("generate spatial column failed", K(ret));
   } else if (OB_UNLIKELY(spatial_cols.count() != 2) ||
              OB_ISNULL(spatial_cols.at(0)) || OB_ISNULL(spatial_cols.at(1))) {
     ret = OB_ERR_UNEXPECTED;
@@ -1244,11 +1228,8 @@ int ObIndexBuilderUtil::generate_spatial_cellid_column(
     } else if (OB_FAIL(databuff_printf(col_name_buf, OB_MAX_COLUMN_NAMES_LENGTH,
         name_pos, "_%ld", geo_col_id))) {
       LOG_WARN("print column id to col_name_buf failed", K(ret), K(geo_col_id));
-    } else if (lib::is_mysql_mode() && OB_FAIL(databuff_printf(cellid_expr_def, OB_MAX_DEFAULT_VALUE_LENGTH,
+    } else if (OB_FAIL(databuff_printf(cellid_expr_def, OB_MAX_DEFAULT_VALUE_LENGTH,
         def_pos, "SPATIAL_CELLID(`%s`)", col_schema.get_column_name()))) {
-      LOG_WARN("print cellid expr to cellid_expr_def failed", K(ret), K(col_schema.get_column_name()));
-    } else if (lib::is_oracle_mode() && OB_FAIL(databuff_printf(cellid_expr_def, OB_MAX_DEFAULT_VALUE_LENGTH,
-        def_pos, "SPATIAL_CELLID(%s)", col_schema.get_column_name()))) {
       LOG_WARN("print cellid expr to cellid_expr_def failed", K(ret), K(col_schema.get_column_name()));
     } else if (OB_FAIL(column_schema.add_cascaded_column_id(geo_col_id))) {
       LOG_WARN("add cascaded column to generated column failed", K(ret));
@@ -1309,11 +1290,8 @@ int ObIndexBuilderUtil::generate_spatial_mbr_column(
     } else if (OB_FAIL(databuff_printf(col_name_buf, OB_MAX_COLUMN_NAMES_LENGTH,
         name_pos, "_%ld", geo_col_id))) {
       LOG_WARN("print column id to buffer failed", K(ret), K(geo_col_id));
-    } else if (lib::is_mysql_mode() && OB_FAIL(databuff_printf(mbr_expr_def, OB_MAX_DEFAULT_VALUE_LENGTH,
+    } else if (OB_FAIL(databuff_printf(mbr_expr_def, OB_MAX_DEFAULT_VALUE_LENGTH,
         def_pos, "SPATIAL_MBR(`%s`)", col_schema.get_column_name()))) {
-      LOG_WARN("print mbr expr to mbr_expr_def failed", K(ret), K(col_schema.get_column_name()));
-    } else if (lib::is_oracle_mode() && OB_FAIL(databuff_printf(mbr_expr_def, OB_MAX_DEFAULT_VALUE_LENGTH,
-        def_pos, "SPATIAL_MBR(%s)", col_schema.get_column_name()))) {
       LOG_WARN("print mbr expr to mbr_expr_def failed", K(ret), K(col_schema.get_column_name()));
     } else if (OB_FAIL(column_schema.add_cascaded_column_id(geo_col_id))) {
       LOG_WARN("add cascaded column to generated column failed", K(ret));

@@ -28,7 +28,6 @@ ob_set_subtarget(ob_share_extra ALONE
   aggregate/min.cpp
   aggregate/max.cpp
   aggregate/approx_count_distinct_mysql.cpp
-  aggregate/approx_count_distinct_oracle.cpp
   aggregate/sum_opnsize.cpp
   aggregate/group_concat.cpp
   aggregate/approx_count_distinct_synopsis.cpp
@@ -182,7 +181,6 @@ ob_set_subtarget(ob_share common
   ob_gais_client.cpp
   ob_gais_msg.cpp
   ob_gais_rpc.cpp
-  ob_get_compat_mode.cpp
   ob_global_autoinc_service.cpp
   ob_global_merge_table_operator.cpp
   ob_global_stat_proxy.cpp
@@ -360,10 +358,6 @@ ob_set_subtarget(ob_share common_mixed
   longops_mgr/ob_ddl_longops.cpp
   longops_mgr/ob_i_longops.cpp
   longops_mgr/ob_longops_mgr.cpp
-  ash/ob_active_sess_hist_list.cpp
-  ash/ob_active_sess_hist_task.cpp
-  ash/ob_ash_refresh_task.cpp
-  ash/ob_di_util.cpp
   throttle/ob_share_throttle_define.cpp
   throttle/ob_throttle_common.cpp
   restore/ob_restore_data_mode.cpp
@@ -608,13 +602,6 @@ ob_set_subtarget(ob_share text_analysis
 
 ob_set_subtarget(ob_share throttle
   throttle/ob_throttle_common.cpp
-)
-
-ob_set_subtarget(ob_share wr
-  wr/ob_wr_service.cpp
-  wr/ob_wr_task.cpp
-  wr/ob_wr_snapshot_rpc_processor.cpp
-  wr/ob_wr_collector.cpp
 )
 
 ob_set_subtarget(ob_share object_storage

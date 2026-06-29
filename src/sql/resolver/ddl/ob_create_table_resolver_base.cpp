@@ -126,7 +126,7 @@ int ObCreateTableResolverBase::set_table_option_to_schema(ObTableSchema &table_s
         if (OB_FAIL((ObStoreFormat::find_store_format_type(default_format, store_format_)))) {
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("default compress not found!", K(ret), K_(store_format), K(default_format));
-        } else if (!ObStoreFormat::is_store_format_valid(store_format_, false)) {
+        } else if (!ObStoreFormat::is_store_format_valid(store_format_)) {
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("Unexpected store format type", K_(store_format), K(ret));
         } else if (OB_FAIL(ObDDLResolver::get_row_store_type(tenant_id, store_format_, row_store_type_))) {
@@ -247,15 +247,10 @@ int ObCreateTableResolverBase::add_primary_key_part(const ObString &column_name,
 {
   int ret = OB_SUCCESS;
   col = NULL;
-  bool is_oracle_mode = false;
   int64_t length = 0;
   if (OB_ISNULL(session_info_)) {
     ret = OB_NOT_INIT;
     SQL_RESV_LOG(WARN, "session is null", KP(session_info_), K(ret));
-  } else if (static_cast<int64_t>(table_id_) > 0
-             && OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-             session_info_->get_effective_tenant_id(), table_id_, is_oracle_mode))) {
-    LOG_WARN("fail to check oracle mode", KR(ret), K_(table_id));
   } else if (OB_ISNULL(col = table_schema.get_column_schema(column_name))) {
     ret = OB_ERR_KEY_COLUMN_DOES_NOT_EXITS;
     LOG_USER_ERROR(OB_ERR_KEY_COLUMN_DOES_NOT_EXITS, column_name.length(), column_name.ptr());
@@ -274,7 +269,7 @@ int ObCreateTableResolverBase::add_primary_key_part(const ObString &column_name,
     LOG_WARN("failed to set rowkey info", K(ret));
   } else if (!col->is_string_type()) {
     /* do nothing */
-  } else if (OB_FAIL(col->get_byte_length(length, false, false))) {
+  } else if (OB_FAIL(col->get_byte_length(length, false))) {
     SQL_RESV_LOG(WARN, "fail to get byte length of column", KR(ret));
   } else if (length <= 0) {
     ret = OB_ERR_WRONG_KEY_COLUMN;

@@ -46,9 +46,7 @@ int ObTriggerResolver::resolve(const ParseNode &parse_tree)
     ObDropTriggerStmt *stmt = create_stmt<ObDropTriggerStmt>();
     OV (OB_NOT_NULL(stmt), OB_ALLOCATE_MEMORY_FAILED);
     OZ (resolve_drop_trigger_stmt(parse_tree, stmt->get_trigger_arg()));
-    if (lib::is_mysql_mode()) {
-      OZ (get_drop_trigger_stmt_table_name(stmt));
-    }
+    OZ (get_drop_trigger_stmt_table_name(stmt));
     break;
   }
   case T_TG_ALTER: {
@@ -188,12 +186,12 @@ int ObTriggerResolver::resolve_sp_definer(const ParseNode *parse_node,
         }
       }
     }
-  } else if (lib::is_mysql_mode()) {
+  } else {
     // When definer is not specified, it defaults to the current user and host
     user_name = cur_user_name;
     host_name = cur_host_name;
   }
-  if (OB_SUCC(ret) && lib::is_mysql_mode()) {
+  if (OB_SUCC(ret)) {
     // user@host as a whole is stored in the priv_user field
     char tmp_buf[common::OB_MAX_USER_NAME_LENGTH + common::OB_MAX_HOST_NAME_LENGTH + 2] = {};
     snprintf(tmp_buf, sizeof(tmp_buf), "%.*s@%.*s", user_name.length(), user_name.ptr(),
@@ -329,7 +327,7 @@ int ObTriggerResolver::resolve_trigger_source(const ParseNode &parse_node,
     OZ (resolve_compound_dml_trigger(*parse_node.children_[1], trigger_arg));
   } else if (T_TG_SYSTEM == parse_node.children_[1]->type_) {
   }
-  if (OB_SUCC(ret) && parse_node.value_ != 0 && is_mysql_mode()) {
+  if (OB_SUCC(ret) && parse_node.value_ != 0) {
     OX (trigger_arg.with_if_not_exist_ = parse_node.value_);
   }
   return ret;
@@ -771,7 +769,7 @@ int ObTriggerResolver::resolve_trigger_body(const ParseNode &parse_node,
   OZ (trigger_info.gen_package_source(trigger_arg.base_object_database_,
                                       trigger_arg.base_object_name_, parse_node,
                                       session_info_->get_dtc_params()));
-  if (OB_SUCC(ret) && lib::is_mysql_mode()) {
+  if (OB_SUCC(ret)) {
     ObString procedure_source;
     pl::ObPLParser parser(*allocator_, session_info_->get_charsets4parser(), session_info_->get_sql_mode());
     ObStmtNodeTree *parse_tree = NULL;
@@ -919,7 +917,7 @@ int ObTriggerResolver::resolve_base_object(ObCreateTriggerArg &tg_arg,
       ret = OB_NOT_SUPPORTED;
       LOG_WARN("simple dml trigger only support on user table", K(ret));
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "simple dml trigger isn't used on user table");
-    } else if (lib::is_mysql_mode()) {
+    } else {
       uint64_t trigger_id = OB_INVALID_ID;
       const ObTriggerInfo *trigger_info = NULL;
       const uint64_t tenant_id = table_schema->get_tenant_id();
@@ -949,7 +947,6 @@ int ObTriggerResolver::resolve_order_clause(const ParseNode *parse_node, ObCreat
   int ret = OB_SUCCESS;
   LOG_DEBUG("resolve trigger order clause start", K(ret));
   if (OB_NOT_NULL(parse_node)) {
-    bool is_oracle_mode = false;
     ObTriggerInfo &trg_info = trigger_arg.trigger_info_;
     OV (T_TG_ORDER == parse_node->type_ && 1 == parse_node->num_child_ && NULL != parse_node->children_[0]);
     if (OB_SUCC(ret)) {

@@ -32,6 +32,7 @@ namespace common
 class ObServerConfig;
 class ObConfigManager;
 class ObMySQLProxy;
+class ObCommonSqlProxy;
 class ObTimer;
 class ObITabletScan;
 class ObMysqlRandom;
@@ -119,7 +120,6 @@ class ObSchemaStatusProxy;
 class ObKVStorage;
 
 class ObCgroupCtrl;
-class ObWorkloadRepositoryService;
 
 namespace schema
 {
@@ -141,7 +141,7 @@ struct ObGlobalContext
   sql::ObExecutorRpcImpl *executor_rpc_;
   common::ObMySQLProxy *sql_proxy_;
   common::ObMySQLProxy *ddl_sql_proxy_;
-  common::ObOracleSqlProxy *ddl_oracle_sql_proxy_;
+  common::ObCommonSqlProxy *ddl_oracle_sql_proxy_;
   observer::ObResourceInnerSQLConnectionPool *res_inner_conn_pool_;
   common::ObInOutBandwidthThrottle *bandwidth_throttle_;
   common::ObITabletScan *vt_par_ser_;
@@ -174,7 +174,7 @@ struct ObGlobalContext
   int64_t flashback_scn_;
   int64_t ssl_key_expired_time_;
   sql::ObConnectResourceMgr* conn_res_mgr_;
-  share::ObWorkloadRepositoryService *wr_service_;
+
   observer::ObStartupAccelTaskHandler* startup_accel_handler_;
   bool in_bootstrap_;
   bool sys_package_ready_;

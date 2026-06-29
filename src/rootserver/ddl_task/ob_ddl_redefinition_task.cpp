@@ -105,10 +105,8 @@ int ObDDLRedefinitionSSTableBuildTask::process()
   ddl_event_info.set_inner_sql_id(execution_id_);
   ObSqlString sql_string;
   ObSchemaGetterGuard schema_guard;
-  const ObSysVariableSchema *sys_variable_schema = nullptr;
   ObDDLTaskKey task_key(tenant_id_, dest_table_id_, schema_version_);
   ObDDLTaskInfo info;
-  bool oracle_mode = false;
   bool need_exec_new_inner_sql = true;
   const ObTableSchema *data_table_schema = nullptr;
 
@@ -122,14 +120,6 @@ int ObDDLRedefinitionSSTableBuildTask::process()
     LOG_WARN("fail to get tenant schema guard", K(ret), K(data_table_id_));
   } else if (OB_FAIL(schema_guard.check_formal_guard())) {
     LOG_WARN("fail to check formal guard", K(ret));
-  } else if (OB_FAIL(schema_guard.get_sys_variable_schema(
-      tenant_id_, sys_variable_schema))) {
-    LOG_WARN("get sys variable schema failed", K(ret), K(tenant_id_));
-  } else if (OB_ISNULL(sys_variable_schema)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("sys variable schema is NULL", K(ret));
-  } else if (OB_FAIL(sys_variable_schema->get_oracle_mode(oracle_mode))) {
-    LOG_WARN("get oracle mode failed", K(ret));
   } else if (OB_FAIL(schema_guard.get_table_schema(tenant_id_, data_table_id_, data_table_schema))) {
     LOG_WARN("get table schema failed", K(ret), K(tenant_id_), K(data_table_id_));
   } else if (OB_ISNULL(data_table_schema)) {
@@ -142,7 +132,7 @@ int ObDDLRedefinitionSSTableBuildTask::process()
           OB_FAIL(ObMViewRefreshHelper::collect_deps_and_check_satisfy(
                   tenant_id_, mview_table_id_, mview_target_data_sync_scn_,
                   snapshot_version_, *GCTX.sql_proxy_, schema_guard))) {
-          LOG_WARN("fail to check satisfied", K(ret), K(oracle_mode),
+          LOG_WARN("fail to check satisfied", K(ret),
                    K(mview_table_id_), K(mview_target_data_sync_scn_), K(snapshot_version_));
       } else if (OB_FAIL(ObDDLUtil::generate_build_mview_replica_sql(tenant_id_,
                                                                      mview_table_id_,
@@ -181,9 +171,7 @@ int ObDDLRedefinitionSSTableBuildTask::process()
       ObTimeoutCtx timeout_ctx;
       common::ObCommonSqlProxy *user_sql_proxy = nullptr;
       int64_t affected_rows = 0;
-      if (oracle_mode) {
-        sql_mode_ = SMO_STRICT_ALL_TABLES | SMO_PAD_CHAR_TO_FULL_LENGTH;
-      } else if (is_mview_complete_refresh_) {
+      if (is_mview_complete_refresh_) {
         sql_mode_ = SMO_STRICT_ALL_TABLES;
       }
       ObSessionParam session_param;
@@ -205,11 +193,7 @@ int ObDDLRedefinitionSSTableBuildTask::process()
         sql_exec_addr = &inner_sql_exec_addr_;
         LOG_INFO("inner sql execute addr" , K(*sql_exec_addr), "ddl_event_info", ObDDLEventInfo());
       }
-      if (oracle_mode) {
-        user_sql_proxy = GCTX.ddl_oracle_sql_proxy_;
-      } else {
-        user_sql_proxy = GCTX.ddl_sql_proxy_;
-      }
+      user_sql_proxy = GCTX.ddl_sql_proxy_;
       add_event_info(ret, "ddl redefinition sstable build task generate innersql");
       LOG_INFO("execute sql" , K(sql_string), K(data_table_id_), K(tenant_id_),
               "is_strict_mode", is_strict_mode(sql_mode_), K(sql_mode_), K(parallelism_), K(DDL_INNER_SQL_EXECUTE_TIMEOUT), "ddl_event_info", ObDDLEventInfo());
@@ -218,9 +202,7 @@ int ObDDLRedefinitionSSTableBuildTask::process()
       } else if (OB_FAIL(timeout_ctx.set_timeout(DDL_INNER_SQL_EXECUTE_TIMEOUT))) {
         LOG_WARN("set timeout failed", K(ret));
       } else {
-        ObCompatibilityMode compat_mode = oracle_mode ?
-                                          ObCompatibilityMode::ORACLE_MODE :
-                                          ObCompatibilityMode::MYSQL_MODE;
+        ObCompatibilityMode compat_mode = ObCompatibilityMode::MYSQL_MODE;
         ObMySQLTransaction trans;
         if (is_mview_complete_refresh_) {
           ObMViewOpArg arg;
@@ -485,7 +467,6 @@ int ObDDLRedefinitionTask::obtain_snapshot(const ObDDLTaskStatus next_task_statu
 
 // list the column type modifications that support to validate the checksum.
 bool ObDDLRedefinitionTask::check_can_validate_column_checksum(
-    const bool is_oracle_mode,
     const ObColumnSchemaV2 &src_column_schema,
     const ObColumnSchemaV2 &dest_column_schema)
 {
@@ -518,18 +499,11 @@ int ObDDLRedefinitionTask::get_validate_checksum_columns_id(const ObTableSchema 
   const ObTableSchema &dest_table_schema, hash::ObHashMap<uint64_t, uint64_t> &validate_checksum_columns_id)
 {
   int ret = OB_SUCCESS;
-  bool is_oracle_mode = false;
   if (OB_FAIL(DDL_SIM(tenant_id_, task_id_, REDEF_TASK_GET_CHECKSUM_COLUMNS_FAILED))) {
     LOG_WARN("ddl sim failure", K(ret), K(tenant_id_), K(task_id_));
-  } else if (OB_FAIL(alter_table_arg_.alter_table_schema_.check_if_oracle_compat_mode(is_oracle_mode))) {
-    LOG_WARN("check if oracle mode failed", K(ret), K(object_id_), "dest_table_id", target_object_id_);
   } else {
     ObSQLMode sql_mode = alter_table_arg_.sql_mode_;
-    if (is_oracle_mode) {
-      sql_mode = SMO_STRICT_ALL_TABLES;
-    } else {
-      sql_mode = sql_mode & (~SMO_PAD_CHAR_TO_FULL_LENGTH);
-    }
+    sql_mode = sql_mode & (~SMO_PAD_CHAR_TO_FULL_LENGTH);
     ObArray<uint64_t> column_ids;
     ObColumnNameMap col_name_map;
     if (OB_FAIL(data_table_schema.get_column_ids(column_ids))) {
@@ -588,13 +562,13 @@ int ObDDLRedefinitionTask::get_validate_checksum_columns_id(const ObTableSchema 
           (cur_column_schema->get_encoding_type() != dest_column_schema->get_encoding_type() ||
           cur_column_schema->get_collation_type() != dest_column_schema->get_collation_type())) {
             // do not validate the column checksum if encoding type and collation type change;
-        } else if (is_strict_mode(sql_mode) && check_can_validate_column_checksum(is_oracle_mode, *cur_column_schema, *dest_column_schema)) {
+        } else if (is_strict_mode(sql_mode) && check_can_validate_column_checksum(*cur_column_schema, *dest_column_schema)) {
           if (OB_FAIL(validate_checksum_columns_id.set_refactored(cur_column_id, dest_column_schema->get_column_id()))) {
-            LOG_WARN("fail to append the column to validate the checksum", K(ret), K(is_oracle_mode), K(is_strict_mode(sql_mode)),
+            LOG_WARN("fail to append the column to validate the checksum", K(ret), K(is_strict_mode(sql_mode)),
             K(cur_column_schema->get_data_type()), K(dest_column_schema->get_data_type()),
             K(cur_column_schema->get_data_length()), K(dest_column_schema->get_data_length()));
           } else {
-            LOG_INFO("succeed to append the column to validate the checksum", K(is_oracle_mode), K(is_strict_mode(sql_mode)),
+            LOG_INFO("succeed to append the column to validate the checksum", K(is_strict_mode(sql_mode)),
             K(cur_column_schema->get_data_type()), K(dest_column_schema->get_data_type()),
             K(cur_column_schema->get_data_length()), K(dest_column_schema->get_data_length()));
           }

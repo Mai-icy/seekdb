@@ -210,7 +210,6 @@ void ObErrorInfoMgr::print_ob_error()
       is_compat_header_printed = true;
       printf("\t\tMySQL: %d(%s)\n", mysql_errno, sqlstate);
     }
-    // Oracle error code printing removed - seekdb no longer supports Oracle compatibility mode
   }
 }
 //////////////////////////////////////////////////////////////
@@ -218,14 +217,23 @@ static void print_help()
 {
   printf("This is the ob_error tool. Usage:\n\n"
          "    ob_error [option]\n"
-         "    ob_error [facility] error_code\n"
+         "    ob_error [facility] error_code [-a ARGUMENT]\n"
+         "    ob_error [facility] error_code [--argument ARGUMENT]\n"
          "Get the error information, reasons and possible solutions.\n\n"
          "Query an error:\n\n"
          "    ob_error error_code\n\n"
          "Query an error in MySQL mode:\n\n"
          "    ob_error MY error_code\n\n"
+         "Query an error in ORACLE mode:\n\n"
+         "    ob_error facility error_code\n"
+         "    ob_error facility error_code -a ARGUMENT\n"
+         "    ob_error facility error_code --argument ARGUMENT\n\n"
+         "ARGUMENT:         \n\n"
+         "  Positive number   OceanBase error_code in ORA-00600 error output.\n\n"
          "facility:\n\n"
-         "  MY                MySQL mode.\n\n"
+         "  MY                MySQL mode.\n"
+         "  ORA               ORACLE mode. Error from database.\n"
+         "  PLS               ORACLE mode. Error from the stored procedure.\n\n"
          "Normal options:\n\n"
          "  --help, -h        Print this message and then exit.\n"
          "  --version, -V     Print version information and then exit.\n\n");
@@ -364,9 +372,9 @@ bool add_ob_info(int error_code, ObErrorInfoMgr* mgr)
         bret = true;
       }
     } else {
-      const char* error_usr_msg = ob_errpkt_str_user_error(-error_code, false);
+      const char* error_usr_msg = ob_errpkt_str_user_error(-error_code);
       if (nullptr != error_usr_msg) {
-        const char* error_msg = ob_errpkt_strerror(-error_code, false);
+        const char* error_msg = ob_errpkt_strerror(-error_code);
         const char* error_name = ob_error_name(-error_code);
         const char* error_cause = ob_error_cause(-error_code);
         const char* error_solution = ob_error_solution(-error_code);
@@ -393,9 +401,9 @@ static bool add_error_info(int error_code, Fac facility, int g_error[][OB_MAX_SA
         break;
       } else {
         ob_error = g_error[error_code][i];
-        const char* error_usr_msg = ob_errpkt_str_user_error(-ob_error, MY > facility);
+        const char* error_usr_msg = ob_errpkt_str_user_error(-ob_error);
         if (nullptr != error_usr_msg) {
-          const char* error_msg = ob_errpkt_strerror(-ob_error, MY > facility);
+          const char* error_msg = ob_errpkt_strerror(-ob_error);
           const char* error_name = ob_error_name(-ob_error);
           const char* error_cause = ob_error_cause(-ob_error);
           const char* error_solution = ob_error_solution(-ob_error);
@@ -441,8 +449,6 @@ bool add_mysql_info(int error_code, ObErrorInfoMgr* mgr)
 
 bool add_oracle_info(Fac oracle_facility, int error_code, int argument, ObErrorInfoMgr* mgr)
 {
-  // Oracle support has been removed from seekdb
-  // This function now returns false to indicate no Oracle error info is available
   (void)oracle_facility;
   (void)error_code;
   (void)argument;
@@ -684,7 +690,24 @@ static bool ob_init_error_to_oberror(int ora_err[][OB_MAX_SAME_ERROR_COUNT], int
         bret = false;
       }
     }
-    // Oracle error mapping removed - seekdb no longer supports Oracle compatibility mode
+    // init ora_err/pls_err map
+    const char* error_usr_msg = ob_oracle_str_user_error(-i);
+    error_code = ob_oracle_errno(-i);
+    if (-1 != error_code && NULL != error_usr_msg) {
+      if (0 > error_code)
+        error_code = -error_code;
+      if (0 == strncmp(error_usr_msg, facility_str[ORA], strlen(facility_str[ORA]))) {
+        if (!insert_oracle_error_slot_ora(ora_err, error_code, i)) {
+          ERROR_PRINT("error: OB_MAX_SAME_ERROR_COUNT is not enough for ORA-%05d(OB Error %d)\n", error_code, i);
+          bret = false;
+        }
+      } else if (0 == strncmp(error_usr_msg, facility_str[PLS], strlen(facility_str[PLS]))) {
+        if (!insert_oracle_error_slot_pls(pls_err, error_code, i)) {
+          ERROR_PRINT("error: OB_MAX_SAME_ERROR_COUNT is not enough for PLS-%05d(OB Error %d)\n", error_code, i);
+          bret = false;
+        }
+      }
+    }
   }
   return bret;
 }

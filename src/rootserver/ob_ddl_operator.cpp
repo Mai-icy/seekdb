@@ -1236,22 +1236,12 @@ int ObDDLOperator::reinit_autoinc_row(const ObTableSchema &table_schema,
   ObAutoincrementService &autoinc_service = share::ObAutoincrementService::get_instance();
 
   if (0 != column_id) {
-    bool is_oracle_mode = false;
-    if (OB_FAIL(table_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-      LOG_WARN("fail to check is oracle mode",
-                KR(ret), K(table_id), K(table_name), K(truncate_version), K(column_id));
-    } else if (is_oracle_mode) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("in oracle mode, autoic_column_id must be illegal",
-              KR(ret), K(table_id), K(table_name), K(truncate_version), K(column_id));
-    } else {
-      // reinit auto_increment value
-      uint64_t tenant_id = table_schema.get_tenant_id();
-      if (OB_FAIL(autoinc_service.reinit_autoinc_row(tenant_id, table_id,
-                                                     column_id, truncate_version, trans))) {
-        LOG_WARN("failed to reint auto_increment",
-                KR(ret), K(tenant_id), K(table_id), K(table_name), K(truncate_version), K(column_id));
-      }
+    // reinit auto_increment value
+    uint64_t tenant_id = table_schema.get_tenant_id();
+    if (OB_FAIL(autoinc_service.reinit_autoinc_row(tenant_id, table_id,
+                                                   column_id, truncate_version, trans))) {
+      LOG_WARN("failed to reint auto_increment",
+              KR(ret), K(tenant_id), K(table_id), K(table_name), K(truncate_version), K(column_id));
     }
   }
   int64_t finish_time = ObTimeUtility::current_time();
@@ -2667,18 +2657,9 @@ int ObDDLOperator::alter_table_drop_foreign_key(const ObTableSchema &table_schem
       }
     }
     if (OB_SUCC(ret) && OB_ISNULL(foreign_key_info)) {
-      bool is_oracle_mode = false;
-      if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_table_id(
-         table_schema.get_tenant_id(), table_schema.get_table_id(), is_oracle_mode))) {
-       LOG_WARN("fail to check is oracle mode", K(ret), K(table_schema));
-      } else if (is_oracle_mode) {
-       ret = OB_ERR_NONEXISTENT_CONSTRAINT;
-       LOG_WARN("Cannot drop foreign key constraint  - nonexistent constraint", K(ret), K(foreign_key_name), K(table_schema.get_table_name_str()));
-      } else {
-       ret = OB_ERR_CANT_DROP_FIELD_OR_KEY;
-       LOG_USER_ERROR(OB_ERR_CANT_DROP_FIELD_OR_KEY, foreign_key_name.length(), foreign_key_name.ptr());
-       LOG_WARN("Cannot drop foreign key constraint  - nonexistent constraint", K(ret), K(foreign_key_name), K(table_schema.get_table_name_str()));
-      }
+      ret = OB_ERR_CANT_DROP_FIELD_OR_KEY;
+      LOG_USER_ERROR(OB_ERR_CANT_DROP_FIELD_OR_KEY, foreign_key_name.length(), foreign_key_name.ptr());
+      LOG_WARN("Cannot drop foreign key constraint  - nonexistent constraint", K(ret), K(foreign_key_name), K(table_schema.get_table_name_str()));
     }
     if (OB_FAIL(ret)) {
     } else if (OB_FAIL(schema_service_.gen_new_schema_version(tenant_id, new_schema_version))) {
@@ -4795,19 +4776,7 @@ int ObDDLOperator::flashback_table_from_recyclebin(const ObTableSchema &table_sc
           new_table_schema.set_invisible_before(0);
         }
         if (OB_SUCC(ret) && new_table_schema.is_index_table()) {
-          bool is_oracle_mode = false;
-          if (OB_FAIL(new_table_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-            LOG_WARN("fail check if oracle mode", K(ret));
-          } else if (is_oracle_mode) {
-            ObString new_idx_name;
-            if (OB_FAIL(ObTableSchema::create_new_idx_name_after_flashback(new_table_schema,
-                                                                           new_idx_name,
-                                                                           allocator,
-                                                                           guard))) {
-            } else if (OB_FAIL(new_table_schema.set_table_name(new_idx_name))) {
-              LOG_WARN("set new table name failed", K(ret));
-            }
-          }
+          // oracle mode index rename after flashback removed (MySQL-only)
         }
       } else {
         if (!new_table_name.empty()) {
@@ -4850,19 +4819,7 @@ int ObDDLOperator::flashback_table_from_recyclebin(const ObTableSchema &table_sc
         new_table_schema.set_invisible_before(0);
       }
       if (OB_SUCC(ret) && new_table_schema.is_index_table()) {
-        bool is_oracle_mode = false;
-        if (OB_FAIL(new_table_schema.check_if_oracle_compat_mode(is_oracle_mode))) {
-          LOG_WARN("fail check if oracle mode", K(ret));
-        } else if (is_oracle_mode) {
-          ObString new_idx_name;
-          if (OB_FAIL(ObTableSchema::create_new_idx_name_after_flashback(new_table_schema,
-                                                                         new_idx_name,
-                                                                         allocator,
-                                                                         guard))) {
-          } else if (OB_FAIL(new_table_schema.set_table_name(new_idx_name))) {
-            LOG_WARN("set new table name failed", K(ret));
-          }
-        }
+        // oracle mode index rename after flashback removed (MySQL-only)
       }
     }
     if (OB_SUCC(ret)) {
@@ -5441,8 +5398,7 @@ int ObDDLOperator::init_tenant_database(const ObTenantSchema &tenant_schema,
                                         const ObString &db_name,
                                         const uint64_t pure_db_id,
                                         const ObString &db_comment,
-                                        ObMySQLTransaction &trans,
-                                        const bool is_oracle_mode)
+                                        ObMySQLTransaction &trans)
 {
   int ret = OB_SUCCESS;
   int64_t start = ObTimeUtility::current_time();
@@ -5483,7 +5439,7 @@ int ObDDLOperator::init_tenant_database(const ObTenantSchema &tenant_schema,
     const uint64_t tenant_id = tenant_schema.get_tenant_id();
     ObOriginalDBKey db_key;
     db_key.tenant_id_ = tenant_id;
-    db_key.user_id_ = is_oracle_mode ? OB_ORA_SYS_USER_ID : OB_SYS_USER_ID;
+    db_key.user_id_ = OB_SYS_USER_ID;
     db_key.db_ = db_name;
 
     ObSchemaService *schema_service = schema_service_.get_schema_service();
@@ -5497,7 +5453,7 @@ int ObDDLOperator::init_tenant_database(const ObTenantSchema &tenant_schema,
       need_priv.db_ = db_name;
       need_priv.priv_set_ = OB_PRIV_DB_ACC;//is collect?
       need_priv.priv_level_ = OB_PRIV_DB_LEVEL;
-      if (OB_FAIL(ObDDLSqlGenerator::gen_db_priv_sql(ObAccountArg(is_oracle_mode ? OB_ORA_SYS_USER_NAME : OB_SYS_USER_NAME,
+      if (OB_FAIL(ObDDLSqlGenerator::gen_db_priv_sql(ObAccountArg(OB_SYS_USER_NAME,
                                                      OB_SYS_HOST_NAME),
                                                      need_priv,
                                                      true, /*is_grant*/
@@ -5532,36 +5488,31 @@ int ObDDLOperator::init_tenant_databases(const ObTenantSchema &tenant_schema,
   ObString recyclebin_schema(OB_RECYCLEBIN_SCHEMA_NAME);
   ObString public_schema(OB_PUBLIC_SCHEMA_NAME);
   ObString test_schema(OB_TEST_SCHEMA_NAME);
-  bool is_oracle_mode = false;
-  if (OB_FAIL(sys_variable.get_oracle_mode(is_oracle_mode))) {
-    LOG_WARN("failed to get oracle mode", K(ret));
-  } else if (OB_FAIL(init_tenant_database(tenant_schema, oceanbase_schema,
+  if (OB_FAIL(init_tenant_database(tenant_schema, oceanbase_schema,
                                    OB_SYS_DATABASE_ID, "system database",
-                                   trans, is_oracle_mode))) {
+                                   trans))) {
     RS_LOG(WARN, "insert default database failed", K(tenant_id), K(ret));
   } else if (OB_FAIL(init_tenant_database(tenant_schema, recyclebin_schema,
                                           OB_RECYCLEBIN_SCHEMA_ID, "recyclebin schema",
-                                          trans, is_oracle_mode))) {
+                                          trans))) {
     RS_LOG(WARN, "insert recyclebin schema failed", K(tenant_id), K(ret));
   } else if (OB_FAIL(init_tenant_database(tenant_schema, public_schema,
                                           OB_PUBLIC_SCHEMA_ID, "public schema",
-                                          trans, is_oracle_mode))) {
+                                          trans))) {
     RS_LOG(WARN, "insert public schema failed", K(tenant_id), K(ret));
   } else {
-    if (!is_oracle_mode) {
-      if (OB_FAIL(init_tenant_database(tenant_schema, mysql_schema,
-                                       OB_MYSQL_SCHEMA_ID, "MySql schema",
-                                       trans, false))) {
-        RS_LOG(WARN, "insert information_schema failed", K(tenant_id), K(ret));
-      } else if (OB_FAIL(init_tenant_database(tenant_schema, information_schema,
-                                              OB_INFORMATION_SCHEMA_ID, "information_schema",
-                                              trans, false))) {
-        RS_LOG(WARN, "insert mysql schema failed", K(tenant_id), K(ret));
-      } else if (OB_FAIL(init_tenant_database(tenant_schema, test_schema,
-                                              OB_INITIAL_TEST_DATABASE_ID, "test schema",
-                                              trans, is_oracle_mode))) {
-        RS_LOG(WARN, "insert test schema failed", K(tenant_id), K(ret));
-      }
+    if (OB_FAIL(init_tenant_database(tenant_schema, mysql_schema,
+                                     OB_MYSQL_SCHEMA_ID, "MySql schema",
+                                     trans))) {
+      RS_LOG(WARN, "insert information_schema failed", K(tenant_id), K(ret));
+    } else if (OB_FAIL(init_tenant_database(tenant_schema, information_schema,
+                                            OB_INFORMATION_SCHEMA_ID, "information_schema",
+                                            trans))) {
+      RS_LOG(WARN, "insert mysql schema failed", K(tenant_id), K(ret));
+    } else if (OB_FAIL(init_tenant_database(tenant_schema, test_schema,
+                                            OB_INITIAL_TEST_DATABASE_ID, "test schema",
+                                            trans))) {
+      RS_LOG(WARN, "insert test schema failed", K(tenant_id), K(ret));
     }
   }
 
@@ -5648,8 +5599,7 @@ RESOURCE CREATE SEQUENCE                          NO  YES YES*/
 int ObDDLOperator::init_inner_user_privs(
     const uint64_t tenant_id,
     ObUserInfo &user,
-    ObMySQLTransaction &trans,
-    const bool is_oracle_mode)
+    ObMySQLTransaction &trans)
 {
   int ret = OB_SUCCESS;
   int64_t new_schema_version = OB_INVALID_VERSION;
@@ -5672,8 +5622,7 @@ int ObDDLOperator::init_tenant_user(const uint64_t tenant_id,
                                     const ObString &user_comment,
                                     ObMySQLTransaction &trans,
                                     const bool set_locked,
-                                    const bool is_user,
-                                    const bool is_oracle_mode)
+                                    const bool is_user)
 {
   int ret = OB_SUCCESS;
   ObString pwd_enc;
@@ -5700,7 +5649,7 @@ int ObDDLOperator::init_tenant_user(const uint64_t tenant_id,
   } else {
     user.set_is_locked(set_locked);
     user.set_user_id(pure_user_id);
-    if ((!is_oracle_mode || is_user) &&
+    if (is_user &&
         pure_user_id != OB_ORA_LBACSYS_USER_ID &&
         pure_user_id != OB_ORA_AUDITOR_USER_ID) {
       user.set_priv_set(OB_PRIV_ALL | OB_PRIV_GRANT | OB_PRIV_ENCRYPT | OB_PRIV_DECRYPT);
@@ -5724,7 +5673,7 @@ int ObDDLOperator::init_tenant_user(const uint64_t tenant_id,
                        user, new_schema_version, &ddl_sql, trans))) {
       LOG_WARN("insert user failed", K(user), K(ret));
     } else if ((!is_user || is_ora_sys_user(user.get_user_id()))
-               && OB_FAIL(init_inner_user_privs(tenant_id, user, trans, is_oracle_mode))) {
+               && OB_FAIL(init_inner_user_privs(tenant_id, user, trans))) {
       LOG_WARN("init user privs failed", K(user), K(ret));
     }
   }
@@ -7218,7 +7167,6 @@ int ObDDLOperator::revoke_table(
   const uint64_t tenant_id = table_priv_key.tenant_id_;
   ObSchemaGetterGuard schema_guard;
   ObSchemaService *schema_sql_service = schema_service_.get_schema_service();
-  bool is_oracle_mode = false;
   if (OB_ISNULL(schema_sql_service)) {
     ret = OB_ERR_SYS;
     LOG_ERROR("schama service_impl and schema manage must not null",
@@ -7229,8 +7177,6 @@ int ObDDLOperator::revoke_table(
     LOG_WARN("db_priv_key is invalid", K(table_priv_key), K(ret));
   } else if (OB_FAIL(schema_service_.get_tenant_schema_guard(tenant_id, schema_guard))) {
     LOG_WARN("failed to get schema guard", K(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to check is oracle mode", K(ret));
   } else {
     ObPrivSet table_priv_set = OB_PRIV_SET_EMPTY;
     if (OB_FAIL(schema_guard.get_table_priv_set(table_priv_key, table_priv_set))) {
@@ -7312,7 +7258,7 @@ int ObDDLOperator::revoke_table(
         if (OB_SUCC(ret) && revoke_all_ora) {
           OZ (revoke_table_all(schema_guard, tenant_id, obj_priv_key, ddl_sql, trans));
         }
-      } else if (!is_oracle_mode) {
+      } else if (true) {
         //do nothing
       } else {
         ObSqlString ddl_stmt_str;
@@ -7491,7 +7437,6 @@ int ObDDLOperator::grant_revoke_role(
   ObSchemaGetterGuard schema_guard;
   int64_t new_schema_version = OB_INVALID_VERSION;
   ObString ddl_sql;
-  bool is_oracle_mode = false;
 
   if (OB_ISNULL(schema_service)) {
     ret = OB_ERR_SYS;
@@ -7500,8 +7445,6 @@ int ObDDLOperator::grant_revoke_role(
     LOG_WARN("fail to gen new schema_version", K(ret), K(tenant_id));
   } else if (OB_FAIL(schema_service_.get_tenant_schema_guard(tenant_id, schema_guard))) {
     LOG_WARN("failed to get schema guard", K(ret));
-  } else if (OB_FAIL(ObCompatModeGetter::check_is_oracle_mode_with_tenant_id(tenant_id, is_oracle_mode))) {
-    LOG_WARN("fail to get compat mode", K(ret));
   } else {
     common::ObSEArray<uint64_t, 8> role_ids;
     bool need_flush = false;
@@ -7535,7 +7478,7 @@ int ObDDLOperator::grant_revoke_role(
           } else if (NULL == role_info) {
             ret = OB_ERR_UNEXPECTED;
             LOG_WARN("role doesn't exist", K(ret), K(role_id));
-          } else if (is_oracle_mode ?
+          } else if (false ?
                        OB_FAIL(sql_string.append_fmt("%s", role_info->get_user_name()))
                      : OB_FAIL(sql_string.append_fmt("`%s`@`%s`",
                                                      role_info->get_user_name(),
@@ -7545,7 +7488,7 @@ int ObDDLOperator::grant_revoke_role(
         }
       }
       if (OB_SUCC(ret)) {
-        if (is_oracle_mode ? OB_FAIL(sql_string.append_fmt(is_grant ? " TO %s": " FROM %s",
+        if (false ? OB_FAIL(sql_string.append_fmt(is_grant ? " TO %s": " FROM %s",
                                                            user_info.get_user_name()))
                            : OB_FAIL(sql_string.append_fmt(is_grant ? " TO `%s`@`%s`": " FROM `%s`@`%s`",
                                                            user_info.get_user_name(),
@@ -8167,11 +8110,7 @@ int ObDDLOperator::revise_not_null_constraint_info(
   } else if (OB_FAIL(schema_service_.gen_new_schema_version(arg.tenant_id_, new_schema_version))) {
     LOG_WARN("fail to gen new schema_version", K(ret), K(arg.tenant_id_));
   } else {
-    bool is_oracle_mode = false;
     uint64_t new_cst_id = OB_INVALID_ID;
-    if (OB_FAIL(ori_table_schema->check_if_oracle_compat_mode(is_oracle_mode))) {
-      LOG_WARN("fail check if oracle mode", K(ret));
-    }
     for (int64_t i = 0; OB_SUCC(ret) && i < not_null_cols.count(); ++i) {
       ObArenaAllocator allocator("ReviseNotNulCst");
       ObString cst_name;
@@ -8189,14 +8128,13 @@ int ObDDLOperator::revise_not_null_constraint_info(
             tenant_id,
             ori_table_schema->get_database_id(),
             10, /* retry_times */
-            cst_name_generated,
-            true))) {
+            cst_name_generated))) {
         LOG_WARN("create cons name automatically failed", K(ret));
       } else if (OB_UNLIKELY(!cst_name_generated)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("duplicate name constraint already exists", K(ret), KPC(ori_table_schema));
       } else if (OB_FAIL(ObResolverUtils::create_not_null_expr_str(
-                  col_schema->get_column_name_str(), allocator, check_expr_str, is_oracle_mode))) {
+                  col_schema->get_column_name_str(), allocator, check_expr_str))) {
         LOG_WARN("create not null expr str failed", K(ret));
       } else if (OB_FAIL(schema_service->fetch_new_constraint_id(tenant_id, new_cst_id))) {
         LOG_WARN("failed to fetch new constraint id", K(ret));

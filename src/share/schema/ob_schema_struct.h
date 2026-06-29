@@ -248,7 +248,7 @@ enum ObObjectStatus : int64_t
   NA = 2, /*The use case is unknown*/
 };
 
-int get_part_type_str(const bool is_oracle_mode, ObPartitionFuncType type, common::ObString &str);
+int get_part_type_str(ObPartitionFuncType type, common::ObString &str);
 
 inline bool is_hash_part(const ObPartitionFuncType part_type)
 {
@@ -2023,7 +2023,6 @@ public:
   bool is_read_only() const { return read_only_; }
   common::ObNameCaseMode get_name_case_mode() const { return name_case_mode_; }
   void set_name_case_mode(const common::ObNameCaseMode mode) { name_case_mode_ = mode; }
-  int get_oracle_mode(bool &is_oracle_mode) const;
   TO_STRING_KV(K_(tenant_id), K_(schema_version),
                "sysvars", common::ObArrayWrap<ObSysVarSchema *>(sysvar_array_, ObSysVarFactory::ALL_SYS_VARS_COUNT),
                K_(read_only), K_(name_case_mode));
@@ -2091,7 +2090,6 @@ public:
   inline void set_storage_format_work_version(const int64_t storage_format_work_version);
   void set_default_tablegroup_id(const uint64_t tablegroup_id) { default_tablegroup_id_ = tablegroup_id; }
   int set_default_tablegroup_name(const common::ObString &tablegroup_name) { return deep_copy_str(tablegroup_name, default_tablegroup_name_); }
-  inline void set_compatibility_mode(const common::ObCompatibilityMode compatibility_mode) { compatibility_mode_ = compatibility_mode; }
 
   //get methods
   inline uint64_t get_tenant_id() const { return tenant_id_; }
@@ -2114,16 +2112,6 @@ public:
       common::ObIArray<common::ObZone> &zone_list) const;
   inline uint64_t get_default_tablegroup_id() const { return default_tablegroup_id_; }
   inline const common::ObString &get_default_tablegroup_name() const { return default_tablegroup_name_; }
-  inline common::ObCompatibilityMode get_compatibility_mode() const { return compatibility_mode_; }
-
-  inline bool is_oracle_tenant() const
-  {
-    return common::ObCompatibilityMode::ORACLE_MODE == compatibility_mode_;
-  }
-  inline bool is_mysql_tenant() const
-  {
-    return common::ObCompatibilityMode::MYSQL_MODE == compatibility_mode_;
-  }
   inline bool is_dropping() const { return TENANT_STATUS_DROPPING == status_; }
   inline bool is_in_recyclebin() const { return in_recyclebin_; }
   inline void set_in_recyclebin(const bool in_recyclebin) { in_recyclebin_ = in_recyclebin; }
@@ -2144,7 +2132,7 @@ public:
   TO_STRING_KV(K_(tenant_id), K_(schema_version), K_(tenant_name), K_(zone_list),
                K_(charset_type), K_(locked), K_(comment), K_(name_case_mode),
                K_(read_only),
-               K_(default_tablegroup_id), K_(default_tablegroup_name), K_(compatibility_mode),
+               K_(default_tablegroup_id), K_(default_tablegroup_name),
                K_(status), K_(in_recyclebin));
 private:
   uint64_t tenant_id_;
@@ -2161,7 +2149,6 @@ private:
   // The following is the parsed array of a single zone, which has been sorted according to priority
   uint64_t default_tablegroup_id_;
   common::ObString default_tablegroup_name_;
-  common::ObCompatibilityMode compatibility_mode_;//Cannot be modified after creation
   ObTenantStatus status_;
   bool in_recyclebin_;
 };
@@ -2741,7 +2728,6 @@ class ObPartitionSchema : public ObSchema
   OB_UNIS_VERSION(1);
 public:
   constexpr const static char * const MYSQL_NON_PARTITIONED_TABLE_PART_NAME = "p0";
-  constexpr const static char * const ORACLE_NON_PARTITIONED_TABLE_PART_NAME = "P0";
 
   const static int64_t SUBPART_TEMPLATE_DEF_EXIST_SHIFT = 0;
   const static int64_t SUBPART_TEMPLATE_DEF_VALID_SHIFT = 1;
@@ -2991,7 +2977,6 @@ public:
   // may have other interval partitions.
   int get_interval_parted_range_part_num(uint64_t &part_num) const;
 
-  virtual int check_if_oracle_compat_mode(bool &is_oracle_mode) const = 0;
   // only used for virtual table
   int mock_list_partition_array();
   // only used for generate part_name
@@ -3192,7 +3177,6 @@ public:
   bool can_read_index() const { return true; }
   virtual bool is_hidden_schema() const override { return false; }
   virtual bool is_normal_schema() const override { return !is_hidden_schema(); }
-  virtual int check_if_oracle_compat_mode(bool &is_oracle_mode) const;
   inline int64_t get_truncate_version() { return 0; }
 
   DECLARE_VIRTUAL_TO_STRING;
@@ -3223,7 +3207,6 @@ public:
 
   //Convert rowkey to sql literal for show
   static int convert_rowkey_to_sql_literal(
-             const bool is_oracle_mode,
              const common::ObRowkey &rowkey,
              char *buf,
              const int64_t buf_len,
@@ -3233,7 +3216,6 @@ public:
 
   // Used to display the defined value of the LIST partition
   static int convert_rows_to_sql_literal(
-             const bool is_oracle_mode,
              const common::ObIArray<common::ObNewRow>& rows,
              char *buf,
              const int64_t buf_len,
@@ -3255,7 +3237,6 @@ public:
   // check if partition value equal
   template <typename PARTITION>
   static int check_partition_value(
-             const bool is_oracle_mode,
              const PARTITION &l_part,
              const PARTITION &r_part,
              const ObPartitionFuncType part_type,
@@ -3263,12 +3244,10 @@ public:
              ObSqlString *user_error = NULL);
 
   static bool is_types_equal_for_partition_check(
-              const bool is_oracle_mode,
               const common::ObObjType &typ1,
               const common::ObObjType &type2);
 
   static int set_low_bound_val_by_interval_range_by_innersql(
-      const bool is_oracle_mode,
       ObPartition &p,
       const ObRowkey &interval_range);
 
@@ -6936,7 +6915,6 @@ public:
 
 template<typename PARTITION>
 int ObPartitionUtils::check_partition_value(
-    const bool is_oracle_mode,
     const PARTITION &l_part,
     const PARTITION &r_part,
     const ObPartitionFuncType part_type,
@@ -6960,12 +6938,12 @@ int ObPartitionUtils::check_partition_value(
         const common::ObObjMeta meta2 = r_part.get_high_bound_val().get_obj_ptr()[i].get_meta();
         // The obj comparison function does not require the same cs_level
         if (meta1.get_collation_type() == meta2.get_collation_type()) {
-          is_equal = is_types_equal_for_partition_check(is_oracle_mode, meta1.get_type(), meta2.get_type());
+          is_equal = is_types_equal_for_partition_check(meta1.get_type(), meta2.get_type());
           if (!is_equal) {
             ASSIGN_PARTITION_ERROR(user_error, "range_part partition meta type not equal");
             SHARE_SCHEMA_LOG(TRACE, "fail to check partition values, value meta not equal",
                            "left", l_part.get_high_bound_val().get_obj_ptr()[i],
-                           "right", r_part.get_high_bound_val().get_obj_ptr()[i], K(is_oracle_mode));
+                           "right", r_part.get_high_bound_val().get_obj_ptr()[i]);
           }
         } else {
           is_equal = false;
@@ -7012,7 +6990,7 @@ int ObPartitionUtils::check_partition_value(
               const common::ObObjMeta meta2 = r_rowkey.get_cell(z).get_meta();
               // The obj comparison function does not require the same cs_level
               if (meta1.get_collation_type() == meta2.get_collation_type()) {
-                is_equal = is_types_equal_for_partition_check(is_oracle_mode, meta1.get_type(), meta2.get_type());
+                is_equal = is_types_equal_for_partition_check(meta1.get_type(), meta2.get_type());
                 if (!is_equal) {
                   ASSIGN_PARTITION_ERROR(user_error, "list_part partition meta type not equal");
                   SHARE_SCHEMA_LOG(TRACE, "fail to check partition values, value meta not equal",
@@ -7469,8 +7447,6 @@ public:
   void set_schema_version(const int64_t schema_version) { schema_version_ = schema_version; }
   inline int64_t get_schema_version() const { return schema_version_; }
 
-  int check_if_oracle_compat_mode(bool &is_oracle_mode) const { is_oracle_mode = false; return OB_SUCCESS; };
-
   inline ObMockFKParentTableKey get_mock_parent_table_key() const
   { return ObMockFKParentTableKey(tenant_id_, mock_fk_parent_table_id_); }
   int64_t get_convert_size() const;
@@ -7780,8 +7756,7 @@ struct GetIndexNameKey<ObIndexSchemaHashWrapper, ObIndexNameInfo*>
 
 typedef common::hash::ObPointerHashMap<ObIndexSchemaHashWrapper, ObIndexNameInfo*, GetIndexNameKey, 1024> ObIndexNameMap;
 
-bool check_can_drop_column_instant(const uint64_t tenant_id,
-                                   const bool is_oracle_mode);
+bool check_can_drop_column_instant(const uint64_t tenant_id);
 
 }//namespace schema
 }//namespace share

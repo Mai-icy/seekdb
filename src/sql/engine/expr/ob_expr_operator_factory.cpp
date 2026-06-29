@@ -39,8 +39,7 @@
 #include "sql/engine/expr/ob_expr_bit_right_shift.h"
 #include "sql/engine/expr/ob_expr_bm25.h"
 #include "sql/engine/expr/ob_expr_case.h"
-#include "sql/engine/expr/ob_expr_oracle_decode.h"
-#include "sql/engine/expr/ob_expr_oracle_trunc.h"
+// ob_expr_oracle_decode.h removed (Oracle cleanup)
 #include "sql/engine/expr/ob_expr_fun_values.h"
 #include "sql/engine/expr/ob_expr_fun_default.h"
 #include "sql/engine/expr/ob_expr_cast.h"
@@ -438,7 +437,7 @@
 #include "sql/engine/expr/ob_expr_map_keys.h"
 #include "sql/engine/expr/ob_expr_current_catalog.h"
 #include "sql/engine/expr/ob_expr_check_catalog_access.h"
-#include "sql/engine/expr/ob_expr_oracle_to_char.h"
+// ob_expr_oracle_to_char.h removed (Oracle cleanup)
 #include "sql/engine/expr/ob_expr_semantic_distance.h"
 #include "sql/engine/expr/ob_expr_ai/ob_expr_ai_complete.h"
 #include "sql/engine/expr/ob_expr_ai/ob_expr_ai_embed.h"
@@ -597,7 +596,6 @@ void ObExprOperatorFactory::register_expr_operators()
     REG_OP(ObExprTimeStampAdd);
     REG_OP(ObExprToType);
     REG_OP(ObExprChar);
-    REG_OP(ObExprToChar);
     REG_OP(ObExprConvert);
     REG_OP(ObExprCoalesce);
     REG_OP(ObExprNvl);
@@ -605,8 +603,6 @@ void ObExprOperatorFactory::register_expr_operators()
     REG_OP(ObExprCurrentUser);
     REG_OP(ObExprCurrentUserPriv);
     REG_OP(ObExprYear);
-    REG_OP(ObExprOracleDecode);
-    REG_OP(ObExprOracleTrunc);
     REG_OP(ObExprDiv);
     REG_OP(ObExprAggDiv);
     REG_OP(ObExprEffectiveTenant);
@@ -1252,7 +1248,7 @@ int ObExprOperatorFactory::alloc(common::ObIAllocator &alloc, ObExprOperator *&e
 
 
 void ObExprOperatorFactory::get_function_alias_name(const ObString &origin_name, ObString &alias_name) {
-  if (is_mysql_mode()) {
+  {
     //for synonyms in mysql mode
     if (0 == origin_name.case_compare("bin")) {
       // bin(N) is equivalent to CONV(N,10,2)
@@ -1337,8 +1333,6 @@ void ObExprOperatorFactory::get_function_alias_name(const ObString &origin_name,
     } else {
       //do nothing
     }
-  } else {
-    //for synonyms in oracle mode
   }
 }
 
