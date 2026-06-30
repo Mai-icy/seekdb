@@ -68,6 +68,8 @@ build_release
 build_version.c
 build_version.cpp
 compile
+!test/compile/
+!test/compile/**
 config.guess
 config.log
 config.status
