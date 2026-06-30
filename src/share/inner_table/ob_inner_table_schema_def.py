@@ -8174,10 +8174,6 @@ def_table_schema(
 
 # 12435: __all_virtual_clone_job (abandoned)
 # 12436: __all_virtual_clone_job_history (abandoned)
-# 12437: __all_virtual_checkpoint_diagnose_memtable_info (removed)
-# 12438: __all_virtual_checkpoint_diagnose_checkpoint_unit_info (removed)
-# 12439: __all_virtual_checkpoint_diagnose_info (removed)
-
 # 12440: __all_virtual_wr_system_event # removed
 
 # 12441: __all_virtual_wr_event_name # removed
