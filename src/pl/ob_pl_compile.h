@@ -33,6 +33,11 @@ class ObRoutineInfo;
 class ObPackageInfo;
 }
 }
+namespace sql
+{
+class ObRawExpr;
+class ObSqlExpression;
+}
 namespace pl
 {
 class ObPLPackageAST;
@@ -42,24 +47,11 @@ class ObPLResolver;
 class ObPLVarDebugInfo;
 class ObRoutinePersistentInfo;
 
-class ObPLCGMallocCallback final : public lib::ObMallocCallback
-{
-public:
-  ObPLCGMallocCallback(int64_t &mem_used)
-    : mem_used_(mem_used) {}
-  virtual ~ObPLCGMallocCallback() {}
-  virtual void operator()(const ObMemAttr &attr, int64_t add_size) override
-  {
-    if ((ObLabel(GET_PL_MOD_STRING(pl::OB_PL_JIT)) == attr.label_ 
-        || ObLabel(GET_PL_MOD_STRING(pl::OB_PL_CODE_GEN)) == attr.label_)
-        && attr.ctx_id_ == ObCtxIds::GLIBC) {
-      mem_used_ += add_size;
-    }
-  }
-private:
-  int64_t &mem_used_;
-}; // end of class ObPLCGMallocCallback
-
+// PL front-end: parses and semantically resolves PL source (anonymous blocks,
+// standalone routines, packages) into an executable AST unit (ObPLFunction /
+// ObPLPackage). It emits no native code -- the interpreter is the back-end that
+// walks the produced AST. "Compile" here means source -> executable AST, as in
+// an interpreter front-end, not JIT/codegen (which has been removed).
 class ObPLCompiler
 {
 public:
@@ -86,7 +78,7 @@ public:
 
   int analyze_package(const ObString &source, const ObPLBlockNS *parent_ns,
                       ObPLPackageAST &package_ast, bool is_for_trigger);
-  int generate_package(const ObString &exec_env, ObPLPackageAST &package_ast, ObPLPackage &package, bool &is_from_disk);
+  int generate_package(const ObString &exec_env, ObPLPackageAST &package_ast, ObPLPackage &package);
   int compile_package(const share::schema::ObPackageInfo &package_info, const ObPLBlockNS *parent_ns,
                       ObPLPackageAST &package_ast, ObPLPackage &package); //package
   static int compile_subprogram_table(common::ObIAllocator &allocator,
@@ -109,7 +101,6 @@ public:
   int check_package_body_legal(const ObPLBlockNS *parent_ns,
                                       const ObPLPackageAST &package_ast);
   static int update_schema_object_dep_info(ObIArray<ObSchemaObjVersion> &dp_tbl,
-                                           uint64_t tenant_id,
                                            uint64_t owner_id,
                                            uint64_t dep_obj_id, 
                                            uint64_t schema_version,
@@ -136,19 +127,19 @@ private:
                                 ObPLPackage &package);
   static int compile_types(const ObIArray<const ObUserDefinedType*> &types, ObPLCompileUnit &unit);
   static int format_object_name(share::schema::ObSchemaGetterGuard &schema_guard,
-                                const uint64_t tenant_id,
                                 const uint64_t db_id,
                                 const uint64_t package_id,
                                 ObString &database_name,
                                 ObString &package_name);
   int compile(const share::schema::ObRoutineInfo &routine, ObPLFunctionAST &func_ast, ObPLFunction &func);
-  int read_dll_from_disk(bool enable_persistent,
-                         ObRoutinePersistentInfo &routine_storage,
-                         ObPLFunctionAST &func_ast,
-                         ObPLCodeGenerator &cg,
-                         const ObRoutineInfo &routine,
-                         ObPLFunction &func,
-                         ObRoutinePersistentInfo::ObPLOperation &op);
+public:
+  // Bind a resolved raw expr's runtime ObExpr into the PL ObSqlExpression. Relocated off
+  // the deleted LLVM code generator; ObPLCompiler is a friend of ObRawExpr so it may read
+  // the protected rt_expr_.
+  static int link_sql_expr_rt(sql::ObRawExpr &raw_expr, sql::ObSqlExpression &sql_expr);
+  // Propagate a unit's profiler info to all nested routines (LLVM-free; relocated off the
+  // deleted code generator).
+  static int set_profiler_unit_info_recursive(const ObPLCompileUnit &unit);
 private:
   common::ObIAllocator &allocator_;
   sql::ObSQLSessionInfo &session_info_;

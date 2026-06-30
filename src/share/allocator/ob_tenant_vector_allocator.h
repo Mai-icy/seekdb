@@ -18,7 +18,7 @@
 #define OCEANBASE_ALLOCATOR_OB_TENANT_VECTOR_ALLOCATOR_H_
 #include "lib/vector/ob_vector_util.h"
 #include "share/throttle/ob_share_throttle_define.h"
-#include "observer/omt/ob_tenant_config_mgr.h"
+#include "share/config/ob_server_config.h"
 namespace oceanbase {
 namespace share {
 
@@ -61,7 +61,7 @@ public:
   inline uint64_t* get_used_mem_ptr() { return &all_used_mem_; }
   int64_t get_rb_mem_used();
   static void get_vector_mem_config(int64_t &resource_limit, int64_t &max_duration);
-  static int64_t get_vector_mem_limit_percentage(omt::ObTenantConfigGuard &tenant_config);
+  static int64_t get_vector_mem_limit_percentage(common::ObServerConfig *tenant_config);
   TO_STRING_KV(K(is_inited_), KP(throttle_tool_), KP(memory_context_.ref_context()));
 
 private:
@@ -84,7 +84,7 @@ public:
       mem_context_ = nullptr;
     }
   }
-  int init(lib::MemoryContext &parent_mem_context, uint64_t *all_vsag_use_mem, uint64_t tenant_id);
+  int init(lib::MemoryContext &parent_mem_context, uint64_t *all_vsag_use_mem);
   bool is_inited() { return OB_NOT_NULL(mem_context_); }
 
   std::string Name() override {
@@ -131,7 +131,7 @@ public:
       mem_context_ = nullptr;
     }
   }
-  int init(lib::MemoryContext &parent_mem_context, uint64_t *all_vsag_use_mem, uint64_t tenant_id, const char *label = IVF_CACHE_LABEL);
+  int init(lib::MemoryContext &parent_mem_context, uint64_t *all_vsag_use_mem, const char *label = IVF_CACHE_LABEL);
   bool is_inited() { return OB_NOT_NULL(mem_context_); }
   void* Allocate(size_t size);
   void Deallocate(void* p);

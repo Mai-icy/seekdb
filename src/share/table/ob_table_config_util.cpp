@@ -148,18 +148,16 @@ ObPrivControlMode::ObPrivControlMode(const uint8_t *values)
 }
 
 
-int ObKVConfigUtil::get_compress_type(const int64_t tenant_id, 
-                                      int64_t result_size,
+int ObKVConfigUtil::get_compress_type(int64_t result_size,
                                       ObCompressorType &compressor_type)
 {
   int ret = OB_SUCCESS;
-  omt::ObTenantConfigGuard tenant_config(TENANT_CONF(tenant_id));
-  if (!tenant_config.is_valid()) {
+  if (!true) {
     ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("fail to get rpc compress config", K(tenant_id));
+    LOG_WARN("fail to get rpc compress config");
   } else {
-    int64_t compress_threshold = tenant_config->kv_transport_compress_threshold;
-    ObString compress_type_str(tenant_config->kv_transport_compress_func.get_value());
+    int64_t compress_threshold = GCONF.kv_transport_compress_threshold;
+    ObString compress_type_str(GCONF.kv_transport_compress_func.get_value());
     if (OB_FAIL(ObCompressorPool::get_instance().get_compressor_type(compress_type_str, compressor_type))) {
       LOG_WARN("fail to get compress type", K(ret), K(compress_type_str));
     } else if (compressor_type == NONE_COMPRESSOR || result_size < compress_threshold) {

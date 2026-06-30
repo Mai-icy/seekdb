@@ -19,7 +19,6 @@
 #include "share/ob_virtual_table_scanner_iterator.h"
 #include "lib/alloc/ob_malloc_sample_struct.h"
 #include "storage/tablet/ob_tablet_iterator.h"
-#include "observer/omt/ob_multi_tenant_operator.h"
 
 namespace oceanbase
 {
@@ -46,7 +45,7 @@ public:
   virtual int inner_get_next_row(common::ObNewRow *&row);
   virtual void reset();
 private:
-  int64_t fill_glibc_used_info(uint64_t tenant_id);
+  int64_t fill_glibc_used_info();
   common::ObAddr addr_;
   uint64_t current_pos_;
   lib::ObMallocSampleMap::const_iterator it_;

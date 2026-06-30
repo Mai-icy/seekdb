@@ -23,7 +23,6 @@
 #include "sql/optimizer/ob_table_location.h"
 #include "sql/engine/ob_exec_context.h"
 #include "sql/optimizer/ob_fd_item.h"
-#include "observer/omt/ob_tenant_config_mgr.h"
 #include "sql/optimizer/ob_sharding_info.h"
 #include "sql/optimizer/ob_opt_est_cost.h"
 #include "sql/engine/expr/ob_expr_join_filter.h"
@@ -457,11 +456,7 @@ ObOptimizerContext(ObSQLSessionInfo *session_info,
   double enable_px_batch_rescan()
   {
     if (-1 == enable_px_batch_rescan_) {
-      omt::ObTenantConfigGuard tenant_config(
-            TENANT_CONF(session_info_->get_effective_tenant_id()));
-      if (OB_UNLIKELY(!tenant_config.is_valid())) {
-        enable_px_batch_rescan_ = 0;
-      } else if (tenant_config->_enable_px_batch_rescan) {
+      if (GCONF._enable_px_batch_rescan) {
         enable_px_batch_rescan_ = 1;
       } else {
         enable_px_batch_rescan_ = 0;
@@ -545,13 +540,7 @@ ObOptimizerContext(ObSQLSessionInfo *session_info,
   int get_px_object_sample_rate()
   {
     if (-1 == px_object_sample_rate_) {
-      omt::ObTenantConfigGuard tenant_config(
-            TENANT_CONF(session_info_->get_effective_tenant_id()));
-      if (OB_UNLIKELY(!tenant_config.is_valid())) {
-        px_object_sample_rate_ = 10;
-      } else {
-        px_object_sample_rate_ = tenant_config->_px_object_sampling;
-      }
+      px_object_sample_rate_ = GCONF._px_object_sampling;
     }
     return px_object_sample_rate_;
   }
@@ -748,8 +737,6 @@ ObOptimizerContext(ObSQLSessionInfo *session_info,
   bool has_pl_udf() const { return has_pl_udf_; }
   void set_has_cursor_expression(bool v) { has_cursor_expression_ = v; }
   bool has_cursor_expression() const { return has_cursor_expression_; }
-  void set_has_dblink(bool v) { has_dblink_ = v; }
-  bool has_dblink() const { return has_dblink_; }
   void set_has_subquery_in_function_table(bool v) { has_subquery_in_function_table_ = v; }
   bool has_subquery_in_function_table() const { return has_subquery_in_function_table_; }
   bool contain_nested_sql() const { return nested_sql_flags_ > 0; }
@@ -896,7 +883,6 @@ private:
       int8_t has_trigger_                      : 1; //this sql has trigger object
       int8_t has_pl_udf_                       : 1; //this sql has pl user defined function
       int8_t has_subquery_in_function_table_   : 1; //this stmt has function table
-      int8_t has_dblink_                       : 1; //this stmt has dblink table
       int8_t has_cursor_expression_            : 1; //this sql has cursor expression
     };
   };

@@ -2792,12 +2792,6 @@ int ObFastParserOracle::process_identifier_begin_with_n()
   return ret;
 }
 
-int ObFastParserOracle::process_values(const char *str)
-{
-  int ret = OB_SUCCESS;
-  return ret;
-}
-
 int ObFastParserOracle::process_identifier(bool is_number_begin)
 {
   int ret = OB_SUCCESS;
@@ -2885,10 +2879,6 @@ int ObFastParserOracle::process_identifier(bool is_number_begin)
         }
         break;
       }
-      case 'v':
-      case 'V':
-        OZ (process_values("alues"));
-        break;
       default: {
         break;
       }

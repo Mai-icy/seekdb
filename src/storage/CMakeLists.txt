@@ -71,7 +71,6 @@ ob_set_subtarget(ob_storage blocksstable_encoding1
   blocksstable/encoding/ob_column_equal_encoder.cpp
   blocksstable/encoding/ob_const_decoder.cpp
   blocksstable/encoding/ob_const_encoder.cpp
-  blocksstable/encoding/ob_vector_decode_util.cpp
   blocksstable/encoding/ob_dict_decoder.cpp
   blocksstable/encoding/ob_dict_encoder.cpp
   blocksstable/encoding/ob_encoding_allocator.cpp
@@ -85,6 +84,13 @@ ob_set_subtarget(ob_storage blocksstable_encoding1
   blocksstable/encoding/ob_new_column_decoder.cpp
   blocksstable/encoding/ob_integer_base_diff_decoder.cpp
   blocksstable/encoding/ob_integer_base_diff_encoder.cpp
+)
+# Vector-decode explicit-instantiation sites: must be ALONE (own TU), not unity, so the include
+# guard does not swallow their definition pass and they remain the sole definers of the symbols.
+ob_set_subtarget(ob_storage ALONE
+  blocksstable/encoding/ob_vector_decode_util.cpp
+  blocksstable/encoding/ob_vector_decode_util_b.cpp
+  blocksstable/encoding/ob_vector_decode_util_c.cpp
 )
 ob_set_subtarget(ob_storage blocksstable_encoding2
   blocksstable/encoding/ob_inter_column_substring_decoder.cpp
@@ -136,14 +142,20 @@ ob_set_subtarget(ob_storage blocksstable_cs_encoding
   blocksstable/cs_encoding/ob_integer_stream_decoder.cpp
   blocksstable/cs_encoding/ob_string_stream_encoder.cpp
   blocksstable/cs_encoding/ob_string_stream_decoder.cpp
-  blocksstable/cs_encoding/ob_integer_stream_vector_decoder.cpp
-  blocksstable/cs_encoding/ob_string_stream_vector_decoder.cpp
   blocksstable/cs_encoding/ob_cs_vector_decoding_util.cpp
   blocksstable/cs_encoding/semistruct_encoding/ob_semistruct_column_encoder.cpp
   blocksstable/cs_encoding/semistruct_encoding/ob_semistruct_column_decoder.cpp
   blocksstable/cs_encoding/semistruct_encoding/ob_semistruct_json.cpp
   blocksstable/cs_encoding/semistruct_encoding/ob_semistruct_encoding_util.cpp
   blocksstable/cs_encoding/semistruct_encoding/ob_semistruct_encoding_struct.cpp
+)
+
+# These two carry the cs vector-decode template matrix (ConvertStringToVec / ObIntStreamVecDecode);
+# each is ~190s/~87s alone and dominates the cs_encoding unity. ALONE makes them their own TUs so
+# they compile in parallel instead of serializing inside one unity straggler (no source/runtime change).
+ob_set_subtarget(ob_storage ALONE
+  blocksstable/cs_encoding/ob_string_stream_vector_decoder.cpp
+  blocksstable/cs_encoding/ob_integer_stream_vector_decoder.cpp
 )
 
 ob_set_subtarget(ob_storage blocksstable_index_block
@@ -275,32 +287,8 @@ ob_set_subtarget(ob_storage ik
 )
 
 
-ob_set_subtarget(ob_storage high_availability
-  high_availability/ob_physical_copy_ctx.cpp
-  high_availability/ob_physical_copy_task.cpp
-  high_availability/ob_sstable_copy_finish_task.cpp
-  high_availability/ob_tablet_copy_finish_task.cpp
-  high_availability/ob_storage_ha_macro_block_writer.cpp
-  high_availability/ob_storage_ha_reader.cpp
-  high_availability/ob_storage_ha_service.cpp
-  high_availability/ob_storage_ha_struct.cpp
-  high_availability/ob_storage_restore_struct.cpp
-  high_availability/ob_storage_ha_dag.cpp
-  high_availability/ob_storage_ha_tablet_builder.cpp
-  high_availability/ob_tablet_ha_status.cpp
-  high_availability/ob_storage_ha_utils.cpp
-  high_availability/ob_restore_status.cpp
-  high_availability/ob_restore_handler.cpp
-  high_availability/ob_restore_helper.cpp
-  high_availability/ob_restore_helper_ctx.cpp
-  high_availability/ob_restore_complete_dag_net.cpp
-  high_availability/ob_restore_dag_net.cpp
-)
 
 ob_set_subtarget(ob_storage restore
-  restore/ob_ls_restore_args.cpp
-  restore/ob_tenant_restore_info_mgr.cpp
-  restore/ob_restore_compatibility_util.cpp
 )
 
 ob_set_subtarget(ob_storage tablet
@@ -361,21 +349,6 @@ ob_set_subtarget(ob_storage tablet
   tablet/ob_tablet_ddl_complete_mds_data.cpp
 )
 
-ob_set_subtarget(ob_storage tx_wrs
-  tx/wrs/ob_black_list.cpp
-  tx/wrs/ob_i_weak_read_service.cpp
-  tx/wrs/ob_tenant_weak_read_cluster_service.cpp
-  tx/wrs/ob_tenant_weak_read_cluster_version_mgr.cpp
-  tx/wrs/ob_tenant_weak_read_server_version_mgr.cpp
-  tx/wrs/ob_tenant_weak_read_service.cpp
-  tx/wrs/ob_tenant_weak_read_stat.cpp
-  tx/wrs/ob_weak_read_service.cpp
-  tx/wrs/ob_weak_read_service_rpc.cpp
-  tx/wrs/ob_weak_read_service_rpc_define.cpp
-  tx/wrs/ob_weak_read_util.cpp
-  tx/wrs/ob_ls_wrs_handler.cpp
-)
-
 ob_set_subtarget(ob_storage tx
   tx/ob_ctx_tx_data.cpp
   tx/ob_gti_rpc.cpp
@@ -396,9 +369,9 @@ ob_set_subtarget(ob_storage tx
   tx/ob_tx_ctx_log_cb_helper.cpp
   tx/ob_location_adapter.cpp
   tx/ob_tablet_to_ls_cache.cpp
-  tx/ob_standby_timestamp_service.cpp
   tx/ob_timestamp_access.cpp
   tx/ob_timestamp_service.cpp
+  tx/ob_weak_read_util.cpp
   tx/ob_time_wheel.cpp
   tx/ob_trans_ctx.cpp
   tx/ob_trans_ctx_lock.cpp
@@ -484,6 +457,7 @@ ob_set_subtarget(ob_storage tx_table
 
 ob_set_subtarget(ob_storage ls
   ls/ob_freezer.cpp
+  ls/ob_ls_wrs_handler.cpp
   ls/ob_ls.cpp
   ls/ob_ls_ddl_log_handler.cpp
   ls/ob_ls_lock.cpp
@@ -654,7 +628,6 @@ ob_set_subtarget(ob_storage common
   ob_row_fuse.cpp
   ob_row_reshape.cpp
   ob_storage_rpc.cpp
-  ob_storage_grpc.cpp
   ob_storage_rpc.ipp
   ob_storage_schema.cpp
   ob_storage_schema_util.cpp
@@ -662,6 +635,8 @@ ob_set_subtarget(ob_storage common
   ob_storage_clog_recorder.cpp
   ob_storage_leak_checker.cpp
   ob_storage_struct.cpp
+  ob_tablet_ha_status.cpp
+  ob_storage_ha_struct.cpp
   ob_storage_table_guard.cpp
   ob_storage_util.cpp
   ob_super_block_struct.cpp
@@ -681,6 +656,7 @@ ob_set_subtarget(ob_storage common_mixed
   checkpoint/ob_checkpoint_executor.cpp
   checkpoint/ob_data_checkpoint.cpp
   checkpoint/ob_freeze_checkpoint.cpp
+  checkpoint/ob_checkpoint_diagnose.cpp
   meta_mem/ob_external_tablet_cnt_map.cpp
   meta_mem/ob_flying_tablet_pointer_map.cpp
   meta_mem/ob_meta_obj_struct.cpp
@@ -1021,7 +997,6 @@ ob_add_new_object_target(ob_storage_extra ob_storage_extra)
 target_link_libraries(ob_storage PUBLIC ob_base)
 target_link_libraries(ob_storage_extra PUBLIC ob_base)
 
-add_dependencies(ob_storage oblib_grpc)
 
 add_library(ob_storage_static
   STATIC

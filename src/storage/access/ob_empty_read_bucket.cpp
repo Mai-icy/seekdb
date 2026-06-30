@@ -15,14 +15,12 @@
  */
 
 #include "ob_empty_read_bucket.h"
-#include "src/observer/omt/ob_tenant_config_mgr.h"
-
 namespace oceanbase
 {
 namespace storage
 {
 ObEmptyReadBucket::ObEmptyReadBucket()
-  : allocator_(ObModIds::OB_BLOOM_FILTER, OB_MALLOC_NORMAL_BLOCK_SIZE, MTL_ID()),
+  : allocator_(ObModIds::OB_BLOOM_FILTER, OB_MALLOC_NORMAL_BLOCK_SIZE),
     buckets_(NULL),
     bucket_size_(0)
 {

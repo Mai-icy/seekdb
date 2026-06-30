@@ -27,7 +27,7 @@
 #include "lib/number/ob_number_v2.h"
 #include "common/object/ob_object.h"
 #include "lib/geo/ob_geo_to_tree_visitor.h"
-#include "objit/common/ob_item_type.h"
+#include "sql/parser/ob_item_type.h"
 
 namespace oceanbase
 {
@@ -424,11 +424,10 @@ typedef struct
 class ObGeoBoostAllocGuard
 {
 public:
-  ObGeoBoostAllocGuard(uint64_t tenant_id)
+  ObGeoBoostAllocGuard()
   : mem_context_(nullptr),
     inited_(false),
-    malloc_guard_(lib::ObMemAttr(tenant_id, "GISModule")),
-    tenant_id_(tenant_id)
+    malloc_guard_(lib::ObMemAttr("GISModule"))
     {}
   ~ObGeoBoostAllocGuard();
   int init();
@@ -439,7 +438,7 @@ private:
   lib::MemoryContext mem_context_;
   bool inited_;
   lib::ObMallocHookAttrGuard malloc_guard_;
-  uint64_t tenant_id_;
+  
 };
 
 

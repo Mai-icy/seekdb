@@ -117,16 +117,15 @@ private:
 class ObConfigFreezeTriggerIntChecker
 {
 public:
-  static bool check(const uint64_t tenant_id,
-                    const obcall::ObAdminSetConfigItem &t);
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 private:
-  static int64_t get_write_throttle_trigger_percentage_(const uint64_t tenant_id);
+  static int64_t get_write_throttle_trigger_percentage_();
   DISALLOW_COPY_AND_ASSIGN(ObConfigFreezeTriggerIntChecker);
 };
 class ObConfigTxShareMemoryLimitChecker
 {
 public:
-  static bool check(const uint64_t tenant_id, const obcall::ObAdminSetConfigItem &t);
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigTxShareMemoryLimitChecker);
@@ -134,7 +133,7 @@ private:
 class ObConfigMemstoreLimitChecker
 {
 public:
-  static bool check(const uint64_t tenant_id, const obcall::ObAdminSetConfigItem &t);
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigMemstoreLimitChecker);
@@ -143,7 +142,7 @@ private:
 class ObConfigTxDataLimitChecker
 {
 public:
-  static bool check(const uint64_t tenant_id, const obcall::ObAdminSetConfigItem &t);
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigTxDataLimitChecker);
@@ -151,7 +150,7 @@ private:
 class ObConfigMdsLimitChecker
 {
 public:
-  static bool check(const uint64_t tenant_id, const obcall::ObAdminSetConfigItem &t);
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigMdsLimitChecker);
@@ -160,10 +159,9 @@ private:
 class ObConfigWriteThrottleTriggerIntChecker
 {
 public:
-  static bool check(const uint64_t tenant_id,
-                    const obcall::ObAdminSetConfigItem &t);
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 private:
-  static int64_t get_freeze_trigger_percentage_(const uint64_t tenant_id);
+  static int64_t get_freeze_trigger_percentage_();
   DISALLOW_COPY_AND_ASSIGN(ObConfigWriteThrottleTriggerIntChecker);
 };
 
@@ -171,10 +169,9 @@ private:
 class ObConfigLogDiskLimitThresholdIntChecker
 {
 public:
-  static bool check(const uint64_t tenant_id,
-                    const obcall::ObAdminSetConfigItem &t);
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 private:
-  static int64_t get_log_disk_throttling_percentage_(const uint64_t tenant_id);
+  static int64_t get_log_disk_throttling_percentage_();
   DISALLOW_COPY_AND_ASSIGN(ObConfigLogDiskLimitThresholdIntChecker);
 };
 
@@ -182,10 +179,9 @@ private:
 class ObConfigLogDiskThrottlingPercentageIntChecker
 {
 public:
-  static bool check(const uint64_t tenant_id,
-                    const obcall::ObAdminSetConfigItem &t);
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 private:
-  static int64_t get_log_disk_utilization_limit_threshold_(const uint64_t tenant_id);
+  static int64_t get_log_disk_utilization_limit_threshold_();
   DISALLOW_COPY_AND_ASSIGN(ObConfigLogDiskThrottlingPercentageIntChecker);
 };
 
@@ -575,36 +571,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigQueryRateLimitChecker);
 };
 
-class ObConfigPartitionBalanceStrategyFuncChecker
-  : public ObConfigChecker
-{
-public:
-  enum PartitionBalanceStrategy
-  {
-    AUTO = 0,
-    STANDARD,
-    DISK_UTILIZATION_ONLY,
-    PARTITION_BALANCE_STRATEGY_MAX,
-  };
-  static const char *balance_strategy[PARTITION_BALANCE_STRATEGY_MAX];
-public:
-  ObConfigPartitionBalanceStrategyFuncChecker() {}
-  virtual ~ObConfigPartitionBalanceStrategyFuncChecker() {}
-  bool check(const ObConfigItem &t) const;
-private:
-  DISALLOW_COPY_AND_ASSIGN(ObConfigPartitionBalanceStrategyFuncChecker);
-};
-
-class ObDataStorageErrorToleranceTimeChecker
-  : public ObConfigChecker
-{
-public:
-  ObDataStorageErrorToleranceTimeChecker() {}
-  virtual ~ObDataStorageErrorToleranceTimeChecker() {}
-  bool check(const ObConfigItem &t) const;
-private:
-  DISABLE_COPY_ASSIGN(ObDataStorageErrorToleranceTimeChecker);
-};
 
 class ObConfigAuditModeChecker
   : public ObConfigChecker
@@ -617,19 +583,6 @@ public:
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigAuditModeChecker);
-};
-
-class ObConfigOfsBlockVerifyIntervalChecker
-  : public ObConfigChecker
-{
-public:
-  ObConfigOfsBlockVerifyIntervalChecker() {}
-  virtual ~ObConfigOfsBlockVerifyIntervalChecker() {}
-  bool check(const ObConfigItem &t) const;
-  static constexpr int64_t MIN_VALID_INTVL = 60 * 60 * 1000 * 1000UL; // 1 hour
-  static constexpr int64_t MAX_VALID_INTVL = 30 * 24 * MIN_VALID_INTVL; // 30 days
-private:
-  DISABLE_COPY_ASSIGN(ObConfigOfsBlockVerifyIntervalChecker);
 };
 
 class ObLogDiskUsagePercentageChecker
@@ -962,20 +915,18 @@ private:
 
 class ObConfigDDLNoLoggingChecker: public ObConfigChecker {
   public:
-    static bool check(const uint64_t tenant_id, const obcall::ObAdminSetConfigItem &t);
+    static bool check(const obcall::ObAdminSetConfigItem &t);
   private:
     DISALLOW_COPY_AND_ASSIGN(ObConfigDDLNoLoggingChecker);
 };
 
-class ObConfigMigrationChooseSourceChecker
-  : public ObConfigChecker
-{
+class ObConfigArchiveLagTargetChecker {
 public:
-  ObConfigMigrationChooseSourceChecker() {}
-  virtual ~ObConfigMigrationChooseSourceChecker() {}
-  bool check(const ObConfigItem &t) const;
+  ObConfigArchiveLagTargetChecker(){}
+  virtual ~ObConfigArchiveLagTargetChecker(){}
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 private:
-  DISALLOW_COPY_AND_ASSIGN(ObConfigMigrationChooseSourceChecker);
+  DISALLOW_COPY_AND_ASSIGN(ObConfigArchiveLagTargetChecker);
 };
 
 
@@ -1051,7 +1002,7 @@ typedef __ObConfigContainer<ObConfigStringKey,
 class ObConfigVectorMemoryChecker
 {
 public:
-  static bool check(const uint64_t tenant_id, const obcall::ObAdminSetConfigItem &t);
+  static bool check(const obcall::ObAdminSetConfigItem &t);
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigVectorMemoryChecker);
