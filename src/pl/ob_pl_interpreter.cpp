@@ -776,14 +776,13 @@ static int exec_call(ObPLExecCtx *ctx, const ObPLCallStmt *s)
   int ret = OB_SUCCESS;
   CK (OB_NOT_NULL(s), OB_NOT_NULL(ctx), OB_NOT_NULL(ctx->allocator_), OB_NOT_NULL(ctx->params_));
   const int64_t argc = OB_SUCC(ret) ? s->get_params().count() : 0;
-  ObArenaAllocator tmp_alloc(GET_PL_MOD_STRING(PL_MOD_IDX::OB_PL_ARENA), OB_MALLOC_NORMAL_BLOCK_SIZE);
   ObObjParam **argv = NULL;
   ObObjParam *storage = NULL;  // independent temps backing every actual
   int64_t *nocopy = NULL;
   if (OB_SUCC(ret) && argc > 0) {
-    argv = static_cast<ObObjParam **>(tmp_alloc.alloc(sizeof(ObObjParam *) * argc));
-    storage = static_cast<ObObjParam *>(tmp_alloc.alloc(sizeof(ObObjParam) * argc));
-    nocopy = static_cast<int64_t *>(tmp_alloc.alloc(sizeof(int64_t) * argc));
+    argv = static_cast<ObObjParam **>(ctx->allocator_->alloc(sizeof(ObObjParam *) * argc));
+    storage = static_cast<ObObjParam *>(ctx->allocator_->alloc(sizeof(ObObjParam) * argc));
+    nocopy = static_cast<int64_t *>(ctx->allocator_->alloc(sizeof(int64_t) * argc));
     if (OB_ISNULL(argv) || OB_ISNULL(storage) || OB_ISNULL(nocopy)) {
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("[pl-interp] failed to allocate call argv", K(ret), K(argc));
@@ -823,15 +822,15 @@ static int exec_call(ObPLExecCtx *ctx, const ObPLCallStmt *s)
           } else if (OB_NOT_NULL(src_ti)) {
             const uint64_t idx = src->get_uint64();  // 1-based ENUM index; 0 == '' (no value)
             common::ObString s;
-            if (OB_SUCC(ret) && idx >= 1 && idx <= static_cast<uint64_t>(src_ti->count())) {
-              OZ (ob_write_string(tmp_alloc, src_ti->at(idx - 1), s));
+            if (idx >= 1 && idx <= static_cast<uint64_t>(src_ti->count())) {
+              OZ (ob_write_string(*ctx->allocator_, src_ti->at(idx - 1), s));
             }
             OX (storage[i].set_varchar(s));
             OX (storage[i].set_collation_type(src->get_collation_type()));
             OX (storage[i].set_collation_level(common::CS_LEVEL_IMPLICIT));
             OX (storage[i].set_param_meta());
           } else if (OB_NOT_NULL(src)) {
-            OZ (ob_write_obj(tmp_alloc, *src, storage[i]));
+            OZ (ob_write_obj(*ctx->allocator_, *src, storage[i]));
             OX (storage[i].set_param_meta());
           }
         }
@@ -1061,14 +1060,13 @@ static int exec_execute(ObPLExecCtx *ctx, const ObPLExecuteStmt *s)
   const ObDataType *types = type_count > 0 ? &s->get_data_type().at(0) : NULL;
   const bool *not_null = s->get_not_null_flags().count() > 0 ? &s->get_not_null_flags().at(0) : NULL;
   const int64_t *ranges = s->get_pl_integer_ranges().count() > 0 ? &s->get_pl_integer_ranges().at(0) : NULL;
-  ObArenaAllocator tmp_alloc(GET_PL_MOD_STRING(PL_MOD_IDX::OB_PL_ARENA), OB_MALLOC_NORMAL_BLOCK_SIZE);
   ObObjParam **params = NULL;
   ObObjParam *storage = NULL;  // independent temps backing every USING actual
   int64_t *params_mode = NULL;
   if (OB_SUCC(ret) && param_count > 0) {
-    params = static_cast<ObObjParam **>(tmp_alloc.alloc(sizeof(ObObjParam *) * param_count));
-    storage = static_cast<ObObjParam *>(tmp_alloc.alloc(sizeof(ObObjParam) * param_count));
-    params_mode = static_cast<int64_t *>(tmp_alloc.alloc(sizeof(int64_t) * param_count));
+    params = static_cast<ObObjParam **>(ctx->allocator_->alloc(sizeof(ObObjParam *) * param_count));
+    storage = static_cast<ObObjParam *>(ctx->allocator_->alloc(sizeof(ObObjParam) * param_count));
+    params_mode = static_cast<int64_t *>(ctx->allocator_->alloc(sizeof(int64_t) * param_count));
     if (OB_ISNULL(params) || OB_ISNULL(storage) || OB_ISNULL(params_mode)) {
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("[pl-interp] failed to allocate USING params", K(ret), K(param_count));

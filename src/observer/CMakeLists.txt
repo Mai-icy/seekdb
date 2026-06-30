@@ -290,6 +290,7 @@ ob_set_subtarget(ob_server virtual_table
   virtual_table/ob_all_virtual_tablet_info.cpp
   virtual_table/ob_all_virtual_server.cpp
   virtual_table/ob_all_virtual_server_storage.cpp
+  virtual_table/ob_all_virtual_sqlite_tables.cpp
   virtual_table/ob_all_virtual_tablet_compaction_history.cpp
   virtual_table/ob_all_virtual_tablet_compaction_progress.cpp
   virtual_table/ob_all_virtual_io_status.cpp
@@ -389,13 +390,10 @@ ob_set_subtarget(ob_server virtual_table
   virtual_table/ob_tenant_show_catalog_databases.cpp
   virtual_table/ob_all_virtual_tenant_vector_mem_info.cpp
   virtual_table/ob_all_virtual_ccl_status.cpp
-  virtual_table/ob_all_virtual_sqlite_tables.cpp
 )
 
 ob_server_add_target(ob_server)
 
-set_source_files_properties(table/htable_filter_lex.cxx PROPERTIES COMPILE_FLAGS -Wno-null-conversion)
-set_source_files_properties(table/htable_filter_tab.cxx PROPERTIES COMPILE_FLAGS -Wno-array-bounds-pointer-arithmetic)
 
 add_library(oceanbase_static
   STATIC
@@ -429,11 +427,6 @@ else()
     PRIVATE
     $<$<NOT:$<PLATFORM_ID:Darwin>>:-Wl,-z,notext>
     $<$<NOT:$<PLATFORM_ID:Darwin>>:-Wl,--whole-archive>
-    # oblib_extra_objects (zstd/lz4 prebuilt object archives, incl. ObZstdWrapper)
-    # used to reach liboceanbase.so transitively via objit -> oblib(STATIC). objit is
-    # gone with the LLVM-JIT removal, so add them explicitly; otherwise the shared lib
-    # has undefined ObZstdWrapper symbols and every unittest linking it fails under
-    # lld's --no-allow-shlib-undefined.
     "${ob_objects}" "${oblib_object_libraries}" "${oblib_extra_objects}"
     ob_sql_static
     ob_storage_static
