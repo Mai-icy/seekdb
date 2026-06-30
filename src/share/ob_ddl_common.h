@@ -141,7 +141,7 @@ enum ObDDLType
   DDL_TABLE_REDEFINITION = 1010,
   DDL_DIRECT_LOAD = 1011, // load data
   DDL_DIRECT_LOAD_INSERT = 1012, // insert into select
-  DDL_TABLE_RESTORE = 1013, // table restore
+  // 1013 was used by removed table restore DDL. Do not reuse.
   DDL_MVIEW_COMPLETE_REFRESH = 1014,
   DDL_CREATE_MVIEW = 1015,
   DDL_ALTER_COLUMN_GROUP = 1016, // alter table add/drop column group
@@ -179,7 +179,7 @@ enum ObDDLTaskType
   UPDATE_AUTOINC_SCHEMA = 9,
   CANCEL_DDL_TASK = 10,
   MODIFY_NOT_NULL_COLUMN_STATE_TASK = 11,
-  MAKE_RECOVER_RESTORE_TABLE_TASK_TAKE_EFFECT = 12,
+  // 12 was used by removed recover restore table DDL. Do not reuse.
   PARTITION_SPLIT_RECOVERY_TASK = 13,
   PARTITION_SPLIT_RECOVERY_CLEANUP_GARBAGE_TASK = 14,
   SWITCH_VEC_INDEX_NAME_TASK = 15,
@@ -475,8 +475,7 @@ static inline bool is_complement_data_relying_on_dag(const ObDDLType type)
 {
   return DDL_DROP_COLUMN == type
       || DDL_ADD_COLUMN_OFFLINE == type
-      || DDL_COLUMN_REDEFINITION == type
-      || DDL_TABLE_RESTORE == type;
+      || DDL_COLUMN_REDEFINITION == type;
 }
 
 static inline bool is_delete_lob_meta_row_relying_on_dag(const ObDDLType type)

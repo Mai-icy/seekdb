@@ -19,7 +19,6 @@
 #include "ob_rpc_struct.h"
 #include "share/rc/ob_module_provider.h"
 #include "storage/tx/ob_trans_service.h"
-#include "share/table/ob_table_ddl_struct.h"
 #include "src/share/ob_server_struct.h"
 
 namespace oceanbase
@@ -5987,118 +5986,6 @@ OB_SERIALIZE_MEMBER(ObCancelGatherStatsArg, task_id_);
 
 OB_SERIALIZE_MEMBER(ObCheckNestedMViewMdsArg, mview_id_, refresh_id_, target_data_sync_scn_);
 OB_SERIALIZE_MEMBER(ObCheckNestedMViewMdsRes, target_data_sync_scn_, ret_);
-
-ObHTableDDLArg::~ObHTableDDLArg()
-{
-  if (OB_NOT_NULL(ddl_param_)) {
-    ddl_param_->~ObHTableDDLParam();
-    ddl_param_ = nullptr;
-  }
-}
-
-bool ObHTableDDLArg::is_valid() const
-{
-  bool is_valid = false;
-  if (OB_NOT_NULL(ddl_param_)) {
-    is_valid = ddl_param_->is_valid();
-  }
-  return is_valid;
-}
-
-bool ObHTableDDLArg::is_allow_when_upgrade() const
-{
-  bool is_allow = false;
-  if (OB_NOT_NULL(ddl_param_)) {
-    is_allow = ddl_param_->is_allow_when_upgrade();
-  }
-  return is_allow;
-}
-
-
-DEF_TO_STRING(ObHTableDDLArg)
-{
-  int64_t pos = 0;
-  J_KV(K_(ddl_type),
-       KPC_(ddl_param));
-  return pos;
-}
-
-OB_DEF_SERIALIZE(ObHTableDDLArg)
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(ObDDLArg::serialize(buf, buf_len, pos))) {
-    LOG_WARN("failed to serialize ObDDLArg", K(ret));
-  } else {
-    OB_UNIS_ENCODE(ddl_type_);
-    if (OB_FAIL(ret)) {
-    } else if (OB_NOT_NULL(ddl_param_)) {
-      LST_DO_CODE(OB_UNIS_ENCODE, *ddl_param_);
-    }
-  }
-  return ret;
-}
-
-OB_DEF_SERIALIZE_SIZE(ObHTableDDLArg)
-{
-  int64_t len = ObDDLArg::get_serialize_size();
-  OB_UNIS_ADD_LEN(ddl_type_);
-  if (OB_NOT_NULL(ddl_param_)) {
-    OB_UNIS_ADD_LEN(*ddl_param_);
-  }
-  return len;
-}
-
-OB_DEF_DESERIALIZE(ObHTableDDLArg)
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(ObDDLArg::deserialize(buf, data_len, pos))) {
-    RPC_WARN("fail to deserialize ObDDLArg", KR(ret));
-  } else if (pos < data_len) {
-    LST_DO_CODE(OB_UNIS_DECODE, ddl_type_);
-    if (OB_SUCC(ret)) {
-      switch (ddl_type_) {
-        case ObHTableDDLType::CREATE_TABLE: {
-          if (OB_ISNULL(ddl_param_ = OB_NEWx(ObCreateHTableDDLParam, &deserialize_allocator_))) {
-            ret = OB_ALLOCATE_MEMORY_FAILED;
-            RPC_WARN("fail to alloc ObCreateHTableDDLParam", KR(ret), K_(ddl_type));
-          }
-          break;
-        }
-        case ObHTableDDLType::DROP_TABLE: {
-          if (OB_ISNULL(ddl_param_ = OB_NEWx(ObDropHTableDDLParam, &deserialize_allocator_))) {
-            ret = OB_ALLOCATE_MEMORY_FAILED;
-            RPC_WARN("fail to alloc ObDropHTableDDLParam", KR(ret), K_(ddl_type));
-          }
-          break;
-        }
-        case ObHTableDDLType::ENABLE_TABLE:
-        case ObHTableDDLType::DISABLE_TABLE: {
-          if (OB_ISNULL(ddl_param_ = OB_NEWx(ObSetKvAttributeParam, &deserialize_allocator_))) {
-            ret = OB_ALLOCATE_MEMORY_FAILED;
-            RPC_WARN("fail to alloc ObSetKvAttributeParam", KR(ret), K_(ddl_type));
-          }
-          break;
-        }
-        default: {
-          ret = OB_ERR_UNEXPECTED;
-          RPC_WARN("unexpected ddl type ", KR(ret), K_(ddl_type));
-          break;
-        }
-      }
-
-      if (OB_SUCC(ret)) {
-        if (OB_FAIL(ddl_param_->deserialize(buf, data_len, pos))) {
-          RPC_WARN("fail to deserialize ddl_param_", KR(ret), K(data_len), K(pos));
-        }
-      }
-    }
-  }
-  return ret;
-}
-
-
-OB_SERIALIZE_MEMBER((ObHTableDDLRes, ObParallelDDLRes),);
-
 
 OB_SERIALIZE_MEMBER((ObCreateTableGroupRes, ObParallelDDLRes), tablegroup_id_);
 

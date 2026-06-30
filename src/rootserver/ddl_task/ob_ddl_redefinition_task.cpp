@@ -621,8 +621,8 @@ int ObDDLRedefinitionTask::send_build_single_replica_request()
     LOG_WARN("ObColumnRedefinitionTask has not been inited", K(ret));
   } else {
     SMART_VAR(ObDDLReplicaBuildExecutorParam, param) {
-      
-      
+
+
       param.ddl_type_ = task_type_;
       param.snapshot_version_ = snapshot_version_;
       param.task_id_ = task_id_;
@@ -635,7 +635,7 @@ int ObDDLRedefinitionTask::send_build_single_replica_request()
         LOG_WARN("fail to get tablets", K(ret), K(object_id_));
       } else if (OB_FAIL(ObDDLUtil::get_tablets(target_object_id_, param.dest_tablet_ids_))) {
         LOG_WARN("fail to get tablets", K(ret), K(target_object_id_));
-      } 
+      }
       const int64_t src_tablet_cnt = param.source_tablet_ids_.count();
       for (int64_t i = 0; OB_SUCC(ret) && i < src_tablet_cnt; ++i) {
         if (OB_FAIL(param.source_table_ids_.push_back(object_id_))) {
@@ -823,7 +823,7 @@ int ObDDLRedefinitionTask::add_constraint_ddl_task(const int64_t constraint_id)
     } else if (OB_FAIL(alter_table_arg.set_nls_formats(alter_table_arg_.nls_formats_))) {
       LOG_WARN("set nls formats failed", K(ret));
     } else {
-      
+
       alter_table_arg.alter_constraint_type_ = obcall::ObAlterTableArg::ADD_CONSTRAINT;
       alter_table_schema.clear_constraint();
       alter_table_schema.set_origin_database_name(database_schema->get_database_name_str());
@@ -937,7 +937,7 @@ int ObDDLRedefinitionTask::add_fk_ddl_task(const int64_t fk_id)
       alter_table_schema.set_origin_table_name(orig_table_schema->get_table_name_str());
       alter_table_arg.table_id_ = object_id_;
       alter_table_arg.hidden_table_id_ = target_object_id_;
-      
+
       for (int64_t i = 0; OB_SUCC(ret) && i < fk_info_array.count(); ++i) {
         const ObForeignKeyInfo &tmp_fk_info	= fk_info_array.at(i);
         if (tmp_fk_info.foreign_key_id_ == fk_id) {
@@ -1090,13 +1090,13 @@ int ObDDLRedefinitionTask::sync_auto_increment_position()
       && dst_column_schema->is_autoincrement()) {
         // Worker timeout ts here is default value, i.e., INT64_MAX,
         // which leads to RPC-receiver worker timeout due to overflow when select val from __ALL_AUTO_INCREMENT.
-        // More details, refer to comments in 
+        // More details, refer to comments in
         const int64_t save_timeout_ts = THIS_WORKER.get_timeout_ts();
         THIS_WORKER.set_timeout_ts(ObTimeUtility::current_time() + max(GCONF.rpc_timeout, static_cast<int64_t>(1000 * 1000 * 20)));
         ObAutoincrementService &auto_inc_service = ObAutoincrementService::get_instance();
         uint64_t sequence_value = 0;
         AutoincParam param;
-        
+
         param.autoinc_table_id_ = target_object_id_;
         param.autoinc_first_part_num_ = dest_table_schema->get_first_part_num();
         param.autoinc_table_part_num_ = dest_table_schema->get_all_part_num();
@@ -1118,14 +1118,7 @@ int ObDDLRedefinitionTask::sync_auto_increment_position()
         } else {
           for (int64_t retry_cnt = 100; OB_SUCC(ret) && retry_cnt > 0; retry_cnt--) {
             if (OB_FAIL(auto_inc_service.sync_insert_value_global(param))) {
-              if (DDL_TABLE_RESTORE == task_type_ && share::ObIDDLTask::in_ddl_retry_white_list(ret)) {
-                if (TC_REACH_TIME_INTERVAL(10L * 1000L * 1000L)) {
-                  LOG_INFO("set auto increment position failed, retry", K(ret), K(target_object_id_), K(cur_column_id), K(param));
-                }
-                ret = OB_SUCCESS;
-              } else {
-                LOG_WARN("set auto increment position failed", K(ret), K(target_object_id_), K(cur_column_id), K(param));
-              }
+              LOG_WARN("set auto increment position failed", K(ret), K(target_object_id_), K(cur_column_id), K(param));
             } else {
               break;
             }
@@ -1239,7 +1232,7 @@ int ObDDLRedefinitionTask::modify_autoinc(const ObDDLTaskStatus next_task_status
       ObAutoincrementService &auto_inc_service = ObAutoincrementService::get_instance();
       const uint64_t autoinc_val = alter_table_schema.get_auto_increment();
       AutoincParam param;
-      
+
       param.autoinc_table_id_ = target_object_id_;
       param.autoinc_first_part_num_ = new_table_schema->get_first_part_num();
       param.autoinc_table_part_num_ = new_table_schema->get_all_part_num();
@@ -1302,7 +1295,7 @@ int ObDDLRedefinitionTask::finish()
   alter_table_arg_.table_id_ = object_id_;
   alter_table_arg_.hidden_table_id_ = target_object_id_;
   alter_table_arg_.task_id_ = task_id_;
-  
+
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     LOG_WARN("ObDDLRedefinitionTask has not been inited", K(ret));
@@ -1501,7 +1494,7 @@ bool ObDDLRedefinitionTask::check_need_sync_stats_history() {
 }
 
 bool ObDDLRedefinitionTask::check_need_sync_stats() {
-  // bugfix: 
+  // bugfix:
   // shouldn't sync stats if the ddl task is from load data's direct_load
   return ObDDLType::DDL_DIRECT_LOAD != task_type_
       && ObDDLType::DDL_DIRECT_LOAD_INSERT != task_type_
@@ -1654,8 +1647,8 @@ int ObDDLRedefinitionTask::get_src_part_stats(const ObTableSchema &data_table_sc
   int ret = OB_SUCCESS;
   ObOptTableStat::Key key;
   ObOptStatSqlService &stat_svr = ObOptStatManager::get_instance().get_stat_sql_service();
-  
-  
+
+
   key.table_id_ = object_id_;
   if (!data_table_schema.is_partitioned_table()) {
     key.partition_id_ = object_id_;
@@ -1940,7 +1933,7 @@ int ObDDLRedefinitionTask::sync_table_level_stats_info(common::ObMySQLTransactio
   // for partitioned table, table-level stat is -1, for non-partitioned table, table-level stat is table id
   int64_t partition_id = data_table_schema.is_partitioned_table() ? -1 : object_id_;
   int64_t target_partition_id = new_table_schema.is_partitioned_table() ? -1 : target_object_id_;
-  
+
   if (OB_FAIL(sql_string.assign_fmt("UPDATE %s SET table_id = %ld, partition_id = %ld"
       " WHERE table_id = %ld and partition_id = %ld",
       OB_ALL_TABLE_STAT_TNAME, target_object_id_, target_partition_id,
@@ -1971,7 +1964,7 @@ int ObDDLRedefinitionTask::sync_partition_level_stats_info(common::ObMySQLTransa
   int ret = OB_SUCCESS;
   ObArray<ObObjectID> src_partition_ids;
   ObArray<ObObjectID> dest_partition_ids;
-  
+
   if (!data_table_schema.is_partitioned_table()) {
     // if not partition table, no need to sync partition level stats
   } else if (OB_FAIL(pl::ObDbmsStats::get_part_ids_from_schema(&data_table_schema, src_partition_ids))) {
@@ -2102,7 +2095,7 @@ int ObDDLRedefinitionTask::sync_one_column_table_level_stats_info(common::ObMySQ
   // for partitioned table, table-level stat is -1, for non-partitioned table, table-level stat is table id
   int64_t partition_id = data_table_schema.is_partitioned_table() ? -1 : object_id_;
   int64_t target_partition_id = new_table_schema.is_partitioned_table() ? -1 : target_object_id_;
-  
+
   if (OB_FAIL(column_sql_string.assign_fmt("UPDATE %s SET table_id = %ld, partition_id = %ld, column_id = %ld"
       " WHERE table_id = %ld and partition_id = %ld and column_id = %ld",
       OB_ALL_COLUMN_STAT_TNAME, target_object_id_, target_partition_id, new_col_id,
@@ -2150,7 +2143,7 @@ int ObDDLRedefinitionTask::sync_one_column_partition_level_stats_info(common::Ob
   int ret = OB_SUCCESS;
   ObArray<ObObjectID> src_partition_ids;
   ObArray<ObObjectID> dest_partition_ids;
-  
+
   if (!data_table_schema.is_partitioned_table()) {
     // if not partition table, no need to sync partition level stats
   } else if (OB_FAIL(pl::ObDbmsStats::get_part_ids_from_schema(&data_table_schema, src_partition_ids))) {
@@ -2229,7 +2222,7 @@ int ObDDLRedefinitionTask::generate_sync_partition_level_stats_sql(const char *t
   int ret = OB_SUCCESS;
   sql_string.reset();
   ObSqlString in_partitions_sql;
-  
+
   if (OB_UNLIKELY(src_partition_ids.count() != dest_partition_ids.count() || batch_end < batch_start
       || batch_end >= dest_partition_ids.count())) {
     ret = OB_INVALID_ARGUMENT;
@@ -2273,7 +2266,7 @@ int ObDDLRedefinitionTask::generate_sync_column_partition_level_stats_sql(const 
   int ret = OB_SUCCESS;
   sql_string.reset();
   ObSqlString in_partitions_sql;
-  
+
   if (OB_UNLIKELY(src_partition_ids.count() != dest_partition_ids.count() || batch_end < batch_start
       || batch_end >= dest_partition_ids.count())) {
     ret = OB_INVALID_ARGUMENT;
@@ -2430,8 +2423,8 @@ int ObDDLRedefinitionTask::check_need_check_table_empty(bool &need_check_table_e
 }
 
 int ObDDLRedefinitionTask::generate_rebuild_index_arg_list(
-    const int64_t table_id, 
-    ObSchemaGetterGuard &schema_guard, 
+    const int64_t table_id,
+    ObSchemaGetterGuard &schema_guard,
     obcall::ObAlterTableArg &alter_table_arg)
 {
   int ret = OB_SUCCESS;
@@ -2534,8 +2527,8 @@ int ObSyncTabletAutoincSeqCtx::init(
   } else if (OB_FAIL(ObDDLUtil::get_tablets(dest_table_id, dest_tablet_ids_))) {
     LOG_WARN("failed to get dest table snapshot", K(ret));
   } else {
-    
-    
+
+
     is_synced_ = false;
     is_inited_ = true;
   }
@@ -2622,7 +2615,7 @@ int ObSyncTabletAutoincSeqCtx::call_and_process_all_tablet_autoinc_seqs(const bo
   const int64_t tablet_count = src_tablet_ids_.count();
   share::ObLocationService *location_service = nullptr;
   ObHashMap<ObLSID, ObSEArray<ObMigrateTabletAutoincSeqParam, 1>> ls_to_tablet_map;
-  
+
   if (OB_ISNULL(location_service = GCTX.location_service_)) {
     ret = OB_ERR_SYS;
     LOG_WARN("location_cache is null", K(ret));

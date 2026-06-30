@@ -22,6 +22,7 @@
 #include "share/ob_ddl_checksum.h"
 #include "rootserver/ob_ddl_service_launcher.h" // for ObDDLServiceLauncher
 #include "rootserver/ob_root_service.h"
+#include "observer/ob_service.h"
 #include "src/storage/tx_storage/ob_ls_map.h"
 #include "share/ob_tablet_reorganize_history_table_operator.h"
 

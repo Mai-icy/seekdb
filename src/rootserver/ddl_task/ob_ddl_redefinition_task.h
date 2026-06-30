@@ -118,8 +118,6 @@ private:
   bool is_inited_;
   bool is_synced_;
   bool need_renew_location_;
-  
-  
   ObSEArray<ObTabletID, 1> orig_src_tablet_ids_;
   ObSEArray<ObTabletID, 1> src_tablet_ids_;
   ObSEArray<ObTabletID, 1> dest_tablet_ids_;
@@ -263,7 +261,7 @@ protected:
   int get_estimated_timeout(const share::schema::ObTableSchema *dst_table_schema, int64_t &estimated_timeout);
   int get_orig_all_index_tablet_count(ObSchemaGetterGuard &schema_guard, int64_t &all_tablet_count);
 
-  int generate_rebuild_index_arg_list(const int64_t table_id, 
+  int generate_rebuild_index_arg_list(const int64_t table_id,
                                       ObSchemaGetterGuard &schema_guard, 
                                       obcall::ObAlterTableArg &alter_table_arg);
   int64_t get_build_replica_request_time();

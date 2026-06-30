@@ -10,6 +10,7 @@ add_library(truncate_info_helper ob_truncate_info_helper.cpp)
 target_include_directories(truncate_info_helper PUBLIC
   ${CMAKE_SOURCE_DIR}/unittest)
 target_link_libraries(truncate_info_helper PUBLIC ob_base mockcontainer)
+
 # add_library(mock_ft_parser SHARED
 #   mock_ft_parser.cpp)
 # target_link_libraries(mock_ft_parser PUBLIC oceanbase)
@@ -96,8 +97,6 @@ storage_unittest(test_storage_log_read_write slog/test_storage_log_read_write.cp
 storage_unittest(test_storage_log_replay slog/test_storage_log_replay.cpp)
 storage_unittest(test_linked_macro_block slog_ckpt/test_linked_macro_block.cpp)
 storage_unittest(test_tablet_dumped_medium_info test_tablet_dumped_medium_info.cpp)
-storage_unittest(test_backup_clean_path backup/test_backup_clean_path.cpp)
-
 #storage_unittest(test_create_tablet_clog tx_storage/test_create_tablet_clog.cpp)
 storage_unittest(test_safe_destroy_handler tx_storage/test_safe_destroy_handler.cpp)
 storage_unittest(test_simple_rows_merger)

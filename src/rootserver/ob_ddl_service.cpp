@@ -2696,12 +2696,6 @@ int ObDDLService::set_raw_table_options(
           }
           break;
         }
-        case ObAlterTableArg::KV_ATTRIBUTES: {
-          if (OB_FAIL(new_table_schema.set_kv_attributes(alter_table_schema.get_kv_attributes()))) {
-            LOG_WARN("fail to set kv attributes", K(ret));
-          }
-          break;
-        }
         case ObAlterTableArg::STORAGE_CACHE_POLICY: {
           new_table_schema.set_storage_cache_policy(alter_table_schema.get_storage_cache_policy());
           break;
@@ -12303,8 +12297,6 @@ const char* ObDDLService::ddl_type_str(const ObDDLType ddl_type)
     str = "convert to character";
   } else if (DDL_CHANGE_COLUMN_NAME == ddl_type) {
     str = "change column name";
-  } else if (DDL_TABLE_RESTORE == ddl_type) {
-    str = "recover restore table ddl";
   } else if (DDL_MVIEW_COMPLETE_REFRESH == ddl_type) {
     str = "mview complete refresh";
   } else if (DDL_CREATE_MVIEW == ddl_type) {

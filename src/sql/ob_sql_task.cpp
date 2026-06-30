@@ -23,6 +23,9 @@ using namespace oceanbase::observer;
 using namespace oceanbase::common;
 using namespace oceanbase::obcall;
 
+namespace oceanbase {
+namespace sql {
+
 void ObSqlTaskHandler::reset()
 {
   task_ = NULL;
@@ -137,3 +140,6 @@ void ObSqlTaskFactory::free_(ObSqlTask *task)
     task = NULL;
   }
 }
+
+} // namespace sql
+} // namespace oceanbase

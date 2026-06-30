@@ -68,7 +68,7 @@ int ObTenantMemoryPrinter::print_tenant_usage()
     if (OB_FAIL(databuff_printf(print_buf, BUF_LEN, pos,
                                 "=== TENANTS MEMORY INFO ===\n"
                                 "unmanaged_memory_size=% '15ld\n",
-                                get_unmanaged_memory_size()))) {
+                                lib::get_unmanaged_memory_size()))) {
       LOG_WARN("print failed", K(ret));
     } else if (OB_ISNULL(omt)) {
       // do nothing

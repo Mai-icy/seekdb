@@ -19,6 +19,7 @@
 #include "ob_unit_getter.h"
 #include "share/ob_server_struct.h"
 #include "share/unit/ob_unit_config.h"
+#include "logservice/ob_server_log_block_mgr.h"
 
 namespace oceanbase
 {

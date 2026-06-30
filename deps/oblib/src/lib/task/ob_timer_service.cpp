@@ -22,7 +22,7 @@
 #include "lib/stat/ob_diagnostic_info_guard.h"
 
 // Weak fallback; strong definition in share/rc/ob_tenant_base.cpp.
-void __attribute__((weak, noinline)) lib_mtl_switch(lib::IRunWrapper *run_wrapper, std::function<void()> fn)
+void __attribute__((weak, noinline)) lib_mtl_switch(::oceanbase::lib::IRunWrapper *run_wrapper, std::function<void()> fn)
 {
   UNUSED(run_wrapper);
   fn();

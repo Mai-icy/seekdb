@@ -19,10 +19,15 @@
 
 #include "lib/hash/ob_hashmap.h"
 #include "lib/allocator/ob_cached_allocator.h"
+#include "lib/container/ob_array.h"
+#include "lib/container/ob_iarray.h"
+#include "lib/allocator/ob_malloc.h"
 #include "common/ob_tablet_id.h"//ObTabletID
 #include "share/ob_rpc_struct.h"//ObBatchCreateTabletArg
 #include "share/ob_ls_id.h"//share::ObLSID
 #include "share/ob_ddl_common.h" // ObForkTabletInfo
+#include "lib/mysqlclient/ob_mysql_transaction.h"
+#include "share/ob_define.h"
 
 namespace oceanbase
 {

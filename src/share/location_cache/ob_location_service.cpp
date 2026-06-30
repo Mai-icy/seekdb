@@ -17,6 +17,11 @@
 #define USING_LOG_PREFIX SHARE_LOCATION
 
 #include "share/location_cache/ob_location_service.h"
+#include "lib/string/ob_sql_string.h"
+#include "share/schema/ob_schema_struct.h"
+#include "share/schema/ob_schema_getter_guard.h"
+#include "share/inner_table/ob_inner_table_schema_constants.h"
+#include "observer/ob_server_struct.h"
 
 namespace oceanbase
 {

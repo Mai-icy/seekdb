@@ -16,6 +16,7 @@
 
 #define USING_LOG_PREFIX SERVER
 #include "obmp_stmt_close.h"
+#include "lib/trace/ob_trace.h"
 #include "observer/omt/ob_tenant.h"
 
 namespace oceanbase

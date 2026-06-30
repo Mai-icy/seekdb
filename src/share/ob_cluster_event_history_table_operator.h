@@ -18,6 +18,7 @@
 #define _OB_CLUSTER_EVENT_HISTORY_TABLE_OPERATOR_H
 #include "share/ob_event_history_table_operator.h"
 #include "share/ob_cluster_version.h"
+#include "share/storage/ob_sqlite_connection_pool.h"
 
 namespace oceanbase
 {

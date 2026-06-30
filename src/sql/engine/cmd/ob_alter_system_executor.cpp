@@ -31,7 +31,6 @@
 #include "sql/plan_cache/ob_ps_cache.h"
 
 #include "rootserver/ob_tenant_event_def.h"
-#include "share/table/ob_redis_importer.h"
 #include "share/ob_timezone_importer.h"
 #include "share/ob_srs_importer.h"
 #include "share/ob_internal_table_change_notifier.h"
@@ -90,7 +89,6 @@ int ObFreezeExecutor::execute(ObExecContext &ctx, ObFreezeStmt &stmt)
       param.freeze_all_meta_ = stmt.is_freeze_all_meta();
       param.freeze_reason_ = rootserver::MF_USER_REQUEST;
       for (int64_t i = 0; i < stmt.get_tenant_count() && OB_SUCC(ret); ++i) {
-        
         if (OB_FAIL(param.add_freeze_info())) {
           LOG_WARN("fail to assign", KR(ret));
         }

@@ -86,18 +86,13 @@ DEF_SIMPLE_CMD_RESOLVER(ObFlushCacheResolver);
 
 DEF_SIMPLE_CMD_RESOLVER(ObFlushKVCacheResolver);
 
-
 DEF_SIMPLE_CMD_RESOLVER(ObFlushIlogCacheResolver);
 
 DEF_SIMPLE_CMD_RESOLVER(ObFlushDagWarningsResolver);
 
-
 DEF_SIMPLE_CMD_RESOLVER(ObAdminZoneResolver);
 
 DEF_SIMPLE_CMD_RESOLVER(ObAdminMergeResolver);
-
-
-
 
 DEF_SIMPLE_CMD_RESOLVER(ObRefreshMemStatResolver);
 
@@ -112,8 +107,6 @@ DEF_SIMPLE_CMD_RESOLVER(ObReloadGtsResolver);
 DEF_SIMPLE_CMD_RESOLVER(ObClearMergeErrorResolver);
 
 DEF_SIMPLE_CMD_RESOLVER(ObUpgradeVirtualSchemaResolver);
-
-
 
 DEF_SIMPLE_CMD_RESOLVER(ObCancelTaskResolver);
 
@@ -178,6 +171,7 @@ DEF_SIMPLE_CMD_RESOLVER(ObEnableSqlThrottleResolver);
 DEF_SIMPLE_CMD_RESOLVER(ObDisableSqlThrottleResolver);
 DEF_SIMPLE_CMD_RESOLVER(ObTableTTLResolver);
 DEF_SIMPLE_CMD_RESOLVER(ObChangeExternalStorageDestResolver);
+
 
 #undef DEF_SIMPLE_CMD_RESOLVER
 

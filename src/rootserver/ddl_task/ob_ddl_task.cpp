@@ -19,6 +19,7 @@
 #include "ob_ddl_task.h"
 #include "share/ob_ddl_error_message_table_operator.h"
 #include "rootserver/ob_root_service.h"
+#include "observer/ob_service.h"
 #include "storage/ob_common_id_utils.h"
 #include "storage/tablet/ob_tablet_binding_helper.h"
 #include "storage/tx/ob_ts_mgr.h"
@@ -831,9 +832,6 @@ int ObDDLTask::get_ddl_type_str(const int64_t ddl_type, const char *&ddl_type_st
       break;
     case DDL_DIRECT_LOAD_INSERT:
       ddl_type_str = "direct load insert";
-      break;
-    case DDL_TABLE_RESTORE:
-      ddl_type_str = "recover table restore ddl";
       break;
     case DDL_MODIFY_AUTO_INCREMENT:
       ddl_type_str = "modify auto increment";

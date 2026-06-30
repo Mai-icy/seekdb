@@ -18,6 +18,8 @@
 #define USING_LOG_PREFIX RS
 
 #include "ob_root_minor_freeze.h"
+#include "share/ob_server_struct.h"
+#include "observer/ob_service.h" // for ObService
 
 #include "share/location_cache/ob_location_service.h"
 

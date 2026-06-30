@@ -85,12 +85,7 @@ int ObTableRedefinitionTask::init(const ObTableSchema* src_table_schema,
     object_id_ = src_table_schema->get_table_id();
     target_object_id_ = dst_table_schema->get_table_id();
 
-    /* only table restore set schema_serson = src, other use dst*/
-    if (ObDDLType::DDL_TABLE_RESTORE == ddl_type) {
-      schema_version_ = src_table_schema->get_schema_version();      
-    } else {
-      schema_version_ = dst_table_schema->get_schema_version();
-    }
+    schema_version_ = dst_table_schema->get_schema_version();
 
     task_status_ = static_cast<ObDDLTaskStatus>(task_status);
     snapshot_version_ = snapshot_version;
@@ -153,12 +148,7 @@ int ObTableRedefinitionTask::init(const ObDDLTaskRecord &task_record)
                       || dst_schema_version <= 0)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("unexpected err", K(ret), K(task_record), K(src_schema_version), K(dst_schema_version));
-  } else if (OB_UNLIKELY(ObDDLType::DDL_TABLE_RESTORE != task_record.ddl_type_
-                      && (false || src_schema_version != dst_schema_version))) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpected err", K(ret), K(task_record), K(src_schema_version), K(dst_schema_version));
-  } else if (OB_UNLIKELY(ObDDLType::DDL_TABLE_RESTORE == task_record.ddl_type_
-                      && (true))) {
+  } else if (OB_UNLIKELY(src_schema_version != dst_schema_version)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("unexpected err", K(ret), K(task_record), K(src_schema_version), K(dst_schema_version));
   } else {
@@ -875,8 +865,7 @@ int ObTableRedefinitionTask::take_effect(const ObDDLTaskStatus next_task_status)
 #endif
   ObSArray<uint64_t> objs;
   int64_t ddl_rpc_timeout = 0;
-  alter_table_arg_.ddl_task_type_ = ObDDLType::DDL_TABLE_RESTORE != task_type_ ?
-                                    share::MAKE_DDL_TAKE_EFFECT_TASK : share::MAKE_RECOVER_RESTORE_TABLE_TASK_TAKE_EFFECT;
+  alter_table_arg_.ddl_task_type_ = share::MAKE_DDL_TAKE_EFFECT_TASK;
   alter_table_arg_.table_id_ = object_id_;
   alter_table_arg_.hidden_table_id_ = target_object_id_;
   // offline ddl is allowed on table with trigger(enable/disable).

@@ -22,6 +22,8 @@
 #include "share/tablet/ob_tablet_table_iterator.h" // ObTenantTabletTableIterator
 #include "storage/tx_storage/ob_ls_service.h" // ObLSService, ObLSIterator
 #include "share/ob_tablet_replica_checksum_operator.h" // ObTabletReplicaChecksumItem
+#include "observer/report/ob_tablet_table_updater.h" // ObTabletTableUpdater
+#include "observer/ob_service.h" // ObService
 
 namespace oceanbase
 {

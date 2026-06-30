@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 #include "sql/engine/cmd/ob_outline_executor.h"
 #include "rootserver/ob_rs_serial_call.h"
+#include "rootserver/ob_root_service.h"
 
 #include "sql/ob_sql.h"
 #include "sql/resolver/ddl/ob_create_outline_stmt.h"

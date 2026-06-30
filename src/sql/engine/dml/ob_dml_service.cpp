@@ -1641,9 +1641,6 @@ void ObDMLService::init_dml_write_flag(const ObDASDMLBaseCtDef &base_ctdef,
   if (base_ctdef.is_insert_up_) {
     write_flag.set_is_insert_up();
   }
-  if (base_ctdef.is_table_api_) {
-    write_flag.set_is_table_api();
-  }
   if (base_ctdef.table_param_.get_data_table().is_storage_index_table()
       && !base_ctdef.table_param_.get_data_table().can_read_index()) {
     write_flag.set_is_write_only_index();

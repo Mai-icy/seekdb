@@ -20,7 +20,7 @@
 #include "lib/function/ob_function.h"
 #include "lib/lock/ob_spin_lock.h"
 #include "logservice/ob_log_base_type.h"
-#include "share/table/ob_redis_importer.h"
+#include "share/ob_module_data_arg.h"
 
 namespace oceanbase
 {

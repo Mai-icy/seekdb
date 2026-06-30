@@ -2339,7 +2339,7 @@ int ObTabletSplitUtil::split_task_ranges(
   ObTableStoreIterator table_store_iterator;
   ObSEArray<ObStoreRange, 32> store_ranges;
   ObSEArray<ObITable *, MAX_SSTABLE_CNT_IN_STORAGE> tables;
-  const bool is_table_restore = ObDDLType::DDL_TABLE_RESTORE == ddl_type;
+  const bool is_table_restore = false;
   common::ObArenaAllocator tmp_arena("SplitRange", OB_MALLOC_NORMAL_BLOCK_SIZE);
   if (OB_UNLIKELY(!ls_id.is_valid() || !tablet_id.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
