@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 #include "sql/engine/cmd/ob_ccl_rule_executor.h"
 #include "rootserver/ob_rs_serial_call.h"
+#include "rootserver/ob_root_service.h"
 #include "sql/engine/cmd/ob_ddl_executor_util.h"
 #include "sql/resolver/ddl/ob_create_ccl_rule_stmt.h"
 #include "sql/resolver/ddl/ob_drop_ccl_rule_stmt.h"

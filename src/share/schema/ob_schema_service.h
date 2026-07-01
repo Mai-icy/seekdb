@@ -251,7 +251,6 @@ enum ObSchemaOperationCategory
   ACT(OB_DDL_REFRESH_SCHEMA_VERSION,)                            \
   ACT(OB_DDL_FINISH_BOOTSTRAP,)                                  \
   ACT(OB_DDL_FINISH_SCHEMA_SPLIT_V2,)                            \
-  ACT(OB_DDL_FINISH_PHYSICAL_RESTORE_MODIFY_SCHEMA,)             \
   ACT(OB_DDL_ONLY_SIGNAL_OPERATION_END, = 1600)                  \
   ACT(OB_DDL_STANDBY_FINISH_REPLAY_SCHEMA_SNAPSHOT, = 1601)      \
   ACT(OB_DDL_KEYSTORE_OPERATION_BEGIN, = 1650)                   \

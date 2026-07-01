@@ -88,11 +88,6 @@ namespace rootserver
 {
 }
 
-namespace table
-{
-class ObHTableDDLParam;
-}
-
 namespace obcall
 {
 typedef common::ObSArray<common::ObAddr> ObServerList;
@@ -6940,46 +6935,6 @@ public:
 public:
   share::SCN target_data_sync_scn_;
   int ret_;
-};
-
-enum class ObHTableDDLType : uint8_t
-{
-  INVALID = 0,
-  CREATE_TABLE = 1,
-  DROP_TABLE = 2,
-  DISABLE_TABLE = 3,
-  ENABLE_TABLE = 4,
-  MAX = 255
-};
-
-struct ObHTableDDLArg : ObDDLArg
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObHTableDDLArg()
-      : ObDDLArg(),
-        ddl_type_(),
-        ddl_param_(nullptr),
-        deserialize_allocator_("HTleDDLArg")
-  {}
-  ~ObHTableDDLArg();
-  bool is_valid() const;
-  virtual bool is_allow_when_upgrade() const;
-  DECLARE_TO_STRING;
-public:
-  ObHTableDDLType ddl_type_;
-  table::ObHTableDDLParam *ddl_param_;
-private:
-  common::ObArenaAllocator deserialize_allocator_;
-};
-
-struct ObHTableDDLRes : ObParallelDDLRes
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObHTableDDLRes()
-  {}
-  ~ObHTableDDLRes() = default;
 };
 
 struct ObCreateTableGroupRes : ObParallelDDLRes

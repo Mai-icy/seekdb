@@ -622,8 +622,6 @@ int ObPartitionExchange::check_table_conditions_in_common_(
       LOG_WARN("table flags of exchanging partition tables are not equal", K(ret), K(base_table_schema.get_table_flags()), K(inc_table_schema.get_table_flags()));
     } else if (OB_UNLIKELY(0 != base_table_schema.get_ttl_definition().compare(inc_table_schema.get_ttl_definition()))) {
       LOG_WARN("ttl definition of exchanging partition tables are not equal", K(ret), K(base_table_schema.get_ttl_definition()), K(inc_table_schema.get_ttl_definition()));
-    } else if (OB_UNLIKELY(0 != base_table_schema.get_kv_attributes().compare(inc_table_schema.get_kv_attributes()))) {
-      LOG_WARN("kv attributes of exchanging partition tables are not equal", K(ret), K(base_table_schema.get_kv_attributes()), K(inc_table_schema.get_kv_attributes()));
     } else if (OB_UNLIKELY(base_table_schema.get_index_using_type() != inc_table_schema.get_index_using_type())) {
       LOG_WARN("index using type of exchanging partition tables are not equal", K(ret), K(base_table_schema.get_index_using_type()), K(inc_table_schema.get_index_using_type()));
     } else if (OB_UNLIKELY(base_table_schema.get_row_store_type() != inc_table_schema.get_row_store_type())) {

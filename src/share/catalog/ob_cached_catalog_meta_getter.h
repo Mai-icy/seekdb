@@ -19,6 +19,7 @@
 
 #include "share/catalog/ob_catalog_meta_getter.h"
 #include "share/catalog/ob_external_catalog.h"
+#include "share/schema/ob_schema_cache.h"
 
 namespace oceanbase
 {
@@ -32,7 +33,7 @@ public:
   ~ObCatalogSchemaCacheKey() override {}
   bool operator==(const common::ObIKVCacheKey &other) const override;
   uint64_t hash() const override;
-  
+
   int64_t size() const override;
   int deep_copy(char *buf, const int64_t buf_len, common::ObIKVCacheKey *&key) const override;
   TO_STRING_KV(K(catalog_id_), K(namespace_name_), K(table_name_));
@@ -71,11 +72,12 @@ private:
   common::ObKVCache<ObCatalogSchemaCacheKey, schema::ObSchemaCacheValue> schema_cache_;
   // common::ObKVCache<ObCatalogSchemaCacheKey, ObExternalTableFiles> file_cache_;
 };
+
 // The logic to determine if the Cache is expired should only be implemented in the ObCachingCatalogMetaGetter layer, do not intrude into the internal Catalog's API
 class ObCachedCatalogMetaGetter final : public ObICatalogMetaGetter
 {
 public:
-  ObCachedCatalogMetaGetter(ObSchemaGetterGuard &schema_getter_guard, ObIAllocator &allocator)
+  ObCachedCatalogMetaGetter(schema::ObSchemaGetterGuard &schema_getter_guard, ObIAllocator &allocator)
       : delegate_(ObCatalogMetaGetter{schema_getter_guard, allocator})
   {
   }

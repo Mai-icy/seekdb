@@ -18,6 +18,7 @@
 #include "ob_dbms_xplan.h"
 #include "observer/ob_inner_sql_connection_pool.h"
 #include "sql/ob_spi.h"
+#include "sql/resolver/ddl/ob_explain_stmt.h" // ObExplainDisplayOpt
 
 namespace oceanbase
 {

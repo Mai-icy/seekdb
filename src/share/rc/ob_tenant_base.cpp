@@ -22,6 +22,7 @@
 #include "src/share/schema/ob_schema_struct.h"
 #include "observer/omt/ob_tenant_mtl_helper.h"
 #include "lib/resource/ob_affinity_ctrl.h"
+#include "share/ob_server_struct.h"
 
 namespace oceanbase
 {

@@ -16,6 +16,9 @@
 
 #include "ob_ddl_task_executor.h"
 #include "share/ob_thread_mgr.h"
+#include "lib/stat/ob_diagnostic_info_guard.h"
+#include "share/rc/ob_tenant_base.h"
+#include "share/ob_force_print_log.h"
 
 #define USING_LOG_PREFIX STORAGE
 

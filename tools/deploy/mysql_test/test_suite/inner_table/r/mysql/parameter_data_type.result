@@ -33,9 +33,6 @@ log_disk_size	CAPACITY
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'rpc_timeout';
 name	data_type
 rpc_timeout	TIME
-select name, data_type from __all_virtual_sys_parameter_stat where name = '_obkv_feature_mode';
-name	data_type
-_obkv_feature_mode	MODE
 ========  [4] check data_tpye for __all_virtual_sys_parameter_stat  =========
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'enable_perf_event';
 name	data_type
@@ -55,9 +52,6 @@ log_disk_size	CAPACITY
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'rpc_timeout';
 name	data_type
 rpc_timeout	TIME
-select name, data_type from __all_virtual_sys_parameter_stat where name = '_obkv_feature_mode';
-name	data_type
-_obkv_feature_mode	MODE
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'plsql_debug';
 name	data_type
 plsql_debug	BOOL
@@ -101,9 +95,6 @@ log_disk_size	CAPACITY
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'rpc_timeout';
 name	data_type
 rpc_timeout	TIME
-select name, data_type from __all_virtual_sys_parameter_stat where name = '_obkv_feature_mode';
-name	data_type
-_obkv_feature_mode	MODE
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'plsql_debug';
 name	data_type
 plsql_debug	BOOL
@@ -172,9 +163,6 @@ log_disk_size	CAPACITY
 select name, data_type from V$OB_PARAMETERS where name = 'rpc_timeout';
 name	data_type
 rpc_timeout	TIME
-select name, data_type from V$OB_PARAMETERS where name = '_obkv_feature_mode';
-name	data_type
-_obkv_feature_mode	MODE
 select name, data_type from V$OB_PARAMETERS where name = 'plsql_debug';
 name	data_type
 plsql_debug	BOOL
@@ -218,9 +206,6 @@ log_disk_size	CAPACITY
 select name, data_type from V$OB_PARAMETERS where name = 'rpc_timeout';
 name	data_type
 rpc_timeout	TIME
-select name, data_type from V$OB_PARAMETERS where name = '_obkv_feature_mode';
-name	data_type
-_obkv_feature_mode	MODE
 select name, data_type from V$OB_PARAMETERS where name = 'plsql_debug';
 name	data_type
 plsql_debug	BOOL
@@ -314,9 +299,6 @@ log_disk_size	CAPACITY
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'rpc_timeout';
 name	data_type
 rpc_timeout	TIME
-select name, data_type from __all_virtual_sys_parameter_stat where name = '_obkv_feature_mode';
-name	data_type
-_obkv_feature_mode	MODE
 select name, data_type from __all_virtual_sys_parameter_stat where name = 'plsql_debug';
 name	data_type
 plsql_debug	BOOL
@@ -360,9 +342,6 @@ log_disk_size	CAPACITY
 select name, data_type from V$OB_PARAMETERS where name = 'rpc_timeout';
 name	data_type
 rpc_timeout	TIME
-select name, data_type from V$OB_PARAMETERS where name = '_obkv_feature_mode';
-name	data_type
-_obkv_feature_mode	MODE
 select name, data_type from V$OB_PARAMETERS where name = 'plsql_debug';
 name	data_type
 plsql_debug	BOOL
@@ -406,9 +385,6 @@ log_disk_size	CAPACITY
 select name, data_type from V$OB_PARAMETERS where name = 'rpc_timeout';
 name	data_type
 rpc_timeout	TIME
-select name, data_type from V$OB_PARAMETERS where name = '_obkv_feature_mode';
-name	data_type
-_obkv_feature_mode	MODE
 select name, data_type from V$OB_PARAMETERS where name = 'plsql_debug';
 name	data_type
 plsql_debug	BOOL

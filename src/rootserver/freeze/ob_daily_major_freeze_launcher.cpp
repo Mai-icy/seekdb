@@ -22,6 +22,7 @@
 #include "share/ob_tablet_checksum_operator.h"
 #include "observer/ob_srv_network_frame.h"
 #include "share/rc/ob_tenant_base.h"
+#include "rootserver/freeze/ob_major_merge_info_manager.h"
 
 namespace oceanbase
 {

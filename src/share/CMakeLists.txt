@@ -205,9 +205,9 @@ ob_set_subtarget(ob_share common
   ob_server_locality_cache.cpp
   ob_server_status.cpp
   ob_server_struct.cpp
-  ob_simple_mem_limit_getter.cpp
   ob_share_util.cpp
   ob_simple_batch.cpp
+  ob_simple_mem_limit_getter.cpp
   ob_snapshot_table_proxy.cpp
   ob_tablet_autoincrement_param.cpp
   ob_tablet_autoincrement_service.cpp
@@ -287,7 +287,6 @@ ob_set_subtarget(ob_share common_mixed
   system_variable/ob_system_variable_init.cpp
   ob_lob_access_utils.cpp
   ob_json_access_utils.cpp
-  table/ob_table_ddl_struct.cpp
   table/ob_table_load_define.cpp
   table/ob_table_load_dml_stat.cpp
   table/ob_table_load_row.cpp
@@ -295,7 +294,6 @@ ob_set_subtarget(ob_share common_mixed
   table/ob_table_load_sql_statistics.cpp
   tenant_snapshot/ob_tenant_snapshot_id.cpp
   table/ob_ttl_util.cpp
-  table/ob_table_config_util.cpp
   index_usage/ob_index_usage_info_mgr.cpp
   index_usage/ob_index_usage_report_task.cpp
   table/ob_table_util.cpp
@@ -330,6 +328,7 @@ ob_set_subtarget(ob_share common_mixed
   longops_mgr/ob_longops_mgr.cpp
   throttle/ob_share_throttle_define.cpp
   throttle/ob_throttle_common.cpp
+  ob_module_data_arg.cpp
 )
 
 ob_set_subtarget(ob_share tablet
@@ -512,8 +511,8 @@ ob_set_subtarget(ob_share catalog
   catalog/ob_catalog_properties.cpp
   catalog/ob_external_object_ctx.cpp
   catalog/ob_external_catalog.cpp
-  catalog/ob_catalog_meta_getter.cpp
   catalog/ob_cached_catalog_meta_getter.cpp
+  catalog/ob_catalog_meta_getter.cpp
   catalog/ob_catalog_utils.cpp
 )
 
@@ -558,7 +557,6 @@ ob_set_subtarget(ob_share throttle
 )
 
 ob_set_subtarget(ob_share object_storage
-  object_storage/ob_device_config_mgr.cpp
   object_storage/ob_device_config_parser.cpp
   object_storage/ob_device_connectivity.cpp
   object_storage/ob_device_manifest.cpp

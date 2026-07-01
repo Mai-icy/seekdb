@@ -264,7 +264,7 @@ private:
    int64_t transfer_seq_;
 };
 
-//TODO: Reserved for tableapi. Need remove.
+// Reserved compatibility cache key.
 class ObTabletLSCacheKey : public common::ObIKVCacheKey
 {
 public:

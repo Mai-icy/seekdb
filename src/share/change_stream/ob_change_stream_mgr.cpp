@@ -22,6 +22,12 @@
 #include "lib/thread/thread_define.h"
 #include "share/ob_thread_define.h"
 #include "storage/tx/ob_ts_mgr.h"
+#include <unistd.h>
+
+#ifndef GET_THREAD_NUM_BY_NPROCESSORS
+#define GET_THREAD_NUM_BY_NPROCESSORS(factor) \
+  (sysconf(_SC_NPROCESSORS_ONLN) / (factor) > 0 ? sysconf(_SC_NPROCESSORS_ONLN) / (factor) : 1)
+#endif
 
 namespace oceanbase
 {

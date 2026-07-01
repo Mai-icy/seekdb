@@ -8276,8 +8276,7 @@ int ObResolverUtils::check_allowed_alter_operations_for_mlog(
                 || arg.alter_table_schema_.alter_option_bitset_.has_member(ObAlterTableArg::SESSION_ACTIVE_TIME)
                 || arg.alter_table_schema_.alter_option_bitset_.has_member(ObAlterTableArg::ENABLE_ROW_MOVEMENT)
                 || arg.alter_table_schema_.alter_option_bitset_.has_member(ObAlterTableArg::FORCE_LOCALITY)
-                || arg.alter_table_schema_.alter_option_bitset_.has_member(ObAlterTableArg::TTL_DEFINITION)
-                || arg.alter_table_schema_.alter_option_bitset_.has_member(ObAlterTableArg::KV_ATTRIBUTES)))) {
+                || arg.alter_table_schema_.alter_option_bitset_.has_member(ObAlterTableArg::TTL_DEFINITION)))) {
       // supported operations
     } else if (!arg.is_alter_columns_
         && ((ObAlterTableArg::ADD_CONSTRAINT == arg.alter_constraint_type_)

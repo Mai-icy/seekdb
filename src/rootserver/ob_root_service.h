@@ -198,13 +198,6 @@ public:
   int create_hidden_table(const obcall::ObCreateHiddenTableArg &arg, obcall::ObCreateHiddenTableRes &res);
   int send_auto_split_tablet_task_request(const obcall::ObAutoSplitTabletBatchArg &arg, obcall::ObAutoSplitTabletBatchRes &res);
   int split_global_index_tablet(const obcall::ObAlterTableArg &arg);
-  /**
-   * For recover restore table ddl, data insert into the target table is selected from another tenant.
-   * The function is used to create a hidden target table without any change on the source table,
-   * and then register a recover task into ddl task queue to finish the all procedures.
-   * The format about the command is,
-   * alter system recover table test.t1 to tenant backup_oracle_tenant from '$ARCHIVE_FILES_PATH' with 'pool_list=small_pool_0&primary_zone=z1' remap table test.t1:recover_test.t3;
-  */
   int execute_ddl_task(const obcall::ObAlterTableArg &arg, common::ObSArray<uint64_t> &obj_ids);
   int cancel_ddl_task(const obcall::ObCancelDDLTaskArg &arg);
   int alter_tablegroup(const obcall::ObAlterTablegroupArg &arg);
@@ -369,8 +362,6 @@ public:
   int admin_upgrade_virtual_schema();
   int admin_flush_cache(const obcall::ObAdminFlushCacheArg &arg);
   int admin_set_tracepoint(const obcall::ObAdminSetTPArg &arg);
-  /* physical restore */
-  /*-----------------*/
   int refresh_time_zone_info(const obcall::ObRefreshTimezoneArg &arg);
   int request_time_zone_info(const common::ObRequestTZInfoArg &arg, common::ObRequestTZInfoResult &result);
   // async tasks and callbacks
@@ -404,10 +395,10 @@ public:
   int get_recycle_schema_versions(
       const obcall::ObGetRecycleSchemaVersionsArg &arg,
       obcall::ObGetRecycleSchemaVersionsResult &result);
+  int standby_upgrade_virtual_schema(const obcall::ObDDLNopOpreatorArg &arg);
   int purge_recyclebin_objects(int64_t purge_each_time);
   int flush_opt_stat_monitoring_info(const obcall::ObFlushOptStatArg &arg);
   int recompile_all_views_batch(const obcall::ObRecompileAllViewsBatchArg &arg);
-  int parallel_htable_ddl(const obcall::ObHTableDDLArg &arg, obcall::ObHTableDDLRes &res);
 private:
   int check_parallel_ddl_conflict(
       share::schema::ObSchemaGetterGuard &schema_guard,
@@ -447,8 +438,7 @@ private:
   bool continue_check(const int ret);
 
   int table_allow_ddl_operation(const obcall::ObAlterTableArg &arg);
-  int get_table_schema(
-                       const common::ObString &database_name,
+  int get_table_schema(const common::ObString &database_name,
                        const common::ObString &table_name,
                        const bool is_index,
                        const int64_t session_id,

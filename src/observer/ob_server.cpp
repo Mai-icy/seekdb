@@ -53,8 +53,8 @@
 #include "storage/tablet/ob_mds_schema_helper.h"
 #include "storage/ob_file_system_router.h"
 #include "storage/tablelock/ob_table_lock_rpc_client.h"
-#include "share/catalog/ob_cached_catalog_meta_getter.h"
 #include "share/stat/ob_opt_stat_manager.h" // for ObOptStatManager
+#include "share/catalog/ob_cached_catalog_meta_getter.h"
 #include "share/scheduler/ob_partition_auto_split_helper.h"
 #include "share/longops_mgr/ob_longops_mgr.h"
 #include "share/ob_ddl_sim_point.h"
@@ -148,7 +148,6 @@ ObServer::ObServer()
     config_(ObServerConfig::get_instance()),
     reload_config_(config_, gctx_), config_mgr_(config_, reload_config_),
     tenant_timezone_mgr_(omt::ObTenantTimezoneMgr::get_instance()),
-    device_config_mgr_(share::ObDeviceConfigMgr::get_instance()),
     schema_service_(share::schema::ObMultiVersionSchemaService::get_instance()),
     tablet_operator_(),
     location_service_(),
@@ -648,10 +647,6 @@ void ObServer::destroy()
     FLOG_INFO("begin to destroy tenant timezone manager");
     tenant_timezone_mgr_.destroy();
     FLOG_INFO("tenant timezone manager destroyed");
-
-    FLOG_INFO("begin to destroy device config mgr");
-    device_config_mgr_.destroy();
-    FLOG_INFO("device config mgr destroyed");
 
     FLOG_INFO("begin to destroy ObMdsEventBuffer");
     ObMdsEventBuffer::destroy();

@@ -1618,10 +1618,6 @@ int ObTableSchema::assign(const ObTableSchema &src_schema)
     LOG_WARN("deep copy ttl definition failed", K(ret));
   }
 
-  if (OB_SUCC(ret) && OB_FAIL(deep_copy_str(src_schema.kv_attributes_, kv_attributes_))) {
-    LOG_WARN("deep copy kv attributes failed", K(ret));
-  }
-
   if (OB_SUCC(ret) && OB_FAIL(deep_copy_str(src_schema.index_params_, index_params_))) {
     LOG_WARN("deep copy vector index param failed", K(ret));
   }
@@ -3263,7 +3259,6 @@ int64_t ObTableSchema::get_convert_size() const
   convert_size += external_file_location_access_info_.length() + 1;
   convert_size += external_file_pattern_.length() + 1;
   convert_size += ttl_definition_.length() + 1;
-  convert_size += kv_attributes_.length() + 1;
   convert_size += index_params_.length() + 1;
 
   convert_size += get_hash_array_mem_size<CgIdHashArray>(column_group_cnt_);
@@ -3362,7 +3357,6 @@ void ObTableSchema::reset()
   external_file_pattern_.reset();
   external_properties_.reset();
   ttl_definition_.reset();
-  kv_attributes_.reset();
   index_params_.reset();
   exec_env_.reset();
   name_generated_type_ = GENERATED_TYPE_UNKNOWN;
@@ -6540,7 +6534,6 @@ OB_DEF_SERIALIZE(ObTableSchema)
   OB_UNIS_ENCODE(external_file_format_);
   OB_UNIS_ENCODE(external_file_pattern_);
   OB_UNIS_ENCODE(ttl_definition_);
-  OB_UNIS_ENCODE(kv_attributes_);
   OB_UNIS_ENCODE(name_generated_type_);
   OB_UNIS_ENCODE(lob_inrow_threshold_);
   OB_UNIS_ENCODE_ARRAY_POINTER(column_group_arr_, column_group_cnt_);
@@ -6782,7 +6775,6 @@ OB_DEF_DESERIALIZE(ObTableSchema)
   OB_UNIS_DECODE_AND_FUNC(external_file_format_, deep_copy_str);
   OB_UNIS_DECODE_AND_FUNC(external_file_pattern_, deep_copy_str);
   OB_UNIS_DECODE_AND_FUNC(ttl_definition_, deep_copy_str);
-  OB_UNIS_DECODE_AND_FUNC(kv_attributes_, deep_copy_str);
   OB_UNIS_DECODE(name_generated_type_);
   OB_UNIS_DECODE(lob_inrow_threshold_);
   OB_UNIS_DECODE_ARRAY_POINTER(column_group_arr_, column_group_cnt_, do_add_column_group);
@@ -6924,7 +6916,6 @@ OB_DEF_SERIALIZE_SIZE(ObTableSchema)
   OB_UNIS_ADD_LEN(external_file_format_);
   OB_UNIS_ADD_LEN(external_file_pattern_);
   OB_UNIS_ADD_LEN(ttl_definition_);
-  OB_UNIS_ADD_LEN(kv_attributes_);
   OB_UNIS_ADD_LEN(name_generated_type_);
   OB_UNIS_ADD_LEN(lob_inrow_threshold_);
   OB_UNIS_ADD_LEN_ARRAY_POINTER(column_group_arr_, column_group_cnt_);
@@ -7297,50 +7288,15 @@ int ObTableSchema::get_presetting_partition_keys(common::ObIArray<uint64_t> &par
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("invalid table type", KR(ret), KPC(this));
   } else if (ori_part_func_str.empty()) {
-    bool is_h_t = false;
-    if (OB_FAIL(is_hbase_table(is_h_t))) {
-      LOG_WARN("failed to check if it is hbase_table", K(ret), K(*this));
-    } else if (!is_h_t) {
-      const ObRowkeyInfo &partition_keys = is_global_index_table() ? get_index_info() : get_rowkey_info();
-      for (int64_t i = 0; OB_SUCC(ret) && i < partition_keys.get_size(); ++i) {
-        const ObRowkeyColumn *partition_column = partition_keys.get_column(i);
-        if (OB_ISNULL(partition_column)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("the partition key is NULL, ", KR(ret), K(i), K(partition_keys), KPC(this));
-        } else if (!is_shadow_column(partition_column->column_id_) &&
-            OB_FAIL(partition_key_ids.push_back(partition_column->column_id_))) {
-          LOG_WARN("failed to push back rowkey column id", KR(ret), KPC(this));
-        }
-      }
-    } else {
-      const ObRowkeyInfo &rowkey_info = get_rowkey_info();
-      const char* K_COLULMN = "K";
-      ObColumnIterByPrevNextID pre_next_id_iter(*this);
-      const ObColumnSchemaV2 *column_schema = NULL;
-      ObCompareNameWithTenantID name_cmp;
-      if (OB_FAIL(pre_next_id_iter.next(column_schema))) {
-        LOG_ERROR("pre_next_id_iter next fail", KR(ret), KPC(column_schema));
-      } else if (OB_ISNULL(column_schema)) {
+    const ObRowkeyInfo &partition_keys = is_global_index_table() ? get_index_info() : get_rowkey_info();
+    for (int64_t i = 0; OB_SUCC(ret) && i < partition_keys.get_size(); ++i) {
+      const ObRowkeyColumn *partition_column = partition_keys.get_column(i);
+      if (OB_ISNULL(partition_column)) {
         ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("column schema should not be null", K(ret), K(*this));
-      } else {
-        ObString col_name;
-        col_name.reset();
-        bool is_col_existed = false;
-        uint64_t col_id = column_schema->get_column_id();
-        get_column_name_by_column_id(col_id, col_name, is_col_existed);
-        if (!is_col_existed) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("the col should exist", K(ret), K(col_id));
-        } else if (OB_ISNULL(col_name.ptr())) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("col_name ptr should not be null", K(ret));
-        } else if (OB_UNLIKELY(0 != strcmp(col_name.ptr(), K_COLULMN))) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("the first column of a hbase table should be column K", K(ret));
-        } else if (OB_FAIL(partition_key_ids.push_back(col_id))) {
-          LOG_WARN("failed to push back", K(ret));
-        }
+        LOG_WARN("the partition key is NULL, ", KR(ret), K(i), K(partition_keys), KPC(this));
+      } else if (!is_shadow_column(partition_column->column_id_) &&
+          OB_FAIL(partition_key_ids.push_back(partition_column->column_id_))) {
+        LOG_WARN("failed to push back rowkey column id", KR(ret), KPC(this));
       }
     }
   } else if (!is_user_table()) {
@@ -8182,70 +8138,6 @@ int ObTableSchema::check_rowkey_column(const common::ObIArray<uint64_t> &parent_
   }
   return ret;
 }
-
-int ObTableSchema::is_hbase_table(bool &is_h_table) const
-{
-  int ret = OB_SUCCESS;
-  const int64_t HBASE_TABLE_COLUMN_COUNT = 4;
-  is_h_table = false;
-  ObKVAttr kv_attr;
-  if (OB_FAIL(common::ObTTLUtil::parse_kv_attributes(get_kv_attributes(), kv_attr))) {
-    LOG_WARN("fail to parse kv attributes", KR(ret), K(get_kv_attributes()));
-  } else if (kv_attr.type_ == common::ObKVAttr::ObTTLTableType::HBASE) {
-    is_h_table = true;
-  } else {
-    const char* K_COLULMN = "K";
-    const char* Q_COLULMN = "Q";
-    const char* T_COLULMN = "T";
-    const char* V_COLULMN = "V";
-    ObSEArray<bool, HBASE_TABLE_COLUMN_COUNT> col_flags;
-    for (int64_t i = 0; OB_SUCC(ret) && i < HBASE_TABLE_COLUMN_COUNT; ++i) {
-      if (OB_FAIL(col_flags.push_back(false))) {
-        LOG_WARN("failed to push back into col_falgs", K(ret));
-      }
-    }
-    // Mark column T as bigint or not
-    bool is_T_column_bigint_type = false;
-    ObColumnIterByPrevNextID pre_next_id_iter(*this);
-    while (OB_SUCC(ret)) {
-      const ObColumnSchemaV2 *column_schema = NULL;
-      if (OB_FAIL(pre_next_id_iter.next(column_schema))) {
-        if (OB_ITER_END != ret) {
-          LOG_ERROR("pre_next_id_iter next fail", KR(ret), KPC(column_schema));
-        }
-      } else if (OB_ISNULL(column_schema)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_ERROR("column_schema is null", K(ret), KPC(column_schema));
-      } else {
-        const char *column_name_ptr = column_schema->get_column_name();
-        if (OB_ISNULL(column_name_ptr)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_ERROR("column_name should not be null", K(ret), K(column_name_ptr));
-        } else if (0 == strcmp(column_name_ptr, K_COLULMN)) {
-            col_flags.at(0) = true;
-        } else if (0 == strcmp(column_name_ptr, Q_COLULMN)) {
-            col_flags.at(1) = true;
-        } else if (0 == strcmp(column_name_ptr, T_COLULMN)) {
-          col_flags.at(2) = true;
-          /*The T column must be int type for mysql mode*/
-          if (ObIntType == column_schema->get_data_type()) {
-            is_h_table = true;
-          }
-        } else if (0 == strcmp(column_name_ptr, V_COLULMN)) {
-          col_flags.at(3) = true;
-        }
-      }
-    }
-    if (OB_ITER_END == ret) {
-      ret = OB_SUCCESS;
-    }
-    for (int64_t i = 0; is_h_table && OB_SUCC(ret) && i < col_flags.count(); ++i) {
-      is_h_table &= col_flags.at(i);
-    }
-  }
-  return ret;
-}
-
 
 int ObTableSchema::add_simple_index_info(const ObAuxTableMetaInfo &simple_index_info)
 {

@@ -177,7 +177,6 @@ public:
                                   common::hash::NormalPointer,
                                   common::ObWrapperAllocator> SysVarNameValMap;
   typedef lib::ObLockGuard<common::ObRecursiveMutex> LockGuard;
-
   class TableStmtType
   {
     OB_UNIS_VERSION_V(1);

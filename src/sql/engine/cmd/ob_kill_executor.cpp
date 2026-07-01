@@ -15,6 +15,7 @@
  */
 
 #define USING_LOG_PREFIX SQL_ENG
+#include "rootserver/ob_root_service.h"
 #include "sql/resolver/cmd/ob_kill_stmt.h"
 #include "sql/engine/cmd/ob_kill_session_arg.h"
 #include "sql/engine/cmd/ob_kill_executor.h"

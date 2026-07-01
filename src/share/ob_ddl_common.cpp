@@ -190,9 +190,6 @@ const char *oceanbase::share::get_ddl_type(ObDDLType ddl_type)
     case ObDDLType::DDL_DIRECT_LOAD_INSERT:
       ret_name = "DDL_DIRECT_LOAD_INSERT";
       break;
-    case ObDDLType::DDL_TABLE_RESTORE:
-      ret_name = "DDL_TABLE_RESTORE";
-      break;
     case ObDDLType::DDL_MVIEW_COMPLETE_REFRESH:
       ret_name = "DDL_MVIEW_COMPLETE_REFRESH";
       break;
@@ -2474,7 +2471,7 @@ int ObDDLUtil::obtain_snapshot(
     LOG_WARN("args have not been inited", K(ret), K(wait_trans_ctx->is_inited()), K(task->is_inited()), K(task->get_task_type()));
   } else {
     ObDDLTaskStatus new_status = ObDDLTaskStatus::OBTAIN_SNAPSHOT;
-    
+
     int64_t new_fetched_snapshot = 0;
     int64_t persisted_snapshot = 0;
     if (!wait_trans_ctx->is_inited()) {
@@ -2621,7 +2618,7 @@ int ObDDLUtil::hold_snapshot(
     ObSchemaGetterGuard schema_guard;
     const ObTableSchema *data_table_schema = nullptr;
     const ObTableSchema *dest_table_schema = nullptr;
-    
+
     int64_t schema_version = task->get_src_schema_version();
     ObMultiVersionSchemaService &schema_service = ObMultiVersionSchemaService::get_instance();
     if (OB_UNLIKELY(snapshot_version < 0)) {
@@ -2690,7 +2687,7 @@ int ObDDLUtil::release_snapshot(
     ret = OB_NOT_INIT;
     LOG_WARN("args have not been inited", K(ret), K(task->get_task_type()));
   } else {
-    
+
     int64_t schema_version = task->get_src_schema_version();
     if (OB_FAIL(DDL_SIM(task->get_task_id(), DDL_TASK_RELEASE_SNAPSHOT_FAILED))) {
       LOG_WARN("ddl sim failure", K(ret), K(task->get_task_id()));
@@ -2716,7 +2713,7 @@ int ObDDLUtil::hold_snapshot(
 {
   int ret = OB_SUCCESS;
   SCN snapshot_scn;
-  
+
   const int64_t data_table_id = data_table_schema.get_table_id();
   const int64_t index_table_id = index_table_schema.get_table_id();
   const int64_t schema_version = index_table_schema.get_schema_version();
@@ -2800,7 +2797,7 @@ int ObDDLUtil::obtain_snapshot(
     int64_t &new_fetched_snapshot)
 {
   int ret = OB_SUCCESS;
-  
+
   int64_t data_table_id = data_table_schema.get_table_id();
   new_fetched_snapshot = 0;
   if (OB_FAIL(calc_snapshot_with_gts(new_fetched_snapshot))) {
@@ -2953,8 +2950,8 @@ int ObDDLUtil::construct_domain_index_arg(ObSchemaGetterGuard &schema_guard,
   } else {
     create_index_arg.table_name_ = ObString(table_schema->get_table_name_str());
     create_index_arg.database_name_ = ObString(database_schema->get_database_name_str());
-    
-    
+
+
     if (ObDDLType::DDL_REBUILD_INDEX == task.get_task_type()) {
       // Only rebuild-index tasks reuse existing table ids. Offline domain-index
       // rebuild during table/column redefinition still goes through normal
@@ -3033,7 +3030,7 @@ int ObDDLUtil::get_domain_index_share_table_snapshot(const ObTableSchema *table_
   int ret = OB_SUCCESS;
   ObSchemaGetterGuard new_schema_guard;
   rootserver::ObRootService *root_service = GCTX.root_service_;
-  
+
   bool need_update_snapshot = false;
   if (OB_ISNULL(root_service) || OB_ISNULL(table_schema) || OB_ISNULL(index_schema)) {
     ret = OB_ERR_SYS;
@@ -3096,7 +3093,7 @@ int ObDDLUtil::write_defensive_and_obtain_snapshot(
       const int64_t abs_timeout_us = THIS_WORKER.is_timeout_ts_valid() ? THIS_WORKER.get_timeout_ts()
                                                                   : ObTimeUtility::current_time() + GCONF.rpc_timeout;
       ObRefreshSchemaStatus schema_status;
-      
+
       if (OB_FAIL(schema_service->get_table_schema_from_inner_table(schema_status,
                                                                     data_table_schema.get_table_id(),
                                                                     trans,
@@ -3277,8 +3274,8 @@ int ObDDLUtil::check_and_cancel_single_replica_dag(
     const int64_t CHECK_DAG_EXIT_BUCKET_NUM = 64;
     common::ObArray<common::ObTabletID> src_tablet_ids;
     common::ObArray<common::ObTabletID> dst_tablet_ids;
-    
-    
+
+
     if (OB_FAIL(ObDDLUtil::get_tablets(table_id, src_tablet_ids))) {
       LOG_WARN("fail to get tablets", K(ret), K(table_id));
     } else if (OB_FAIL(ObDDLUtil::get_tablets(target_table_id, dst_tablet_ids))) {
@@ -3300,8 +3297,8 @@ int ObDDLUtil::check_and_cancel_single_replica_dag(
     common::hash::ObHashMap<common::ObTabletID, common::ObTabletID> ::const_iterator iter =
       check_dag_exit_tablets_map.begin();
     ObArray<common::ObTabletID> dag_not_exist_tablets;
-    
-    
+
+
     for (; OB_SUCC(ret) && iter != check_dag_exit_tablets_map.end(); iter++) {
       ObLSID src_ls_id;
       ObLSID dst_ls_id;
@@ -3320,9 +3317,9 @@ int ObDDLUtil::check_and_cancel_single_replica_dag(
         obcall::ObDDLBuildSingleReplicaRequestArg arg;
         arg.ls_id_ = src_ls_id;
         arg.dest_ls_id_ = dst_ls_id;
-        
-        
-        
+
+
+
         arg.source_tablet_id_ = src_tablet_id;
         arg.dest_tablet_id_ = dst_tablet_id;
         arg.source_table_id_ = table_id;
@@ -4465,7 +4462,7 @@ int ObDDLUtil::check_table_empty(
         LOG_WARN("fail to generate new name with escape character",
                   K(ret), K(table_name));
       } else if (OB_FAIL(session_param.ddl_info_.init(ddl_info, table_schema.get_session_id()))) {
-        LOG_WARN("fail to init ddl info", KR(ret), K(ddl_info), K(table_schema.get_session_id())); 
+        LOG_WARN("fail to init ddl info", KR(ret), K(ddl_info), K(table_schema.get_session_id()));
       } else if (OB_FAIL(ObShareUtil::set_default_timeout_ctx(timeout_ctx, GCONF.internal_sql_execute_timeout))) {
         LOG_WARN("failed to set default timeout ctx", K(ret), K(timeout_ctx));
       } else if (OB_FAIL(connection->set_ddl_info(&session_param.ddl_info_))) {
@@ -4572,8 +4569,8 @@ int ObDDLUtil::set_tablet_autoinc_seq(const ObLSID &ls_id, const ObTabletID &tab
     ObMigrateTabletAutoincSeqParam tablet_autoinc_param;
     obcall::ObBatchSetTabletAutoincSeqArg arg;
     obcall::ObBatchSetTabletAutoincSeqRes res;
-    
-    
+
+
     arg.ls_id_ = ls_id;
     tablet_autoinc_param.src_tablet_id_ = tablet_id;
     tablet_autoinc_param.dest_tablet_id_ = tablet_id;
@@ -4627,7 +4624,7 @@ int ObDDLUtil::get_global_index_table_ids(const schema::ObTableSchema &table_sch
   } else if (OB_FAIL(table_schema.get_simple_index_infos(simple_index_infos))) {
     LOG_WARN("get simple index infos failed", K(ret));
   } else {
-    
+
     for (int64_t i = 0; OB_SUCC(ret) && i < simple_index_infos.count(); i++) {
       const ObTableSchema *aux_table_schema = NULL;
       if (OB_FAIL(schema_guard.get_table_schema( simple_index_infos.at(i).table_id_, aux_table_schema))) {
@@ -4720,7 +4717,7 @@ int ObSqlMonitorStats::init(const int64_t task_id, const ObDDLType ddl_type)
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(task_id_), K(ddl_type));
   } else {
-    
+
     task_id_ = task_id;
     ddl_type_ = ddl_type;
     is_inited_ = true;
@@ -4840,7 +4837,7 @@ int ObSqlMonitorStatsCollector::get_scan_monitor_stats_batch(sqlclient::ObMySQLR
     common::ObCurTraceId::TraceId inner_sql_trace_id;
     ScanMonitorNodeInfo scan_node_info;
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "TASK_ID", scan_node_info.task_id_, int64_t);
-    
+
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "FIRST_CHANGE_TIME", scan_node_info.first_change_time_);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "LAST_CHANGE_TIME", scan_node_info.last_change_time_);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "LAST_REFRESH_TIME", scan_node_info.last_refresh_time_);
@@ -4870,7 +4867,7 @@ int ObSqlMonitorStatsCollector::get_sort_monitor_stats_batch(sqlclient::ObMySQLR
     common::ObCurTraceId::TraceId inner_sql_trace_id;
     SortMonitorNodeInfo sort_node_info;
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "TASK_ID", sort_node_info.task_id_, int64_t);
-    
+
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "THREAD_ID", sort_node_info.thread_id_, int64_t);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "FIRST_CHANGE_TIME", sort_node_info.first_change_time_);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "LAST_CHANGE_TIME", sort_node_info.last_change_time_);
@@ -4907,7 +4904,7 @@ int ObSqlMonitorStatsCollector::get_insert_monitor_stats_batch(sqlclient::ObMySQ
     common::ObCurTraceId::TraceId inner_sql_trace_id;
     InsertMonitorNodeInfo insert_node_info;
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "TASK_ID", insert_node_info.task_id_, int64_t);
-    
+
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "THREAD_ID", insert_node_info.thread_id_, int64_t);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "LAST_REFRESH_TIME", insert_node_info.last_refresh_time_);
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "OTHERSTAT_1_VALUE", insert_node_info.cg_row_inserted_, int64_t);
@@ -4932,7 +4929,7 @@ int ObSqlMonitorStatsCollector::get_insert_monitor_stats_batch(sqlclient::ObMySQ
 int ObSqlMonitorStatsCollector::get_next_sql_plan_monitor_stat(ObSqlMonitorStats &sql_monitor_stats)
 {
   int ret = OB_SUCCESS;
-  
+
   task_id_ = sql_monitor_stats.task_id_;
   ddl_type_ = sql_monitor_stats.ddl_type_;
   if (!is_inited_) {
@@ -4960,7 +4957,7 @@ int ObSqlMonitorStatsCollector::get_next_scanned_stats(ObSqlMonitorStats &sql_mo
   }
   for (; OB_SUCC(ret) && scan_index_id_ < scan_res_.count(); scan_index_id_++) {
     const ScanMonitorNodeInfo &scan_monitor_node = scan_res_.at(scan_index_id_);
-    
+
     const int64_t task_id = scan_monitor_node.task_id_;
     const int64_t execution_id = scan_monitor_node.execution_id_;
     if (next_ddl_monitor_node(task_id)) {
@@ -4989,7 +4986,7 @@ int ObSqlMonitorStatsCollector::get_next_sorted_stats(ObSqlMonitorStats &sql_mon
   }
   for (; OB_SUCC(ret) && sort_index_id_ < sort_res_.count(); sort_index_id_++) {
     const SortMonitorNodeInfo &sort_monitor_node = sort_res_.at(sort_index_id_);
-    
+
     const int64_t task_id = sort_monitor_node.task_id_;
     const int64_t execution_id = sort_monitor_node.execution_id_;
     if (next_ddl_monitor_node(task_id)) {
@@ -5012,7 +5009,7 @@ int ObSqlMonitorStatsCollector::get_next_inserted_stats(ObSqlMonitorStats &sql_m
   }
   for (; OB_SUCC(ret) && insert_index_id_ < insert_res_.count(); insert_index_id_++) {
     const InsertMonitorNodeInfo &insert_monitor_node = insert_res_.at(insert_index_id_);
-    
+
     const int64_t task_id = insert_monitor_node.task_id_;
     const int64_t execution_id = insert_monitor_node.execution_id_;
     if (next_ddl_monitor_node(task_id)) {
@@ -5830,7 +5827,7 @@ int ObCheckTabletDataComplementOp::do_check_tablets_merge_status(const int64_t s
     LOG_WARN("invalid argument", K(ret), K(tablet_ids.count()), K(snapshot_version));
   } else {
     obcall::ObDDLCheckTabletMergeStatusArg arg;
-    
+
     arg.ls_id_ = ls_id;
     arg.snapshot_version_ = snapshot_version;
 

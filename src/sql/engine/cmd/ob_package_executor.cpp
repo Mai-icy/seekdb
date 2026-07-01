@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 #include "ob_package_executor.h"
 #include "rootserver/ob_rs_serial_call.h"
+#include "rootserver/ob_root_service.h"
 #include "sql/resolver/ddl/ob_create_package_stmt.h"
 #include "sql/resolver/ddl/ob_alter_package_stmt.h"
 #include "sql/resolver/ddl/ob_drop_package_stmt.h"

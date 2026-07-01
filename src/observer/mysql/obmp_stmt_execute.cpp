@@ -18,6 +18,9 @@
 
 
 #include "obmp_stmt_execute.h"
+#include "lib/stat/ob_diagnostic_info_guard.h"
+#include "observer/mysql/ob_mysql_result_set.h"
+#include "lib/trace/ob_trace.h"
 #include "observer/mysql/obsm_utils.h"
 #include "rpc/obmysql/packet/ompk_resheader.h"
 #include "rpc/obmysql/packet/ompk_field.h"

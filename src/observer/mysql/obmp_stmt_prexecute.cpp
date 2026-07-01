@@ -18,6 +18,8 @@
 
 
 #include "observer/mysql/obmp_stmt_prexecute.h"
+#include "observer/mysql/ob_mysql_result_set.h"
+#include "lib/trace/ob_trace.h"
 #include "rpc/obmysql/packet/ompk_prexecute.h"
 #include "rpc/obmysql/packet/ompk_field.h"
 #include "observer/mysql/obmp_stmt_prepare.h"

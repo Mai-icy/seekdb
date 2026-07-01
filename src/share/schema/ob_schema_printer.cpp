@@ -1708,16 +1708,6 @@ int ObSchemaPrinter::print_table_definition_table_options(const ObTableSchema &t
       SHARE_SCHEMA_LOG(WARN, "fail to print ttl definition", K(ret), K(ttl_definition));
     }
   }
-  if (OB_SUCC(ret) && !strict_compat_ && !is_index_tbl
-      && table_schema.get_kv_attributes().length() > 0
-      && NULL != table_schema.get_kv_attributes().ptr()) {
-    const ObString kv_attributes = table_schema.get_kv_attributes();
-    if (OB_FAIL(databuff_printf(buf, buf_len, pos, "KV_ATTRIBUTES = '%.*s' ",
-                            kv_attributes.length(), kv_attributes.ptr()))) {
-      SHARE_SCHEMA_LOG(WARN, "fail to print kv attributes", K(ret), K(kv_attributes));
-    }
-  }
-
   if (OB_SUCC(ret) && !strict_compat_ && !is_index_tbl) {
     if (OB_FAIL(print_table_definition_lob_params(table_schema, buf, buf_len, pos))) {
       SHARE_SCHEMA_LOG(WARN, "fail to print store format", K(ret), K(table_schema));
@@ -2176,15 +2166,6 @@ int ObSchemaPrinter::print_table_definition_table_options(
     }
   }
 
-  if (OB_SUCC(ret) && !is_index_tbl && !strict_compat_) {
-    const ObString kv_attributes = table_schema.get_kv_attributes();
-    if (kv_attributes.empty()) {
-      // do nothing
-    } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, "KV_ATTRIBUTES = '%.*s' ",
-         kv_attributes.length(), kv_attributes.ptr()))) {
-      OB_LOG(WARN, "fail to print kv attributes", K(ret), K(kv_attributes));
-    }
-  }
   if (OB_SUCC(ret)
       && !strict_compat_
       && !is_index_tbl

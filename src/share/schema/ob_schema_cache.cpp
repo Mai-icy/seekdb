@@ -23,6 +23,7 @@
 #include "common/ob_smart_call.h"
 #include "deps/oblib/src/lib/lock/ob_latch.h"
 #include "deps/oblib/src/lib/stat/ob_latch_define.h"
+#include "lib/stat/ob_diagnostic_info_guard.h"
 namespace oceanbase
 {
 using namespace common;
