@@ -36,11 +36,6 @@ ob_set_subtarget(ob_share_extra ALONE
   datum/ob_str_datum_funcs_compilation/ob_str_datum_funcs_compilation_0.cpp
   datum/ob_str_datum_funcs_compilation/ob_str_datum_funcs_compilation_1.cpp
   datum/ob_str_datum_funcs_compilation/ob_str_datum_funcs_compilation_2.cpp
-  datum/ob_str_datum_funcs_compilation/ob_str_datum_funcs_compilation_3.cpp
-  datum/ob_str_datum_funcs_compilation/ob_str_datum_funcs_compilation_4.cpp
-  datum/ob_str_datum_funcs_compilation/ob_str_datum_funcs_compilation_5.cpp
-  datum/ob_str_datum_funcs_compilation/ob_str_datum_funcs_compilation_6.cpp
-  datum/ob_str_datum_funcs_compilation/ob_str_datum_funcs_compilation_7.cpp
   datum/ob_str_datum_funcs_compilation/ob_str_datum_funcs_all.cpp
   datum/ob_datum_funcs.cpp
 )

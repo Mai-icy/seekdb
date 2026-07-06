@@ -92,3 +92,6 @@ select count(*) from __all_column_group where table_id = (select table_id from _
 +----------+
 |       10 |
 +----------+
+
+drop table if exists ddl_t1;
+drop table if exists foo;

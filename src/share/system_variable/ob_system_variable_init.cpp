@@ -2347,7 +2347,7 @@ static struct VarsInit{
     }();
 
     [&] (){
-      ObSysVars[159].default_value_ = "AL16UTF16" ;
+      ObSysVars[159].default_value_ = "AL32UTF8" ;
       ObSysVars[159].info_ = "specifies the default characterset of the database, This parameter defines the encoding of the data in the NCHAR, NVARCHAR2 and NCLOB columns of a table." ;
       ObSysVars[159].name_ = "nls_nchar_characterset" ;
       ObSysVars[159].data_type_ = ObVarcharType ;
@@ -2355,7 +2355,7 @@ static struct VarsInit{
       ObSysVars[159].id_ = SYS_VAR_NLS_NCHAR_CHARACTERSET ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_NLS_NCHAR_CHARACTERSET)) ;
       ObSysVarsIdToArrayIdx[SYS_VAR_NLS_NCHAR_CHARACTERSET] = 159 ;
-      ObSysVars[159].base_value_ = "AL16UTF16" ;
+      ObSysVars[159].base_value_ = "AL32UTF8" ;
     ObSysVars[159].alias_ = "OB_SV_NLS_NCHAR_CHARACTERSET" ;
     }();
 

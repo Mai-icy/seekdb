@@ -268,7 +268,7 @@ TEST_F(TestDefaultFTParser, test_space_ft_parser_segment_bug_56324268)
 
   ft_parser_param_.fulltext_ = fulltext;
   ft_parser_param_.ft_length_ = ft_len;
-  ft_parser_param_.cs_ = common::ObCharset::get_charset(ObCollationType::CS_TYPE_LATIN1_SWEDISH_CI);
+  ft_parser_param_.cs_ = common::ObCharset::get_charset(ObCollationType::CS_TYPE_UTF8MB4_BIN);
 
   LOG_INFO("before space segment", KCSTRING(fulltext), K(ft_len), K(ft_parser_param_));
   ASSERT_EQ(OB_SUCCESS, parser.init(&ft_parser_param_));
