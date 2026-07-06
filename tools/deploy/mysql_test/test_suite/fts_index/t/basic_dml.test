@@ -1648,7 +1648,7 @@ select tokenize("abc英文空格 中文分号；英文分号;全角空格　全�
 drop table if exists t1;
 --enable_warnings
 
-create table t1(trailing_space VARCHAR(256), fulltext index ft1(trailing_space) with parser space) DEFAULT CHARSET = utf16;
+create table t1(trailing_space VARCHAR(256), fulltext index ft1(trailing_space) with parser space) DEFAULT CHARSET = utf8mb4;
 
 insert into t1 values("abc英文空格 中文分号；英文分号;全角空格　全角逗号，等");
 
@@ -1664,7 +1664,7 @@ select tokenize("abc英文空格 中文分号；英文分号;全角空格　全�
 drop table if exists t1;
 --enable_warnings
 
-create table t1(trailing_space VARCHAR(256), fulltext index ft1(trailing_space) with parser ngram) DEFAULT CHARSET = utf16;
+create table t1(trailing_space VARCHAR(256), fulltext index ft1(trailing_space) with parser ngram) DEFAULT CHARSET = utf8mb4;
 insert into t1 values("abc英文空格 中文分号；英文分号;全角空格　全角逗号，等");
 select * from t1 where match(trailing_space) against ('ab' IN BOOLEAN MODE);
 select * from t1 where match(trailing_space) against ('文空' IN BOOLEAN MODE);

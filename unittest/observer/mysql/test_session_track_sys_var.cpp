@@ -113,7 +113,7 @@ TEST(TestSessionTrackSysVar, charset_and_collation_show_string)
   ObSQLSessionInfo session;
   init_session(allocator, session);
 
-  const int64_t target_collation_id = CS_TYPE_UTF8MB4_0900_AI_CI; // 255
+  const int64_t target_collation_id = CS_TYPE_UTF8MB4_BIN; // 46
   const int64_t fallback_collation_id = CS_TYPE_UTF8MB4_GENERAL_CI; // 45
 
   ASSERT_EQ(OB_SUCCESS, session.update_sys_variable(SYS_VAR_COLLATION_CONNECTION, fallback_collation_id));

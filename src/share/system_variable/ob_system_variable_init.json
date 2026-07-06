@@ -2291,8 +2291,8 @@
   "nls_nchar_characterset": {
     "id": 10074,
     "name": "nls_nchar_characterset",
-    "default_value": "AL16UTF16",
-    "base_value": "AL16UTF16",
+    "default_value": "AL32UTF8",
+    "base_value": "AL32UTF8",
     "data_type": "varchar",
     "info": "specifies the default characterset of the database, This parameter defines the encoding of the data in the NCHAR, NVARCHAR2 and NCLOB columns of a table.",
     "flags": "GLOBAL | NEED_SERIALIZE | ORACLE_ONLY | INFLUENCE_PLAN",
