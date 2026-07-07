@@ -22,7 +22,7 @@
 #include "lib/alloc/memory_dump.h"
 #include "lib/alloc/memory_sanity.h"
 #include "lib/alloc/ob_malloc_callback.h"
-#include "lib/utility/ob_smart_var.h"
+#include "common/ob_smart_var.h"
 
 using namespace oceanbase::lib;
 using namespace oceanbase::common;
@@ -36,11 +36,6 @@ ObTenantCtxAllocatorV2::ObTenantCtxAllocatorV2(uint64_t ctx_id,
 ObTenantCtxAllocatorV2::~ObTenantCtxAllocatorV2()
 {
   allocator_ = NULL;
-}
-
-int64_t ObTenantCtxAllocatorV2::sync_wash(int64_t wash_size)
-{
-  return allocator_->sync_wash_(wash_size);
 }
 
 void ObTenantCtxAllocatorV2::set_req_chunkmgr_parallel(int32_t parallel)
@@ -278,6 +273,7 @@ void ObTenantCtxAllocator::dec_hold(const int64_t size)
 {
   ctx_allocator_.dec_hold(size);
 }
+
 void ObTenantCtxAllocatorV2::dec_hold(const int64_t size)
 {
   if (!resource_handle_.is_valid()) {
@@ -375,28 +371,6 @@ ObLabelItem ObTenantCtxAllocatorV2::get_label_usage(ObLabel &label) const
     return OB_SUCCESS;
   });
   return item;
-}
-
-int64_t ObTenantCtxAllocator::sync_wash_(int64_t wash_size)
-{
-  int64_t washed_size = 0;
-
-  auto stat = obj_mgr_.get_stat();
-  const double min_utilization = 0.95;
-  int64_t min_memory_fragment = 64LL << 20;
-  if (stat.payload_ * min_utilization > stat.used_ ||
-      stat.payload_ - stat.used_ >= min_memory_fragment) {
-    washed_size = obj_mgr_.sync_wash(wash_size);
-  }
-  if (washed_size != 0 && REACH_TIME_INTERVAL(1 * 1000 * 1000)) {
-    _OB_LOG(INFO, "[MEM][WASH] ctx_id: %ld, washed_size: %ld", ctx_id_, washed_size);
-  }
-  return washed_size;
-}
-
-int64_t ObTenantCtxAllocator::sync_wash()
-{
-  return ObMallocAllocator::get_instance()->sync_wash(ctx_id_, INT64_MAX);
 }
 
 void ObTenantCtxAllocatorV2::update_wash_stat(int64_t related_chunks, int64_t blocks, int64_t size)
