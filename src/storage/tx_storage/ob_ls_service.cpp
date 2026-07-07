@@ -308,7 +308,7 @@ int ObLSService::wait()
 
 int ObLSService::mtl_init(ObLSService* &ls_service)
 {
-  
+
 
   return ls_service->init();
 }
@@ -495,7 +495,7 @@ int ObLSService::post_create_ls_(const int64_t create_type,
     case ObLSCreateType::NORMAL: {
       if (OB_FAIL(ls->set_start_work_state())) {
         LOG_ERROR("ls set start work state failed", KR(ret), KPC(ls));
-      } else { 
+      } else {
         ls->enable_to_read();
       }
       break;
@@ -1285,7 +1285,7 @@ int ObLSService::get_restore_status_(
     ObRestoreStatus &restore_status)
 {
   int ret = OB_SUCCESS;
-  
+
   restore_status = ObRestoreStatus::Status::NONE;
   bool is_primary = true;
 
@@ -1414,7 +1414,7 @@ ObMdsThrottleGuard::~ObMdsThrottleGuard()
       if (module_ti_guard.is_valid()) {
         module_ti_guard.throttle_info()->reset();
       }
-    } 
+    }
 
     // reset mds throttled alloc size
     share::mds_throttled_alloc() = 0;

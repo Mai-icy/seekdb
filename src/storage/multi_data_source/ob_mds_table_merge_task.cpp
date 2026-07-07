@@ -174,7 +174,7 @@ int ObMdsTableMergeTask::process()
         table_handle,
         flush_scn,
         new_tablet_handle))) {
-      LOG_ERROR("failed to build new tablet from mds table", K(ret), K(ctx), K(ls_id), K(tablet_id), 
+      LOG_ERROR("failed to build new tablet from mds table", K(ret), K(ctx), K(ls_id), K(tablet_id),
               K(flush_scn), KPC(mds_merge_dag_));
     }
 

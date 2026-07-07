@@ -3923,27 +3923,6 @@ int ObRootService::admin_refresh_memory_stat(const ObAdminRefreshMemStatArg &arg
   return ret;
 }
 
-int ObRootService::admin_wash_memory_fragmentation(const ObAdminWashMemFragmentationArg &arg)
-{
-  int ret = OB_SUCCESS;
-  if (!inited_) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("not init", K(ret));
-  } else {
-    ObSystemAdminCtx ctx;
-    if (OB_FAIL(init_sys_admin_ctx(ctx))) {
-      LOG_WARN("init_sys_admin_ctx failed", K(ret));
-    } else {
-      ObAdminWashMemFragmentation admin_util(ctx);
-      if (OB_FAIL(admin_util.execute(arg))) {
-        LOG_WARN("execute refresh memory stat failed", K(ret));
-      }
-    }
-  }
-  ROOTSERVICE_EVENT_ADD("root_service", "admin_wash_memory_fragmentation", K(ret));
-  return ret;
-}
-
 int ObRootService::admin_refresh_io_calibration(const obcall::ObAdminRefreshIOCalibrationArg &arg)
 {
   int ret = OB_SUCCESS;

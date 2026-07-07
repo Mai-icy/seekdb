@@ -1145,28 +1145,6 @@ int ObRefreshMemStatResolver::resolve(const ParseNode &parse_tree)
   return ret;
 }
 
-int ObWashMemFragmentationResolver::resolve(const ParseNode &parse_tree)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(T_WASH_MEMORY_FRAGMENTATION != parse_tree.type_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("type is not T_WASH_MEMORY_FRAGMENTATION", "type", get_type_name(parse_tree.type_));
-  } else {
-    ObWashMemFragmentationStmt *stmt = create_stmt<ObWashMemFragmentationStmt>();
-    if (NULL == stmt) {
-      ret = OB_ALLOCATE_MEMORY_FAILED;
-      LOG_ERROR("create ObWashMemFragmentationStmt failed");
-    } else {
-      stmt_ = stmt;
-      if (OB_UNLIKELY(NULL == parse_tree.children_)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("children should not be null");
-      }
-    }
-  }
-  return ret;
-}
-
 int ObRefreshIOCalibrationResolver::resolve(const ParseNode &parse_tree)
 {
   int ret = OB_SUCCESS;

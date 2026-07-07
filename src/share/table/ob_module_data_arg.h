@@ -39,7 +39,7 @@ public:
     GIS,
     MAX_MOD
   };
-  ObModuleDataArg() : 
+  ObModuleDataArg() :
     op_(ObInfoOpType::INVALID_OP),
     module_(ObExecModule::INVALID_MOD),
     file_path_()

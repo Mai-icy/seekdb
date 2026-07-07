@@ -323,7 +323,7 @@ int ObMultiTenant::construct_meta_for_hidden_sys(ObTenantMeta &meta)
 {
   int ret = OB_SUCCESS;
 
-  
+
   ObTenantSuperBlock super_block(true/*is_hidden*/);
   share::ObUnitInfoGetter::ObTenantConfig unit;
   const bool has_memstore = true;
@@ -367,7 +367,7 @@ int ObMultiTenant::create_hidden_sys_tenant()
 int ObMultiTenant::update_hidden_sys_tenant()
 {
   int ret = OB_SUCCESS;
-  
+
   omt::ObTenant *tenant = nullptr;
   SMART_VAR(ObTenantMeta, meta) {
     if (OB_FAIL(get_tenant_unsafe(tenant))) { // sys tenant will not be deleted
@@ -403,7 +403,7 @@ int ObMultiTenant::convert_hidden_to_real_sys_tenant(const ObUnitInfoGetter::ObT
   ObTenant *tenant = nullptr;
   const double min_cpu = static_cast<double>(unit.config_.min_cpu());
   const double max_cpu = static_cast<double>(unit.config_.max_cpu());
-  
+
   int64_t allowed_mem_limit = 0;
   UNUSED(abs_timeout_us);
 
@@ -448,7 +448,7 @@ int ObMultiTenant::create_tenant(const ObTenantMeta &meta, bool write_slog, cons
 
   const double min_cpu = static_cast<double>(meta.unit_.config_.min_cpu());
   const double max_cpu = static_cast<double>(meta.unit_.config_.max_cpu());
-  
+
   ObTenant *tenant = nullptr;
   ObMallocAllocator *malloc_allocator = ObMallocAllocator::get_instance();
   ObTenantCreateStep create_step = ObTenantCreateStep::STEP_BEGIN;  // step0
@@ -619,7 +619,7 @@ int ObMultiTenant::update_tenant_unit_no_lock(const ObUnitInfoGetter::ObTenantCo
   const double min_cpu = GCONF.get_sys_tenant_default_min_cpu();
   const double max_cpu = GCONF.get_sys_tenant_default_max_cpu();
   const int64_t log_disk_size =  GCTX.log_block_mgr_->get_log_disk_size();
-  
+
   ObUnitInfoGetter::ObTenantConfig allowed_new_unit;
   ObUnitInfoGetter::ObTenantConfig old_unit;
   int64_t allowed_new_log_disk_size = 0;
@@ -669,7 +669,7 @@ int ObMultiTenant::update_tenant_memory(const ObUnitInfoGetter::ObTenantConfig &
 {
   int ret = OB_SUCCESS;
   ObTenant *tenant = nullptr;
-  
+
   int64_t memory_size = GMEMCONF.get_server_memory_limit();
   int64_t hard_memory_size = GMEMCONF.get_server_hard_memory_limit();
   if (IS_NOT_INIT) {
@@ -866,7 +866,7 @@ int ObMultiTenant::update_tenant_dag_scheduler_config()
 int ObMultiTenant::update_tenant_ddl_config()
 {
   int ret = OB_SUCCESS;
-  
+
 #ifdef ERRSIM
 
   if (OB_FAIL(ObDDLSimPointMgr::get_instance().set_tenant_param(GCONF.errsim_ddl_sim_point_random_control,
@@ -1086,7 +1086,7 @@ void ObMultiTenant::remove_tenant()
 {
   int ret = OB_SUCCESS;
   int tmp_ret = OB_SUCCESS;
-  
+
 
   if (IS_NOT_INIT) {
     ret = OB_NOT_INIT;
@@ -1369,7 +1369,7 @@ int ObMultiTenant::apply_sys_tenant_unit_(const ObUnitInfoGetter::ObTenantConfig
                                           const int64_t abs_timeout_us)
 {
   int ret = OB_SUCCESS;
-  
+
   ObTenant *tenant = nullptr;
   if (OB_FAIL(get_tenant(tenant))) {
     ret = OB_ERR_UNEXPECTED;
@@ -1793,7 +1793,7 @@ int64_t ObMemstoreAllocator::nway_per_group()
   return OB_SUCCESS == ret? calc_nway((int64_t)max_cpu, min_memory): 0;
 }
 
-void ObIndexUsageInfoMgr::destroy() 
+void ObIndexUsageInfoMgr::destroy()
 {
   if (is_inited_) {
     // cancel report task
@@ -1804,7 +1804,7 @@ void ObIndexUsageInfoMgr::destroy()
         TG_WAIT_TASK(share::g_mp->shared_timer()->get_tg_id(), report_task_);
         report_task_.destroy();
       }
-    } 
+    }
     if (refresh_conf_task_.get_is_inited()) {
       bool is_exist = true;
       if (TG_TASK_EXIST(share::g_mp->shared_timer()->get_tg_id(), refresh_conf_task_, is_exist) == OB_SUCCESS && is_exist) {
@@ -1829,7 +1829,7 @@ namespace oceanbase
 namespace share
 {
 
-int ObIndexUsageInfoMgr::start() 
+int ObIndexUsageInfoMgr::start()
 {
   int ret = OB_SUCCESS;
   if (is_inited_) {
@@ -1849,7 +1849,7 @@ int ObIndexUsageInfoMgr::start()
   return ret;
 }
 
-void ObIndexUsageInfoMgr::stop() 
+void ObIndexUsageInfoMgr::stop()
 {
   if (OB_LIKELY(report_task_.get_is_inited())) {
     TG_CANCEL_TASK(share::g_mp->shared_timer()->get_tg_id(), report_task_);
@@ -1859,7 +1859,7 @@ void ObIndexUsageInfoMgr::stop()
   }
 }
 
-void ObIndexUsageInfoMgr::wait() 
+void ObIndexUsageInfoMgr::wait()
 {
   if (OB_LIKELY(report_task_.get_is_inited())) {
     TG_WAIT_TASK(share::g_mp->shared_timer()->get_tg_id(), report_task_);

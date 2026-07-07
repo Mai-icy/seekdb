@@ -78,7 +78,7 @@ public:
   {
     return cmd_name_;
   }
-  
+
   OB_INLINE const ObIArray<ObString> &get_args() const
   {
     return args_;

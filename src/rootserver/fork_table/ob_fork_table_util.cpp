@@ -550,5 +550,3 @@ int ObForkTableUtil::release_snapshot(
   }
   return ret;
 }
-
-

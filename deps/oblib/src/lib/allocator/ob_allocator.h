@@ -94,4 +94,3 @@ private:
 }
 
 #endif //OCEANBASE_COMMON_IALLOCATOR_H_
-

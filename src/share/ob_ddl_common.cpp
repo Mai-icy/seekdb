@@ -1819,7 +1819,7 @@ int ObDDLUtil::get_global_index_table_ids(const schema::ObTableSchema &table_sch
   } else if (OB_FAIL(table_schema.get_simple_index_infos(simple_index_infos))) {
     LOG_WARN("get simple index infos failed", K(ret));
   } else {
-    
+
     for (int64_t i = 0; OB_SUCC(ret) && i < simple_index_infos.count(); i++) {
       const ObTableSchema *aux_table_schema = NULL;
       if (OB_FAIL(schema_guard.get_table_schema( simple_index_infos.at(i).table_id_, aux_table_schema))) {
@@ -1879,7 +1879,7 @@ int ObSqlMonitorStats::init(const int64_t task_id, const ObDDLType ddl_type)
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(task_id_), K(ddl_type));
   } else {
-    
+
     task_id_ = task_id;
     ddl_type_ = ddl_type;
     is_inited_ = true;
@@ -1914,7 +1914,7 @@ int ObSqlMonitorStatsCollector::get_scan_monitor_stats_batch(sqlclient::ObMySQLR
     common::ObCurTraceId::TraceId inner_sql_trace_id;
     ScanMonitorNodeInfo scan_node_info;
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "TASK_ID", scan_node_info.task_id_, int64_t);
-    
+
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "FIRST_CHANGE_TIME", scan_node_info.first_change_time_);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "LAST_CHANGE_TIME", scan_node_info.last_change_time_);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "LAST_REFRESH_TIME", scan_node_info.last_refresh_time_);
@@ -1944,7 +1944,7 @@ int ObSqlMonitorStatsCollector::get_sort_monitor_stats_batch(sqlclient::ObMySQLR
     common::ObCurTraceId::TraceId inner_sql_trace_id;
     SortMonitorNodeInfo sort_node_info;
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "TASK_ID", sort_node_info.task_id_, int64_t);
-    
+
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "THREAD_ID", sort_node_info.thread_id_, int64_t);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "FIRST_CHANGE_TIME", sort_node_info.first_change_time_);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "LAST_CHANGE_TIME", sort_node_info.last_change_time_);
@@ -1981,7 +1981,7 @@ int ObSqlMonitorStatsCollector::get_insert_monitor_stats_batch(sqlclient::ObMySQ
     common::ObCurTraceId::TraceId inner_sql_trace_id;
     InsertMonitorNodeInfo insert_node_info;
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "TASK_ID", insert_node_info.task_id_, int64_t);
-    
+
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "THREAD_ID", insert_node_info.thread_id_, int64_t);
     EXTRACT_TIMESTAMP_FIELD_MYSQL_SKIP_RET(*scan_result, "LAST_REFRESH_TIME", insert_node_info.last_refresh_time_);
     EXTRACT_INT_FIELD_MYSQL(*scan_result, "OTHERSTAT_1_VALUE", insert_node_info.cg_row_inserted_, int64_t);
@@ -2006,7 +2006,7 @@ int ObSqlMonitorStatsCollector::get_insert_monitor_stats_batch(sqlclient::ObMySQ
 int ObSqlMonitorStatsCollector::get_next_sql_plan_monitor_stat(ObSqlMonitorStats &sql_monitor_stats)
 {
   int ret = OB_SUCCESS;
-  
+
   task_id_ = sql_monitor_stats.task_id_;
   ddl_type_ = sql_monitor_stats.ddl_type_;
   if (!is_inited_) {
@@ -2034,7 +2034,7 @@ int ObSqlMonitorStatsCollector::get_next_scanned_stats(ObSqlMonitorStats &sql_mo
   }
   for (; OB_SUCC(ret) && scan_index_id_ < scan_res_.count(); scan_index_id_++) {
     const ScanMonitorNodeInfo &scan_monitor_node = scan_res_.at(scan_index_id_);
-    
+
     const int64_t task_id = scan_monitor_node.task_id_;
     const int64_t execution_id = scan_monitor_node.execution_id_;
     if (next_ddl_monitor_node(task_id)) {
@@ -2063,7 +2063,7 @@ int ObSqlMonitorStatsCollector::get_next_sorted_stats(ObSqlMonitorStats &sql_mon
   }
   for (; OB_SUCC(ret) && sort_index_id_ < sort_res_.count(); sort_index_id_++) {
     const SortMonitorNodeInfo &sort_monitor_node = sort_res_.at(sort_index_id_);
-    
+
     const int64_t task_id = sort_monitor_node.task_id_;
     const int64_t execution_id = sort_monitor_node.execution_id_;
     if (next_ddl_monitor_node(task_id)) {
@@ -2086,7 +2086,7 @@ int ObSqlMonitorStatsCollector::get_next_inserted_stats(ObSqlMonitorStats &sql_m
   }
   for (; OB_SUCC(ret) && insert_index_id_ < insert_res_.count(); insert_index_id_++) {
     const InsertMonitorNodeInfo &insert_monitor_node = insert_res_.at(insert_index_id_);
-    
+
     const int64_t task_id = insert_monitor_node.task_id_;
     const int64_t execution_id = insert_monitor_node.execution_id_;
     if (next_ddl_monitor_node(task_id)) {

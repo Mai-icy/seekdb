@@ -167,7 +167,7 @@ int ObShareUtil::get_rs_default_timeout_ctx(ObTimeoutCtx &ctx)
 #ifdef __APPLE__
   // On Mac, the system is significantly slower due to lack of O_DIRECT and software CRC.
   // Increase the default timeout to 10s to avoid bootstrap failure.
-  DEFAULT_TIMEOUT_US = std::max(DEFAULT_TIMEOUT_US, 10000000LL); 
+  DEFAULT_TIMEOUT_US = std::max(DEFAULT_TIMEOUT_US, 10000000LL);
 #endif
 
   if (OB_FAIL(ObShareUtil::set_default_timeout_ctx(ctx, DEFAULT_TIMEOUT_US))) {
@@ -446,7 +446,7 @@ int ObShareUtil::gen_sys_resource_pool(ObResourcePool &resource_pool)
     resource_pool.resource_pool_id_ = OB_SYS_RESOURCE_POOL_ID;
     resource_pool.unit_count_ = 1;
     resource_pool.unit_config_id_ = ObUnitConfig::SYS_UNIT_CONFIG_ID;
-    
+
     resource_pool.replica_type_ = REPLICA_TYPE_FULL;
   }
   return ret;
@@ -482,7 +482,7 @@ int ObShareUtil::gen_default_sys_tenant_schema(schema::ObTenantSchema &tenant_sc
     }
     if (OB_FAIL(ret)) {
     } else {
-      
+
       tenant_schema.set_schema_version(schema_version);
       tenant_schema.set_locked(false);
       tenant_schema.set_read_only(false);

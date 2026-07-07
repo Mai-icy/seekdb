@@ -663,7 +663,7 @@ int ObService::handle_ls_freeze_req_(const share::ObLSID &ls_id,
           if (OB_EAGAIN == ret) {
             ret = OB_SUCCESS;
           } else {
-            LOG_WARN("fail to freeze tablet", K(ret), K(ls_id), K(tablet_id));
+            LOG_ERROR("fail to freeze tablet", K(ret), K(ls_id), K(tablet_id));
           }
         } else {
           LOG_INFO("succeed to freeze tablet", K(ret), K(ls_id), K(tablet_id));
@@ -674,7 +674,7 @@ int ObService::handle_ls_freeze_req_(const share::ObLSID &ls_id,
           if (OB_EAGAIN == ret) {
             ret = OB_SUCCESS;
           } else {
-            LOG_WARN("fail to freeze ls", K(ret), K(ls_id), K(tablet_id));
+            LOG_ERROR("fail to freeze ls", K(ret), K(ls_id), K(tablet_id));
           }
         } else {
           LOG_INFO("succeed to freeze ls", K(ret), K(ls_id), K(tablet_id));
@@ -702,7 +702,7 @@ int ObService::tenant_freeze_()
         if (OB_ENTRY_EXIST == ret) {
           ret = OB_SUCCESS;
         } else {
-          LOG_WARN("fail to freeze tenant", K(ret));
+          LOG_ERROR("fail to freeze tenant", K(ret));
         }
       } else {
         LOG_INFO("succeed to freeze tenant", K(ret));
@@ -1096,7 +1096,7 @@ int ObService::switch_schema(
       THIS_WORKER.set_timeout_ts(origin_timeout_ts);
       int64_t tmp_ret = OB_SUCCESS;
       if (OB_SUCCESS != (tmp_ret = schema_service->set_tenant_received_broadcast_version(schema_version))) {
-        LOG_WARN("failt to update received schema version", KR(tmp_ret), K(schema_version));
+        LOG_ERROR("failt to update received schema version", KR(tmp_ret), K(schema_version));
         ret = OB_SUCC(ret) ? tmp_ret : ret;
       }
       if (THIS_WORKER.is_timeout_ts_valid()
@@ -1581,12 +1581,6 @@ int ObService::get_wrs_info(const obcall::ObGetWRSArg &arg,
 int ObService::refresh_memory_stat()
 {
   return ObMemoryDump::get_instance().generate_mod_stat_task();
-}
-
-int ObService::wash_memory_fragmentation()
-{
-  ObMallocAllocator::get_instance()->sync_wash();
-  return OB_SUCCESS;
 }
 
 int ObService::build_split_tablet_data_start_request(const obcall::ObTabletSplitStartArg &arg,  obcall::ObTabletSplitStartResult &res)

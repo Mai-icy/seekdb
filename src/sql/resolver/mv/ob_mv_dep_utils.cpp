@@ -49,7 +49,7 @@ int ObMVDepUtils::get_mview_dep_infos(
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       ObSqlString sql;
       ObMySQLResult *result = NULL;
-      
+
       if (OB_FAIL(sql.assign_fmt("SELECT p_order, p_obj, p_type, qbcid, flags FROM %s.%s"
                                  " WHERE mview_id = %lu ORDER BY p_order",
                                  OB_SYS_DATABASE_NAME, OB_ALL_MVIEW_DEP_TNAME,
@@ -78,7 +78,7 @@ int ObMVDepUtils::get_mview_dep_infos(
             EXTRACT_INT_FIELD_MYSQL(*result, "flags", dep_info.flags_, int64_t);
 
             if (OB_SUCC(ret)) {
-              
+
               dep_info.mview_id_ = mview_table_id;
               if (OB_FAIL(dep_infos.push_back(dep_info))) {
                 LOG_WARN("failed to add dep info", KR(ret), K(dep_info));
@@ -105,7 +105,7 @@ int ObMVDepUtils::get_all_mview_dep_infos(
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       ObSqlString sql;
       ObMySQLResult *result = NULL;
-      
+
       if (OB_FAIL(sql.assign_fmt("SELECT mview_id, p_order, p_obj FROM %s.%s"
                                  " order by mview_id, p_order",
                                  OB_SYS_DATABASE_NAME, OB_ALL_MVIEW_DEP_TNAME))) {
@@ -134,7 +134,7 @@ int ObMVDepUtils::get_all_mview_dep_infos(
             // EXTRACT_INT_FIELD_MYSQL(*result, "flags", dep_info.flags_, int64_t);
 
             if (OB_SUCC(ret)) {
-              
+
               if (OB_FAIL(dep_infos.push_back(dep_info))) {
                 LOG_WARN("failed to add dep info", KR(ret), K(dep_info));
               }
@@ -159,7 +159,7 @@ int ObMVDepUtils::insert_mview_dep_infos(
     LOG_WARN("invalid mview_table_id", KR(ret), K(mview_table_id));
   } else {
     ObDMLSqlSplicer dml;
-    
+
     for (int64_t i = 0; OB_SUCC(ret) && (i < dep_infos.count()); ++i) {
       const ObMVDepInfo &dep_info = dep_infos.at(i);
       if (!dep_info.is_valid()) {
@@ -206,7 +206,7 @@ int ObMVDepUtils::delete_mview_dep_infos(
   } else {
     ObSqlString sql;
     int64_t affected_rows = 0;
-    
+
     if (OB_FAIL(sql.assign_fmt("DELETE FROM %s WHERE mview_id = %ld",
                                OB_ALL_MVIEW_DEP_TNAME,
                                mview_table_id))) {
@@ -228,7 +228,7 @@ int ObMVDepUtils::convert_to_mview_dep_infos(
   for (int64_t i = 0; OB_SUCC(ret) && (i < deps.count()); ++i) {
     const ObDependencyInfo &dep_info = deps.at(i);
     ObMVDepInfo mv_dep;
-    
+
     mv_dep.mview_id_ = dep_info.get_dep_obj_id();
     mv_dep.p_order_ = dep_info.get_order();
     mv_dep.p_obj_ = dep_info.get_ref_obj_id();
@@ -256,7 +256,7 @@ int ObMVDepUtils::get_table_ids_only_referenced_by_given_mv(
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       ObSqlString sql;
       ObMySQLResult *result = NULL;
-      
+
       if (OB_FAIL(sql.assign_fmt("select a.p_obj from"
                                  " (select p_obj, count(*) cnt from %s group by p_obj) a,"
                                  " (select p_obj, count(*) cnt from %s where "
@@ -311,13 +311,13 @@ int ObMVDepUtils::get_table_ids_only_referenced_by_given_fast_lsm_mv(
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       ObSqlString sql;
       ObMySQLResult *result = NULL;
-      
+
       if (OB_FAIL(sql.assign_fmt(
               "select a.p_obj from"
               " (select p_obj from %s dep, %s mv where dep.mview_id = mv.mview_id and "
               "mv.refresh_mode in (%ld) group by p_obj having count(*) = 1) a,"
               " (select p_obj from %s dep, %s mv where dep.mview_id = mv.mview_id and "
-              "mv.refresh_mode in (%ld) and dep.mview_id = %lu) b " 
+              "mv.refresh_mode in (%ld) and dep.mview_id = %lu) b "
               "where a.p_obj = b.p_obj",
               OB_ALL_MVIEW_DEP_TNAME, OB_ALL_MVIEW_TNAME,
               ObMVRefreshMode::MAJOR_COMPACTION,
@@ -408,7 +408,7 @@ int ObMVDepUtils::update_mview_data_attr(ObISQLClient &sql_client,
   ObSchemaGetterGuard schema_guard;
   uint64_t data_sync_scn = OB_INVALID_SCN_VAL;
   bool is_synced = true, dep_mview = false, dep_base_table = false;
-  const bool nested_consistent_refresh = target_data_sync_scn == OB_INVALID_SCN_VAL ? false : true; 
+  const bool nested_consistent_refresh = target_data_sync_scn == OB_INVALID_SCN_VAL ? false : true;
   if (OB_FAIL(GCTX.schema_service_->get_tenant_schema_guard(schema_guard))) {
     LOG_WARN("fail to get tenant schema guard", K(ret));
   } else if (OB_FAIL(ObMVDepUtils::get_mview_dep_infos(sql_client, mview_info.get_mview_id(), mv_dep_infos))) {

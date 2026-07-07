@@ -26,7 +26,7 @@
 namespace oceanbase
 {
 using namespace share;
-namespace share 
+namespace share
 {
 // moved definition to storage ob_tenant_freezer.cpp(storage real user)
 
