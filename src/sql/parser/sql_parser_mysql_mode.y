@@ -40,8 +40,6 @@
 #include "../../../src/sql/parser/sql_parser_mysql_mode_lex.h"
 #include "../../../src/sql/parser/sql_parser_base.h"
 
-extern void obsql_oracle_parse_fatal_error(int32_t errcode, yyscan_t yyscanner, yyconst char *msg, ...);
-
 #define GEN_EXPLAN_STMT(no_use, explain_stmt, explain_type, display_type, stmt, into_table, set_statement_id) \
   (void)(no_use); \
   ParseNode *type_node = NULL; \
@@ -4700,7 +4698,7 @@ opt_table_option_list opt_partition_option
                            table_options,        /* table option(s) */
                            $10,                  /* partition optition */
                            NULL,                 /* column group */
-                           NULL);                /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL);                /* temporary table on commit option */
   $$->reserved_ = 0;
 }
 | create_with_opt_hint special_table_type TABLE opt_if_not_exists relation_factor '(' table_element_list ')'
@@ -4719,7 +4717,7 @@ opt_table_option_list opt_partition_option with_column_group
                            table_options,        /* table option(s) */
                            $10,                 /* partition optition */
                            $11,                 /* column group */
-                           NULL);               /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL);               /* temporary table on commit option */
   $$->reserved_ = 0;
 }
 | create_with_opt_hint special_table_type TABLE opt_if_not_exists relation_factor '(' table_element_list ')'
@@ -4738,7 +4736,7 @@ opt_table_option_list opt_partition_option with_column_group
                            table_options,        /* table option(s) */
                            $10,                  /* partition optition */
                            NULL,                 /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $13,                  /* select_stmt */
                            $1,                   /* hints */
                            $11);                 /* opt_ignore_or_replace */
@@ -4760,7 +4758,7 @@ opt_table_option_list opt_partition_option with_column_group
                            table_options,        /* table option(s) */
                            $10,                  /* partition optition */
                            $11,                  /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $13,                  /* select_stmt */
                            $1,                   /* hints */
                            NULL);                /* opt_ignore_or_replace */
@@ -4779,7 +4777,7 @@ opt_table_option_list opt_partition_option with_column_group
                            table_options,        /* table option(s) */
                            $7,                   /* partition optition */
                            NULL,                 /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $10,                  /* select_stmt */
                            $1,                   /* hints */
                            $8);                  /* opt_ignore_or_replace */
@@ -4798,7 +4796,7 @@ opt_table_option_list opt_partition_option with_column_group
                            table_options,        /* table option(s) */
                            $7,                   /* partition optition */
                            $8,                   /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $10,                  /* select_stmt */
                            $1,                   /* hints */
                            NULL);                /* opt_ignore_or_replace */
@@ -4815,7 +4813,7 @@ opt_table_option_list opt_partition_option with_column_group
                            NULL,                 /* table option(s) */
                            $6,                   /* partition optition */
                            NULL,                 /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $9,                   /* select_stmt */
                            $1,                   /* hints */
                            $7);                  /* opt_ignore_or_replace */
@@ -4832,7 +4830,7 @@ opt_table_option_list opt_partition_option with_column_group
                            NULL,                 /* table option(s) */
                            $6,                   /* partition optition */
                            $7,                   /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $9,                   /* select_stmt */
                            $1,                   /* hints */
                            NULL);                /* opt_ignore_or_replace */
@@ -4848,7 +4846,7 @@ opt_table_option_list opt_partition_option with_column_group
                            NULL,                 /* table option(s) */
                            NULL,                 /* partition optition */
                            NULL,                 /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $6,                   /* select_stmt */
                            $1,                   /* hints */
                            NULL);                /* opt_ignore_or_replace */
@@ -4864,7 +4862,7 @@ opt_table_option_list opt_partition_option with_column_group
                            NULL,                 /* table option(s) */
                            NULL,                 /* partition optition */
                            NULL,                 /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $7,                   /* select_stmt */
                            $1,                   /* hints */
                            $6);                  /* opt_ignore_or_replace */
@@ -4880,7 +4878,7 @@ opt_table_option_list opt_partition_option with_column_group
                            NULL,                 /* table option(s) */
                            NULL,                 /* partition optition */
                            $6,                   /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $7,                   /* select_stmt */
                            $1,                   /* hints */
                            NULL);                /* opt_ignore_or_replace */
@@ -4896,7 +4894,7 @@ opt_table_option_list opt_partition_option with_column_group
                            NULL,                 /* table option(s) */
                            NULL,                 /* partition optition */
                            NULL,                 /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $8,                   /* select_stmt */
                            $1,                   /* hints */
                            $6);                /* opt_ignore_or_replace */
@@ -4912,7 +4910,7 @@ opt_table_option_list opt_partition_option with_column_group
                            NULL,                 /* table option(s) */
                            NULL,                 /* partition optition */
                            $6,                   /* column group */
-                           NULL,                 /* oracle兼容模式下存放临时表的 on commit 选项 */
+                           NULL,                 /* temporary table on commit option */
                            $8,                   /* select_stmt */
                            $1,                   /* hints */
                            NULL);                /* opt_ignore_or_replace */
@@ -14357,7 +14355,7 @@ ANALYZE TABLE relation_factor UPDATE HISTOGRAM ON column_name_list WITH INTNUM B
 
 /*****************************************************************************
  *
- *	analyze clause (oracle syntax)
+ *	analyze statistics clause
  *  added by link.zt
  *
 *****************************************************************************/
@@ -20284,12 +20282,11 @@ size_clause is defined as size_clause := SIZE {integer | REPEAT | AUTO | SKEWONL
 column is defined as column := column_name | extension name | extension
 - integer : Number of histogram buckets. Must be in the range [1,2048].
 - REPEAT : Collects histograms only on the columns that already have histograms
-- AUTO : Oracle determines the columns to collect histograms based on data distribution and the workload of the columns
-- SKEWONLY : Oracle determines the columns to collect histograms based on the data distribution of the columns
+- AUTO : The optimizer determines the columns to collect histograms based on data distribution and workload
+- SKEWONLY : The optimizer determines the columns to collect histograms based on column data distribution
 - column_name : name of a column
 - extension : can be either a column group in the format of (column_name, column_name [, ...]) or an expression
 The default is FOR ALL COLUMNS SIZE AUTO.
-https://blogs.oracle.com/optimizer/how-does-the-methodopt-parameter-work
 ******************************************************************************/
 
 method_opt:

@@ -474,7 +474,6 @@ private:
   common::ObConfigManager *config_mgr_;
 
   common::ObMySQLProxy sql_proxy_;
-  common::ObCommonSqlProxy oracle_sql_proxy_;
   share::schema::ObMultiVersionSchemaService *schema_service_;
 
   // minor freeze

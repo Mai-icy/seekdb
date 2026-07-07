@@ -212,15 +212,12 @@ void ObSchemaHistoryRecycler::runTimerTask()
       last_recycle_ts_ = now;
       recycle_schema_version_member_ = OB_INVALID_VERSION;
       recycle_schema_version_valid_ = false;
-      if (false) {
-      } else {
-        ObCurTraceId::init(GCTX.self_addr());
-        LOG_INFO("[SCHEMA_RECYCLE] recycle schema history start");
-        if (OB_FAIL(try_recycle_schema_history())) {
-          LOG_WARN("fail to recycle schema history", KR(ret));
-        }
-        LOG_INFO("[SCHEMA_RECYCLE] recycle schema history finish", KR(ret));
+      ObCurTraceId::init(GCTX.self_addr());
+      LOG_INFO("[SCHEMA_RECYCLE] recycle schema history start");
+      if (OB_FAIL(try_recycle_schema_history())) {
+        LOG_WARN("fail to recycle schema history", KR(ret));
       }
+      LOG_INFO("[SCHEMA_RECYCLE] recycle schema history finish", KR(ret));
     }
   }
   return;
@@ -330,34 +327,15 @@ int ObSchemaHistoryRecycler::check_can_skip_tenant(
     bool &skip)
 {
   int ret = OB_SUCCESS;
-  bool is_primary = false;
   skip = false;
   if (!inited_) {
     ret = OB_NOT_INIT;
     LOG_WARN("not inited", K(ret));
-  } else if (true) {
+  } else {
     // TODO: (yanmu.ztl)
     // Additional schema history of system tenant should be recycled:
     // 1. Other tenant's schema history(except tenant schema history and system table's schema history) generated before schema split.
     skip = true;
-  } else if (OB_FAIL(ObShareUtil::table_check_if_tenant_role_is_primary( is_primary))) {
-    LOG_WARN("fail to execute table_check_if_tenant_role_is_primary", KR(ret));
-  } else if (!is_primary) {
-    skip = true;
-  } else {
-    ObSchemaGetterGuard schema_guard;
-    const ObSimpleTenantSchema *tenant_schema = NULL;
-    if (OB_FAIL(schema_service_->get_tenant_schema_guard(schema_guard))) {
-      LOG_WARN("fail to get schema_guard", K(ret));
-    } else if (OB_FAIL(schema_guard.get_tenant_info(tenant_schema))) {
-      LOG_WARN("fail to get schema guard", K(ret));
-    } else if (OB_ISNULL(tenant_schema)) {
-      ret = OB_TENANT_NOT_EXIST;
-      LOG_WARN("tenant not exist", K(ret));
-    } else if (!tenant_schema->is_normal()) {
-      skip = true;
-      LOG_INFO("tenant is not in normal stat", K(ret), KPC(tenant_schema));
-    }
   }
   return ret;
 }
@@ -480,10 +458,10 @@ int ObSchemaHistoryRecycler::get_recycle_schema_version_by_global_stat(
           LOG_WARN("fail to get schema version by timestamp",
                    KR(ret), K(schema_status), K(expire_time));
         }
-        
+
         // if get_schema_version_by_timestamp failed, do not recycle this tenant's schema history in this round
         expire_schema_version = OB_SUCC(ret) ? expire_schema_version : OB_INVALID_VERSION;
-        
+
         // overwrite ret, so other tenants could recycle normally
         if (OB_FAIL(fill_recycle_schema_versions(
                   expire_schema_version))) {
@@ -1141,19 +1119,9 @@ ObRecycleSchemaExecutor::~ObRecycleSchemaExecutor()
 
 bool ObRecycleSchemaExecutor::is_valid() const
 {
-  bool bret = true;
-  if (false
-      || true
-      || !ObSchemaService::is_formal_version(schema_version_)
-      || OB_ISNULL(table_name_)
-      || OB_ISNULL(schema_key_name_)
-      || OB_ISNULL(sql_proxy_)
-      || OB_ISNULL(recycler_)
-      || NONE == mode_) {
-    bret = false;
-    LOG_WARN_RET(common::OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version), K_(mode),
-             KP_(table_name), KP_(schema_key_name), KP_(sql_proxy), KP_(recycler));
-  }
+  bool bret = false;
+  LOG_WARN_RET(common::OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version), K_(mode),
+           KP_(table_name), KP_(schema_key_name), KP_(sql_proxy), KP_(recycler));
   return bret;
 }
 
@@ -1641,20 +1609,10 @@ ObSecondRecycleSchemaExecutor::~ObSecondRecycleSchemaExecutor()
 
 bool ObSecondRecycleSchemaExecutor::is_valid() const
 {
-  bool bret = true;
-  if (false
-      || true
-      || !ObSchemaService::is_formal_version(schema_version_)
-      || OB_ISNULL(table_name_)
-      || OB_ISNULL(schema_key_name_)
-      || OB_ISNULL(second_schema_key_name_)
-      || OB_ISNULL(sql_proxy_)
-      || OB_ISNULL(recycler_)) {
-    bret = false;
-    LOG_WARN_RET(common::OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version),
-             KP_(table_name), KP_(schema_key_name), KP_(second_schema_key_name),
-             KP_(sql_proxy), KP_(recycler));
-  }
+  bool bret = false;
+  LOG_WARN_RET(common::OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version),
+           KP_(table_name), KP_(schema_key_name), KP_(second_schema_key_name),
+           KP_(sql_proxy), KP_(recycler));
   return bret;
 }
 
@@ -1755,21 +1713,10 @@ ObThirdRecycleSchemaExecutor::~ObThirdRecycleSchemaExecutor()
 
 bool ObThirdRecycleSchemaExecutor::is_valid() const
 {
-  bool bret = true;
-  if (false
-      || true
-      || !ObSchemaService::is_formal_version(schema_version_)
-      || OB_ISNULL(table_name_)
-      || OB_ISNULL(schema_key_name_)
-      || OB_ISNULL(second_schema_key_name_)
-      || OB_ISNULL(third_schema_key_name_)
-      || OB_ISNULL(sql_proxy_)
-      || OB_ISNULL(recycler_)) {
-    bret = false;
-    LOG_WARN_RET(common::OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version),
-             KP_(table_name), KP_(schema_key_name), KP_(second_schema_key_name),
-             KP_(third_schema_key_name), KP_(sql_proxy), KP_(recycler));
-  }
+  bool bret = false;
+  LOG_WARN_RET(common::OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version),
+           KP_(table_name), KP_(schema_key_name), KP_(second_schema_key_name),
+           KP_(third_schema_key_name), KP_(sql_proxy), KP_(recycler));
   return bret;
 }
 
@@ -1931,17 +1878,9 @@ ObSystemVariableRecycleSchemaExecutor::~ObSystemVariableRecycleSchemaExecutor()
 
 bool ObSystemVariableRecycleSchemaExecutor::is_valid() const
 {
-  bool bret = true;
-  if (false
-      || true
-      || !ObSchemaService::is_formal_version(schema_version_)
-      || OB_ISNULL(table_name_)
-      || OB_ISNULL(sql_proxy_)
-      || OB_ISNULL(recycler_)) {
-    bret = false;
-    LOG_WARN_RET(common::OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version),
-             KP_(table_name), KP_(sql_proxy), KP_(recycler));
-  }
+  bool bret = false;
+  LOG_WARN_RET(common::OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version),
+           KP_(table_name), KP_(sql_proxy), KP_(recycler));
   return bret;
 }
 
@@ -2150,17 +2089,9 @@ ObObjectPrivRecycleSchemaExecutor::~ObObjectPrivRecycleSchemaExecutor()
 
 bool ObObjectPrivRecycleSchemaExecutor::is_valid() const
 {
-  bool bret = true;
-  if (false
-      || true
-      || !ObSchemaService::is_formal_version(schema_version_)
-      || OB_ISNULL(table_name_)
-      || OB_ISNULL(sql_proxy_)
-      || OB_ISNULL(recycler_)) {
-    bret = false;
-    LOG_WARN_RET(OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version),
-             KP_(table_name), KP_(sql_proxy), KP_(recycler));
-  }
+  bool bret = false;
+  LOG_WARN_RET(OB_INVALID_ARGUMENT, "invalid argument", K(bret), K_(schema_version),
+           KP_(table_name), KP_(sql_proxy), KP_(recycler));
   return bret;
 }
 

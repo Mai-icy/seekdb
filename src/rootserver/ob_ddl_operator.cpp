@@ -1144,7 +1144,7 @@ int ObDDLOperator::drop_sequence_in_drop_column(const ObColumnSchemaV2 &column_s
       LOG_WARN("get sequence schema fail", K(ret), K(column_schema));
       if (ret == OB_ERR_UNEXPECTED) {
         // sequence has been deleted externally.
-        // Oracle does not allow sequences internally created to be deleted externally.
+        // Internally created identity sequences should not be deleted externally.
         // In the future, it will be solved by adding columns to the internal table,
         // and then the error code conversion can be removed.
         ret = OB_SUCCESS;
@@ -2246,9 +2246,6 @@ int ObDDLOperator::update_origin_column_group_with_new_schema(ObMySQLTransaction
   if (OB_ISNULL(schema_service)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("schema_service is NULL", K(ret));
-  } else if (OB_UNLIKELY(false)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("origin tenant id does not equal to new tenant id", K(ret));
   } else if (OB_FAIL(schema_service_.gen_new_schema_version(new_delete_version))) {
     LOG_WARN("fail to generate new schema version for delete operation", K(ret), K(new_delete_version));
   } else if (OB_FAIL(schema_service_.gen_new_schema_version(new_insert_version))) {
@@ -3113,7 +3110,7 @@ int ObDDLOperator::alter_table_rename_index_with_origin_index_name(const uint64_
   ObSchemaGetterGuard schema_guard;
   const ObTableSchema *index_table_schema = nullptr;
   RS_LOG(INFO, "start alter table rename index", K(index_table_id), K(new_index_name));
-  if (OB_UNLIKELY(false || OB_INVALID_ID == index_table_id || new_index_name.empty())) {
+  if (OB_UNLIKELY(OB_INVALID_ID == index_table_id || new_index_name.empty())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arguments", K(ret), K(index_table_id), K(new_index_name));
   } else if (OB_FAIL(schema_service_.get_tenant_schema_guard(schema_guard))) {
@@ -3151,8 +3148,7 @@ int ObDDLOperator::inner_alter_table_rename_index_(const share::schema::ObTableS
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("schema_service is NULL", K(ret));
   } else if (OB_ISNULL(index_table_schema)
-          || OB_UNLIKELY(new_index_name.empty())
-          || OB_UNLIKELY(false)) {
+          || OB_UNLIKELY(new_index_name.empty())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arguments", K(ret), KP(index_table_schema), KP(new_index_status), K(new_index_name));
   } else if (index_table_schema->is_in_recyclebin()) {
@@ -3766,7 +3762,7 @@ int ObDDLOperator::update_indexes_type(const ObTableSchema &data_table_schema,
 
   uint64_t data_table_id = data_table_schema.get_table_id();
 
-  if (false || OB_INVALID_ID == data_table_id) {
+  if (OB_INVALID_ID == data_table_id) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(data_table_id));
   } else if (index_table_ids.count() != index_types.count()) {
@@ -4569,9 +4565,6 @@ int ObDDLOperator::flashback_table_from_recyclebin(const ObTableSchema &table_sc
           }
           new_table_schema.set_invisible_before(0);
         }
-        if (OB_SUCC(ret) && new_table_schema.is_index_table()) {
-          // oracle mode index rename after flashback removed (MySQL-only)
-        }
       } else {
         if (!new_table_name.empty()) {
           if (OB_FAIL(new_table_schema.set_table_name(new_table_name))) {
@@ -4611,9 +4604,6 @@ int ObDDLOperator::flashback_table_from_recyclebin(const ObTableSchema &table_sc
           new_table_schema.set_index_visibility(VISIBLE);
         }
         new_table_schema.set_invisible_before(0);
-      }
-      if (OB_SUCC(ret) && new_table_schema.is_index_table()) {
-        // oracle mode index rename after flashback removed (MySQL-only)
       }
     }
     if (OB_SUCC(ret)) {
@@ -5402,8 +5392,8 @@ int ObDDLOperator::init_tenant_user(const ObString &user_name,
     user.set_is_locked(set_locked);
     user.set_user_id(pure_user_id);
     if (is_user &&
-        pure_user_id != OB_ORA_LBACSYS_USER_ID &&
-        pure_user_id != OB_ORA_AUDITOR_USER_ID) {
+        pure_user_id != OB_LBACSYS_USER_ID &&
+        pure_user_id != OB_AUDITOR_USER_ID) {
       user.set_priv_set(OB_PRIV_ALL | OB_PRIV_GRANT | OB_PRIV_ENCRYPT | OB_PRIV_DECRYPT);
     }
     user.set_schema_version(OB_CORE_SCHEMA_VERSION);
@@ -5424,7 +5414,7 @@ int ObDDLOperator::init_tenant_user(const ObString &user_name,
     } else if (OB_FAIL(schema_service->get_user_sql_service().create_user(
                        user, new_schema_version, &ddl_sql, trans))) {
       LOG_WARN("insert user failed", K(user), K(ret));
-    } else if ((!is_user || is_ora_sys_user(user.get_user_id()))
+    } else if ((!is_user || is_extended_sys_user(user.get_user_id()))
                && OB_FAIL(init_inner_user_privs(user, trans))) {
       LOG_WARN("init user privs failed", K(user), K(ret));
     }
@@ -5678,7 +5668,7 @@ int ObDDLOperator::drop_db_table_privs(
     }
   }
 
-  // delete oracle table privileges of this user ORACLE
+  // delete object privileges of this user
   if (OB_SUCC(ret)) {
     ObArray<const ObObjPriv *> obj_privs;
 
@@ -6866,7 +6856,7 @@ int ObDDLOperator::drop_fk_cascade(
                 OZ (alter_table_drop_foreign_key(*ref_tab, drop_fk, trans, parent_table_mock_foreign_key_info, ref_tab->get_in_offline_ddl_white_list()));
                 if (OB_SUCC(ret) && NULL != parent_table_mock_foreign_key_info) {
                   ret = OB_ERR_UNEXPECTED;
-                  LOG_WARN("parent_table_mock_foreign_key_info in oracle mode is unexpected", K(ret));
+                  LOG_WARN("parent_table_mock_foreign_key_info is unexpected", K(ret));
                 }
               }
             }
@@ -7480,8 +7470,7 @@ int ObDDLOperator::insert_ori_schema_version(
 {
   int ret = OB_SUCCESS;
   ObSchemaService *schema_service = schema_service_.get_schema_service();
-  if (OB_INVALID_VERSION == ori_schema_version
-      || !true) {
+  if (OB_INVALID_VERSION == ori_schema_version) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("invalid schema version" , K(ret), K(table_id), K(ori_schema_version));
   } else if (OB_FAIL(schema_service->get_table_sql_service().insert_ori_schema_version(
@@ -7880,7 +7869,7 @@ int ObDDLOperator::create_directory(const ObString &ddl_str,
     obj_priv_key.obj_id_ = new_directory_id;
     obj_priv_key.obj_type_ = static_cast<uint64_t>(ObObjectType::DIRECTORY);
     obj_priv_key.col_id_ = OB_COMPACT_COLUMN_INVALID_ID;
-    obj_priv_key.grantor_id_ = OB_ORA_SYS_USER_ID;
+    obj_priv_key.grantor_id_ = OB_EXTENDED_SYS_USER_ID;
     obj_priv_key.grantee_id_ = user_id;
 
     share::ObRawObjPrivArray priv_array;
@@ -8087,7 +8076,7 @@ int ObDDLOperator::get_target_auto_inc_sequence_value(const uint64_t table_id,
 {
   int ret = OB_SUCCESS;
   sequence_value = OB_INVALID_ID;
-  if (OB_UNLIKELY(false || OB_INVALID_ID == table_id || OB_INVALID_ID == column_id)) {
+  if (OB_UNLIKELY(OB_INVALID_ID == table_id || OB_INVALID_ID == column_id)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(table_id), K(column_id));
   } else {
@@ -8144,7 +8133,7 @@ int ObDDLOperator::set_target_auto_inc_sync_value(const uint64_t table_id,
                                                   common::ObMySQLTransaction &trans)
 {
   int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(false || OB_INVALID_ID == table_id || OB_INVALID_ID == column_id || new_sequence_value < 0 || new_sync_value < 0)) {
+  if (OB_UNLIKELY(OB_INVALID_ID == table_id || OB_INVALID_ID == column_id || new_sequence_value < 0 || new_sync_value < 0)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(table_id), K(column_id), K(new_sequence_value), K(new_sync_value));
   } else {
@@ -8171,7 +8160,7 @@ int ObDDLOperator::get_target_sequence_sync_value(const uint64_t sequence_id,
   int ret = OB_SUCCESS;
   next_value.set_zero();
   ObSchemaService *schema_service_impl = schema_service_.get_schema_service();
-  if (OB_UNLIKELY(false || OB_INVALID_ID == sequence_id)) {
+  if (OB_UNLIKELY(OB_INVALID_ID == sequence_id)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(sequence_id));
   } else if (OB_ISNULL(schema_service_impl)) {

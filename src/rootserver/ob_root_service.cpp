@@ -382,12 +382,6 @@ int ObRootService::init(ObServerConfig &config,
     sql_proxy_.assign(sql_proxy);
     sql_proxy_.set_inactive();
 
-    if (OB_FAIL(oracle_sql_proxy_.init(sql_proxy.get_pool()))) {
-      FLOG_WARN("init oracle sql proxy failed", KR(ret));
-    } else {
-      oracle_sql_proxy_.set_inactive();
-    }
-
     schema_service_ = schema_service;
   }
 
@@ -514,7 +508,6 @@ int ObRootService::start_service()
     LOG_INFO("ERRSIM here", KR(ret));
   } else {
     sql_proxy_.set_active();
-    oracle_sql_proxy_.set_active();
     tenant_ddl_service_.restart();
 #ifndef OB_BUILD_LITE
     if (OB_FAIL(hb_checker_.start())) {
@@ -598,8 +591,6 @@ int ObRootService::stop()
     //in_service_ = false;
     sql_proxy_.set_inactive();
     FLOG_INFO("sql_proxy set inactive finished");
-    oracle_sql_proxy_.set_inactive();
-    FLOG_INFO("oracle_sql_proxy set inactive finished");
 
     // let RS stop failed after proxy inactive
     if (OB_UNLIKELY(ERRSIM_RS_STOP_ERROR)) {

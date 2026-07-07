@@ -344,7 +344,7 @@ int ObAdminSetConfig::verify_config(obcall::ObAdminSetConfigArg &arg)
     } else {
       ObConfigItem *ci = nullptr;
       ObString config_name(item->name_.size(), item->name_.ptr());
-      if (false || item->tenant_name_.size() > 0) {
+      if (item->tenant_name_.size() > 0) {
         // tenants(user or sys tenants) modify tenant level configuration
         item->want_to_set_tenant_config_ = true;
 
@@ -365,13 +365,11 @@ int ObAdminSetConfig::verify_config(obcall::ObAdminSetConfigArg &arg)
               LOG_WARN("invalid argument", KR(ret), KP(GCTX.schema_service_));
             } else if (OB_FAIL(GCTX.schema_service_->get_tenant_schema_guard(schema_guard))) {
               LOG_WARN("fail to get sys tenant schema guard", KR(ret));
-            } else if (true &&
-                      (0 == item->tenant_name_.str().case_compare(NAME_ALL) ||
+            } else if (0 == item->tenant_name_.str().case_compare(NAME_ALL) ||
                        0 == item->tenant_name_.str().case_compare(NAME_ALL_USER) ||
-                       0 == item->tenant_name_.str().case_compare(NAME_ALL_META))) {
+                       0 == item->tenant_name_.str().case_compare(NAME_ALL_META)) {
               // lite: no user/meta tenants -> ALL/ALL_USER/ALL_META applies to nothing
-            } else if (true
-                       && item->tenant_name_ == ObFixedLengthString<common::OB_MAX_TENANT_NAME_LENGTH + 1>("seed")) {
+            } else if (item->tenant_name_ == ObFixedLengthString<common::OB_MAX_TENANT_NAME_LENGTH + 1>("seed")) {
 
               if (OB_FAIL(item->batch_ids_.push_back(1UL))) {
                 LOG_WARN("add seed id failed", KR(ret));
@@ -655,10 +653,7 @@ int ObTenantServerAdminUtil::get_tenant_servers(common::ObIArray<ObAddr> &server
 {
   int ret = OB_SUCCESS;
   servers.reset();
-  if (OB_UNLIKELY(false)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", KR(ret));
-  } else if (OB_FAIL(servers.push_back(GCTX.self_addr()))) {
+  if (OB_FAIL(servers.push_back(GCTX.self_addr()))) {
     LOG_WARN("fail to push back self addr to array", KR(ret));
   }
 

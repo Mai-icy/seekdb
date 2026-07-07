@@ -751,9 +751,10 @@ int ObSchemaChecker::get_table_schema(
   }
 
   if (OB_SUCC(ret)) {
-    // It is also possible that the temporary CTE recursive table schema conflicts with an existing table,
-    // At this point, the cte recursive table schema must take precedence (same with oracle)
-    // If found in fake schema, then override the previously found base table
+    // It is also possible that the temporary CTE recursive table schema
+    // conflicts with an existing table. The CTE recursive table schema must
+    // take precedence; if found in fake schema, override the previously found
+    // base table.
     if (cte_table_fisrt) {
       ObNameCaseMode mode = OB_NAME_CASE_INVALID;
       if (OB_FAIL(schema_mgr_->get_tenant_name_case_mode(mode))) {
@@ -1394,7 +1395,6 @@ int ObSchemaChecker::get_sequence_id(const common::ObString &database_name,
   return ret;
 }
 
-// only use in oracle mode
 // If the function execution ends with table_schema being empty, then it indicates that there is no index corresponding to index_name under the current db
 int ObSchemaChecker::get_idx_schema_by_origin_idx_name(const uint64_t database_id,
                                                        const ObString &index_name,
@@ -1449,12 +1449,12 @@ int ObSchemaChecker::get_directory_id(const common::ObString &directory_name,
   } else if (OB_FAIL(schema_mgr_->get_directory_schema_by_name(directory_name, schema))) {
     LOG_WARN("get directory schema failed", K(ret));
   } else if (OB_ISNULL(schema)) {
-    /* comp oracle err code
+    /* match directory privilege error reporting
     SQL> GRANT READ ON DD TO U2;
     GRANT READ ON DD TO U2
                   *
     ERROR at line 1:
-    ORA-00942: table or view does not exist
+    table or view does not exist
     */
     ret = OB_TABLE_NOT_EXIST;
     LOG_WARN("directory is not exists", K(directory_name));

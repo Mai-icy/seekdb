@@ -496,7 +496,7 @@ int ObUniqueIndexChecker::check_unique_index(ObIDag *dag, const int64_t task_id)
         }
       } else {
         if (OB_ERR_PRIMARY_KEY_DUPLICATE == ret && OB_ERR_DUPLICATED_UNIQUE_KEY == report_ret_code) {
-          //error message of OB_ERR_PRIMARY_KEY_DUPLICATE is not compatiable with oracle, so use a new error code
+          // Report direct-load unique index conflicts with the dedicated duplicate-key code.
           ret = OB_ERR_DUPLICATED_UNIQUE_KEY;
         }
         keep_report_err_msg = false;
