@@ -25,7 +25,7 @@ jobs:
           name: vldb-fts-large-benchmark
           path: ${{ runner.temp }}/vldb-fts-large-benchmark
           run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ github.token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Comment FTS benchmark report on PR
         if: ${{ always() }}
@@ -42,6 +42,7 @@ jobs:
           set -euo pipefail
 
           REPORT_PATH="$ARTIFACT_DIR/report.txt"
+          SCORE_PATH="$ARTIFACT_DIR/score.txt"
           if [[ ! -f "$REPORT_PATH" ]]; then
             echo "benchmark comment artifact not found, skip PR comment"
             exit 0
@@ -106,17 +107,26 @@ jobs:
               )
           PY
 
-          python3 - "$REPORT_PATH" "$RUN_URL" "$MARKER" > "$COMMENT_BODY" <<'PY'
+          python3 - "$REPORT_PATH" "$SCORE_PATH" "$RUN_URL" "$MARKER" > "$COMMENT_BODY" <<'PY'
           import html
           import json
+          from pathlib import Path
           import sys
 
-          report_path, run_url, marker = sys.argv[1:4]
-          with open(report_path, encoding="utf-8") as f:
-              report = f.read().strip()
+          report_path, score_path, run_url, marker = sys.argv[1:5]
+          report = Path(report_path).read_text(encoding="utf-8").strip()
+          score = ""
+          if score_path and Path(score_path).is_file():
+              score = Path(score_path).read_text(encoding="utf-8").strip()
 
-          body = "\n".join([
+          parts = [
               marker,
+              "### FTS Large Benchmark Score",
+              "",
+              "<pre>",
+              html.escape(score or "score output not found"),
+              "</pre>",
+              "",
               "### FTS Large Benchmark Report",
               "",
               "<pre>",
@@ -124,7 +134,8 @@ jobs:
               "</pre>",
               "",
               f"[Workflow run]({run_url})",
-          ])
+          ]
+          body = "\n".join(parts)
           print(json.dumps({"body": body}, ensure_ascii=False))
           PY
 
