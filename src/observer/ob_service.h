@@ -192,7 +192,6 @@ public:
   int set_tracepoint(const obcall::ObAdminSetTPArg &arg);
   int cancel_sys_task(const share::ObTaskId &task_id);
   int refresh_memory_stat();
-  int wash_memory_fragmentation();
   ////////////////////////////////////////////////////////////////
   // misc functions
 

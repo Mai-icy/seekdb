@@ -75,13 +75,7 @@ int ObIKVCacheStore::alloc_kvpair(
 {
   int ret = OB_SUCCESS;
 
-  int64_t washed_size;
-  if (OB_SUCC(alloc_kvpair_without_retry(key_size, value_size, kvpair, hazptr_holder, policy))) {
-  } else if (OB_ALLOCATE_MEMORY_FAILED != ret) {
-    COMMON_LOG(WARN, "failed to allocate kvpair", K(key_size), K(value_size), K(policy));
-  } else if (0 >= (washed_size = ObMallocAllocator::get_instance()->sync_wash(0, INT64_MAX))) {
-    COMMON_LOG(WARN, "failed to sync wash");
-  } else if (OB_FAIL(alloc_kvpair_without_retry(key_size, value_size, kvpair, hazptr_holder, policy))) {
+  if (OB_FAIL(alloc_kvpair_without_retry(key_size, value_size, kvpair, hazptr_holder, policy))) {
     COMMON_LOG(WARN, "failed to allocate kvpair", K(key_size), K(value_size), K(policy));
   }
 

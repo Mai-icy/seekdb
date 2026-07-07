@@ -18443,12 +18443,6 @@ alter_with_opt_hint SYSTEM REFRESH MEMORY STAT
   malloc_non_terminal_node($$, result->malloc_pool_, T_REFRESH_MEMORY_STAT, 1, NULL);
 }
 |
-alter_with_opt_hint SYSTEM WASH MEMORY FRAGMENTATION
-{
-  (void)($1);
-  malloc_non_terminal_node($$, result->malloc_pool_, T_WASH_MEMORY_FRAGMENTATION, 1, NULL);
-}
-|
 alter_with_opt_hint SYSTEM REFRESH IO CALIBRATION opt_storage_name opt_calibration_list
 {
   (void)($1);

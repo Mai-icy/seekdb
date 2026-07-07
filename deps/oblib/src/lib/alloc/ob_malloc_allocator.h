@@ -133,8 +133,6 @@ public:
   void print_tenant_memory_usage() const;
   int set_tenant_ctx_idle(
       const uint64_t ctx_id, const int64_t size, const bool reserve = false);
-  int64_t sync_wash(uint64_t from_set_tenantctx_id, int64_t wash_size);
-  int64_t sync_wash();
   int recycle_tenant_allocator();
 
   void make_allocator_create_on_demand() { create_on_demand_ = true; }

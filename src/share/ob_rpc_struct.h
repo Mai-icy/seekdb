@@ -4026,10 +4026,6 @@ struct ObAdminRefreshMemStatArg : public ObServerZoneArg
 {
 };
 
-struct ObAdminWashMemFragmentationArg : public ObServerZoneArg
-{
-};
-
 struct ObRefreshIOCalibrationArg
 {
   OB_UNIS_VERSION(1);

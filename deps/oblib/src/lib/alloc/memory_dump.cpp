@@ -481,12 +481,15 @@ int print_block_meta(AChunk *chunk, ABlock *block, char *buf, int64_t buf_len, i
                      int fd)
 {
   int ret = OB_SUCCESS;
+  const char *size_or_time_field = block->in_use_ ? "alloc_bytes" : "free_time_us";
+  const int64_t size_or_time = block->in_use_ ?
+      static_cast<int64_t>(block->alloc_bytes_) : block->free_time_us_;
   ret = databuff_printf(buf, buf_len, pos,
                         "    block: %p, offset: %03d, in_use: %d, is_large: %d, is_washed: %d, nblocks: %03d," \
-                        " alloc_bytes: %lu, aobject_size: %d, obj_set: %p\n",
+                        " %s: %ld, aobject_size: %d, obj_set: %p\n",
                         chunk->blk_data(block), chunk->blk_offset(block), block->in_use_, block->is_large_,
                         block->is_washed_, chunk->blk_nblocks(block),
-                        block->alloc_bytes_, AOBJECT_CELL_BYTES, block->obj_set_);
+                        size_or_time_field, size_or_time, AOBJECT_CELL_BYTES, block->obj_set_);
   if (OB_SUCC(ret)) {
     if (pos > buf_len / 2) {
       ::write(fd, buf, pos);

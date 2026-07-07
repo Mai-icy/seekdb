@@ -46,7 +46,6 @@ public:
     : ctx_id_(ctx_id) {}
   virtual ABlock *alloc_block(uint64_t size, const ObMemAttr &attr) = 0;
   virtual void free_block(ABlock *block) = 0;
-  virtual int64_t sync_wash(int64_t wash_size) = 0;
 
   virtual int64_t get_ctx_id() { return ctx_id_; }
 
