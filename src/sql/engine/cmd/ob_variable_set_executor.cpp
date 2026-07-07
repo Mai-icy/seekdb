@@ -871,7 +871,7 @@ int ObVariableSetExecutor::check_and_convert_sys_var(ObExecContext &ctx,
     static const common::ObString DEFAULT_VALUE_TERRITORY("AMERICA");
     static const common::ObString DEFAULT_VALUE_SORT("BINARY");
     static const common::ObString DEFAULT_VALUE_COMP("BINARY");
-    static const common::ObString DEFAULT_VALUE_NCHAR_CHARACTERSET("AL16UTF16");
+    static const common::ObString DEFAULT_VALUE_NCHAR_CHARACTERSET("AL32UTF8");
     static const common::ObString DEFAULT_VALUE_DATE_LANGUAGE("AMERICAN");
     static const common::ObString DEFAULT_VALUE_NCHAR_CONV_EXCP("FALSE");
     static const common::ObString DEFAULT_VALUE_CALENDAR("GREGORIAN");

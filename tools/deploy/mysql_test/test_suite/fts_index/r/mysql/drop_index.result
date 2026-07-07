@@ -595,7 +595,7 @@ CREATE TABLE array_ol_ddl_col_mysql(
     PRIMARY KEY(id),
     FULLTEXT idx_full(content),
     INDEX idx_j ( (CAST(j AS CHAR(50) ARRAY)) )
-)CHARACTER SET gbk;
+)character set utf8mb4;
 CREATE UNIQUE INDEX idx_unique_seq ON array_ol_ddl_col_mysql(id);
 CREATE INDEX idx_id_seq ON array_ol_ddl_col_mysql(id, tag);
 ALTER TABLE array_ol_ddl_col_mysql DROP INDEX idx_full,DROP INDEX idx_j;
