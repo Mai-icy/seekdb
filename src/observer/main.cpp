@@ -16,6 +16,38 @@
 
 #define USING_LOG_PREFIX SERVER
 
+#ifdef WITH_COVERAGE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+// Point the coverage runtime at <base_dir>/seekdb.profraw (continuous) from a priority-101
+// constructor, which runs before the runtime's own initializer, so counters go straight there
+// and no default.profraw is ever created.
+extern "C" void __llvm_profile_set_filename(const char *);
+__attribute__((constructor(101)))
+static void seekdb_cov_init_profile_file(int argc, char **argv)
+{
+  const char *base = ".";
+  for (int i = 1; i < argc; ++i) {
+    if (strncmp(argv[i], "--base-dir=", 11) == 0) { base = argv[i] + 11; break; }
+    if (strcmp(argv[i], "--base-dir") == 0 && i + 1 < argc) { base = argv[i + 1]; break; }
+  }
+  char abs_base[1024];
+  if (base[0] == '/') {
+    snprintf(abs_base, sizeof(abs_base), "%s", base);
+  } else {
+    char cwd[1024] = {0};
+    (void)getcwd(cwd, sizeof(cwd));
+    snprintf(abs_base, sizeof(abs_base), "%s/%s", cwd, base);
+  }
+  char val[1100];
+  snprintf(val, sizeof(val), "%s/seekdb%%c.profraw", abs_base);
+  __llvm_profile_set_filename(val);
+  fprintf(stderr, "Coverage: set_filename('%s')\n", val);
+}
+#endif
+
 #include "lib/alloc/malloc_hook.h"
 #include "lib/alloc/ob_malloc_allocator.h"
 #include "lib/allocator/ob_malloc.h"
