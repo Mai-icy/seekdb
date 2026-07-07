@@ -466,7 +466,7 @@ public:
                               const ObObjParam *value,
                               bool is_default = false);
   static int spi_query_into_expr_idx(pl::ObPLExecCtx *ctx,
-                                     const char* sql,
+                                     const ObString &sql,
                                      int64_t type,
                                      const int64_t *into_exprs_idx = NULL,
                                      int64_t into_count = 0,
@@ -478,7 +478,7 @@ public:
                                      bool is_type_record = false,
                                      bool for_update = false);
   static int spi_query(pl::ObPLExecCtx *ctx,
-                       const char* sql,
+                       const ObString &sql,
                        int64_t type,
                        const ObSqlExpression **into_exprs = NULL,
                        int64_t into_count = 0,
@@ -504,7 +504,7 @@ public:
                          ObSPIPrepareResult &prepare_result,
                          pl::ObPLAstUnit &func);
   static int spi_execute_with_expr_idx(pl::ObPLExecCtx *ctx,
-                                       const char *ps_sql,
+                                       const ObString &ps_sql,
                                        int64_t type,
                                        const int64_t *param_exprs_idx,
                                        int64_t param_count,
@@ -519,7 +519,7 @@ public:
                                        bool is_type_record,
                                        bool for_update);
   static int spi_execute(pl::ObPLExecCtx *ctx,
-                         const char* ps_sql,
+                         const ObString &ps_sql,
                          int64_t type,
                          const ObSqlExpression **param_exprs,
                          int64_t param_count,
@@ -649,8 +649,8 @@ public:
                                    common::ObObjParam &obj,
                                    ObCusorDeclareLoc loc);
   static int spi_cursor_open_with_param_idx(pl::ObPLExecCtx *ctx,
-                                  const char *sql,
-                                  const char *ps_sql,
+                                  const ObString &sql,
+                                  const ObString &ps_sql,
                                   int64_t type,
                                   bool for_update,
                                   bool has_hidden_rowid,
@@ -664,8 +664,8 @@ public:
                                   int64_t cursor_param_count,
                                   bool skip_locked);
   static int spi_cursor_open(pl::ObPLExecCtx *ctx,
-                             const char *sql,
-                             const char *ps_sql,
+                             const ObString &sql,
+                             const ObString &ps_sql,
                              int64_t type,
                              bool for_update,
                              bool has_hidden_rowid,
@@ -950,8 +950,8 @@ private:
 
   static int spi_inner_execute(pl::ObPLExecCtx *ctx,
                                ObIAllocator &out_param_alloc,
-                               const char *sql,
-                               const char *ps_sql,
+                               const ObString &sql,
+                               const ObString &ps_sql,
                                int64_t type,
                                void *params,
                                int64_t param_count,

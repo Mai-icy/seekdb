@@ -1467,7 +1467,7 @@ int ObSPIService::set_variable(ObPLExecCtx *ctx,
       }
 
       if(OB_SUCC(ret)) {
-        if (OB_FAIL(spi_query(ctx, sql, stmt::T_VARIABLE_SET))) {
+        if (OB_FAIL(spi_query(ctx, ObString::make_string(sql), stmt::T_VARIABLE_SET))) {
           LOG_WARN("Failed to spi_query", K(sql), K(ret));
         }
       }
@@ -1608,8 +1608,8 @@ ObPLSPITraceIdGuard::~ObPLSPITraceIdGuard()
 // common sql execute interface (static-sql & dynamic-sql & dbms-sql-execute)
 int ObSPIService::spi_inner_execute(ObPLExecCtx *ctx,
                                     ObIAllocator &out_param_alloc,
-                                    const char *sql,
-                                    const char *ps_sql,
+                                    const ObString &sql,
+                                    const ObString &ps_sql,
                                     int64_t type,
                                     void *params,
                                     int64_t param_count,
@@ -1644,7 +1644,6 @@ int ObSPIService::spi_inner_execute(ObPLExecCtx *ctx,
       ObPLPartitionHitGuard ph_guard(*ctx);
       ObSQLSessionInfo *session = ctx->exec_ctx_->get_my_session();
       stmt::StmtType stmt_type = static_cast<stmt::StmtType>(type);
-      ObString sqlstr(sql);
 
       if (is_forall && !session->is_enable_batched_multi_statement()) {
         /* forall need rollback to for loop */
@@ -1653,7 +1652,7 @@ int ObSPIService::spi_inner_execute(ObPLExecCtx *ctx,
       }
       OZ (check_system_trigger_legal(ctx, sql, stmt_type));
       OZ (spi_result.init(*session));
-      OZ (spi_result.start_nested_stmt_if_need(ctx, sqlstr, stmt_type, for_update));
+      OZ (spi_result.start_nested_stmt_if_need(ctx, sql, stmt_type, for_update));
       OX (spi_result.get_sql_ctx().is_dbms_sql_ = is_dbms_sql);
 
       if (OB_SUCC(ret)) {
@@ -1791,8 +1790,8 @@ int ObSPIService::dbms_cursor_execute(ObPLExecCtx *ctx,
   int ret = OB_SUCCESS;
   OZ (spi_inner_execute(ctx,
                         cursor.get_area_allocator(),
-                        cursor.get_sql_stmt().ptr(),
-                        ps_sql.ptr(),
+                        cursor.get_sql_stmt(),
+                        ps_sql,
                         stmt_type,
                         &cursor.get_exec_params(),
                         cursor.get_exec_params().count(),
@@ -1888,7 +1887,7 @@ int ObSPIService::spi_get_parent_allocator(ObIAllocator *current_allcator,
 }
 
 int ObSPIService::spi_query_into_expr_idx(ObPLExecCtx *ctx,
-                                          const char *sql,
+                                          const ObString &sql,
                                           int64_t type,
                                           const int64_t *into_exprs_idx,
                                           int64_t into_count,
@@ -1915,7 +1914,7 @@ int ObSPIService::spi_query_into_expr_idx(ObPLExecCtx *ctx,
 }
 
 int ObSPIService::spi_query(ObPLExecCtx *ctx,
-                            const char *sql,
+                            const ObString &sql,
                             int64_t type,
                             const ObSqlExpression **into_exprs,
                             int64_t into_count,
@@ -1928,7 +1927,8 @@ int ObSPIService::spi_query(ObPLExecCtx *ctx,
                             bool for_update)
 {
   int ret = OB_SUCCESS;
-  OZ (SMART_CALL(spi_inner_execute(ctx, *ctx->get_top_expr_allocator(), sql, "", type, NULL, 0,
+  const ObString empty_sql;
+  OZ (SMART_CALL(spi_inner_execute(ctx, *ctx->get_top_expr_allocator(), sql, empty_sql, type, NULL, 0,
                         into_exprs, into_count,
                         column_types, type_count,
                         exprs_not_null_flag,
@@ -1938,7 +1938,7 @@ int ObSPIService::spi_query(ObPLExecCtx *ctx,
 }
 
 int ObSPIService::spi_execute_with_expr_idx(ObPLExecCtx *ctx,
-                              const char *ps_sql,
+                              const ObString &ps_sql,
                               int64_t type,
                               const int64_t *param_exprs_idx,
                               int64_t param_count,
@@ -1970,7 +1970,7 @@ int ObSPIService::spi_execute_with_expr_idx(ObPLExecCtx *ctx,
   return ret;
 }
 int ObSPIService::spi_execute(ObPLExecCtx *ctx,
-                              const char *ps_sql,
+                              const ObString &ps_sql,
                               int64_t type,
                               const ObSqlExpression **param_exprs,
                               int64_t param_count,
@@ -1986,7 +1986,8 @@ int ObSPIService::spi_execute(ObPLExecCtx *ctx,
                               bool for_update)
 {
   int ret = OB_SUCCESS;
-  OZ (SMART_CALL(spi_inner_execute(ctx, *ctx->get_top_expr_allocator(), NULL, ps_sql, type, param_exprs, param_count,
+  const ObString empty_sql;
+  OZ (SMART_CALL(spi_inner_execute(ctx, *ctx->get_top_expr_allocator(), empty_sql, ps_sql, type, param_exprs, param_count,
                         into_exprs, into_count, column_types, type_count,
                         exprs_not_null_flag, pl_integer_ranges, is_bulk,
                         is_forall, is_type_record, for_update)));
@@ -2740,8 +2741,8 @@ int ObSPIService::spi_execute_immediate(ObPLExecCtx *ctx,
   } else {
     OZ (SMART_CALL(spi_inner_execute(ctx,
                                      *ctx->get_top_expr_allocator(),
-                                     sql_str.ptr(),
-                                     ps_sql.ptr(),
+                                     sql_str.string(),
+                                     ps_sql,
                                      stmt_type,
                                      params,
                                      exec_param_cnt,
@@ -3172,8 +3173,8 @@ int ObSPIService::spi_dynamic_open(ObPLExecCtx *ctx,
     MAKE_EXPR_BUFFER(alloc, sql_param_exprs_idx, sql_param_count, sql_param_exprs);
 
     OZ (spi_cursor_open(ctx,
-                        sql_param_count > 0 ? NULL : sql_str.ptr(),
-                        ps_sql.ptr(),//trans to c-stype
+                        sql_param_count > 0 ? ObString() : sql_str.string(),
+                        ps_sql,
                         stmt_type,
                         for_update,
                         hidden_rowid,
@@ -3275,8 +3276,8 @@ int ObSPIService::prepare_cursor_parameters(ObPLExecCtx *ctx,
 }
 
 int ObSPIService::spi_cursor_open_with_param_idx(ObPLExecCtx *ctx,
-                                  const char *sql,
-                                  const char *ps_sql,
+                                  const ObString &sql,
+                                  const ObString &ps_sql,
                                   int64_t type,
                                   bool for_update,
                                   bool has_hidden_rowid,
@@ -3464,7 +3465,7 @@ int ObSPIService::unstreaming_cursor_open(ObPLExecCtx *ctx,
     ObSPICursor* spi_cursor = NULL;
     OZ (spi_result.init(session_info));
     OZ (spi_result.start_nested_stmt_if_need(ctx, sql, static_cast<stmt::StmtType>(type), for_update));
-    OZ (save_unstreaming_cursor_sql(cursor, (sql != NULL ? sql : ps_sql)));
+    OZ (save_unstreaming_cursor_sql(cursor, sql.empty() ? ps_sql : sql));
 
     if (OB_SUCC(ret)) {
 
@@ -3550,8 +3551,8 @@ int ObSPIService::unstreaming_cursor_open(ObPLExecCtx *ctx,
 }
 
 int ObSPIService::spi_cursor_open(ObPLExecCtx *ctx,
-                                  const char *sql,
-                                  const char *ps_sql,
+                                  const ObString &sql,
+                                  const ObString &ps_sql,
                                   int64_t type,
                                   bool for_update,
                                   bool has_hidden_rowid,
@@ -3580,8 +3581,8 @@ int ObSPIService::spi_cursor_open(ObPLExecCtx *ctx,
      || OB_ISNULL(ctx->exec_ctx_)
      || OB_ISNULL(session_info = ctx->exec_ctx_->get_my_session())
      || (sql_param_count > 0 && NULL == sql_param_exprs)
-     || (NULL != sql && sql_param_count > 0)
-     || (NULL == sql && 0 == sql_param_count)) {
+     || (!sql.empty() && sql_param_count > 0)
+     || (sql.empty() && 0 == sql_param_count)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("Argument passed in is NULL", K(ctx), K(sql), K(ps_sql), K(type), K(sql_param_exprs), K(sql_param_count), K(ret));
   } else if (OB_FAIL(spi_get_cursor_info(ctx, package_id, routine_id, cursor_index, cursor, cursor_var, loc))) {
