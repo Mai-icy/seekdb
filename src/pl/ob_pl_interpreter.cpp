@@ -692,22 +692,6 @@ static int exec_return(ObPLExecCtx *ctx, const ObPLReturnStmt *s, CtrlState &ctr
   return ret;
 }
 
-// Make a null-terminated C string copy of `src` on the exec allocator (spi takes char*).
-static int dup_cstr(ObPLExecCtx *ctx, const ObString &src, const char *&out)
-{
-  int ret = OB_SUCCESS;
-  char *buf = static_cast<char *>(ctx->allocator_->alloc(src.length() + 1));
-  if (OB_ISNULL(buf)) {
-    ret = OB_ALLOCATE_MEMORY_FAILED;
-    LOG_WARN("[pl-interp] failed to allocate sql buffer", K(ret), K(src.length()));
-  } else {
-    MEMCPY(buf, src.ptr(), src.length());
-    buf[src.length()] = '\0';
-    out = buf;
-  }
-  return ret;
-}
-
 // Embedded SQL (SELECT..INTO / INSERT / UPDATE / DELETE). Mirrors codegen's
 // generate_sql: spi_query_into_expr_idx when there are no PL params, else
 // spi_execute_with_expr_idx with the prepared (ps) statement. All param/into
@@ -728,16 +712,12 @@ static int exec_sql(ObPLExecCtx *ctx, const ObPLSqlStmt *s)
     const bool is_type_record = s->is_type_record();
     const bool for_update = s->is_for_update();
     if (s->get_params().empty()) {
-      const char *sql = NULL;
-      OZ (dup_cstr(ctx, s->get_sql(), sql));
-      OZ (ObSPIService::spi_query_into_expr_idx(ctx, sql, type, into_idx, into_count,
+      OZ (ObSPIService::spi_query_into_expr_idx(ctx, s->get_sql(), type, into_idx, into_count,
             types, type_count, not_null, ranges, is_bulk, is_type_record, for_update));
     } else {
-      const char *ps_sql = NULL;
-      OZ (dup_cstr(ctx, s->get_ps_sql(), ps_sql));
       const int64_t param_count = s->get_params().count();
       const int64_t *param_idx = param_count > 0 ? &s->get_params().at(0) : NULL;
-      OZ (ObSPIService::spi_execute_with_expr_idx(ctx, ps_sql, type, param_idx, param_count,
+      OZ (ObSPIService::spi_execute_with_expr_idx(ctx, s->get_ps_sql(), type, param_idx, param_count,
             into_idx, into_count, types, type_count, not_null, ranges,
             is_bulk, s->is_forall_sql(), is_type_record, for_update));
     }
@@ -908,13 +888,12 @@ static int exec_open(ObPLExecCtx *ctx, const ObPLOpenStmt *s)
     const ObIArray<int64_t> &sql_params = cursor->get_sql_params();
     const int64_t sql_pcount = sql_params.count();
     const int64_t *sql_pidx = sql_pcount > 0 ? &sql_params.at(0) : NULL;
-    // spi_cursor_open requires: with params -> sql must be NULL (run via ps_sql);
-    // without params -> sql must be non-NULL (the raw text).
-    const char *sql = NULL;
-    const char *ps_sql = NULL;
-    OZ (dup_cstr(ctx, cursor->get_ps_sql(), ps_sql));
-    if (OB_SUCC(ret) && 0 == sql_pcount) {
-      OZ (dup_cstr(ctx, cursor->get_sql(), sql));
+    // spi_cursor_open requires: with params -> sql must be empty (run via ps_sql);
+    // without params -> sql must be non-empty (the raw text).
+    ObString sql;
+    const ObString &ps_sql = cursor->get_ps_sql();
+    if (0 == sql_pcount) {
+      sql = cursor->get_sql();
     }
     const ObIArray<int64_t> &actual = s->get_params();
     const int64_t cur_pcount = actual.count();
