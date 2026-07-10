@@ -78,7 +78,6 @@ ObStaticMergeParam::ObStaticMergeParam(ObTabletMergeDagParam &dag_param)
     multi_version_column_descs_(),
     pre_warm_param_(),
     tablet_schema_guard_(),
-    tablet_transfer_seq_(ObStorageObjectOpt::INVALID_TABLET_TRANSFER_SEQ),
     co_base_snapshot_version_(0)
 {
   merge_scn_.set_max();
@@ -100,7 +99,6 @@ void ObStaticMergeParam::reset()
   tx_id_ = 0;
   tablet_schema_guard_.reset();
   encoding_granularity_ = 0;
-  tablet_transfer_seq_ = ObStorageObjectOpt::INVALID_TABLET_TRANSFER_SEQ;
   co_base_snapshot_version_ = 0;
   for_unittest_ = false;
   is_cs_replica_force_full_merge_ = false;
@@ -223,12 +221,6 @@ int ObStaticMergeParam::get_basic_info_from_result(
       create_snapshot_version_ = 0;
     }
 
-    if (ObStorageObjectOpt::INVALID_TABLET_TRANSFER_SEQ == tablet_transfer_seq_) {
-      // If not set tranfser_seq specifically, set it.
-      // The tablet_transfer_seq_ can be set to write macro_block to the specific transfer_seq_directory
-      // by tasks in ob_tablet_backfill_tx.cpp.
-      tablet_transfer_seq_ = get_merge_table_result.transfer_seq_;
-    }
   }
   return ret;
 }
@@ -903,7 +895,6 @@ int ObBasicTabletMergeCtx::init_static_desc()
   int ret = OB_SUCCESS;
   static_param_.concurrent_cnt_ = get_concurrent_cnt();
   if (OB_FAIL(static_desc_.init(false/*is_ddl*/, *get_schema(), get_ls_id(), get_tablet_id(),
-                                static_param_.tablet_transfer_seq_,
                                 get_merge_type(), get_snapshot(),
                                 static_param_.scn_range_.end_scn_,
                                 static_param_.data_version_,

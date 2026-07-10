@@ -371,7 +371,6 @@ public:
   const ObIArray<ObColumnSchemaItem> &get_column_info() const override { return column_items_; };
   bool is_schema_item_ready() { return is_schema_item_ready_; }
   bool get_micro_index_clustered() { return micro_index_clustered_; }
-  int64_t get_tablet_transfer_seq() { return tablet_transfer_seq_; }
   int prepare_storage_schema(ObTabletHandle &tablet_handle);
   int64_t get_task_cnt() override { return task_cnt_; }
   int64_t get_cg_cnt() override {return cg_cnt_; }
@@ -392,7 +391,7 @@ public:
   bool get_is_no_logging() override { return is_no_logging_; }
   VIRTUAL_TO_STRING_KV(K_(is_inited), K_(is_schema_item_ready), K_(ls_id), K_(tablet_id), K_(table_key), K_(ref_cnt), 
                K_(direct_load_type), K_(need_process_cs_replica), K_(need_fill_column_group),K_(sqc_build_ctx), KPC(lob_mgr_handle_.get_obj()), K_(schema_item), K_(column_items), K_(lob_column_idxs),
-               K_(task_cnt), K_(cg_cnt), K_(micro_index_clustered), K_(tablet_transfer_seq), K_(is_no_logging));
+               K_(task_cnt), K_(cg_cnt), K_(micro_index_clustered), K_(is_no_logging));
 
 protected:
   int prepare_schema_item_on_demand(const uint64_t table_id,
@@ -439,7 +438,6 @@ protected:
   int64_t task_cnt_;
   int64_t cg_cnt_;
   bool micro_index_clustered_;
-  int64_t tablet_transfer_seq_;
   bool is_no_logging_;
 };
 

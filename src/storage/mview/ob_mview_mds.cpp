@@ -52,7 +52,7 @@ int ObMViewMdsOpHelper::on_register(
   transaction::ObTransID tx_id = user_ctx.get_writer().writer_id_;
 
   if (OB_FAIL(arg.deserialize(buf, len, pos))) {
-    LOG_WARN("failed to deserialize transfer dest prepare info", KR(ret), K(len), K(pos));
+    LOG_WARN("failed to deserialize mview mds op", KR(ret), K(len), K(pos));
   } else if (!arg.is_valid()) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arg", KR(ret), K(arg));
@@ -122,7 +122,7 @@ int ObMViewMdsOpCtx::assign(const ObMViewMdsOpCtx &other)
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(arg_.assign(other.arg_))) {
-    LOG_WARN("transfer dest prepare info assign failed", KR(ret), K(other));
+    LOG_WARN("mview mds op assign failed", KR(ret), K(other));
   } else {
     writer_ = other.writer_;
     op_scn_ = other.op_scn_;

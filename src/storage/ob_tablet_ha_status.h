@@ -139,14 +139,6 @@ public:
     return bool_ret;
   }
 
-  inline bool check_ready_for_transfer() const
-  {
-    return is_restore_status_full()
-           || is_restore_status_minor_and_major_meta()
-           || is_restore_status_remote()
-           || is_restore_status_undefined();
-  }
-
   TO_STRING_KV(K_(restore_status), K_(data_status), K_(expected_status), K_(reserved));
 public:
   static const uint64_t SF_BIT_RESTORE_STATUS = 8;

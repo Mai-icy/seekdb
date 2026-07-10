@@ -266,9 +266,6 @@ int ObGVTxStat::inner_get_next_row(ObNewRow *&row)
         case REC_SCN:
           cur_row_.cells_[i].set_uint64(tx_stat.rec_scn_.get_val_for_inner_table_field());
           break;
-        case TRANSFER_BLOCKING:
-          cur_row_.cells_[i].set_bool(tx_stat.transfer_blocking_);
-          break;
         case BUSY_CBS_CNT:
           cur_row_.cells_[i].set_int(tx_stat.busy_cbs_cnt_);
           break;

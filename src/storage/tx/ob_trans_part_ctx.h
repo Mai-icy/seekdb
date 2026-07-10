@@ -104,24 +104,6 @@ int64_t search(const ObIArray<T> &array, fn &equal_func)
   return search_index;
 }
 template<typename T>
-class EqualToTransferPartFunctor
-{
-public:
-  EqualToTransferPartFunctor(const ObStandbyCheckInfo &tmp_info) :
-                            tmp_info_(tmp_info)
-  {}
-  bool operator()(const T& item) {
-    bool bool_ret = false;
-    if (item.check_info_ == tmp_info_) {
-      bool_ret = true;
-    }
-    return bool_ret;
-  }
-private:
-  const ObStandbyCheckInfo &tmp_info_;
-};
-
-template<typename T>
 class EqualToStateInfoFunctor
 {
 public:
@@ -335,8 +317,6 @@ private:
   int common_on_success_(ObTxLogCb * log_cb);
   int on_success_ops_(ObTxLogCb * log_cb);
   void check_and_register_timeout_task_();
-  int recover_ls_transfer_status_();
-
   int check_dli_batch_completed_(ObTxLogType submit_log_type);
 
 public:
@@ -705,8 +685,6 @@ private:
   int check_is_aborted_in_tx_data_(const ObTransID tx_id,
                                    bool &is_aborted);
 
-  int64_t get_max_transfer_epoch_();
-
   // ========================================================
 
 private:
@@ -780,10 +758,7 @@ public:
   int rollback_to_savepoint(const int64_t op_sn,
                             ObTxSEQ from_seq,
                             const ObTxSEQ to_seq,
-                            const int64_t seq_base,
-                            const int64_t input_transfer_epoch,
-                            int64_t &output_transfer_epoch,
-                            ObIArray<ObTxLSEpochPair> &downstream_parts);
+                            const int64_t seq_base);
   bool is_xa_trans() const { return !exec_info_.xid_.empty(); }
   int handle_tx_keepalive_response(const int64_t status);
 private:
@@ -869,7 +844,7 @@ private:
   ObTxExecInfo exec_info_;
   ObCtxTxData ctx_tx_data_;
   // when multi source data is registered, it is stored in the array below,
-  // it is transfered to exec_info_.multi_source_data_ when corresponding
+  // it is moved to exec_info_.multi_source_data_ when corresponding
   // redo log callbacked.
   ObTxMDSCache mds_cache_;
   ObIRetainCtxCheckFunctor *retain_ctx_func_ptr_;

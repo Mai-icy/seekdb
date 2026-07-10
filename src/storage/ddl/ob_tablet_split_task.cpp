@@ -292,7 +292,6 @@ int ObTabletSplitCtx::prepare_index_builder(
             true/*is_ddl*/, *clipped_storage_schema, param.ls_id_, 
             dst_tablet_id, merge_type, snapshot_version, param.data_format_version_,
             tablet_handle.get_obj()->get_tablet_meta().micro_index_clustered_,
-            tablet_handle.get_obj()->get_transfer_seq(),
             0/*concurrent_cnt*/,
             sstable->get_end_scn(),
             nullptr/*cg_schema*/,
@@ -933,7 +932,6 @@ int ObTabletSplitWriteTask::prepare_macro_block_writer(
                                         snapshot_version,
                                         param_->data_format_version_,
                                         micro_index_clustered,
-                                        tablet_handle.get_obj()->get_transfer_seq(),
                                         0/*concurrent_cnt*/,
                                         sstable_->get_end_scn(),
                                         nullptr/* cg_schema */,
@@ -2864,8 +2862,6 @@ int ObTabletSplitUtil::check_and_build_mds_sstable_merge_ctx(
     static_param.merge_scn_                          = end_scn;
     static_param.create_snapshot_version_            = 0;
     static_param.need_parallel_minor_merge_          = false;
-    static_param.tablet_transfer_seq_                  = dest_tablet_handle.get_obj()->get_transfer_seq();
-    tablet_merge_ctx.static_desc_.tablet_transfer_seq_ = dest_tablet_handle.get_obj()->get_transfer_seq();
 
     if (OB_FAIL(tablet_merge_ctx.init_tablet_merge_info())) {
       LOG_WARN("failed to init tablet merge info", K(ret), K(ls_handle), K(dest_tablet_handle), K(tablet_merge_ctx));

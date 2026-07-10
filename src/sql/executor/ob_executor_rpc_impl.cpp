@@ -36,13 +36,11 @@ int ObExecutorRpcImpl::task_execute(ObExecutorRpcCtx &rpc_ctx,
                                     ObTask &task,
                                     const common::ObAddr &svr,
                                     RemoteExecuteStreamHandle &handler,
-                                    bool &has_sent_task,
-                                    bool &has_transfer_err)
+                                    bool &has_sent_task)
 {
   UNUSEDx(rpc_ctx, task);
   int ret = OB_NOT_SUPPORTED;
   has_sent_task = false;
-  has_transfer_err = false;
   handler.set_result_code(ret);
   LOG_ERROR("remote task_execute is not supported on single replica", K(ret), K(svr));
   return ret;
@@ -52,13 +50,11 @@ int ObExecutorRpcImpl::task_execute_v2(ObExecutorRpcCtx &rpc_ctx,
                                        ObRemoteTask &task,
                                        const common::ObAddr &svr,
                                        RemoteExecuteStreamHandle &handler,
-                                       bool &has_sent_task,
-                                       bool &has_transfer_err)
+                                       bool &has_sent_task)
 {
   UNUSEDx(rpc_ctx, task);
   int ret = OB_NOT_SUPPORTED;
   has_sent_task = false;
-  has_transfer_err = false;
   handler.set_result_code(ret);
   LOG_ERROR("remote task_execute_v2 is not supported on single replica", K(ret), K(svr));
   return ret;

@@ -120,7 +120,6 @@ int ObPartitionMergePolicy::get_medium_merge_tables(
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null base table", K(ret), K(tablet));
   } else {
-    result.transfer_seq_ = tablet.get_transfer_seq();
     result.version_range_.base_version_ = 0;
     result.version_range_.multi_version_start_ = tablet.get_multi_version_start();
     result.version_range_.snapshot_version_ = param.merge_version_;
@@ -187,7 +186,6 @@ int ObPartitionMergePolicy::get_mds_merge_tables(
     result.handle_.reset();
   } else {
     result.version_range_.snapshot_version_ = tablet.get_snapshot_version();
-    result.transfer_seq_ = tablet.get_transfer_seq();
   }
   return ret;
 }
@@ -223,7 +221,6 @@ int ObPartitionMergePolicy::get_convert_co_major_merge_tables(
     result.version_range_.base_version_ = 0;
     result.version_range_.multi_version_start_ = tablet.get_multi_version_start();
     result.version_range_.snapshot_version_ = param.merge_version_;
-    result.transfer_seq_ = tablet.get_transfer_seq();
     if (OB_FAIL(get_multi_version_start(param.merge_type_, ls, tablet, result.version_range_, result.snapshot_info_))) {
       LOG_WARN("failed to get multi version_start", K(ret));
     }
@@ -337,12 +334,10 @@ int ObPartitionMergePolicy::get_mini_merge_tables(
       LOG_WARN("failed to find mini merge tables", K(ret), K(next_freeze_info));
     }
   } else if (result.update_tablet_directly_) {
-    result.transfer_seq_ = tablet.get_transfer_seq();
     // do nothing else
   } else if (OB_FAIL(deal_with_minor_result(merge_type, ls, tablet, result))) {
     LOG_WARN("failed to deal with minor merge result", K(ret));
   } else {
-    result.transfer_seq_ = tablet.get_transfer_seq();
   }
 
   return ret;
@@ -525,7 +520,6 @@ int ObPartitionMergePolicy::get_minor_merge_tables(
       LOG_WARN("failed to get minor merge tables", K(ret), K(max_snapshot_version));
     }
   } else {
-    result.transfer_seq_ = tablet.get_transfer_seq();
   }
 
   return ret;
@@ -779,7 +773,6 @@ int ObPartitionMergePolicy::get_hist_minor_merge_tables(
       LOG_WARN("failed to get minor tables for hist minor merge", K(ret));
     }
   } else {
-    result.transfer_seq_ = tablet.get_transfer_seq();
   }
   return ret;
 }
@@ -1502,7 +1495,6 @@ int ObAdaptiveMergePolicy::get_meta_merge_tables(
   }
 
   if (OB_SUCC(ret)) {
-    result.transfer_seq_ = tablet.get_transfer_seq();
     FLOG_INFO("succeed to get meta major merge tables", K(merge_type), K(result), K(tablet));
   }
   return ret;

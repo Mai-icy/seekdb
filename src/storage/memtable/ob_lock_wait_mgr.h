@@ -258,7 +258,7 @@ public:
                 const transaction::tablelock::ObTableLockMode &lock_mode,
                 const ObLSID &ls_id,
                 ObFunction<int(bool &need_wait)> &check_need_wait);
-  // when removing the callbacks of uncommitted transaction, we need transfer
+  // when removing the callbacks of uncommitted transaction, we need move
   // the conflict dependency from rows to transactions
   int transform_row_lock_to_tx_lock(const ObTabletID &tablet_id,
                                     const Key &key,

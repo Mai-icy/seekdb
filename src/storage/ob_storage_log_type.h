@@ -79,11 +79,6 @@ enum ObStorageLogType
   // for test
   OB_LOG_TEST = 30000,
 
-  OB_LOG_TRANSFER_ADD_SSTORE = 40001,
-  OB_LOG_TRANSFER_PREPARE = 40002,
-  OB_LOG_TRANSFER_COMMIT = 40003,
-  OB_LOG_TRANSFER_ABORT = 40004,
-  OB_LOG_TRANSFER_CLEAR = 40005,
   OB_LOG_TRANS_LITE = 40006,
   OB_LOG_ADD_PARTITION_TO_PG = 40007,
   OB_LOG_REMOVE_PARTITION_FROM_PG = 40008,
@@ -205,21 +200,6 @@ public:
       case OB_LOG_TEST:
         log_type_str = "TEST";
         break;
-      case OB_LOG_TRANSFER_ADD_SSTORE:
-        log_type_str = "TRANSFER_ADD_SSTORE";
-        break;
-      case OB_LOG_TRANSFER_PREPARE:
-        log_type_str = "TRANSFER_PREPARE";
-        break;
-      case OB_LOG_TRANSFER_COMMIT:
-        log_type_str = "TRANSFER_COMMIT";
-        break;
-      case OB_LOG_TRANSFER_ABORT:
-        log_type_str = "TRANSFER_ABORT";
-        break;
-      case OB_LOG_TRANSFER_CLEAR:
-        log_type_str = "TRANSFER_CLEAR";
-        break;
       case OB_LOG_TRANS_LITE:
         log_type_str = "TRANS_LITE";
         break;
@@ -329,15 +309,6 @@ public:
   {
     return OB_LOG_OFFLINE_PARTITION_V2 == log_type;
   }
-  static bool is_transfer_log(const int64_t log_type)
-  {
-    return (OB_LOG_TRANSFER_ADD_SSTORE == log_type
-        || OB_LOG_TRANSFER_PREPARE == log_type
-        || OB_LOG_TRANSFER_COMMIT == log_type
-        || OB_LOG_TRANSFER_ABORT == log_type
-        || OB_LOG_TRANSFER_CLEAR == log_type
-        || OB_LOG_TRANS_LITE == log_type);
-  }
   static bool is_split_log(const int64_t log_type)
   {
     return (OB_LOG_SPLIT_SOURCE_PARTITION == log_type ||
@@ -414,7 +385,7 @@ public:
            || is_test_log(log_type)
            || is_freeze_log(log_type)
            || is_offline_partition_log(log_type)
-           || is_transfer_log(log_type)
+           || OB_LOG_TRANS_LITE == log_type
            || is_split_log(log_type)
            || is_start_membership_log(log_type)
            || is_checkpoint_log(log_type)

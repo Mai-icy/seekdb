@@ -124,7 +124,7 @@ public:
   ObSArray<ObTabletID> tablet_status_tablet_ids_;
   ObTabletStatus tablet_status_;
   ObTabletMdsUserDataType tablet_status_data_type_;
-  ObSArray<ObTabletID> set_freeze_flag_tablet_ids_; // set transfer freeze flag on replay
+  ObSArray<ObTabletID> set_freeze_flag_tablet_ids_; // set freeze flag on replay
   obcall::ObBatchSetTabletAutoincSeqArg autoinc_seq_arg_;
 private:
   DISALLOW_COPY_AND_ASSIGN(ObTabletSplitMdsArg);

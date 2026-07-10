@@ -24,7 +24,6 @@
 #include "common/ob_tablet_id.h"
 #include "storage/meta_mem/ob_meta_obj_struct.h"
 #include "storage/meta_store/ob_tenant_seq_generator.h"
-#include "share/transfer/ob_transfer_info.h" // INVALID_TRANSFER_SEQ
 
 namespace oceanbase
 {
@@ -38,7 +37,7 @@ enum GCTabletType
 {
   InvalidType = -1,
   DropTablet = 0,
-  TransferOut = 1,
+  ReservedOut = 1,
   CreateAbort = 2,
   DropLS = 3
 };
@@ -262,10 +261,10 @@ struct ObActiveTabletItem
 public:
   ObActiveTabletItem();
   ObActiveTabletItem(const common::ObTabletID tablet_id, const int64_t union_id);
-  int64_t get_transfer_seq() const { return meta_transfer_seq_; }
+  int64_t get_path_id() const { return meta_path_id_; }
   uint64_t get_tablet_meta_version() const { return meta_version_id_; }
 
-  TO_STRING_KV(K_(tablet_id), K_(meta_transfer_seq), K_(meta_version_id));
+  TO_STRING_KV(K_(tablet_id), K_(meta_path_id), K_(meta_version_id));
   OB_UNIS_VERSION(1);
 
 public:
@@ -274,7 +273,7 @@ public:
     int64_t union_id_;
     // for PRIVATE_TABLET_META
     struct {
-      int64_t meta_transfer_seq_  : blocksstable::MacroBlockId::SF_BIT_TRANSFER_SEQ;
+      int64_t meta_path_id_       : blocksstable::MacroBlockId::SF_BIT_PATH_ID;
       uint64_t meta_version_id_   : blocksstable::MacroBlockId::SF_BIT_META_VERSION_ID;
     };
   };
@@ -315,35 +314,31 @@ public:
       tablet_meta_version_(0),
       status_(ObPendingFreeTabletStatus::MAX),
       free_time_(0),
-      gc_type_(GCTabletType::DropTablet),
-      tablet_transfer_seq_(share::OB_INVALID_TRANSFER_SEQ)
+      gc_type_(GCTabletType::DropTablet)
   {}
   ObPendingFreeTabletItem(
     const common::ObTabletID tablet_id,
     const int64_t tablet_meta_version,
     const ObPendingFreeTabletStatus status,
     const int64_t free_time,
-    const GCTabletType gc_type,
-    const int64_t tablet_transfer_seq)
+    const GCTabletType gc_type)
     : tablet_id_(tablet_id), tablet_meta_version_(tablet_meta_version), 
       status_(status), free_time_(free_time),
-      gc_type_(gc_type), tablet_transfer_seq_(tablet_transfer_seq)
+      gc_type_(gc_type)
   {}
 
   bool is_valid() const
   { 
     return tablet_id_.is_valid() && tablet_meta_version_ > 0 &&
-        ObPendingFreeTabletStatus::MAX != status_ && 
-        tablet_transfer_seq_ != share::OB_INVALID_TRANSFER_SEQ;
+        ObPendingFreeTabletStatus::MAX != status_;
   }
   bool operator == (const ObPendingFreeTabletItem &other) const {
     return tablet_id_ == other.tablet_id_ &&
            tablet_meta_version_ == other.tablet_meta_version_ &&
-           status_ == other.status_ &&
-           tablet_transfer_seq_ == other.tablet_transfer_seq_;
+           status_ == other.status_;
   }
 
-  TO_STRING_KV(K_(tablet_id), K_(tablet_meta_version), K_(status), K_(tablet_transfer_seq));
+  TO_STRING_KV(K_(tablet_id), K_(tablet_meta_version), K_(status));
   OB_UNIS_VERSION(1);
 
 public:
@@ -353,7 +348,6 @@ public:
   // pending_free_items in pending_free_tablet_arr are incremented according to free time
   int64_t free_time_;
   GCTabletType gc_type_;
-  int64_t tablet_transfer_seq_;
 };
 
 struct ObLSPendingFreeTabletArray

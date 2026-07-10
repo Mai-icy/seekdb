@@ -539,24 +539,21 @@ struct ObWriteTabletParam
 {
 public:
   ObWriteTabletParam() :
-    tablet_transfer_seq_(0),
     is_micro_index_clustered_(false),
     with_cs_replica_(false),
     storage_schema_(nullptr),
     cs_replica_storage_schema_(nullptr) { }
   void reset()
   {
-    tablet_transfer_seq_ = 0;
     is_micro_index_clustered_ = false;
     with_cs_replica_ = false;
     reorganization_scn_.reset();
     storage_schema_ = nullptr;
     cs_replica_storage_schema_ = nullptr;
   }
-  TO_STRING_KV(K_(tablet_transfer_seq), K_(is_micro_index_clustered), K_(with_cs_replica), K_(reorganization_scn),
+  TO_STRING_KV(K_(is_micro_index_clustered), K_(with_cs_replica), K_(reorganization_scn),
                KP_(storage_schema), KP_(cs_replica_storage_schema));
 public:
-  int64_t tablet_transfer_seq_; // get from tablet meta
   bool is_micro_index_clustered_; // get from tablet meta
   bool with_cs_replica_; // get from tablet meta
   share::SCN reorganization_scn_; // get from tablet meta

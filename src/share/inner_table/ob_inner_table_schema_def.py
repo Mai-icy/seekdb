@@ -2494,8 +2494,7 @@ def_table_schema(
     in_tenant_space = True,
     is_cluster_private = False,
     normal_columns = [
-        ('table_id', 'int'),
-        ('transfer_seq', 'int', 'false', '0')
+        ('table_id', 'int')
   ]
   )
 
@@ -2760,8 +2759,6 @@ def_table_schema(**all_context_def)
 def_table_schema(**gen_history_table_def(382, all_context_def))
 
 # 383: __all_global_context_value (abandoned)
-#384: __all_tablet_transfer_info
-
 # 385: __all_ls_election_reference_info (abandoned)
 
 # backup clean inner table
@@ -2932,8 +2929,6 @@ def_table_schema(**all_column_group_mapping)
 
 def_table_schema(**gen_history_table_def(422, all_column_group_mapping))
 
-# 423: __all_transfer_task (abandoned)
-# 424: __all_transfer_task_history (abandoned)
 # 429: __all_arbitration_service (abandoned)
 # 430: __all_ls_arb_replica_task (abandoned)
 
@@ -2989,9 +2984,7 @@ def_table_schema(
 # Placeholder - original definition removed, using SQLite version
 
 # 445: __all_cluster_event_history # migrated to SQLite, see gen_sqlite_table_def above
-# 446: __all_ls_transfer_member_list_lock_info (abandoned)
 # 447 : __all_ls_log_restore_stat
-# 448 : __all_backup_transferring_tablets
 # 449 : __all_wait_for_partition_split_tablet
 
 # 450: __all_external_table_file # abandoned in seekdb
@@ -3474,8 +3467,6 @@ def_table_schema(
   ]
   )
 
-# 498: __all_transfer_partition_task (abandoned)
-# 499: __all_transfer_partition_task_history (abandoned)
 # 500: __all_tenant_snapshot_job (abandoned)
 
 # __wr_sqltext # removed
@@ -4759,7 +4750,6 @@ def_table_schema(
   ('start_scn', 'uint'),
   ('end_scn', 'uint'),
   ('rec_scn', 'uint'),
-  ('transfer_blocking', 'bool'),
   ('busy_cbs', 'int'),
   ('replay_complete', 'int'),
   ('serial_log_final_scn', 'int'),
@@ -6997,7 +6987,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-# 12275: __all_virtual_tablet_transfer_info
 # 12276: __all_virtual_server (rename to __all_virtual_server_stat)
 def_table_schema(
     owner = 'wanhong.wwh',
@@ -7142,7 +7131,7 @@ def_table_schema(
   ('migrate_status', 'int'),
   ('rebuild_seq', 'int'),
   ('tablet_change_checkpoint_scn', 'uint'),
-  ('transfer_scn', 'uint'),
+  ('reserved_scn', 'uint'),
   ('tx_blocked', 'int'),
   ('required_data_disk_size', 'int', 'false', 0),
   ('mv_major_merge_scn', 'uint', 'false', 0),
@@ -7167,9 +7156,6 @@ def_table_schema(
   ('checkpoint_scn', 'uint'),
   ('compaction_scn', 'uint'),
   ('multi_version_start', 'uint'),
-  ('transfer_start_scn', 'uint'),
-  ('transfer_seq', 'int'),
-  ('has_transfer_table', 'int'),
   ('restore_status', 'int'),
   ('tablet_status', 'int'),
   ('is_committed', 'int'),
@@ -7619,8 +7605,6 @@ def_table_schema(
 
 # 12341: __all_virtual_data_dictionary_in_log # removed (single-tenant: iterate VT mechanism deleted)
 
-# 12342: __all_virtual_transfer_task
-# 12343: __all_virtual_transfer_task_history
 # 12358: __all_virtual_tenant_mysql_sys_agent (abandoned)
 
 def_table_schema(
@@ -7713,8 +7697,6 @@ def_table_schema(
 # 12366: __all_virtual_archive_dest_status (removed: backup/restore/log-archive deleted)
 
 # 12367: __all_virtual_kv_hotkey_stat
-# 12368: __all_virtual_backup_transferring_tablets
-
 # 12370: __all_virtual_wait_for_partition_split_tablet
 
 # 12371: __all_virtual_external_table_file # abandoned in seekdb
@@ -7886,8 +7868,6 @@ def_table_schema(
 # 12392: __all_virtual_kv_connection abandoned
 
 # 12393: __all_virtual_long_ops_status_mysql_sys_agent # removed (single-tenant: iterate VT mechanism deleted)
-
-# 12394: __all_virtual_ls_transfer_member_list_lock_info (abandoned)
 
 def_table_schema(
   owner             = 'lixinze.lxz',
@@ -8136,8 +8116,6 @@ def_table_schema(
   ]
   )
 
-# 12451: __all_virtual_transfer_partition_task (abandoned)
-# 12452: __all_virtual_transfer_partition_task_history (abandoned)
 # 12453: __all_virtual_tenant_snapshot_job (abandoned)
 
 # 12454: __all_virtual_wr_sqltext # removed
@@ -15745,10 +15723,6 @@ def_table_schema(
 # 21410: CDB_OB_BALANCE_TASKS (abandoned)
 # 21411: DBA_OB_BALANCE_TASK_HISTORY (abandoned)
 # 21412: CDB_OB_BALANCE_TASK_HISTORY (abandoned)
-# 21413: DBA_OB_TRANSFER_TASKS (abandoned)
-# 21414: CDB_OB_TRANSFER_TASKS (abandoned)
-# 21415: DBA_OB_TRANSFER_TASK_HISTORY (abandoned)
-# 21416: CDB_OB_TRANSFER_TASK_HISTORY (abandoned)
 
 # 21417: DBA_OB_EXTERNAL_TABLE_FILES # abandoned in seekdb
 
@@ -16288,10 +16262,6 @@ def_table_schema(
   """.replace("\n", " ")
   )
 
-# 21501: DBA_OB_TRANSFER_PARTITION_TASKS (abandoned)
-# 21502: CDB_OB_TRANSFER_PARTITION_TASKS (abandoned)
-# 21503: DBA_OB_TRANSFER_PARTITION_TASK_HISTORY (abandoned)
-# 21504: CDB_OB_TRANSFER_PARTITION_TASK_HISTORY (abandoned)
 
 # 21505: DBA_WR_SQLTEXT # removed
 # 21506: CDB_WR_SQLTEXT # removed
@@ -19143,8 +19113,6 @@ def_sys_index_table(
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
   keywords = all_def_keywords['__all_mview_refresh_stats'])
-
-# 101098: idx_transfer_partition_key (abandoned)
 
 def_sys_index_table(
   index_name = 'idx_client_to_server_session_info_client_session_id',

@@ -139,7 +139,7 @@ public:  // ObTxDataTable
   ObTxDataTable()
     : is_inited_(false),
       is_started_(false),
-      latest_transfer_scn_(),
+      latest_reserved_scn_(),
       ls_id_(),
       tablet_id_(0),
       arena_allocator_(),
@@ -264,7 +264,7 @@ public: // getter and setter
 
   share::ObLSID get_ls_id();
   void disable_upper_trans_calculation();
-  void enable_upper_trans_calculation(const share::SCN latest_transfer_scn);
+  void enable_upper_trans_calculation(const share::SCN latest_reserved_scn);
 
 private:
   virtual ObTxDataMemtableMgr *get_memtable_mgr_() { return memtable_mgr_; }
@@ -347,7 +347,7 @@ private:
   static const int64_t LS_TX_DATA_SCHEMA_COLUMN_CNT = 5;
   bool is_inited_;
   bool is_started_;
-  share::SCN latest_transfer_scn_;
+  share::SCN latest_reserved_scn_;
   share::ObLSID ls_id_;
   ObTabletID tablet_id_;
   // Allocator to allocate ObTxData and ObUndoStatus

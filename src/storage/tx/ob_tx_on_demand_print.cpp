@@ -39,7 +39,6 @@ IMPL_ON_DEMAND_PRINT_FUNC(ObTxSubState)
                          flag_.state_log_submitted_, " ");
     TX_KV_PRINT_WITH_ERR(flag_.prepare_notify_ > 0, prepare_notify, flag_.prepare_notify_, " ");
     TX_KV_PRINT_WITH_ERR(flag_.force_abort_ > 0, force_abort, flag_.force_abort_, " ");
-    TX_KV_PRINT_WITH_ERR(flag_.transfer_blocking_ > 0, transfer_blocking, flag_.transfer_blocking_, " ");
 
     ON_DEMAND_END_PRINT(SubState);
   // }
@@ -82,10 +81,7 @@ IMPL_ON_DEMAND_PRINT_FUNC(ObTxExecInfo)
   TX_KV_PRINT_WITH_ERR(!prepare_log_info_arr_.empty(),prepare_log_info_arr , prepare_log_info_arr_, ", ");
   TX_KV_PRINT_WITH_ERR(!xid_.empty(), xid , xid_, ", ");
   TX_KV_PRINT_WITH_ERR(is_sub2pc_, is_sub2pc , is_sub2pc_, ", ");
-  TX_KV_PRINT_WITH_ERR(is_transfer_blocking_, is_transfer_blocking , is_transfer_blocking_, ", ");
   TX_KV_PRINT_WITH_ERR(!commit_parts_.empty(), commit_parts , commit_parts_, ", ");
-  TX_KV_PRINT_WITH_ERR(!transfer_parts_.empty(), transfer_parts, transfer_parts_, ", ");
-  TX_KV_PRINT_WITH_ERR(is_empty_ctx_created_by_transfer_, is_empty_ctx_created_by_transfer, is_empty_ctx_created_by_transfer_, ", ");
   TX_KV_PRINT_WITH_ERR(serial_final_scn_.is_valid(), serial_final_scn, serial_final_scn_, ", ");
   TX_KV_PRINT_WITH_ERR(serial_final_seq_no_.is_valid(), serial_final_seq_no,serial_final_seq_no_, ", ");
 

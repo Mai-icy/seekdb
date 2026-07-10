@@ -236,7 +236,7 @@ int ObCOTabletMergeCtx::handle_alter_cg_delayed_in_cs_replica()
         LOG_INFO("[CS-Replica] Decide build redundant row store from rowkey cg for cs replica", K(ret), K_(static_param));
       }
     } else {
-      // Storage schema in tablet may be column store when alter column group delayed and do transfer (with updated storage schema).
+      // Storage schema in tablet may be column store when alter column group is delayed.
       // The operation will make it confuse to decide the co major merge type, so need handle it case by case.
       ObStorageSchema *schema_on_tablet = nullptr;
       if (OB_FAIL(static_param_.tablet_schema_guard_.load(schema_on_tablet))) {

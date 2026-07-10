@@ -1092,10 +1092,10 @@ void ObTxTable::disable_upper_trans_calculation()
   FLOG_INFO("disable upper trans version calculation", KPC(this));
 }
 
-void ObTxTable::enable_upper_trans_calculation(const share::SCN latest_transfer_scn)
+void ObTxTable::enable_upper_trans_calculation(const share::SCN latest_reserved_scn)
 {
   reset_ctx_min_start_scn_info_();
-  (void)tx_data_table_.enable_upper_trans_calculation(latest_transfer_scn);
+  (void)tx_data_table_.enable_upper_trans_calculation(latest_reserved_scn);
   ATOMIC_STORE(&calc_upper_trans_is_disabled_, false);
   FLOG_INFO("enable upper trans version calculation", KPC(this));
 }

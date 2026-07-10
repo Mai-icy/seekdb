@@ -268,9 +268,6 @@ protected:
       transaction::ObTxDesc &tx_desc,
       ObTabletHandle &tablet_handle,
       ObStoreCtxGuard &ctx_guard);
-  int get_source_ls_tx_table_guard_(
-      const ObTabletHandle &tablet_handle,
-      ObStoreCtxGuard &ctx_guard);
   int construct_store_ctx_other_variables_(
       ObLS &ls,
       const common::ObTabletID &tablet_id,

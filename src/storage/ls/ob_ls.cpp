@@ -1171,7 +1171,7 @@ int ObLS::get_ls_info(ObLSVTInfo &ls_info)
       ls_info.checkpoint_lsn_ = ls_meta_.get_clog_base_lsn().val_;
       ls_info.rebuild_seq_ = ls_meta_.get_rebuild_seq();
       ls_info.tablet_change_checkpoint_scn_ = ls_meta_.get_tablet_change_checkpoint_scn();
-      ls_info.transfer_scn_ = ls_meta_.get_transfer_scn();
+      ls_info.reserved_scn_ = ls_meta_.get_reserved_scn();
       ls_info.tx_blocked_ = tx_blocked;
       ls_info.mv_major_merge_scn_ = ls_meta_.get_major_mv_merge_info().major_mv_merge_scn_;
       ls_info.mv_publish_scn_ = ls_meta_.get_major_mv_merge_info().major_mv_merge_scn_publish_;
@@ -1561,7 +1561,7 @@ int ObLS::replay_get_tablet(
       }
     } else if (mds::TwoPhaseCommitState::ON_COMMIT != trans_stat) {
       if ((ObTabletStatus::NORMAL == data.tablet_status_ && data.create_commit_version_ == ObTransVersion::INVALID_TRANS_VERSION)
-          || ObTabletStatus::TRANSFER_IN == data.tablet_status_
+          || ObTabletStatus::RESERVED_5 == data.tablet_status_
           || ObTabletStatus::SPLIT_DST == data.tablet_status_) {
         ret = OB_EAGAIN;
         LOG_INFO("latest transaction has not committed yet, should retry", KR(ret), K(ls_id), K(tablet_id),
@@ -1960,13 +1960,13 @@ int ObLS::diagnose(DiagnoseInfo &info) const
   return ret;
 }
 
-int ObLS::inc_update_transfer_scn(const share::SCN &transfer_scn)
+int ObLS::inc_update_reserved_scn(const share::SCN &reserved_scn)
 {
   int ret = OB_SUCCESS;
   WRLockGuard guard(meta_rwlock_);
   if (OB_FAIL(ret)) {
-  } else if (OB_FAIL(ls_meta_.inc_update_transfer_scn(ls_epoch_, transfer_scn))) {
-    LOG_WARN("fail to set transfer scn", K(ret), K(transfer_scn), K_(ls_meta));
+  } else if (OB_FAIL(ls_meta_.inc_update_reserved_scn(ls_epoch_, reserved_scn))) {
+    LOG_WARN("fail to set reserved scn", K(ret), K(reserved_scn), K_(ls_meta));
   } else {
     // do nothing
   }

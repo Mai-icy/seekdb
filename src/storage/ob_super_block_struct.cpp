@@ -559,7 +559,7 @@ ObActiveTabletItem::ObActiveTabletItem(const common::ObTabletID tablet_id, const
 OB_SERIALIZE_MEMBER(ObLSActiveTabletArray, items_);
 
 
-OB_SERIALIZE_MEMBER(ObPendingFreeTabletItem, tablet_id_, tablet_meta_version_, status_, free_time_, gc_type_, tablet_transfer_seq_);
+OB_SERIALIZE_MEMBER(ObPendingFreeTabletItem, tablet_id_, tablet_meta_version_, status_, free_time_, gc_type_);
 OB_SERIALIZE_MEMBER(ObLSPendingFreeTabletArray, items_);
 
 int ObLSPendingFreeTabletArray::assign(const ObLSPendingFreeTabletArray &other)

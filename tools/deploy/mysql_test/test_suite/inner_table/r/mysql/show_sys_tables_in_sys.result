@@ -1785,14 +1785,13 @@ id	field	type	length	precision	nullable
 21	valchar	22	4000	-1	1
 22	chgtime	18	0	25	1
 23	spare1	5	0	20	1
-table oceanbase.__all_tablet_to_ls column_count 5 table_id 343
+table oceanbase.__all_tablet_to_ls column_count 4 table_id 343
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=343 order by column_id;
 id	field	type	length	precision	nullable
 16	gmt_create	18	0	25	1
 17	gmt_modified	18	0	25	1
 18	tablet_id	5	0	20	0
 19	table_id	5	0	20	0
-20	transfer_seq	5	0	20	0
 table oceanbase.__all_tablet_to_table_history column_count 6 table_id 369
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=369 order by column_id;
 id	field	type	length	precision	nullable
@@ -3105,7 +3104,7 @@ id	field	type	length	precision	nullable
 32	freeze_state	22	256	-1	0
 33	freeze_time_dist	22	256	-1	0
 34	compaction_info_list	22	128	-1	0
-table oceanbase.__all_virtual_trans_stat column_count 32 table_id 11027
+table oceanbase.__all_virtual_trans_stat column_count 31 table_id 11027
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=11027 order by column_id;
 id	field	type	length	precision	nullable
 16	trans_type	5	0	20	0
@@ -3135,11 +3134,10 @@ id	field	type	length	precision	nullable
 40	start_scn	10	0	20	0
 41	end_scn	10	0	20	0
 42	rec_scn	10	0	20	0
-43	transfer_blocking	1	0	4	0
-44	busy_cbs	5	0	20	0
-45	replay_complete	5	0	20	0
-46	serial_log_final_scn	5	0	20	0
-47	callback_list_stats	30	536870911	-1	0
+43	busy_cbs	5	0	20	0
+44	replay_complete	5	0	20	0
+45	serial_log_final_scn	5	0	20	0
+46	callback_list_stats	30	536870911	-1	0
 table oceanbase.__all_virtual_trans_ctx_mgr_stat column_count 6 table_id 11028
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=11028 order by column_id;
 id	field	type	length	precision	nullable
@@ -4541,13 +4539,13 @@ id	field	type	length	precision	nullable
 23	migrate_status	5	0	20	0
 24	rebuild_seq	5	0	20	0
 25	tablet_change_checkpoint_scn	10	0	20	0
-26	transfer_scn	10	0	20	0
+26	reserved_scn	10	0	20	0
 27	tx_blocked	5	0	20	0
 28	required_data_disk_size	5	0	20	0
 29	mv_major_merge_scn	10	0	20	0
 30	mv_publish_scn	10	0	20	0
 31	mv_safe_scn	10	0	20	0
-table oceanbase.__all_virtual_tablet_info column_count 13 table_id 12288
+table oceanbase.__all_virtual_tablet_info column_count 10 table_id 12288
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=12288 order by column_id;
 id	field	type	length	precision	nullable
 16	tablet_id	5	0	20	0
@@ -4556,13 +4554,10 @@ id	field	type	length	precision	nullable
 19	checkpoint_scn	10	0	20	0
 20	compaction_scn	10	0	20	0
 21	multi_version_start	10	0	20	0
-22	transfer_start_scn	10	0	20	0
-23	transfer_seq	5	0	20	0
-24	has_transfer_table	5	0	20	0
-25	restore_status	5	0	20	0
-26	tablet_status	5	0	20	0
-27	is_committed	5	0	20	0
-28	is_empty_shell	5	0	20	0
+22	restore_status	5	0	20	0
+23	tablet_status	5	0	20	0
+24	is_committed	5	0	20	0
+25	is_empty_shell	5	0	20	0
 table oceanbase.__all_virtual_obj_lock column_count 16 table_id 12289
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=12289 order by column_id;
 id	field	type	length	precision	nullable

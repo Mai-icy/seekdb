@@ -473,8 +473,7 @@ int ObDDLRedoReplayExecutor::do_inc_replay_(
     // do nothing
   } else {
     ObStorageObjectOpt opt;
-    opt.set_private_object_opt(tablet_handle.get_obj()->get_tablet_id().id(),
-                               tablet_handle.get_obj()->get_transfer_seq());
+    opt.set_private_object_opt(tablet_handle.get_obj()->get_tablet_id().id());
     ObStorageObjectWriteInfo object_write_info;
     object_write_info.buffer_ = write_info.buffer_;
     object_write_info.size_= write_info.size_;
@@ -625,8 +624,7 @@ int ObDDLRedoReplayExecutor::do_full_replay_(
   } else {
     const ObDDLMacroBlockRedoInfo &redo_info = log_->get_redo_info();
     ObStorageObjectOpt opt;
-    opt.set_private_object_opt(tablet_handle.get_obj()->get_tablet_id().id(),
-                               tablet_handle.get_obj()->get_transfer_seq());
+    opt.set_private_object_opt(tablet_handle.get_obj()->get_tablet_id().id());
     ObStorageObjectHandle macro_handle;
     ObStorageObjectWriteInfo write_info;
     write_info.buffer_ = redo_info.data_buffer_.ptr();
@@ -1210,7 +1208,7 @@ int ObSplitFinishReplayExecutor::modify_tablet_restore_status_if_need(
       } else if (ObTabletRestoreStatus::STATUS::FULL != des_restore_status) {
           //do nothing
       } else if (OB_FAIL(ls->get_tablet_svr()->update_tablet_restore_status(t_id, 
-          ObTabletRestoreStatus::STATUS::EMPTY, false/* need reset transfer flag */, true/*need_to_set_split_data_complete*/))) {
+          ObTabletRestoreStatus::STATUS::EMPTY, true/*need_to_set_split_data_complete*/))) {
         LOG_WARN("failed to update tablet restore status", K(ret), KPC(tablet));
       // TODO(xingzhi): add this fuction where supporting restore 
       // } else {

@@ -35,17 +35,15 @@ public:
     : object_type_(ObStorageObjectType::PRIVATE_DATA_MACRO) {}
 
   ~ObStorageObjectOpt() {}
-  void set_private_object_opt(const int64_t tablet_id = -1, const int64_t tablet_transfer_seq = -1)
+  void set_private_object_opt(const int64_t tablet_id = -1)
   {
     object_type_ = ObStorageObjectType::PRIVATE_DATA_MACRO;
     private_opt_.tablet_id_ = tablet_id;
-    private_opt_.tablet_trasfer_seq_ = tablet_transfer_seq;
   }
-  void set_private_meta_macro_object_opt(const int64_t tablet_id = -1, const int64_t tablet_transfer_seq = -1)
+  void set_private_meta_macro_object_opt(const int64_t tablet_id = -1)
   {
     object_type_ = ObStorageObjectType::PRIVATE_META_MACRO;
     private_opt_.tablet_id_ = tablet_id;
-    private_opt_.tablet_trasfer_seq_ = tablet_transfer_seq;
   }
   void set_ss_share_data_macro_object_opt(
       const int64_t tablet_id,
@@ -91,13 +89,12 @@ public:
   };
 
   void set_ss_private_tablet_meta_object_opt(
-      const int64_t ls_id, const uint64_t tablet_id, const uint64_t version, const int64_t tablet_trasfer_seq)
+      const int64_t ls_id, const uint64_t tablet_id, const uint64_t version)
   {
     object_type_ = ObStorageObjectType::PRIVATE_TABLET_META;
     ss_private_tablet_opt_.ls_id_ = ls_id;
     ss_private_tablet_opt_.tablet_id_ = tablet_id;
     ss_private_tablet_opt_.version_ = version;
-    ss_private_tablet_opt_.tablet_transfer_seq_ = tablet_trasfer_seq;
   }
   void set_ss_private_tablet_meta_current_verison_object_opt(
       const int64_t ls_id, const uint64_t tablet_id)
@@ -200,7 +197,6 @@ public:
   // Must match MacroBlockId::meta_version_id_ (SF_BIT_META_VERSION_ID-bit unsigned field).
   static constexpr uint64_t INVALID_TABLET_VERSION =
       (1llu << (MacroBlockId::SF_BIT_META_VERSION_ID)) - 1;
-  static const int64_t INVALID_TABLET_TRANSFER_SEQ = -1;
   static bool is_inaccurate_tablet_addr(const storage::ObMetaDiskAddr &tablet_meta_addr)
   {
     return tablet_meta_addr.is_block() && tablet_meta_addr.block_id().meta_version_id() == INVALID_TABLET_VERSION;
@@ -210,7 +206,6 @@ private:
   struct PrivateObjectOpt
   {
     uint64_t tablet_id_;
-    uint64_t tablet_trasfer_seq_;
   };
   struct SSShareObjectOpt
   {
@@ -233,7 +228,7 @@ private:
     int64_t tenant_epoch_id_;
   };
   // ls level meta include:
-  // ls_meta/dup_table_meta/active_tablet_array/pending_free_tablet_array/tansfer_id_array
+  // ls_meta/dup_table_meta/active_tablet_array/pending_free_tablet_array
   struct SSLSLevelMetaObjectOpt
   {
     uint64_t ls_id_;
@@ -244,7 +239,6 @@ private:
     uint64_t ls_id_;
     uint64_t tablet_id_;
     int64_t version_;
-    int64_t tablet_transfer_seq_;
   };
   struct SSPrivateTabletCurrentVersionObjectOpt
   {
