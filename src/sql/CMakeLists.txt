@@ -93,7 +93,6 @@ ob_set_subtarget(ob_sql engine_vector_fixed
 
 ob_set_subtarget(ob_sql optimizer_stat
   optimizer/stat/ob_basic_stats_estimator.cpp
-  optimizer/stat/ob_column_store_refine_estimator.cpp
   optimizer/stat/ob_dbms_stats_copy_table_stats.cpp
   optimizer/stat/ob_dbms_stats_executor.cpp
   optimizer/stat/ob_dbms_stats_export_import.cpp

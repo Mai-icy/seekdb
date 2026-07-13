@@ -207,7 +207,6 @@ struct ObOptParamHint
     DEF(_PUSH_JOIN_PREDICATE,)                      \
     DEF(RANGE_INDEX_DIVE_LIMIT,)                    \
     DEF(PARTITION_INDEX_DIVE_LIMIT,)                \
-    DEF(OB_TABLE_ACCESS_POLICY,)                    \
     DEF(PARTITION_WISE_PLAN_ENABLED,)               \
     DEF(USE_HASH_ROLLUP,)                           \
     DEF(ENABLE_PX_ORDERED_COORD,)                   \

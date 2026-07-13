@@ -88,7 +88,6 @@ const ObSysVarClassType ESSENTIAL_SYS_VARS[] = {
   SYS_VAR_DEFAULT_COLLATION_FOR_UTF8MB4,        // default_collation_for_utf8mb4
   SYS_VAR__ENABLE_OLD_CHARSET_AGGREGATION,        // _enable_old_charset_aggregation
   SYS_VAR_ENABLE_SQL_PLAN_MONITOR,        // enable_sql_plan_monitor
-  SYS_VAR_OB_TABLE_ACCESS_POLICY,        // ob_table_access_policy
   SYS_VAR__PUSH_JOIN_PREDICATE,        // _push_join_predicate
 };
 
@@ -1915,7 +1914,7 @@ static struct VarsInit{
       ObSysVars[127].info_ = "the routing policy of obproxy/java client and observer internal retry, 1=READONLY_ZONE_FIRST, 2=ONLY_READONLY_ZONE, 3=UNMERGE_ZONE_FIRST, 4=UNMERGE_FOLLOWER_FIRST, 5=FORCE_READONLY_ZONE" ;
       ObSysVars[127].name_ = "ob_route_policy" ;
       ObSysVars[127].data_type_ = ObIntType ;
-      ObSysVars[127].enum_names_ = "[u'', u'READONLY_ZONE_FIRST', u'ONLY_READONLY_ZONE', u'UNMERGE_ZONE_FIRST', u'UNMERGE_FOLLOWER_FIRST', u'COLUMN_STORE_ONLY', u'FORCE_READONLY_ZONE']" ;
+      ObSysVars[127].enum_names_ = "[u'', u'READONLY_ZONE_FIRST', u'ONLY_READONLY_ZONE', u'UNMERGE_ZONE_FIRST', u'UNMERGE_FOLLOWER_FIRST', u'FORCE_READONLY_ZONE']" ;
       ObSysVars[127].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::INFLUENCE_PLAN | ObSysVarFlag::NEED_SERIALIZE ;
       ObSysVars[127].id_ = SYS_VAR_OB_ROUTE_POLICY ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_OB_ROUTE_POLICY)) ;
@@ -11015,169 +11014,155 @@ static struct VarsInit{
     }();
 
     [&] (){
-      ObSysVars[799].default_value_ = "2" ;
-      ObSysVars[799].info_ = "Control the optimizer to generate a table access plan that prefers a specific storage format." ;
-      ObSysVars[799].name_ = "ob_table_access_policy" ;
-      ObSysVars[799].data_type_ = ObIntType ;
-      ObSysVars[799].enum_names_ = "[u'ROW_STORE', u'COLUMN_STORE', u'AUTO']" ;
-      ObSysVars[799].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::INFLUENCE_PLAN | ObSysVarFlag::NEED_SERIALIZE ;
-      ObSysVars[799].id_ = SYS_VAR_OB_TABLE_ACCESS_POLICY ;
-      cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_OB_TABLE_ACCESS_POLICY)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_OB_TABLE_ACCESS_POLICY] = 799 ;
-      ObSysVars[799].base_value_ = "2" ;
-    ObSysVars[799].alias_ = "OB_SV_TABLE_ACCESS_POLICY" ;
+      ObSysVars[799].default_value_ = "3" ;
+      ObSysVars[799].info_ = "The path name of the file in which the server writes its process ID" ;
+      ObSysVars[799].name_ = "pid_file" ;
+      ObSysVars[799].data_type_ = ObVarcharType ;
+      ObSysVars[799].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::READONLY | ObSysVarFlag::MYSQL_ONLY ;
+      ObSysVars[799].id_ = SYS_VAR_PID_FILE ;
+      cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_PID_FILE)) ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_PID_FILE] = 799 ;
+      ObSysVars[799].base_value_ = "3" ;
+    ObSysVars[799].alias_ = "OB_SV_PID_FILE" ;
     }();
 
     [&] (){
       ObSysVars[800].default_value_ = "3" ;
-      ObSysVars[800].info_ = "The path name of the file in which the server writes its process ID" ;
-      ObSysVars[800].name_ = "pid_file" ;
-      ObSysVars[800].data_type_ = ObVarcharType ;
+      ObSysVars[800].info_ = "The number of the port on which the server listens for TCP/IP connections" ;
+      ObSysVars[800].name_ = "port" ;
+      ObSysVars[800].data_type_ = ObIntType ;
       ObSysVars[800].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::READONLY | ObSysVarFlag::MYSQL_ONLY ;
-      ObSysVars[800].id_ = SYS_VAR_PID_FILE ;
-      cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_PID_FILE)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_PID_FILE] = 800 ;
+      ObSysVars[800].id_ = SYS_VAR_PORT ;
+      cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_PORT)) ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_PORT] = 800 ;
       ObSysVars[800].base_value_ = "3" ;
-    ObSysVars[800].alias_ = "OB_SV_PID_FILE" ;
+    ObSysVars[800].alias_ = "OB_SV_PORT" ;
     }();
 
     [&] (){
       ObSysVars[801].default_value_ = "3" ;
-      ObSysVars[801].info_ = "The number of the port on which the server listens for TCP/IP connections" ;
-      ObSysVars[801].name_ = "port" ;
-      ObSysVars[801].data_type_ = ObIntType ;
+      ObSysVars[801].info_ = "the name of the socket file that is used for local client connections" ;
+      ObSysVars[801].name_ = "socket" ;
+      ObSysVars[801].data_type_ = ObVarcharType ;
       ObSysVars[801].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::READONLY | ObSysVarFlag::MYSQL_ONLY ;
-      ObSysVars[801].id_ = SYS_VAR_PORT ;
-      cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_PORT)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_PORT] = 801 ;
-      ObSysVars[801].base_value_ = "3" ;
-    ObSysVars[801].alias_ = "OB_SV_PORT" ;
-    }();
-
-    [&] (){
-      ObSysVars[802].default_value_ = "3" ;
-      ObSysVars[802].info_ = "the name of the socket file that is used for local client connections" ;
-      ObSysVars[802].name_ = "socket" ;
-      ObSysVars[802].data_type_ = ObVarcharType ;
-      ObSysVars[802].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::READONLY | ObSysVarFlag::MYSQL_ONLY ;
-      ObSysVars[802].id_ = SYS_VAR_SOCKET ;
+      ObSysVars[801].id_ = SYS_VAR_SOCKET ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_SOCKET)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_SOCKET] = 802 ;
-      ObSysVars[802].base_value_ = "3" ;
-    ObSysVars[802].alias_ = "OB_SV_SOCKET" ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_SOCKET] = 801 ;
+      ObSysVars[801].base_value_ = "3" ;
+    ObSysVars[801].alias_ = "OB_SV_SOCKET" ;
     }();
 
     [&] (){
-      ObSysVars[803].default_value_ = "4" ;
-      ObSysVars[803].info_ = "The default refresh parallelism of materialized view" ;
-      ObSysVars[803].name_ = "mview_refresh_dop" ;
-      ObSysVars[803].data_type_ = ObUInt64Type ;
-      ObSysVars[803].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::SESSION_SCOPE ;
-      ObSysVars[803].id_ = SYS_VAR_MVIEW_REFRESH_DOP ;
+      ObSysVars[802].default_value_ = "4" ;
+      ObSysVars[802].info_ = "The default refresh parallelism of materialized view" ;
+      ObSysVars[802].name_ = "mview_refresh_dop" ;
+      ObSysVars[802].data_type_ = ObUInt64Type ;
+      ObSysVars[802].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::SESSION_SCOPE ;
+      ObSysVars[802].id_ = SYS_VAR_MVIEW_REFRESH_DOP ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_MVIEW_REFRESH_DOP)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_MVIEW_REFRESH_DOP] = 803 ;
-      ObSysVars[803].base_value_ = "4" ;
-    ObSysVars[803].alias_ = "OB_SV_MVIEW_REFRESH_DOP" ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_MVIEW_REFRESH_DOP] = 802 ;
+      ObSysVars[802].base_value_ = "4" ;
+    ObSysVars[802].alias_ = "OB_SV_MVIEW_REFRESH_DOP" ;
     }();
 
     [&] (){
-      ObSysVars[804].default_value_ = "1" ;
-      ObSysVars[804].info_ = "Control whether the optimizer considers the impact of rowgoal (such as the LIMIT operator, etc.) during cardinality estimation." ;
-      ObSysVars[804].name_ = "enable_optimizer_rowgoal" ;
-      ObSysVars[804].data_type_ = ObIntType ;
-      ObSysVars[804].enum_names_ = "[u'OFF', u'AUTO', u'ON']" ;
-      ObSysVars[804].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::SESSION_SCOPE ;
-      ObSysVars[804].id_ = SYS_VAR_ENABLE_OPTIMIZER_ROWGOAL ;
+      ObSysVars[803].default_value_ = "1" ;
+      ObSysVars[803].info_ = "Control whether the optimizer considers the impact of rowgoal (such as the LIMIT operator, etc.) during cardinality estimation." ;
+      ObSysVars[803].name_ = "enable_optimizer_rowgoal" ;
+      ObSysVars[803].data_type_ = ObIntType ;
+      ObSysVars[803].enum_names_ = "[u'OFF', u'AUTO', u'ON']" ;
+      ObSysVars[803].flags_ = ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::SESSION_SCOPE ;
+      ObSysVars[803].id_ = SYS_VAR_ENABLE_OPTIMIZER_ROWGOAL ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_ENABLE_OPTIMIZER_ROWGOAL)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_ENABLE_OPTIMIZER_ROWGOAL] = 804 ;
-      ObSysVars[804].base_value_ = "1" ;
-    ObSysVars[804].alias_ = "OB_SV_ENABLE_OPTIMIZER_ROWGOAL" ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_ENABLE_OPTIMIZER_ROWGOAL] = 803 ;
+      ObSysVars[803].base_value_ = "1" ;
+    ObSysVars[803].alias_ = "OB_SV_ENABLE_OPTIMIZER_ROWGOAL" ;
     }();
 
     [&] (){
-      ObSysVars[805].default_value_ = "8" ;
-      ObSysVars[805].info_ = "The number of nearest cluster centers from the IVF vector index searched during this session." ;
-      ObSysVars[805].name_ = "ob_ivf_nprobes" ;
-      ObSysVars[805].data_type_ = ObUInt64Type ;
-      ObSysVars[805].min_val_ = "1" ;
-      ObSysVars[805].max_val_ = "65536" ;
-      ObSysVars[805].flags_ = ObSysVarFlag::SESSION_SCOPE ;
-      ObSysVars[805].id_ = SYS_VAR_OB_IVF_NPROBES ;
+      ObSysVars[804].default_value_ = "8" ;
+      ObSysVars[804].info_ = "The number of nearest cluster centers from the IVF vector index searched during this session." ;
+      ObSysVars[804].name_ = "ob_ivf_nprobes" ;
+      ObSysVars[804].data_type_ = ObUInt64Type ;
+      ObSysVars[804].min_val_ = "1" ;
+      ObSysVars[804].max_val_ = "65536" ;
+      ObSysVars[804].flags_ = ObSysVarFlag::SESSION_SCOPE ;
+      ObSysVars[804].id_ = SYS_VAR_OB_IVF_NPROBES ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_OB_IVF_NPROBES)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_OB_IVF_NPROBES] = 805 ;
-      ObSysVars[805].base_value_ = "8" ;
-    ObSysVars[805].alias_ = "OB_SV_IVF_NPROBES" ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_OB_IVF_NPROBES] = 804 ;
+      ObSysVars[804].base_value_ = "8" ;
+    ObSysVars[804].alias_ = "OB_SV_IVF_NPROBES" ;
     }();
 
     [&] (){
-      ObSysVars[806].default_value_ = "0" ;
-      ObSysVars[806].info_ = "The default catalog for session." ;
-      ObSysVars[806].name_ = "_current_default_catalog" ;
-      ObSysVars[806].data_type_ = ObUInt64Type ;
-      ObSysVars[806].min_val_ = "0" ;
-      ObSysVars[806].max_val_ = "18446744073709551615" ;
-      ObSysVars[806].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::NEED_SERIALIZE | ObSysVarFlag::INVISIBLE | ObSysVarFlag::READONLY ;
-      ObSysVars[806].id_ = SYS_VAR__CURRENT_DEFAULT_CATALOG ;
+      ObSysVars[805].default_value_ = "0" ;
+      ObSysVars[805].info_ = "The default catalog for session." ;
+      ObSysVars[805].name_ = "_current_default_catalog" ;
+      ObSysVars[805].data_type_ = ObUInt64Type ;
+      ObSysVars[805].min_val_ = "0" ;
+      ObSysVars[805].max_val_ = "18446744073709551615" ;
+      ObSysVars[805].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::NEED_SERIALIZE | ObSysVarFlag::INVISIBLE | ObSysVarFlag::READONLY ;
+      ObSysVars[805].id_ = SYS_VAR__CURRENT_DEFAULT_CATALOG ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR__CURRENT_DEFAULT_CATALOG)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR__CURRENT_DEFAULT_CATALOG] = 806 ;
-      ObSysVars[806].base_value_ = "0" ;
-    ObSysVars[806].alias_ = "OB_SV__CURRENT_DEFAULT_CATALOG" ;
+      ObSysVarsIdToArrayIdx[SYS_VAR__CURRENT_DEFAULT_CATALOG] = 805 ;
+      ObSysVars[805].base_value_ = "0" ;
+    ObSysVars[805].alias_ = "OB_SV__CURRENT_DEFAULT_CATALOG" ;
     }();
 
     [&] (){
-      ObSysVars[807].default_value_ = "1" ;
-      ObSysVars[807].info_ = "wether use parameter anonymous_block in ps mode" ;
-      ObSysVars[807].name_ = "ob_enable_ps_parameter_anonymous_block" ;
-      ObSysVars[807].data_type_ = ObIntType ;
-      ObSysVars[807].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::NEED_SERIALIZE ;
-      ObSysVars[807].id_ = SYS_VAR_OB_ENABLE_PS_PARAMETER_ANONYMOUS_BLOCK ;
+      ObSysVars[806].default_value_ = "1" ;
+      ObSysVars[806].info_ = "wether use parameter anonymous_block in ps mode" ;
+      ObSysVars[806].name_ = "ob_enable_ps_parameter_anonymous_block" ;
+      ObSysVars[806].data_type_ = ObIntType ;
+      ObSysVars[806].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::NEED_SERIALIZE ;
+      ObSysVars[806].id_ = SYS_VAR_OB_ENABLE_PS_PARAMETER_ANONYMOUS_BLOCK ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_OB_ENABLE_PS_PARAMETER_ANONYMOUS_BLOCK)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_OB_ENABLE_PS_PARAMETER_ANONYMOUS_BLOCK] = 807 ;
-      ObSysVars[807].base_value_ = "1" ;
-    ObSysVars[807].alias_ = "OB_SV_ENABLE_PS_PARAMETER_ANONYMOUS_BLOCK" ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_OB_ENABLE_PS_PARAMETER_ANONYMOUS_BLOCK] = 806 ;
+      ObSysVars[806].base_value_ = "1" ;
+    ObSysVars[806].alias_ = "OB_SV_ENABLE_PS_PARAMETER_ANONYMOUS_BLOCK" ;
     }();
 
     [&] (){
-      ObSysVars[808].default_value_ = "1024" ;
-      ObSysVars[808].info_ = "The extra info size threshold filled into the hnsw index param, when not specified during hnsw index creation." ;
-      ObSysVars[808].name_ = "ob_hnsw_extra_info_max_size" ;
-      ObSysVars[808].data_type_ = ObUInt64Type ;
-      ObSysVars[808].min_val_ = "0" ;
-      ObSysVars[808].max_val_ = "16384" ;
-      ObSysVars[808].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::GLOBAL_SCOPE ;
-      ObSysVars[808].id_ = SYS_VAR_OB_HNSW_EXTRA_INFO_MAX_SIZE ;
+      ObSysVars[807].default_value_ = "1024" ;
+      ObSysVars[807].info_ = "The extra info size threshold filled into the hnsw index param, when not specified during hnsw index creation." ;
+      ObSysVars[807].name_ = "ob_hnsw_extra_info_max_size" ;
+      ObSysVars[807].data_type_ = ObUInt64Type ;
+      ObSysVars[807].min_val_ = "0" ;
+      ObSysVars[807].max_val_ = "16384" ;
+      ObSysVars[807].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::GLOBAL_SCOPE ;
+      ObSysVars[807].id_ = SYS_VAR_OB_HNSW_EXTRA_INFO_MAX_SIZE ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_OB_HNSW_EXTRA_INFO_MAX_SIZE)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_OB_HNSW_EXTRA_INFO_MAX_SIZE] = 808 ;
-      ObSysVars[808].base_value_ = "1024" ;
-    ObSysVars[808].alias_ = "OB_SV_HNSW_EXTRA_INFO_MAX_SIZE" ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_OB_HNSW_EXTRA_INFO_MAX_SIZE] = 807 ;
+      ObSysVars[807].base_value_ = "1024" ;
+    ObSysVars[807].alias_ = "OB_SV_HNSW_EXTRA_INFO_MAX_SIZE" ;
     }();
 
     [&] (){
-      ObSysVars[809].default_value_ = "1" ;
-      ObSysVars[809].info_ = "control whether the optimizer pushes down join predicates to view" ;
-      ObSysVars[809].name_ = "_push_join_predicate" ;
-      ObSysVars[809].data_type_ = ObIntType ;
-      ObSysVars[809].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::INVISIBLE | ObSysVarFlag::INFLUENCE_PLAN ;
-      ObSysVars[809].id_ = SYS_VAR__PUSH_JOIN_PREDICATE ;
+      ObSysVars[808].default_value_ = "1" ;
+      ObSysVars[808].info_ = "control whether the optimizer pushes down join predicates to view" ;
+      ObSysVars[808].name_ = "_push_join_predicate" ;
+      ObSysVars[808].data_type_ = ObIntType ;
+      ObSysVars[808].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::GLOBAL_SCOPE | ObSysVarFlag::INVISIBLE | ObSysVarFlag::INFLUENCE_PLAN ;
+      ObSysVars[808].id_ = SYS_VAR__PUSH_JOIN_PREDICATE ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR__PUSH_JOIN_PREDICATE)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR__PUSH_JOIN_PREDICATE] = 809 ;
-      ObSysVars[809].base_value_ = "1" ;
-    ObSysVars[809].alias_ = "OB_SV__PUSH_JOIN_PREDICATE" ;
+      ObSysVarsIdToArrayIdx[SYS_VAR__PUSH_JOIN_PREDICATE] = 808 ;
+      ObSysVars[808].base_value_ = "1" ;
+    ObSysVars[808].alias_ = "OB_SV__PUSH_JOIN_PREDICATE" ;
     }();
 
     [&] (){
-      ObSysVars[810].default_value_ = "0" ;
-      ObSysVars[810].info_ = "set the smallest drop_ratio of values across all dimensions of the query vector to zero" ;
-      ObSysVars[810].name_ = "ob_sparse_drop_ratio_search" ;
-      ObSysVars[810].data_type_ = ObUInt64Type ;
-      ObSysVars[810].min_val_ = "0" ;
-      ObSysVars[810].max_val_ = "100" ;
-      ObSysVars[810].flags_ = ObSysVarFlag::SESSION_SCOPE ;
-      ObSysVars[810].id_ = SYS_VAR_OB_SPARSE_DROP_RATIO_SEARCH ;
+      ObSysVars[809].default_value_ = "0" ;
+      ObSysVars[809].info_ = "set the smallest drop_ratio of values across all dimensions of the query vector to zero" ;
+      ObSysVars[809].name_ = "ob_sparse_drop_ratio_search" ;
+      ObSysVars[809].data_type_ = ObUInt64Type ;
+      ObSysVars[809].min_val_ = "0" ;
+      ObSysVars[809].max_val_ = "100" ;
+      ObSysVars[809].flags_ = ObSysVarFlag::SESSION_SCOPE ;
+      ObSysVars[809].id_ = SYS_VAR_OB_SPARSE_DROP_RATIO_SEARCH ;
       cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_OB_SPARSE_DROP_RATIO_SEARCH)) ;
-      ObSysVarsIdToArrayIdx[SYS_VAR_OB_SPARSE_DROP_RATIO_SEARCH] = 810 ;
-      ObSysVars[810].base_value_ = "0" ;
-    ObSysVars[810].alias_ = "OB_SV_SPARSE_DROP_RATIO_SEARCH" ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_OB_SPARSE_DROP_RATIO_SEARCH] = 809 ;
+      ObSysVars[809].base_value_ = "0" ;
+    ObSysVars[809].alias_ = "OB_SV_SPARSE_DROP_RATIO_SEARCH" ;
     }();
 
     if (cur_max_var_id >= ObSysVarMeta::OB_MAX_SYS_VAR_ID) {
@@ -11186,7 +11171,7 @@ static struct VarsInit{
   }
 }vars_init;
 
-static int64_t var_amount = 811;
+static int64_t var_amount = 810;
 
 int64_t ObSysVariables::get_all_sys_var_count(){ return ObSysVarMeta::ALL_SYS_VARS_COUNT;}
 ObSysVarClassType ObSysVariables::get_sys_var_id(int64_t i){ return ObSysVars[i].id_;}

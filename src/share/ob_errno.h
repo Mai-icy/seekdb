@@ -104,7 +104,6 @@ constexpr int OB_RELEASE_SCHEMA_ERROR = -4178;
 constexpr int OB_NO_EMPTY_ENTRY = -4180;
 constexpr int OB_BEYOND_THE_RANGE = -4183;
 constexpr int OB_SERVER_OUTOF_DISK_SPACE = -4184;
-constexpr int OB_COLUMN_GROUP_NOT_FOUND = -4185;
 constexpr int OB_CS_COMPRESS_LIB_ERROR = -4186;
 constexpr int OB_SCHEDULER_TASK_CNT_MISMATCH = -4188;
 constexpr int OB_INVALID_MACRO_BLOCK_TYPE = -4189;
@@ -814,7 +813,6 @@ constexpr int OB_ERR_OBJECT_STRING_DOES_NOT_EXIST = -5400;
 constexpr int OB_ERR_RESULTANT_DATA_TYPE_OF_VIRTUAL_COLUMN_IS_NOT_SUPPORTED = -5401;
 constexpr int OB_ERR_GET_STACKED_DIAGNOSTICS = -5402;
 constexpr int OB_DDL_SCHEMA_VERSION_NOT_MATCH = -5403;
-constexpr int OB_ERR_COLUMN_GROUP_DUPLICATE = -5404;
 constexpr int OB_ERR_RESERVED_SYNTAX = -5405;
 constexpr int OB_ERR_INVALID_PARAM_TO_PROCEDURE = -5406;
 constexpr int OB_ERR_WRONG_PARAMETERS_TO_NATIVE_FCT = -5407;
@@ -2128,7 +2126,6 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_SEARCH_NOT_FOUND__USER_ERROR_MSG "Value not found"
 #define OB_BEYOND_THE_RANGE__USER_ERROR_MSG "Key out of range"
 #define OB_SERVER_OUTOF_DISK_SPACE__USER_ERROR_MSG "Server out of disk space"
-#define OB_COLUMN_GROUP_NOT_FOUND__USER_ERROR_MSG "Column group \'%.*s\' not found"
 #define OB_CS_COMPRESS_LIB_ERROR__USER_ERROR_MSG "Server failed to get compress library"
 #define OB_ITEM_NOT_MATCH__USER_ERROR_MSG "Item not match"
 #define OB_SCHEDULER_TASK_CNT_MISMATCH__USER_ERROR_MSG "Running task cnt and unfinished task cnt not consistent"
@@ -2916,7 +2913,6 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_ERR_RESULTANT_DATA_TYPE_OF_VIRTUAL_COLUMN_IS_NOT_SUPPORTED__USER_ERROR_MSG "resultant data type of virtual column is not supported"
 #define OB_ERR_GET_STACKED_DIAGNOSTICS__USER_ERROR_MSG "GET STACKED DIAGNOSTICS when handler not active"
 #define OB_DDL_SCHEMA_VERSION_NOT_MATCH__USER_ERROR_MSG "ddl schema version not match"
-#define OB_ERR_COLUMN_GROUP_DUPLICATE__USER_ERROR_MSG "Duplicate column group name '%.*s'"
 #define OB_ERR_RESERVED_SYNTAX__USER_ERROR_MSG "The \'%.*s\' syntax is reserved for purposes internal to the OceanBase Server"
 #define OB_ERR_INVALID_PARAM_TO_PROCEDURE__USER_ERROR_MSG "Incorrect parameters to procedure \'%.*s\'"
 #define OB_ERR_WRONG_PARAMETERS_TO_NATIVE_FCT__USER_ERROR_MSG "Incorrect parameters in the call to native function '%.*s'"
@@ -4368,7 +4364,7 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_ERR_DATA_TOO_LONG_MSG_FMT_V2__USER_ERROR_MSG "Data too long for column '%.*s' at row %ld"
 #define OB_ERR_INVALID_DATE_MSG_FMT_V2__USER_ERROR_MSG "Incorrect datetime value for column '%.*s' at row %ld"
 
-extern int g_all_ob_errnos[2410];
+extern int g_all_ob_errnos[2408];
 
   const char *ob_error_name(const int oberr);
   const char* ob_error_cause(const int oberr);

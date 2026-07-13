@@ -65,7 +65,6 @@ const char *ObSysVarObRoutePolicy::OB_ROUTE_POLICY_NAMES[] = {
   "ONLY_READONLY_ZONE",
   "UNMERGE_ZONE_FIRST",
   "UNMERGE_FOLLOWER_FIRST",
-  "COLUMN_STORE_ONLY",
   "FORCE_READONLY_ZONE",
   0
 };
@@ -535,12 +534,6 @@ const char *ObSysVarUpdatableViewsWithLimit::UPDATABLE_VIEWS_WITH_LIMIT_NAMES[] 
   "ON",
   "NO",
   "YES",
-  0
-};
-const char *ObSysVarObTableAccessPolicy::OB_TABLE_ACCESS_POLICY_NAMES[] = {
-  "ROW_STORE",
-  "COLUMN_STORE",
-  "AUTO",
   0
 };
 const char *ObSysVarEnableOptimizerRowgoal::ENABLE_OPTIMIZER_ROWGOAL_NAMES[] = {
@@ -1444,7 +1437,6 @@ int ObSysVarFactory::create_all_sys_vars_()
         + sizeof(ObSysVarOptimizerCostBasedTransformation)
         + sizeof(ObSysVarRangeIndexDiveLimit)
         + sizeof(ObSysVarPartitionIndexDiveLimit)
-        + sizeof(ObSysVarObTableAccessPolicy)
         + sizeof(ObSysVarPidFile)
         + sizeof(ObSysVarPort)
         + sizeof(ObSysVarSocket)
@@ -8656,15 +8648,6 @@ int ObSysVarFactory::create_all_sys_vars_()
       }
     }
     if (OB_SUCC(ret)) {
-      if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarObTableAccessPolicy())) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_ERROR("fail to new ObSysVarObTableAccessPolicy", K(ret));
-      } else {
-        store_buf_[share::ObSysVarsToIdxMap::get_store_idx(static_cast<int64_t>(share::SYS_VAR_OB_TABLE_ACCESS_POLICY))] = sys_var_ptr;
-        ptr = (void *)((char *)ptr + sizeof(ObSysVarObTableAccessPolicy));
-      }
-    }
-    if (OB_SUCC(ret)) {
       if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarPidFile())) {
         ret = OB_ALLOCATE_MEMORY_FAILED;
         LOG_ERROR("fail to new ObSysVarPidFile", K(ret));
@@ -11982,10 +11965,6 @@ int ObSysVarFactory::create_sys_var(ObIAllocator &allocator_, share::ObSysVarCla
     }
     case share::SYS_VAR_PARTITION_INDEX_DIVE_LIMIT: {
       ret = create_one_sys_var<ObSysVarPartitionIndexDiveLimit>(allocator_, sys_var_ptr, "ObSysVarPartitionIndexDiveLimit");
-      break;
-    }
-    case share::SYS_VAR_OB_TABLE_ACCESS_POLICY: {
-      ret = create_one_sys_var<ObSysVarObTableAccessPolicy>(allocator_, sys_var_ptr, "ObSysVarObTableAccessPolicy");
       break;
     }
     case share::SYS_VAR_PID_FILE: {

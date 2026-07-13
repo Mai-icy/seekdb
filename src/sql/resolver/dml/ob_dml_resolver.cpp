@@ -11325,8 +11325,6 @@ int ObDMLResolver::resolve_optimize_hint(const ParseNode &hint_node,
     case T_INDEX_SS_HINT:
     case T_INDEX_SS_ASC_HINT:
     case T_INDEX_SS_DESC_HINT:
-    case T_USE_COLUMN_STORE_HINT:
-    case T_NO_USE_COLUMN_STORE_HINT:
     case T_INDEX_ASC_HINT:
     case T_INDEX_DESC_HINT: {
       if (OB_FAIL(resolve_index_hint(hint_node, opt_hint))) {
@@ -11504,8 +11502,7 @@ int ObDMLResolver::resolve_index_hint(const ParseNode &index_node,
   } else if (OB_FAIL(resolve_table_relation_in_hint(*table_node, index_hint->get_table()))) {
     LOG_WARN("Resolve table relation fail", K(ret));
   } else if (T_FULL_HINT == index_hint->get_hint_type() ||
-             T_USE_DAS_HINT == index_hint->get_hint_type() ||
-             T_USE_COLUMN_STORE_HINT == index_hint->get_hint_type()) {
+             T_USE_DAS_HINT == index_hint->get_hint_type()) {
     index_hint->set_qb_name(qb_name);
     opt_hint = index_hint;
   } else if (OB_UNLIKELY(3 > index_node.num_child_) ||
