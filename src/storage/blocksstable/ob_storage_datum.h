@@ -56,7 +56,7 @@ struct ObStorageDatum : public common::ObDatum
   OB_INLINE void set_min() { set_ext_value(common::ObObj::MIN_OBJECT_VALUE); }
   OB_INLINE void set_max() { set_ext_value(common::ObObj::MAX_OBJECT_VALUE); }
   OB_INLINE bool is_nop_value() const { return is_nop(); } // temp solution
-  // transfer section
+  // conversion section
   OB_INLINE bool is_local_buf() const { return ptr_ == buf_; }
   OB_INLINE int from_buf_enhance(const char *buf, const int64_t buf_len);
   OB_INLINE int from_obj_enhance(const common::ObObj &obj);

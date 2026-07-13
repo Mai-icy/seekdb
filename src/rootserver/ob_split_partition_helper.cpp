@@ -519,7 +519,7 @@ int ObSplitPartitionHelper::insert_dst_tablet_to_ls_and_table_history_(const ObL
       ObArray<ObTabletTablePair> tablet_table_pairs;
       for (int64_t i = 0; OB_SUCC(ret) && i < dst_tablet_ids.at(table_idx).count(); i++) {
         const ObTabletID &tablet_id = dst_tablet_ids.at(table_idx).at(i);
-        const ObTabletToLSInfo tablet_info(tablet_id, ls_id, table_id, 0/*transfer_seq*/);
+        const ObTabletToLSInfo tablet_info(tablet_id, ls_id, table_id);
         if (OB_FAIL(tablet_table_pairs.push_back(ObTabletTablePair(tablet_id, table_id)))) {
           LOG_WARN("failed to push back", K(ret));
         } else if (OB_FAIL(tablet_infos.push_back(tablet_info))) {

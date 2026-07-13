@@ -949,7 +949,7 @@ int ObChunkBatchSliceStore::fill_column_group(const int64_t cg_idx,
 ObColumnSliceStore::ObColumnSliceStore()
   : is_inited_(false), allocator_(nullptr), storage_schema_(nullptr), row_count_(0), dumped_row_count_(0), direct_load_type_(DIRECT_LOAD_MAX),
     tenant_data_version_(0), snapshot_version_(0), ddl_task_id_(0), parallel_task_count_(0),
-    is_micro_index_clustered_(false), tablet_transfer_seq_(share::OB_INVALID_TRANSFER_SEQ), slice_idx_(0), is_cs_replica_(false),
+    is_micro_index_clustered_(false), slice_idx_(0), is_cs_replica_(false),
     tx_desc_(nullptr), trans_id_(), seq_no_()
 {
 }
@@ -1160,7 +1160,6 @@ int ObColumnSliceStore::dump_macro_block()
                                         snapshot_version_,
                                         tenant_data_version_,
                                         is_micro_index_clustered_,
-                                        tablet_transfer_seq_,
                                         0/*concurrent_cnt*/,
                                         SCN::min_scn()/*end_scn, unused for major*/,
                                         &cur_cg_schema,
@@ -1252,7 +1251,6 @@ void ObColumnSliceStore::destroy()
   ddl_task_id_ = 0;
   parallel_task_count_ = 0;
   is_micro_index_clustered_ = false;
-  tablet_transfer_seq_ = share::OB_INVALID_TRANSFER_SEQ;
   start_seqs_.reset();
   start_scn_.reset();
   slice_idx_ = 0;
@@ -1304,7 +1302,6 @@ void ObColumnBatchSliceStore::reset()
   ddl_task_id_ = 0;
   parallel_task_count_ = 0;
   is_micro_index_clustered_ = false; 
-  tablet_transfer_seq_ = OB_INVALID_TRANSFER_SEQ;
   is_cs_replica_ = false;
   tx_desc_ = nullptr;
   trans_id_.reset();
@@ -1609,7 +1606,6 @@ int ObColumnBatchSliceStore::dump_macro_block()
                                     snapshot_version_,
                                     tenant_data_version_,
                                     is_micro_index_clustered_,
-                                    tablet_transfer_seq_,
                                     0/*concurrent_cnt*/,
                                     SCN::min_scn()/*end_scn, unused for major*/,
                                     &cur_cg_schema,
@@ -3626,7 +3622,6 @@ int ObCOSliceWriter::init(const ObStorageSchema *storage_schema, const int64_t c
                                 table_key.get_snapshot_version(),
                                 data_format_version,
                                 tablet_direct_load_mgr->get_micro_index_clustered(),
-                                tablet_direct_load_mgr->get_tablet_transfer_seq(),
                                 0/*concurrent_cnt*/,
                                 SCN::min_scn(),
                                 &cg_schema,

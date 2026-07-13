@@ -246,7 +246,6 @@ int TestCGMicroMacroWriteOp::initialize_args_and_env(const ObObjType *col_types,
       LOG_WARN("fail to init storage schema", K(ret));
     } else {
       tablet_context->tablet_param_.storage_schema_ = storage_schema;
-      tablet_context->tablet_param_.tablet_transfer_seq_ = common::ObTimeUtility::current_time();
       tablet_context->tablet_param_.is_micro_index_clustered_ = true;
       tablet_context->tablet_param_.with_cs_replica_ = false;
     }

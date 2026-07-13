@@ -333,12 +333,9 @@ const int64_t OB_MAX_TABLE_CNT_PER_INDEX = 4;
 // The max count of aux tables with physical tablets per user data table.
 const int64_t OB_MAX_AUX_TABLE_PER_MAIN_TABLE = OB_MAX_INDEX_PER_TABLE * OB_MAX_TABLE_CNT_PER_INDEX +
                                            OB_MAX_SHARED_TABLE_CNT_PER_INDEX_TYPE + OB_AUX_LOB_TABLE_CNT + OB_MLOG_TABLE_CNT; // 517
-// The max tablet count of a transfer is one data table tablet with max aux tablets bound together.
-const int64_t OB_MAX_TRANSFER_BINDING_TABLET_CNT = OB_MAX_AUX_TABLE_PER_MAIN_TABLE + 1; // 518
 
 //       If the new index has multiple aux tables, you need to make sure that OB_MAX_AUX_TABLE_PER_MAIN_TABLE is correct and
-//       modify "tools/obtest/t/quick/include/transfer_max_aux.test" to verify that a partition with
-//       max aux tables can be transferred.
+//       max aux tables can be created.
 enum ObIndexType
 {
   INDEX_TYPE_IS_NOT = 0,//is not index table
@@ -1106,7 +1103,6 @@ inline bool is_index_support_empty_table_opt(ObIndexType index_type)
           || INDEX_TYPE_UNIQUE_GLOBAL_LOCAL_STORAGE == index_type;
 }
 
-// Note: When adding new related table, you need to modify OB_MAX_TRANSFER_BINDING_TABLET_CNT
 inline bool is_related_table(
     const ObTableType &table_type,
     const ObIndexType &index_type)

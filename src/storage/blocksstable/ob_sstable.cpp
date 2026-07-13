@@ -949,7 +949,7 @@ int ObSSTable::get_last_rowkey(
   return ret;
 }
 
-int ObSSTable::deep_copy(ObIAllocator &allocator, ObSSTable *&dst, const bool transfer_macro_ref) const
+int ObSSTable::deep_copy(ObIAllocator &allocator, ObSSTable *&dst, const bool move_macro_ref) const
 {
   int ret = OB_SUCCESS;
   const int64_t deep_copy_size = get_deep_copy_size();
@@ -962,7 +962,7 @@ int ObSSTable::deep_copy(ObIAllocator &allocator, ObSSTable *&dst, const bool tr
     LOG_WARN("fail to inner deep copy sstable", K(ret));
   } else {
     dst = static_cast<ObSSTable *>(meta_obj);
-    if (transfer_macro_ref) {
+    if (move_macro_ref) {
       const_cast<ObSSTable *>(this)->is_tmp_sstable_ = false;
       dst->is_tmp_sstable_ = true;
     }
@@ -1769,7 +1769,6 @@ int ObSSTable::get_cs_range(
 int ObSSTable::persist_linked_block_if_need(
     ObArenaAllocator &allocator,
     const ObTabletID &tablet_id,
-    const int64_t tablet_transfer_seq,
     const int64_t snapshot_version,
     blocksstable::ObIMacroBlockFlushCallback *ddl_redo_cb,
     int64_t &macro_start_seq,
@@ -1797,7 +1796,6 @@ int ObSSTable::persist_linked_block_if_need(
   } else if (OB_FAIL(link_write_info.init(ddl_redo_cb))) {
     LOG_WARN("fail to init link_write_info", K(ret), KP(ddl_redo_cb));
   } else if (OB_FAIL(meta_->macro_info_.persist_block_ids(tablet_id,
-                                                          tablet_transfer_seq,
                                                           snapshot_version,
                                                           allocator,
                                                           &link_write_info,

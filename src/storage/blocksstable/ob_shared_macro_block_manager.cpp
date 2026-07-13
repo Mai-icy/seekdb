@@ -782,7 +782,6 @@ int ObSharedMacroBlockMgr::prepare_data_desc(
           snapshot_version,
           cluster_version,
           tablet.get_tablet_meta().micro_index_clustered_,
-          tablet.get_transfer_seq(),
           0/*concurrent_cnt*/,
           end_scn))) {
       LOG_WARN("failed to init static desc", K(ret), KPC(storage_schema),
@@ -815,7 +814,6 @@ int ObSharedMacroBlockMgr::prepare_data_desc(
           snapshot_version,
           cluster_version,
           tablet.get_tablet_meta().micro_index_clustered_,
-          tablet.get_transfer_seq(),
           0/*concurrent_cnt*/,
           end_scn,
           cg_schema,

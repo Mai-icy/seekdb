@@ -369,12 +369,12 @@ public:
   // recommend scn should belong to the tables before the memtable and the
   // memtable. And under exception case, user need guarantee all new data is
   // bigger than the recommend_scn.
-  inline void set_transfer_freeze(const share::SCN recommend_scn)
+  inline void set_recommend_freeze(const share::SCN recommend_scn)
   {
     recommend_snapshot_version_.atomic_set(recommend_scn);
-    ATOMIC_STORE(&transfer_freeze_flag_, true);
+    ATOMIC_STORE(&recommend_freeze_flag_, true);
   }
-  inline bool is_transfer_freeze() const { return ATOMIC_LOAD(&transfer_freeze_flag_); }
+  inline bool is_recommend_freeze() const { return ATOMIC_LOAD(&recommend_freeze_flag_); }
   virtual void set_delete_insert_flag(const bool rhs) override { is_delete_insert_table_ = rhs; }
   inline bool is_delete_insert_table() const { return is_delete_insert_table_; }
   virtual uint32_t get_freeze_flag() override;
@@ -403,7 +403,7 @@ public:
                        K_(snapshot_version),
                        K_(contain_hotspot_row),
                        K_(ls_id),
-                       K_(transfer_freeze_flag),
+                       K_(recommend_freeze_flag),
                        K_(recommend_snapshot_version),
                        K_(is_delete_insert_table));
 private:
@@ -501,7 +501,7 @@ private:
 private:
   DISALLOW_COPY_AND_ASSIGN(ObMemtable);
   bool is_inited_;
-  bool transfer_freeze_flag_;
+  bool recommend_freeze_flag_;
   bool contain_hotspot_row_;
   bool is_delete_insert_table_;
 

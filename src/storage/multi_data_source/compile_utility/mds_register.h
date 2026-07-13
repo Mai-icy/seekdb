@@ -69,7 +69,6 @@
   #include "src/storage/tablet/ob_tablet_fork_mds_helper.h"
   #include "src/share/ob_tablet_autoincrement_param.h"
   #include "src/storage/compaction/ob_medium_compaction_info.h"
-  #include "src/storage/tablet/ob_tablet_transfer_tx_ctx.h"
   #include "src/storage/multi_data_source/ob_tablet_create_mds_ctx.h"
   #include "src/share/ob_standby_upgrade.h"
   #include "src/storage/multi_data_source/ob_tablet_create_mds_ctx.h"

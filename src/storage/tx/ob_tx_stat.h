@@ -71,7 +71,7 @@ struct ObTxStat
            const common::ObAddr &scheduler,
            const bool is_exiting, const ObXATransID &xid,
            const share::ObLSID &coord, const int64_t last_request_ts,
-           share::SCN start_scn, share::SCN end_scn, share::SCN rec_scn, bool transfer_blocking,
+           share::SCN start_scn, share::SCN end_scn, share::SCN rec_scn,
            const int busy_cbs_cnt,
            int replay_completeness,
            share::SCN serial_final_scn);
@@ -85,7 +85,7 @@ struct ObTxStat
                K_(scheduler_addr), K_(is_exiting),
                K_(xid), K_(coord), K_(last_request_ts),
                K_(xid), K_(coord), K_(last_request_ts),
-               K_(start_scn), K_(end_scn), K_(rec_scn), K_(transfer_blocking),
+               K_(start_scn), K_(end_scn), K_(rec_scn),
                K_(busy_cbs_cnt),
                K_(serial_final_scn),
                K_(replay_completeness),
@@ -119,7 +119,6 @@ public:
   share::SCN start_scn_;
   share::SCN end_scn_;
   share::SCN rec_scn_;
-  bool transfer_blocking_;
   int busy_cbs_cnt_;
   int replay_completeness_;
   share::SCN serial_final_scn_;

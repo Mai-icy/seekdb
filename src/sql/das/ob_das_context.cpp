@@ -249,8 +249,8 @@ OB_INLINE int ObDASCtx::build_related_tablet_loc(ObDASTabletLoc &tablet_loc)
                                                                         related_table_id))) {
       //related local index tablet_id pruning only can be used in local plan or remote plan(all operator
       //use the same das context),
-      //because the distributed plan will transfer tablet_id through exchange operator,
-      //but the related tablet_id map can not be transfered by exchange operator,
+      //because the distributed plan will pass tablet_id through exchange operator,
+      //but the related tablet_id map can not be passed by exchange operator,
       //unused related pruning in distributed plan's dml operator,
       //we will use get_all_tablet_and_object_id() to build the related tablet_id map when
       //dml operator's table loc was inited

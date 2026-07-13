@@ -281,7 +281,6 @@ public:
   int persist_linked_block_if_need(
       ObArenaAllocator &allocator,
       const ObTabletID &tablet_id,
-      const int64_t tablet_transfer_seq,
       const int64_t snapshot_version,
       blocksstable::ObIMacroBlockFlushCallback *ddl_redo_cb,
       int64_t &macro_start_seq,
@@ -299,7 +298,7 @@ public:
       common::ObIAllocator &allocator,
       ObDatumRowkey &endkey);
 
-  int deep_copy(common::ObIAllocator &allocator, ObSSTable *&dst, const bool transfer_macro_ref = false) const;
+  int deep_copy(common::ObIAllocator &allocator, ObSSTable *&dst, const bool move_macro_ref = false) const;
   virtual int deep_copy(char *buf, const int64_t buf_len, ObIStorageMetaObj *&value) const override;
   virtual int64_t get_deep_copy_size() const override
   {

@@ -195,7 +195,6 @@ protected:
   void update_max_meta_macro_seq(const int64_t cur_meta_seq);
   int calc_root_macro_seq(int64_t &root_seq);
   void update_store_desc_exec_mode(ObStaticDataStoreDesc &ob_data_store_desc) { ob_data_store_desc.exec_mode_ = compaction::EXEC_MODE_OUTPUT; }
-  int64_t get_tablet_transfer_seq() override { return tablet_transfer_seq_; }
 private:
   int64_t last_data_seq_;
   int64_t last_meta_seq_;
@@ -205,7 +204,6 @@ private:
    * one thread may process a few tasks
   */
   int64_t total_slice_cnt_;
-  int64_t tablet_transfer_seq_;
   ObMacroMetaStoreManager macro_meta_store_mgr_;
 };
 

@@ -527,11 +527,9 @@ public:
     mask_set_.reset();
   }
   int merge_part(const share::ObLSID add_ls_id,
-                 const int64_t exec_epoch,
-                 const int64_t transfer_epoch);
+                 const int64_t exec_epoch);
   int find_part(const share::ObLSID ls_id,
                 const int64_t orig_epoch,
-                const int64_t transfer_epoch,
                 ObTxExecPart &part);
 private:
   ObSpinLock lock_;

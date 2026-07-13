@@ -179,14 +179,9 @@ public:
       const uint64_t data_format_version,
       ObTabletHandle &tablet_handle,
       const share::ObForkTabletInfo &fork_info = share::ObForkTabletInfo());
-  int create_transfer_in_tablet(
-      const share::ObLSID &ls_id,
-      const ObMigrationTabletParam &tablet_meta,
-      ObTabletHandle &tablet_handle);
   int rollback_remove_tablet(
       const share::ObLSID &ls_id,
-      const common::ObTabletID &tablet_id,
-      const share::SCN &transfer_start_scn);
+      const common::ObTabletID &tablet_id);
 
   int get_tablet(
       const common::ObTabletID &tablet_id,
@@ -249,7 +244,6 @@ public:
   int update_tablet_restore_status(
       const common::ObTabletID &tablet_id,
       const ObTabletRestoreStatus::STATUS &restore_status,
-      const bool need_reset_transfer_flag,
       const bool need_to_set_split_data_complete);
   int update_tablet_ha_data_status(
       const common::ObTabletID &tablet_id,
@@ -462,8 +456,7 @@ public:
       const ObMigrationTabletParam &mig_tablet_param,
       const bool keep_old);
   int create_or_update_migration_tablet(
-      const ObMigrationTabletParam &mig_tablet_param,
-      const bool is_transfer);
+      const ObMigrationTabletParam &mig_tablet_param);
   int build_tablet_with_batch_tables(
       const ObTabletID &tablet_id,
       const ObBatchUpdateTableStoreParam &param);
@@ -473,7 +466,7 @@ public:
 
   int flush_mds_table(int64_t recycle_scn);
 
-  // for transfer check tablet write stop
+  // check tablet write stop
   int check_tablet_no_active_memtable(const ObIArray<ObTabletID> &tablet_list, bool &has);
 
 protected:
@@ -647,7 +640,7 @@ private:
       ObTabletHandle &handle);
   int delete_all_tablets();
   int offline_build_tablet_without_memtable_();
-  int offline_gc_tablet_for_create_or_transfer_in_abort_();
+  int offline_gc_tablet_for_aborted_create_();
   int offline_destroy_memtable_and_mds_table_();
 
   int inner_get_read_tables(
@@ -676,9 +669,9 @@ private:
       const int64_t ls_epoch,
       ObTabletHandle &tablet_handle);
   static int check_real_leader_for_4377_(const ObLSID ls_id);
-  static int check_need_rollback_in_transfer_for_4377_(const transaction::ObTxDesc *tx_desc,
-                                                       ObTabletHandle &tablet_handle);
-  static int check_parts_tx_state_in_transfer_for_4377_(transaction::ObTxDesc *tx_desc);
+  static int check_need_rollback_for_4377_(const transaction::ObTxDesc *tx_desc,
+                                           ObTabletHandle &tablet_handle);
+  static int check_parts_tx_state_for_4377_(transaction::ObTxDesc *tx_desc);
   static int check_old_row_legitimacy(
       const blocksstable::ObStoreCmpFuncs &cmp_funcs,
       ObTabletHandle &data_tablet_handle,
@@ -919,7 +912,6 @@ private:
   int check_rollback_tablet_is_same_(
       const share::ObLSID &ls_id,
       const common::ObTabletID &tablet_id,
-      const share::SCN &transfer_start_scn,
       bool &is_same);
 
   // for lob tablet dml

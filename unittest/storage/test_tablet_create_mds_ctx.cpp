@@ -39,7 +39,7 @@ public:
   virtual ~TestTabletCreateMdsCtx() = default;
 };
 
-TEST_F(TestTabletCreateMdsCtx, start_transfer_mds_ctx)
+TEST_F(TestTabletCreateMdsCtx, start_mds_ctx)
 {
   int ret = OB_SUCCESS;
 

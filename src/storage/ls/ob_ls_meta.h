@@ -97,8 +97,8 @@ public:
   int check_valid_for_backup() const;
   share::SCN get_tablet_change_checkpoint_scn() const;
   int set_tablet_change_checkpoint_scn(const int64_t ls_epoch, const share::SCN &tablet_change_checkpoint_scn);
-  share::SCN get_transfer_scn() const;
-  int inc_update_transfer_scn(const int64_t ls_epoch, const share::SCN &transfer_scn);
+  share::SCN get_reserved_scn() const;
+  int inc_update_reserved_scn(const int64_t ls_epoch, const share::SCN &new_reserved_scn);
   int update_id_meta(const int64_t ls_epoch,
                      const int64_t service_type,
                      const int64_t limited_id,
@@ -171,7 +171,7 @@ public:
                K_(clog_checkpoint_scn), K_(clog_base_lsn),
                K_(rebuild_seq), K_(migration_status), K(offline_scn_),
                K_(restore_status), K_(replayable_point), K_(tablet_change_checkpoint_scn),
-               K_(all_id_meta), K_(transfer_scn), K_(rebuild_info),
+               K_(all_id_meta), K_(reserved_scn), K_(rebuild_info),
                K_(store_format));
 private:
   int check_can_update_();
@@ -209,7 +209,7 @@ private:
   share::SCN tablet_change_checkpoint_scn_;
   transaction::ObAllIDMeta all_id_meta_;
   ObLSSavedInfo saved_info_;
-  share::SCN transfer_scn_;
+  share::SCN reserved_scn_;
   ObLSRebuildInfo rebuild_info_;
   ObMajorMVMergeInfo major_mv_merge_info_;
   common::ObLSStoreFormat store_format_;    // set on initialization and then remain unchanged

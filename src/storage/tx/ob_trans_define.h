@@ -255,7 +255,7 @@ struct ObLockForReadArg
   ObTxSEQ data_sql_sequence_;
   bool read_latest_;
   bool read_uncommitted_;
-  // Compare with transfer_start_scn, sstable is end_scn, and memtable is ObMvccTransNode scn
+  // Compare with the source SCN: sstable is end_scn, and memtable is ObMvccTransNode scn.
   share::SCN scn_;
 };
 
@@ -937,10 +937,6 @@ public:
   void set_force_abort() { flag_.force_abort_ = 1; }
   void clear_force_abort() { flag_.force_abort_ = 0; }
 
-  bool is_transfer_blocking() const { return flag_.transfer_blocking_; }
-  void set_transfer_blocking() { flag_.transfer_blocking_ = 1; }
-  void clear_transfer_blocking() { flag_.transfer_blocking_ = 0; }
-
   DECLARE_ON_DEMAND_TO_STRING
   TO_STRING_KV("info_log_submitted",
                flag_.info_log_submitted_,
@@ -953,9 +949,7 @@ public:
                // "prepare_notify",
                // flag_.prepare_notify_,
                "force_abort",
-               flag_.force_abort_,
-               "transfer_blocking",
-               flag_.transfer_blocking_);
+               flag_.force_abort_);
 
   bool is_valid() const { return flag_.is_valid(); }
 private:
@@ -967,7 +961,6 @@ private:
     unsigned int state_log_submitted_ : 1;
     unsigned int prepare_notify_ : 1;
     unsigned int force_abort_ : 1;
-    unsigned int transfer_blocking_ : 1;
 
     void reset()
     {
@@ -977,14 +970,12 @@ private:
       state_log_submitted_ = 0;
       prepare_notify_ = 0;
       force_abort_ = 0;
-      transfer_blocking_ = 0;
     }
 
     bool is_valid() const
     {
       return info_log_submitted_ > 0 || gts_waiting_ > 0 || state_log_submitted_ > 0
-          || state_log_submitting_ > 0 || prepare_notify_ > 0 || force_abort_ > 0
-          || transfer_blocking_ > 0;
+          || state_log_submitting_ > 0 || prepare_notify_ > 0 || force_abort_ > 0;
     }
 
     BitFlag() { reset(); }
@@ -1291,12 +1282,12 @@ public:
 
 // CHANGING_LEADER_STATE state machine
 //
-// Original state when no leader transfer is on going:                NO_CHANGING_LEADER
+// Original state when no leader switch is on going:                  NO_CHANGING_LEADER
 // If stmt info is not matched during preparing change leader:        NO_CHANGING_LEADER -> STATEMENT_NOT_FINISH
-// - If stmt info matches before leader transfer and submit log:      STATEMENT_NOT_FINISH -> NO_CHANGING_LEADER
+// - If stmt info matches before leader switch and submit log:        STATEMENT_NOT_FINISH -> NO_CHANGING_LEADER
 //   - if exists a on-the-fly log during submit STATE log:            STATEMENT_NOT_FINISH -> LOGGING_NOT_FINISH
 // If there exists a on-the-fly log during submit STATE log:          NO_CHANGING_LEADER -> LOGGING_NOT_FINISH
-// - If the prev log is synced before leader transfer and submit log: LOGGING_NOT_FINISH -> NO_CHANGING_LEADER
+// - If the prev log is synced before leader switch and submit log:   LOGGING_NOT_FINISH -> NO_CHANGING_LEADER
 // If the leader revokes:                                             STATEMENT_NOT_FINISH/LOGGING_NOT_FINISH -> NO_CHANGING_LEADER
 enum CHANGING_LEADER_STATE
 {
@@ -1405,30 +1396,25 @@ private:
 
 struct ObTxExecPart
 {
-  OB_UNIS_VERSION(1);
+  OB_UNIS_VERSION(2);
 public:
   ObTxExecPart() : ls_id_(),
-                     exec_epoch_(-1),
-                     transfer_epoch_(-1) {}
-  ObTxExecPart(share::ObLSID ls_id, int64_t epoch, int64_t transfer_epoch)
+                     exec_epoch_(-1) {}
+  ObTxExecPart(share::ObLSID ls_id, int64_t epoch)
                    : ls_id_(ls_id),
-                     exec_epoch_(epoch),
-                     transfer_epoch_(transfer_epoch) {}
+                     exec_epoch_(epoch) {}
   inline bool operator==(const ObTxExecPart &other) const {
     return other.ls_id_ == ls_id_ &&
-           other.exec_epoch_ == exec_epoch_ &&
-           other.transfer_epoch_ == transfer_epoch_;
+           other.exec_epoch_ == exec_epoch_;
   }
   bool is_valid() const {
     return    ls_id_.is_valid()
-           && (exec_epoch_ > 0
-           || transfer_epoch_ > 0);
+           && exec_epoch_ > 0;
   }
   share::ObLSID ls_id_;
   int64_t exec_epoch_;
-  int64_t transfer_epoch_;
 
-  TO_STRING_KV(K_(ls_id), K_(exec_epoch), K_(transfer_epoch));
+  TO_STRING_KV(K_(ls_id), K_(exec_epoch));
 };
 
 struct ObStandbyCheckInfo
@@ -1545,7 +1531,7 @@ typedef common::ObSEArray<ObTxExecPart, share::OB_DEFAULT_LS_COUNT> ObTxRollback
   }
 #define CONVERT_PARTS_TO_COMMIT_PARTS(parts, commit_parts)                      \
   for (int64_t idx = 0; OB_SUCC(ret) && idx < parts.count(); idx++) {           \
-    if (OB_FAIL(commit_parts.push_back(ObTxExecPart(parts.at(idx), -1, -1)))) { \
+    if (OB_FAIL(commit_parts.push_back(ObTxExecPart(parts.at(idx), -1)))) {     \
       TRANS_LOG(WARN, "parts push failed", K(ret));                             \
     }                                                                           \
   }                                                                             \
@@ -1572,8 +1558,6 @@ enum class PartCtxSource
   REGISTER_MDS = 2,
   REPLAY = 3,
   RECOVER = 4,
-  TRANSFER = 5,
-  TRANSFER_RECOVER = 6,
 };
 
 static const char * to_str_ctx_source(const PartCtxSource & ctx_src)
@@ -1586,13 +1570,9 @@ static const char * to_str_ctx_source(const PartCtxSource & ctx_src)
     TRX_ENUM_CASE_TO_STR(PartCtxSource, REGISTER_MDS);
     TRX_ENUM_CASE_TO_STR(PartCtxSource, REPLAY);
     TRX_ENUM_CASE_TO_STR(PartCtxSource, RECOVER);
-    TRX_ENUM_CASE_TO_STR(PartCtxSource, TRANSFER);
-    TRX_ENUM_CASE_TO_STR(PartCtxSource, TRANSFER_RECOVER);
   }
   return str;
 }
-
-bool is_transfer_ctx(PartCtxSource ctx_source);
 
 
 enum class RetainCause : int16_t
@@ -1624,7 +1604,7 @@ struct ObIArrayPrintTrait {
 };
 struct ObTxExecInfo
 {
-  OB_UNIS_VERSION(1);
+  OB_UNIS_VERSION(2);
 public:
   ObTxExecInfo() {}
   explicit ObTxExecInfo(TransModulePageAllocator &allocator)
@@ -1688,10 +1668,7 @@ public:
                K_(xid),
                K_(need_checksum),
                K_(is_sub2pc),
-               K_(is_transfer_blocking),
                K_(commit_parts),
-               K_(transfer_parts),
-               K_(is_empty_ctx_created_by_transfer),
                K_(exec_epoch),
                K_(serial_final_scn),
                K_(serial_final_seq_no),
@@ -1705,7 +1682,6 @@ public:
   // for tree phase commit
   share::ObLSArray incremental_participants_;
   ObTxCommitParts intermediate_participants_;
-  ObTxCommitParts transfer_parts_;
   LogOffSet prev_record_lsn_;
   ObRedoLSNArray redo_lsns_;
   ObTxBufferNodeArray multi_data_source_;
@@ -1717,7 +1693,7 @@ public:
   share::SCN max_applied_log_ts_;
   share::SCN max_applying_log_ts_;
   int64_t max_applying_part_log_no_; // start from 0 on follower and always be INT64_MAX on leader
-  ObTxSEQ max_submitted_seq_no_; // maintains on Leader and transfer to Follower via ActiveInfoLog
+  ObTxSEQ max_submitted_seq_no_; // maintained on leader and sent to follower via ActiveInfoLog
   ObSEArray<uint64_t,1> checksum_;
   ObSEArray<share::SCN,1> checksum_scn_;
   palf::LSN max_durable_lsn_;
@@ -1730,8 +1706,6 @@ public:
   ObXATransID xid_;
   bool need_checksum_;
   bool is_sub2pc_;
-  bool is_transfer_blocking_;
-  bool is_empty_ctx_created_by_transfer_;
   int64_t exec_epoch_;
   // if valid, this txCtx is logged by multi parallel thread
   // since this scn

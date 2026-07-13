@@ -831,13 +831,7 @@ int ObITabletMdsInterface::mds_range_query(
   int ret = OB_SUCCESS;
   ObTabletHandle tablet_handle;
 
-  ObITabletMdsInterface *src = nullptr;
   ObTabletHandle src_tablet_handle;
-  if (get_tablet_meta_().has_transfer_table()) {
-    if (OB_FAIL(get_src_tablet_handle_and_base_ptr_(src_tablet_handle, src))) {
-      MDS_LOG(WARN, "fail to get src tablet handle", K(ret), K(get_tablet_meta_()));
-    }
-  }
 
   if (OB_FAIL(ret)) {
   } else if (OB_FAIL(get_tablet_handle_from_this(tablet_handle))) {
@@ -859,21 +853,9 @@ int ObITabletMdsInterface::get_latest_committed_data(T &value, ObIAllocator *all
     ret = OB_NOT_INIT;
     MDS_LOG_GET(WARN, "not inited");
   } else {
-    ObITabletMdsInterface *src = nullptr;
-    ObTabletHandle src_tablet_handle;
-    if (get_tablet_meta_().has_transfer_table()) {
-      if (CLICK_FAIL(get_src_tablet_handle_and_base_ptr_(src_tablet_handle, src))) {
-        MDS_LOG(WARN, "fail to get src tablet handle", K(ret), K(get_tablet_meta_()));
-      }
-    }
-
-    if (OB_FAIL(ret)) {
-    } else if (CLICK_FAIL((cross_ls_get_latest_committed(
-        src,
-        value,
-        alloc)))) {
+    if (CLICK_FAIL((get_latest_committed(value, alloc)))) {
       if (OB_EMPTY_RESULT != ret) {
-        MDS_LOG_GET(WARN, "fail to cross ls get latest", K(lbt()));
+        MDS_LOG_GET(WARN, "fail to get latest", K(lbt()));
       }
     } else if (!value.is_valid()) {
       ret = OB_ERR_UNEXPECTED;
@@ -978,7 +960,7 @@ int ObITabletMdsInterface::check_mds_data_complete_(bool &is_complete) const
 }
 
 /********************************************this is special logic*****************************************************/
-inline int ObITabletMdsInterface::check_transfer_in_redo_written(bool &written)
+inline int ObITabletMdsInterface::check_reserved_status_redo_written(bool &written)
 {
   #define PRINT_WRAPPER KR(ret), K(*this), K(written)
   MDS_TG(10_ms);
@@ -1015,14 +997,14 @@ inline int ObITabletMdsInterface::check_transfer_in_redo_written(bool &written)
             MDS_LOG_GET(TRACE, "failed to get mds data");
           }
         } else {
-          if (tablet_status.get_tablet_status() != ObTabletStatus::TRANSFER_IN) {
+          if (tablet_status.get_tablet_status() != ObTabletStatus::RESERVED_5) {
             ret = OB_STATE_NOT_MATCH;
           } else if (!redo_scn.is_valid() || redo_scn.is_max()) {
             written = false;
-            MDS_LOG_GET(TRACE, "get transfer in status on mds_table, but redo scn is not valid");
+            MDS_LOG_GET(TRACE, "get reserved status on mds_table, but redo scn is not valid");
           } else {
             written = true;
-            MDS_LOG_GET(TRACE, "get transfer in status on mds_table, and redo scn is valid");
+            MDS_LOG_GET(TRACE, "get reserved status on mds_table, and redo scn is valid");
           }
         }
         if (CLICK_FAIL(ret)) {
@@ -1033,7 +1015,7 @@ inline int ObITabletMdsInterface::check_transfer_in_redo_written(bool &written)
                 ObTabletCommon::DEFAULT_GET_TABLET_DURATION_US/*timeout_us*/,
                 ReadTabletStatusOp(tablet_status))))) {
               MDS_LOG_GET(WARN, "failed to get latest data from tablet");
-            } else if (tablet_status.get_tablet_status() != ObTabletStatus::TRANSFER_IN) {
+            } else if (tablet_status.get_tablet_status() != ObTabletStatus::RESERVED_5) {
               ret = OB_STATE_NOT_MATCH;
             } else {
               written = true;
@@ -1047,7 +1029,7 @@ inline int ObITabletMdsInterface::check_transfer_in_redo_written(bool &written)
             }
             MDS_LOG_GET(WARN, "failed to double check ls online");
           } else {
-            MDS_LOG_GET(TRACE, "success to check_transfer_in_redo_written");
+            MDS_LOG_GET(TRACE, "success to check_reserved_status_redo_written");
           }
         }
       } while (ret == OB_VERSION_NOT_MATCH && is_online);

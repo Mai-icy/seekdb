@@ -98,7 +98,6 @@ int ObComplementDataParam::fill_tablet_param()
   } else if (OB_FAIL(tablet_handle.get_obj()->get_ddl_kv_mgr(ddl_kv_mgr_handle, true /*try_create]*/))) {
     LOG_WARN("failed to create ddl kv mgr", K(ret));
   } else {
-    tablet_param_.tablet_transfer_seq_ = 0;
     tablet_param_.is_micro_index_clustered_ = tablet_handle.get_obj()->get_tablet_meta().micro_index_clustered_;
     ObTabletBindingMdsUserData mds_data;
     if (OB_FAIL(tablet_handle.get_obj()->ObITabletMdsInterface::get_ddl_data(share::SCN::max_scn(), mds_data))) {
@@ -112,7 +111,6 @@ int ObComplementDataParam::fill_tablet_param()
         LOG_WARN("load storage schema failed", K(ret));
       } else {
         lob_meta_tablet_param_.with_cs_replica_ = false;
-        lob_meta_tablet_param_.tablet_transfer_seq_ = 0;
         lob_meta_tablet_param_.is_micro_index_clustered_ = lob_meta_tablet_handle.get_obj()->get_tablet_meta().micro_index_clustered_;
         ObDDLKvMgrHandle lob_ddl_kv_mgr_handle;
         if (OB_FAIL(lob_meta_tablet_handle.get_obj()->get_ddl_kv_mgr(lob_ddl_kv_mgr_handle, true /*try_create]*/))) {

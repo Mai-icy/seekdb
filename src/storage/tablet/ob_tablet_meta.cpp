@@ -399,8 +399,7 @@ int ObTabletMeta::init(
 }
 
 int ObTabletMeta::init(
-    const ObMigrationTabletParam &param,
-    const bool is_transfer)
+    const ObMigrationTabletParam &param)
 {
   int ret = OB_SUCCESS;
 
@@ -450,8 +449,6 @@ int ObTabletMeta::init(
       } else if (OB_FAIL(last_persisted_committed_tablet_status_.deserialize(user_data.ptr(), user_data.length(), tmp_pos))) {
         LOG_WARN("failed to deserialize user data", K(ret), K(tmp_pos), K(user_data));
       }
-    } else if (is_transfer) {
-      last_persisted_committed_tablet_status_.reset();
     } else if (OB_FAIL(last_persisted_committed_tablet_status_.assign(param.last_persisted_committed_tablet_status_))) {
       LOG_WARN("fail to init last_persisted_committed_tablet_status from mig param", K(ret),
           "last_persisted_committed_tablet_status",
@@ -568,9 +565,9 @@ int ObTabletMeta::init(
     const SCN mds_checkpoint_scn = OB_ISNULL(tablet_meta) ?
         old_tablet_meta.mds_checkpoint_scn_ : MAX(old_tablet_meta.mds_checkpoint_scn_, tablet_meta->mds_checkpoint_scn_);
     // fuse restore status during migration, consider the following timeline
-    // 1. SOURCE: tablet P0 was created with restore status FULL by replay start transfer in.
+    // 1. SOURCE: tablet P0 was created with restore status FULL by replaying reserved status.
     // 2. TARGET: rebuild was triggered, then create P0 with restore status FULL, and data status INCOMPLETE.
-    // 3. SOURCE: transfer handler modified the restore status of P0 to EMPTY.
+    // 3. SOURCE: reserved status handler modified the restore status of P0 to EMPTY.
     // 4. SOURCE: the minor of P0 was restored by restore handler, then set the restore status to MINOR_AND_MAJOR_META.
     // 5. TARGET: the minor of P0 was restored by migration, then set data status COMPLETE.
     // The result is P0 was FULL, but only exist minor sstables, with no major.
@@ -1061,19 +1058,11 @@ int ObTabletMeta::inner_check_(
       || old_tablet_meta.data_tablet_id_ != tablet_meta->data_tablet_id_
       || old_tablet_meta.ref_tablet_id_ != tablet_meta->ref_tablet_id_
       || old_tablet_meta.compat_mode_ != tablet_meta->compat_mode_) {
-    //TODO(muwei.ym) Fix it in 4.3
-    //1.tablet meta transfer seq < old tablet meta transfer seq should failed.
-    //2.tablet meta transfer seq > old tablet meta transfer seq should use tablet meta
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("old tablet meta part variable is not same with migration tablet param",
         K(ret), K(old_tablet_meta), KPC(tablet_meta));
   }
   return ret;
-}
-
-bool ObTabletMeta::has_transfer_table() const
-{
-  return false;
 }
 
 void ObTabletMeta::update_extra_medium_info(
@@ -1117,8 +1106,8 @@ int ObTabletMeta::update_meta_last_persisted_committed_tablet_status(
     user_data.tablet_status_ = tx_data.tablet_status_;
     user_data.create_commit_scn_ = create_commit_scn;
     user_data.create_commit_version_ = tx_data.tx_scn_.get_val_for_tx();
-    user_data.transfer_scn_ = tx_data.transfer_scn_;
-    user_data.transfer_ls_id_ = tx_data.transfer_ls_id_;
+    user_data.reserved_scn_ = tx_data.reserved_scn_;
+    user_data.reserved_ls_id_ = tx_data.reserved_ls_id_;
     if (ObTabletStatus::DELETED == tx_data.tablet_status_) {
       //TODO(bizhu) check deleted trans scn
       user_data.delete_commit_scn_ = tx_data.tx_scn_;
@@ -1248,33 +1237,6 @@ bool ObMigrationTabletParam::is_empty_shell() const
 SCN ObMigrationTabletParam::get_max_tablet_checkpoint_scn() const
 {
   return MAX3(clog_checkpoint_scn_, mds_checkpoint_scn_, ddl_checkpoint_scn_);
-}
-
-int ObMigrationTabletParam::get_tablet_status_for_transfer(ObTabletCreateDeleteMdsUserData &user_data) const
-{
-  int ret = OB_SUCCESS;
-  user_data.reset();
-
-  if (PARAM_VERSION == version_) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not supported for this param version", K(ret), K_(ls_id), K_(tablet_id), K_(version));
-  } else if (PARAM_VERSION_V2 == version_) {
-    // use uncommitted tablet status mds dump kv
-    const ObString &str = mds_data_.tablet_status_uncommitted_kv_.v_.user_data_;
-    int64_t pos = 0;
-    if (OB_UNLIKELY(str.empty())) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("user data is empty", K(ret), K_(ls_id), K_(tablet_id), "tablet_status_uncommitted_kv", mds_data_.tablet_status_uncommitted_kv_);
-    } else if (OB_FAIL(user_data.deserialize(str.ptr(), str.length(), pos))) {
-      LOG_WARN("failed to deserialize user data", K(ret), K_(ls_id), K_(tablet_id));
-    }
-  } else if (version_ >= PARAM_VERSION_V3) {
-    if (OB_FAIL(user_data.assign(last_persisted_committed_tablet_status_))) {
-      LOG_WARN("fail to assign tablet status", K(ret), K_(ls_id), K_(tablet_id), K_(last_persisted_committed_tablet_status));
-    }
-  }
-
-  return ret;
 }
 
 int ObMigrationTabletParam::serialize(char *buf, const int64_t len, int64_t &pos) const

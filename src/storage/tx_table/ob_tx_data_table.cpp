@@ -68,7 +68,7 @@ int ObTxDataTable::init(ObLS *ls, ObTxCtxTable *tx_ctx_table)
     memtable_mgr_ = static_cast<ObTxDataMemtableMgr *>(memtable_mgr_handle.get_memtable_mgr());
     tx_ctx_table_ = tx_ctx_table;
     tablet_id_ = LS_TX_DATA_TABLET;
-    latest_transfer_scn_.reset();
+    latest_reserved_scn_.reset();
 
     is_inited_ = true;
     FLOG_INFO("tx data table init success", K(sizeof(ObTxData)), K(sizeof(ObTxDataLinkNode)), KPC(this));
@@ -179,7 +179,7 @@ void ObTxDataTable::reset()
   tx_ctx_table_ = nullptr;
   calc_upper_trans_version_cache_.reset();
   memtables_cache_.reuse();
-  latest_transfer_scn_.reset();
+  latest_reserved_scn_.reset();
   is_started_ = false;
   is_inited_ = false;
 }
@@ -232,7 +232,7 @@ int ObTxDataTable::online()
       TCWLockGuard lock_guard(calc_upper_trans_version_cache_.lock_);
       calc_upper_trans_version_cache_.reset();
     }
-    latest_transfer_scn_.reset();
+    latest_reserved_scn_.reset();
     is_started_ = true;
   }
 
@@ -800,7 +800,7 @@ int ObTxDataTable::get_upper_trans_version_before_given_scn(const SCN sstable_en
     TCRLockGuard lock_guard(calc_upper_trans_version_cache_.lock_);
     if (0 == calc_upper_trans_version_cache_.commit_versions_.array_.count()) {
       ret = OB_EAGAIN;
-      STORAGE_LOG(WARN, "empty commit versions. may be a concurrent transfer.", K(calc_upper_trans_version_cache_));
+      STORAGE_LOG(WARN, "empty commit versions during concurrent update", K(calc_upper_trans_version_cache_));
     } else if (!calc_upper_trans_version_cache_.commit_versions_.is_valid()) {
       ret = OB_ERR_UNEXPECTED;
       STORAGE_LOG(WARN, "invalid cache for upper trans version calculation. ", KR(ret));
@@ -973,7 +973,7 @@ int ObTxDataTable::check_min_start_in_ctx_(const SCN &sstable_end_scn,
     need_skip = true;
     STORAGE_LOG(DEBUG, "get uncommited tx min_start_scn failed", KR(ret), K(sstable_end_scn), K(max_decided_scn));
   } else if (min_start_scn <= sstable_end_scn || max_decided_scn <= effective_scn ||
-             (latest_transfer_scn_.is_valid() && effective_scn < latest_transfer_scn_)) {
+             (latest_reserved_scn_.is_valid() && effective_scn < latest_reserved_scn_)) {
     need_skip = true;
     STORAGE_LOG(DEBUG,
                 "skip calculate upper_trans_version",
@@ -981,7 +981,7 @@ int ObTxDataTable::check_min_start_in_ctx_(const SCN &sstable_end_scn,
                 K(max_decided_scn),
                 K(min_start_scn),
                 K(effective_scn),
-                K(latest_transfer_scn_),
+                K(latest_reserved_scn_),
                 K(need_skip));
   } else {
     // there is no ctx whose start_scn less than sstable_end_scn
@@ -1217,16 +1217,16 @@ void ObTxDataTable::disable_upper_trans_calculation()
   }
 }
 
-void ObTxDataTable::enable_upper_trans_calculation(const share::SCN latest_transfer_scn)
+void ObTxDataTable::enable_upper_trans_calculation(const share::SCN latest_reserved_scn)
 {
   {
     TCWLockGuard lock_guard(calc_upper_trans_version_cache_.lock_);
     calc_upper_trans_version_cache_.reset();
   }
-  if (latest_transfer_scn_.is_valid()) {
-    latest_transfer_scn_ = SCN::max(latest_transfer_scn, latest_transfer_scn_);
+  if (latest_reserved_scn_.is_valid()) {
+    latest_reserved_scn_ = SCN::max(latest_reserved_scn, latest_reserved_scn_);
   } else {
-    latest_transfer_scn_ = latest_transfer_scn;
+    latest_reserved_scn_ = latest_reserved_scn;
   }
 }
 

@@ -568,7 +568,6 @@ TEST_F(TestSSTableMacroInfo, test_huge_block_ids)
   ObSharedObjectsWriteCtx linked_block_write_ctx;
   ObSArray<ObSharedObjectsWriteCtx> total_ctxs;
   ASSERT_EQ(OB_SUCCESS, sstable_macro_info.persist_block_ids(tablet_id,
-                                                              0, // tablet_transfer_seq
                                                               0, // snapshot_version
                                                               allocator_,
                                                               &link_write_info,
@@ -645,7 +644,6 @@ TEST_F(TestSSTableMeta, test_common_sstable_persister_linked_block)
   ASSERT_EQ(OB_SUCCESS, sstable.persist_linked_block_if_need(
                                   allocator_,
                                   tablet_id,
-                                  0, // tablet_transfer_seq
                                   snapshot_version,
                                   nullptr,
                                   macro_start_seq,
@@ -661,7 +659,6 @@ TEST_F(TestSSTableMeta, test_common_sstable_persister_linked_block)
   ASSERT_EQ(OB_SUCCESS, sstable.persist_linked_block_if_need(
                                   allocator_,
                                   tablet_id,
-                                  0, // tablet_transfer_seq
                                   snapshot_version,
                                   nullptr,
                                   macro_start_seq,
@@ -693,7 +690,6 @@ TEST_F(TestSSTableMeta, test_common_sstable_persister_linked_block)
   ASSERT_EQ(OB_SUCCESS, tmp_sstable.persist_linked_block_if_need(
                                   allocator_,
                                   tablet_id,
-                                  0, // tablet_transfer_seq
                                   snapshot_version,
                                   nullptr,
                                   macro_start_seq,
@@ -732,7 +728,6 @@ TEST_F(TestSSTableMeta, test_huge_sstable_persister_linked_block)
   ASSERT_EQ(OB_SUCCESS, sstable.persist_linked_block_if_need(
                                   allocator_,
                                   tablet_id,
-                                  0, // tablet_transfer_seq
                                   snapshot_version,
                                   nullptr,
                                   macro_start_seq,
@@ -748,7 +743,6 @@ TEST_F(TestSSTableMeta, test_huge_sstable_persister_linked_block)
   ASSERT_EQ(OB_SUCCESS, sstable.persist_linked_block_if_need(
                                   allocator_,
                                   tablet_id,
-                                  0, // tablet_transfer_seq
                                   snapshot_version,
                                   nullptr,
                                   macro_start_seq,
@@ -780,7 +774,6 @@ TEST_F(TestSSTableMeta, test_huge_sstable_persister_linked_block)
   ASSERT_EQ(OB_SUCCESS, tmp_sstable.persist_linked_block_if_need(
                                   allocator_,
                                   tablet_id,
-                                  0, // tablet_transfer_seq
                                   snapshot_version,
                                   nullptr,
                                   macro_start_seq,

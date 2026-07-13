@@ -95,7 +95,7 @@ public:
   enum TabletScheduleNewRoundState : uint8_t
   {
     CAN_SCHEDULE_NEW_ROUND = 0,
-    DURING_TRANSFER,
+    RESERVED_STATE,
     DURING_SPLIT,
     NEED_CHECK_LAST_MEDIUM_CKM,
     EXIST_UNFINISH_MEDIUM,
