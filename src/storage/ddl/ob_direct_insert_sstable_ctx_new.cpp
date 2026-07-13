@@ -1141,7 +1141,7 @@ ObTabletDirectLoadMgr::ObTabletDirectLoadMgr()
   : is_inited_(false), is_schema_item_ready_(false),
     need_process_cs_replica_(false), need_fill_column_group_(false), sqc_build_ctx_(),
     column_items_(), lob_column_idxs_(), lob_col_types_(), schema_item_(), dir_id_(0), task_cnt_(0), cg_cnt_(0),
-    micro_index_clustered_(false), is_no_logging_(false)
+    micro_index_clustered_(false), tablet_transfer_seq_(ObStorageObjectOpt::INVALID_TABLET_TRANSFER_SEQ), is_no_logging_(false)
 {
   column_items_.set_attr(ObMemAttr("DL_schema"));
   lob_column_idxs_.set_attr(ObMemAttr("DL_schema"));
@@ -1161,6 +1161,7 @@ ObTabletDirectLoadMgr::~ObTabletDirectLoadMgr()
   schema_item_.reset();
   is_schema_item_ready_ = false;
   micro_index_clustered_ = false;
+  tablet_transfer_seq_ = ObStorageObjectOpt::INVALID_TABLET_TRANSFER_SEQ;
   is_no_logging_ = false;
 }
 
@@ -1267,6 +1268,7 @@ int ObTabletDirectLoadMgr::update(
       is_rescan_data_compl_dag_ = build_param.common_param_.is_rescan_data_compl_dag_;
       tenant_data_version_ = build_param.common_param_.data_format_version_;
       micro_index_clustered_ = tablet_handle.get_obj()->get_tablet_meta().micro_index_clustered_;
+      tablet_transfer_seq_ = tablet_handle.get_obj()->get_transfer_seq();
       is_inited_ = true;
     }
   }
@@ -2296,7 +2298,7 @@ int ObTabletDirectLoadMgr::prepare_index_builder_if_need(const ObTableSchema &ta
   } else if (OB_FAIL(index_block_desc.init(true/*is ddl*/, table_schema, ls_id_, tablet_id_,
           is_full_direct_load(direct_load_type_) ? compaction::ObMergeType::MAJOR_MERGE : compaction::ObMergeType::MINOR_MERGE,
           is_full_direct_load(direct_load_type_) ? table_key_.get_snapshot_version() : 1L,
-          tenant_data_version_, get_micro_index_clustered(), 0/*concurrent_cnt*/,
+          tenant_data_version_, get_micro_index_clustered(), get_tablet_transfer_seq(), 0/*concurrent_cnt*/,
           is_full_direct_load(direct_load_type_) ? SCN::invalid_scn() : table_key_.get_end_scn()))) {
     LOG_WARN("fail to init data desc", K(ret));
   } else if (FALSE_IT(index_block_desc.get_static_desc().schema_version_ = sqc_build_ctx_.build_param_.runtime_only_param_.schema_version_)) {
@@ -2317,7 +2319,7 @@ int ObTabletDirectLoadMgr::prepare_index_builder_if_need(const ObTableSchema &ta
     } else if (OB_FAIL(sqc_build_ctx_.data_block_desc_.init(true/*is ddl*/, table_schema, ls_id_, tablet_id_,
             is_full_direct_load(direct_load_type_) ? compaction::ObMergeType::MAJOR_MERGE : compaction::ObMergeType::MINOR_MERGE,
             is_full_direct_load(direct_load_type_) ? table_key_.get_snapshot_version() : 1L,
-            tenant_data_version_, get_micro_index_clustered(), 0/*concurrent_cnt*/,
+            tenant_data_version_, get_micro_index_clustered(), get_tablet_transfer_seq(), 0/*concurrent_cnt*/,
             is_full_direct_load(direct_load_type_) ? SCN::invalid_scn() : table_key_.get_end_scn()))) {
       LOG_WARN("fail to init data block desc", K(ret));
     } else {

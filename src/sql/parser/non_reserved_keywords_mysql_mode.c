@@ -1026,6 +1026,7 @@ static const NonReservedKeyword Mysql_none_reserved_keywords[] =
   {"trace", TRACE},
   {"traditional", TRADITIONAL},
   {"trailing", TRAILING},
+  {"transfer", TRANSFER},
   {"transaction", TRANSACTION},
   {"trigger", TRIGGER},
   {"triggers", TRIGGERS},

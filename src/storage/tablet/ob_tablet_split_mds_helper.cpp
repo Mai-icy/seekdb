@@ -1123,8 +1123,8 @@ int ObTabletSplitMdsHelper::set_freeze_flag(
       } else {
         ObMemtable *memtable = static_cast<ObMemtable *>(table);
         if (memtable->is_active_memtable()) {
-          memtable->set_recommend_freeze(replay_scn);
-          LOG_INFO("succ set recommend freeze", K(ls_id), K(tablet_id), KP(memtable), K(replay_scn));
+          memtable->set_transfer_freeze(replay_scn);
+          LOG_INFO("succ set transfer freeze", K(ls_id), K(tablet_id), KP(memtable), K(replay_scn));
         }
       }
     }

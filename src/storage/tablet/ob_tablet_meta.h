@@ -103,7 +103,8 @@ public:
       const ObTabletMeta &old_tablet_meta,
       const share::SCN &flush_scn);
   int init(
-      const ObMigrationTabletParam &param);
+      const ObMigrationTabletParam &param,
+      const bool is_transfer);
   int init(
       const ObTabletMeta &old_tablet_meta,
       const ObMigrationTabletParam *tablet_meta);
@@ -119,6 +120,7 @@ public:
       const int64_t len,
       int64_t &pos);
   int64_t get_serialize_size() const;
+  bool has_transfer_table() const;
   share::SCN get_ddl_sstable_start_scn() const;
   // Return the max replayed scn which is the max scn among clog_checkpoint_scn,
   // mds_checkpoint_scn and ddl_checkpoint_scn.
@@ -282,6 +284,7 @@ public:
   void reset();
   int assign(const ObMigrationTabletParam &param);
   int build_deleted_tablet_info(const share::ObLSID &ls_id, const ObTabletID &tablet_id);
+  int get_tablet_status_for_transfer(ObTabletCreateDeleteMdsUserData &user_data) const;
 
   // Return the max tablet checkpoint scn which is the max scn among clog_checkpoint_scn,
   // mds_checkpoint_scn and ddl_checkpoint_scn.
@@ -365,7 +368,7 @@ public:
   compaction::ObExtraMediumInfo extra_medium_info_;
   // Record source tablet last_persisted_committed_tablet_status_ for:
   // 1. create migration shell tablet in case there's no valid status to get_tablet
-  // 2. create reserved shell tablet for mds table data in case there's no valid status to get_tablet
+  // 2. create transfer shell tablet for mds table data in case there's no valid status to get_tablet
   // In other scenes, latest status on destination tablet meta should be get from sstables. The one
   // on param has no usage.
   ObTabletCreateDeleteMdsUserData last_persisted_committed_tablet_status_;

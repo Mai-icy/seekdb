@@ -1017,6 +1017,7 @@ int ObTenantTabletScheduler::schedule_tablet_minor_merge(
       LOG_WARN("failed to check need merge", K(ret), K(merge_type), K(tablet_id), K(tablet_handle));
     }
   } else {
+    result.transfer_seq_ = tablet_handle.get_obj()->get_transfer_seq();
     int64_t minor_compact_trigger = ObPartitionMergePolicy::DEFAULT_MINOR_COMPACT_TRIGGER;
     {
 
@@ -1076,6 +1077,10 @@ int ObTenantTabletScheduler::schedule_tablet_ddl_major_merge(
   if (OB_UNLIKELY(!ls_id.is_valid() || !tablet_handle.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(ls_id), K(tablet_handle));
+  } else if (tablet_handle.get_obj()->get_tablet_meta().has_transfer_table()) {
+    if (REACH_THREAD_TIME_INTERVAL(PRINT_LOG_INTERVAL)) {
+      LOG_INFO("The tablet in the transfer process does not do ddl major_merge", K(tablet_handle));
+    }
   } else if (OB_ISNULL(tenant_direct_load_mgr)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("unexpected error", K(ret));

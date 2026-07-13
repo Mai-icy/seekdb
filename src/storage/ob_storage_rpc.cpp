@@ -292,7 +292,8 @@ OB_SERIALIZE_MEMBER(ObFetchLSMetaInfoArg, ls_id_, version_);
 
 ObFetchLSMetaInfoResp::ObFetchLSMetaInfoResp()
   : ls_meta_package_(),
-    version_(OB_INVALID_ID)
+    version_(OB_INVALID_ID),
+    has_transfer_table_(false)
 {
 }
 
@@ -303,7 +304,7 @@ bool ObFetchLSMetaInfoResp::is_valid() const
       && version_ != OB_INVALID_ID;
 }
 
-OB_SERIALIZE_MEMBER(ObFetchLSMetaInfoResp, ls_meta_package_, version_);
+OB_SERIALIZE_MEMBER(ObFetchLSMetaInfoResp, ls_meta_package_, version_, has_transfer_table_);
 
 ObFetchLSMemberListArg::ObFetchLSMemberListArg()
   : ls_id_()
@@ -574,6 +575,27 @@ bool ObRestoreUpdateLSMetaArg::is_valid() const
 
 OB_SERIALIZE_MEMBER(ObRestoreUpdateLSMetaArg, ls_meta_package_);
 
+
+ObCheckSrcTransferTabletsArg::ObCheckSrcTransferTabletsArg()
+  : src_ls_id_(),
+    tablet_info_array_()
+{
+}
+
+
+
+
+OB_SERIALIZE_MEMBER(ObCheckSrcTransferTabletsArg, src_ls_id_, tablet_info_array_);
+
+
+ObGetLSActiveTransCountArg::ObGetLSActiveTransCountArg()
+  : src_ls_id_()
+{
+}
+
+
+
+OB_SERIALIZE_MEMBER(ObGetLSActiveTransCountArg, src_ls_id_);
 
 ObCopyLSViewArg::ObCopyLSViewArg()
   : ls_id_()

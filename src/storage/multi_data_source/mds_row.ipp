@@ -653,21 +653,21 @@ struct DumpNodeOP {
                                   MdsAllocator::get_instance()))) {
       MDS_LOG_SCAN(WARN, "failt to convert user mds node to dump node", K(node));
     /**********************this is different logic from normal logic***************************************************/
-    } else if (specified_node.user_data_.data_type_ == ObTabletMdsUserDataType::RESERVED_7) {
+    } else if (specified_node.user_data_.data_type_ == ObTabletMdsUserDataType::START_TRANSFER_OUT_PREPARE) {
       if (specified_node.seq_no_.is_min()) {
         dump_kv_.v_.seq_no_ = transaction::ObTxSEQ::mk_v0(47);
         dump_kv_.v_.crc_check_number_ = dump_kv_.v_.generate_hash();
-        MDS_LOG(INFO, "convert reserved tablet status mds node's seq no from min to 47 for compat issue", K(node), K(dump_kv_));
+        MDS_LOG(INFO, "convert start transfer out prepare tablet status mds node's seq no from min to 47 for compat issue", K(node), K(dump_kv_));
       } else {
-        MDS_LOG(TRACE, "no need convert reserved tablet status mds node's seq no cause it is valid", K(node), K(dump_kv_));
+        MDS_LOG(TRACE, "no need convert start transfer out prepare tablet status mds node's seq no cause it is valid", K(node), K(dump_kv_));
       }
-    } else if (specified_node.user_data_.data_type_ == ObTabletMdsUserDataType::RESERVED_3) {
+    } else if (specified_node.user_data_.data_type_ == ObTabletMdsUserDataType::START_TRANSFER_OUT) {
       if (specified_node.seq_no_.is_min()) {
         dump_kv_.v_.seq_no_ = transaction::ObTxSEQ::mk_v0(100);
         dump_kv_.v_.crc_check_number_ = dump_kv_.v_.generate_hash();
-        MDS_LOG(INFO, "convert reserved tablet status mds node's seq no from min to 100 for compat issue", K(node), K(dump_kv_));
+        MDS_LOG(INFO, "convert start transfer out tablet status mds node's seq no from min to 100 for compat issue", K(node), K(dump_kv_));
       } else {
-        MDS_LOG(TRACE, "no need convert reserved tablet status mds node's seq no cause it is valid", K(node), K(dump_kv_));
+        MDS_LOG(TRACE, "no need convert start transfer out tablet status mds node's seq no cause it is valid", K(node), K(dump_kv_));
       }
     }
     if (OB_FAIL(ret)) {

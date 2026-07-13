@@ -6,7 +6,7 @@
 // SQL层错误码值域[-5000, -6000)，含各种schema相关错误
 // 事务层错误码值域[-6000, -7000),含clog，memtable等
 // Election错误码值域[-7000, -7100)
-// 负载均衡错误码值域[-7100, -7200)
+// 负载均衡(Transfer)错误码值域[-7100, -7200)
 // GIS错误码值域  [-7201, -7400)
 // XML错误码值域  [-7400, -7600)
 // ARRAY错误码值域  [-7600, -7700)
@@ -1893,22 +1893,38 @@ DEFINE_ERROR(OB_ELECTION_DURING_UPGRADING, -7041, -1, "HY000", "election priorit
 ////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
-// 负载均衡错误码值域[-7100, -7200)
+// 负载均衡(Transfer)错误码值域[-7100, -7200)
 ////////////////////////////////////////////////////////////////
+DEFINE_ERROR(OB_TRANSFER_TASK_COMPLETED, -7100, -1, "HY000", "transfer task completed");
+DEFINE_ERROR(OB_TOO_MANY_TRANSFER_TASK, -7101, -1, "HY000", "too many transfer tasks");
+DEFINE_ERROR(OB_TRANSFER_TASK_EXIST, -7102, -1, "HY000", "transfer task exist");
+DEFINE_ERROR(OB_TRANSFER_TASK_NOT_EXIST, -7103, -1, "HY000", "transfer task not exist");
 DEFINE_ERROR(OB_NOT_ALLOW_TO_REMOVE, -7104, -1, "HY000", "not allow to remove");
 DEFINE_ERROR(OB_RG_NOT_MATCH, -7105, -1, "HY000", "replication group not match");
+DEFINE_ERROR(OB_TRANSFER_TASK_ABORTED, -7106, -1, "HY000", "transfer task aborted");
+DEFINE_ERROR(OB_TRANSFER_INVALID_MESSAGE, -7107, -1, "HY000", "transfer invalid message");
+DEFINE_ERROR(OB_TRANSFER_CTX_TS_NOT_MATCH, -7108, -1, "HY000", "transfer ctx_ts not match");
+DEFINE_ERROR(OB_TRANSFER_SYS_ERROR, -7109, -1, "HY000", "transfer system error");
+DEFINE_ERROR(OB_TRANSFER_MEMBER_LIST_NOT_SAME, -7110, -1, "HY000", "transfer src ls and dest ls member list not same");
 DEFINE_ERROR(OB_ERR_UNEXPECTED_LOCK_OWNER, -7111, -1, "HY000", "lock owner id is not expected");
+DEFINE_ERROR(OB_LS_TRANSFER_SCN_TOO_SMALL, -7112, -1, "HY000", "change member list compare ls transfer scn too small");
+DEFINE_ERROR(OB_TABLET_TRANSFER_SEQ_NOT_MATCH, -7113, -1, "HY000", "compare tablet transfer seq not match");
+DEFINE_ERROR(OB_TRANSFER_DETECT_ACTIVE_TRANS, -7114, -1, "HY000", "transfer detect active trans");
+DEFINE_ERROR(OB_TRANSFER_SRC_LS_NOT_EXIST, -7115, -1, "HY000", "transfer src ls does not exist");
+DEFINE_ERROR(OB_TRANSFER_SRC_TABLET_NOT_EXIST, -7116, -1, "HY000", "transfer src tablet does not exist");
 DEFINE_ERROR(OB_LS_NEED_REBUILD, -7117, -1, "HY000", "ls need rebuild");
 DEFINE_ERROR(OB_OBSOLETE_CLOG_NEED_SKIP, -7118, -1, "HY000", "obsolete clog need skip");
+DEFINE_ERROR(OB_TRANSFER_WAIT_TRANSACTION_END_TIMEOUT, -7119, -1, "HY000", "transfer wait transactions end timeout");
 DEFINE_ERROR(OB_TABLET_GC_LOCK_CONFLICT, -7120, -1, "HY000", "tablet GC lock conflict");
 DEFINE_ERROR(OB_SEQUENCE_NOT_MATCH, -7121, -1, "HY000", "compare sequence not match");
 DEFINE_ERROR(OB_SEQUENCE_TOO_SMALL, -7122, -1, "HY000", "compare sequence too small");
+DEFINE_ERROR(OB_TRANSFER_CANNOT_START, -7123, -1, "HY000", "transfer cannot start");
 DEFINE_ERROR_EXT_DEP(OB_PARTITION_ALREADY_BALANCED, -7124, -1, "HY000", "partitions are already balanced", "partitions are already balanced, %s");
 DEFINE_ERROR(NEW_MV_MAJOR_VERSION_NOT_MATCH, -7125, -1, "HY000", "new mv major version is not match");
 
 // 余留位置
 ////////////////////////////////////////////////////////////////
-// 负载均衡错误码值域[-7100, -7200)
+// 负载均衡(Transfer)错误码值域[-7100, -7200)
 ////////////////////////////////////////////////////////////////
 
 //////////////////////////////////// 新增(占位)须知 ////////////////////////////////////
@@ -2236,6 +2252,7 @@ DEFINE_ERROR(OB_BACKUP_ADVANCE_CHECKPOINT_TIMEOUT, -9086, -1, "HY000", "backup a
 DEFINE_ERROR(OB_CLOG_RECYCLE_BEFORE_ARCHIVE, -9087, -1, "HY000", "seekdb clog is recycled before archive");
 DEFINE_ERROR(OB_SOURCE_TENANT_STATE_NOT_MATCH, -9088, -1, "HY000", "log restore source tenant state not match, switchover to primary not allowed");
 DEFINE_ERROR(OB_SOURCE_LS_STATE_NOT_MATCH, -9089, -1, "HY000", "log restore source LS state not match, switchover to primary is not allowed");
+
 
 DEFINE_ERROR(OB_ESI_SESSION_NOT_EXIST, -9090, -1, "HY000", "obesi process session not exist");
 DEFINE_ERROR(OB_ALREADY_IN_ARCHIVE_MODE, -9091, -1, "HY000", "Already in ARCHIVELOG mode");
@@ -2701,6 +2718,7 @@ DEFINE_ERROR_EXT(OB_ERR_USER_ALREADY_EXISTS, -11009, ER_USER_ALREADY_EXISTS, "HY
 DEFINE_ERROR(OB_ERR_ARGUMENT_SHOULD_CONSTANT_OR_GROUP_EXPR, -11010, -1, "HY000", "Argument should be a constant or a function of expressions in GROUP BY.");
 DEFINE_ERROR(OB_ERR_QUERY_RANGE_MEMORY_EXHAUSTED, -11011, -1, "HY000", "query range memory exhausted");
 DEFINE_ERROR_EXT(OB_CANNOT_USER_IF_EXISTS, -11012, ER_CANNOT_USER_IF_EXISTS, "HY000", "User operation failed", "User %.*s does not exist");
+
 
 DEFINE_ERROR(OB_ERR_ARGUMENT_SHOULD_CONSTANT_OR_GROUP_EXPR, -11010, -1, "HY000", "Argument should be a constant or a function of expressions in GROUP BY.");
 DEFINE_ERROR_EXT(OB_ERR_ILLEGAL_USER_VAR, -11013, ER_ILLEGAL_USER_VAR, "42000", "User variable name is illegal", "User variable name %.*s is illegal");

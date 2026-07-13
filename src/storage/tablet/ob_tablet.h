@@ -236,11 +236,13 @@ public:
       const ObUpdateTableStoreParam &param,
       const ObTablet &old_tablet);
   bool is_external_tablet() const { return is_external_tablet_; }
+  // transfer build new tablet
   int init_with_migrate_param(
       common::ObArenaAllocator &allocator,
       const ObMigrationTabletParam &param,
       const bool is_update,
-      ObFreezer *freezer);
+      ObFreezer *freezer,
+      const bool is_transfer);
   //batch update table store with range cut
   int init_for_sstable_replace(
       common::ObArenaAllocator &allocator,
@@ -450,6 +452,9 @@ public:
   // 2. If a tablet may be being accessed, shouldn't call this function.
   int clear_ddl_memtables();
 
+  int get_storage_schema_for_transfer_in(
+      common::ObArenaAllocator &allocator,
+      ObStorageSchema &storage_schema) const;
   int get_restore_status(ObTabletRestoreStatus::STATUS &restore_status) const;
 
   // static help function
@@ -474,6 +479,18 @@ public:
   int get_ha_tables(
       ObTableStoreIterator &iter);
   int get_ha_sstable_size(int64_t &data_size);
+  //transfer
+  int build_transfer_tablet_param(
+      const int64_t data_version,
+      const share::ObLSID &dest_ls_id,
+      ObMigrationTabletParam &mig_tablet_param);
+  // transfer use storage schema from ls leader to create tablet, need specially process in cs replica
+  int inner_alloc_and_init_storage_schema(
+      common::ObArenaAllocator &allocator,
+      const share::ObLSID &ls_id,
+      const ObTabletID &tablet_id,
+      const ObStorageSchema &input_storage_schema,
+      bool &need_generate_cs_replica_cg_array);
   int get_ddl_kv_mgr(ObDDLKvMgrHandle &ddl_kv_mgr_handle, bool try_create = false);
   int start_direct_load_task_if_need();
   int get_ddl_sstables(ObTableStoreIterator &table_store_iter) const;
@@ -508,6 +525,7 @@ public:
   share::SCN get_mds_checkpoint_scn() const { return tablet_meta_.mds_checkpoint_scn_; }
   int64_t get_snapshot_version() const { return tablet_meta_.snapshot_version_; }
   int64_t get_multi_version_start() const { return tablet_meta_.multi_version_start_; }
+  int64_t get_transfer_seq() const { return 0; }
   int get_snapshot_version(share::SCN &scn) const;
 
   //TODO huronghui.hrh: rename function for row store sstable
@@ -846,6 +864,12 @@ private:
       int64_t &pos,
       const bool prepare_memtable);
 
+  int get_src_tablet_read_tables_(
+      const int64_t snapshot_version,
+      const bool allow_no_ready_read,
+      ObTabletTableIterator &iter,
+      bool &succ_get_src_tables);
+
   int prepare_param(ObRelativeTable &relative_table, ObTableIterParam &param);
   int prepare_param_ctx(
       common::ObIAllocator &allocator,
@@ -872,6 +896,7 @@ private:
   void reset_ddl_memtables();
   int wait_release_memtables_();
   int mark_mds_table_switched_to_empty_shell_();
+  int handle_transfer_replace_(const ObBatchUpdateTableStoreParam &param);
 
   // DDL.
   int update_restore_status_for_split_(const ObTabletTableStore &table_store);
@@ -908,6 +933,10 @@ private:
       ObMigrationTabletParam &mig_tablet_param) const;
     int build_migration_tablet_param_major_ckm_info(
       ObMigrationTabletParam &mig_tablet_param) const;
+
+  int build_transfer_tablet_param_current_(
+      const share::ObLSID &dest_ls_id,
+      ObMigrationTabletParam &mig_tablet_param);
 
   int clear_memtables_on_table_store(); // be careful to call this func, will destroy memtables array on table_store
   int check_table_store_flag_match_with_table_store_(const ObTabletTableStore *table_store);

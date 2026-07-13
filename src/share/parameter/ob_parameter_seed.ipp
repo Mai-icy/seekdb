@@ -1544,6 +1544,52 @@ DEF_PARAM(_display_non_session_cursor, BOOL, OB_CLUSTER_PARAMETER, "True",
          "whether the content of non session cursors is displayed.",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
+//transfer
+DEF_PARAM(_transfer_start_rpc_timeout, TIME, OB_CLUSTER_PARAMETER, "10s", "[1ms,600s]",
+        "transfer start status rpc check some status ready timeout, Range [1ms,600s]. "
+        "The default value is 10s",
+        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
+
+DEF_PARAM(_transfer_finish_trans_timeout, TIME, OB_CLUSTER_PARAMETER, "10s", "[1s,600s]",
+        "transfer finish transaction timeout, Range [1s,600s]. "
+        "The default value is 10s",
+        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
+
+DEF_PARAM(_transfer_start_trans_timeout, TIME, OB_CLUSTER_PARAMETER, "1s", "[1ms,600s]",
+        "transfer start transaction timeout, Range [1ms,600s]. "
+        "The default value is 1s",
+        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
+
+DEF_PARAM(_transfer_start_retry_count, INT, OB_CLUSTER_PARAMETER, "3", "[0,64]",
+        "the number of transfer start retry. Range: [0, 64] in integer",
+        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::STATIC_EFFECTIVE));
+
+
+DEF_PARAM(_transfer_service_wakeup_interval, TIME, OB_CLUSTER_PARAMETER, "5m", "[1s,5m]",
+        "transfer service wakeup interval in errsim mode. "
+        "Range: [1s, 5m]",
+        ObParameterAttr(Section::ROOT_SERVICE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
+
+DEF_PARAM(_transfer_process_lock_tx_timeout, TIME, OB_CLUSTER_PARAMETER, "100s", "[30s,)",
+        "transaction timeout for locking and unlocking transfer task. "
+        "Range: [30s, +∞)",
+        ObParameterAttr(Section::ROOT_SERVICE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
+
+DEF_PARAM(_transfer_task_tablet_count_threshold, INT, OB_CLUSTER_PARAMETER, "100", "(0,)",
+        "Threshold for the count of tablets that can be processed by a transfer task. "
+        "Range: (0, +∞)",
+        ObParameterAttr(Section::ROOT_SERVICE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
+DEF_PARAM(_enable_active_txn_transfer, BOOL, OB_CLUSTER_PARAMETER, "True",
+        "Specifies whether support transfer active tx",
+        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
+
+DEF_PARAM(_transfer_task_retry_interval, TIME, OB_CLUSTER_PARAMETER, "1m", "[0s,)",
+        "Retry interval after transfer task failure. "
+        "Range: [0s, +∞). Default: 1m",
+        ObParameterAttr(Section::ROOT_SERVICE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
+
+// end of transfer
+
 DEF_PARAM(dump_data_dictionary_to_log_interval, TIME, OB_CLUSTER_PARAMETER, "24h", "(0s,]",
          "data dictionary dump to log(SYS LS) interval"
         "Range: (0s,+∞)",

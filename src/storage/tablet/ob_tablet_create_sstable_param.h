@@ -141,6 +141,13 @@ public:
   int init_for_ha(const blocksstable::ObMigrationSSTableParam &migration_param);
 
   // Without checking the validity of the input parameters, necessary to ensure the correctness of the method call.
+  int init_for_transfer_empty_minor_sstable(const common::ObTabletID &tablet_id,
+                                            const share::SCN &start_scn,
+                                            const share::SCN &end_scn,
+                                            const ObStorageSchema &table_schema);
+  
+  // Without checking the validity of the input parameters, necessary to ensure the correctness of the method call.
+
   int init_for_mds(const compaction::ObBasicTabletMergeCtx &ctx,
                    const blocksstable::ObSSTableMergeRes &res,
                    const ObStorageSchema &mds_schema);

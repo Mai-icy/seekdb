@@ -531,9 +531,10 @@ public:
   // used by the replay process of multi data source.
   int replay_lock(const transaction::tablelock::ObTableLockOp &lock_op,
                   const share::SCN &scn);
-  int recover_from_table_lock_durable_info(const ObTableLockInfo &table_lock_info);
+  int recover_from_table_lock_durable_info(const ObTableLockInfo &table_lock_info,
+                                           const bool transfer_merge = false);
   int get_table_lock_store_info(ObTableLockInfo &table_lock_info);
-  int get_table_lock_for_reserved(ObTableLockInfo &table_lock_info, const ObIArray<common::ObTabletID> &tablet_list);
+  int get_table_lock_for_transfer(ObTableLockInfo &table_lock_info, const ObIArray<common::ObTabletID> &tablet_list);
   // for deadlock detect.
   void set_table_lock_killed() { lock_mem_ctx_.set_killed(); }
   bool is_table_lock_killed() const { return lock_mem_ctx_.is_killed(); }

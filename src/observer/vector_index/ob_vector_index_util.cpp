@@ -4754,7 +4754,7 @@ int ObVectorIndexUtil::generate_index_schema_from_exist_table(
 
       if (new_index_schema.is_vec_ivf_index()
           && OB_FAIL(reconstruct_ivf_index_schema_in_rebuild(trans, ddl_service, create_index_arg, data_table_schema, new_index_schema))) {
-        LOG_WARN("failed to reconstruct ivf index schema in rebuild", K(ret), K(new_index_schema));
+        LOG_ERROR("failed to reconstruct ivf index schema in rebuild", K(ret), K(new_index_schema));
       } // end is_vec_ivf_index.
     }
   }
@@ -5642,7 +5642,7 @@ int ObVectorIndexUtil::calc_residual_vector(
     float *&residual)
 {
   int ret = OB_SUCCESS;
-  ObVectorClusterHelper helper;
+  ObVectorKmeansClusterHelper helper;
   int64_t center_idx = 1;
   float *center_vec = nullptr;
 

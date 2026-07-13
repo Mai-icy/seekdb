@@ -90,6 +90,10 @@ public:
   static bool check_can_report_readable_scn(
       const ObMigrationStatus &cur_status);
 private:
+  static int check_transfer_dest_tablet_for_ls_gc(
+      ObLS *ls,
+      const ObTabletID &tablet_id,
+      bool &allow_gc);
   static bool check_migration_status_is_fail_(const ObMigrationStatus &cur_status);
   static int set_ls_migrate_gc_status_(
       ObLS &ls,
@@ -102,6 +106,22 @@ enum ObMigrationOpPriority
   PRIO_LOW = 1,
   PRIO_MID = 2,
   PRIO_INVALID
+};
+
+struct ObTabletsTransferArg
+{
+  ObTabletsTransferArg();
+  virtual ~ObTabletsTransferArg() = default;
+  VIRTUAL_TO_STRING_KV(
+      K_(ls_id),
+      K_(src),
+      K_(tablet_id_array),
+      K_(snapshot_log_ts));
+
+  share::ObLSID ls_id_;
+  common::ObReplicaMember src_;
+  common::ObArray<common::ObTabletID> tablet_id_array_;
+  int64_t snapshot_log_ts_;
 };
 
 struct ObStorageHASrcInfo
@@ -281,7 +301,7 @@ public:
   {
     NONE = 0,
     CLOG = 1,
-    RESERVED_2 = 2,
+    TRANSFER = 2,
     TABLET = 3,
     MAX
   };
@@ -297,7 +317,7 @@ public:
   bool is_valid() const;
   TYPE get_type() const { return type_; }
   void reset();
-  bool is_rebuild_ls_type() const { return ObLSRebuildType::CLOG == type_; }
+  bool is_rebuild_ls_type() const { return ObLSRebuildType::CLOG == type_ || ObLSRebuildType::TRANSFER == type_; }
   bool is_rebuild_rebuild_type() const { return ObLSRebuildType::TABLET == type_; }
   TO_STRING_KV(K_(type));
 private:
@@ -489,12 +509,14 @@ struct ObLogicTabletID final
 public:
   ObLogicTabletID();
   ~ObLogicTabletID() = default;
-  int init(const common::ObTabletID &tablet_id);
+  int init(const common::ObTabletID &tablet_id, const int64_t transfer_seq);
   void reset();
   bool operator == (const ObLogicTabletID &other) const;
   TO_STRING_KV(
-      K_(tablet_id));
+      K_(tablet_id),
+      K_(transfer_seq));
   common::ObTabletID tablet_id_;
+  int64_t transfer_seq_;
 };
 
 struct ObLSMemberListInfo final

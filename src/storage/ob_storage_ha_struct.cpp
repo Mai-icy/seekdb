@@ -173,11 +173,46 @@ bool ObMigrationStatusHelper::check_can_restore(const ObMigrationStatus &cur_sta
   return OB_MIGRATION_STATUS_NONE == cur_status;
 }
 
-// The status of the log stream is OB_MIGRATION_STATUS_GC, which blocks log replay.
+// If dest_tablet does not exist, the log stream allows GC.
+// If dest_tablet exists, has_transfer_table=false, the log stream allows GC.
+// src_ls GC process: offline log_handler ---> set OB_MIGRATION_STATUS_GC ---> get dest_tablet
+// dest_ls replay clog process: create transfer in tablet(on_redo) ----> check the migration_status of src_ls in dest_ls replay clog(on_prepare)
+// if the replay of the next start transfer in log depends on this log stream, the replay of the on_prepare log will be stuck, and the newly created transfer in tablet will be unreadable
+// If dest_tablet exists, has_transfer_table=true, the log stream does not allow GC, because the data of the log stream also needs to be relied on
+int ObMigrationStatusHelper::check_transfer_dest_tablet_for_ls_gc(ObLS *ls, const ObTabletID &tablet_id, bool &allow_gc)
+{
+  int ret = OB_SUCCESS;
+  ObTabletHandle tablet_handle;
+  ObTablet *tablet = nullptr;
+  if (OB_ISNULL(ls) || !tablet_id.is_valid()) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("invalid argument", K(ret), KP(ls), K(tablet_id));
+  } else if (OB_FAIL(ls->ha_get_tablet(tablet_id, tablet_handle))) {
+    if (OB_TABLET_NOT_EXIST == ret) {
+      LOG_WARN("dest tablet not exist", K(ret), "ls_id", ls->get_ls_id(), K(tablet_id));
+      allow_gc = false;
+      ret = OB_SUCCESS;
+    } else {
+      LOG_WARN("failed to get tablet", K(ret), "ls_id", ls->get_ls_id(), K(tablet_id));
+    }
+  } else if (OB_ISNULL(tablet = tablet_handle.get_obj())) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("tablet should not be NULL", K(ret), "ls_id", ls->get_ls_id(), K(tablet_id));
+  } else if (tablet->get_tablet_meta().has_transfer_table()) {
+    allow_gc = false;
+    LOG_INFO("dest tablet has transfer table", "ls_id", ls->get_ls_id(), K(tablet_id));
+  } else {
+    allow_gc = true;
+    LOG_INFO("dest tablet has no transfer table", "ls_id", ls->get_ls_id(), K(tablet_id));
+  }
+  return ret;
+}
+
+// The status of the log stream is OB_MIGRATION_STATUS_GC, which will block the replay of the start transfer in log corresponding to transfer dest_ls
 // Log stream that is not in the member_list will not be added to the member_list.
 // If the log stream status modification fails, there is no need to online log_handler.
-// After setting the LS GC flag and stopping log synchronization, the destination
-// can be restored through rebuilding.
+// After setting the flag of ls gc and stopping log synchronization, it will only affect the destination of the transfer minority,
+// and the destination can be restored through rebuilding.
 int ObMigrationStatusHelper::set_ls_migrate_gc_status_(
     ObLS &ls,
     bool &allow_gc)
@@ -392,6 +427,17 @@ bool ObMigrationStatusHelper::check_can_report_readable_scn(
   return can_report;
 }
 
+/******************ObTabletsTransferArg*********************/
+ObTabletsTransferArg::ObTabletsTransferArg()
+  : ls_id_(),
+    src_(),
+    tablet_id_array_(),
+    snapshot_log_ts_(0)
+{
+}
+
+
+
 /******************ObStorageHASrcInfo*********************/
 
 ObStorageHASrcInfo::ObStorageHASrcInfo()
@@ -487,8 +533,10 @@ bool ObMigrationUtils::is_need_retry_error(const int err)
     case OB_CHECKSUM_ERROR :
     case OB_DDL_SSTABLE_RANGE_CROSS :
     case OB_TENANT_NOT_EXIST :
+    case OB_TRANSFER_SYS_ERROR :
     case OB_INVALID_TABLE_STORE :
     case OB_UNEXPECTED_TABLET_STATUS :
+    case OB_TABLET_TRANSFER_SEQ_NOT_MATCH :
     case OB_MIGRATE_TX_DATA_NOT_CONTINUES :
       bret = false;
       break;
@@ -1001,19 +1049,22 @@ int ObMacroBlockReuseMgr::count(int64_t &count)
 }
 
 ObLogicTabletID::ObLogicTabletID()
-  : tablet_id_()
+  : tablet_id_(),
+    transfer_seq_(-1)
 {
 }
 
 int ObLogicTabletID::init(
-    const common::ObTabletID &tablet_id)
+    const common::ObTabletID &tablet_id,
+    const int64_t transfer_seq)
 {
   int ret = OB_SUCCESS;
-  if (!tablet_id.is_valid()) {
+  if (!tablet_id.is_valid() || transfer_seq < 0) {
     ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("init logic tablet id get invalid argument", K(ret), K(tablet_id));
+    LOG_WARN("init logic tablet id get invalid argument", K(ret), K(tablet_id), K(transfer_seq));
   } else {
     tablet_id_ = tablet_id;
+    transfer_seq_ = transfer_seq;
   }
   return ret;
 }
@@ -1021,6 +1072,7 @@ int ObLogicTabletID::init(
 void ObLogicTabletID::reset()
 {
   tablet_id_.reset();
+  transfer_seq_ = -1;
 }
 
 
@@ -1029,7 +1081,8 @@ bool ObLogicTabletID::operator == (const ObLogicTabletID &other) const
   bool is_same = true;
   if (this == &other) {
     // same
-  } else if (tablet_id_ != other.tablet_id_) {
+  } else if (tablet_id_ != other.tablet_id_
+      || transfer_seq_ != other.transfer_seq_) {
     is_same = false;
   } else {
     is_same = true;

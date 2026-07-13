@@ -166,6 +166,8 @@ TEST_F(ObTestTx, basic)
 //   // mock gts waiting
 //   part_ctx->sub_state_.set_gts_waiting();
 //
+//   // mock transfer
+//   part_ctx->sub_state_.set_transfer_blocking();
 //
 //   ObMonotonicTs stc(99);
 //   ObMonotonicTs srr(100);
@@ -182,6 +184,17 @@ TEST_F(ObTestTx, basic)
 //   start_scn.convert_for_gts(888);
 //   end_scn.convert_for_gts(1000);
 //   part_ctx->ctx_tx_data_.set_start_log_ts(start_scn);
+//   ObSEArray<ObTabletID, 8> array;
+//   ObTxCtxMoveArg arg;
+//   bool is_collected;
+//   TRANS_LOG(INFO, "qc debug");
+//   ASSERT_EQ(OB_SUCCESS, part_ctx->collect_tx_ctx(dst_ls_id,
+//                                                  end_scn,
+//                                                  array,
+//                                                  arg,
+//                                                  is_collected));
+//   ASSERT_EQ(true, is_collected);
+//
 //   n1->get_ts_mgr_().repair_get_gts_error();
 // }
 

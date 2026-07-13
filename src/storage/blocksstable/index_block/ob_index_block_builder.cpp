@@ -1562,6 +1562,11 @@ bool ObSSTableIndexBuilder::micro_index_clustered() const
   return data_store_desc_.get_desc().micro_index_clustered();
 }
 
+int64_t ObSSTableIndexBuilder::get_tablet_transfer_seq() const
+{
+  return data_store_desc_.get_desc().get_tablet_transfer_seq();
+}
+
 int ObSSTableIndexBuilder::fsync_block()
 {
   int ret = OB_SUCCESS;
@@ -4088,6 +4093,21 @@ int ObIndexBlockRebuilder::get_macro_meta(const char *buf, const int64_t size,
 bool ObIndexBlockRebuilder::use_absolute_offset(const ObITable::TableKey &table_key)
 {
   return table_key.is_ddl_merge_sstable();
+}
+
+int ObIndexBlockRebuilder::get_tablet_transfer_seq (int64_t &tablet_transfer_seq) const 
+{ 
+  int ret = OB_SUCCESS;
+  if (!is_inited_) {
+    ret = OB_NOT_INIT;
+    LOG_WARN("rebuilder is not inited", K(ret));
+  } else if (OB_ISNULL(sstable_builder_)) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("sstable_builder_ shoulde not be nullptr", K(ret), KP(sstable_builder_));
+  } else {
+    tablet_transfer_seq = sstable_builder_->get_tablet_transfer_seq(); 
+  }
+  return ret;
 }
 
 int ObIndexBlockRebuilder::inner_get_macro_meta(

@@ -9052,8 +9052,8 @@ int ObStaticEngineCG::generate_calc_part_id_expr(const ObRawExpr &src,
   } else if (loc_meta != nullptr && !loc_meta->unuse_related_pruning_) {
     //related local index tablet_id pruning only can be used in local plan or remote plan(all operator
     //use the same das context),
-    //because the distributed plan will pass tablet_id through exchange operator,
-    //but the related tablet_id map can not be passed by exchange operator,
+    //because the distributed plan will transfer tablet_id through exchange operator,
+    //but the related tablet_id map can not be transfered by exchange operator,
     //unused related pruning in distributed plan's dml operator,
     //we will build the related tablet_id map when dml operator be opened in distributed plan
     CalcPartitionBaseInfo *calc_part_info = static_cast<CalcPartitionBaseInfo*>(dst->extra_info_);

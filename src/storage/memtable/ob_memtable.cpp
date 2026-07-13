@@ -130,7 +130,7 @@ private:
 
 ObMemtable::ObMemtable()
   :   is_inited_(false),
-      recommend_freeze_flag_(false),
+      transfer_freeze_flag_(false),
       contain_hotspot_row_(false),
       is_delete_insert_table_(false),
       ls_handle_(),
@@ -260,7 +260,7 @@ void ObMemtable::destroy()
   max_column_cnt_ = 0;
   state_ = ObMemtableState::INVALID;
   reported_dml_stat_.reset();
-  recommend_freeze_flag_ = false;
+  transfer_freeze_flag_ = false;
   recommend_snapshot_version_.reset();
   contain_hotspot_row_ = false;
   ObITabletMemtable::reset();
@@ -1120,6 +1120,7 @@ int ObMemtable::check_row_locked_on_frozen_stores_(
         } else if (stores->at(i)->is_data_memtable()) {
           ObMemtable *memtable = static_cast<ObMemtable *>(stores->at(i));
           ObMvccEngine &mvcc_engine = memtable->get_mvcc_engine();
+          // FIXME(handora.qc): two active memtable in transfer
           if (OB_FAIL(mvcc_engine.check_row_locked(ctx.mvcc_acc_ctx_,
                                                    memtable_key,
                                                    lock_state))) {
@@ -1768,16 +1769,18 @@ int ObMemtable::resolve_snapshot_version_()
   } else if (SCN::invalid_scn() == freeze_snapshot_version) {
     ret = OB_ERR_UNEXPECTED;
     TRANS_LOG(ERROR, "fail to get freeze_snapshot_version", K(ret), KPC(this));
-  } else if (is_recommend_freeze()) {
+  } else if (is_transfer_freeze()) {
     // freeze_snapshot_version is used for read tables decision which guarantees
     // that all version smaller than the freeze_snapshot_version belongs to
-    // table before the memtable. Some callers need it to be smaller than the
-    // reserved_scn, which requires ignoring the input snapshot version.
+    // table before the memtable. While the transfer want the it to be smaller
+    // than the transfer_scn which require we ignore the input snapshot version.
     //
     // NOTICE: While the recommend snapshot may be unsafe, so user must ensure
     // its correctness.
     //
-    // So use the recommended snapshot version for this freeze.
+    // So use recommend snapshot version if transfer freeze
+    // recommend snapshot maybe smaller than data commit version when transfer rollback,
+    // but it will not has any bad effect when major freeze which relay on snapshot version.
     if (!recommend_snapshot_version_.is_valid()
         || ObScnRange::MAX_SCN == recommend_snapshot_version_
         || ObScnRange::MIN_SCN == recommend_snapshot_version_) {
@@ -1820,11 +1823,16 @@ int ObMemtable::resolve_max_end_scn_()
     TRANS_LOG(ERROR, "fail to get freeze_snapshot_version", K(ret));
   } else if (SCN::invalid_scn() == max_decided_scn) {
     // Pass if not necessary
-  } else if (is_recommend_freeze()) {
+  } else if (is_transfer_freeze()) {
     // max_decided_scn is critial for sstable read performance using larger
     // right boundary of memtable(You can learn from the comments that follow
-    // the class member). Some callers need the right boundary to stay smaller
-    // than the recommended SCN, so ignore max_decided_scn.
+    // the class member). While the transfer want the right boundary smaller
+    // than the transfer_out_scn which require we ignore the max_decided_scn.
+    // NOTICE: You should notice that we must double check the concurrency issue
+    // between transfer handler set_transfer_freeze then submit transfer out log
+    // and freezer get_transfer_freeze and decide its max_decided scn.
+    //
+    // So pass if transfer freeze
   } else if (OB_TMP_FAIL(set_max_end_scn(max_decided_scn))) {
     TRANS_LOG(WARN, "fail to set max_end_scn", K(ret));
   }

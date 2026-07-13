@@ -61,6 +61,11 @@ int ObITabletMdsCustomizedInterface::get_latest_split_data(
   } else {
     ObITabletMdsInterface *src = nullptr;
     ObTabletHandle src_tablet_handle;
+    if (get_tablet_meta_().has_transfer_table()) {
+      if (CLICK_FAIL(get_src_tablet_handle_and_base_ptr_(src_tablet_handle, src))) {
+        MDS_LOG(WARN, "fail to get src tablet handle", K(ret), K(get_tablet_meta_()));
+      }
+    }
 
     if (OB_FAIL(ret)) {
     } else if (CLICK_FAIL((cross_ls_get_latest<ObTabletSplitMdsUserData>(
@@ -96,6 +101,11 @@ int ObITabletMdsCustomizedInterface::get_latest_autoinc_seq(
   } else {
     ObITabletMdsInterface *src = nullptr;
     ObTabletHandle src_tablet_handle;
+    if (get_tablet_meta_().has_transfer_table()) {
+      if (CLICK_FAIL(get_src_tablet_handle_and_base_ptr_(src_tablet_handle, src))) {
+        MDS_LOG(WARN, "fail to get src tablet handle", K(ret), K(get_tablet_meta_()));
+      }
+    }
 
     if (OB_FAIL(ret)) {
     } else if (CLICK_FAIL((cross_ls_get_latest<ObTabletAutoincSeq>(

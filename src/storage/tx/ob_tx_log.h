@@ -219,6 +219,7 @@ public:
     SELF = 1,
     COMMIT_INFO = 2,
     PREPARE = 3,
+    TRANSFER_IN = 10,
   };
 
 public:
@@ -229,6 +230,8 @@ public:
   bool is_valid() const { return prev_log_type_ > 0; }
   void set_self() { prev_log_type_ = TypeEnum::SELF; }
   bool is_self() const { return TypeEnum::SELF == prev_log_type_; }
+  void set_tranfer_in() { prev_log_type_ = TypeEnum::TRANSFER_IN; }
+  bool is_transfer_in() const { return TypeEnum::TRANSFER_IN == prev_log_type_; }
 
   void set_prepare() { prev_log_type_ = TypeEnum::PREPARE; }
   void set_commit_info() { prev_log_type_ = TypeEnum::COMMIT_INFO; }
@@ -895,7 +898,7 @@ private:
   ObRedoLSNArray &redo_lsns_;
   // for xa
   ObXATransID xid_;
-  // for commit participants
+  // for transfer
   ObTxCommitParts &commit_parts_;
   int64_t epoch_;
 };
@@ -1638,3 +1641,5 @@ int ObTxLogBlock::add_new_log(T &tx_log_body, ObTxBigSegmentBuf *big_segment_buf
 } // namespace transaction
 } // namespace oceanbase
 #endif
+
+

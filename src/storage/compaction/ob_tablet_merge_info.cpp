@@ -240,7 +240,7 @@ int ObTabletMergeInfo::create_sstable(
           CTX_SET_DIAGNOSE_LOCATION(ctx);
         } else if (OB_FAIL(tmp_handle.get_sstable(sstable))) {
           STORAGE_LOG(WARN, "Failed to get sstable", K(ret));
-        } else if (OB_FAIL(sstable->deep_copy(ctx.mem_ctx_.get_safe_arena(), new_sstable, true/*move_macro_ref*/))) {
+        } else if (OB_FAIL(sstable->deep_copy(ctx.mem_ctx_.get_safe_arena(), new_sstable, true/*transfer macro ref*/))) {
           STORAGE_LOG(WARN, "Failed to deep copy sstable", K(ret));
         } else if (OB_FAIL(ctx.try_set_upper_trans_version(*sstable))) {
           LOG_WARN("failed to set upper trans version", K(ret), K(param));

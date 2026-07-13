@@ -2349,6 +2349,10 @@ int ObTabletTableStore::build_ha_major_tables_(
 
 //migration will add tables with ddl and minor tables. this func will copy old minor
 //tables when add ddl tables with param.update_ddl_sstable_ = true.
+//new_minor_tables is empty
+//   The corresponding reason may be that there is no minor at the source or the transfer_in tablet still exists in the transfer table
+//new_minor_tables is not empty
+//   Tablet still has a transfer table, so need to check the continuity of the transfer table and minor sstable
 int ObTabletTableStore::replace_ha_minor_sstables_(
     common::ObArenaAllocator &allocator,
     const ObTablet &tablet,
@@ -2887,6 +2891,7 @@ int ObTabletTableStore::build_ha_minor_tables_(
   return ret;
 }
 
+//TODO (muwei.ym) transfer compatible code, can be removed in next barrier version
 int ObTabletTableStore::get_mini_minor_sstables_(ObTableStoreIterator &iter) const
 {
   int ret = OB_SUCCESS;

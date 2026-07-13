@@ -15092,6 +15092,42 @@ static const _error _error_OB_ELECTION_DURING_UPGRADING = {
       .str_error             = "election priority mechanism changed, maybe during upgrading",
       .str_user_error        = "election priority mechanism changed, maybe during upgrading"
 };
+static const _error _error_OB_TRANSFER_TASK_COMPLETED = {
+      .error_name            = "OB_TRANSFER_TASK_COMPLETED",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer task completed",
+      .str_user_error        = "transfer task completed"
+};
+static const _error _error_OB_TOO_MANY_TRANSFER_TASK = {
+      .error_name            = "OB_TOO_MANY_TRANSFER_TASK",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "too many transfer tasks",
+      .str_user_error        = "too many transfer tasks"
+};
+static const _error _error_OB_TRANSFER_TASK_EXIST = {
+      .error_name            = "OB_TRANSFER_TASK_EXIST",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer task exist",
+      .str_user_error        = "transfer task exist"
+};
+static const _error _error_OB_TRANSFER_TASK_NOT_EXIST = {
+      .error_name            = "OB_TRANSFER_TASK_NOT_EXIST",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer task not exist",
+      .str_user_error        = "transfer task not exist"
+};
 static const _error _error_OB_NOT_ALLOW_TO_REMOVE = {
       .error_name            = "OB_NOT_ALLOW_TO_REMOVE",
       .error_cause           = "Internal Error",
@@ -15110,6 +15146,51 @@ static const _error _error_OB_RG_NOT_MATCH = {
       .str_error             = "replication group not match",
       .str_user_error        = "replication group not match"
 };
+static const _error _error_OB_TRANSFER_TASK_ABORTED = {
+      .error_name            = "OB_TRANSFER_TASK_ABORTED",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer task aborted",
+      .str_user_error        = "transfer task aborted"
+};
+static const _error _error_OB_TRANSFER_INVALID_MESSAGE = {
+      .error_name            = "OB_TRANSFER_INVALID_MESSAGE",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer invalid message",
+      .str_user_error        = "transfer invalid message"
+};
+static const _error _error_OB_TRANSFER_CTX_TS_NOT_MATCH = {
+      .error_name            = "OB_TRANSFER_CTX_TS_NOT_MATCH",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer ctx_ts not match",
+      .str_user_error        = "transfer ctx_ts not match"
+};
+static const _error _error_OB_TRANSFER_SYS_ERROR = {
+      .error_name            = "OB_TRANSFER_SYS_ERROR",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer system error",
+      .str_user_error        = "transfer system error"
+};
+static const _error _error_OB_TRANSFER_MEMBER_LIST_NOT_SAME = {
+      .error_name            = "OB_TRANSFER_MEMBER_LIST_NOT_SAME",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer src ls and dest ls member list not same",
+      .str_user_error        = "transfer src ls and dest ls member list not same"
+};
 static const _error _error_OB_ERR_UNEXPECTED_LOCK_OWNER = {
       .error_name            = "OB_ERR_UNEXPECTED_LOCK_OWNER",
       .error_cause           = "Internal Error",
@@ -15118,6 +15199,51 @@ static const _error _error_OB_ERR_UNEXPECTED_LOCK_OWNER = {
       .sqlstate              = "HY000",
       .str_error             = "lock owner id is not expected",
       .str_user_error        = "lock owner id is not expected"
+};
+static const _error _error_OB_LS_TRANSFER_SCN_TOO_SMALL = {
+      .error_name            = "OB_LS_TRANSFER_SCN_TOO_SMALL",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "change member list compare ls transfer scn too small",
+      .str_user_error        = "change member list compare ls transfer scn too small"
+};
+static const _error _error_OB_TABLET_TRANSFER_SEQ_NOT_MATCH = {
+      .error_name            = "OB_TABLET_TRANSFER_SEQ_NOT_MATCH",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "compare tablet transfer seq not match",
+      .str_user_error        = "compare tablet transfer seq not match"
+};
+static const _error _error_OB_TRANSFER_DETECT_ACTIVE_TRANS = {
+      .error_name            = "OB_TRANSFER_DETECT_ACTIVE_TRANS",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer detect active trans",
+      .str_user_error        = "transfer detect active trans"
+};
+static const _error _error_OB_TRANSFER_SRC_LS_NOT_EXIST = {
+      .error_name            = "OB_TRANSFER_SRC_LS_NOT_EXIST",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer src ls does not exist",
+      .str_user_error        = "transfer src ls does not exist"
+};
+static const _error _error_OB_TRANSFER_SRC_TABLET_NOT_EXIST = {
+      .error_name            = "OB_TRANSFER_SRC_TABLET_NOT_EXIST",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer src tablet does not exist",
+      .str_user_error        = "transfer src tablet does not exist"
 };
 static const _error _error_OB_LS_NEED_REBUILD = {
       .error_name            = "OB_LS_NEED_REBUILD",
@@ -15136,6 +15262,15 @@ static const _error _error_OB_OBSOLETE_CLOG_NEED_SKIP = {
       .sqlstate              = "HY000",
       .str_error             = "obsolete clog need skip",
       .str_user_error        = "obsolete clog need skip"
+};
+static const _error _error_OB_TRANSFER_WAIT_TRANSACTION_END_TIMEOUT = {
+      .error_name            = "OB_TRANSFER_WAIT_TRANSACTION_END_TIMEOUT",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer wait transactions end timeout",
+      .str_user_error        = "transfer wait transactions end timeout"
 };
 static const _error _error_OB_TABLET_GC_LOCK_CONFLICT = {
       .error_name            = "OB_TABLET_GC_LOCK_CONFLICT",
@@ -15163,6 +15298,15 @@ static const _error _error_OB_SEQUENCE_TOO_SMALL = {
       .sqlstate              = "HY000",
       .str_error             = "compare sequence too small",
       .str_user_error        = "compare sequence too small"
+};
+static const _error _error_OB_TRANSFER_CANNOT_START = {
+      .error_name            = "OB_TRANSFER_CANNOT_START",
+      .error_cause           = "Internal Error",
+      .error_solution        = "Contact OceanBase Support",
+      .mysql_errno           = -1,
+      .sqlstate              = "HY000",
+      .str_error             = "transfer cannot start",
+      .str_user_error        = "transfer cannot start"
 };
 static const _error _error_OB_PARTITION_ALREADY_BALANCED = {
       .error_name            = "OB_PARTITION_ALREADY_BALANCED",
@@ -23270,14 +23414,30 @@ struct ObStrErrorInit
     _errors[-OB_ELECTION_BELOW_MAJORITY] = &_error_OB_ELECTION_BELOW_MAJORITY;
     _errors[-OB_ELECTION_OVER_MAJORITY] = &_error_OB_ELECTION_OVER_MAJORITY;
     _errors[-OB_ELECTION_DURING_UPGRADING] = &_error_OB_ELECTION_DURING_UPGRADING;
+    _errors[-OB_TRANSFER_TASK_COMPLETED] = &_error_OB_TRANSFER_TASK_COMPLETED;
+    _errors[-OB_TOO_MANY_TRANSFER_TASK] = &_error_OB_TOO_MANY_TRANSFER_TASK;
+    _errors[-OB_TRANSFER_TASK_EXIST] = &_error_OB_TRANSFER_TASK_EXIST;
+    _errors[-OB_TRANSFER_TASK_NOT_EXIST] = &_error_OB_TRANSFER_TASK_NOT_EXIST;
     _errors[-OB_NOT_ALLOW_TO_REMOVE] = &_error_OB_NOT_ALLOW_TO_REMOVE;
     _errors[-OB_RG_NOT_MATCH] = &_error_OB_RG_NOT_MATCH;
+    _errors[-OB_TRANSFER_TASK_ABORTED] = &_error_OB_TRANSFER_TASK_ABORTED;
+    _errors[-OB_TRANSFER_INVALID_MESSAGE] = &_error_OB_TRANSFER_INVALID_MESSAGE;
+    _errors[-OB_TRANSFER_CTX_TS_NOT_MATCH] = &_error_OB_TRANSFER_CTX_TS_NOT_MATCH;
+    _errors[-OB_TRANSFER_SYS_ERROR] = &_error_OB_TRANSFER_SYS_ERROR;
+    _errors[-OB_TRANSFER_MEMBER_LIST_NOT_SAME] = &_error_OB_TRANSFER_MEMBER_LIST_NOT_SAME;
     _errors[-OB_ERR_UNEXPECTED_LOCK_OWNER] = &_error_OB_ERR_UNEXPECTED_LOCK_OWNER;
+    _errors[-OB_LS_TRANSFER_SCN_TOO_SMALL] = &_error_OB_LS_TRANSFER_SCN_TOO_SMALL;
+    _errors[-OB_TABLET_TRANSFER_SEQ_NOT_MATCH] = &_error_OB_TABLET_TRANSFER_SEQ_NOT_MATCH;
+    _errors[-OB_TRANSFER_DETECT_ACTIVE_TRANS] = &_error_OB_TRANSFER_DETECT_ACTIVE_TRANS;
+    _errors[-OB_TRANSFER_SRC_LS_NOT_EXIST] = &_error_OB_TRANSFER_SRC_LS_NOT_EXIST;
+    _errors[-OB_TRANSFER_SRC_TABLET_NOT_EXIST] = &_error_OB_TRANSFER_SRC_TABLET_NOT_EXIST;
     _errors[-OB_LS_NEED_REBUILD] = &_error_OB_LS_NEED_REBUILD;
     _errors[-OB_OBSOLETE_CLOG_NEED_SKIP] = &_error_OB_OBSOLETE_CLOG_NEED_SKIP;
+    _errors[-OB_TRANSFER_WAIT_TRANSACTION_END_TIMEOUT] = &_error_OB_TRANSFER_WAIT_TRANSACTION_END_TIMEOUT;
     _errors[-OB_TABLET_GC_LOCK_CONFLICT] = &_error_OB_TABLET_GC_LOCK_CONFLICT;
     _errors[-OB_SEQUENCE_NOT_MATCH] = &_error_OB_SEQUENCE_NOT_MATCH;
     _errors[-OB_SEQUENCE_TOO_SMALL] = &_error_OB_SEQUENCE_TOO_SMALL;
+    _errors[-OB_TRANSFER_CANNOT_START] = &_error_OB_TRANSFER_CANNOT_START;
     _errors[-OB_PARTITION_ALREADY_BALANCED] = &_error_OB_PARTITION_ALREADY_BALANCED;
     _errors[-NEW_MV_MAJOR_VERSION_NOT_MATCH] = &_error_NEW_MV_MAJOR_VERSION_NOT_MATCH;
     _errors[-OB_ERR_GIS_DIFFERENT_SRIDS] = &_error_OB_ERR_GIS_DIFFERENT_SRIDS;

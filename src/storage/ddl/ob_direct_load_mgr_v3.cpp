@@ -124,7 +124,7 @@ int ObTabletDirectLoadMgrV3::prepare_index_builder(const ObTabletDirectLoadInser
   } else if (OB_FAIL(index_block_desc.init(true/*is ddl*/, table_schema, ls_id, tablet_id,
           is_full_direct_load(direct_load_type) ? compaction::ObMergeType::MAJOR_MERGE : compaction::ObMergeType::MINOR_MERGE,
           is_full_direct_load(direct_load_type) ? table_key.get_snapshot_version() : 1L,
-          data_format_version, table_schema.get_micro_index_clustered(), 0/*concurrent_cnt*/,
+          data_format_version, table_schema.get_micro_index_clustered(), get_tablet_transfer_seq(), 0/*concurrent_cnt*/,
           is_full_direct_load(direct_load_type) ? SCN::invalid_scn() : table_key.get_end_scn()))) {
     LOG_WARN("fail to init data desc", K(ret));
   } else {
@@ -143,7 +143,7 @@ int ObTabletDirectLoadMgrV3::prepare_index_builder(const ObTabletDirectLoadInser
     } else if (OB_FAIL(data_block_desc.init(true/*is ddl*/, table_schema, ls_id, tablet_id,
             compaction::ObMergeType::MAJOR_MERGE, // TODO @zhuora.zzr to set virtual
             is_full_direct_load(direct_load_type) ? table_key.get_snapshot_version() : 1L,
-            data_format_version, table_schema.get_micro_index_clustered(), 0/*concurrent_cnt*/,
+            data_format_version, table_schema.get_micro_index_clustered(), get_tablet_transfer_seq(), 0/*concurrent_cnt*/,
             is_full_direct_load(direct_load_type) ? SCN::invalid_scn() : table_key.get_end_scn()))) {
       LOG_WARN("fail to init data block desc", K(ret));
     } else {
@@ -879,7 +879,7 @@ int ObSNTabletDirectLoadMgr::init_v2(const ObTabletDirectLoadInsertParam &build_
 }
 
 ObSSTabletDirectLoadMgr::ObSSTabletDirectLoadMgr():
-ObTabletDirectLoadMgrV3(), last_data_seq_(0), last_meta_seq_(0), last_lob_id_(0), total_slice_cnt_(0)
+ObTabletDirectLoadMgrV3(), last_data_seq_(0), last_meta_seq_(0), last_lob_id_(0), total_slice_cnt_(0), tablet_transfer_seq_(-1)
 {}
 
 ObSSTabletDirectLoadMgr::~ObSSTabletDirectLoadMgr()
@@ -901,6 +901,7 @@ int ObSSTabletDirectLoadMgr::init_v2(const ObTabletDirectLoadInsertParam &build_
   } else if (!tablet_handle.is_valid()) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("invalid tablet handle", K(ret));
+  } else if (FALSE_IT(tablet_transfer_seq_= tablet_handle.get_obj()->get_transfer_seq())) {
   } else {
     is_inited_ = true;
   }

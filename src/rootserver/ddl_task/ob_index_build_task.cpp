@@ -1687,7 +1687,7 @@ int ObIndexBuildTask::clean_on_failed()
       } else if (!wait_trans_ctx_.is_inited() && OB_FAIL(wait_trans_ctx_.init(
               task_id_, task_status_, object_id_, ObDDLWaitTransEndCtx::WaitTransType::WAIT_SCHEMA_TRANS_WITHOUT_WRITE_DEFENSIVE, index_schema->get_schema_version()))) {
         // Reasons for no need write densive:
-        // 1. setting write defensive mds may race with concurrent tablet status changes
+        // 1. setting write defensive mds may concurrent with transfer
         // 2. writes to index still concurrent with dropping index, because the write defensive is done on data tablets
         LOG_WARN("init wait_trans_ctx failed", K(ret), K(object_id_), K(index_table_id_));
       } else if (OB_FAIL(wait_trans_ctx_.try_wait(is_trans_end, tmp_snapshot_version))) {

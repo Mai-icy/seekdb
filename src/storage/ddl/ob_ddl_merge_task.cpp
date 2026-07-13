@@ -993,7 +993,8 @@ int ObTabletDDLUtil::prepare_index_data_desc(const ObTablet &tablet,
       if (OB_FAIL(data_desc.init(true/*is_ddl*/, *storage_schema, ls_id, tablet_id, 
                                  compaction::ObMergeType::MAJOR_MERGE,
                                  snapshot_version, data_format_version, 
-                                 tablet.get_tablet_meta().micro_index_clustered_, 0 /*concurrent_cnt*/,
+                                 tablet.get_tablet_meta().micro_index_clustered_,
+                                 tablet.get_transfer_seq(), 0 /*concurrent_cnt*/,
                                  end_scn, &cur_cg_schema, cg_idx))) {
         LOG_WARN("init data desc for cg failed", K(ret));
       } else {
@@ -1011,6 +1012,7 @@ int ObTabletDDLUtil::prepare_index_data_desc(const ObTablet &tablet,
                                     snapshot_version,
                                     data_format_version,
                                     tablet.get_tablet_meta().micro_index_clustered_,
+                                    tablet.get_transfer_seq(),
                                     0 /* concurrent cnt */,
                                     end_scn))) {
     // use storage schema to init ObDataStoreDesc

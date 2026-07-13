@@ -484,7 +484,7 @@ int ObTabletCreateMdsHelper::check_pure_aux_tablets_info(
       LOG_WARN("failed to check tablet existence", K(ret), K(key));
     } else if (OB_UNLIKELY(!exist)) {
       ret = OB_ERR_PARALLEL_DDL_CONFLICT;
-      LOG_WARN("data tablet does not exist", K(ret), K(key));
+      LOG_WARN("data tablet does not exist, maybe transferred out", K(ret), K(key));
     } else {
       valid = true;
     }
@@ -1056,6 +1056,8 @@ int ObTabletCreateMdsHelper::rollback_remove_tablets(
   ObTenantMetaMemMgr *t3m = share::g_mp->tenant_meta_mem_mgr();
   ObLSHandle ls_handle;
   ObLS *ls = nullptr;
+  const share::SCN transfer_start_scn(share::SCN::min_scn());
+
   if (CLICK_FAIL(get_ls(ls_id, ls_handle))) {
     LOG_WARN("failed to get ls", K(ret), K(ls_id));
   } else if (OB_ISNULL(ls = ls_handle.get_ls())) {
@@ -1065,7 +1067,7 @@ int ObTabletCreateMdsHelper::rollback_remove_tablets(
     for (int64_t i = 0; OB_SUCC(ret) && i < tablet_id_array.count(); ++i) {
       MDS_TG(10_ms);
       const common::ObTabletID &tablet_id = tablet_id_array.at(i);
-      if (CLICK_FAIL(ls->get_tablet_svr()->rollback_remove_tablet(ls_id, tablet_id))) {
+      if (CLICK_FAIL(ls->get_tablet_svr()->rollback_remove_tablet(ls_id, tablet_id, transfer_start_scn))) {
         LOG_ERROR("failed to rollback remove tablet", K(ret), K(ls_id), K(tablet_id));
       }
     }

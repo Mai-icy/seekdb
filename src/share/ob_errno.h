@@ -1446,14 +1446,30 @@ constexpr int OB_ELECTION_WARN_T1_NOT_MATCH = -7038;
 constexpr int OB_ELECTION_BELOW_MAJORITY = -7039;
 constexpr int OB_ELECTION_OVER_MAJORITY = -7040;
 constexpr int OB_ELECTION_DURING_UPGRADING = -7041;
+constexpr int OB_TRANSFER_TASK_COMPLETED = -7100;
+constexpr int OB_TOO_MANY_TRANSFER_TASK = -7101;
+constexpr int OB_TRANSFER_TASK_EXIST = -7102;
+constexpr int OB_TRANSFER_TASK_NOT_EXIST = -7103;
 constexpr int OB_NOT_ALLOW_TO_REMOVE = -7104;
 constexpr int OB_RG_NOT_MATCH = -7105;
+constexpr int OB_TRANSFER_TASK_ABORTED = -7106;
+constexpr int OB_TRANSFER_INVALID_MESSAGE = -7107;
+constexpr int OB_TRANSFER_CTX_TS_NOT_MATCH = -7108;
+constexpr int OB_TRANSFER_SYS_ERROR = -7109;
+constexpr int OB_TRANSFER_MEMBER_LIST_NOT_SAME = -7110;
 constexpr int OB_ERR_UNEXPECTED_LOCK_OWNER = -7111;
+constexpr int OB_LS_TRANSFER_SCN_TOO_SMALL = -7112;
+constexpr int OB_TABLET_TRANSFER_SEQ_NOT_MATCH = -7113;
+constexpr int OB_TRANSFER_DETECT_ACTIVE_TRANS = -7114;
+constexpr int OB_TRANSFER_SRC_LS_NOT_EXIST = -7115;
+constexpr int OB_TRANSFER_SRC_TABLET_NOT_EXIST = -7116;
 constexpr int OB_LS_NEED_REBUILD = -7117;
 constexpr int OB_OBSOLETE_CLOG_NEED_SKIP = -7118;
+constexpr int OB_TRANSFER_WAIT_TRANSACTION_END_TIMEOUT = -7119;
 constexpr int OB_TABLET_GC_LOCK_CONFLICT = -7120;
 constexpr int OB_SEQUENCE_NOT_MATCH = -7121;
 constexpr int OB_SEQUENCE_TOO_SMALL = -7122;
+constexpr int OB_TRANSFER_CANNOT_START = -7123;
 constexpr int NEW_MV_MAJOR_VERSION_NOT_MATCH = -7125;
 constexpr int OB_ERR_DIMENSION_NUMBER_IS_OUT_OF_RANGE = -7290;
 constexpr int OB_ERR_INVALID_SRID_IN_SDO_GEOMETRY = -7292;
@@ -1970,6 +1986,7 @@ constexpr int OB_ERR_UPDATE_ON_EXPR = -38104;
 constexpr int OB_ERR_SPECIFIED_ROW_NO_LONGER_EXISTS = -38105;
 constexpr int OB_ERR_DATA_TOO_LONG_MSG_FMT_V2 = -5167;
 constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
+
 
 #define OB_SUCCESS__USER_ERROR_MSG "Success"
 #define OB_ERROR__USER_ERROR_MSG "Common error"
@@ -3643,14 +3660,30 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_ELECTION_BELOW_MAJORITY__USER_ERROR_MSG "not reach majority"
 #define OB_ELECTION_OVER_MAJORITY__USER_ERROR_MSG "over majority"
 #define OB_ELECTION_DURING_UPGRADING__USER_ERROR_MSG "election priority mechanism changed, maybe during upgrading"
+#define OB_TRANSFER_TASK_COMPLETED__USER_ERROR_MSG "transfer task completed"
+#define OB_TOO_MANY_TRANSFER_TASK__USER_ERROR_MSG "too many transfer tasks"
+#define OB_TRANSFER_TASK_EXIST__USER_ERROR_MSG "transfer task exist"
+#define OB_TRANSFER_TASK_NOT_EXIST__USER_ERROR_MSG "transfer task not exist"
 #define OB_NOT_ALLOW_TO_REMOVE__USER_ERROR_MSG "not allow to remove"
 #define OB_RG_NOT_MATCH__USER_ERROR_MSG "replication group not match"
+#define OB_TRANSFER_TASK_ABORTED__USER_ERROR_MSG "transfer task aborted"
+#define OB_TRANSFER_INVALID_MESSAGE__USER_ERROR_MSG "transfer invalid message"
+#define OB_TRANSFER_CTX_TS_NOT_MATCH__USER_ERROR_MSG "transfer ctx_ts not match"
+#define OB_TRANSFER_SYS_ERROR__USER_ERROR_MSG "transfer system error"
+#define OB_TRANSFER_MEMBER_LIST_NOT_SAME__USER_ERROR_MSG "transfer src ls and dest ls member list not same"
 #define OB_ERR_UNEXPECTED_LOCK_OWNER__USER_ERROR_MSG "lock owner id is not expected"
+#define OB_LS_TRANSFER_SCN_TOO_SMALL__USER_ERROR_MSG "change member list compare ls transfer scn too small"
+#define OB_TABLET_TRANSFER_SEQ_NOT_MATCH__USER_ERROR_MSG "compare tablet transfer seq not match"
+#define OB_TRANSFER_DETECT_ACTIVE_TRANS__USER_ERROR_MSG "transfer detect active trans"
+#define OB_TRANSFER_SRC_LS_NOT_EXIST__USER_ERROR_MSG "transfer src ls does not exist"
+#define OB_TRANSFER_SRC_TABLET_NOT_EXIST__USER_ERROR_MSG "transfer src tablet does not exist"
 #define OB_LS_NEED_REBUILD__USER_ERROR_MSG "ls need rebuild"
 #define OB_OBSOLETE_CLOG_NEED_SKIP__USER_ERROR_MSG "obsolete clog need skip"
+#define OB_TRANSFER_WAIT_TRANSACTION_END_TIMEOUT__USER_ERROR_MSG "transfer wait transactions end timeout"
 #define OB_TABLET_GC_LOCK_CONFLICT__USER_ERROR_MSG "tablet GC lock conflict"
 #define OB_SEQUENCE_NOT_MATCH__USER_ERROR_MSG "compare sequence not match"
 #define OB_SEQUENCE_TOO_SMALL__USER_ERROR_MSG "compare sequence too small"
+#define OB_TRANSFER_CANNOT_START__USER_ERROR_MSG "transfer cannot start"
 #define OB_PARTITION_ALREADY_BALANCED__USER_ERROR_MSG "partitions are already balanced, %s"
 #define NEW_MV_MAJOR_VERSION_NOT_MATCH__USER_ERROR_MSG "new mv major version is not match"
 #define OB_ERR_GIS_DIFFERENT_SRIDS__USER_ERROR_MSG "Binary geometry function %s given two geometries of different srids: %u and %u, which should have been identical."
@@ -4383,6 +4416,7 @@ extern int g_all_ob_errnos[2410];
   int ob_errpkt_errno(const int oberr);
   const char *ob_errpkt_strerror(const int oberr);
   const char *ob_errpkt_str_user_error(const int oberr);
+
 
 } // end namespace common
 } // end namespace oceanbase

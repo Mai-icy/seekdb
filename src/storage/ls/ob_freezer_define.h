@@ -38,8 +38,8 @@ enum class ObFreezeSourceFlag : int64_t
   USER_MINOR_FREEZE   = 2,
   FREEZE_TRIGGER      = 3,
   BACKUP              = 4,
-  RESERVED_5          = 5,
-  RESERVED_6          = 6,
+  TRANSFER_NO_KILL_TX = 5,
+  TRANSFER_BACKFILL   = 6,
   MAJOR_FREEZE        = 7,
   FAST_FREEZE         = 8,
   DIRECT_INC_START    = 9,
@@ -78,11 +78,11 @@ inline const char *obj_to_cstring(const ObFreezeSourceFlag type)
   case ObFreezeSourceFlag::BACKUP:
     ret = "BACKUP";
     break;
-  case ObFreezeSourceFlag::RESERVED_5:
-    ret = "RESERVED_5";
+  case ObFreezeSourceFlag::TRANSFER_NO_KILL_TX:
+    ret = "TRANSFER_NO_KILL_TX";
     break;
-  case ObFreezeSourceFlag::RESERVED_6:
-    ret = "RESERVED_6";
+  case ObFreezeSourceFlag::TRANSFER_BACKFILL:
+    ret = "TRANSFER_BACKFILL";
     break;
   case ObFreezeSourceFlag::MAJOR_FREEZE:
     ret = "MAJOR_FREEZE";

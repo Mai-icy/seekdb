@@ -19,11 +19,41 @@
 #include "share/rc/ob_module_provider.h"
 #include "storage/tablet/ob_mds_scan_param_helper.h"
 #include "storage/tablet/ob_mds_schema_helper.h"
+#include "storage/tx_storage/ob_ls_service.h"
 
 namespace oceanbase
 {
 namespace storage
 {
+int ObITabletMdsInterface::get_src_tablet_handle_and_base_ptr_(
+    ObTabletHandle &tablet_handle,
+    ObITabletMdsInterface *&base_ptr) const
+{
+  int ret = OB_SUCCESS;
+  const share::ObLSID &ls_id = ObLSID(SYS_LS);
+  const common::ObTabletID &tablet_id = get_tablet_meta_().tablet_id_;
+  ObLSService *ls_service = share::g_mp->ls_service();
+  ObLSHandle ls_handle;
+  ObLS *ls = nullptr;
+  ObTablet *tablet = nullptr;
+
+  if (OB_FAIL(ls_service->get_ls(ls_id, ls_handle, ObLSGetMod::TABLET_MOD))) {
+    MDS_LOG(WARN, "fail to get ls", K(ret), K(ls_id));
+  } else if (OB_ISNULL(ls = ls_handle.get_ls())) {
+    ret = OB_ERR_UNEXPECTED;
+    MDS_LOG(WARN, "ls is null", K(ret), KP(ls), K(ls_id));
+  } else if (OB_FAIL(ls->get_tablet(tablet_id, tablet_handle, 0, ObMDSGetTabletMode::READ_WITHOUT_CHECK))) {
+    MDS_LOG(WARN, "fail to get tablet", K(ret), K(ls_id), K(tablet_id));
+  } else if (OB_ISNULL(tablet = tablet_handle.get_obj())) {
+    ret = OB_ERR_UNEXPECTED;
+    MDS_LOG(WARN, "tablet is null", K(ret), K(ls_id), K(tablet_id), K(tablet_handle));
+  } else {
+    base_ptr = static_cast<ObITabletMdsInterface*>(tablet);
+  }
+
+  return ret;
+}
+
 int ObITabletMdsInterface::get_tablet_status(
     const share::SCN &snapshot,
     ObTabletCreateDeleteMdsUserData &data,
@@ -92,14 +122,24 @@ int ObITabletMdsInterface::get_latest_ddl_data(
     ret = OB_NOT_INIT;
     MDS_LOG_GET(WARN, "not inited");
   } else {
-    if (CLICK_FAIL((get_latest<ObTabletBindingMdsUserData>(
+    ObITabletMdsInterface *src = nullptr;
+    ObTabletHandle src_tablet_handle;
+    if (get_tablet_meta_().has_transfer_table()) {
+      if (CLICK_FAIL(get_src_tablet_handle_and_base_ptr_(src_tablet_handle, src))) {
+        MDS_LOG(WARN, "fail to get src tablet handle", K(ret), K(get_tablet_meta_()));
+      }
+    }
+
+    if (OB_FAIL(ret)) {
+    } else if (CLICK_FAIL((cross_ls_get_latest<ObTabletBindingMdsUserData>(
+        src,
         ReadBindingInfoOp(data),
         writer,
         trans_stat,
         trans_version,
         read_seq)))) {
       if (OB_EMPTY_RESULT != ret) {
-        MDS_LOG_GET(WARN, "fail to get latest", K(lbt()));
+        MDS_LOG_GET(WARN, "fail to cross ls get latest", K(lbt()));
       }
     } else if (!data.is_valid()) {
       ret = OB_ERR_UNEXPECTED;
@@ -125,10 +165,19 @@ int ObITabletMdsInterface::get_ddl_data(
     ret = OB_NOT_SUPPORTED;
     MDS_LOG_GET(WARN, "only support read latest data currently");
   } else {
-    if (CLICK_FAIL((get_snapshot<mds::DummyKey, ObTabletBindingMdsUserData>(mds::DummyKey(),
+    ObITabletMdsInterface *src = nullptr;
+    ObTabletHandle src_tablet_handle;
+    if (get_tablet_meta_().has_transfer_table()) {
+      if (CLICK_FAIL(get_src_tablet_handle_and_base_ptr_(src_tablet_handle, src))) {
+        MDS_LOG(WARN, "fail to get src tablet handle", K(ret), K(get_tablet_meta_()));
+      }
+    }
+
+    if (OB_FAIL(ret)) {
+    } else if (CLICK_FAIL((cross_ls_get_snapshot<mds::DummyKey, ObTabletBindingMdsUserData>(src, mds::DummyKey(),
         ReadBindingInfoOp(data), snapshot, timeout)))) {
       if (OB_EMPTY_RESULT != ret) {
-        MDS_LOG_GET(WARN, "fail to get snapshot", K(lbt()));
+        MDS_LOG_GET(WARN, "fail to cross ls get snapshot", K(lbt()));
       } else {
         data.set_default_value(); // use default value
         ret = OB_SUCCESS;
@@ -155,10 +204,19 @@ int ObITabletMdsInterface::get_autoinc_seq(
     ret = OB_NOT_SUPPORTED;
     MDS_LOG_GET(WARN, "only support read latest data currently");
   } else {
-    if (CLICK_FAIL((get_snapshot<mds::DummyKey, share::ObTabletAutoincSeq>(mds::DummyKey(),
+    ObITabletMdsInterface *src = nullptr;
+    ObTabletHandle src_tablet_handle;
+    if (get_tablet_meta_().has_transfer_table()) {
+      if (CLICK_FAIL(get_src_tablet_handle_and_base_ptr_(src_tablet_handle, src))) {
+        MDS_LOG(WARN, "fail to get src tablet handle", K(ret), K(get_tablet_meta_()));
+      }
+    }
+
+    if (OB_FAIL(ret)) {
+    } else if (CLICK_FAIL((cross_ls_get_snapshot<mds::DummyKey, share::ObTabletAutoincSeq>(src, mds::DummyKey(),
         ReadAutoIncSeqOp(allocator, data), snapshot, timeout)))) {
       if (OB_EMPTY_RESULT != ret) {
-        MDS_LOG_GET(WARN, "fail to get snapshot", K(lbt()));
+        MDS_LOG_GET(WARN, "fail to cross ls get snapshot", K(lbt()));
       } else {
         data.reset(); // use default value
         ret = OB_SUCCESS;
@@ -183,11 +241,19 @@ int ObITabletMdsInterface::get_split_data(
   } else {
     // TODO(lihongqin.lhq): use get_latest_committed and block during 2pc
     const share::SCN snapshot = share::SCN::max_scn();
+    ObITabletMdsInterface *src = nullptr;
+    ObTabletHandle src_tablet_handle;
+    if (get_tablet_meta_().has_transfer_table()) {
+      if (CLICK_FAIL(get_src_tablet_handle_and_base_ptr_(src_tablet_handle, src))) {
+        MDS_LOG(WARN, "fail to get src tablet handle", K(ret), K(get_tablet_meta_()));
+      }
+    }
 
-    if (CLICK_FAIL((get_snapshot<mds::DummyKey, ObTabletSplitMdsUserData>(mds::DummyKey(),
+    if (OB_FAIL(ret)) {
+    } else if (CLICK_FAIL((cross_ls_get_snapshot<mds::DummyKey, ObTabletSplitMdsUserData>(src, mds::DummyKey(),
         ReadSplitDataOp(data), snapshot, timeout)))) {
       if (OB_EMPTY_RESULT != ret) {
-        MDS_LOG_GET(WARN, "fail to get snapshot", K(lbt()));
+        MDS_LOG_GET(WARN, "fail to cross ls get snapshot", K(lbt()));
       } else {
         data.reset(); // use default value
         ret = OB_SUCCESS;
@@ -214,11 +280,19 @@ int ObITabletMdsInterface::split_partkey_compare(const blocksstable::ObDatumRowk
   } else {
     // TODO(lihongqin.lhq): use get_latest_committed and block during 2pc
     const share::SCN snapshot = share::SCN::max_scn();
+    ObITabletMdsInterface *src = nullptr;
+    ObTabletHandle src_tablet_handle;
+    if (get_tablet_meta_().has_transfer_table()) {
+      if (CLICK_FAIL(get_src_tablet_handle_and_base_ptr_(src_tablet_handle, src))) {
+        MDS_LOG(WARN, "fail to get src tablet handle", K(ret), K(get_tablet_meta_()));
+      }
+    }
 
-    if (CLICK_FAIL((get_snapshot<mds::DummyKey, ObTabletSplitMdsUserData>(mds::DummyKey(),
+    if (OB_FAIL(ret)) {
+    } else if (CLICK_FAIL((cross_ls_get_snapshot<mds::DummyKey, ObTabletSplitMdsUserData>(src, mds::DummyKey(),
         ReadSplitDataPartkeyCompareOp(rowkey, rowkey_read_info, partkey_projector, cmp_ret), snapshot, timeout)))) {
       if (OB_EMPTY_RESULT != ret) {
-        MDS_LOG_GET(WARN, "fail to get snapshot", K(ret), K(lbt()));
+        MDS_LOG_GET(WARN, "fail to cross ls get snapshot", K(ret), K(lbt()));
       }
     }
   }

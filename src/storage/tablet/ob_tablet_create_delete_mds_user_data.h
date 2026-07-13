@@ -36,11 +36,16 @@ enum class ObTabletMdsUserDataType : int64_t
   CREATE_TABLET = 1,
   //for drop tablet
   REMOVE_TABLET = 2,
-  RESERVED_3 = 3,
-  RESERVED_4 = 4,
-  RESERVED_5 = 5,
-  RESERVED_6 = 6,
-  RESERVED_7 = 7,
+  //for start transfer out
+  START_TRANSFER_OUT = 3,
+  //for start transfer in
+  START_TRANSFER_IN = 4,
+  //for finish transfer out
+  FINISH_TRANSFER_OUT = 5,
+  // for finish transfer in
+  FINISH_TRANSFER_IN = 6,
+  // for start tranfer out prepare
+  START_TRANSFER_OUT_PREPARE = 7,
   // for start split src
   START_SPLIT_SRC = 8,
   // for start split dst
@@ -75,25 +80,27 @@ public:
   static int set_tablet_gc_trigger(const share::ObLSID &ls_id);
   static int set_tablet_empty_shell_trigger(const share::ObLSID &ls_id);
 
-  TO_STRING_KV(K_(tablet_status), K_(reserved_scn),
-      K_(reserved_ls_id), K_(data_type),
+  TO_STRING_KV(K_(tablet_status), K_(transfer_scn),
+      K_(transfer_ls_id), K_(data_type),
       K_(create_commit_scn), K_(create_commit_version),
       K_(delete_commit_scn), K_(delete_commit_version),
-      K_(reserved_commit_version), K_(start_split_commit_version));
+      K_(start_transfer_commit_version), K_(start_split_commit_version));
 private:
-  void reserved_scn_on_redo_(const share::SCN &redo_scn);
+  void start_transfer_out_on_redo_(const share::SCN &redo_scn);
+  void finish_transfer_in_on_redo_(const share::SCN &redo_scn);
   void create_tablet_on_commit_(const share::SCN &commit_version, const share::SCN &commit_scn);
   void delete_tablet_on_commit_(const share::SCN &commit_version, const share::SCN &commit_scn);
-  void reserved_start_on_commit_(const share::SCN &commit_version);
-  void reserved_finish_on_commit_(const share::SCN &commit_version, const share::SCN &commit_scn);
+  void start_transfer_in_on_commit_(const share::SCN &commit_version);
+  void start_transfer_out_on_commit_(const share::SCN &commit_version);
+  void finish_transfer_out_on_commit_(const share::SCN &commit_version, const share::SCN &commit_scn);
 
   void start_split_src_on_commit_(const share::SCN &commit_version);
   void start_split_dst_on_commit_(const share::SCN &commit_version);
   void finish_split_src_on_commit_(const share::SCN &commit_version, const share::SCN &commit_scn);
 public:
   ObTabletStatus tablet_status_;
-  share::SCN reserved_scn_;
-  share::ObLSID reserved_ls_id_;
+  share::SCN transfer_scn_;
+  share::ObLSID transfer_ls_id_;
   ObTabletMdsUserDataType data_type_;
 
   // create_commit_scn_ remain unchanged throughout the entire tablet lifecycle
@@ -101,7 +108,7 @@ public:
   int64_t create_commit_version_; // create tx commit trans version
   share::SCN delete_commit_scn_; // delete tx commit log scn
   int64_t delete_commit_version_; // delete tx commit trans version
-  int64_t reserved_commit_version_;
+  int64_t start_transfer_commit_version_; // start transfer commit trans version(transfer in/transfer out)
   int64_t start_split_commit_version_; // start split commit trans version
 };
 

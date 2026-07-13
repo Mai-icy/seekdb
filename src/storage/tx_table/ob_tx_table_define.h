@@ -270,40 +270,45 @@ public:
 
   VIRTUAL_TO_STRING_KV(K_(tx_data_check_data));
 public:
-  // Reserved compatibility data needs to rely both on
-  // the tx table state before the reserved_scn, as well as
-  // the tx table state after the reserved_scn.
+  // In the process of transfers, the data during transfer needs to rely both on
+  // the tx table state from the transfer src before the transfer_scn, as well as
+  // the tx table state from the transfer dest after the transfer_scn.
   // Otherwise:
-  //   1. If the tx table state before the reserved_scn is
-  //      not relied upon, there could be a loss of rollbacks in the
-  //      previous undo_status.
-  //   2. If the tx table state after the reserved_scn is
+  //   1. If the tx table state from the transfer src before the transfer_scn is
+  //      not relied upon, there could be a loss of rollbacks in the transfer
+  //      src's undo_status.
+  //   2. If the tx table state from the transfer dest after the transfer_scn is
   //      not relied upon, there could be a loss of the most recent decided txn
-  //      state in the later side.
+  //      state in the transfer dest side.
   //
-  // When uncommitted data exists around the reserved SCN, it is necessary to
-  // fuse tx data states from both sides of the boundary.
+  // So, in the context of a transfer, when the src side has uncommitted data,
+  // it's necessary to both fuse the tx data state from the src and dest sides.
+  // Abstractly speaking, the reason for this fusion stems from the most
+  // critical abstraction:
+  //   - For the transfer, there exists a transfer out log. Data and txn states
+  //     preceding this log are located on the src side, while data and txn
+  //     states following this log are situated on the dest side.
   //
   // Therefore, it's necessary to fuse the txn states. While we should note that
   // txn is composed of txn states(state), commit versions(commit_version) and
   // rollback sequences(undo_status). Among these:
-  //   1. From the previous side, what's needed are the txn states of the already
-  //      committed transactions before the reserved_scn, along with their
+  //   1. From the src side, what's needed are the txn states of the already
+  //      committed transactions before the transfer_scn, along with their
   //      commit versions and rollback sequences, as well as the rollback
   //      sequences of txns that are not yet committed.
-  //   2. From the later side, what's required are the transaction states,
+  //   2. From the dest side, what's required are the transaction states,
   //      commit versions, and rollback sequences of transactions after the
-  //      reserved_scn.
+  //      transfer_scn.
   //
-  // Hence, the later side of the txn state for uncommitted data on the previous side
+  // Hence, the dest of the txn state for uncommitted data on the src side
   // should follow these steps:
-  //   - From the previous side, if a txn has been committed(meaning there
+  //   - Starting from the src side, if a txn has been committed(meaning there
   //     is a transaction state, commit version, or contained in the rollback
-  //     sequence), it can be directly obtained from the previous side.
-  //   - If a txn is uncommitted on the previous side (no decided txn state, commit
+  //     sequence), it can be directly obtained from the source side.
+  //   - If a txn is uncommitted on the src side (no decided txn state, commit
   //     version, or rollback sequence exists), then its details need to be
   //     determined from the txn state, commit version, or rollback sequence on
-  //     the later side.
+  //     the destination side.
   ObTxDataCheckData tx_data_check_data_;
   // In the tx_data_table, defensive error reporting strategies are implemented,
   // which means that potential errors are proactively handled and reported

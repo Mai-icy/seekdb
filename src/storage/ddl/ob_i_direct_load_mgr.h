@@ -199,6 +199,7 @@ public:
 
   /* TODO zhuoran, wait to fullfil in new sub class*/
   virtual bool get_is_no_logging() {return false; }
+  virtual int64_t get_tablet_transfer_seq()  {return -1; }
 
 protected:
   /* basic info */

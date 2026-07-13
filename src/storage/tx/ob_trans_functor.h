@@ -34,6 +34,7 @@
 #include "storage/tx/ob_tx_stat.h"
 #include "storage/tx/ob_trans_service.h"
 #include "storage/tx/ob_keep_alive_ls_handler.h"
+#include "storage/tablet/ob_tablet_transfer_tx_ctx.h"
 
 namespace oceanbase
 {
@@ -359,6 +360,81 @@ private:
   ObTxCommitCallback *&cb_list_;
 };
 
+class FilterTransferTxFunctor
+{
+public:
+  FilterTransferTxFunctor(ObIArray<ObTabletID> &tablet_list, const SCN data_end_scn, ObIArray<ObTransID> &move_tx_ids) :
+    tablet_list_(tablet_list), data_end_scn_(data_end_scn),
+    move_tx_ids_(move_tx_ids), count_(0), ret_(OB_SUCCESS)
+  {}
+  ~FilterTransferTxFunctor() { PRINT_FUNC_STAT; }
+  OPERATOR_V4(FilterTransferTxFunctor)
+  {
+    bool bool_ret = false;
+    int ret = OB_SUCCESS;
+    if (!tx_id.is_valid() || OB_ISNULL(tx_ctx)) {
+      ret_ = ret = OB_INVALID_ARGUMENT;
+      TRANS_LOG(WARN, "invalid argument", K(tx_id), "ctx", OB_P(tx_ctx));
+    } else {
+      ++count_;
+    }
+    if (OB_SUCC(ret)) {
+      bool need_transfer = false;
+      ret = OB_NOT_SUPPORTED;
+      TRANS_LOG(WARN, "check need transfer failed", KR(ret), K(*tx_ctx));
+      ret_ = ret;
+    }
+    return bool_ret;
+  }
+  int get_ret() const { return ret_; }
+  int64_t get_count() const { return count_; }
+private:
+  ObIArray<ObTabletID> &tablet_list_;
+  const SCN data_end_scn_;
+  ObIArray<ObTransID> &move_tx_ids_;
+  int64_t count_;
+  int ret_;
+};
+
+class TransferOutTxOpFunctor
+{
+public:
+  TransferOutTxOpFunctor(const ObTransferOutTxParam &param)
+     : param_(param), count_(0), op_tx_count_(0), ret_(OB_SUCCESS)
+  {
+  }
+  ~TransferOutTxOpFunctor() { PRINT_FUNC_STAT; }
+  OPERATOR_V4(TransferOutTxOpFunctor)
+  {
+    bool bool_ret = false;
+    int ret = OB_SUCCESS;
+    if (!tx_id.is_valid() || OB_ISNULL(tx_ctx)) {
+      ret_ = ret = OB_INVALID_ARGUMENT;
+      TRANS_LOG(WARN, "invalid argument", K(tx_id), "ctx", OB_P(tx_ctx));
+    } else {
+      ++count_;
+    }
+    if (OB_FAIL(ret)) {
+    } else if (tx_id.get_id() == param_.except_tx_id_) {
+      bool_ret = true;
+    } else {
+      bool is_operated = false;
+      ret = OB_NOT_SUPPORTED;
+      TRANS_LOG(WARN, "do_transfer_out_tx_op failed", KR(ret), K(*tx_ctx));
+      ret_ = ret;
+    }
+    return bool_ret;
+  }
+  int get_ret() const { return ret_; }
+  int64_t get_count() const { return count_; }
+  int64_t get_op_tx_count() const { return op_tx_count_; }
+private:
+  const ObTransferOutTxParam &param_;
+  int64_t count_;
+  int64_t op_tx_count_;
+  int ret_;
+};
+
 class WaitTxWriteEndFunctor
 {
 public:
@@ -400,6 +476,51 @@ private:
   static const int64_t BATCH_CHECK_COUNT = 100;
   int64_t abs_expired_time_;
   int64_t count_;
+  int ret_;
+};
+
+class CollectTxCtxFunctor
+{
+public:
+  CollectTxCtxFunctor(const int64_t abs_expired_time,
+                      share::ObLSID dest_ls_id,
+                      SCN log_scn,
+                      const ObIArray<common::ObTabletID> &tablet_list,
+                      int64_t &tx_count,
+                      int64_t &collect_count,
+                      ObIArray<ObTxCtxMoveArg> &res)
+      : abs_expired_time_(abs_expired_time), dest_ls_id_(dest_ls_id), log_scn_(log_scn),
+        tablet_list_(tablet_list), tx_count_(tx_count), collect_count_(collect_count), res_(res), ret_(OB_SUCCESS)
+  {
+    SET_EXPIRED_LIMIT(100 * 1000 /*100ms*/, 3 * 1000 * 1000 /*3s*/);
+  }
+  ~CollectTxCtxFunctor() { PRINT_FUNC_STAT; }
+  OPERATOR_V4(CollectTxCtxFunctor)
+  {
+    bool bool_ret = false;
+    int ret = OB_SUCCESS;
+    if (!tx_id.is_valid() || OB_ISNULL(tx_ctx)) {
+      ret_ = ret = OB_INVALID_ARGUMENT;
+      TRANS_LOG(WARN, "invalid argument", K(tx_id), "ctx", OB_P(tx_ctx));
+    } else {
+      ret = OB_NOT_SUPPORTED;
+      TRANS_LOG(WARN, "collect_tx_ctx", KR(ret), K(*tx_ctx));
+      ret_ = ret;
+    }
+    return bool_ret;
+  }
+  int get_ret() const { return ret_; }
+  int64_t get_tx_count() const { return tx_count_; }
+  int64_t get_collect_count() const { return collect_count_; }
+private:
+  static const int64_t BATCH_CHECK_COUNT = 100;
+  int64_t abs_expired_time_;
+  share::ObLSID dest_ls_id_;
+  SCN log_scn_;
+  const ObIArray<common::ObTabletID> &tablet_list_;
+  int64_t &tx_count_;
+  int64_t &collect_count_;
+  ObIArray<ObTxCtxMoveArg> &res_;
   int ret_;
 };
 
@@ -872,6 +993,7 @@ public:
                                  OB_NOT_NULL(tx_data) ? tx_data->start_scn_.atomic_load() : SCN::invalid_scn(),
                                  OB_NOT_NULL(tx_data) ? tx_data->end_scn_.atomic_load() : SCN::invalid_scn(),
                                  tx_ctx->get_rec_log_ts_(),
+                                 tx_ctx->sub_state_.is_transfer_blocking(),
                                  busy_cbs_cnt,
                                  (int)tx_ctx->replay_completeness_.complete_,
                                  tx_ctx->exec_info_.serial_final_scn_))) {

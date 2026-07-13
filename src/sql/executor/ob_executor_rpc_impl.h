@@ -175,12 +175,14 @@ public:
                            ObTask &task,
                            const common::ObAddr &svr,
                            RemoteExecuteStreamHandle &handler,
-                           bool &has_sent_task);
+                           bool &has_sent_task,
+                           bool &has_transfer_err);
   virtual int task_execute_v2(ObExecutorRpcCtx &rpc_ctx,
                               ObRemoteTask &task,
                               const common::ObAddr &svr,
                               RemoteExecuteStreamHandle &handler,
-                              bool &has_sent_task);
+                              bool &has_sent_task,
+                              bool &has_transfer_err);
   virtual int task_kill(
       ObExecutorRpcCtx &rpc_ctx,
       const ObTaskID &task_id,

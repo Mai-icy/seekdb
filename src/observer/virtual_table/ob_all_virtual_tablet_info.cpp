@@ -171,7 +171,19 @@ int ObAllVirtualTabletInfo::inner_get_next_row(ObNewRow *&row)
           // multi_version_start
           cur_row_.cells_[i].set_uint64(tablet_meta.multi_version_start_);
           break;
-        case OB_APP_MIN_COLUMN_ID + 6: {
+        case OB_APP_MIN_COLUMN_ID + 6:
+          // transfer_start_scn
+          cur_row_.cells_[i].set_uint64(0);
+          break;
+        case OB_APP_MIN_COLUMN_ID + 7:
+          // transfer_seq
+          cur_row_.cells_[i].set_int(0);
+          break;
+        case OB_APP_MIN_COLUMN_ID + 8:
+          // has_transfer_table
+          cur_row_.cells_[i].set_int(0);
+          break;
+        case OB_APP_MIN_COLUMN_ID + 9: {
           // restore_status
           ObTabletRestoreStatus::STATUS restore_status;
           if (OB_FAIL(tablet_meta.ha_status_.get_restore_status(restore_status))) {
@@ -181,7 +193,7 @@ int ObAllVirtualTabletInfo::inner_get_next_row(ObNewRow *&row)
           }
         }
           break;
-        case OB_APP_MIN_COLUMN_ID + 7: {
+        case OB_APP_MIN_COLUMN_ID + 10: {
           // tablet_status
           if (is_empty_result) {
             cur_row_.cells_[i].set_int(static_cast<int64_t>(ObTabletStatus::MAX));
@@ -190,11 +202,11 @@ int ObAllVirtualTabletInfo::inner_get_next_row(ObNewRow *&row)
           }
           break;
         }
-        case OB_APP_MIN_COLUMN_ID + 8:
+        case OB_APP_MIN_COLUMN_ID + 11:
           // is_committed
           cur_row_.cells_[i].set_int(trans_stat == mds::TwoPhaseCommitState::ON_COMMIT ? 1 : 0);
           break;
-        case OB_APP_MIN_COLUMN_ID + 9:
+        case OB_APP_MIN_COLUMN_ID + 12:
           // is_empty_shell
           cur_row_.cells_[i].set_int(tablet->is_empty_shell() ? 1 : 0);
           break;

@@ -243,7 +243,7 @@ int ObMdsRangeQueryIterator<K, T>::get_next_mds_kv(
       MDS_LOG(WARN, "fail to advance mds sstable iter", K(ret));
     } else {
       int tmp_ret = OB_ERR_UNEXPECTED;
-      MDS_LOG(WARN, "current tablet and source tablet should not have the same Key", K(tmp_ret), KPC(kv), KPC(cur_kv_), KPC(src_kv_), K(lbt()));
+      MDS_LOG(WARN, "dest_tablet and src_tablet in a transfer progress should not have the same Key", K(tmp_ret), KPC(kv), KPC(cur_kv_), KPC(src_kv_), K(lbt()));
     }
   } else {
     if (OB_FAIL(kv->assign(*cur_kv_, allocator))) {

@@ -457,6 +457,7 @@ private:
   int check_data_disk_write_limit_(obcall::ObAdminSetConfigItem &item);
   int check_data_disk_usage_limit_(obcall::ObAdminSetConfigItem &item);
   int check_vector_memory_limit_(obcall::ObAdminSetConfigItem &item);
+  int check_transfer_task_tablet_count_threshold_(obcall::ObAdminSetConfigItem &item);
   int start_ddl_service_();
 private:
   static const int64_t OB_MAX_CLUSTER_REPLICA_COUNT = 10000000;

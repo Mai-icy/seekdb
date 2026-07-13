@@ -313,7 +313,8 @@ int ObTabletToLSTableOperator::inner_batch_update_by_sql_(
         ret = OB_INVALID_ARGUMENT;
         LOG_WARN("invalid TabletToLSInfo", KR(ret), K(info));
       } else if (OB_FAIL(dml_splicer.add_pk_column("tablet_id", info.get_tablet_id().id()))
-          || OB_FAIL(dml_splicer.add_column("table_id", info.get_table_id()))) {
+          || OB_FAIL(dml_splicer.add_column("table_id", info.get_table_id())
+          || OB_FAIL(dml_splicer.add_column("transfer_seq", info.get_transfer_seq())))) {
         LOG_WARN("fail to add column", KR(ret), K(info));
       } else if (OB_FAIL(dml_splicer.finish_row())) {
         LOG_WARN("fail to finish row", KR(ret));
@@ -443,13 +444,16 @@ int ObTabletToLSTableOperator::construct_results_(
     int64_t tablet_id = ObTabletID::INVALID_TABLET_ID;
     int64_t ls_id = ObLSID::SYS_LS_ID;
     uint64_t table_id = OB_INVALID_ID;
+    int64_t transfer_seq = 0;
     ObTabletToLSInfo info;
 
     EXTRACT_INT_FIELD_MYSQL(res, "tablet_id", tablet_id, int64_t);
     EXTRACT_INT_FIELD_MYSQL(res, "table_id", table_id, uint64_t);
+    EXTRACT_INT_FIELD_MYSQL_WITH_DEFAULT_VALUE(res, "transfer_seq", transfer_seq, int64_t,
+        true/*skip_null_error*/, true/*skip_column_error*/, 0/*default value*/);
 
-    if (FAILEDx(info.init(ObTabletID(tablet_id), ObLSID(ls_id), table_id))) {
-      LOG_WARN("init failed", KR(ret), K(tablet_id), K(ls_id), K(table_id));
+    if (FAILEDx(info.init(ObTabletID(tablet_id), ObLSID(ls_id), table_id, transfer_seq))) {
+      LOG_WARN("init failed", KR(ret), K(tablet_id), K(ls_id), K(table_id), K(transfer_seq));
     } else if (OB_FAIL(infos.push_back(info))) {
       LOG_WARN("fail to push back", KR(ret), K(info));
     }
@@ -565,14 +569,19 @@ int ObTabletToLSTableOperator::construct_results_(
     tablet_ls_cache.reset();
     uint64_t tablet_id = ObTabletID::INVALID_TABLET_ID;
     int64_t ls_id = ObLSID::SYS_LS_ID;
+    int64_t transfer_seq = OB_INVALID_TRANSFER_SEQ;
     EXTRACT_INT_FIELD_MYSQL(res, "tablet_id", tablet_id, uint64_t);
+    EXTRACT_INT_FIELD_MYSQL_WITH_DEFAULT_VALUE(
+      res, "transfer_seq", transfer_seq, int64_t,
+      false/*skip null error*/, true/*skip column error*/, 0 /*default value*/);
     const int64_t now = ObTimeUtility::fast_current_time();
     if (FAILEDx(tablet_ls_cache.init(
         ObTabletID(tablet_id),
         ObLSID(ls_id),
-        now))) {
+        now,
+        transfer_seq))) {
       LOG_WARN("init tablet_ls_cache failed", KR(ret),
-          K(tablet_id), K(ls_id), K(now));
+          K(tablet_id), K(ls_id), K(now), K(transfer_seq));
     } else if (OB_FAIL(tablet_ls_caches.push_back(tablet_ls_cache))) {
       LOG_WARN("fail to push back", KR(ret), K(tablet_ls_cache));
     }

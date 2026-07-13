@@ -94,21 +94,21 @@ public:
       const mds::MdsWriter &writer,
       const mds::TwoPhaseCommitState &trans_state,
       const share::SCN &trans_version);
-  static int check_read_snapshot_for_reserved_5(
+  static int check_read_snapshot_for_transfer_in(
       const ObTablet &tablet,
       const int64_t snapshot_version,
       const ObTabletCreateDeleteMdsUserData &user_data,
       const mds::MdsWriter &writer,
       const mds::TwoPhaseCommitState &trans_state,
       const share::SCN &trans_version);
-  static int check_read_snapshot_for_deleted_or_reserved_4(
+  static int check_read_snapshot_for_deleted_or_transfer_out(
       const ObTablet &tablet,
       const int64_t snapshot_version,
       const ObTabletCreateDeleteMdsUserData &user_data,
       const mds::MdsWriter &writer,
       const mds::TwoPhaseCommitState &trans_state,
       const share::SCN &trans_version);
-  static int check_read_snapshot_for_reserved_6(
+  static int check_read_snapshot_for_transfer_out_deleted(
       const ObTablet &tablet,
       const int64_t snapshot_version,
       const ObTabletCreateDeleteMdsUserData &user_data);
@@ -124,7 +124,7 @@ public:
   static int check_read_snapshot_by_commit_version(
       const int64_t snapshot_version,
       const ObTabletCreateDeleteMdsUserData &user_data);
-  static int check_read_snapshot_for_reserved_status_tx(
+  static int check_read_snapshot_for_finish_transfer_in_tx(
       const ObTablet &tablet,
       const int64_t snapshot_version,
       const ObTabletCreateDeleteMdsUserData &user_data);

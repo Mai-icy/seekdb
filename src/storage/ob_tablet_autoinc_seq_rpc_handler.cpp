@@ -178,7 +178,7 @@ int ObTabletAutoincSeqRpcHandler::fetch_tablet_autoinc_seq_cache(
         LOG_WARN("fail to get latest tablet status", K(ret), K(arg));
       } else if (OB_UNLIKELY(trans_stat != mds::TwoPhaseCommitState::ON_COMMIT)) {
         ret = OB_EAGAIN;
-        LOG_WARN("tablet status not committed, maybe split start trans", K(ret), K(user_data), K(trans_stat), K(writer));
+        LOG_WARN("tablet status not committed, maybe transfer or split start trans", K(ret), K(user_data), K(trans_stat), K(writer));
       // TODO(lihongqin.lhq): fetch from split dst to avoid retry
       } else if (OB_FAIL(tablet_handle.get_obj()->fetch_tablet_autoinc_seq_cache(
           arg.cache_size_, autoinc_interval))) {

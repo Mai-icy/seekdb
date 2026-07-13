@@ -267,7 +267,7 @@ int ObLockMemCtx::get_table_lock_store_info(ObTableLockInfo &table_lock_info)
   return ret;
 }
 
-int ObLockMemCtx::get_table_lock_for_reserved(ObTableLockInfo &table_lock_info, const ObIArray<ObTabletID> &tablet_list)
+int ObLockMemCtx::get_table_lock_for_transfer(ObTableLockInfo &table_lock_info, const ObIArray<ObTabletID> &tablet_list)
 {
   int ret = OB_SUCCESS;
   RDLockGuard guard(list_rwlock_);

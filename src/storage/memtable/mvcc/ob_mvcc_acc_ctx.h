@@ -235,6 +235,12 @@ public:
     return ret;
   }
 
+  void set_src_tx_table_guard(const storage::ObTxTableGuard &tx_table_guard,
+                              storage::ObLSHandle &src_ls_handle)
+  {
+    tx_table_guards_.src_tx_table_guard_ = tx_table_guard;
+    tx_table_guards_.src_ls_handle_ = src_ls_handle;
+  }
   void set_write_flag(const concurrent_control::ObWriteFlag write_flag)
   {
     write_flag_ = write_flag;
@@ -346,7 +352,7 @@ public: // NOTE: those field should only be accessed by txn relative routine
   int64_t tx_lock_timeout_us_;
   int64_t major_snapshot_;
   transaction::ObTxSnapshot snapshot_;
-  storage::ObTxTableGuards tx_table_guards_;
+  storage::ObTxTableGuards tx_table_guards_;  // for transfer query
   // specials for MvccWrite
   transaction::ObTransID tx_id_;
   transaction::ObTxDesc *tx_desc_;             // the txn descriptor

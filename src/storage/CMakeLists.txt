@@ -374,6 +374,7 @@ ob_set_subtarget(ob_storage tablet
   tablet/ob_tablet.cpp
   tablet/ob_tablet_block_header.cpp
   tablet/ob_tablet_medium_info_reader.cpp
+  tablet/ob_tablet_transfer_tx_ctx.cpp
   tablet/ob_tablet_space_usage.cpp
   tablet/ob_tablet_block_aggregated_info.cpp
   tablet/ob_tablet_macro_info_iterator.cpp

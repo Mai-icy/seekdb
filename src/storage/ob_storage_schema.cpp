@@ -1079,7 +1079,7 @@ int ObStorageSchema::deserialize(
       STORAGE_LOG(WARN, "Failed to deserialize column groups", K(ret));
     } else if (OB_FAIL(deserialize_skip_idx_attr_array(buf, data_len, pos))) {
       STORAGE_LOG(WARN, "failed to deserialize skip idx attr array", K(ret));
-    }
+    } // TODO(@lixia.yq) need to add compat log for column_group after transfer refresh
     if (OB_SUCC(ret) && storage_schema_version_ >= STORAGE_SCHEMA_VERSION_V4) {
       OB_UNIS_DECODE(mv_mode_);
     }

@@ -244,6 +244,7 @@ int init_tablet_param(ObTablet *tablet, ObStorageSchema *storage_schema, const O
   } else {
     ObDDLKvMgrHandle ddl_kv_mgr_handle;
     const ObTabletMeta &tablet_meta = tablet->get_tablet_meta();
+    tablet_param.tablet_transfer_seq_ = 0;
     tablet_param.is_micro_index_clustered_ = tablet_meta.micro_index_clustered_;
     tablet_param.storage_schema_ = storage_schema;
     if (is_incremental_minor_direct_load(direct_load_type)) {
@@ -515,3 +516,4 @@ int ObDDLTabletContext::get_all_slices(ObIArray<ObDDLSlice *> &ddl_slices)
   }
   return ret;
 }
+

@@ -152,7 +152,7 @@ const char * ObTabletStatusCache::tablet_execute_state_to_str(const ObTabletStat
 
 const static char * ObTabletScheduleNewRoundStateStr[] = {
     "CAN_SCHEDULE_NEW_ROUND",
-    "RESERVED_STATE",
+    "DURING_TRANSFER",
     "DURING_SPLIT",
     "NEED_CHECK_LAST_MEDIUM_CKM",
     "EXIST_UNFINISH_MEDIUM",
@@ -297,11 +297,11 @@ void ObTabletStatusCache::inner_init_could_schedule_new_round(
   new_round_state_ = NEW_ROUND_STATE_MAX;
   if (OB_FAIL(tablet.ObITabletMdsInterface::get_latest_tablet_status(user_data, writer, trans_stat, trans_version))) {
     LOG_WARN("failed to get tablet status", K(ret), K(tablet), K(user_data));
-  } else if (ObTabletStatus::RESERVED_4 == user_data.tablet_status_
-    || ObTabletStatus::RESERVED_6 == user_data.tablet_status_) {
-    new_round_state_ = RESERVED_STATE;
+  } else if (ObTabletStatus::TRANSFER_OUT == user_data.tablet_status_
+    || ObTabletStatus::TRANSFER_OUT_DELETED == user_data.tablet_status_) {
+    new_round_state_ = DURING_TRANSFER;
     if (REACH_THREAD_TIME_INTERVAL(PRINT_LOG_INVERVAL)) {
-      LOG_INFO("tablet status is reserved, merging is not allowed", K(user_data), K(tablet));
+      LOG_INFO("tablet status is TRANSFER_OUT or TRANSFER_OUT_DELETED, merging is not allowed", K(user_data), K(tablet));
     }
   } else if (ObTabletStatus::SPLIT_SRC == user_data.tablet_status_
     || ObTabletStatus::SPLIT_SRC_DELETED == user_data.tablet_status_) {

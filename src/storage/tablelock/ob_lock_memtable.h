@@ -346,8 +346,8 @@ private:
   int unregister_from_deadlock_detector_(const ObTableLockOp &lock_op);
 
   int check_tablet_write_allow_(const ObTableLockOp &lock_op,
-                                const int64_t input_reserved_counter,
-                                int64_t &output_reserved_counter);
+                                const int64_t input_transfer_counter,
+                                int64_t &output_transfer_counter);
   int get_lock_wait_expire_ts_(const int64_t lock_wait_start_ts);
   int check_and_set_tx_lock_timeout_(const memtable::ObMvccAccessCtx &acc_ctx);
 private:
@@ -369,10 +369,10 @@ private:
   share::SCN pre_rec_scn_;
   share::SCN max_committed_scn_;
   bool is_frozen_;
-  // enable tablet status check
+  // for transfer to enable tablet status check
   bool need_check_tablet_status_;
-  // detect status changes between table lock operations
-  int64_t reserved_counter_;
+  // for detect the transfer between the table lock operation
+  int64_t transfer_counter_;
 
   storage::ObFreezer *freezer_;
   RWLock flush_lock_;        // lock before change ts

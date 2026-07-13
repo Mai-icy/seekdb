@@ -27,9 +27,10 @@ namespace sql {
 /**
  *
  * DAS cannot unconditionally retry for the error of tablet_location or ls_location, like -4725, -4721,
- * and needs to determine whether the real cause of the error is due to DDL operations or stale location cache.
+ * and needs to determine whether the real cause of the error is due to DDL operations or transfer.
  * 1. When the table, partition or tenant was dropped, which is caused by DDL, das task cannot be retried.
- * 2. When tablet location cache is stale, tablet location cache should be updated and das task needs to be retried.
+ * 2. When a partition was transfered and tablet location cache is not updated, tablet location cache should
+ *    be updated and das task needs to be retried.
  *
  **/
 void ObDASRetryCtrl::tablet_location_retry_proc(ObDASRef &das_ref,

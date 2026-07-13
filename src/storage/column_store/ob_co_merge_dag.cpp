@@ -251,6 +251,7 @@ int ObCOMergePrepareTask::schedule_minor_exec_dag(
   result.version_range_.multi_version_start_ = ctx.get_tablet()->get_multi_version_start();
   result.version_range_.base_version_ = 0;
   result.version_range_.snapshot_version_ = ctx.get_tablet()->get_snapshot_version();
+  result.transfer_seq_ = ctx.get_tablet()->get_transfer_seq();
   ObTabletMergeDagParam dag_param(MINOR_MERGE, ctx.get_ls_id(), ctx.get_tablet_id());
   if (OB_FAIL(share::g_mp->tenant_dag_scheduler()->alloc_dag(minor_exe_dag))) {
     LOG_WARN("failed to alloc dag", K(ret));
@@ -1533,6 +1534,7 @@ int ObCOMergeDagNet::swap_tablet_after_minor()
     LOG_WARN("failed to assign tables handle", K(ret), K(tmp_result));
   } else {
     co_merge_ctx_->tablet_handle_ = tmp_tablet_handle;
+    co_merge_ctx_->static_param_.tablet_transfer_seq_ = tmp_tablet_handle.get_obj()->get_transfer_seq();
     co_merge_ctx_->static_param_.rowkey_read_info_ =
       static_cast<const ObRowkeyReadInfo *>(&(co_merge_ctx_->get_tablet()->get_rowkey_read_info()));
     LOG_INFO("success to swap tablet after minor", K(ret), K(tmp_result),

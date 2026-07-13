@@ -552,6 +552,68 @@ int ObAccessService::get_write_store_ctx_guard_(
   return ret;
 }
 
+int ObAccessService::get_source_ls_tx_table_guard_(
+  const ObTabletHandle &tablet_handle,
+  ObStoreCtxGuard &ctx_guard)
+{
+  int ret = OB_SUCCESS;
+  ObTabletCreateDeleteMdsUserData user_data;
+  const ObTablet *tablet = nullptr;
+  mds::MdsWriter unused_writer;// will be removed later
+  mds::TwoPhaseCommitState trans_stat;// will be removed later
+  share::SCN unused_trans_version;// will be removed later
+  ObStoreCtx &ctx = ctx_guard.get_store_ctx();
+
+  if (OB_ISNULL(tablet = tablet_handle.get_obj())) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("tablet should not be NULL", K(ret), KPC(tablet), K(tablet_handle));
+  } else if (OB_LIKELY(!tablet->get_tablet_meta().has_transfer_table())) {
+    // do nothing
+  } else if (OB_FAIL(tablet->get_latest(user_data,
+      unused_writer, trans_stat, unused_trans_version))) {
+    LOG_WARN("failed to get tablet status", K(ret), KPC(tablet), K(user_data));
+  } else if (mds::TwoPhaseCommitState::ON_COMMIT != trans_stat && ctx.is_write()) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("tablet in transfer but user data is uncommit, unexpected", K(ret), K(trans_stat), K(user_data));
+  } else if (ObTabletStatus::TRANSFER_IN != user_data.tablet_status_ || !user_data.transfer_ls_id_.is_valid()) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("tablet status is unexpected", K(ret), K(user_data));
+  } else if (ctx_guard.get_store_ctx().mvcc_acc_ctx_.get_tx_table_guards().is_src_valid()) {
+    // The main tablet and local index tablets use the same mvcc_acc_ctx, if the src_tx_table_guard
+    // has been set, you do not need to set it again and must skip start_request_for_transfer,
+    // because it only call end_request_for_transfer once when revert store ctx.
+    ObTxTableGuards &tx_table_guards = ctx_guard.get_store_ctx().mvcc_acc_ctx_.get_tx_table_guards();
+    if (OB_UNLIKELY(tx_table_guards.src_ls_handle_.get_ls()->get_ls_id() != user_data.transfer_ls_id_)) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_ERROR("main tablet and local index tablet must have same src ls", K(ret), K(tx_table_guards), K(user_data));
+    }
+  } else {
+    ObLS *src_ls = nullptr;
+    ObLSService *ls_service = share::g_mp->ls_service();
+    ObLSHandle ls_handle;
+    ObTxTableGuard src_tx_table_guard;
+    if (OB_FAIL(ls_service->get_ls(user_data.transfer_ls_id_, ls_handle, ObLSGetMod::HA_MOD))) {
+      LOG_WARN("failed to get ls", K(ret), K(user_data));
+    } else if (OB_ISNULL(src_ls = ls_handle.get_ls())) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("ls should not be NULL", K(ret), KP(src_ls), K(user_data));
+    } else if (OB_FAIL(src_ls->get_tx_table_guard(src_tx_table_guard))) {
+      LOG_WARN("failed to get tablet", K(ret));
+    } else if (!user_data.transfer_scn_.is_valid() || !src_tx_table_guard.is_valid()) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("transfer_scn or source ls tx_table_guard is invalid", K(ret), K(src_tx_table_guard), K(user_data));
+    } else if (OB_FAIL(src_ls->get_tx_svr()->start_request_for_transfer())) {
+      LOG_WARN("start request for transfer failed", KR(ret), K(user_data));
+    } else {
+      ObStoreCtx &ctx = ctx_guard.get_store_ctx();
+      ctx.mvcc_acc_ctx_.set_src_tx_table_guard(src_tx_table_guard, ls_handle);
+      LOG_DEBUG("succ get src tx table guard", K(ret), K(src_ls->get_ls_id()), K(src_tx_table_guard), K(user_data));
+    }
+  }
+
+  return ret;
+}
+
 int ObAccessService::construct_store_ctx_other_variables_(
     ObLS &ls,
     const common::ObTabletID &tablet_id,
@@ -575,6 +637,8 @@ int ObAccessService::construct_store_ctx_other_variables_(
   } else if (OB_FAIL(tablet_service->get_tablet_with_timeout(
       tablet_id, tablet_handle, timeout, ObMDSGetTabletMode::READ_READABLE_COMMITED, snapshot))) {
     LOG_WARN("failed to check and get tablet", K(ret), K(ls_id), K(tablet_id), K(timeout), K(snapshot));
+  } else if (OB_FAIL(get_source_ls_tx_table_guard_(tablet_handle, ctx_guard))) {
+    LOG_WARN("failed to get src ls tx table guard", K(ret), K(ls_id), K(tablet_id));
   }
   if (OB_TABLET_IS_SPLIT_SRC == ret) {
     ObArray<ObTabletID> tmp_tablet_ids;

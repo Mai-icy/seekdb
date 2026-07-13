@@ -53,6 +53,10 @@ int ObDDLMergeScheduler::check_need_merge_for_idem_sn(ObTablet &tablet, ObArray<
   if (ddl_kv_type != ObDDLKVType::DDL_KV_INVALID || need_schedule_merge) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("invalid argument, return param should be invalid", K(ret), K(ddl_kv_type), K(need_schedule_merge));
+  } else if (tablet.get_tablet_meta().has_transfer_table()) {
+    if (REACH_THREAD_TIME_INTERVAL(PRINT_LOG_INTERVAL)) {
+      LOG_INFO("The tablet in the transfer process does not do ddl major_merge", K(tablet.get_tablet_id()));
+    }
   } else if (tablet.get_tablet_meta().ddl_data_format_version_ < DDL_IDEM_DATA_FORMAT_VERSION) {
     LOG_INFO("skip check need merge for idem sn, data format version is less than idem data format version", K(tablet.get_tablet_meta().ddl_data_format_version_));
   } else if ((tablet.get_major_table_count() > 0) || 
@@ -107,6 +111,10 @@ int ObDDLMergeScheduler::check_need_merge_for_nidem_sn(ObTablet &tablet, ObArray
     LOG_WARN("invalid argument, return param should be invalid", K(ret), K(ddl_kv_type), K(need_schedule_merge));
   } else if (!(tablet.get_tablet_meta().ddl_data_format_version_ < DDL_IDEM_DATA_FORMAT_VERSION)) {
     LOG_INFO("skip check need merge for nidem sn, data format version is not less than idem data format version", K(tablet.get_tablet_meta().ddl_data_format_version_));
+  } else if (tablet.get_tablet_meta().has_transfer_table()) {
+    if (REACH_THREAD_TIME_INTERVAL(PRINT_LOG_INTERVAL)) {
+      LOG_INFO("The tablet in the transfer process does not do ddl major_merge", K(tablet.get_tablet_id()));
+    }
   } else {
     bool is_major_sstable_exist = false;
     ObTenantDirectLoadMgr *tenant_direct_load_mgr = nullptr;
@@ -247,6 +255,10 @@ int ObDDLMergeScheduler::schedule_tablet_ddl_major_merge(
   if (OB_UNLIKELY(!ls_id.is_valid() || !tablet_handle.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(ls_id), K(tablet_handle));
+  } else if (tablet_handle.get_obj()->get_tablet_meta().has_transfer_table()) {
+    if (REACH_THREAD_TIME_INTERVAL(PRINT_LOG_INTERVAL)) {
+      LOG_INFO("The tablet in the transfer process does not do ddl major_merge", K(tablet_handle));
+    }
   } else {
     need_schedule_merge = true;
   }

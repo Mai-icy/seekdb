@@ -146,12 +146,13 @@ int ObMdsTableMergeTask::process()
       ctx.time_guard_click(ObStorageCompactionTimeGuard::EXECUTE);
       share::dag_yield();
     } else if (FALSE_IT(ctx.static_param_.scn_range_.start_scn_ = tablet->get_mds_checkpoint_scn())) {
+    } else if (FALSE_IT(ctx.static_desc_.tablet_transfer_seq_ = tablet->get_transfer_seq())) {
     } else if (MDS_FAIL(build_mds_sstable(ctx, mds_construct_sequence, table_handle))) {
       if (OB_EMPTY_RESULT != ret) {
         LOG_ERROR("fail to build mds sstable", K(ret), K(ls_id), K(tablet_id), KPC(mds_merge_dag_));
       } else {
         // abort transaction may trigger an empty mds table dump to relase mem and clog scn
-        // however, an uncommitted tablet for example create/reserved/split dest, need to
+        // however, an uncommitted tablet for example create/transfer in/split dest, need to
         // transform to empty shell accoring to the mds table rec scn (See 
         // ObTabletEmptyShellHandler::check_tablet_from_aborted_tx_).
         // So here double check tablet status that only flush those committed tablet status.

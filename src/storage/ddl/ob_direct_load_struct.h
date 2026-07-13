@@ -920,7 +920,7 @@ public:
   virtual void cancel() override {}
   TO_STRING_KV(K(is_inited_), K(row_count_), K(dumped_row_count_), K(ls_id_), K(tablet_id_), K(direct_load_type_),
       K(tenant_data_version_), K(snapshot_version_), K(ddl_task_id_), K(parallel_task_count_), K(is_micro_index_clustered_),
-      K(slice_idx_), K(start_scn_), K(is_cs_replica_), K(start_seqs_), K(datum_stores_), KPC(storage_schema_), KP_(tx_desc), K_(trans_id), K_(seq_no));
+      K(tablet_transfer_seq_), K(slice_idx_), K(start_scn_), K(is_cs_replica_), K(start_seqs_), K(datum_stores_), KPC(storage_schema_), KP_(tx_desc), K_(trans_id), K_(seq_no));
 private:
   int check_need_dump(bool &need_dump);
   int dump_macro_block();
@@ -940,6 +940,7 @@ private:
   int64_t ddl_task_id_; // for clog wirte speed limit
   int64_t parallel_task_count_; // for gc flag in shared storage mode
   bool is_micro_index_clustered_;
+  int64_t tablet_transfer_seq_;
 
   ObArray<blocksstable::ObMacroDataSeq> start_seqs_;
   int64_t slice_idx_;
@@ -969,6 +970,7 @@ public:
       ddl_task_id_(0), 
       parallel_task_count_(0),
       is_micro_index_clustered_(false), 
+      tablet_transfer_seq_(share::OB_INVALID_TRANSFER_SEQ),
       is_cs_replica_(false),
       is_inited_(false),
       tx_desc_(nullptr),
@@ -1017,6 +1019,7 @@ public:
                K_(ddl_task_id),
                K_(parallel_task_count),
                K_(is_micro_index_clustered),
+               K_(tablet_transfer_seq),
                K_(start_scn),
                K_(is_cs_replica),
                K_(is_inited),
@@ -1083,6 +1086,7 @@ public:
   int64_t ddl_task_id_; // for clog wirte speed limit
   int64_t parallel_task_count_; // for gc flag in shared storage mode
   bool is_micro_index_clustered_;
+  int64_t tablet_transfer_seq_;
   share::SCN start_scn_;
   bool is_cs_replica_;
   bool is_inited_;
