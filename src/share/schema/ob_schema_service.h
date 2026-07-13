@@ -88,14 +88,14 @@ enum ObSchemaOperationCategory
   ACT(OB_DDL_TRUNCATE_TABLE_DROP,)                               \
   ACT(OB_DDL_DROP_TABLE_TO_RECYCLEBIN, = 25)                     \
   ACT(OB_DDL_DROP_VIEW_TO_RECYCLEBIN,)                           \
-  ACT(OB_DDL_FLASHBACK_TABLE,)                                   \
-  ACT(OB_DDL_FLASHBACK_VIEW,)                                    \
+  ACT(OB_DDL_RESTORE_TABLE_FROM_RECYCLEBIN,)                                   \
+  ACT(OB_DDL_RESTORE_VIEW_FROM_RECYCLEBIN,)                                    \
   ACT(OB_DDL_ADD_PARTITION,)                                     \
   ACT(OB_DDL_DROP_PARTITION, = 30)                               \
   ACT(OB_DDL_TRUNCATE_DROP_TABLE_TO_RECYCLEBIN,)                 \
   ACT(OB_DDL_RENAME_INDEX,)                                      \
   ACT(OB_DDL_DROP_INDEX_TO_RECYCLEBIN,)                          \
-  ACT(OB_DDL_FLASHBACK_INDEX,)                                   \
+  ACT(OB_DDL_RECOVER_INDEX_FROM_RECYCLEBIN,)                     \
   ACT(OB_DDL_PARTITIONED_TABLE, = 35)                            \
   ACT(OB_DDL_FINISH_SPLIT,)                                      \
   ACT(OB_DDL_ADD_CONSTRAINT,)                                    \
@@ -142,7 +142,6 @@ enum ObSchemaOperationCategory
   ACT(OB_DDL_ADD_TENANT_END,)                                    \
   ACT(OB_DDL_RENAME_TENANT,)                                     \
   ACT(OB_DDL_DROP_TENANT_TO_RECYCLEBIN,)                         \
-  ACT(OB_DDL_FLASHBACK_TENANT,)                                  \
   ACT(OB_DDL_TENANT_OPERATION_END, = 200)                        \
   ACT(OB_DDL_DATABASE_OPERATION_BEGIN, = 201)                    \
   ACT(OB_DDL_ADD_DATABASE,)                                      \
@@ -150,7 +149,7 @@ enum ObSchemaOperationCategory
   ACT(OB_DDL_DEL_DATABASE,)                                      \
   ACT(OB_DDL_RENAME_DATABASE,)                                   \
   ACT(OB_DDL_DROP_DATABASE_TO_RECYCLEBIN,)                       \
-  ACT(OB_DDL_FLASHBACK_DATABASE,)                                \
+  ACT(OB_DDL_RESTORE_DATABASE_FROM_RECYCLEBIN,)                                \
   ACT(OB_DDL_DELAY_DELETE_DATABASE,)                             \
   ACT(OB_DDL_DATABASE_OPERATION_END, = 300)                      \
   ACT(OB_DDL_TABLEGROUP_OPERATION_BEGIN, = 301)                  \
@@ -291,7 +290,7 @@ enum ObSchemaOperationCategory
   ACT(OB_DDL_ALTER_TRIGGER,)                                     \
   ACT(OB_DDL_DROP_TRIGGER,)                                      \
   ACT(OB_DDL_DROP_TRIGGER_TO_RECYCLEBIN,)                        \
-  ACT(OB_DDL_FLASHBACK_TRIGGER,)                                 \
+  ACT(OB_DDL_RESTORE_TRIGGER_FROM_RECYCLEBIN,)                                 \
   ACT(OB_DDL_TRIGGER_OPERATION_END, = 1960)                      \
   ACT(OB_DDL_PROFILE_OPERATION_BEGIN, = 1961)                    \
   ACT(OB_DDL_CREATE_PROFILE,)                                    \

@@ -3758,7 +3758,6 @@ def_table_schema(**all_catalog_privilege_def)
 
 def_table_schema(**gen_history_table_def(540, all_catalog_privilege_def))
 
-# 541: __all_tenant_flashback_log_scn
 # 542: __sslog_table
 # 543: __all_license (abandoned)
 
@@ -6109,7 +6108,7 @@ def_table_schema(
 
 # 12104: __all_virtual_routine_param_history # removed (single-tenant: iterate VT mechanism deleted)
 
-# 12115: __all_virtual_recyclebin # removed (single-tenant: iterate VT mechanism deleted)
+# 12115: reserved for removed recyclebin virtual table
 
 # 12116: __all_virtual_tenant_gc_partition_info # abandoned in 4.0
 
@@ -8447,8 +8446,6 @@ def_table_schema(
 
 # 12520: __all_virtual_sswriter_group_stat
 # 12521: __all_virtual_sswriter_lease_mgr
-
-# 12522: __all_virtual_tenant_flashback_log_scn
 
 # 12523: __all_virtual_pl_recompile_objinfo # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -18020,8 +18017,6 @@ def_table_schema(
 # 21635: GV$OB_PLUGINS # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_plugin_info)
 # 21636: V$OB_PLUGINS # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_plugin_info)
 
-# 21637: DBA_OB_TENANT_FLASHBACK_LOG_SCN
-# 21638: CDB_OB_TENANT_FLASHBACK_LOG_SCN
 # 21639: DBA_OB_LICENSE (abandoned)
 
 def_table_schema(

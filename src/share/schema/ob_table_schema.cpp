@@ -2516,10 +2516,10 @@ bool ObTableSchema::is_sys_generated_name(bool check_unknown) const
   return bret;
 }
 
-// description: Legacy generated-name convention for flashback of an indexed table.
+// description: Legacy generated-name convention for restoring an indexed table from recyclebin.
 //  for the index on the table
-//              Generation rules: idx_name_flashback_auto = RECYCLE_OBIDX_timestamp
-int ObTableSchema::create_new_idx_name_after_flashback(
+//              Generation rules: idx_name_restore_auto = RECYCLE_OBIDX_timestamp
+int ObTableSchema::create_new_idx_name_after_recyclebin_restore(
     ObTableSchema &new_table_schema,
     common::ObString &new_idx_name,
     common::ObIAllocator &allocator,

@@ -665,7 +665,7 @@ DEFINE_ERROR(OB_NOT_PRIMARY_TENANT, -4782, -1, "HY000", "The tenant is not PRIMA
 DEFINE_ERROR(OB_SERVICE_STOPPED, -4783, -1, "HY000", "The service has stopped");
 DEFINE_ERROR(OB_SERVER_CONNECTION_ERROR, -4784, -1, "HY000", "Server '%s' connection error");
 DEFINE_ERROR_EXT(OB_ERR_ATLER_TABLE_ILLEGAL_FK_DROP_INDEX, -4785, ER_DROP_INDEX_FK, "HY000", "Cannot drop index: needed in a foreign key constraint", "Cannot drop index '%.*s': needed in a foreign key constraint");
-DEFINE_ERROR(OB_ERR_FLASHBACK_QUERY_EXP_NULL, -4786, -1, "HY000", "NULL snapshot expression not allowed here");
+DEFINE_ERROR(OB_ERR_SNAPSHOT_QUERY_EXP_NULL, -4786, -1, "HY000", "NULL snapshot expression not allowed here");
 DEFINE_ERROR(OB_RELEASE_MDS_NODE_ERROR, -4787, -1, "HY000", "Release mds node error");
 
 // 余留位置
@@ -2330,7 +2330,7 @@ DEFINE_ERROR_EXT(OB_FUNCTION_NOT_DEFINED, -9203, ER_FUNCTION_NOT_DEFINED, "HY000
 ////////////////////////////////////////////////////////////////
 DEFINE_ERROR_EXT(OB_SP_RAISE_APPLICATION_ERROR, -20000, -1, "HY000", "The stored procedure 'raise_application_error' was called which causes this error to be generated", "%.*s");
 DEFINE_ERROR_EXT(OB_SP_RAISE_APPLICATION_ERROR_NUM, -21000, -1, "HY000", "error number argument to raise_application_error of stringstring is out of range", "error number argument to raise_application_error of '%d' is out of range");
-DEFINE_ERROR(OB_ERR_FLASHBACK_QUERY_WITH_UPDATE, -32491, -1, "HY000", "snapshot expression not allowed here");
+DEFINE_ERROR(OB_ERR_SNAPSHOT_QUERY_WITH_UPDATE, -32491, -1, "HY000", "snapshot expression not allowed here");
 
 DEFINE_ERROR(OB_ERR_DUPLICATE_HAVING_CLAUSE_IN_TABLE_EXPRESSION, -9501, -1, "HY000", "Duplicate having-clause in table expression");
 DEFINE_ERROR(OB_ERR_INOUT_PARAM_PLACEMENT_NOT_PROPERLY, -9502, -1, "HY000", "OUT and IN/OUT modes cannot be used in this context");

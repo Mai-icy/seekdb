@@ -67,12 +67,12 @@ class ObPxMultiPartSSTableInsertSpec : public ObPxMultiPartInsertSpec
   OB_UNIS_VERSION_V(1);
 public:
   ObPxMultiPartSSTableInsertSpec(common::ObIAllocator &alloc, const ObPhyOperatorType type)
-    : ObPxMultiPartInsertSpec(alloc, type), flashback_query_expr_(nullptr),
+    : ObPxMultiPartInsertSpec(alloc, type), snapshot_query_expr_(nullptr),
       regenerate_heap_table_pk_(false)
   {}
   int get_snapshot_version(ObEvalCtx &eval_ctx, int64_t &snapshot_version) const;
 public:
-  ObExpr *flashback_query_expr_;
+  ObExpr *snapshot_query_expr_;
   bool regenerate_heap_table_pk_;
   int64_t ddl_slice_id_idx_; // record idx of exprs for ddl slice id
   DISALLOW_COPY_AND_ASSIGN(ObPxMultiPartSSTableInsertSpec);

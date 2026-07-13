@@ -229,9 +229,9 @@ int ObMVChecker::check_mv_table_type_valid(const ObSelectStmt &stmt, bool &is_va
         fast_refreshable_error_.assign_fmt("query has invalid table type(%s). only basic table "
                                            "and materialized view are supported",
                                            get_table_type_str(table->type_));
-      } else if (OB_NOT_NULL(table->flashback_query_expr_)) {
+      } else if (OB_NOT_NULL(table->snapshot_query_expr_)) {
         is_valid = false;
-        fast_refreshable_error_.assign_fmt("flashback query is not supported");
+        fast_refreshable_error_.assign_fmt("snapshot query is not supported");
       } else if (OB_UNLIKELY(!table->part_ids_.empty())) {
         is_valid = false;
         fast_refreshable_error_.assign_fmt("query with partition specification for table is not supported");

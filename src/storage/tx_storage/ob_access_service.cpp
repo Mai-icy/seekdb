@@ -613,7 +613,7 @@ int ObAccessService::check_read_allowed_(
   int ret = OB_SUCCESS;
   ObLS *ls = nullptr;
 
-  LOG_TRACE("print check read allowed, scan param", K(ls_id), K(tablet_id), K(scan_param.fb_read_tx_uncommitted_));
+  LOG_TRACE("print check read allowed, scan param", K(ls_id), K(tablet_id));
   if (OB_FAIL(ctx_guard.init(ls_id))) {
     LOG_WARN("ctx_guard init fail", K(ret), K(ls_id));
   } else if (OB_FAIL(ls_svr_->get_ls(ls_id, ctx_guard.get_ls_handle(), ObLSGetMod::DAS_MOD))) {
@@ -626,7 +626,7 @@ int ObAccessService::check_read_allowed_(
     ctx.ls_ = ls;
     ctx.timeout_ = scan_param.timeout_;
     ctx.tablet_id_ = tablet_id;
-    if (user_specified_snapshot.is_valid() && !scan_param.fb_read_tx_uncommitted_) {
+    if (user_specified_snapshot.is_valid()) {
       if (OB_FAIL(ls->get_read_store_ctx(user_specified_snapshot,
                                          scan_param.tx_lock_timeout_,
                                          ctx))) {

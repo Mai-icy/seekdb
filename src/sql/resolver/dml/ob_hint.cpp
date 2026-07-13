@@ -321,7 +321,6 @@ bool ObGlobalHint::has_hint_exclude_concurrent() const
          || has_gather_opt_stat_hint()
          || false != has_dbms_stats_hint_
          || -1 != dynamic_sampling_
-         || flashback_read_tx_uncommitted_
          || has_direct_load()
          || ObParallelDASOption::NOT_SPECIFIED != parallel_das_dml_option_
          || !px_node_hint_.empty();
@@ -353,7 +352,6 @@ void ObGlobalHint::reset()
   ob_ddl_schema_versions_.reuse();
   osg_hint_.flags_ = 0;
   has_dbms_stats_hint_ = false;
-  flashback_read_tx_uncommitted_ = false;
   dynamic_sampling_ = ObGlobalHint::UNSET_DYNAMIC_SAMPLING;
   alloc_op_hints_.reuse();
   direct_load_hint_.reset();
@@ -384,7 +382,6 @@ int ObGlobalHint::merge_global_hint(const ObGlobalHint &other)
   disable_cost_based_transform_ |= other.disable_cost_based_transform_;
   osg_hint_.flags_ |= other.osg_hint_.flags_;
   has_dbms_stats_hint_ |= other.has_dbms_stats_hint_;
-  flashback_read_tx_uncommitted_ |= other.flashback_read_tx_uncommitted_;
   merge_parallel_das_dml_hint(other.parallel_das_dml_option_);
   merge_dynamic_sampling_hint(other.dynamic_sampling_);
   merge_direct_load_hint(other.direct_load_hint_);
@@ -573,9 +570,6 @@ int ObGlobalHint::print_global_hint(PlanText &plan_text) const
   }
   if (OB_SUCC(ret) && has_dbms_stats_hint()) {
     PRINT_GLOBAL_HINT_STR("DBMS_STATS");
-  }
-  if (OB_SUCC(ret) && get_flashback_read_tx_uncommitted()) {
-    PRINT_GLOBAL_HINT_STR("FLASHBACK_READ_TX_UNCOMMITTED");
   }
   if (OB_SUCC(ret) && OB_FAIL(direct_load_hint_.print_direct_load_hint(plan_text))) {
     LOG_WARN("failed to print direct load hint", KR(ret));

@@ -2533,7 +2533,7 @@ DEF_TO_STRING(ObDropForeignKeyArg)
 OB_SERIALIZE_MEMBER((ObDropForeignKeyArg, ObIndexArg),
                     foreign_key_name_);
 
-bool ObFlashBackTableFromRecyclebinArg::is_valid() const
+bool ObRecyclebinRestoreTableArg::is_valid() const
 {
   int bret = true;
   if (origin_table_name_.empty()) {
@@ -2548,54 +2548,12 @@ bool ObFlashBackTableFromRecyclebinArg::is_valid() const
   return bret;
 }
 
-OB_SERIALIZE_MEMBER((ObFlashBackTableFromRecyclebinArg, ObDDLArg),
+OB_SERIALIZE_MEMBER((ObRecyclebinRestoreTableArg, ObDDLArg),
 
                     origin_table_name_,
                     new_db_name_,
                     new_table_name_,
                     origin_db_name_);
-
-bool ObFlashBackTableToScnArg::is_valid() const
-{
-  int bret = true;
-  if (OB_INVALID_ID == time_point_) {
-    bret = false;
-    LOG_WARN_RET(OB_INVALID_ERROR, "timepoint is invalid", K_(time_point));
-  } else if (0 == tables_.count()) {
-    bret = false;
-    LOG_WARN_RET(OB_INVALID_ERROR, "table is empty", K_(tables));
-  } else if (-1 == query_end_time_) {
-    bret = false;
-  }
-  return bret;
-}
-
-OB_SERIALIZE_MEMBER(ObFlashBackTableToScnArg,
-
-                    time_point_,
-                    tables_,
-                    query_end_time_);
-
-bool ObFlashBackIndexArg::is_valid() const
-{
-  int bret = true;
-  if (origin_table_name_.empty()) {
-    bret = false;
-    LOG_WARN_RET(OB_INVALID_ERROR, "origin_table_name is empty", K_(origin_table_name));
-  } else if ((new_db_name_.empty() && !new_table_name_.empty()) ||
-      (!new_db_name_.empty() && new_table_name_.empty())) {
-    bret = false;
-    LOG_WARN_RET(OB_INVALID_ERROR, "new_db_name or new_table_name is invalid",
-             K_(new_db_name), K_(new_table_name));
-  }
-  return bret;
-}
-
-OB_SERIALIZE_MEMBER((ObFlashBackIndexArg, ObDDLArg),
-
-                    origin_table_name_,
-                    new_db_name_,
-                    new_table_name_);
 
 bool ObPurgeIndexArg::is_valid() const
 {
@@ -2609,12 +2567,12 @@ OB_SERIALIZE_MEMBER((ObPurgeIndexArg, ObDDLArg),
                     database_id_,
                     table_name_);
 
-bool ObFlashBackDatabaseArg::is_valid() const
+bool ObRecyclebinRestoreDatabaseArg::is_valid() const
 {
   return !origin_db_name_.empty();
 }
 
-OB_SERIALIZE_MEMBER((ObFlashBackDatabaseArg, ObDDLArg),
+OB_SERIALIZE_MEMBER((ObRecyclebinRestoreDatabaseArg, ObDDLArg),
 
                     origin_db_name_,
                     new_db_name_);

@@ -395,7 +395,7 @@ public:
                                        common::ObMySQLTransaction &trans,
                                        const common::ObString *ddl_stmt_str,/*= NULL*/
                                        const bool is_truncate_table = false);
-  virtual int flashback_table_from_recyclebin(const share::schema::ObTableSchema &table_schema,
+  virtual int restore_table_from_recyclebin(const share::schema::ObTableSchema &table_schema,
                                               share::schema::ObTableSchema &new_table_schema,
                                               common::ObMySQLTransaction &trans,
                                               const uint64_t new_db_id,
@@ -415,7 +415,7 @@ public:
   virtual int drop_database_to_recyclebin(const share::schema::ObDatabaseSchema &database_schema,
                                           common::ObMySQLTransaction &trans,
                                           const common::ObString *ddl_stmt_str);
-  virtual int flashback_database_from_recyclebin(const share::schema::ObDatabaseSchema &database_schema,
+  virtual int restore_database_from_recyclebin(const share::schema::ObDatabaseSchema &database_schema,
                                                  common::ObMySQLTransaction &trans,
                                                  const common::ObString &new_db_name,
                                                  share::schema::ObSchemaGetterGuard &schema_guard,
@@ -664,7 +664,7 @@ public:
                     common::ObMySQLTransaction &tran,
                     const common::ObString *ddl_stmt_str/*=NULL*/,
                     bool is_update_table_schema_version = true);
-  int flashback_trigger(const share::schema::ObTriggerInfo &trigger_info,
+  int restore_trigger(const share::schema::ObTriggerInfo &trigger_info,
                         uint64_t new_database_id,
                         const common::ObString &new_table_name,
                         share::schema::ObSchemaGetterGuard &schema_guard,

@@ -7233,9 +7233,6 @@ DEF_TO_STRING(ObPrintPrivSet)
   if ((priv_set_ & OB_PRIV_REFERENCES) && OB_SUCCESS == ret) {
     ret = BUF_PRINTF("PRIV_REFERENCES,");
   }
-  if ((priv_set_ & OB_PRIV_FLASHBACK) && OB_SUCCESS == ret) {
-    ret = BUF_PRINTF("PRIV_FLASHBACK,");
-  }
   if ((priv_set_ & OB_PRIV_READ) && OB_SUCCESS == ret) {
     ret = BUF_PRINTF("PRIV_READ,");
   }

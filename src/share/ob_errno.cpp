@@ -5201,8 +5201,8 @@ static const _error _error_OB_ERR_ATLER_TABLE_ILLEGAL_FK_DROP_INDEX = {
       .str_error             = "Cannot drop index: needed in a foreign key constraint",
       .str_user_error        = "Cannot drop index '%.*s': needed in a foreign key constraint"
 };
-static const _error _error_OB_ERR_FLASHBACK_QUERY_EXP_NULL = {
-      .error_name            = "OB_ERR_FLASHBACK_QUERY_EXP_NULL",
+static const _error _error_OB_ERR_SNAPSHOT_QUERY_EXP_NULL = {
+      .error_name            = "OB_ERR_SNAPSHOT_QUERY_EXP_NULL",
       .error_cause           = "Internal Error",
       .error_solution        = "Contact OceanBase Support",
       .mysql_errno           = -1,
@@ -21545,8 +21545,8 @@ static const _error _error_OB_ERR_UPDATE_TWICE = {
       .str_error             = "unable to get a stable set of rows in the source tables",
       .str_user_error        = "unable to get a stable set of rows in the source tables"
 };
-static const _error _error_OB_ERR_FLASHBACK_QUERY_WITH_UPDATE = {
-      .error_name            = "OB_ERR_FLASHBACK_QUERY_WITH_UPDATE",
+static const _error _error_OB_ERR_SNAPSHOT_QUERY_WITH_UPDATE = {
+      .error_name            = "OB_ERR_SNAPSHOT_QUERY_WITH_UPDATE",
       .error_cause           = "Internal Error",
       .error_solution        = "Contact OceanBase Support",
       .mysql_errno           = -1,
@@ -22153,7 +22153,7 @@ struct ObStrErrorInit
     _errors[-OB_SERVICE_STOPPED] = &_error_OB_SERVICE_STOPPED;
     _errors[-OB_SERVER_CONNECTION_ERROR] = &_error_OB_SERVER_CONNECTION_ERROR;
     _errors[-OB_ERR_ATLER_TABLE_ILLEGAL_FK_DROP_INDEX] = &_error_OB_ERR_ATLER_TABLE_ILLEGAL_FK_DROP_INDEX;
-    _errors[-OB_ERR_FLASHBACK_QUERY_EXP_NULL] = &_error_OB_ERR_FLASHBACK_QUERY_EXP_NULL;
+    _errors[-OB_ERR_SNAPSHOT_QUERY_EXP_NULL] = &_error_OB_ERR_SNAPSHOT_QUERY_EXP_NULL;
     _errors[-OB_RELEASE_MDS_NODE_ERROR] = &_error_OB_RELEASE_MDS_NODE_ERROR;
     _errors[-OB_ERR_PARSER_INIT] = &_error_OB_ERR_PARSER_INIT;
     _errors[-OB_ERR_PARSE_SQL] = &_error_OB_ERR_PARSE_SQL;
@@ -23969,7 +23969,7 @@ struct ObStrErrorInit
     _errors[-OB_SP_RAISE_APPLICATION_ERROR_NUM] = &_error_OB_SP_RAISE_APPLICATION_ERROR_NUM;
     _errors[-OB_CLOB_ONLY_SUPPORT_WITH_MULTIBYTE_FUN] = &_error_OB_CLOB_ONLY_SUPPORT_WITH_MULTIBYTE_FUN;
     _errors[-OB_ERR_UPDATE_TWICE] = &_error_OB_ERR_UPDATE_TWICE;
-    _errors[-OB_ERR_FLASHBACK_QUERY_WITH_UPDATE] = &_error_OB_ERR_FLASHBACK_QUERY_WITH_UPDATE;
+    _errors[-OB_ERR_SNAPSHOT_QUERY_WITH_UPDATE] = &_error_OB_ERR_SNAPSHOT_QUERY_WITH_UPDATE;
     _errors[-OB_ERR_UPDATE_ON_EXPR] = &_error_OB_ERR_UPDATE_ON_EXPR;
     _errors[-OB_ERR_SPECIFIED_ROW_NO_LONGER_EXISTS] = &_error_OB_ERR_SPECIFIED_ROW_NO_LONGER_EXISTS;
 

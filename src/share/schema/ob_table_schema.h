@@ -1275,10 +1275,10 @@ public:
                                                   const uint64_t database_id,
                                                   const int64_t retry_times,
                                                   bool &cst_name_generated);
-  static int create_new_idx_name_after_flashback(ObTableSchema &new_table_schema,
-                                                 common::ObString &new_idx_name,
-                                                 common::ObIAllocator &allocator,
-                                                 ObSchemaGetterGuard &guard);
+  static int create_new_idx_name_after_recyclebin_restore(ObTableSchema &new_table_schema,
+                                                          common::ObString &new_idx_name,
+                                                          common::ObIAllocator &allocator,
+                                                          ObSchemaGetterGuard &guard);
 public:
   typedef ObColumnSchemaV2* const *const_column_iterator;
   typedef ObConstraint * const *const_constraint_iterator;

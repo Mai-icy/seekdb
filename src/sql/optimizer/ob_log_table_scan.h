@@ -375,7 +375,6 @@ public:
         diverse_path_count_(0),
         fq_expr_(NULL),
         fq_type_(TableItem::NOT_USING),
-        fq_read_tx_uncommitted_(false),
         bf_info_(),
         part_join_filter_allocated_(false),
         group_id_expr_(nullptr),
@@ -773,13 +772,11 @@ public:
   const common::ObIArray<ObRawExpr*> &get_range_conditions() const { return range_conds_; }
   inline void set_diverse_path_count(int64_t count) { diverse_path_count_ = count; }
   inline int64_t get_diverse_path_count() const { return diverse_path_count_; }
-  inline TableItem::FlashBackQueryType get_flashback_query_type() const {return fq_type_; }
-  inline void set_flashback_query_type(TableItem::FlashBackQueryType type) { fq_type_ = type; }
-  inline bool get_fq_read_tx_uncommitted() const { return fq_read_tx_uncommitted_; }
-  inline void set_fq_read_tx_uncommitted(bool v) { fq_read_tx_uncommitted_ = v; }
-  inline const ObRawExpr* get_flashback_query_expr() const { return fq_expr_; }
-  inline ObRawExpr* &get_flashback_query_expr() { return fq_expr_; }
-  inline void set_flashback_query_expr(ObRawExpr *expr) { fq_expr_ = expr; }
+  inline TableItem::SnapshotQueryType get_snapshot_query_type() const {return fq_type_; }
+  inline void set_snapshot_query_type(TableItem::SnapshotQueryType type) { fq_type_ = type; }
+  inline const ObRawExpr* get_snapshot_query_expr() const { return fq_expr_; }
+  inline ObRawExpr* &get_snapshot_query_expr() { return fq_expr_; }
+  inline void set_snapshot_query_expr(ObRawExpr *expr) { fq_expr_ = expr; }
   int get_phy_location_type(ObTableLocationType &location_type);
   virtual int generate_access_exprs();
   int copy_filter_before_index_back();
@@ -1227,9 +1224,8 @@ protected: // memeber variables
 
   int64_t diverse_path_count_; // count of access path with diverse query ranges
 
-  ObRawExpr* fq_expr_; //flashback query expr
-  TableItem::FlashBackQueryType fq_type_; //flashback query type
-  bool fq_read_tx_uncommitted_; // whether flashback query read uncommitted changes in transaction
+  ObRawExpr* fq_expr_; //snapshot query expr
+  TableItem::SnapshotQueryType fq_type_; //snapshot query type
    // for join partition filter
   ObPxBFStaticInfo bf_info_;
   bool part_join_filter_allocated_;

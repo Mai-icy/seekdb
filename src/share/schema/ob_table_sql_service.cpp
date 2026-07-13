@@ -5519,7 +5519,7 @@ int ObTableSqlService::drop_mock_fk_parent_table(
 // 2. create table like
 // 3. rename table
 // 4. alter table rename to
-// 5. flashback table to before drop
+// 5. restore table from recyclebin
 // will drop mock_fk_parent_table, update foreign_key info and update foreign_key_column info
 int ObTableSqlService::replace_mock_fk_parent_table(
     common::ObISQLClient *sql_client,

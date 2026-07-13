@@ -210,7 +210,7 @@ NO_DIRECT
 // direct load data hint
 DIRECT
 // hint related to optimizer statistics
-APPEND NO_GATHER_OPTIMIZER_STATISTICS GATHER_OPTIMIZER_STATISTICS DBMS_STATS FLASHBACK_READ_TX_UNCOMMITTED
+APPEND NO_GATHER_OPTIMIZER_STATISTICS GATHER_OPTIMIZER_STATISTICS DBMS_STATS
 // optimizer dynamic sampling hint
 DYNAMIC_SAMPLING
 // other
@@ -396,7 +396,7 @@ END_P SET_VAR DELIMITER
 %type <node> create_database_stmt drop_database_stmt alter_database_stmt use_database_stmt
 %type <node> opt_database_name database_option database_option_list opt_database_option_list database_factor databases_expr database_with_catalog_factor opt_databases
 %type <node> cur_timestamp_func cur_time_func cur_date_func now_synonyms_func utc_timestamp_func utc_time_func utc_date_func sys_interval_func sysdate_func cur_user_func
-%type <node> opt_range_partition_info opt_auto_split_tablet_size_option auto_split_tablet_size_option opt_partition_option partition_option hash_partition_option key_partition_option opt_use_partition use_partition range_partition_option subpartition_option opt_range_partition_list opt_range_subpartition_list range_partition_list range_subpartition_list range_partition_element range_subpartition_element range_partition_expr range_expr_list range_expr opt_part_id sample_clause opt_block seed sample_percent opt_sample_scope modify_partition_info modify_tg_partition_info opt_partition_range_or_list auto_partition_option auto_range_type partition_size auto_partition_type use_flashback partition_options partition_num opt_subpartition_range_or_list
+%type <node> opt_range_partition_info opt_auto_split_tablet_size_option auto_split_tablet_size_option opt_partition_option partition_option hash_partition_option key_partition_option opt_use_partition use_partition range_partition_option subpartition_option opt_range_partition_list opt_range_subpartition_list range_partition_list range_subpartition_list range_partition_element range_subpartition_element range_partition_expr range_expr_list range_expr opt_part_id sample_clause opt_block seed sample_percent opt_sample_scope modify_partition_info modify_tg_partition_info opt_partition_range_or_list auto_partition_option auto_range_type partition_size auto_partition_type use_snapshot partition_options partition_num opt_subpartition_range_or_list
 %type <node> subpartition_template_option subpartition_individual_option opt_hash_partition_list hash_partition_list hash_partition_element opt_hash_subpartition_list hash_subpartition_list hash_subpartition_element opt_subpartition_list opt_engine_option
 %type <node> date_unit date_params timestamp_params
 %type <node> drop_table_stmt table_list drop_view_stmt table_or_tables
@@ -497,7 +497,7 @@ END_P SET_VAR DELIMITER
 %type <node> create_tablegroup_stmt drop_tablegroup_stmt alter_tablegroup_stmt default_tablegroup
 %type <node> set_transaction_stmt transaction_characteristics transaction_access_mode isolation_level
 %type <node> lock_tables_stmt unlock_tables_stmt lock_type lock_table_list lock_table opt_local
-%type <node> flashback_stmt purge_stmt opt_flashback_rename_table opt_flashback_rename_database
+%type <node> recyclebin_restore_stmt purge_stmt opt_recyclebin_restore_rename_table opt_recyclebin_restore_rename_database
 %type <node> tenant_name_list opt_tenant_list tenant_list_tuple cache_type flush_scope
 %type <node> into_opt into_clause field_opt field_term field_term_list line_opt line_term line_term_list into_var_list into_var file_partition_opt file_opt file_option_list file_option file_size_const binary_format
 %type <node> string_list text_string string_val_list ulong_num
@@ -701,7 +701,7 @@ stmt:
       query resolver不会报错， 这样做失去了原来保存question mark
       的值，不过按代码逻辑这个值本身应该总为0, 且该值对本语句无意义 */
   { $$ = $1; check_question_mark($$, result); $$->value_ = 1; }
-  | flashback_stmt          { $$ = $1; check_question_mark($$, result); }
+  | recyclebin_restore_stmt { $$ = $1; check_question_mark($$, result); }
   | purge_stmt              { $$ = $1; check_question_mark($$, result); }
   | analyze_stmt            { $$ = $1; check_question_mark($$, result); }
   | load_data_stmt          { $$ = $1; check_question_mark($$, result); }
@@ -11152,10 +11152,6 @@ READ_CONSISTENCY '(' consistency_level ')'
 {
   malloc_terminal_node($$, result->malloc_pool_, T_DBMS_STATS);
 }
-| FLASHBACK_READ_TX_UNCOMMITTED
-{
-  malloc_terminal_node($$, result->malloc_pool_, T_FLASHBACK_READ_TX_UNCOMMITTED);
-}
 | PX_NODE_POLICY '(' STRING_VALUE ')'
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_PX_NODE_POLICY, 1, $3);
@@ -12691,14 +12687,14 @@ tbl_name
   unname_node->sql_str_off_ = @2.first_column;
   $$->value_ = 1; //lateral
 }
-| select_with_parens use_flashback %prec LOWER_PARENS
+| select_with_parens use_snapshot %prec LOWER_PARENS
 {
   ParseNode *unname_node = NULL;
   make_name_node(unname_node, result->malloc_pool_, "");
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, unname_node, unname_node, unname_node, unname_node, $2);
   unname_node->sql_str_off_ = @1.first_column;
 }
-| LATERAL select_with_parens use_flashback %prec LOWER_PARENS
+| LATERAL select_with_parens use_snapshot %prec LOWER_PARENS
 {
   ParseNode *unname_node = NULL;
   make_name_node(unname_node, result->malloc_pool_, "");
@@ -12738,11 +12734,11 @@ relation_factor %prec LOWER_PARENS
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 4, $1, NULL, $2, NULL);
 }
-| relation_factor use_flashback %prec LOWER_PARENS
+| relation_factor use_snapshot %prec LOWER_PARENS
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 5, $1, NULL, NULL, NULL, $2);
 }
-| relation_factor use_partition use_flashback %prec LOWER_PARENS
+| relation_factor use_partition use_snapshot %prec LOWER_PARENS
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 5, $1, NULL, $2, NULL, $3);
 }
@@ -12775,23 +12771,23 @@ relation_factor %prec LOWER_PARENS
   merge_nodes($$, result, T_INDEX_HINT_LIST, $5);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 4, $1, $$, $2, $3);
 }
-| relation_factor use_partition sample_clause use_flashback %prec LOWER_PARENS
+| relation_factor use_partition sample_clause use_snapshot %prec LOWER_PARENS
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 5, $1, NULL, $2, $3, $4);
 }
-| relation_factor use_partition sample_clause seed use_flashback %prec LOWER_PARENS
+| relation_factor use_partition sample_clause seed use_snapshot %prec LOWER_PARENS
 {
   if ($3 != NULL) {
     $3->children_[2] = $4;
   }
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 5, $1, NULL, $2, $3, $5);
 }
-| relation_factor use_partition sample_clause use_flashback index_hint_list %prec LOWER_PARENS
+| relation_factor use_partition sample_clause use_snapshot index_hint_list %prec LOWER_PARENS
 {
   merge_nodes($$, result, T_INDEX_HINT_LIST, $5);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 5, $1, $$, $2, $3, $4);
 }
-| relation_factor use_partition sample_clause seed use_flashback index_hint_list %prec LOWER_PARENS
+| relation_factor use_partition sample_clause seed use_snapshot index_hint_list %prec LOWER_PARENS
 {
   if ($3 != NULL) {
     $3->children_[2] = $4;
@@ -12823,23 +12819,23 @@ relation_factor %prec LOWER_PARENS
   merge_nodes($$, result, T_INDEX_HINT_LIST, $4);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 4, $1, $$, NULL, $2);
 }
-| relation_factor sample_clause use_flashback %prec LOWER_PARENS
+| relation_factor sample_clause use_snapshot %prec LOWER_PARENS
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 5, $1, NULL, NULL, $2, $3);
 }
-| relation_factor sample_clause seed use_flashback %prec LOWER_PARENS
+| relation_factor sample_clause seed use_snapshot %prec LOWER_PARENS
 {
   if ($2 != NULL) {
     $2->children_[2] = $3;
   }
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 5, $1, NULL, NULL, $2, $4);
 }
-| relation_factor sample_clause use_flashback index_hint_list %prec LOWER_PARENS
+| relation_factor sample_clause use_snapshot index_hint_list %prec LOWER_PARENS
 {
   merge_nodes($$, result, T_INDEX_HINT_LIST, $4);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ORG, 5, $1, $$, NULL, $2, $3);
 }
-| relation_factor sample_clause seed use_flashback index_hint_list %prec LOWER_PARENS
+| relation_factor sample_clause seed use_snapshot index_hint_list %prec LOWER_PARENS
 {
   if ($2 != NULL) {
     $2->children_[2] = $3;
@@ -12862,12 +12858,12 @@ relation_factor %prec LOWER_PARENS
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 5, $1, $4, NULL, $2, NULL);
   $$->sql_str_off_ = @1.first_column;
 }
-| relation_factor use_flashback AS relation_name
+| relation_factor use_snapshot AS relation_name
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $4, NULL, NULL, NULL, $2);
   $$->sql_str_off_ = @1.first_column;
 }
-| relation_factor use_partition use_flashback AS relation_name
+| relation_factor use_partition use_snapshot AS relation_name
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $5, NULL, $2, NULL, $3);
   $$->sql_str_off_ = @1.first_column;
@@ -12898,34 +12894,34 @@ relation_factor %prec LOWER_PARENS
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 5, $1, $6, NULL, $2, $3);
   $$->sql_str_off_ = @1.first_column;
 }
-| relation_factor sample_clause use_flashback AS relation_name
+| relation_factor sample_clause use_snapshot AS relation_name
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $5, NULL, NULL, $2, $3);
 }
-| relation_factor sample_clause seed use_flashback AS relation_name
+| relation_factor sample_clause seed use_snapshot AS relation_name
 {
   if ($2 != NULL) {
     $2->children_[2] = $3;
   }
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $6, NULL, NULL, $2, $4);
 }
-| relation_factor use_partition sample_clause use_flashback AS relation_name
+| relation_factor use_partition sample_clause use_snapshot AS relation_name
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $6, NULL, $2, $3, $4);
 }
-| relation_factor use_partition sample_clause seed use_flashback AS relation_name
+| relation_factor use_partition sample_clause seed use_snapshot AS relation_name
 {
   if ($3 != NULL) {
     $3->children_[2] = $4;
   }
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $7, NULL, $2, $3, $5);
 }
-| relation_factor sample_clause use_flashback AS relation_name index_hint_list
+| relation_factor sample_clause use_snapshot AS relation_name index_hint_list
 {
   merge_nodes($$, result, T_INDEX_HINT_LIST, $6);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $5, $$, NULL, $2, $3);
 }
-| relation_factor sample_clause seed use_flashback AS relation_name index_hint_list
+| relation_factor sample_clause seed use_snapshot AS relation_name index_hint_list
 {
   if ($2 != NULL) {
     $2->children_[2] = $3;
@@ -12933,12 +12929,12 @@ relation_factor %prec LOWER_PARENS
   merge_nodes($$, result, T_INDEX_HINT_LIST, $7);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $6, $$, NULL, $2, $4);
 }
-| relation_factor use_partition sample_clause use_flashback AS relation_name index_hint_list
+| relation_factor use_partition sample_clause use_snapshot AS relation_name index_hint_list
 {
   merge_nodes($$, result, T_INDEX_HINT_LIST, $7);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $6, $$, $2, $3, $4);
 }
-| relation_factor use_partition sample_clause seed use_flashback AS relation_name index_hint_list
+| relation_factor use_partition sample_clause seed use_snapshot AS relation_name index_hint_list
 {
   if ($3 != NULL) {
     $3->children_[2] = $4;
@@ -12999,12 +12995,12 @@ relation_factor %prec LOWER_PARENS
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 5, $1, $3, NULL, $2, NULL);
   $$->sql_str_off_ = @1.first_column;
 }
-| relation_factor use_flashback relation_name
+| relation_factor use_snapshot relation_name
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $3, NULL, NULL, NULL, $2);
   $$->sql_str_off_ = @1.first_column;
 }
-| relation_factor use_partition use_flashback relation_name
+| relation_factor use_partition use_snapshot relation_name
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $4, NULL, $2, NULL, $3);
   $$->sql_str_off_ = @1.first_column;
@@ -13077,34 +13073,34 @@ relation_factor %prec LOWER_PARENS
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 5, $1, $4, $$, $2, $3);
   $$->sql_str_off_ = @1.first_column;
 }
-| relation_factor sample_clause use_flashback relation_name
+| relation_factor sample_clause use_snapshot relation_name
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $4, NULL, NULL, $2, $3);
 }
-| relation_factor sample_clause seed use_flashback relation_name
+| relation_factor sample_clause seed use_snapshot relation_name
 {
   if ($2 != NULL) {
     $2->children_[2] = $3;
   }
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $5, NULL, NULL, $2, $4);
 }
-| relation_factor use_partition sample_clause use_flashback relation_name
+| relation_factor use_partition sample_clause use_snapshot relation_name
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $5, NULL, $2, $3, $4);
 }
-| relation_factor use_partition sample_clause seed use_flashback relation_name
+| relation_factor use_partition sample_clause seed use_snapshot relation_name
 {
   if ($3 != NULL) {
     $3->children_[2] = $4;
   }
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $6, NULL, $2, $3, $5);
 }
-| relation_factor sample_clause use_flashback relation_name index_hint_list
+| relation_factor sample_clause use_snapshot relation_name index_hint_list
 {
   merge_nodes($$, result, T_INDEX_HINT_LIST, $5);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $4, $$, NULL, $2, $3);
 }
-| relation_factor sample_clause seed use_flashback relation_name index_hint_list
+| relation_factor sample_clause seed use_snapshot relation_name index_hint_list
 {
   if ($2 != NULL) {
     $2->children_[2] = $3;
@@ -13112,12 +13108,12 @@ relation_factor %prec LOWER_PARENS
   merge_nodes($$, result, T_INDEX_HINT_LIST, $6);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $5, $$, NULL, $2, $4);
 }
-| relation_factor use_partition sample_clause use_flashback relation_name index_hint_list
+| relation_factor use_partition sample_clause use_snapshot relation_name index_hint_list
 {
   merge_nodes($$, result, T_INDEX_HINT_LIST, $6);
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $5, $$, $2, $3, $4);
 }
-| relation_factor use_partition sample_clause seed use_flashback relation_name index_hint_list
+| relation_factor use_partition sample_clause seed use_snapshot relation_name index_hint_list
 {
   if ($3 != NULL) {
     $3->children_[2] = $4;
@@ -13226,12 +13222,12 @@ select_with_parens table_subquery_alias
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 2, $1, $3);
   $$->sql_str_off_ = @1.first_column;
 }
-| select_with_parens use_flashback table_subquery_alias
+| select_with_parens use_snapshot table_subquery_alias
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $3, NULL, NULL, NULL, $2);
   $$->sql_str_off_ = @1.first_column;
 }
-| select_with_parens use_flashback AS table_subquery_alias
+| select_with_parens use_snapshot AS table_subquery_alias
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_ALIAS, 6, $1, $4, NULL, NULL, NULL, $2);
   $$->sql_str_off_ = @1.first_column;
@@ -13273,12 +13269,12 @@ PARTITION '(' name_list ')'
   malloc_non_terminal_node($$, result->malloc_pool_, T_USE_PARTITION, 1, name_list);
 }
 
-use_flashback:
+use_snapshot:
 AS OF SNAPSHOT bit_expr %prec LOWER_PARENS
 {
   ParseNode *unname_node = NULL;
   make_name_node(unname_node, result->malloc_pool_, "");
-  malloc_non_terminal_node($$, result->malloc_pool_, T_TABLE_FLASHBACK_QUERY_SCN, 2, $4, unname_node);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_TABLE_SNAPSHOT_QUERY_SCN, 2, $4, unname_node);
 }
 ;
 
@@ -17891,26 +17887,26 @@ SET DEFAULT signed_literal
  *	RECYCLE grammar
  *
  *****************************************************************************/
-flashback_stmt:
-FLASHBACK TABLE relation_factor TO BEFORE DROP opt_flashback_rename_table
+recyclebin_restore_stmt:
+FLASHBACK TABLE relation_factor TO BEFORE DROP opt_recyclebin_restore_rename_table
 {
-  malloc_non_terminal_node($$, result->malloc_pool_, T_FLASHBACK_TABLE_FROM_RECYCLEBIN, 2, $3, $7);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_RECYCLEBIN_RESTORE_TABLE, 2, $3, $7);
 }
 |
-FLASHBACK database_key database_factor TO BEFORE DROP opt_flashback_rename_database
+FLASHBACK database_key database_factor TO BEFORE DROP opt_recyclebin_restore_rename_database
 {
   (void)($2);
-  malloc_non_terminal_node($$, result->malloc_pool_, T_FLASHBACK_DATABASE, 2, $3, $7);
+  malloc_non_terminal_node($$, result->malloc_pool_, T_RECYCLEBIN_RESTORE_DATABASE, 2, $3, $7);
 }
 
-opt_flashback_rename_table:
+opt_recyclebin_restore_rename_table:
 RENAME TO relation_factor
 {
   $$ = $3;
 }
 | /*EMPTY*/  { $$ = NULL; }
 
-opt_flashback_rename_database:
+opt_recyclebin_restore_rename_database:
 RENAME TO database_factor
 {
   $$ = $3;

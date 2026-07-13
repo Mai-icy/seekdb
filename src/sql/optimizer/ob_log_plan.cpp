@@ -2952,9 +2952,8 @@ int ObLogPlan::allocate_access_path(AccessPath *ap,
     LOG_WARN("failed to init est cost simple info", K(ret));
   } else {
     scan->set_est_cost_info(&ap->get_cost_table_scan_info());
-    scan->set_flashback_query_expr(table_item->flashback_query_expr_);
-    scan->set_flashback_query_type(table_item->flashback_query_type_);
-    scan->set_fq_read_tx_uncommitted(get_optimizer_context().get_global_hint().get_flashback_read_tx_uncommitted());
+    scan->set_snapshot_query_expr(table_item->snapshot_query_expr_);
+    scan->set_snapshot_query_type(table_item->snapshot_query_type_);
     scan->set_table_id(ap->get_table_id());
     scan->set_ref_table_id(ap->get_ref_table_id());
     scan->set_index_table_id(ap->get_index_table_id());

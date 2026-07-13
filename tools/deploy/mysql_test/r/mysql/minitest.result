@@ -248,7 +248,6 @@ ob_enable_rich_error_msg	OFF
 ob_enable_show_trace	OFF
 ob_enable_transformation	ON
 ob_enable_transmission_checksum	ON
-ob_enable_truncate_flashback	ON
 ob_hnsw_ef_search	64
 ob_hnsw_extra_info_max_size	1024
 ob_interm_result_mem_limit	2147483648
@@ -296,7 +295,6 @@ ob_enable_ps_parameter_anonymous_block	ON
 ob_enable_rich_error_msg	OFF
 ob_enable_transformation	ON
 ob_enable_transmission_checksum	ON
-ob_enable_truncate_flashback	ON
 ob_hnsw_extra_info_max_size	1024
 ob_interm_result_mem_limit	2147483648
 ob_log_level	disabled

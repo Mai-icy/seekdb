@@ -83,20 +83,19 @@ int ObTscCgService::generate_tsc_ctdef(ObLogTableScan &op, ObTableScanCtDef &tsc
       }
     }
   }
-  if (OB_SUCC(ret) && (OB_NOT_NULL(op.get_flashback_query_expr()))) {
-    if (OB_FAIL(cg_.generate_rt_expr(*op.get_flashback_query_expr(),
-                                     tsc_ctdef.flashback_item_.flashback_query_expr_))) {
-      LOG_WARN("generate flashback query expr failed", K(ret));
+  if (OB_SUCC(ret) && (OB_NOT_NULL(op.get_snapshot_query_expr()))) {
+    if (OB_FAIL(cg_.generate_rt_expr(*op.get_snapshot_query_expr(),
+                                     tsc_ctdef.snapshot_item_.snapshot_query_expr_))) {
+      LOG_WARN("generate snapshot query expr failed", K(ret));
     } else {
       const ObExecContext *exec_ctx = nullptr;
-      tsc_ctdef.flashback_item_.flashback_query_type_ = op.get_flashback_query_type();
-      tsc_ctdef.flashback_item_.fq_read_tx_uncommitted_ = op.get_fq_read_tx_uncommitted();
+      tsc_ctdef.snapshot_item_.snapshot_query_type_ = op.get_snapshot_query_type();
       if (OB_ISNULL(exec_ctx = cg_.opt_ctx_->get_exec_ctx())) {
         ret = OB_INVALID_ARGUMENT;
         LOG_WARN("invalid argument", K(ret));
       } else if (cg_.opt_ctx_->is_online_ddl()) {
         ObSqlCtx *sql_ctx = const_cast<ObExecContext *>(exec_ctx)->get_sql_ctx();
-        sql_ctx->flashback_query_expr_ = op.get_flashback_query_expr();
+        sql_ctx->snapshot_query_expr_ = op.get_snapshot_query_expr();
       }
     }
   }
@@ -112,7 +111,7 @@ int ObTscCgService::generate_tsc_ctdef(ObLogTableScan &op, ObTableScanCtDef &tsc
     } else if (OB_FAIL(generate_das_scan_ctdef(op, cg_ctx, scan_ctdef, has_rowscn))) {
       LOG_WARN("generate das scan ctdef failed", K(ret), K(scan_ctdef.ref_table_id_));
     } else {
-      tsc_ctdef.flashback_item_.need_scn_ |= has_rowscn;
+      tsc_ctdef.snapshot_item_.need_scn_ |= has_rowscn;
       root_ctdef = &scan_ctdef;
     }
   }
@@ -4639,7 +4638,7 @@ int ObTscCgService::generate_table_lookup_ctdef(const ObLogTableScan &op,
                                                *tsc_ctdef.lookup_loc_meta_))) {
       LOG_WARN("generate table loc meta failed", K(ret));
     } else {
-      tsc_ctdef.flashback_item_.need_scn_ |= has_rowscn;
+      tsc_ctdef.snapshot_item_.need_scn_ |= has_rowscn;
       // lookup to main table should invoke get
       tsc_ctdef.lookup_ctdef_->is_get_ = true;
     }

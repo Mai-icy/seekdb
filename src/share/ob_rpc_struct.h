@@ -2739,11 +2739,11 @@ public:
   common::ObString foreign_key_name_;
 };
 
-struct ObFlashBackTableFromRecyclebinArg: public ObDDLArg
+struct ObRecyclebinRestoreTableArg: public ObDDLArg
 {
   OB_UNIS_VERSION(1);
 public:
-  ObFlashBackTableFromRecyclebinArg():
+  ObRecyclebinRestoreTableArg():
     ObDDLArg(),
     origin_db_name_(),
     origin_table_name_(),
@@ -2767,58 +2767,11 @@ public:
                K_(origin_table_id));
 };
 
-struct ObFlashBackTableToScnArg : public ObDDLArg
-{
-  OB_UNIS_VERSION(1);
-  public:
-  ObFlashBackTableToScnArg():
-    time_point_(-1),
-    tables_(),
-    query_end_time_(-1)
-  {}
-  bool is_valid() const;
-
-
-  int64_t time_point_;
-  common::ObSArray<ObTableItem> tables_;
-  int64_t query_end_time_;
-
-  TO_STRING_KV(
-               K_(time_point),
-               K_(tables),
-               K_(query_end_time));
-};
-
-struct ObFlashBackIndexArg: public ObDDLArg
+struct ObRecyclebinRestoreDatabaseArg: public ObDDLArg
 {
   OB_UNIS_VERSION(1);
 public:
-  ObFlashBackIndexArg():
-    ObDDLArg(),
-    origin_table_name_(),
-    new_db_name_(),
-    new_table_name_(),
-    origin_table_id_(common::OB_INVALID_ID)
-  {}
-  bool is_valid() const;
-
-  common::ObString origin_table_name_;
-  common::ObString new_db_name_;
-  common::ObString new_table_name_;
-  uint64_t origin_table_id_;//only used in work thread, no need add to SERIALIZE now
-
-  TO_STRING_KV(
-               K_(origin_table_name),
-               K_(new_db_name),
-               K_(new_table_name),
-               K_(origin_table_id));
-};
-
-struct ObFlashBackDatabaseArg: public ObDDLArg
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObFlashBackDatabaseArg():
+  ObRecyclebinRestoreDatabaseArg():
     ObDDLArg(),
     origin_db_name_(),
     new_db_name_()

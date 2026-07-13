@@ -6756,7 +6756,7 @@ int ObStaticEngineCG::generate_spec(ObLogInsert &op, ObPxMultiPartSSTableInsertS
     LOG_WARN("invalid argument", K(ret), KP(log_plan), KP(exec_ctx));
   } else {
     ObSqlCtx *sql_ctx = const_cast<ObExecContext *>(exec_ctx)->get_sql_ctx();
-    if (OB_FAIL(generate_rt_expr(*sql_ctx->flashback_query_expr_, spec.flashback_query_expr_))) {
+    if (OB_FAIL(generate_rt_expr(*sql_ctx->snapshot_query_expr_, spec.snapshot_query_expr_))) {
       LOG_WARN("generate rt expr failed", K(ret));
     } else if (log_plan->get_optimizer_context().is_heap_table_ddl()) {
       spec.regenerate_heap_table_pk_ = true;

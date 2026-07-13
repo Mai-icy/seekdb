@@ -23913,7 +23913,7 @@ int ObDDLService::drop_aux_table_in_drop_table(
   return ret;
 }
 
-int ObDDLService::flashback_table_from_recyclebin_in_trans(const ObTableSchema &table_schema,
+int ObDDLService::restore_table_from_recyclebin_in_trans(const ObTableSchema &table_schema,
                                            const uint64_t new_db_id,
                                            const ObString &new_table_name,
                                            const ObString &ddl_stmt_str,
@@ -23932,36 +23932,36 @@ int ObDDLService::flashback_table_from_recyclebin_in_trans(const ObTableSchema &
     } else if (OB_FAIL(trans.start(sql_proxy_, refreshed_schema_version))) {
       LOG_WARN("start transaction failed", KR(ret), K(refreshed_schema_version));
     } else {
-      if (OB_FAIL(flashback_aux_table(table_schema, guard, trans, ddl_operator,
+      if (OB_FAIL(restore_aux_table(table_schema, guard, trans, ddl_operator,
           new_db_id, USER_INDEX))) {
-        LOG_WARN("flashback_aux_table failed", K(ret), K(table_schema));
-      } else if (OB_FAIL(flashback_aux_table(table_schema, guard, trans, ddl_operator,
+        LOG_WARN("restore_aux_table failed", K(ret), K(table_schema));
+      } else if (OB_FAIL(restore_aux_table(table_schema, guard, trans, ddl_operator,
           new_db_id, AUX_VERTIAL_PARTITION_TABLE))) {
-        LOG_WARN("flashback_aux_table failed", K(ret), K(table_schema));
-      } else if (OB_FAIL(flashback_aux_table(table_schema, guard, trans, ddl_operator,
+        LOG_WARN("restore_aux_table failed", K(ret), K(table_schema));
+      } else if (OB_FAIL(restore_aux_table(table_schema, guard, trans, ddl_operator,
           new_db_id, AUX_LOB_META))) {
-        LOG_WARN("flashback_aux_table failed", K(ret), K(table_schema));
-      } else if (OB_FAIL(flashback_aux_table(table_schema, guard, trans, ddl_operator,
+        LOG_WARN("restore_aux_table failed", K(ret), K(table_schema));
+      } else if (OB_FAIL(restore_aux_table(table_schema, guard, trans, ddl_operator,
           new_db_id, AUX_LOB_PIECE))) {
-        LOG_WARN("flashback_aux_table failed", K(ret), K(table_schema));
-      } else if (OB_FAIL(ObPLDDLService::flashback_trigger(table_schema,
+        LOG_WARN("restore_aux_table failed", K(ret), K(table_schema));
+      } else if (OB_FAIL(ObPLDDLService::restore_trigger(table_schema,
                                                            new_db_id,
                                                            new_table_name,
                                                            guard,
                                                            trans,
                                                            ddl_operator))) {
-        LOG_WARN("flashback_trigger failed", K(ret), K(table_schema));
+        LOG_WARN("restore_trigger failed", K(ret), K(table_schema));
       }
       if (OB_SUCC(ret)) {
         ObTableSchema new_table_schema;
-        if (OB_FAIL(ddl_operator.flashback_table_from_recyclebin(table_schema,
+        if (OB_FAIL(ddl_operator.restore_table_from_recyclebin(table_schema,
                                                                  new_table_schema,
                                                                  trans,
                                                                  new_db_id,
                                                                  new_table_name,
                                                                  &ddl_stmt_str,
                                                                  guard))) {
-          LOG_WARN("flashback table failed", K(ret));
+          LOG_WARN("restore table from recyclebin failed", K(ret));
         } else {
           lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
           if (OB_FAIL(guard.get_tenant_compat_mode(compat_mode))) {
@@ -24018,7 +24018,7 @@ int ObDDLService::flashback_table_from_recyclebin_in_trans(const ObTableSchema &
   return ret;
 }
 
-int ObDDLService::flashback_aux_table(
+int ObDDLService::restore_aux_table(
     const ObTableSchema &table_schema,
     ObSchemaGetterGuard &schema_guard,
     ObMySQLTransaction &trans,
@@ -24075,26 +24075,20 @@ int ObDDLService::flashback_aux_table(
       LOG_WARN("table schema should not be null", K(ret));
     } else if (aux_table_schema->is_drop_index()) { // Temporarily keep the drop index into the recycle bin code
       ret = OB_SUCCESS;
-      LOG_INFO("index table is dropped, can't flashback", K(ret));
-    } else if (OB_FAIL(ddl_operator.flashback_table_from_recyclebin(
+      LOG_INFO("index table is dropped, can't restore", K(ret));
+    } else if (OB_FAIL(ddl_operator.restore_table_from_recyclebin(
         *aux_table_schema,
         new_table_schema,
         trans,
         new_db_id,
-        //set empty, because ensure that the index table flashback, use your own name
+        // set empty, because index tables restore with their own names
         ObString(),
         NULL, //ddl_stmt_str
         schema_guard))) {
-      LOG_WARN("flashback table failed", K(ret));
+      LOG_WARN("restore table from recyclebin failed", K(ret));
     }
   }
   return ret;
-}
-
-int ObDDLService::flashback_table_to_time_point(const obcall::ObFlashBackTableToScnArg &arg)
-{
-  UNUSEDx(arg);
-  return OB_NOT_SUPPORTED;
 }
 
 // check whether org db of object name and arg.origin_db_name_ is same
@@ -24194,7 +24188,7 @@ int ObDDLService::get_object_name_with_origin_name_in_recyclebin(const ObString 
   return ret;
 }
 
-int ObDDLService::flashback_table_from_recyclebin(const ObFlashBackTableFromRecyclebinArg &arg)
+int ObDDLService::restore_table_from_recyclebin(const ObRecyclebinRestoreTableArg &arg)
 {
   int ret = OB_SUCCESS;
   ObSchemaGetterGuard schema_guard;
@@ -24223,7 +24217,7 @@ int ObDDLService::flashback_table_from_recyclebin(const ObFlashBackTableFromRecy
                      table_schema))) {
     LOG_WARN("get_table_schema failed", K(ret));
   } else if (OB_ISNULL(table_schema)) {
-    // use origin table name to flashback
+    // use origin table name to restore from recyclebin
     ObString object_name;
     if (OB_FAIL(get_object_name_with_origin_name_in_recyclebin(arg.origin_table_name_,
                 database_id,
@@ -24246,7 +24240,7 @@ int ObDDLService::flashback_table_from_recyclebin(const ObFlashBackTableFromRecy
   } else if (OB_FAIL(check_object_name_matches_db_name(arg.origin_table_name_,
                                                        database_id,
                                                        is_match))) {
-    // use object name to flashback
+    // use object name to restore from recyclebin
     LOG_WARN("fail to check object name matches db name", K(ret));
   } else if (!is_match) {
     // The specified object name does not exist under the specified db
@@ -24268,7 +24262,7 @@ int ObDDLService::flashback_table_from_recyclebin(const ObFlashBackTableFromRecy
       if (ObString(OB_RECYCLEBIN_SCHEMA_NAME) == arg.new_db_name_
           || ObString(OB_PUBLIC_SCHEMA_NAME) == arg.new_db_name_) {
         ret = OB_OP_NOT_ALLOW;
-        LOG_WARN("flashback table to __recyclebin database is not allowed", K(arg), K(ret));
+        LOG_WARN("restore table to __recyclebin database is not allowed", K(arg), K(ret));
       } else if (OB_FAIL(schema_guard.get_database_schema(
                                                           arg.new_db_name_,
                                                           new_db_schema))) {
@@ -24278,7 +24272,7 @@ int ObDDLService::flashback_table_from_recyclebin(const ObFlashBackTableFromRecy
         LOG_USER_ERROR(OB_ERR_BAD_DATABASE, arg.new_db_name_.length(), arg.new_db_name_.ptr());
       } else if (new_db_schema->is_in_recyclebin()) {
         ret = OB_OP_NOT_ALLOW;
-        LOG_WARN("flashback table to recyclebin db is not allowed", K(ret), K(arg));
+        LOG_WARN("restore table to recyclebin db is not allowed", K(ret), K(arg));
       }
       if (OB_SUCC(ret) && lib::Worker::CompatMode::MYSQL == compat_mode) {
         if (OB_FAIL(schema_guard.check_table_exist(new_db_schema->get_database_id(),
@@ -24304,13 +24298,13 @@ int ObDDLService::flashback_table_from_recyclebin(const ObFlashBackTableFromRecy
           || table_schema->is_aux_lob_table()
           || table_schema->is_mlog_table()) {
         ret = OB_NOT_SUPPORTED;
-        LOG_WARN("flash back index or materialized view log table is not supported now", K(ret));
-      } else if (OB_FAIL(flashback_table_from_recyclebin_in_trans(*table_schema,
+        LOG_WARN("restore index or materialized view log table is not supported now", K(ret));
+      } else if (OB_FAIL(restore_table_from_recyclebin_in_trans(*table_schema,
                                                   new_db_id,
                                                   arg.new_table_name_,
                                                   arg.ddl_stmt_str_,
                                                   schema_guard))) {
-        LOG_WARN("flashback table from recyclebin in trans failed", K(ret));
+        LOG_WARN("restore table from recyclebin in trans failed", K(ret));
       }
     }
     if (OB_SUCC(ret)) {
@@ -24319,131 +24313,6 @@ int ObDDLService::flashback_table_from_recyclebin(const ObFlashBackTableFromRecy
       }
     }
   }
-  return ret;
-}
-
-int ObDDLService::flashback_index(const ObFlashBackIndexArg &arg) {
-  int ret = OB_SUCCESS;
-  ObSchemaGetterGuard schema_guard;
-  const ObTableSchema *index_schema = NULL;
-  const ObTableSchema *data_table_schema = NULL;
-
-  if (OB_FAIL(check_inner_stat())) {
-    LOG_WARN("check_inner_stat failed", K(ret));
-  } else if (OB_FAIL(get_tenant_schema_guard_with_version_in_inner_table(schema_guard))) {
-    LOG_WARN("fail to get schema guard with version in inner table", K(ret));
-  } else if (OB_FAIL(schema_guard.get_table_schema(
-                                                   OB_RECYCLEBIN_SCHEMA_ID,
-                                                   arg.origin_table_name_,
-                                                   true, /*is_index*/
-                                                   index_schema))) {
-    LOG_WARN("get_table_schema failed", K(ret));
-  } else if (OB_ISNULL(index_schema)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("table schema is null", K(arg), K(ret));
-  } else if (!index_schema->is_index_table()) {
-    ret = OB_OP_NOT_ALLOW;
-    LOG_WARN("the table is not index, flashback index failed", K(ret));
-  } else if (OB_FAIL(schema_guard.get_table_schema( index_schema->get_data_table_id(), data_table_schema))) {
-    LOG_WARN("get data table schema failed", K(ret));
-  } else if (OB_ISNULL(data_table_schema)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("data table schema is null", K(ret));
-  } else if (data_table_schema->is_in_recyclebin()) {
-    ret = OB_ERR_OPERATION_ON_RECYCLE_OBJECT;
-    LOG_WARN("the data table is in recyclebin", K(ret));
-  }
-
-  if (OB_SUCC(ret)) {
-    if (!arg.new_table_name_.empty()) {
-      bool is_table_exist = false;
-      const ObDatabaseSchema *database_schema = NULL;
-      if (OB_FAIL(schema_guard.get_database_schema( data_table_schema->get_database_id(), database_schema))) {
-        LOG_WARN("get database schema failed", K(ret));
-      } else if (OB_ISNULL(database_schema)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("database schema is null", K(ret));
-      } else if (ObString(OB_RECYCLEBIN_SCHEMA_NAME) == database_schema->get_database_name() ||
-                 ObString(OB_PUBLIC_SCHEMA_NAME) == database_schema->get_database_name()) {
-        ret = OB_OP_NOT_ALLOW;
-        LOG_WARN("flashback table to __recyclebin database is not allowed", K(ret), K(*database_schema));
-      } else if (OB_FAIL(schema_guard.check_table_exist(data_table_schema->get_database_id(),
-                                                        arg.new_table_name_,
-                                                        index_schema->is_index_table(),
-                                                        ObSchemaGetterGuard::ALL_NON_HIDDEN_TYPES,
-                                                        is_table_exist))) {
-        LOG_WARN("check table exist failed,", K(ret), K(arg), K(data_table_schema->get_database_id()));
-      } else if (is_table_exist) {
-        ret = OB_ERR_TABLE_EXIST;
-        LOG_USER_ERROR(OB_ERR_TABLE_EXIST, arg.new_table_name_.length(),
-                       arg.new_table_name_.ptr());
-        LOG_WARN("talbe exist", K(data_table_schema->get_database_id()), K(arg), K(ret));
-      }
-    }
-    if (OB_SUCC(ret)) {
-      if (OB_FAIL(flashback_index_in_trans(schema_guard,
-              *index_schema,
-              data_table_schema->get_database_id(),
-              arg.new_table_name_,
-              arg.ddl_stmt_str_))) {
-        LOG_WARN("falshback index in trans failed", K(ret));
-      }
-    }
-
-    if (OB_SUCC(ret)) {
-      if (OB_FAIL(publish_schema())) {
-        LOG_WARN("publish_schema failed", K(ret));
-      }
-    }
-  }
-  return ret;
-}
-
-int ObDDLService::flashback_index_in_trans(share::schema::ObSchemaGetterGuard &schema_guard,
-                              const share::schema::ObTableSchema &table_schema,
-                              const uint64_t new_db_id,
-                              const common::ObString &new_table_name,
-                              const common::ObString &ddl_stmt_str) {
-  int ret = OB_SUCCESS;
-  ObArenaAllocator allocator(ObModIds::OB_RS_PARTITION_TABLE_TEMP);
-  ObString new_index_table_name;
-  if (OB_FAIL(check_inner_stat())) {
-    LOG_WARN("check inner stat failed", K(ret));
-  }
-  if (OB_SUCC(ret)) {
-    ObDDLOperator ddl_operator(*schema_service_, *sql_proxy_);
-    ObDDLSQLTransaction trans(schema_service_);
-
-    int64_t refreshed_schema_version = 0;
-    if (OB_FAIL(schema_guard.get_schema_version(refreshed_schema_version))) {
-      LOG_WARN("failed to get tenant schema version", KR(ret));
-    } else if (OB_FAIL(trans.start(sql_proxy_, refreshed_schema_version))) {
-      LOG_WARN("start transaction failed", KR(ret), K(refreshed_schema_version));
-    } else if (OB_FAIL(ObTableSchema::build_index_table_name(allocator,
-                                                             table_schema.get_data_table_id(),
-                                                             new_table_name,
-                                                             new_index_table_name))) {
-      LOG_WARN("build index table name failed", K(ret));
-    } else {
-      ObTableSchema new_table_schema;
-      if (OB_FAIL(ddl_operator.flashback_table_from_recyclebin(table_schema, new_table_schema,
-                                                  trans,
-                                                  new_db_id,
-                                                  new_index_table_name,
-                                                  &ddl_stmt_str,
-                                                  schema_guard))) {
-        LOG_WARN("flashback table in trans failed", K(ret));
-      }
-      if (trans.is_started()) {
-        int temp_ret = OB_SUCCESS;
-        if (OB_SUCCESS != (temp_ret = trans.end(OB_SUCC(ret)))) {
-          LOG_ERROR("trans end failed", "is_commit", OB_SUCCESS == ret, K(temp_ret));
-          ret = (OB_SUCC(ret)) ? temp_ret : ret;
-        }
-      }
-    }
-  }
-
   return ret;
 }
 
@@ -24616,7 +24485,7 @@ int ObDDLService::purge_table(
   return ret;
 }
 
-int ObDDLService::flashback_database_in_trans(const ObDatabaseSchema &db_schema,
+int ObDDLService::restore_database_in_trans(const ObDatabaseSchema &db_schema,
                                               const ObString &new_db_name,
                                               ObSchemaGetterGuard &schema_guard,
                                               const ObString &ddl_stmt_str)
@@ -24633,12 +24502,12 @@ int ObDDLService::flashback_database_in_trans(const ObDatabaseSchema &db_schema,
       LOG_WARN("failed to get tenant schema version", KR(ret));
     } else if (OB_FAIL(trans.start(sql_proxy_, refreshed_schema_version))) {
       LOG_WARN("start transaction failed", KR(ret), K(refreshed_schema_version));
-    } else if (OB_FAIL(ddl_operator.flashback_database_from_recyclebin(db_schema,
+    } else if (OB_FAIL(ddl_operator.restore_database_from_recyclebin(db_schema,
                                                                        trans,
                                                                        new_db_name,
                                                                        schema_guard,
                                                                        ddl_stmt_str))) {
-      LOG_WARN("flashback database from recyclebin failed", K(ret));
+      LOG_WARN("restore database from recyclebin failed", K(ret));
     }
     if (trans.is_started()) {
       int temp_ret = OB_SUCCESS;
@@ -24651,7 +24520,7 @@ int ObDDLService::flashback_database_in_trans(const ObDatabaseSchema &db_schema,
   return ret;
 }
 
-int ObDDLService::flashback_database(const ObFlashBackDatabaseArg &arg)
+int ObDDLService::restore_database(const ObRecyclebinRestoreDatabaseArg &arg)
 {
   int ret = OB_SUCCESS;
   ObSchemaGetterGuard schema_guard;
@@ -24687,11 +24556,11 @@ int ObDDLService::flashback_database(const ObFlashBackDatabaseArg &arg)
       }
     }
     if (OB_SUCC(ret)) {
-      if (OB_FAIL(flashback_database_in_trans(*database_schema,
+      if (OB_FAIL(restore_database_in_trans(*database_schema,
                                               new_db_name,
                                               schema_guard,
                                               arg.ddl_stmt_str_))) {
-        LOG_WARN("flashback table in trans failed", K(ret));
+        LOG_WARN("restore database in trans failed", K(ret));
       }
     }
     if (OB_SUCC(ret)) {

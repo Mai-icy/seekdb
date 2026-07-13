@@ -2617,7 +2617,7 @@ int ObDDLOperator::deal_with_mock_fk_parent_table(
     // 2. create table like
     // 3. rename table
     // 4. alter table rename to
-    // 5. flashback table to before drop
+    // 5. restore table from recyclebin
     if (OB_FAIL(replace_mock_fk_parent_table(trans, schema_guard, mock_fk_parent_table_schema))) {
       LOG_WARN("replace mock_fk_parent_table failed", K(ret), K(mock_fk_parent_table_schema.get_operation_type()), K(mock_fk_parent_table_schema));
     }
@@ -4363,7 +4363,7 @@ int ObDDLOperator::drop_table_to_recyclebin(const ObTableSchema &table_schema,
   return ret;
 }
 
-int ObDDLOperator::flashback_table_from_recyclebin(const ObTableSchema &table_schema,
+int ObDDLOperator::restore_table_from_recyclebin(const ObTableSchema &table_schema,
                                                    ObTableSchema &new_table_schema,
                                                    ObMySQLTransaction &trans,
                                                    const uint64_t new_db_id,
@@ -4395,11 +4395,11 @@ int ObDDLOperator::flashback_table_from_recyclebin(const ObTableSchema &table_sc
     const ObRecycleObject &recycle_obj = recycle_objs.at(0);
     if (OB_FAIL(new_table_schema.assign(table_schema))) {
       LOG_WARN("fail to assign schema", K(ret));
-    } else if (new_db_id != OB_INVALID_ID) {//flashback to new db
+    } else if (new_db_id != OB_INVALID_ID) { // restore to new db
       new_table_schema.set_database_id(new_db_id);
       if (new_table_schema.is_aux_table()) {
         // should set the old name
-        // When flashback table to new db, distinguish between empty index name and renaming flashback index
+        // When recovering a table to a new db, distinguish empty index name from renamed indexes.
         if (!new_table_name.empty() && OB_FAIL(new_table_schema.set_table_name(new_table_name))) {
           LOG_WARN("set new table name failed", K(ret));
         } else if (new_table_name.empty() && OB_FAIL(new_table_schema.set_table_name(recycle_obj.get_original_name()))) {
@@ -4436,7 +4436,7 @@ int ObDDLOperator::flashback_table_from_recyclebin(const ObTableSchema &table_sc
         LOG_WARN("database not exist", K(recycle_obj), K(ret));
       } else if (db_schema->is_in_recyclebin()) {
         ret = OB_OP_NOT_ALLOW;
-        LOG_WARN("flashback table to __recyclebin database is not allowed",
+        LOG_WARN("restore table to __recyclebin database is not allowed",
                  K(recycle_obj), K(*db_schema), K(ret));
       } else if (OB_FAIL(new_table_schema.set_table_name(recycle_obj.get_original_name()))) {
         LOG_WARN("set table name failed", K(ret), K(recycle_obj));
@@ -4458,9 +4458,9 @@ int ObDDLOperator::flashback_table_from_recyclebin(const ObTableSchema &table_sc
       bool is_table_exist = true;
       const int64_t table_schema_version = OB_INVALID_VERSION; // Take the latest local schema_guard
       ObSchemaOperationType op_type = new_table_schema.is_view_table()
-          ? OB_DDL_FLASHBACK_VIEW : OB_DDL_FLASHBACK_TABLE;
+          ? OB_DDL_RESTORE_VIEW_FROM_RECYCLEBIN : OB_DDL_RESTORE_TABLE_FROM_RECYCLEBIN;
       if (new_table_schema.is_index_table()) {
-        op_type = OB_DDL_FLASHBACK_INDEX;
+        op_type = OB_DDL_RECOVER_INDEX_FROM_RECYCLEBIN;
       }
       if (OB_FAIL(schema_service_.check_table_exist(new_table_schema.get_database_id(),
                                                            new_table_schema.get_table_name_str(),
@@ -4726,7 +4726,7 @@ int ObDDLOperator::update_tablegroup_id_of_tables(const ObDatabaseSchema &databa
             } else if (FALSE_IT(new_index_schema.set_schema_version(new_schema_version))) {
             } else if (OB_FAIL(schema_service->get_table_sql_service().update_table_options(
                 trans, *index_table_schema, new_index_schema,
-                OB_DDL_FLASHBACK_TABLE, NULL))) {
+                OB_DDL_RESTORE_TABLE_FROM_RECYCLEBIN, NULL))) {
               LOG_WARN("update_table_option failed", K(ret));
             }
           }
@@ -4741,7 +4741,7 @@ int ObDDLOperator::update_tablegroup_id_of_tables(const ObDatabaseSchema &databa
               new_ts.set_tablegroup_id(OB_INVALID_ID);
             }
             const ObSchemaOperationType op_type = new_ts.is_view_table()
-                ? OB_DDL_FLASHBACK_VIEW : OB_DDL_FLASHBACK_TABLE;
+                ? OB_DDL_RESTORE_VIEW_FROM_RECYCLEBIN : OB_DDL_RESTORE_TABLE_FROM_RECYCLEBIN;
             if (OB_FAIL(schema_service_.gen_new_schema_version(new_schema_version))) {
                 LOG_WARN("fail to gen new schema_version", K(ret));
             } else if (FALSE_IT(new_ts.set_schema_version(new_schema_version))) {
@@ -4757,7 +4757,7 @@ int ObDDLOperator::update_tablegroup_id_of_tables(const ObDatabaseSchema &databa
   return ret;
 }
 
-int ObDDLOperator::flashback_database_from_recyclebin(const ObDatabaseSchema &database_schema,
+int ObDDLOperator::restore_database_from_recyclebin(const ObDatabaseSchema &database_schema,
                                                       ObMySQLTransaction &trans,
                                                       const ObString &new_db_name,
                                                       ObSchemaGetterGuard &schema_guard,
@@ -4820,7 +4820,7 @@ int ObDDLOperator::flashback_database_from_recyclebin(const ObDatabaseSchema &da
         } else if (OB_FAIL(schema_service->get_database_sql_service().update_database(
             new_db_schema,
             trans,
-            OB_DDL_FLASHBACK_DATABASE,
+            OB_DDL_RESTORE_DATABASE_FROM_RECYCLEBIN,
             &ddl_stmt_str))) {
           LOG_WARN("update_database failed", K(ret), K(new_db_schema));
         } else if (OB_FAIL(schema_service->delete_recycle_object(recycle_obj,

@@ -37,7 +37,7 @@ using namespace oceanbase::common::serialization;
 OB_SERIALIZE_MEMBER((ObPxMultiPartSSTableInsertOpInput, ObPxMultiPartModifyOpInput));
 OB_SERIALIZE_MEMBER((ObPxMultiPartSSTableInsertVecOpInput, ObPxMultiPartSSTableInsertOpInput));
 
-OB_SERIALIZE_MEMBER((ObPxMultiPartSSTableInsertSpec, ObPxMultiPartInsertSpec), flashback_query_expr_,
+OB_SERIALIZE_MEMBER((ObPxMultiPartSSTableInsertSpec, ObPxMultiPartInsertSpec), snapshot_query_expr_,
                      regenerate_heap_table_pk_);
 OB_SERIALIZE_MEMBER((ObPxMultiPartSSTableInsertVecSpec, ObPxMultiPartSSTableInsertSpec));
 
@@ -46,7 +46,7 @@ int ObPxMultiPartSSTableInsertSpec::get_snapshot_version(ObEvalCtx &eval_ctx, in
   int ret = OB_SUCCESS;
   ObDatum *datum = nullptr;
   snapshot_version = 0;
-  if (OB_FAIL(flashback_query_expr_->eval(eval_ctx, datum))) {
+  if (OB_FAIL(snapshot_query_expr_->eval(eval_ctx, datum))) {
     LOG_WARN("expr evaluate failed", K(ret));
   } else if (datum->is_null()) {
     ret = OB_ERR_UNEXPECTED;
