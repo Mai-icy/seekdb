@@ -119,6 +119,24 @@ int create_index(obvsag::VectorIndexPtr& index_handler, int index_type,
 #endif
 }
 
+int validate_create_index(const CreateIndexParam &param, std::string &err_msg)
+{
+#ifdef OB_BUILD_CDC_DISABLE_VSAG
+  INIT_SUCC(ret);
+  UNUSED(param);
+  err_msg.clear();
+  return ret;
+#else
+  obvsag::set_block_size_limit(2*1024*1024);
+  LOG_INFO("vector index validate params: ", K(param.index_type_), KCSTRING(param.dtype_),
+      KCSTRING(param.metric_), K(param.is_sparse_), K(param.dim_), K(param.max_degree_),
+      K(param.ef_construction_), K(param.ef_search_), K(param.extra_info_size_),
+      K(param.refine_type_), K(param.bq_bits_query_), K(param.bq_use_fht_),
+      K(param.use_reorder_), K(param.doc_prune_ratio_), K(param.window_size_), KP(param.allocator_));
+  return obvsag::validate_create_index(param, err_msg);
+#endif
+}
+
 int create_index(obvsag::VectorIndexPtr &index_handler, int index_type, const char *dtype, const char *metric,
     bool use_reorder, float doc_prune_ratio, int window_size, void *allocator, int extra_info_size /* 0 */)
 {
