@@ -719,8 +719,6 @@ bool ObSQLSessionMgr::CheckSessionFunctor::operator()(sql::ObSQLSessionMgr::Key 
                                       K(query_timeout), K(timeout_multiplier),
                                       "session_state", ObString::make_string(sess_info->get_session_state_str()),
                                       K(sess_info->get_current_query_string()));
-      //dump stack of all threads of observer
-      IGNORE_RETURN faststack();
     }
   }
   return OB_SUCCESS == ret;

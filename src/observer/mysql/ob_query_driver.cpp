@@ -23,7 +23,8 @@
 #include "rpc/obmysql/packet/ompk_resheader.h"
 #include "rpc/obmysql/packet/ompk_field.h"
 #include "rpc/obmysql/packet/ompk_eof.h"
-#include "sql/engine/expr/ob_expr_xml_func_helper.h"
+#include "sql/engine/expr/ob_expr_lob_utils.h"
+#include "sql/engine/expr/ob_expr_sql_udt_utils.h"
 #include "sql/monitor/show_trace/ob_show_trace.h"
 
 namespace oceanbase
@@ -224,11 +225,11 @@ int ObQueryDriver::response_query_result(ObResultSet &result,
           LOG_WARN("convert text value charset failed", K(ret));
         }
         if (OB_FAIL(ret)){
-        } else if ((value.is_lob() || value.is_json() || value.is_geometry() || value.is_roaringbitmap())
+        } else if ((value.is_lob() || value.is_json() || value.is_geometry())
                   && OB_FAIL(process_lob_locator_results(value, result))) {
           LOG_WARN("convert lob locator to longtext failed", K(ret));
         } else if ((value.is_collection_sql_type() || value.is_geometry()) &&
-                   OB_FAIL(ObXMLExprHelper::process_sql_udt_results(value, result))) {
+                   OB_FAIL(ObSqlUdtUtils::convert_result_for_client(value, result))) {
           LOG_WARN("convert udt to client format failed", K(ret), K(value.get_udt_subschema_id()));
         }
       }
@@ -443,7 +444,7 @@ int ObQueryDriver::process_lob_locator_results(ObObj& value,
 {
   int ret = OB_SUCCESS;
   bool is_lob_type = value.is_lob()
-                     || value.is_json() || value.is_geometry() || value.is_roaringbitmap() ;
+                     || value.is_json() || value.is_geometry();
   if (!is_lob_type) {
     // not lob types, do nothing
   } else if (value.is_null() || value.is_nop_value()) {
@@ -466,8 +467,6 @@ int ObQueryDriver::process_lob_locator_results(ObObj& value,
           dst_type = ObJsonType;
         } else if (value.is_geometry()) {
           dst_type = ObGeometryType;
-        } else if (value.is_roaringbitmap()) {
-          dst_type = ObRoaringBitmapType;
         }
         // remove has lob header flag
         value.set_lob_value(dst_type, data.ptr(), static_cast<int32_t>(data.length()));

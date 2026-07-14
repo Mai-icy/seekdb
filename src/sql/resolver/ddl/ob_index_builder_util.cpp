@@ -305,10 +305,6 @@ int ObIndexBuilderUtil::add_shadow_partition_keys(
           ret = OB_ERR_WRONG_KEY_COLUMN;
           LOG_WARN("Unexpected lob column in shadow partition key", "table_id", data_schema.get_table_id(),
               K(column_id), K(ret));
-        } else if (ob_is_roaringbitmap_tc(const_data_column->get_data_type())) {
-          ret = OB_ERR_WRONG_KEY_COLUMN;
-          LOG_WARN("Unexpected roaringbitmap column in shadow partition key", "table_id", data_schema.get_table_id(),
-              K(column_id), K(ret));
         } else if (ob_is_extend(const_data_column->get_data_type())) {
           ret = OB_ERR_WRONG_KEY_COLUMN;
           LOG_WARN("Unexpected udt column in shadow partition key", "table_id", data_schema.get_table_id(),
@@ -452,14 +448,6 @@ int ObIndexBuilderUtil::set_index_table_columns(
                     "column name", sort_item.column_name_,
                     "column length", sort_item.prefix_len_, K(ret));
           }
-        } else if (ob_is_roaringbitmap_tc(data_column->get_data_type())) {
-          ret = OB_ERR_WRONG_KEY_COLUMN;
-          LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, sort_item.column_name_.length(), sort_item.column_name_.ptr());
-          LOG_WARN("roaringbitmap column cannot be used in key specification", 
-                  "database_id", data_schema.get_database_id(),
-                  "table_name", data_schema.get_table_name(),
-                  "column name", sort_item.column_name_,
-                  "column length", sort_item.prefix_len_, K(ret));
         } else if (ob_is_extend(data_column->get_data_type())) {
           ret = OB_ERR_WRONG_KEY_COLUMN;
           LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, sort_item.column_name_.length(), sort_item.column_name_.ptr());
@@ -525,11 +513,6 @@ int ObIndexBuilderUtil::set_index_table_columns(
             LOG_WARN("Lob column should not appear in rowkey position", "data_column", *data_column, K(is_index_column),
                 K(is_rowkey), "order_in_rowkey", data_column->get_order_in_rowkey(),
                 K(row_desc), K(ret));
-          } else if (ob_is_roaringbitmap_tc(data_column->get_data_type())) {
-            ret = OB_ERR_WRONG_KEY_COLUMN;
-            LOG_WARN("roaringbitmap column should not appear in rowkey position", "data_column", *data_column, K(is_index_column),
-                K(is_rowkey), "order_in_rowkey", data_column->get_order_in_rowkey(),
-                K(row_desc), K(ret));
           } else if (ob_is_extend(data_column->get_data_type())) {
             ret = OB_ERR_WRONG_KEY_COLUMN;
             LOG_WARN("udt column should not appear in rowkey position", "data_column", *data_column, K(is_index_column),
@@ -577,12 +560,6 @@ int ObIndexBuilderUtil::set_index_table_columns(
             ret = OB_ERR_WRONG_KEY_COLUMN;
             LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, arg.store_columns_.at(i).length(), arg.store_columns_.at(i).ptr());
             LOG_WARN("Index storing column should not be lob type", 
-                "database_id", data_schema.get_database_id(), "table_name",
-                data_schema.get_table_name(), "column name", arg.store_columns_.at(i), K(ret));
-          } else if (ob_is_roaringbitmap_tc(data_column->get_data_type())) {
-            ret = OB_ERR_WRONG_KEY_COLUMN;
-            LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, arg.store_columns_.at(i).length(), arg.store_columns_.at(i).ptr());
-            LOG_WARN("Index storing column should not be roaringbitmap type", 
                 "database_id", data_schema.get_database_id(), "table_name",
                 data_schema.get_table_name(), "column name", arg.store_columns_.at(i), K(ret));
           } else if (ob_is_extend(data_column->get_data_type())) {
@@ -634,13 +611,6 @@ int ObIndexBuilderUtil::set_index_table_columns(
             LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, arg.hidden_store_columns_.at(i).length(),
                                                     arg.hidden_store_columns_.at(i).ptr());
             LOG_WARN("Index storing column should not be lob type",
-                "database_id", data_schema.get_database_id(), "table_name",
-                data_schema.get_table_name(), "column name", arg.hidden_store_columns_.at(i), K(ret));
-          } else if (ob_is_roaringbitmap_tc(data_column->get_data_type())) {
-            ret = OB_ERR_WRONG_KEY_COLUMN;
-            LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, arg.hidden_store_columns_.at(i).length(),
-                                                    arg.hidden_store_columns_.at(i).ptr());
-            LOG_WARN("Index storing column should not be roaringbitmap type",
                 "database_id", data_schema.get_database_id(), "table_name",
                 data_schema.get_table_name(), "column name", arg.hidden_store_columns_.at(i), K(ret));
           } else if (ob_is_extend(data_column->get_data_type())) {

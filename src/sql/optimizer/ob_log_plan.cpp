@@ -5891,11 +5891,7 @@ int ObLogPlan::check_three_stage_groupby_pushdown(const ObIArray<ObRawExpr *> &r
   bool is_rollup = !rollup_exprs.empty();
   can_push = true;
   bool has_one_distinct = true;
-  ObSQLSessionInfo *session = NULL;
-  if (OB_ISNULL(session = get_optimizer_context().get_session_info())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("get unexpected null", K(session), K(ret));
-  } else if (!enable_hash_rollup && is_rollup) {
+  if (!enable_hash_rollup && is_rollup) {
     // disable merge rollup pushdown
     can_push = false;
   }
@@ -5914,20 +5910,9 @@ int ObLogPlan::check_three_stage_groupby_pushdown(const ObIArray<ObRawExpr *> &r
                aggr_expr->get_expr_type() != T_FUN_SYS_BIT_AND &&
                aggr_expr->get_expr_type() != T_FUN_SYS_BIT_OR &&
                aggr_expr->get_expr_type() != T_FUN_SYS_BIT_XOR &&
-               aggr_expr->get_expr_type() != T_FUN_SYS_RB_BUILD_AGG &&
-               aggr_expr->get_expr_type() != T_FUN_SYS_RB_AND_AGG &&
-               aggr_expr->get_expr_type() != T_FUN_SYS_RB_OR_AGG &&
                aggr_expr->get_expr_type() != T_FUN_GROUPING_ID) {
       // three stage with rollup, only hash rollup is allowed
       // grouping_id can be safely pushdown
-      can_push = false;
-    } else if (aggr_expr->get_expr_type() == T_FUN_SYS_RB_BUILD_AGG &&
-              (! session->use_rich_format())) {
-      // if vector 2.0 is not enable  can not pushdown for rb_build_agg
-      can_push = false;
-    } else if ((aggr_expr->get_expr_type() == T_FUN_SYS_RB_AND_AGG || aggr_expr->get_expr_type() == T_FUN_SYS_RB_OR_AGG) &&
-               (! session->use_rich_format())) {
-      // if vector 2.0 is not enable  can not pushdown for rb_and_agg / rb_or_agg
       can_push = false;
     } else if (aggr_expr->is_param_distinct()) {
       if (OB_FAIL(distinct_aggrs.push_back(aggr_expr))) {
@@ -5977,10 +5962,6 @@ int ObLogPlan::check_basic_groupby_pushdown(const ObIArray<ObAggFunRawExpr*> &ag
 {
   int ret = OB_SUCCESS;
   can_push = true;
-  bool enable_rich_vector_format = false;
-  if (OB_FAIL(get_enable_rich_vector_format(enable_rich_vector_format))) {
-    LOG_WARN("get enable_rich_vector_format fail", K(ret));
-  }
   // check whether contain agg expr can not be pushed down
   for (int64_t i = 0; OB_SUCC(ret) && can_push && i < aggr_items.count(); ++i) {
     ObAggFunRawExpr *aggr_expr = aggr_items.at(i);
@@ -6000,18 +5981,7 @@ int ObLogPlan::check_basic_groupby_pushdown(const ObIArray<ObAggFunRawExpr*> &ag
                T_FUN_SYS_BIT_AND != aggr_expr->get_expr_type() &&
                T_FUN_SYS_BIT_OR != aggr_expr->get_expr_type() &&
                T_FUN_SYS_BIT_XOR != aggr_expr->get_expr_type() &&
-               T_FUN_SUM_OPNSIZE != aggr_expr->get_expr_type() &&
-               T_FUN_SYS_RB_BUILD_AGG != aggr_expr->get_expr_type() &&
-               T_FUN_SYS_RB_OR_AGG != aggr_expr->get_expr_type() &&
-               T_FUN_SYS_RB_AND_AGG != aggr_expr->get_expr_type()) {
-      can_push = false;
-    } else if (T_FUN_SYS_RB_BUILD_AGG == aggr_expr->get_expr_type() &&
-              (! enable_rich_vector_format)) {
-      // if vector 2.0 is not enable  can not pushdown for rb_build_agg
-      can_push = false;
-    } else if ((T_FUN_SYS_RB_OR_AGG == aggr_expr->get_expr_type() || T_FUN_SYS_RB_AND_AGG == aggr_expr->get_expr_type()) &&
-               (! enable_rich_vector_format)) {
-      // if vector 2.0 is not enable  can not pushdown for rb aggr exprs
+               T_FUN_SUM_OPNSIZE != aggr_expr->get_expr_type()) {
       can_push = false;
     } else if (aggr_expr->is_param_distinct()) {
       can_push = false;
@@ -13935,10 +13905,6 @@ int ObLogPlan::check_scalar_aggr_can_storage_pushdown(const uint64_t table_id,
   ObAggFunRawExpr *cur_aggr = NULL;
   ObRawExpr *first_param = NULL;
   can_push = true;
-  bool enable_rich_vector_format = false;
-  if (OB_FAIL(get_enable_rich_vector_format(enable_rich_vector_format))) {
-    LOG_WARN("get enable_rich_vector_format fail", K(ret), K(table_id));
-  }
   for (int64_t i = 0; OB_SUCC(ret) && can_push && i < aggrs.count(); ++i) {
     if (OB_ISNULL(cur_aggr = aggrs.at(i))) {
       ret = OB_ERR_UNEXPECTED;
@@ -13948,18 +13914,7 @@ int ObLogPlan::check_scalar_aggr_can_storage_pushdown(const uint64_t table_id,
                 && T_FUN_MAX != cur_aggr->get_expr_type()
                 && T_FUN_SUM != cur_aggr->get_expr_type()
                 && T_FUN_APPROX_COUNT_DISTINCT_SYNOPSIS != cur_aggr->get_expr_type()
-                && T_FUN_SUM_OPNSIZE != cur_aggr->get_expr_type()
-                && T_FUN_SYS_RB_AND_AGG != cur_aggr->get_expr_type()
-                && T_FUN_SYS_RB_OR_AGG != cur_aggr->get_expr_type()
-                && T_FUN_SYS_RB_BUILD_AGG != cur_aggr->get_expr_type()) {
-      can_push = false;
-            } else if (T_FUN_SYS_RB_BUILD_AGG == cur_aggr->get_expr_type() &&
-              (! enable_rich_vector_format)) {
-      // if vector 2.0 is not enable  can not storage pushdown for rb_build_agg
-      can_push = false;
-    } else if ((T_FUN_SYS_RB_AND_AGG == cur_aggr->get_expr_type() || T_FUN_SYS_RB_AND_AGG == cur_aggr->get_expr_type()) &&
-                (! enable_rich_vector_format)) {
-      // if vector 2.0 is not enable  can not storage pushdown for rb agg
+                && T_FUN_SUM_OPNSIZE != cur_aggr->get_expr_type()) {
       can_push = false;
     } else if (1 < cur_aggr->get_real_param_count()) {
       can_push = false;

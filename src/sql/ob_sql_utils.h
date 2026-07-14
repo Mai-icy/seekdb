@@ -22,7 +22,6 @@
 #include "common/object/ob_object.h"
 #include "lib/container/ob_vector.h"
 #include "lib/container/ob_2d_array.h"
-#include "common/mysqlclient/ob_mysql_connection.h"
 #include "share/geo/ob_s2adapter.h"
 #include "share/ob_i_sql_expression.h"          // ObISqlExpression,ObExprCtx
 #include "storage/access/ob_table_param.h"        // ObColDesc
@@ -62,6 +61,7 @@ class ObRawExprResType;
 class ObStmtHint;
 struct ObTransformerCtx;
 struct ObPreCalcExprFrameInfo;
+struct ObSqlCtx;
 typedef common::ObSEArray<common::ObNewRange *, 1> ObQueryRangeArray;
 struct ObExprConstraint;
 typedef common::ObSEArray<common::ObSpatialMBR, 1> ObMbrFilterArray;

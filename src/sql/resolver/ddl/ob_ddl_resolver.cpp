@@ -269,10 +269,6 @@ int ObDDLResolver::check_add_column_as_pk_allowed(const ObColumnSchemaV2 &column
     ret = OB_ERR_WRONG_KEY_COLUMN;
     LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column_schema.get_column_name_str().length(), column_schema.get_column_name_str().ptr());
     SQL_RESV_LOG(WARN, "BLOB, TEXT column can't be primary key", K(ret), K(column_schema));
-  } else if (ob_is_roaringbitmap(column_schema.get_data_type())) {
-    ret = OB_ERR_WRONG_KEY_COLUMN;
-    LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column_schema.get_column_name_str().length(), column_schema.get_column_name_str().ptr());
-    SQL_RESV_LOG(WARN, "roaringbitmap column can't be primary key", K(ret), K(column_schema));
   } else if (ob_is_extend(column_schema.get_data_type())) {
     ret = OB_ERR_WRONG_KEY_COLUMN;
     LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column_schema.get_column_name_str().length(), column_schema.get_column_name_str().ptr());
@@ -1021,9 +1017,6 @@ int ObDDLResolver::add_storing_column(const ObString &column_name,
         LOG_USER_ERROR(OB_ERR_BAD_FIELD_ERROR, column_name.length(), column_name.ptr(), table_name_.length(), table_name_.ptr());
       } else {
         if (column_schema->is_key_forbid_lob()) {
-          ret = OB_ERR_WRONG_KEY_COLUMN;
-          LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column_name.length(), column_name.ptr());
-        } else if (ob_is_roaringbitmap_tc(column_schema->get_data_type())) {
           ret = OB_ERR_WRONG_KEY_COLUMN;
           LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column_name.length(), column_name.ptr());
         } else if (ob_is_extend(column_schema->get_data_type())) {
@@ -2678,7 +2671,7 @@ int ObDDLResolver::resolve_column_definition(ObColumnSchemaV2 &column,
         if (OB_FAIL(check_and_fill_column_charset_info(column, charset_type, collation_type))) {
           SQL_RESV_LOG(WARN, "fail to check and fill column charset info", K(ret));
         } else if (data_type.get_meta_type().is_lob() || data_type.get_meta_type().is_json()
-                   || data_type.get_meta_type().is_geometry() || data_type.get_meta_type().is_roaringbitmap()) {
+                   || data_type.get_meta_type().is_geometry()) {
           if (OB_FAIL(check_text_column_length_and_promote(column, table_id_))) {
             SQL_RESV_LOG(WARN, "fail to check text or blob column length", K(ret), K(column));
           } else if (is_string && data_type.get_meta_type().is_text()) {
@@ -3018,10 +3011,6 @@ int ObDDLResolver::resolve_normal_column_attribute(ObColumnSchemaV2 &column,
           ret = OB_ERR_WRONG_KEY_COLUMN;
           LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
           SQL_RESV_LOG(WARN, "BLOB, TEXT column can't be primary key", K(column), K(ret));
-        } else if (ob_is_roaringbitmap_tc(column.get_data_type())) {
-          ret = OB_ERR_WRONG_KEY_COLUMN;
-          LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
-          SQL_RESV_LOG(WARN, "roaringbitmap column can't be primary key", K(column), K(ret));
         } else if (ob_is_extend(column.get_data_type())) {
           ret = OB_ERR_WRONG_KEY_COLUMN;
           LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
@@ -3047,10 +3036,6 @@ int ObDDLResolver::resolve_normal_column_attribute(ObColumnSchemaV2 &column,
           ret = OB_ERR_WRONG_KEY_COLUMN;
           LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
           SQL_RESV_LOG(WARN, "BLOB, TEXT column can't be unique key", K(column), K(ret));
-        } else if (ob_is_roaringbitmap_tc(column.get_data_type())) {
-          ret = OB_ERR_WRONG_KEY_COLUMN;
-          LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
-          SQL_RESV_LOG(WARN, "roaringbitmap column can't be unique key", K(column), K(ret));
         } else if (ob_is_extend(column.get_data_type())) {
           ret = OB_ERR_WRONG_KEY_COLUMN;
           LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
@@ -3081,7 +3066,7 @@ int ObDDLResolver::resolve_normal_column_attribute(ObColumnSchemaV2 &column,
       }
       case T_CONSTR_AUTO_INCREMENT:
         if (ob_is_text_tc(column.get_data_type()) || ob_is_json_tc(column.get_data_type())
-            || ob_is_geometry_tc(column.get_data_type()) || ob_is_roaringbitmap_tc(column.get_data_type())) {
+            || ob_is_geometry_tc(column.get_data_type())) {
           ret = OB_ERR_COLUMN_SPEC;
           LOG_USER_ERROR(OB_ERR_COLUMN_SPEC, column.get_column_name_str().length(), column.get_column_name_str().ptr());
           SQL_RESV_LOG(WARN, "BLOB, TEXT column can't set autoincrement", K(column), K(default_value), K(ret));
@@ -3803,10 +3788,6 @@ int ObDDLResolver::resolve_identity_column_attribute(ObColumnSchemaV2 &column,
         ret = OB_ERR_WRONG_KEY_COLUMN;
         LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
         SQL_RESV_LOG(WARN, "BLOB, TEXT column can't be primary key", K(column), K(ret));
-      } else if (ob_is_roaringbitmap_tc(column.get_data_type())) {
-        ret = OB_ERR_WRONG_KEY_COLUMN;
-        LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
-        SQL_RESV_LOG(WARN, "roaringbitmap column can't be primary key", K(column), K(ret));
       } else if (ob_is_extend(column.get_data_type())) {
         ret = OB_ERR_WRONG_KEY_COLUMN;
         LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
@@ -3824,10 +3805,6 @@ int ObDDLResolver::resolve_identity_column_attribute(ObColumnSchemaV2 &column,
         ret = OB_ERR_WRONG_KEY_COLUMN;
         LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
         SQL_RESV_LOG(WARN, "BLOB, TEXT column can't be unique key", K(column), K(ret));
-      } else if (ob_is_roaringbitmap_tc(column.get_data_type())) {
-        ret = OB_ERR_WRONG_KEY_COLUMN;
-        LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
-        SQL_RESV_LOG(WARN, "roaringbitmap column can't be unique key", K(column), K(ret));
       } else if (ob_is_extend(column.get_data_type())) {
         ret = OB_ERR_WRONG_KEY_COLUMN;
         LOG_USER_ERROR(OB_ERR_WRONG_KEY_COLUMN, column.get_column_name_str().length(), column.get_column_name_str().ptr());
@@ -4029,14 +4006,6 @@ int ObDDLResolver::cast_default_value(ObSQLSessionInfo *session_info,
                             column_schema.get_collation_type(),
                             *res_obj, default_value, res_obj))) {
           SQL_RESV_LOG(WARN, "check default value failed on mysql mode", K(ret), K(default_value), K(*res_obj));
-        }
-      } else if (ObRoaringBitmapTC == column_schema.get_data_type_class()) {
-        // remove lob header
-        ObString real_str;
-        if (OB_FAIL(sql::ObTextStringHelper::read_real_string_data(&allocator, default_value, real_str))) {
-          LOG_WARN("fail to get real data.", K(ret), K(real_str));
-        } else {
-          default_value.set_string(ObRoaringBitmapType, real_str);
         }
       }
       if (OB_FAIL(ret)) {
@@ -4312,7 +4281,7 @@ int ObDDLResolver::check_text_length(ObCharsetType cs_type,
   int ret = OB_SUCCESS;
   int64_t mbmaxlen = 0;
   int32_t default_length = ObAccuracy::DDL_DEFAULT_ACCURACY[type].get_length();
-  if(!(ob_is_text_tc(type) || ob_is_json_tc(type) || ob_is_geometry_tc(type) || ob_is_roaringbitmap_tc(type))
+  if (!(ob_is_text_tc(type) || ob_is_json_tc(type) || ob_is_geometry_tc(type))
      || CHARSET_INVALID == cs_type || CS_TYPE_INVALID == co_type) {
     ret = OB_ERR_UNEXPECTED;
     SQL_RESV_LOG(ERROR,"column infomation is error", K(cs_type), K(co_type), K(ret));
@@ -10777,7 +10746,6 @@ int new_discrete_vector(
     DISCRETE_VECTOR_INIT_SWITCH(VEC_TC_GEO);
     DISCRETE_VECTOR_INIT_SWITCH(VEC_TC_UDT);
     DISCRETE_VECTOR_INIT_SWITCH(VEC_TC_COLLECTION);
-    DISCRETE_VECTOR_INIT_SWITCH(VEC_TC_ROARINGBITMAP);
 #undef DISCRETE_VECTOR_INIT_SWITCH
     default:
       ret = OB_ERR_UNEXPECTED;

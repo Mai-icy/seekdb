@@ -71,8 +71,6 @@ select array_union([1,2,3], map(1,11));
 select array_union(map(1,11), [1,2]);
 --error 5083
 select element_at(map(1,11), 1);
---error 5083
-select rb_build(map(1,11));
 
 --error 5083
 select WEIGHT_STRING(map(1,11));

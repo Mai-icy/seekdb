@@ -6211,8 +6211,6 @@ int ObSPIService::convert_obj(ObPLExecCtx *ctx,
                && !obj.is_geometry()
                && !obj.is_null()
                && result_types[i].get_meta_type().is_ext()) {
-      // sql udt or geometry can cast to pl extend, null from sql udt type can cast to pl extend(xmltype)
-      // support: select extract(xmlparse(document '<a>a</a>'), '/b') into xml_data from dual;
       ret = OB_ERR_INTO_EXPR_ILLEGAL;
       LOG_WARN("expression 'string' in the INTO list is of wrong type", K(ret), K(obj), K(i), K(current_type.at(i)), K(result_types[i]));
     } else {
@@ -6352,13 +6350,13 @@ int ObSPIService::store_result(ObPLExecCtx *ctx,
                            1 == obj_array.count() &&
                            ((obj_array.at(0).is_pl_extend() &&
                            obj_array.at(0).get_meta().get_extend_type() != PL_CURSOR_TYPE &&
-                           obj_array.at(0).get_meta().get_extend_type() != PL_OPAQUE_TYPE) || // xmltypes may need to do cast
+                           obj_array.at(0).get_meta().get_extend_type() != PL_OPAQUE_TYPE) ||
                            (obj_array.at(0).is_null() &&
                            row_desc.at(0).get_meta_type().is_ext() &&
                            row_desc.at(0).get_meta_type().get_extend_type() > 0 &&
                            row_desc.at(0).get_meta_type().get_extend_type() < T_EXT_SQL_ARRAY &&
                            row_desc.at(0).get_meta_type().get_extend_type() != PL_CURSOR_TYPE &&
-                           row_desc.at(0).get_meta_type().get_extend_type() != PL_OPAQUE_TYPE))); // xmltypes may need to do cast
+                           row_desc.at(0).get_meta_type().get_extend_type() != PL_OPAQUE_TYPE)));
   if (!is_schema_object) {
     if (OB_SUCC(ret) && type_count != obj_array.count()) {
       ret = OB_ERR_SP_INVALID_FETCH_ARG;

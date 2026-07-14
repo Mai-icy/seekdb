@@ -69,7 +69,6 @@ const ObAccuracy ObAccuracy::DDL_DEFAULT_ACCURACY[ObMaxType] = {
   ObAccuracy(OB_MAX_LONGTEXT_LENGTH),     // collection type in sql
   ObAccuracy(10, 0),         // mysql date.
   ObAccuracy(19, 6),         // mysql datetime.
-  ObAccuracy(OB_MAX_LONGTEXT_LENGTH),     // roaringbitmap, roaringbitmap serialized size is possibly to exceed 512M.
 };
 
 const ObAccuracy ObAccuracy::DDL_DEFAULT_ACCURACY2[1][ObMaxType] = {
@@ -117,7 +116,6 @@ const ObAccuracy ObAccuracy::DDL_DEFAULT_ACCURACY2[1][ObMaxType] = {
     ObAccuracy(OB_MAX_LONGTEXT_LENGTH),        // collection type in sql
     ObAccuracy(10, 0),         // mysql date.
     ObAccuracy(19, 6),         // mysql datetime.
-    ObAccuracy(OB_MAX_LONGTEXT_LENGTH),         // roaringbitmap
   }
 };
 
@@ -165,7 +163,6 @@ const ObAccuracy ObAccuracy::MAX_ACCURACY[ObMaxType] = {
   ObAccuracy(OB_MAX_LONGTEXT_LENGTH),         // collection type in sql
   ObAccuracy(10, 0),         // mysql date.
   ObAccuracy(19, 6),         // mysql datetime.
-  ObAccuracy(OB_MAX_LONGTEXT_LENGTH),        // roaringbitmap
 };
 
 const ObAccuracy ObAccuracy::MAX_ACCURACY2[1][ObMaxType] = {
@@ -213,7 +210,6 @@ const ObAccuracy ObAccuracy::MAX_ACCURACY2[1][ObMaxType] = {
     ObAccuracy(OB_MAX_LONGTEXT_LENGTH),  // collection type in sql
     ObAccuracy(10, 0),         // mysql date.
     ObAccuracy(19, 6),         // mysql datetime.
-    ObAccuracy(OB_MAX_LONGTEXT_LENGTH),        // roaringbitmap
   }
 };
 
@@ -261,7 +257,6 @@ const ObAccuracy ObAccuracy::DML_DEFAULT_ACCURACY[ObMaxType] = {
   ObAccuracy(OB_MAX_LONGTEXT_LENGTH),         // collection type in sql
   ObAccuracy(0, 0),         // mysql date.
   ObAccuracy(0, 6),         // mysql datetime.
-  ObAccuracy(OB_MAX_LONGTEXT_LENGTH),        // roaringbitmap
 };
 
 const ObAccuracy ObAccuracy::MAX_ACCURACY_OLD[ObMaxType] = {

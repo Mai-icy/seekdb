@@ -23,7 +23,7 @@
 #include "observer/mysql/obsm_row.h"
 #include "observer/mysql/obmp_utils.h"
 #include "observer/mysql/ob_query_driver.h"
-#include "sql/engine/expr/ob_expr_xml_func_helper.h"
+#include "sql/engine/expr/ob_expr_sql_udt_utils.h"
 namespace oceanbase
 {
 using namespace share;
@@ -442,7 +442,7 @@ int ObMPBase::response_row(ObSQLSessionInfo &session,
                                     exec_ctx))) {
           LOG_WARN("convert lob locator to longtext failed", K(ret));
         } else if ((value.is_collection_sql_type() || value.is_geometry())
-                   && OB_FAIL(ObXMLExprHelper::process_sql_udt_results(value, 
+                   && OB_FAIL(ObSqlUdtUtils::convert_result_for_client(value,
                                     &allocator,
                                     &session,
                                     exec_ctx,

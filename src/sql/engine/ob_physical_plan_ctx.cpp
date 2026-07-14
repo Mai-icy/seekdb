@@ -1236,8 +1236,7 @@ int ObPhysicalPlanCtx::build_subschema_by_fields(const ColumnsFieldIArray *field
       if (fields->at(i).type_.is_collection_sql_type()) {
         uint64_t udt_id = fields->at(i).accuracy_.get_accuracy();
         uint16_t subschema_id = 0;
-        if (udt_id != T_OBJ_XML 
-            && OB_FAIL(get_subschema_id_by_udt_id(udt_id, subschema_id, schema_guard))) {
+        if (OB_FAIL(get_subschema_id_by_udt_id(udt_id, subschema_id, schema_guard))) {
           LOG_WARN("failed to get subschema id", K(ret), K(fields->at(i)), K(udt_id));
         }
       }

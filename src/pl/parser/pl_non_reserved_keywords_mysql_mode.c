@@ -211,7 +211,6 @@ static const NonReservedKeyword Mysql_pl_none_reserved_keywords[] =
   {"multipolygon", MULTIPOLYGON},
   {"geometrycollection", GEOMETRYCOLLECTION},
   {"geomcollection", GEOMCOLLECTION},
-  {"roaringbitmap", ROARINGBITMAP},
   {"interval", INTERVAL},
   {"to", TO},
   {"serial", SERIAL}

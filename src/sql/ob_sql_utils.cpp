@@ -668,9 +668,6 @@ int ObSQLUtils::se_calc_const_expr(ObSQLSessionInfo *session,
                   LOG_WARN("failed to deep copy pl extend obj", K(ret), K(tmp_result));
                 }
               } else if (OB_NOT_NULL(out_ctx)) {
-                // fix bug:
-                // create table xml_test(id varchar2(200) primary key not null,mm xmltype constraint xmltype not null ,ls clob ,tag varchar2(2200),tt clob);
-                // insert into xml_test(id,mm) select 1,xmltype('<c>123</c>') from dual;
                 if (OB_FAIL(pl::ObUserDefinedType::deep_copy_obj(out_ctx->get_allocator(), tmp_result, result))) {
                   LOG_WARN("failed to deep copy pl extend obj", K(ret), K(tmp_result));
                 } else if (OB_ISNULL(out_ctx->get_pl_ctx())) {

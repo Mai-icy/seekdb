@@ -8377,7 +8377,6 @@ int ObPLResolver::replace_udf_param_expr(
     if (access_ident.is_pl_udf()) {
       OZ (replace_udf_param_expr(access_ident, columns, real_exprs));
     } else if (access_ident.is_sys_func()) {
-      // cases like : xmlparse(document expr).getclobval()
       ObRawExpr *expr = static_cast<ObRawExpr *>(access_ident.sys_func_expr_);
       for (int64_t i = 0; OB_SUCC(ret) && i < real_exprs.count(); ++i) {
         if (OB_FAIL(ObRawExprUtils::replace_ref_column(expr, columns.at(i).ref_expr_, real_exprs.at(i)))) {

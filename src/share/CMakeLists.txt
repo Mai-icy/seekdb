@@ -41,11 +41,7 @@ ob_set_subtarget(ob_share_extra ALONE
 )
 
 ob_set_subtarget(ob_share vector
-  roaringbitmap/ob_roaringbitmap.cpp
-  roaringbitmap/ob_rb_utils.cpp
-  roaringbitmap/ob_rb_bin.cpp
   roaringbitmap/ob_rb_memory_mgr.cpp
-  ob_mysql_proc_statement.cpp
 )
 
 ob_set_subtarget(ob_share ALONE

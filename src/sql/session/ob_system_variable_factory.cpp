@@ -449,36 +449,6 @@ const char *ObSysVarInnodbStatsMethod::INNODB_STATS_METHOD_NAMES[] = {
   "nulls_ignored",
   0
 };
-const char *ObSysVarKeyringAwsRegion::KEYRING_AWS_REGION_NAMES[] = {
-  "af-south-1",
-  "ap-east-1",
-  "ap-northeast-1",
-  "ap-northeast-2",
-  "ap-northeast-3",
-  "ap-south-1",
-  "ap-southeast-1",
-  "ap-southeast-2",
-  "ca-central-1",
-  "cn-north-1",
-  "cn-northwest-1",
-  "eu-central-1",
-  "eu-north-1",
-  "eu-south-1",
-  "eu-west-1",
-  "eu-west-2",
-  "eu-west-3",
-  "me-south-1",
-  "sa-east-1",
-  "us-east-1",
-  "us-east-2",
-  "us-gov-east-1",
-  "us-iso-east-1",
-  "us-iso-west-1",
-  "us-isob-east-1",
-  "us-west-1",
-  "us-west-2",
-  0
-};
 const char *ObSysVarOldPasswords::OLD_PASSWORDS_NAMES[] = {
   "0",
   "1",
@@ -1240,8 +1210,6 @@ int ObSysVarFactory::create_all_sys_vars_()
         + sizeof(ObSysVarExternalUser)
         + sizeof(ObSysVarHaveCrypt)
         + sizeof(ObSysVarHaveDynamicLoading)
-        + sizeof(ObSysVarKeyringAwsConfFile)
-        + sizeof(ObSysVarKeyringAwsDataFile)
         + sizeof(ObSysVarLanguage)
         + sizeof(ObSysVarLcMessagesDir)
         + sizeof(ObSysVarLowerCaseFileSystem)
@@ -1287,8 +1255,6 @@ int ObSysVarFactory::create_all_sys_vars_()
         + sizeof(ObSysVarInnodbStatsPersistentSamplePages)
         + sizeof(ObSysVarInnodbStatsSamplePages)
         + sizeof(ObSysVarInnodbStatsTransientSamplePages)
-        + sizeof(ObSysVarKeyringAwsCmkId)
-        + sizeof(ObSysVarKeyringAwsRegion)
         + sizeof(ObSysVarKeyringEncryptedFileData)
         + sizeof(ObSysVarKeyringEncryptedFilePassword)
         + sizeof(ObSysVarKeyringFileData)
@@ -7162,24 +7128,6 @@ int ObSysVarFactory::create_all_sys_vars_()
       }
     }
     if (OB_SUCC(ret)) {
-      if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarKeyringAwsConfFile())) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_ERROR("fail to new ObSysVarKeyringAwsConfFile", K(ret));
-      } else {
-        store_buf_[share::ObSysVarsToIdxMap::get_store_idx(static_cast<int64_t>(share::SYS_VAR_KEYRING_AWS_CONF_FILE))] = sys_var_ptr;
-        ptr = (void *)((char *)ptr + sizeof(ObSysVarKeyringAwsConfFile));
-      }
-    }
-    if (OB_SUCC(ret)) {
-      if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarKeyringAwsDataFile())) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_ERROR("fail to new ObSysVarKeyringAwsDataFile", K(ret));
-      } else {
-        store_buf_[share::ObSysVarsToIdxMap::get_store_idx(static_cast<int64_t>(share::SYS_VAR_KEYRING_AWS_DATA_FILE))] = sys_var_ptr;
-        ptr = (void *)((char *)ptr + sizeof(ObSysVarKeyringAwsDataFile));
-      }
-    }
-    if (OB_SUCC(ret)) {
       if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarLanguage())) {
         ret = OB_ALLOCATE_MEMORY_FAILED;
         LOG_ERROR("fail to new ObSysVarLanguage", K(ret));
@@ -7582,24 +7530,6 @@ int ObSysVarFactory::create_all_sys_vars_()
       } else {
         store_buf_[share::ObSysVarsToIdxMap::get_store_idx(static_cast<int64_t>(share::SYS_VAR_INNODB_STATS_TRANSIENT_SAMPLE_PAGES))] = sys_var_ptr;
         ptr = (void *)((char *)ptr + sizeof(ObSysVarInnodbStatsTransientSamplePages));
-      }
-    }
-    if (OB_SUCC(ret)) {
-      if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarKeyringAwsCmkId())) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_ERROR("fail to new ObSysVarKeyringAwsCmkId", K(ret));
-      } else {
-        store_buf_[share::ObSysVarsToIdxMap::get_store_idx(static_cast<int64_t>(share::SYS_VAR_KEYRING_AWS_CMK_ID))] = sys_var_ptr;
-        ptr = (void *)((char *)ptr + sizeof(ObSysVarKeyringAwsCmkId));
-      }
-    }
-    if (OB_SUCC(ret)) {
-      if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarKeyringAwsRegion())) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_ERROR("fail to new ObSysVarKeyringAwsRegion", K(ret));
-      } else {
-        store_buf_[share::ObSysVarsToIdxMap::get_store_idx(static_cast<int64_t>(share::SYS_VAR_KEYRING_AWS_REGION))] = sys_var_ptr;
-        ptr = (void *)((char *)ptr + sizeof(ObSysVarKeyringAwsRegion));
       }
     }
     if (OB_SUCC(ret)) {
@@ -10661,14 +10591,6 @@ int ObSysVarFactory::create_sys_var(ObIAllocator &allocator_, share::ObSysVarCla
       ret = create_one_sys_var<ObSysVarHaveDynamicLoading>(allocator_, sys_var_ptr, "ObSysVarHaveDynamicLoading");
       break;
     }
-    case share::SYS_VAR_KEYRING_AWS_CONF_FILE: {
-      ret = create_one_sys_var<ObSysVarKeyringAwsConfFile>(allocator_, sys_var_ptr, "ObSysVarKeyringAwsConfFile");
-      break;
-    }
-    case share::SYS_VAR_KEYRING_AWS_DATA_FILE: {
-      ret = create_one_sys_var<ObSysVarKeyringAwsDataFile>(allocator_, sys_var_ptr, "ObSysVarKeyringAwsDataFile");
-      break;
-    }
     case share::SYS_VAR_LANGUAGE: {
       ret = create_one_sys_var<ObSysVarLanguage>(allocator_, sys_var_ptr, "ObSysVarLanguage");
       break;
@@ -10847,14 +10769,6 @@ int ObSysVarFactory::create_sys_var(ObIAllocator &allocator_, share::ObSysVarCla
     }
     case share::SYS_VAR_INNODB_STATS_TRANSIENT_SAMPLE_PAGES: {
       ret = create_one_sys_var<ObSysVarInnodbStatsTransientSamplePages>(allocator_, sys_var_ptr, "ObSysVarInnodbStatsTransientSamplePages");
-      break;
-    }
-    case share::SYS_VAR_KEYRING_AWS_CMK_ID: {
-      ret = create_one_sys_var<ObSysVarKeyringAwsCmkId>(allocator_, sys_var_ptr, "ObSysVarKeyringAwsCmkId");
-      break;
-    }
-    case share::SYS_VAR_KEYRING_AWS_REGION: {
-      ret = create_one_sys_var<ObSysVarKeyringAwsRegion>(allocator_, sys_var_ptr, "ObSysVarKeyringAwsRegion");
       break;
     }
     case share::SYS_VAR_KEYRING_ENCRYPTED_FILE_DATA: {

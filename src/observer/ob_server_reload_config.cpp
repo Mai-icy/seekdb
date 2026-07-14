@@ -272,9 +272,6 @@ int ObServerReloadConfig::operator()()
     ObMallocAllocator::get_instance()->force_malloc_for_absent_tenant_ = GCONF._force_malloc_for_absent_tenant;
   }
 
-  {
-    ObSigFaststack::get_instance().set_min_interval(GCONF._faststack_min_interval.get_value());
-  }
   // moved from share ObConfigManager::reload_config(share base must not touch observer components;
   // this function is the original reload_config_func_ call site,order and fail-fast semantics are preserved)
   if (OB_FAIL(ret)) {

@@ -2015,26 +2015,14 @@ DEFINE_ERROR(OB_ERR_PARSING_SPATIAL_PARAM, -7302, -1, "42000", "internal error w
 // XML错误码值域  [-7400, -7600)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-DEFINE_ERROR_EXT(OB_ERR_INVALID_XML_DATATYPE, -7402, -1, "22000", "Invalid data type for the operation", "inconsistent datatypes: expected %s got %s");
-DEFINE_ERROR(OB_ERR_XML_MISSING_COMMA, -7403, -1, "42000", "missing comma");
 DEFINE_ERROR(OB_ERR_INVALID_XPATH_EXPRESSION, -7404, ER_UNKNOWN_ERROR, "42000", "XPATH syntax error: ''");
 DEFINE_ERROR(OB_ERR_EXTRACTVALUE_MULTI_NODES, -7405, -1, "42000", "EXTRACTVALUE cannot extract values of multiple nodes");
-DEFINE_ERROR(OB_ERR_XML_FRAMENT_CONVERT, -7406, -1, "42000", "Cannot convert XML fragment to the required datatype");
-DEFINE_ERROR(OB_INVALID_PRINT_OPTION, -7407, -1, "42000", "The specified printing option is invalid");
-DEFINE_ERROR(OB_XML_CHAR_LEN_TOO_SMALL, -7408, -1, "42000", "character length specified for XMLSerialize is too small.");
 DEFINE_ERROR(OB_XPATH_EXPRESSION_UNSUPPORTED, -7409, ER_UNKNOWN_ERROR, "42000", "Only constant XPATH queries are supported");
 DEFINE_ERROR(OB_EXTRACTVALUE_NOT_LEAF_NODE, -7410, -1, "42000", "EXTRACTVALUE can only retrieve value of leaf node");
-DEFINE_ERROR(OB_XML_INSERT_FRAGMENT, -7411, -1, "42000", "Cannot insert XML fragments");
 DEFINE_ERROR(OB_ERR_NO_ORDER_MAP_SQL, -7412, -1, "42000", "cannot ORDER objects without MAP or ORDER method");
-DEFINE_ERROR(OB_ERR_XMLELEMENT_ALIASED, -7413, -1, "42000", "parameter %d of function XMLELEMENT must be aliased");
-DEFINE_ERROR(OB_INVALID_ALTERATIONG_DATATYPE, -7414, -1, "42000", "invalid alteration of datatype");
-DEFINE_ERROR(OB_INVALID_MODIFICATION_OF_COLUMNS, -7415, -1, "42000", "invalid modification of columns");
-DEFINE_ERROR(OB_ERR_NULL_FOR_XML_CONSTRUCTOR, -7416, -1, "42000", "Expected XML tag , got no content");
-DEFINE_ERROR(OB_ERR_XML_INDEX, -7417, -1, "42000", "cannot create index on expression with datatype ADT '%.*s'");
 DEFINE_ERROR(OB_ERR_UPDATE_XML_WITH_INVALID_NODE, -7418, -1, "42000", "XML nodes must be updated with valid nodes and of the same type'");
 DEFINE_ERROR(OB_LOB_VALUE_NOT_EXIST, -7419, -1, "42000", "LOB value does not exist");
 DEFINE_ERROR(OB_ERR_JSON_FUN_UNSUPPORTED_TYPE, -7420, -1, "HY000", "Input to JSON generation function has unsupported data type");
-DEFINE_ERROR(OB_ERR_XQUERY_MULTI_VALUE, -7421, -1, "42000", "XPTY0004 - XQuery dynamic type mismatch: expected singleton sequence - got multi-item sequence");
 DEFINE_ERROR_EXT_DEP(OB_ERR_PARSE_XQUERY_EXPR, -7422, -1, "42000", "XPST0003 - error during parsing the XQuery expression", "XPST0003 - error during parsing the XQuery expression : %.*s");
 DEFINE_ERROR(OB_ERR_LACK_XQUERY_LITERAL, -7423, -1, "42000", "XQuery string literal expected");
 DEFINE_ERROR_EXT_DEP(OB_ERR_TOO_MANY_PREFIX_DECLARE, -7424, -1, "42000", "XPST0033 - too many declarations for namespace prefix", "XPST0033 - too many declarations for namespace prefix %.*s");
@@ -2224,9 +2212,6 @@ DEFINE_ERROR(OB_NO_SUCH_FILE_OR_DIRECTORY, -9100, -1, "HY000", "no such file or 
 DEFINE_ERROR(OB_FILE_OR_DIRECTORY_EXIST, -9101, -1, "HY000", "file or directory already exist");
 DEFINE_ERROR(OB_FILE_OR_DIRECTORY_PERMISSION_DENIED, -9102, -1, "HY000", "file or directory permission denied");
 DEFINE_ERROR(OB_TOO_MANY_OPEN_FILES, -9103, -1, "HY000", "too many open files");
-// do not use OB_S3_ERROR, use OB_OBJECT_STORAGE_IO_ERROR instead
-DEFINE_ERROR_DEP(OB_S3_ERROR, -9105, -1, "HY000", "S3 error");
-
 // For tenant snapshot
 DEFINE_ERROR_EXT_DEP(OB_TENANT_SNAPSHOT_NOT_EXIST, -9106, -1, "HY000", "Tenant snapshot does not exist", "Tenant snapshot \'%.*s\' does not exist");
 DEFINE_ERROR_EXT_DEP(OB_TENANT_SNAPSHOT_EXIST, -9107, -1, "HY000", "Tenant snapshot already exist", "Tenant snapshot \'%.*s\' already exist");
@@ -2240,7 +2225,6 @@ DEFINE_ERROR_EXT_DEP(OB_CHECKSUM_TYPE_NOT_SUPPORTED, -9113, -1, "HY000", "checks
 DEFINE_ERROR_DEP(OB_INVALID_STORAGE_DEST, -9114, -1, "HY000", "storage destination is not valid");
 DEFINE_ERROR(OB_STORAGE_DEST_NOT_CONNECT, -9115, -1, "HY000", "can not connect to storage destination");
 DEFINE_ERROR_DEP(OB_OBJECT_STORAGE_PERMISSION_DENIED, -9116, -1, "HY000", "no I/O operation permission of the object storage");
-DEFINE_ERROR_DEP(OB_S3_REGION_MISMATCH, -9117, -1, "HY000", "the specified s3_region does not match the endpoint");
 DEFINE_ERROR_DEP(OB_INVALID_OBJECT_STORAGE_ENDPOINT, -9118, -1, "HY000", "object storage endpoint is invalid");
 DEFINE_ERROR_EXT_DEP(OB_RESTORE_SOURCE_NOT_ENOUGH, -9119, -1, "HY000", "do not have enough restore source", "%s");
 
