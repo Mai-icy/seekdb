@@ -35,37 +35,31 @@ public:
     : object_type_(ObStorageObjectType::PRIVATE_DATA_MACRO) {}
 
   ~ObStorageObjectOpt() {}
-  void set_private_object_opt(const int64_t tablet_id = -1, const int64_t tablet_transfer_seq = -1)
+  void set_private_object_opt(const int64_t tablet_id = -1)
   {
     object_type_ = ObStorageObjectType::PRIVATE_DATA_MACRO;
     private_opt_.tablet_id_ = tablet_id;
-    private_opt_.tablet_trasfer_seq_ = tablet_transfer_seq;
   }
-  void set_private_meta_macro_object_opt(const int64_t tablet_id = -1, const int64_t tablet_transfer_seq = -1)
+  void set_private_meta_macro_object_opt(const int64_t tablet_id = -1)
   {
     object_type_ = ObStorageObjectType::PRIVATE_META_MACRO;
     private_opt_.tablet_id_ = tablet_id;
-    private_opt_.tablet_trasfer_seq_ = tablet_transfer_seq;
   }
   void set_ss_share_data_macro_object_opt(
       const int64_t tablet_id,
-      const int64_t data_seq,
-      const int64_t column_group_id)
+      const int64_t data_seq)
   {
     object_type_ = ObStorageObjectType::SHARED_MAJOR_DATA_MACRO;
     ss_share_opt_.tablet_id_ = tablet_id;
     ss_share_opt_.data_seq_ = data_seq;
-    ss_share_opt_.column_group_id_ = column_group_id;
   }
   void set_ss_share_meta_macro_object_opt(
       const int64_t tablet_id,
-      const int64_t data_seq,
-      const int64_t column_group_id)
+      const int64_t data_seq)
   {
     object_type_ = ObStorageObjectType::SHARED_MAJOR_META_MACRO;
     ss_share_opt_.tablet_id_ = tablet_id;
     ss_share_opt_.data_seq_ = data_seq;
-    ss_share_opt_.column_group_id_ = column_group_id;
   }
   void set_ss_tmp_file_object_opt()
   {
@@ -91,13 +85,12 @@ public:
   };
 
   void set_ss_private_tablet_meta_object_opt(
-      const int64_t ls_id, const uint64_t tablet_id, const uint64_t version, const int64_t tablet_trasfer_seq)
+      const int64_t ls_id, const uint64_t tablet_id, const uint64_t version)
   {
     object_type_ = ObStorageObjectType::PRIVATE_TABLET_META;
     ss_private_tablet_opt_.ls_id_ = ls_id;
     ss_private_tablet_opt_.tablet_id_ = tablet_id;
     ss_private_tablet_opt_.version_ = version;
-    ss_private_tablet_opt_.tablet_transfer_seq_ = tablet_trasfer_seq;
   }
   void set_ss_private_tablet_meta_current_verison_object_opt(
       const int64_t ls_id, const uint64_t tablet_id)
@@ -181,26 +174,12 @@ public:
     ss_major_prewarm_opt_.compaction_scn_ = compaction_scn;
   }
 
-  void set_ss_checksum_error_dump_macro_opt(
-    const ObStorageObjectType object_type,
-    const uint64_t tablet_id,
-    const uint64_t cg_id,
-    const uint64_t compaction_scn,
-    const uint64_t block_seq)
-  {
-    object_type_ = object_type;
-    ss_ckm_error_dump_macro_id_opt_.tablet_id_ = tablet_id;
-    ss_ckm_error_dump_macro_id_opt_.cg_id_ = cg_id;
-    ss_ckm_error_dump_macro_id_opt_.compaction_scn_ = compaction_scn;
-    ss_ckm_error_dump_macro_id_opt_.block_seq_ = block_seq;
-  }
   int64_t to_string(char *buf, const int64_t buf_len) const;
 
 public:
   // Must match MacroBlockId::meta_version_id_ (SF_BIT_META_VERSION_ID-bit unsigned field).
   static constexpr uint64_t INVALID_TABLET_VERSION =
       (1llu << (MacroBlockId::SF_BIT_META_VERSION_ID)) - 1;
-  static const int64_t INVALID_TABLET_TRANSFER_SEQ = -1;
   static bool is_inaccurate_tablet_addr(const storage::ObMetaDiskAddr &tablet_meta_addr)
   {
     return tablet_meta_addr.is_block() && tablet_meta_addr.block_id().meta_version_id() == INVALID_TABLET_VERSION;
@@ -210,13 +189,11 @@ private:
   struct PrivateObjectOpt
   {
     uint64_t tablet_id_;
-    uint64_t tablet_trasfer_seq_;
   };
   struct SSShareObjectOpt
   {
     uint64_t tablet_id_;
     int64_t data_seq_;
-    int64_t column_group_id_;
   };
   struct SSTmpFileObjectOpt
   {
@@ -233,7 +210,7 @@ private:
     int64_t tenant_epoch_id_;
   };
   // ls level meta include:
-  // ls_meta/dup_table_meta/active_tablet_array/pending_free_tablet_array/tansfer_id_array
+  // ls_meta/dup_table_meta/active_tablet_array/pending_free_tablet_array
   struct SSLSLevelMetaObjectOpt
   {
     uint64_t ls_id_;
@@ -244,7 +221,6 @@ private:
     uint64_t ls_id_;
     uint64_t tablet_id_;
     int64_t version_;
-    int64_t tablet_transfer_seq_;
   };
   struct SSPrivateTabletCurrentVersionObjectOpt
   {
@@ -294,13 +270,6 @@ private:
     uint64_t tablet_id_;
   };
 
-  struct SSCkmErrorDumpMacroObjectOpt
-  {
-    uint64_t tablet_id_;
-    uint64_t cg_id_;
-    uint64_t compaction_scn_;
-    uint64_t block_seq_;
-  };
 public:
   ObStorageObjectType object_type_;
   union
@@ -322,7 +291,6 @@ public:
     SSTabletCompactionStatusObjectOpt ss_tablet_compaction_status_opt_;
     SSMajorPrewarmObjectOpt ss_major_prewarm_opt_;
     SSSharedTabletIdOpt ss_shared_tablet_id_opt_;
-    SSCkmErrorDumpMacroObjectOpt ss_ckm_error_dump_macro_id_opt_;
   };
 
 };

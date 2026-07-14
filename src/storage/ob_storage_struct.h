@@ -34,7 +34,6 @@
 #include "storage/ob_tablet_ha_status.h"
 #include "storage/blocksstable/ob_major_checksum_info.h"
 #include "storage/meta_mem/ob_tablet_handle.h"
-#include "storage/column_store/ob_column_store_replica_ddl_helper.h"
 
 namespace oceanbase
 {
@@ -91,11 +90,11 @@ public:
   TYPE type_;
 };
 
-class ObErrsimTransferBackfillPoint final
+class ObErrsimBackfillPoint final
 {
 public:
-  ObErrsimTransferBackfillPoint();
-  virtual ~ObErrsimTransferBackfillPoint();
+  ObErrsimBackfillPoint();
+  virtual ~ObErrsimBackfillPoint();
   bool is_valid() const;
   void reset();
   int set_point_type(const ObErrsimBackfillPointType &point_type);
@@ -189,8 +188,7 @@ struct ObTabletReportStatus
     : merge_snapshot_version_(0),
       cur_report_version_(0),
       data_checksum_(0),
-      row_count_(0),
-      found_cg_checksum_error_(false)
+      row_count_(0)
   {
   }
   ~ObTabletReportStatus() { };
@@ -201,14 +199,12 @@ struct ObTabletReportStatus
     data_checksum_ = 0;
     row_count_ = 0;
   }
-  bool need_report() const { return merge_snapshot_version_ > cur_report_version_ && INVALID_VAL != cur_report_version_; }
-  TO_STRING_KV(K_(merge_snapshot_version), K_(cur_report_version), K_(data_checksum), K_(row_count), K_(found_cg_checksum_error));
-  static constexpr int64_t INVALID_VAL = INT64_MIN;
+  bool need_report() const { return merge_snapshot_version_ > cur_report_version_; }
+  TO_STRING_KV(K_(merge_snapshot_version), K_(cur_report_version), K_(data_checksum), K_(row_count));
   int64_t merge_snapshot_version_;
   int64_t cur_report_version_;
   int64_t data_checksum_;
   int64_t row_count_;
-  bool found_cg_checksum_error_;
   OB_UNIS_VERSION(1);
 };
 
@@ -318,7 +314,6 @@ struct ObGetMergeTablesResult
   //for backfill
   bool is_backfill_;
   share::SCN backfill_scn_;
-  int64_t transfer_seq_; // is_used for write_macro_block in ss, used for all compaction.
   ObGetMergeTablesResult();
   bool is_valid() const;
   void reset_handle_and_range();
@@ -328,7 +323,7 @@ struct ObGetMergeTablesResult
   int copy_basic_info(const ObGetMergeTablesResult &src);
   share::SCN get_merge_scn() const;
   TO_STRING_KV(K_(version_range), K_(scn_range), K_(merge_version), K_(is_simplified),
-      K_(handle), K_(update_tablet_directly), K_(schedule_major), K_(is_backfill), K_(backfill_scn), K_(transfer_seq));
+      K_(handle), K_(update_tablet_directly), K_(schedule_major), K_(is_backfill), K_(backfill_scn));
 };
 
 OB_INLINE bool is_valid_migrate_status(const ObMigrateStatus &status)
@@ -345,7 +340,7 @@ public:
                K_(ddl_start_scn), K_(ddl_commit_scn), K_(ddl_checkpoint_scn),
                K_(ddl_snapshot_version), K_(ddl_execution_id),
                K_(data_format_version), KP_(ddl_redo_callback),
-               KP_(ddl_finish_callback), K_(ddl_replay_status), K_(slice_sstables));
+               KP_(ddl_finish_callback), K(slice_sstables_.count()));
 
 public:
   bool keep_old_ddl_sstable_;
@@ -358,8 +353,6 @@ public:
   int64_t data_format_version_;
   blocksstable::ObIMacroBlockFlushCallback *ddl_redo_callback_;
   blocksstable::ObIMacroBlockFlushCallback *ddl_finish_callback_;
-  // used to decide storage type for replaying ddl clog in cs replica, see ObTabletMeta::ddl_replay_status_ for more detail
-  ObCSReplicaDDLReplayStatus ddl_replay_status_;
   ObArray<const blocksstable::ObSSTable *> slice_sstables_;
 };
 
@@ -508,16 +501,15 @@ struct ObBatchUpdateTableStoreParam final
   bool is_valid() const;
   void reset();
 
-  TO_STRING_KV(K_(tables_handle), K_(rebuild_seq), K_(is_transfer_replace),
+  TO_STRING_KV(K_(tables_handle), K_(rebuild_seq),
       K_(start_scn), KP_(tablet_meta), K_(restore_status), K_(tablet_split_param),
       K_(tablet_fork_param), K_(need_replace_remote_sstable), K_(release_mds_scn));
 
   ObTablesHandleArray tables_handle_;
 #ifdef ERRSIM
-  ObErrsimTransferBackfillPoint errsim_point_info_;
+  ObErrsimBackfillPoint errsim_point_info_;
 #endif
   int64_t rebuild_seq_;
-  bool is_transfer_replace_;
   share::SCN start_scn_;
   const ObMigrationTabletParam *tablet_meta_;
   ObTabletRestoreStatus::STATUS restore_status_;

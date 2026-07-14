@@ -111,7 +111,7 @@ void ObTabletHandle::reset()
           if (allow_copy_and_assign_) {
             tmp_ret = OB_ERR_UNEXPECTED;
             LOG_ERROR("allow_copy_and_assign_ of external_tablet must be false", K(tmp_ret), KPC(this), KPC(obj_), K(lbt()));
-          } else if (OB_TMP_FAIL(t3m_->dec_external_tablet_cnt(obj_->get_tablet_id().id(), obj_->get_transfer_seq()))) {
+          } else if (OB_TMP_FAIL(t3m_->dec_external_tablet_cnt(obj_->get_tablet_id().id()))) {
             LOG_ERROR("fail to dec external tablet_cnt", K(tmp_ret), KP(obj_), KPC(obj_));
           }
         }
@@ -226,24 +226,6 @@ int ObTabletTableIterator::assign(const ObTabletTableIterator& other)
     }
 
     if (OB_FAIL(ret)) {
-    } else {
-      if (OB_UNLIKELY(nullptr != other.transfer_src_handle_)) {
-        if (nullptr == transfer_src_handle_) {
-          void *tablet_hdl_buf = ob_malloc(sizeof(ObTabletHandle), ObMemAttr("TransferMetaH"));
-          if (OB_ISNULL(tablet_hdl_buf)) {
-            ret = OB_ALLOCATE_MEMORY_FAILED;
-            LOG_WARN("fail to allocator memory for handle", K(ret));
-          } else {
-            transfer_src_handle_ = new (tablet_hdl_buf) ObTabletHandle();
-          }
-        }
-        if (OB_SUCC(ret)) {
-          *transfer_src_handle_ = *(other.transfer_src_handle_);
-        }
-      }
-    }
-
-    if (OB_FAIL(ret)) {
     } else if (OB_FAIL(split_extra_tablet_handles_.assign(other.split_extra_tablet_handles_))) {
       LOG_WARN("failed to assign", K(ret));
     } else if (nullptr == other.fork_ctx_) {
@@ -277,24 +259,6 @@ int ObTabletTableIterator::set_tablet_handle(const ObTabletHandle &tablet_handle
     LOG_WARN("tablet table iterator already has a valid tablet handle", K(ret));
   } else {
     tablet_handle_ = tablet_handle;
-  }
-  return ret;
-}
-
-int ObTabletTableIterator::set_transfer_src_tablet_handle(const ObTabletHandle &tablet_handle)
-{
-  int ret = OB_SUCCESS;
-  if (nullptr == transfer_src_handle_) {
-    void *tablet_hdl_buf = ob_malloc(sizeof(ObTabletHandle), ObMemAttr("TransferTblH"));
-    if (OB_ISNULL(tablet_hdl_buf)) {
-      ret = OB_ALLOCATE_MEMORY_FAILED;
-      LOG_WARN("fail to allocator memory for handles", K(ret));
-    } else {
-      transfer_src_handle_ = new (tablet_hdl_buf) ObTabletHandle();
-    }
-  }
-  if (OB_SUCC(ret)) {
-    *transfer_src_handle_ = tablet_handle;
   }
   return ret;
 }

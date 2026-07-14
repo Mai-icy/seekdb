@@ -341,7 +341,7 @@ public:
   const char* get_state_string(const int64_t state) const;
 
   void disable_upper_trans_calculation();
-  void enable_upper_trans_calculation(const share::SCN latest_transfer_scn);
+  void enable_upper_trans_calculation(const share::SCN latest_reserved_scn);
 
   int get_tx_data_sstable_recycle_scn(share::SCN &recycle_scn);
 

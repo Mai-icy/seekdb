@@ -151,12 +151,6 @@ int ObMvccValueIterator::lock_for_read_inner_(const ObQueryFlag &flag,
   } else if ((is_committed || is_aborted || (read_elr && !is_delayed_cleanout))
       // Opt2: data is not decided while we donot need cleanout
       || (!is_delayed_cleanout
-          // read the memtable not during transfer-in
-          && (!ctx_->get_tx_table_guards().src_tx_table_guard_.is_valid() ||
-              // read the transfer dest's memtable
-              (memtable_ls_id_.is_valid() &&
-               ctx_->get_tx_table_guards().src_tx_table_guard_.get_tx_table()->
-               get_ls_id() != memtable_ls_id_))
           && (// Opt2.1: snapshot reads the data written by snapshot
             data_tx_id == snapshot_tx_id ||
             // Opt2.2: read reader's latest is matched
@@ -265,12 +259,6 @@ int ObMvccValueIterator::lock_for_read_inner_(const ObQueryFlag &flag,
           TRANS_LOG(WARN, "waiting for the iter to be cleanout", K(ret),
                     KPC(iter), K(lock_for_read_arg), KPC(value_), KPC(ctx_));
         }
-
-        // Tip2: In the transfer scenario, the tx_table and data at the src and
-        // dest are independent. Therefore, it is possible to use the src's data
-        // with the dest's tx_table. In the case, when reading from the standby,
-        // the tx_data may have already been updated while the data cannot be
-        // cleanout. Thus, it is necessary to detect and avoid such situations.
 
         usleep(10); // 10us
       }

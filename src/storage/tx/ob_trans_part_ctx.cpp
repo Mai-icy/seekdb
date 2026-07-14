@@ -1375,9 +1375,6 @@ int ObPartTransCtx::recover_tx_ctx_table_info(ObTxCtxTableInfo &ctx_info)
     if (exec_info_.prepare_version_.is_valid()) {
       mt_ctx_.set_trans_version(exec_info_.prepare_version_);
     }
-    if (exec_info_.is_transfer_blocking_) {
-      sub_state_.set_transfer_blocking();
-    }
     exec_info_.multi_data_source_.reset();
     exec_info_.mds_buffer_ctx_array_.reset();
     if (OB_FAIL(ret)) {
@@ -1448,9 +1445,6 @@ int ObPartTransCtx::recover_tx_ctx_table_info(ObTxCtxTableInfo &ctx_info)
       }
       create_ctx_scn_ = exec_info_.max_applying_log_ts_;
 
-      if(!exec_info_.transfer_parts_.empty()) {
-        ctx_source_ = PartCtxSource::TRANSFER_RECOVER;
-      }
     }
     TRANS_LOG(INFO, "[TRANS RECOVERY] recover tx ctx table info succeed", K(ret), KPC(this), K(ctx_info));
   }
@@ -1494,8 +1488,7 @@ int ObPartTransCtx::serialize_tx_ctx_to_buffer(ObTxLocalBuffer &buffer, int64_t 
       TRANS_LOG(INFO, "tx ctx is an incomplete replay ctx", K(ret), KPC(this));
     }
     // ctx created by replay redo of parallel replay, skip
-  } else if (replay_completeness_.is_unknown()
-             && !exec_info_.is_empty_ctx_created_by_transfer_) {
+  } else if (replay_completeness_.is_unknown()) {
     if (OB_FAIL(refresh_rec_log_ts_())) {
       TRANS_LOG(WARN, "refresh rec log ts failed", K(ret), KPC(this));
     } else {
@@ -4365,10 +4358,6 @@ int ObPartTransCtx::get_prev_log_lsn_(const ObTxLogBlock &log_block,
     lsn = exec_info_.max_durable_lsn_;
   }
 
-  if (OB_SUCC(ret) && !lsn.is_valid() && is_transfer_ctx(ctx_source_) /*is_transfer*/) {
-    prev_log_type.set_tranfer_in();
-  }
-
   if (!prev_log_type.is_valid() || (prev_log_type.is_normal_log() && !lsn.is_valid())) {
     ret = OB_ERR_UNEXPECTED;
     TRANS_LOG(WARN, "unexpected prev lsn", K(ret), K(log_block), K(prev_log_type), K(lsn),
@@ -5093,8 +5082,7 @@ int ObPartTransCtx::assign_commit_parts(const share::ObLSArray &log_participants
     // replay old version log, we need mock the commit parts
     for (int64_t i = 0; OB_SUCC(ret) && i < log_participants.count(); i++) {
       if (OB_FAIL(exec_info_.commit_parts_.push_back(ObTxExecPart(log_participants[i],
-                                                                  -1, /*exec_epoch*/
-                                                                  -1  /*transfer_epoch*/)))) {
+                                                                  -1 /*exec_epoch*/)))) {
         TRANS_LOG(WARN, "set commit parts error", K(ret), K(*this));
       }
     }
@@ -5294,7 +5282,6 @@ int ObPartTransCtx::replay_commit(const ObTxCommitLog &commit_log,
   const SCN commit_version = commit_log.get_commit_version();
   bool need_replay = true;
 
-  // TODO replace participants_ with prepare_log_info_arr_ for transfer
   if (OB_FAIL(check_replay_avaliable_(offset, timestamp, part_log_no, need_replay))) {
     TRANS_LOG(WARN, "check replay available failed", KR(ret), K(offset), K(timestamp), K(*this));
   } else if (OB_FAIL(check_trans_type_for_replay_(commit_log.get_trans_type(), timestamp))) {
@@ -5784,35 +5771,31 @@ int ObPartTransCtx::switch_to_leader(const SCN &start_working_ts)
     TRANS_LOG(WARN, "switch role state error", KR(ret), K(*this));
   } else {
     const bool contain_mds_table_lock = is_contain_mds_type_(ObTxDataSourceType::TABLE_LOCK);
-    const bool contain_mds_transfer_out = false;
     const bool contain_mds_tablet_split = is_contain_mds_type_(ObTxDataSourceType::TABLET_SPLIT);
-    const bool contain_mds_tablet_transfer_in = false;
     const bool need_kill_tx = contain_mds_table_lock
-                           || contain_mds_transfer_out
-                           || contain_mds_tablet_split
-                           || contain_mds_tablet_transfer_in;
+                           || contain_mds_tablet_split;
     bool kill_by_append_mode_initial_scn = false;
     if (append_mode_initial_scn.is_valid()) {
       kill_by_append_mode_initial_scn = exec_info_.max_applying_log_ts_ <= append_mode_initial_scn;
     }
 
     if (ObTxState::INIT == exec_info_.state_) {
-      if (exec_info_.data_complete_ && !contain_mds_table_lock && !contain_mds_transfer_out
-          && !contain_mds_tablet_split && !kill_by_append_mode_initial_scn && !contain_mds_tablet_transfer_in) {
+      if (exec_info_.data_complete_ && !contain_mds_table_lock
+          && !contain_mds_tablet_split && !kill_by_append_mode_initial_scn) {
         if (OB_FAIL(mt_ctx_.replay_to_commit(false /*is_resume*/))) {
           TRANS_LOG(WARN, "replay to commit failed", KR(ret), K(*this));
         }
       } else {
         TRANS_LOG(WARN, "txn data incomplete, will be aborted", K(contain_mds_table_lock),
-                  K(contain_mds_transfer_out), K(contain_mds_tablet_split), K(contain_mds_tablet_transfer_in),
+                  K(contain_mds_tablet_split),
                   K(kill_by_append_mode_initial_scn), K(append_mode_initial_scn), KPC(this));
         if (has_persisted_log_()) {
           if (ObPartTransAction::COMMIT == part_trans_action_
               || get_upstream_state() >= ObTxState::REDO_COMPLETE) {
 
             TRANS_LOG(WARN, "abort self instantly with a tx_commit request",
-                      K(contain_mds_table_lock), K(contain_mds_transfer_out), K(contain_mds_tablet_split),
-                      K(contain_mds_tablet_transfer_in), K(need_kill_tx), K(kill_by_append_mode_initial_scn),
+                      K(contain_mds_table_lock), K(contain_mds_tablet_split),
+                      K(need_kill_tx), K(kill_by_append_mode_initial_scn),
                       K(append_mode_initial_scn), KPC(this));
             if (OB_FAIL(do_local_tx_end_(TxEndAction::ABORT_TX))) {
               //Temporary fix:
@@ -5848,7 +5831,7 @@ int ObPartTransCtx::switch_to_leader(const SCN &start_working_ts)
     // The txn with is_exiting_ = true only need to maintain the state
     if (OB_SUCC(ret) && !is_exiting_) {
       // The request_id_ should be initialized to prevent the 2pc cannot be
-      // driven if all participants transferring the leader
+      // driven if all participants are switching leader
       generate_request_id_();
       if (ObTxState::INIT == exec_info_.state_ && exec_info_.data_complete_) {
         const int64_t left_time = trans_expired_time_ - ObClockGenerator::getRealClock();
@@ -5868,7 +5851,6 @@ int ObPartTransCtx::switch_to_leader(const SCN &start_working_ts)
       }
     }
     if (OB_SUCC(ret)) {
-      exec_info_.is_empty_ctx_created_by_transfer_ = false;
       exec_info_.data_complete_ = false;
       start_working_log_ts_ = start_working_ts;
     } else {
@@ -7490,10 +7472,7 @@ int ObPartTransCtx::check_pending_log_overflow(const int64_t stmt_timeout)
 int ObPartTransCtx::rollback_to_savepoint(const int64_t op_sn,
                                           ObTxSEQ from_scn,
                                           const ObTxSEQ to_scn,
-                                          const int64_t seq_base,
-                                          const int64_t input_transfer_epoch,
-                                          int64_t &output_transfer_epoch,
-                                          ObIArray<ObTxLSEpochPair> &downstream_parts)
+                                          const int64_t seq_base)
 {
   int ret = OB_SUCCESS;
   bool need_write_log = false;
@@ -7525,36 +7504,6 @@ int ObPartTransCtx::rollback_to_savepoint(const int64_t op_sn,
     TRANS_LOG(WARN, "rollback_to_savepoint fail", K(ret), K(from_scn), K(to_scn), K(op_sn), KPC(this));
   } else if (to_scn.get_branch() == 0) {
     last_scn_ = to_scn;
-  }
-
-  if (OB_SUCC(ret)) {
-    bool need_downstream = true;
-    output_transfer_epoch = 0;
-
-    if (input_transfer_epoch != output_transfer_epoch) {
-      need_downstream = true;
-      if (-1 != input_transfer_epoch) {
-        TRANS_LOG(INFO, "transfer between rollback to happened", K(ret),
-                  K(input_transfer_epoch), K(output_transfer_epoch), KPC(this));
-      }
-    } else {
-      need_downstream = false;
-      TRANS_LOG(INFO, "no transfer between rollback to happened", K(ret),
-                K(input_transfer_epoch), K(output_transfer_epoch), KPC(this));
-    }
-
-    // must add downstream parts when return success
-    for (int64_t idx = 0;
-         OB_SUCC(ret) &&
-           need_downstream &&
-           idx < exec_info_.intermediate_participants_.count();
-         idx++) {
-      if (OB_FAIL(downstream_parts.push_back(
-                    ObTxLSEpochPair(exec_info_.intermediate_participants_.at(idx).ls_id_,
-                                    exec_info_.intermediate_participants_.at(idx).transfer_epoch_)))) {
-        TRANS_LOG(WARN, "push parts to array failed", K(ret), KPC(this));
-      }
-    }
   }
 
   REC_TRANS_TRACE_EXT(tlog_, rollback_savepoint,
@@ -8118,10 +8067,7 @@ int ObPartTransCtx::handle_ask_tx_state_for_4377(bool &is_alive)
     TRANS_LOG(WARN, "ObPartTransCtx not inited");
   } else {
     if (exec_info_.state_ == ObTxState::ABORT) {
-      // Lost data read during transfer sources from reading aborted txn.
-      // Because of the strong log synchronization semantic of transfer, we can
-      // relay on the transfer src txn is already in a state of death with abort
-      // log synchronized.
+      // Treat aborted txn as not alive to avoid reporting a stale 4377 conflict.
       is_alive = false;
     } else {
       is_alive = true;
@@ -8132,9 +8078,6 @@ int ObPartTransCtx::handle_ask_tx_state_for_4377(bool &is_alive)
   return ret;
 }
 
-// For the transfer, the src txn may transfer into the dst txn that has already
-// aborted, and the txn may already release the lock which causes two alive txn
-// on the same row
 int ObPartTransCtx::check_is_aborted_in_tx_data_(const ObTransID tx_id,
                                                  bool &is_aborted)
 {
@@ -8518,11 +8461,10 @@ void ObPartTransCtx::build_tx_common_msg_(const ObLSID &receiver,
                        ls_id_,
                        cluster_id_,
                        msg);
-  // fill exec_epoch && transfer_epoch
+  // fill exec_epoch
   for (int64_t idx = 0; idx < exec_info_.commit_parts_.count(); idx++) {
     if (exec_info_.commit_parts_.at(idx).ls_id_ == receiver) {
       msg.epoch_ = exec_info_.commit_parts_.at(idx).exec_epoch_;
-      msg.transfer_epoch_ = exec_info_.commit_parts_.at(idx).transfer_epoch_;
     }
   }
 }

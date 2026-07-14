@@ -174,19 +174,13 @@ public:
       const share::SCN &mds_checkpoint_scn,
       const storage::ObTabletMdsUserDataType &create_type,
       const bool micro_index_clustered,
-      const bool has_cs_replica,
       const ObTabletID &split_src_tablet_id,
       const uint64_t data_format_version,
       ObTabletHandle &tablet_handle,
       const share::ObForkTabletInfo &fork_info = share::ObForkTabletInfo());
-  int create_transfer_in_tablet(
-      const share::ObLSID &ls_id,
-      const ObMigrationTabletParam &tablet_meta,
-      ObTabletHandle &tablet_handle);
   int rollback_remove_tablet(
       const share::ObLSID &ls_id,
-      const common::ObTabletID &tablet_id,
-      const share::SCN &transfer_start_scn);
+      const common::ObTabletID &tablet_id);
 
   int get_tablet(
       const common::ObTabletID &tablet_id,
@@ -228,9 +222,7 @@ public:
   int update_tablet_table_store( // only for small sstables defragmentation
       const ObTabletHandle &old_tablet_handle,
       const ObIArray<storage::ObITable *> &tables);
-  int update_tablet_report_status(
-      const common::ObTabletID &tablet_id,
-      const bool found_column_group_checksum_error = false);
+  int update_tablet_report_status(const common::ObTabletID &tablet_id);
   int update_tablet_snapshot_version(
       const common::ObTabletID &tablet_id,
       const int64_t snapshot_version);
@@ -249,7 +241,6 @@ public:
   int update_tablet_restore_status(
       const common::ObTabletID &tablet_id,
       const ObTabletRestoreStatus::STATUS &restore_status,
-      const bool need_reset_transfer_flag,
       const bool need_to_set_split_data_complete);
   int update_tablet_ha_data_status(
       const common::ObTabletID &tablet_id,
@@ -417,26 +408,14 @@ public:
       int64_t &macro_block_count,
       int64_t &micro_block_count,
       int64_t &sstable_row_count,
-      int64_t &memtable_row_count,
-      common::ObIArray<int64_t> &cg_macro_cnt_arr,
-      common::ObIArray<int64_t> &cg_micro_cnt_arr);
+      int64_t &memtable_row_count);
   int estimate_block_count_and_row_count(
       const common::ObTabletID &tablet_id,
       const int64_t timeout_us,
       int64_t &macro_block_count,
       int64_t &micro_block_count,
       int64_t &sstable_row_count,
-      int64_t &memtable_row_count,
-      common::ObIArray<int64_t> &cg_macro_cnt_arr,
-      common::ObIArray<int64_t> &cg_micro_cnt_arr);
-  int estimate_skip_index_sortedness(
-      const uint64_t& table_id,
-      const common::ObTabletID &tablet_id,
-      const int64_t timeout_us,
-      const common::ObIArray<uint64_t> &column_ids,
-      const common::ObIArray<uint64_t> &sample_count,
-      common::ObIArray<double> &sortedness,
-      common::ObIArray<uint64_t> &res_sample_counts);
+      int64_t &memtable_row_count);
   int scan_block_stat(
       const ObTabletHandle &tablet_handle,
       ObBlockStatScanParam &scan_param,
@@ -462,8 +441,7 @@ public:
       const ObMigrationTabletParam &mig_tablet_param,
       const bool keep_old);
   int create_or_update_migration_tablet(
-      const ObMigrationTabletParam &mig_tablet_param,
-      const bool is_transfer);
+      const ObMigrationTabletParam &mig_tablet_param);
   int build_tablet_with_batch_tables(
       const ObTabletID &tablet_id,
       const ObBatchUpdateTableStoreParam &param);
@@ -473,7 +451,7 @@ public:
 
   int flush_mds_table(int64_t recycle_scn);
 
-  // for transfer check tablet write stop
+  // check tablet write stop
   int check_tablet_no_active_memtable(const ObIArray<ObTabletID> &tablet_list, bool &has);
 
 protected:
@@ -604,12 +582,6 @@ private:
       const int64_t snapshot_version,
       const ObCreateTabletSchema &create_tablet_schema,
       ObTabletHandle &tablet_handle);
-  int inner_estimate_block_count_and_row_count(
-      ObTabletTableIterator &tablet_iter,
-      int64_t &macro_block_count,
-      int64_t &micro_block_count,
-      int64_t &sstable_row_count,
-      int64_t &memtable_row_count);
   int estimate_block_count_and_row_count_for_split_extra(
       const ObTabletID &tablet_id,
       const int64_t split_cnt,
@@ -618,9 +590,7 @@ private:
       int64_t &macro_block_count,
       int64_t &micro_block_count,
       int64_t &sstable_row_count,
-      int64_t &memtable_row_count,
-      common::ObIArray<int64_t> &cg_macro_cnt_arr,
-      common::ObIArray<int64_t> &cg_micro_cnt_arr);
+      int64_t &memtable_row_count);
 
   int refresh_tablet_addr(
       const share::ObLSID &ls_id,
@@ -647,7 +617,7 @@ private:
       ObTabletHandle &handle);
   int delete_all_tablets();
   int offline_build_tablet_without_memtable_();
-  int offline_gc_tablet_for_create_or_transfer_in_abort_();
+  int offline_gc_tablet_for_aborted_create_();
   int offline_destroy_memtable_and_mds_table_();
 
   int inner_get_read_tables(
@@ -676,9 +646,9 @@ private:
       const int64_t ls_epoch,
       ObTabletHandle &tablet_handle);
   static int check_real_leader_for_4377_(const ObLSID ls_id);
-  static int check_need_rollback_in_transfer_for_4377_(const transaction::ObTxDesc *tx_desc,
-                                                       ObTabletHandle &tablet_handle);
-  static int check_parts_tx_state_in_transfer_for_4377_(transaction::ObTxDesc *tx_desc);
+  static int check_need_rollback_for_4377_(const transaction::ObTxDesc *tx_desc,
+                                           ObTabletHandle &tablet_handle);
+  static int check_parts_tx_state_for_4377_(transaction::ObTxDesc *tx_desc);
   static int check_old_row_legitimacy(
       const blocksstable::ObStoreCmpFuncs &cmp_funcs,
       ObTabletHandle &data_tablet_handle,
@@ -919,7 +889,6 @@ private:
   int check_rollback_tablet_is_same_(
       const share::ObLSID &ls_id,
       const common::ObTabletID &tablet_id,
-      const share::SCN &transfer_start_scn,
       bool &is_same);
 
   // for lob tablet dml

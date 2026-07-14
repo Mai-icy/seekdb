@@ -71,22 +71,22 @@ int ObErrsimBackfillPointType::hash(uint64_t &hash_val) const
 
 OB_SERIALIZE_MEMBER(ObErrsimBackfillPointType, type_);
 
-ObErrsimTransferBackfillPoint::ObErrsimTransferBackfillPoint()
+ObErrsimBackfillPoint::ObErrsimBackfillPoint()
   : point_type_(ObErrsimBackfillPointType::ERRSIM_MODULE_MAX),
     point_start_time_(0)
 {
 }
 
-ObErrsimTransferBackfillPoint::~ObErrsimTransferBackfillPoint()
+ObErrsimBackfillPoint::~ObErrsimBackfillPoint()
 {
 }
 
-bool ObErrsimTransferBackfillPoint::is_valid() const
+bool ObErrsimBackfillPoint::is_valid() const
 {
   return point_type_.is_valid() && point_start_time_ > 0;
 }
 
-int ObErrsimTransferBackfillPoint::set_point_type(const ObErrsimBackfillPointType &point_type)
+int ObErrsimBackfillPoint::set_point_type(const ObErrsimBackfillPointType &point_type)
 {
   int ret = OB_SUCCESS;
   if (!point_type.is_valid()) {
@@ -101,7 +101,7 @@ int ObErrsimTransferBackfillPoint::set_point_type(const ObErrsimBackfillPointTyp
 
   return ret;
 }
-int ObErrsimTransferBackfillPoint::set_point_start_time(int64_t start_time)
+int ObErrsimBackfillPoint::set_point_start_time(int64_t start_time)
 {
   int ret = OB_SUCCESS;
   if (start_time < 0) {
@@ -117,13 +117,13 @@ int ObErrsimTransferBackfillPoint::set_point_start_time(int64_t start_time)
   return ret;
 }
 
-void ObErrsimTransferBackfillPoint::reset()
+void ObErrsimBackfillPoint::reset()
 {
   point_type_.type_ = ObErrsimBackfillPointType::ERRSIM_MODULE_MAX;
   point_start_time_ = 0;
 }
 
-bool ObErrsimTransferBackfillPoint::is_errsim_point(const ObErrsimBackfillPointType &point_type) const
+bool ObErrsimBackfillPoint::is_errsim_point(const ObErrsimBackfillPointType &point_type) const
 {
   bool is_point = false;
   if (!is_valid()) {
@@ -211,8 +211,7 @@ ObGetMergeTablesResult::ObGetMergeTablesResult()
     error_location_(nullptr),
     snapshot_info_(),
     is_backfill_(false),
-    backfill_scn_(),
-    transfer_seq_(ObStorageObjectOpt::INVALID_TABLET_TRANSFER_SEQ)
+    backfill_scn_()
 {
 }
 
@@ -250,7 +249,6 @@ void ObGetMergeTablesResult::reset()
   snapshot_info_.reset();
   is_backfill_ = false;
   backfill_scn_.reset();
-  transfer_seq_ = ObStorageObjectOpt::INVALID_TABLET_TRANSFER_SEQ;
 }
 
 int ObGetMergeTablesResult::copy_basic_info(const ObGetMergeTablesResult &src)
@@ -269,7 +267,6 @@ int ObGetMergeTablesResult::copy_basic_info(const ObGetMergeTablesResult &src)
     is_backfill_ = src.is_backfill_;
     backfill_scn_ = src.backfill_scn_;
     snapshot_info_ = src.snapshot_info_;
-    transfer_seq_ = src.transfer_seq_;
   }
   return ret;
 }
@@ -303,8 +300,7 @@ ObDDLTableStoreParam::ObDDLTableStoreParam()
     ddl_execution_id_(-1),
     data_format_version_(0),
     ddl_redo_callback_(nullptr),
-    ddl_finish_callback_(nullptr),
-    ddl_replay_status_(CS_REPLICA_REPLAY_NONE)
+    ddl_finish_callback_(nullptr)
 {
 
 }
@@ -511,7 +507,6 @@ ObBatchUpdateTableStoreParam::ObBatchUpdateTableStoreParam()
     errsim_point_info_(),
 #endif
     rebuild_seq_(OB_INVALID_VERSION),
-    is_transfer_replace_(false),
     start_scn_(SCN::min_scn()),
     tablet_meta_(nullptr),
     restore_status_(ObTabletRestoreStatus::FULL),
@@ -526,7 +521,6 @@ void ObBatchUpdateTableStoreParam::reset()
 {
   tables_handle_.reset();
   rebuild_seq_ = OB_INVALID_VERSION;
-  is_transfer_replace_ = false;
   start_scn_.set_min();
   tablet_meta_ = nullptr;
   restore_status_ = ObTabletRestoreStatus::FULL;
@@ -679,5 +673,3 @@ ObRebuildListener::~ObRebuildListener()
 
 
 /***********************ObBackupRestoreTableSchemaChecker***************************/
-
-

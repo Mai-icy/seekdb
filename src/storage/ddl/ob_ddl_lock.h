@@ -223,7 +223,7 @@ private:
 class ObOnlineDDLLock {
 public:
   /*
-   * acquire online ddl lock for transfer and release after trans end
+   * acquire online ddl lock and release after trans end
    *
    * @return
    * - OB_SUCCESS:                  successful
@@ -232,7 +232,7 @@ public:
    */
 
   /*
-   * acquire online ddl lock for transfer
+   * acquire online ddl lock
    *
    * @return
    * - OB_SUCCESS:  successful
@@ -240,7 +240,7 @@ public:
    */
 
   /*
-   * release online ddl lock for transfer
+   * release online ddl lock
    *
    * @return
    * - OB_SUCCESS:                  all locks are unlocked here

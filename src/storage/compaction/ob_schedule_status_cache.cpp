@@ -152,7 +152,7 @@ const char * ObTabletStatusCache::tablet_execute_state_to_str(const ObTabletStat
 
 const static char * ObTabletScheduleNewRoundStateStr[] = {
     "CAN_SCHEDULE_NEW_ROUND",
-    "DURING_TRANSFER",
+    "RESERVED_STATE",
     "DURING_SPLIT",
     "NEED_CHECK_LAST_MEDIUM_CKM",
     "EXIST_UNFINISH_MEDIUM",
@@ -297,11 +297,11 @@ void ObTabletStatusCache::inner_init_could_schedule_new_round(
   new_round_state_ = NEW_ROUND_STATE_MAX;
   if (OB_FAIL(tablet.ObITabletMdsInterface::get_latest_tablet_status(user_data, writer, trans_stat, trans_version))) {
     LOG_WARN("failed to get tablet status", K(ret), K(tablet), K(user_data));
-  } else if (ObTabletStatus::TRANSFER_OUT == user_data.tablet_status_
-    || ObTabletStatus::TRANSFER_OUT_DELETED == user_data.tablet_status_) {
-    new_round_state_ = DURING_TRANSFER;
+  } else if (ObTabletStatus::RESERVED_4 == user_data.tablet_status_
+    || ObTabletStatus::RESERVED_6 == user_data.tablet_status_) {
+    new_round_state_ = RESERVED_STATE;
     if (REACH_THREAD_TIME_INTERVAL(PRINT_LOG_INVERVAL)) {
-      LOG_INFO("tablet status is TRANSFER_OUT or TRANSFER_OUT_DELETED, merging is not allowed", K(user_data), K(tablet));
+      LOG_INFO("tablet status is reserved, merging is not allowed", K(user_data), K(tablet));
     }
   } else if (ObTabletStatus::SPLIT_SRC == user_data.tablet_status_
     || ObTabletStatus::SPLIT_SRC_DELETED == user_data.tablet_status_) {
@@ -390,13 +390,7 @@ int ObTabletStatusCache::update_tablet_report_status(
     const ObTablet &tablet)
 {
   int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(tablet.get_tablet_meta().report_status_.found_cg_checksum_error_)) {
-    //TODO(@DanLing) solve this situation, but how to deal with the COSSTable that without the all column group?
-    ret = OB_CHECKSUM_ERROR;
-    if (REACH_THREAD_TIME_INTERVAL(PRINT_LOG_INVERVAL)) {
-      LOG_ERROR("tablet found cg checksum error, skip to schedule merge", K(ret), K(tablet));
-    }
-  } else if (tablet_merge_finish_) {
+  if (tablet_merge_finish_) {
     int tmp_ret = OB_SUCCESS;
     const ObLSID &ls_id = ls.get_ls_id();
     const ObTabletID &tablet_id = tablet.get_tablet_id();

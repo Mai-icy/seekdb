@@ -60,7 +60,7 @@ public:
     backup_bytes_ = 0;
   }
   bool is_valid() const { return valid_; }
-  TO_STRING_KV(K_(valid), K_(is_empty_shell), K_(has_transfer_table),
+  TO_STRING_KV(K_(valid), K_(is_empty_shell),
       K_(has_next_tablet), K_(has_nested_table), K_(ha_status), 
       K_(all_sstable_data_occupy_size), K_(all_sstable_data_required_size), K_(tablet_meta_size),
       K_(ss_public_sstable_occupy_size), K_(backup_bytes)
@@ -71,7 +71,6 @@ public:
     struct {
         bool valid_ : 1; // valid_ = true means attr is filled
         bool is_empty_shell_ : 1;
-        bool has_transfer_table_ : 1;
         bool has_next_tablet_ : 1;
         bool has_nested_table_: 1;
     };
@@ -210,7 +209,6 @@ public:
     {}
   ~ObTabletResidentInfo() { reset(); };
   bool is_valid() const { return attr_.valid_ && tablet_id_.is_valid() && tablet_addr_.is_valid(); }
-  bool has_transfer_table() const { return attr_.has_transfer_table_; }
   bool is_empty_shell() const { return attr_.is_empty_shell_; }
   bool has_next_tablet() const { return attr_.has_next_tablet_; }
   bool has_nested_table() const { return attr_.has_nested_table_; }
@@ -277,4 +275,3 @@ struct ScanAllVersionTabletsOp
 } // namespace oceanbase
 
 #endif // OCEANBASE_STORAGE_OB_TABLET_POINTER
-

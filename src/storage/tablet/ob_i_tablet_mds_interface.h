@@ -155,14 +155,14 @@ public:
                "tablet_id", get_tablet_id_(), KP(get_tablet_pointer_()));
   int get_mds_table_rec_scn(share::SCN &rec_scn);
   int mds_table_flush(const share::SCN &recycle_scn);
-  // get tablet status from MDS, and check whether state is TRANSFER_IN and redo scn is valid.
-  // @param [in] written : if current tablet status is TRANSFER_IN, set true if redo_scn is valid, otherwise set fasle
-  // @return OB_STATE_NOT_MATCH : tablet status is not TRANSFER_IN.
+  // get tablet status from MDS, and check whether reserved state redo scn is valid.
+  // @param [in] written : if current tablet status is reserved, set true if redo_scn is valid, otherwise set fasle
+  // @return OB_STATE_NOT_MATCH : tablet status is not reserved.
   //         OB_EMPTY_RESULT : never has tablet status written.
   //         OB_LS_OFFLINE : read meet ls offline
   //         other error...
-  // CAUTIONS: this interface is only for transfer! anyone else shouldn't call this!
-  int check_transfer_in_redo_written(bool &written);
+  // CAUTIONS: this interface is only for reserved compatibility status.
+  int check_reserved_status_redo_written(bool &written);
   template <typename T>
   int get_latest_committed_data(T &value, ObIAllocator *alloc = nullptr);
 protected:// implemented by ObTablet
@@ -216,8 +216,6 @@ protected:// implemented by ObTablet
   int replay(T &&mds,
              mds::MdsCtx &ctx,
              const share::SCN &scn);
-  int get_src_tablet_handle_and_base_ptr_(ObTabletHandle &tablet_handle,
-                                          ObITabletMdsInterface *&base_ptr) const;
   template <typename T, typename OP>
   int cross_ls_get_latest(const ObITabletMdsInterface *another,
                           OP &&read_op,

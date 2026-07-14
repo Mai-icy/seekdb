@@ -20,7 +20,6 @@
 #include "share/location_cache/ob_location_struct.h"
 #include "share/config/ob_server_config.h" // GCONF
 #include "share/ob_server_struct.h"
-#include "share/transfer/ob_transfer_info.h"
 #include "lib/stat/ob_diagnostic_info_guard.h"
 #include "lib/statistic_event/ob_stat_event.h"
 
@@ -575,8 +574,7 @@ int ObTabletLocation::deep_copy(
 ObTabletLSCache::ObTabletLSCache()
     : cache_key_(),
       ls_id_(),
-      renew_time_(0),
-      transfer_seq_(OB_INVALID_TRANSFER_SEQ)
+      renew_time_(0)
 {
 }
 
@@ -586,7 +584,6 @@ void ObTabletLSCache::reset()
   cache_key_.reset();
   ls_id_.reset();
   renew_time_ = 0;
-  transfer_seq_ = OB_INVALID_TRANSFER_SEQ;
 }
 
 int ObTabletLSCache::assign(const ObTabletLSCache &other)
@@ -596,7 +593,6 @@ int ObTabletLSCache::assign(const ObTabletLSCache &other)
     cache_key_ = other.cache_key_;
     ls_id_ = other.ls_id_;
     renew_time_ = other.renew_time_;
-    transfer_seq_ = other.transfer_seq_;
   }
   return ret;
 }
@@ -605,24 +601,21 @@ bool ObTabletLSCache::is_valid() const
 {
   return cache_key_.is_valid()
       && ls_id_.is_valid()
-      && renew_time_ > 0
-      && transfer_seq_ > OB_INVALID_TRANSFER_SEQ;
+      && renew_time_ > 0;
 }
 
 bool ObTabletLSCache::operator==(const ObTabletLSCache &other) const
 {
   return cache_key_ == other.cache_key_
          && ls_id_ == other.ls_id_
-         && renew_time_ == other.renew_time_
-         && transfer_seq_ == other.transfer_seq_;
+         && renew_time_ == other.renew_time_;
 }
 
 
 int ObTabletLSCache::init(
     const ObTabletID &tablet_id,
     const ObLSID &ls_id,
-    const int64_t renew_time,
-    const int64_t transfer_seq)
+    const int64_t renew_time)
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(cache_key_.init(tablet_id))) {
@@ -630,7 +623,6 @@ int ObTabletLSCache::init(
   } else {
     ls_id_ = ls_id;
     renew_time_ = renew_time;
-    transfer_seq_ = transfer_seq;
     ObLink::reset();
   }
   return ret;

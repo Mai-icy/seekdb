@@ -84,8 +84,8 @@ int check_exist(const ObLockTaskBatchRequest<T> &arg,
     }
   } else if (FALSE_IT(tablet_status = data.get_tablet_status())) {
   } else if (ObTabletStatus::NORMAL == tablet_status
-             || ObTabletStatus::TRANSFER_OUT == tablet_status
-             || ObTabletStatus::TRANSFER_IN == tablet_status
+             || ObTabletStatus::RESERVED_4 == tablet_status
+             || ObTabletStatus::RESERVED_5 == tablet_status
              || ObTabletStatus::SPLIT_SRC == tablet_status
              || ObTabletStatus::SPLIT_DST == tablet_status) {
     // do nothing

@@ -31,7 +31,6 @@
 #include "storage/ls/ob_ls_meta_package.h"
 #include "tablet/ob_tablet_meta.h"
 #include "share/ls/ob_ls_restore_status.h"
-#include "share/transfer/ob_transfer_info.h"
 #include "storage/lob/ob_lob_rpc_struct.h"
 #include "storage/blocksstable/ob_logic_macro_id.h"
 #include "storage/meta_mem/ob_tablet_pointer.h"
@@ -287,16 +286,15 @@ public:
 
 struct ObFetchLSMetaInfoResp
 {
-  OB_UNIS_VERSION(2);
+  OB_UNIS_VERSION(3);
 public:
   ObFetchLSMetaInfoResp();
   virtual ~ObFetchLSMetaInfoResp() {}
   bool is_valid() const;
 
-  TO_STRING_KV(K_(ls_meta_package), K_(has_transfer_table), K_(version));
+  TO_STRING_KV(K_(ls_meta_package), K_(version));
   storage::ObLSMetaPackage ls_meta_package_;
   uint64_t version_;
-  bool has_transfer_table_;
 };
 
 struct ObFetchLSMemberListArg
@@ -490,45 +488,6 @@ public:
   storage::ObLSMetaPackage ls_meta_package_;
 };
 
-//transfer
-struct ObCheckSrcTransferTabletsArg final
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObCheckSrcTransferTabletsArg();
-  ~ObCheckSrcTransferTabletsArg() {}
-
-  TO_STRING_KV(K_(src_ls_id), K_(tablet_info_array));
-  share::ObLSID src_ls_id_;
-  common::ObSArray<share::ObTransferTabletInfo> tablet_info_array_;
-private:
-  DISALLOW_COPY_AND_ASSIGN(ObCheckSrcTransferTabletsArg);
-};
-
-struct ObGetLSActiveTransCountArg final
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObGetLSActiveTransCountArg();
-  ~ObGetLSActiveTransCountArg() {}
-
-  TO_STRING_KV(K_(src_ls_id));
-  share::ObLSID src_ls_id_;
-};
-
-struct ObGetLSActiveTransCountRes final
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObGetLSActiveTransCountRes();
-  ~ObGetLSActiveTransCountRes() {}
-  bool is_valid() const;
-  void reset();
-
-  TO_STRING_KV(K_(active_trans_count));
-  int64_t active_trans_count_;
-};
-
 // Fetch ls meta and all tablet metas by stream reader.
 struct ObCopyLSViewArg final
 {
@@ -610,16 +569,6 @@ private:
 };
 
 // ObStorageStreamRpcReader (obcall stream-RPC reader template) deleted — dead in seekdb.
-
-class ObHasTransferTableFilterOp final : public ObITabletFilterOp
-{
-public:
-  int do_filter(const ObTabletResidentInfo &info, bool &is_skipped) override
-  {
-    is_skipped = !info.has_transfer_table();
-    return OB_SUCCESS;
-  }
-};
 
 } // storage
 } // oceanbase

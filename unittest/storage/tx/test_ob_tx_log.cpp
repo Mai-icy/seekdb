@@ -64,7 +64,7 @@ ObTxSEQ TEST_MAX_SUBMITTED_SEQ_NO = ObTxSEQ(12345, 0);
 ObTxSEQ TEST_SERIAL_FINAL_SEQ_NO = ObTxSEQ(12346, 0);
 LSKey TEST_LS_KEY;
 ObXATransID TEST_XID;
-ObTxPrevLogType TEST_PREV_LOG_TYPE(ObTxPrevLogType::TypeEnum::TRANSFER_IN);
+ObTxPrevLogType TEST_PREV_LOG_TYPE(ObTxPrevLogType::TypeEnum::PREPARE);
 tablelock::ObTableLockPrioOpArray TEST_PRIO_OP_ARRAY;
 
 
@@ -173,7 +173,7 @@ TEST_F(TestObTxLog, tx_log_body_except_redo)
   ObLSArray TEST_LS_ARRAY;
   TEST_LS_ARRAY.push_back(LSKey());
   ObTxCommitParts TEST_COMMIT_PARTS;
-  TEST_COMMIT_PARTS.push_back(ObTxExecPart(TEST_LS_KEY, 0, 0));
+  TEST_COMMIT_PARTS.push_back(ObTxExecPart(TEST_LS_KEY, 0));
   ObRedoLSNArray TEST_LOG_OFFSET_ARRY;
   TEST_LOG_OFFSET_ARRY.push_back(TEST_LOG_OFFSET);
   ObLSLogInfoArray TEST_INFO_ARRAY;
@@ -323,7 +323,7 @@ TEST_F(TestObTxLog, tx_log_body_redo)
   ObLSArray TEST_LS_ARRAY;
   TEST_LS_ARRAY.push_back(LSKey());
   ObTxCommitParts TEST_COMMIT_PARTS;
-  TEST_COMMIT_PARTS.push_back(ObTxExecPart(TEST_LS_KEY, 0, 0));
+  TEST_COMMIT_PARTS.push_back(ObTxExecPart(TEST_LS_KEY, 0));
   ObRedoLSNArray TEST_LOG_OFFSET_ARRY;
   TEST_LOG_OFFSET_ARRY.push_back(TEST_LOG_OFFSET);
   ObLSLogInfoArray TEST_INFO_ARRAY;
@@ -445,7 +445,7 @@ TEST_F(TestObTxLog, test_compat_bytes)
   ObLSArray TEST_LS_ARRAY;
   TEST_LS_ARRAY.push_back(LSKey());
   ObTxCommitParts TEST_COMMIT_PARTS;
-  TEST_COMMIT_PARTS.push_back(ObTxExecPart(TEST_LS_KEY, 0, 0));
+  TEST_COMMIT_PARTS.push_back(ObTxExecPart(TEST_LS_KEY, 0));
   ObRedoLSNArray TEST_LOG_OFFSET_ARRY;
   TEST_LOG_OFFSET_ARRY.push_back(TEST_LOG_OFFSET);
   ObLSLogInfoArray TEST_INFO_ARRAY;
@@ -735,7 +735,7 @@ void test_big_commit_info_log(int64_t log_size)
   ObLSArray TEST_LS_ARRAY;
   TEST_LS_ARRAY.push_back(LSKey());
   ObTxCommitParts TEST_COMMIT_PARTS;
-  TEST_COMMIT_PARTS.push_back(ObTxExecPart(TEST_LS_KEY, 0, 0));
+  TEST_COMMIT_PARTS.push_back(ObTxExecPart(TEST_LS_KEY, 0));
   ObRedoLSNArray TEST_BIG_REDO_LSN_ARRAY;
   for (int i = 0; i < log_size / sizeof(palf::LSN); i++) {
     TEST_BIG_REDO_LSN_ARRAY.push_back(palf::LSN(i));
