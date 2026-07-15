@@ -156,7 +156,8 @@ struct PalfOptions
   PalfOptions() : disk_options_(),
                   compress_options_(),
                   rebuild_replica_log_lag_threshold_(0),
-                  enable_log_cache_(false)
+                  enable_log_cache_(false),
+                  enable_fetch_log_engine_(true)
   {}
   ~PalfOptions() { reset(); }
   void reset();
@@ -164,12 +165,14 @@ struct PalfOptions
   TO_STRING_KV(K(disk_options_),
                K(compress_options_),
                K(rebuild_replica_log_lag_threshold_),
-               K(enable_log_cache_));
+               K(enable_log_cache_),
+               K(enable_fetch_log_engine_));
 public:
   PalfDiskOptions disk_options_;
   PalfTransportCompressOptions compress_options_;
   int64_t rebuild_replica_log_lag_threshold_;
   bool enable_log_cache_;
+  bool enable_fetch_log_engine_;
 };
 
 struct PalfThrottleOptions

@@ -127,9 +127,10 @@ void ObSrvNetworkFrame::destroy()
   }
 }
 
-int ObSrvNetworkFrame::start(bool disable_tcp)
+int ObSrvNetworkFrame::start()
 {
   int ret = OB_SUCCESS;
+  const bool disable_tcp = gctx_.is_embedded_mode();
   obmysql::global_sql_nio_server =
       OB_NEW(obmysql::ObSqlNioServer, "SqlNio",
               obmysql::global_sm_conn_callback);
@@ -440,4 +441,3 @@ int ObSrvNetworkFrame::net_endpoint_set_ingress(const ObNetEndpointKey &endpoint
   LOG_WARN("net endpoint set ingress is not supported");
   return ret;
 }
-
