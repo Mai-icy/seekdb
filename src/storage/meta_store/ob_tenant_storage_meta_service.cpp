@@ -19,6 +19,7 @@
 #include "share/rc/ob_module_provider.h"
 #include "storage/meta_store/ob_storage_meta_io_util.h"
 #include "storage/meta_store/ob_server_storage_meta_service.h"
+#include "storage/ob_file_system_router.h"
 #include "storage/tablet/ob_tablet_macro_info_iterator.h"
 #include "observer/omt/ob_tenant.h"
 #include "storage/ls/ob_ls.h"
@@ -59,7 +60,10 @@ int ObTenantStorageMetaService::init()
     ret = OB_INIT_TWICE;
     LOG_WARN("has inited", K(ret));
   } else if (!is_shared_storage &&
-      OB_FAIL(slogger_.init(SERVER_STORAGE_META_SERVICE.get_slogger_manager()))) {
+      OB_FAIL(slogger_.init(
+        OB_FILE_SYSTEM_ROUTER.get_slog_dir(),
+        ObLogConstants::MAX_LOG_FILE_SIZE,
+        OB_FILE_SYSTEM_ROUTER.get_slog_file_spec()))) {
     LOG_WARN("failed to init slogger", K(ret));
   } else if (OB_FAIL(ckpt_slog_handler_.init(slogger_))) {
     LOG_WARN("fail to init tenant checkpoint slog hander", K(ret));

@@ -189,7 +189,8 @@ int TestOpEngine::prepare_io(const std::string & test_data_name_suffix)
     LOG_WARN("add device channel failed", K(ret));
   } else if (OB_FAIL(SERVER_STORAGE_META_SERVICE.init())) {
     LOG_WARN("fail to init storage meta service", K(ret));
-  } else if (FALSE_IT(SERVER_STORAGE_META_SERVICE.get_slogger_manager().need_reserved_ = false)) {
+  } else if (OB_FAIL(SERVER_STORAGE_META_SERVICE.set_need_reserved_for_test(false))) {
+    LOG_WARN("fail to set need reserved for test", K(ret));
   } else if (OB_FAIL(OB_STORAGE_OBJECT_MGR.init(storage_env_.default_block_size_))) {
     LOG_WARN("init block manager fail", K(ret));
   } else if (OB_FAIL(ObIOManager::get_instance().start())) {

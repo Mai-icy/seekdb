@@ -58,7 +58,6 @@
 #include "storage/meta_mem/ob_tenant_meta_mem_mgr.h"
 #include "storage/compaction/ob_tenant_tablet_scheduler.h"
 #include "storage/compaction/ob_tenant_medium_checker.h"
-#include "storage/slog/ob_storage_logger_manager.h"
 #include "storage/slog/ob_storage_logger.h"
 #include "storage/compaction/ob_sstable_merge_info_mgr.h"
 #include "storage/compaction/ob_tenant_freeze_info_mgr.h"
