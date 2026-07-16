@@ -181,6 +181,9 @@ ob_set_subtarget(ob_sql das
   das/ob_das_update_op.cpp
   das/ob_data_access_service.cpp
   das/ob_das_utils.cpp
+  das/ob_das_id_service.cpp
+  das/ob_das_id_rpc.cpp
+  das/ob_das_id_cache.cpp
   das/ob_das_ir_define.cpp
   das/ob_das_vec_define.cpp
   das/ob_das_task_result.cpp
@@ -1149,8 +1152,12 @@ ob_set_subtarget(ob_sql executor
 
 ob_set_subtarget(ob_sql monitor
   monitor/ob_exec_stat_collector.cpp
+  monitor/ob_monitor_info_elimination_task.cpp
+  monitor/ob_monitor_info_manager.cpp
+  monitor/ob_phy_operator_monitor_info.cpp
   monitor/ob_phy_operator_stats.cpp
-  monitor/ob_monitor_node.cpp
+  monitor/ob_phy_plan_monitor_info.cpp
+  monitor/ob_sql_plan_monitor_node_list.cpp
   monitor/show_trace/ob_show_trace.cpp
   monitor/ob_sql_plan.cpp
   monitor/ob_plan_info_manager.cpp
@@ -1167,6 +1174,7 @@ ob_set_subtarget(ob_sql optimizer
   optimizer/ob_help_log_plan.cpp
   optimizer/ob_index_info_cache.cpp
   optimizer/ob_insert_log_plan.cpp
+  optimizer/ob_intersect_route_policy.cpp
   optimizer/ob_join_order.cpp
   optimizer/ob_log_del_upd.cpp
   optimizer/ob_log_delete.cpp
@@ -1216,6 +1224,8 @@ ob_set_subtarget(ob_sql optimizer
   optimizer/ob_raw_expr_add_to_context.cpp
   optimizer/ob_raw_expr_check_dep.cpp
   optimizer/ob_raw_expr_get_hash_value.cpp
+  optimizer/ob_replica_compare.cpp
+  optimizer/ob_route_policy.cpp
   optimizer/ob_sel_estimator.cpp
   optimizer/ob_select_log_plan.cpp
   optimizer/ob_sharding_info.cpp
@@ -1552,6 +1562,13 @@ ob_set_subtarget(ob_sql session
 
 ob_add_new_object_target(ob_sql ob_sql)
 ob_add_new_object_target(ob_sql_extra ob_sql_extra)
+
+if (DETECT_RECURSION)
+ target_compile_options(ob_sql
+   PRIVATE -finstrument-functions
+ )
+endif()
+
 
 ob_set_subtarget(ob_sql_simd common
   engine/basic/ob_pushdown_filter_simd.cpp
