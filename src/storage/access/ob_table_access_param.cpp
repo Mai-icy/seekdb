@@ -139,10 +139,10 @@ int ObTableIterParam::refresh_lob_column_out_status()
   return ret;
 }
 
-bool ObTableIterParam::enable_fuse_row_cache(const ObQueryFlag &query_flag, const StorageScanType scan_type) const
+bool ObTableIterParam::enable_fuse_row_cache(const ObQueryFlag &query_flag) const
 {
   bool bret = query_flag.is_use_fuse_row_cache() && !query_flag.is_read_latest() &&
-              nullptr != rowkey_read_info_ && (!need_scn_ || is_mview_table_scan(scan_type)) &&
+              nullptr != rowkey_read_info_ && !need_scn_ &&
               is_same_schema_column_ && !has_virtual_columns_ && !has_lob_column_out_;
   return bret;
 }
@@ -335,8 +335,7 @@ int ObTableAccessParam::init(
     iter_param_.limit_prefetch_ = (nullptr == op_filters_ || op_filters_->empty());
     iter_param_.is_mds_query_ = scan_param.is_mds_query_;
 
-    if (scan_param.need_switch_param_ ||
-        scan_param.is_mview_query()) {
+    if (scan_param.need_switch_param_) {
       iter_param_.set_use_stmt_iter_pool();
     }
 

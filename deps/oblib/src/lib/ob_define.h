@@ -714,28 +714,10 @@ const uint64_t OB_ACTION_FLAG_COLUMN_ID = OB_ALL_MAX_COLUMN_ID
 // internal compaction trans seq
 const int64_t DELETE_INSERT_TRANS_SEQUENCE  = ((__INT64_C(1LL << 62)) + 1);
 
-// materialized view log
-const uint64_t OB_MLOG_SEQ_NO_COLUMN_ID = OB_ALL_MAX_COLUMN_ID
-                                          - OB_END_RESERVED_COLUMN_ID_NUM + 2; /* 65521 */
-const uint64_t OB_MLOG_DML_TYPE_COLUMN_ID = OB_ALL_MAX_COLUMN_ID
-                                          - OB_END_RESERVED_COLUMN_ID_NUM + 3; /* 65522 */
-const uint64_t OB_MLOG_OLD_NEW_COLUMN_ID = OB_ALL_MAX_COLUMN_ID
-                                           - OB_END_RESERVED_COLUMN_ID_NUM + 4; /* 65523 */
-const uint64_t OB_MLOG_ROWID_COLUMN_ID = OB_ALL_MAX_COLUMN_ID
-                                         - OB_END_RESERVED_COLUMN_ID_NUM + 5; /* 65524 */
-const uint64_t OB_MIN_MLOG_SPECIAL_COLUMN_ID = OB_MLOG_SEQ_NO_COLUMN_ID;
-const uint64_t OB_MAX_MLOG_SPECIAL_COLUMN_ID = OB_MLOG_ROWID_COLUMN_ID;
-
-const char *const OB_MLOG_SEQ_NO_COLUMN_NAME = "SEQUENCE$$";
-const char *const OB_MLOG_DML_TYPE_COLUMN_NAME = "DMLTYPE$$";
-const char *const OB_MLOG_OLD_NEW_COLUMN_NAME = "OLD_NEW$$";
-const char *const OB_MLOG_ROWID_COLUMN_NAME = "M_ROW$$";
-
 const uint64_t OB_MAX_TMP_COLUMN_ID = OB_ALL_MAX_COLUMN_ID
                                       - OB_END_RESERVED_COLUMN_ID_NUM;
 // pseudo column id used in special table scan
 const uint64_t OB_COUNT_AGG_PD_COLUMN_ID = INT32_MAX - 1;
-const uint64_t OB_MAJOR_REFRESH_MVIEW_OLD_NEW_COLUMN_ID = INT32_MAX - 2;
 
 const int64_t OB_MAX_AUTOINC_SEQ_VALUE = (1LL << 40) - 1; // max value for 40bit
 
@@ -753,10 +735,6 @@ const char *const OB_HIDDEN_LINE_NUMBER_COLUMN_NAME = "__line_number"; // used f
 
 // internal index prefix
 const char *const OB_INDEX_PREFIX = "__idx_";
-// internal materialized view log prefix
-const char *const OB_MLOG_PREFIX_MYSQL = "mlog$_";
-const char *const OB_TMP_MLOG_PREFIX_MYSQL = "tmlog$_";
-
 // internal user
 const char *const OB_INTERNAL_USER = "__ob_server";
 
@@ -978,7 +956,6 @@ const int64_t MAX_ENABLED_ROLES = 148;
 //             table id range definition                  //
 ////////////////////////////////////////////////////////////
 const uint64_t OB_MIN_GENERATED_COLUMN_ID = 2000;
-const uint64_t OB_MIN_MV_COLUMN_ID = 10000;
 const uint64_t OB_MIN_SHADOW_COLUMN_ID = 32767;
 const uint64_t OB_MAX_SYS_POOL_ID = 100;
 
@@ -1639,21 +1616,9 @@ OB_INLINE uint64_t combine_two_ids(uint64_t high_id, uint64_t low_id)
 
 const char *const OB_RANDOM_PRIMARY_ZONE = "RANDOM";
 
-OB_INLINE bool is_mlog_reference_column(const uint64_t column_id)
-{
-  return (common::OB_MLOG_ROWID_COLUMN_ID == column_id);
-}
-
-OB_INLINE bool is_mlog_special_column(const uint64_t column_id)
-{
-  return (column_id >= common::OB_MIN_MLOG_SPECIAL_COLUMN_ID
-          && column_id <= common::OB_MAX_MLOG_SPECIAL_COLUMN_ID);
-}
-
 OB_INLINE bool is_shadow_column(const uint64_t column_id)
 {
-  return (column_id > common::OB_MIN_SHADOW_COLUMN_ID)
-          && !is_mlog_special_column(column_id);
+  return column_id > common::OB_MIN_SHADOW_COLUMN_ID;
 }
 
 OB_INLINE bool is_bootstrap_resource_pool(const uint64_t resource_pool_id)

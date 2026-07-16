@@ -3099,9 +3099,7 @@ int ObLSTabletService::update_rows(
       const bool delay_new = false;
       const ObColDescIArray &col_descs = *(run_ctx.col_descs_);
 
-      // for major mv base table need update full column
-      if (dml_param.table_param_->get_data_table().get_mv_mode().table_referenced_by_fast_lsm_mv_flag_ ||
-          run_ctx.is_delete_insert_table_) {
+      if (run_ctx.is_delete_insert_table_) {
         ctx.update_full_column_ =  true;
       }
 

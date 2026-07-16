@@ -367,7 +367,6 @@ int ObLSService::inner_create_ls_(const share::ObLSID &lsid,
                                   const ObMigrationStatus &migration_status,
                                   const ObRestoreStatus &restore_status,
                                   const SCN &create_scn,
-                                  const ObMajorMVMergeInfo &major_mv_merge_info,
                                   ObLS *&ls)
 {
   int ret = OB_SUCCESS;
@@ -383,8 +382,7 @@ int ObLSService::inner_create_ls_(const share::ObLSID &lsid,
   } else if (OB_FAIL(ls->init(lsid,
                               migration_status,
                               restore_status,
-                              create_scn,
-                              major_mv_merge_info))) {
+                              create_scn))) {
     LOG_WARN("fail to init ls", K(ret), K(lsid));
   }
   if (OB_FAIL(ret) && NULL != ls) {
@@ -838,7 +836,6 @@ int ObLSService::replay_create_ls_(const int64_t ls_epoch, const ObLSMeta &ls_me
                                       migration_status,
                                       restore_status,
                                       ls_meta.get_clog_checkpoint_scn(),
-                                      ls_meta.get_major_mv_merge_info(),
                                       ls))) {
     LOG_WARN("fail to inner create ls", K(ret), K(ls_meta.ls_id_));
   } else if (FALSE_IT(state = ObLSCreateState::CREATE_STATE_INNER_CREATED)) {
@@ -1001,7 +998,6 @@ int ObLSService::create_ls_(const ObCreateLSCommonArg &arg)
   palf_base_info.generate_by_default();
   palf_base_info.prev_log_info_.scn_ = arg.create_scn_;
 
-  const storage::ObMajorMVMergeInfo major_mv_merge_info;
   common::ObMemberList member_list;
   common::GlobalLearnerList learner_list;
   const ObMigrationStatus migration_status(ObMigrationStatus::OB_MIGRATION_STATUS_NONE);
@@ -1038,7 +1034,6 @@ int ObLSService::create_ls_(const ObCreateLSCommonArg &arg)
                                               migration_status,
                                               arg.restore_status_,
                                               arg.create_scn_,
-                                              major_mv_merge_info/*not init is ok*/,
                                               ls))) {
       LOG_WARN("create ls failed", K(ret));
     } else {

@@ -544,11 +544,9 @@ all_table_def = dict(
       ('lob_inrow_threshold', 'int', 'false', 'OB_DEFAULT_LOB_INROW_THRESHOLD'),
       ('auto_increment_cache_size', 'int', 'false', '0'),
       ('external_properties', 'varbinary:OB_MAX_VARCHAR_LENGTH', 'true'),
-      ('local_session_vars', 'longtext', 'true'),
       ('duplicate_read_consistency', 'int', 'false', '0'),
       ('index_params', 'varchar:OB_MAX_INDEX_PARAMS_LENGTH', 'false', ''),
       ('micro_index_clustered', 'bool', 'false', 'false'),
-      ('mv_mode', 'int', 'false', '0'),
       ('parser_properties', 'longtext', 'false', ''),
       ('enable_macro_block_bloom_filter', 'bool', 'false', 'false'),
       ('storage_cache_policy', 'varchar:OB_MAX_VARCHAR_LENGTH', 'false', r'{\"GLOBAL\":\"AUTO\"}'),
@@ -3010,196 +3008,6 @@ def_table_schema(
 # 462: __all_tenant_snapshot_ls_replica (abandoned)
 
 def_table_schema(
-  owner = 'suzhi.yt',
-  table_name = '__all_mlog',
-  table_id = '463',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('mlog_id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('purge_mode', 'int'),
-    ('purge_start', 'timestamp', 'true'),
-    ('purge_next', 'varchar:OB_MAX_FUNC_EXPR_LENGTH', 'true'),
-    ('purge_job', 'varchar:OB_MAX_SCHEDULER_JOB_NAME_LENGTH', 'true'),
-    ('last_purge_scn', 'uint', 'true'),
-    ('last_purge_date', 'timestamp', 'true'),
-    ('last_purge_time', 'int', 'true'),
-    ('last_purge_rows', 'int', 'true'),
-    ('last_purge_trace_id', 'varchar:OB_MAX_TRACE_ID_BUFFER_SIZE', 'true'),
-    ('schema_version', 'int')
-  ]
-)
-
-def_table_schema(
-  owner = 'suzhi.yt',
-  table_name = '__all_mview',
-  table_id = '464',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('mview_id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('build_mode', 'int'),
-    ('refresh_mode', 'int'),
-    ('refresh_method', 'int'),
-    ('refresh_start', 'timestamp', 'true'),
-    ('refresh_next', 'varchar:OB_MAX_FUNC_EXPR_LENGTH', 'true'),
-    ('refresh_job', 'varchar:OB_MAX_SCHEDULER_JOB_NAME_LENGTH', 'true'),
-    ('last_refresh_scn', 'uint', 'true'),
-    ('last_refresh_type', 'int', 'true'),
-    ('last_refresh_date', 'timestamp', 'true'),
-    ('last_refresh_time', 'int', 'true'),
-    ('last_refresh_trace_id', 'varchar:OB_MAX_TRACE_ID_BUFFER_SIZE', 'true'),
-    ('schema_version', 'int'),
-    ('refresh_dop', 'int', 'false', '0'),
-    ('data_sync_scn', 'uint', 'false', '0'),
-    ('is_synced', 'bool', 'false', '0'),
-    ('nested_refresh_mode', 'int', 'false', '0')
-  ]
-)
-
-def_table_schema(
-  owner = 'suzhi.yt',
-  table_name = '__all_mview_refresh_stats_sys_defaults',
-  table_id = '465',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('collection_level', 'int'),
-    ('retention_period', 'int')
-  ]
-)
-
-def_table_schema(
-  owner = 'suzhi.yt',
-  table_name = '__all_mview_refresh_stats_params',
-  table_id = '466',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('mview_id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('collection_level', 'int'),
-    ('retention_period', 'int')
-  ]
-)
-
-def_table_schema(
-  owner = 'suzhi.yt',
-  table_name = '__all_mview_refresh_run_stats',
-  table_id = '467',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('refresh_id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('run_user_id', 'int'),
-    ('num_mvs_total', 'int'),
-    ('num_mvs_current', 'int'),
-    ('mviews', 'varchar:4000'),
-    ('base_tables', 'varchar:4000', 'true'),
-    ('method', 'varchar:4000', 'true'),
-    ('rollback_seg', 'varchar:4000', 'true'),
-    ('push_deferred_rpc', 'bool'),
-    ('refresh_after_errors', 'bool'),
-    ('purge_option', 'int'),
-    ('parallelism', 'int'),
-    ('heap_size', 'int'),
-    ('atomic_refresh', 'bool'),
-    ('nested', 'bool'),
-    ('out_of_place', 'bool'),
-    ('number_of_failures', 'int'),
-    ('start_time', 'timestamp'),
-    ('end_time', 'timestamp'),
-    ('elapsed_time', 'int'),
-    ('log_purge_time', 'int'),
-    ('complete_stats_avaliable', 'bool'),
-    ('trace_id', 'varchar:OB_MAX_TRACE_ID_BUFFER_SIZE', 'true')
-  ]
-)
-
-def_table_schema(
-  owner = 'suzhi.yt',
-  table_name = '__all_mview_refresh_stats',
-  table_id = '468',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('refresh_id', 'int'),
-    ('mview_id', 'int'),
-    ('retry_id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('refresh_type', 'int'),
-    ('start_time', 'timestamp'),
-    ('end_time', 'timestamp'),
-    ('elapsed_time', 'int'),
-    ('log_purge_time', 'int'),
-    ('initial_num_rows', 'int'),
-    ('final_num_rows', 'int'),
-    ('num_steps', 'int'),
-    ('result', 'int')
-  ]
-)
-
-def_table_schema(
-  owner = 'suzhi.yt',
-  table_name = '__all_mview_refresh_change_stats',
-  table_id = '469',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('refresh_id', 'int'),
-    ('mview_id', 'int'),
-    ('retry_id', 'int'),
-    ('detail_table_id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('num_rows_ins', 'int', 'true'),
-    ('num_rows_upd', 'int', 'true'),
-    ('num_rows_del', 'int', 'true'),
-    ('num_rows', 'int', 'true')
-  ]
-)
-
-def_table_schema(
-  owner = 'suzhi.yt',
-  table_name = '__all_mview_refresh_stmt_stats',
-  table_id = '470',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('refresh_id', 'int'),
-    ('mview_id', 'int'),
-    ('retry_id', 'int'),
-    ('step', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('sqlid', 'varchar:OB_MAX_SQL_ID_LENGTH', 'true'),
-    ('stmt', 'longtext'),
-    ('execution_time', 'int'),
-    ('execution_plan', 'longtext', 'true'),
-    ('result', 'int')
-  ]
-)
-
-def_table_schema(
     owner = 'yangyifei.yyf',
     table_name = '__all_dbms_lock_allocated',
     table_id = '471',
@@ -3451,25 +3259,6 @@ def_table_schema(**gen_history_table_def(506, all_column_privilege_def))
 # 511 : __all_tablet_checksum_error_info (abandoned)
 # 516 : __all_service (abandoned)
 # 517: __all_storage_io_usage (abandoned)
-
-def_table_schema(
-  owner = 'yuya.yu',
-  table_name = '__all_mview_dep',
-  table_id = '518',
-  table_type = 'SYSTEM_TABLE',
-    gm_columns = ['gmt_create', 'gmt_modified'],
-    rowkey_columns = [
-    ('mview_id', 'int'),
-    ('p_order', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('p_obj', 'int'),
-    ('p_type', 'int'),
-    ('qbcid', 'int'),
-    ('flags', 'int')
-  ]
-)
 
 def_table_schema(
   owner = 'fyy280124',
@@ -7073,10 +6862,7 @@ def_table_schema(
   ('tablet_change_checkpoint_scn', 'uint'),
   ('reserved_scn', 'uint'),
   ('tx_blocked', 'int'),
-  ('required_data_disk_size', 'int', 'false', 0),
-  ('mv_major_merge_scn', 'uint', 'false', 0),
-  ('mv_publish_scn', 'uint', 'false', 0),
-  ('mv_safe_scn', 'uint', 'false', 0)
+  ('required_data_disk_size', 'int', 'false', 0)
   ],  vtable_route_policy = 'local'
   )
 
@@ -7872,22 +7658,6 @@ def_table_schema(
   ]
 )
 
-# 12406: __all_virtual_mlog # removed (single-tenant: iterate VT mechanism deleted)
-
-# 12407: __all_virtual_mview # removed (single-tenant: iterate VT mechanism deleted)
-
-# 12408: __all_virtual_mview_refresh_stats_sys_defaults # removed (single-tenant: iterate VT mechanism deleted)
-
-# 12409: __all_virtual_mview_refresh_stats_params # removed (single-tenant: iterate VT mechanism deleted)
-
-# 12410: __all_virtual_mview_refresh_run_stats # removed (single-tenant: iterate VT mechanism deleted)
-
-# 12411: __all_virtual_mview_refresh_stats # removed (single-tenant: iterate VT mechanism deleted)
-
-# 12412: __all_virtual_mview_refresh_change_stats # removed (single-tenant: iterate VT mechanism deleted)
-
-# 12413: __all_virtual_mview_refresh_stmt_stats # removed (single-tenant: iterate VT mechanism deleted)
-
 # 12414: __all_virtual_wr_control # removed
 # 12415: __all_virtual_event_history - migrated to SQLite, see gen_sqlite_virtual_table_def above
 
@@ -8510,26 +8280,6 @@ def_table_schema(
   )
 
 def_table_schema(
-  owner = 'zg410411',
-  table_name     = '__all_virtual_mview_running_job',
-  table_id       = '12535',
-  table_type = 'VIRTUAL_TABLE',
-  gm_columns = [],
-  rowkey_columns = [],
-  in_tenant_space = True,
-
-  normal_columns = [
-  ('table_id', 'int'),
-  ('job_type', 'uint'),
-  ('session_id', 'uint'),
-  ('read_snapshot', 'int'),
-  ('parallel', 'int'),
-  ('job_start_time', 'timestamp'),
-  ('target_data_sync_scn', 'uint')
-  ],  vtable_route_policy = 'local'
-  )
-
-def_table_schema(
   owner             = 'zhaoziqian.zzq',
   table_name        = '__all_virtual_dynamic_partition_table',
   table_id          = '12536',
@@ -9050,7 +8800,7 @@ def_table_schema(
                          when a.table_type = 4 then 'VIEW'
                          when a.table_type = 14 then 'EXTERNAL TABLE'
                          else 'BASE TABLE' end as char(64)) as TABLE_TYPE,
-                    cast(case when a.table_type in (0,3,5,6,7,11,12,13,15) then 'InnoDB'
+                    cast(case when a.table_type in (0,3,5,6,11,12,13) then 'InnoDB'
                         else 'MEMORY' end as char(64)) as ENGINE,
                     cast(NULL as unsigned) as VERSION,
                     cast(a.store_format as char(10)) as ROW_FORMAT,
@@ -9130,7 +8880,7 @@ def_table_schema(
                       WHERE e.index_type in (1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 41) and e.table_type = 5
                             group by data_table_id
                     ) idx_stat on idx_stat.data_table_id = a.table_id
-                    where a.table_type in (0, 1, 2, 3, 4, 14, 15)
+                    where a.table_type in (0, 1, 2, 3, 4, 14)
                     and b.database_name != '__recyclebin'
                     and b.in_recyclebin = 0
                     and 0 = sys_privilege_check('table_acc', 1, b.database_name, a.table_name)
@@ -11135,10 +10885,8 @@ def_table_schema(
             WHEN TABLE_TYPE IN (2) THEN 'VIRTUAL TABLE'
             WHEN TABLE_TYPE IN (1,4) THEN 'VIEW'
             WHEN TABLE_TYPE IN (5) THEN 'INDEX'
-            WHEN TABLE_TYPE IN (7) THEN 'MATERIALIZED VIEW'
-            WHEN TABLE_TYPE IN (15) THEN 'MATERIALIZED VIEW LOG'
             ELSE NULL END AS OBJECT_TYPE
-      ,CAST(CASE WHEN TABLE_TYPE IN (5,15) THEN CASE WHEN INDEX_STATUS = 2 THEN 'VALID'
+      ,CAST(CASE WHEN TABLE_TYPE IN (5) THEN CASE WHEN INDEX_STATUS = 2 THEN 'VALID'
               WHEN INDEX_STATUS = 3 THEN 'CHECKING'
               WHEN INDEX_STATUS = 4 THEN 'INELEGIBLE'
               WHEN INDEX_STATUS = 5 THEN 'ERROR'
@@ -11383,7 +11131,7 @@ def_table_schema(
   in_tenant_space = True,
   view_definition = """
   SELECT CAST(DB.DATABASE_NAME AS CHAR(128)) OWNER,
-         CAST(TB.NEW_TABLE_NAME AS CHAR(128)) TABLE_NAME,
+         CAST(TB.TABLE_NAME AS CHAR(128)) TABLE_NAME,
          CAST((CASE TB.PART_FUNC_TYPE
               WHEN 0 THEN 'HASH'
               WHEN 1 THEN 'KEY'
@@ -11459,34 +11207,7 @@ def_table_schema(
          CAST(NULL AS CHAR(1000)) DEF_INMEMORY_SERVICE_NAME,
          CAST('NO' AS CHAR(3)) AUTO
       FROM
-			((
-			    SELECT
-			        mv_table.table_name AS new_table_name,
-			        container_table.*
-			    FROM
-			        oceanbase.__all_table AS mv_table,
-			        (
-			            SELECT * FROM
-			                oceanbase.__all_table
-			            WHERE
-			                (table_mode & 1 << 24) = 1 << 24
-			        ) AS container_table
-			    WHERE
-			        mv_table.data_table_id = container_table.table_id
-							and mv_table.table_type = 7
-			)
-
-			UNION ALL
-
-			(
-			    SELECT
-			        table_name as new_table_name,
-			        *
-			    FROM
-			        oceanbase.__all_table
-			    WHERE
-			        (table_mode & 1 << 24) = 0
-			)) TB
+			oceanbase.__all_table TB
       JOIN OCEANBASE.__ALL_DATABASE DB
       ON TB.DATABASE_ID = DB.DATABASE_ID
       JOIN
@@ -11705,38 +11426,11 @@ def_table_schema(
       FROM (SELECT DB.DATABASE_NAME,
                    DB.DATABASE_ID,
                    TB.TABLE_ID,
-                   TB.NEW_TABLE_NAME AS TABLE_NAME,
+                   TB.TABLE_NAME AS TABLE_NAME,
                    TB.B_TRANSITION_POINT,
                    TB.PART_LEVEL
             FROM
-			      ((
-			          SELECT
-			              mv_table.table_name AS new_table_name,
-			              container_table.*
-			          FROM
-			              oceanbase.__all_table AS mv_table,
-			              (
-			                  SELECT * FROM
-			                      oceanbase.__all_table
-			                  WHERE
-			                      (table_mode & 1 << 24) = 1 << 24
-			              ) AS container_table
-			          WHERE
-			              mv_table.data_table_id = container_table.table_id
-			      				and mv_table.table_type = 7
-			      )
-
-			      UNION ALL
-
-			      (
-			          SELECT
-			              table_name as new_table_name,
-			              *
-			          FROM
-			              oceanbase.__all_table
-			          WHERE
-			              (table_mode & 1 << 24) = 0
-			      )) TB,
+			      oceanbase.__all_table TB,
                  OCEANBASE.__ALL_DATABASE DB
             WHERE TB.DATABASE_ID = DB.DATABASE_ID
               AND TB.TABLE_TYPE in (3, 6)
@@ -11833,36 +11527,9 @@ def_table_schema(
       (SELECT DB.DATABASE_NAME,
               DB.DATABASE_ID,
               TB.TABLE_ID,
-              TB.NEW_TABLE_NAME AS TABLE_NAME
+              TB.TABLE_NAME AS TABLE_NAME
        FROM
-			 ((
-			     SELECT
-			         mv_table.table_name AS new_table_name,
-			         container_table.*
-			     FROM
-			         oceanbase.__all_table AS mv_table,
-			         (
-			             SELECT * FROM
-			                 oceanbase.__all_table
-			             WHERE
-			                 (table_mode & 1 << 24) = 1 << 24
-			         ) AS container_table
-			     WHERE
-			         mv_table.data_table_id = container_table.table_id
-			 				and mv_table.table_type = 7
-			 )
-
-			 UNION ALL
-
-			 (
-			     SELECT
-			         table_name as new_table_name,
-			         *
-			     FROM
-			         oceanbase.__all_table
-			     WHERE
-			         (table_mode & 1 << 24) = 0
-			 )) TB,
+			 oceanbase.__all_table TB,
              OCEANBASE.__ALL_DATABASE DB
        WHERE TB.DATABASE_ID = DB.DATABASE_ID
          AND TB.TABLE_MODE >> 12 & 15 in (0,1)
@@ -12034,7 +11701,7 @@ FROM
         I.PART_FUNC_TYPE,
         I.PART_NUM,
         I.SUB_PART_FUNC_TYPE,
-        T.NEW_TABLE_NAME AS TABLE_NAME,
+        T.TABLE_NAME AS TABLE_NAME,
         T.SUB_PART_NUM,
         T.SUB_PART_TEMPLATE_FLAGS,
         T.TABLESPACE_ID,
@@ -12057,34 +11724,7 @@ FROM
          ELSE I.TABLE_ID END) AS JOIN_TABLE_ID
  FROM OCEANBASE.__ALL_TABLE I
  JOIN
-			((
-			    SELECT
-			        mv_table.table_name AS new_table_name,
-			        container_table.*
-			    FROM
-			        oceanbase.__all_table AS mv_table,
-			        (
-			            SELECT * FROM
-			                oceanbase.__all_table
-			            WHERE
-			                (table_mode & 1 << 24) = 1 << 24
-			        ) AS container_table
-			    WHERE
-			        mv_table.data_table_id = container_table.table_id
-							and mv_table.table_type = 7
-			)
-
-			UNION ALL
-
-			(
-			    SELECT
-			        table_name as new_table_name,
-			        *
-			    FROM
-			        oceanbase.__all_table
-			    WHERE
-			        (table_mode & 1 << 24) = 0
-			)) T
+			oceanbase.__all_table T
  ON I.DATA_TABLE_ID = T.TABLE_ID
  JOIN OCEANBASE.__ALL_DATABASE D
  ON T.DATABASE_ID = D.DATABASE_ID
@@ -12750,7 +12390,7 @@ def_table_schema(
               'TABLE' AS OBJECT_TYPE
           FROM
             OCEANBASE.__ALL_VIRTUAL_CORE_ALL_TABLE
-          WHERE TABLE_TYPE IN (0,2,3,6,14,15)
+          WHERE TABLE_TYPE IN (0,2,3,6,14)
         UNION ALL
         SELECT DATABASE_ID,
                TABLE_ID,
@@ -12763,7 +12403,7 @@ def_table_schema(
                'TABLE' AS OBJECT_TYPE
         FROM
             oceanbase.__all_table T
-        WHERE T.TABLE_TYPE IN (0,2,3,6,14,15)
+        WHERE T.TABLE_TYPE IN (0,2,3,6,14)
         AND T.TABLE_MODE >> 12 & 15 in (0,1)
         AND T.INDEX_ATTRIBUTES_SET & 16 = 0)
     UNION ALL
@@ -12781,7 +12421,7 @@ def_table_schema(
           JOIN
             oceanbase.__all_part P
             ON T.TABLE_ID = P.TABLE_ID
-        WHERE T.TABLE_TYPE IN (0,2,3,6,14,15)
+        WHERE T.TABLE_TYPE IN (0,2,3,6,14)
               AND T.TABLE_MODE >> 12 & 15 in (0,1)
               AND (P.PARTITION_TYPE = 0 OR P.PARTITION_TYPE IS NULL)
               AND T.INDEX_ATTRIBUTES_SET & 16 = 0
@@ -12804,7 +12444,7 @@ def_table_schema(
             oceanbase.__all_sub_part SP
             ON T.TABLE_ID = SP.TABLE_ID
             AND P.PART_ID = SP.PART_ID
-        WHERE T.TABLE_TYPE IN (0,2,3,6,14,15)
+        WHERE T.TABLE_TYPE IN (0,2,3,6,14)
               AND T.TABLE_MODE >> 12 & 15 in (0,1)
               AND (P.PARTITION_TYPE = 0 OR P.PARTITION_TYPE IS NULL)
               AND (SP.PARTITION_TYPE = 0 OR SP.PARTITION_TYPE IS NULL)
@@ -15310,7 +14950,7 @@ FROM
     FROM OCEANBASE.__ALL_SUB_PART
   ) SP ON T.TABLE_ID = SP.TABLE_ID AND P.PART_ID = SP.PART_ID
   LEFT JOIN OCEANBASE.__ALL_TABLE_STAT TS ON TS.TABLE_ID = T.TABLE_ID AND TS.PARTITION_ID = CASE T.PART_LEVEL WHEN 0 THEN T.TABLE_ID WHEN 1 THEN P.PART_ID WHEN 2 THEN SP.SUB_PART_ID END
-WHERE T.TABLE_TYPE IN (3,6,8,9,14,15)
+WHERE T.TABLE_TYPE IN (3,6,8,9,14)
       AND (P.PARTITION_TYPE = 0 OR P.PARTITION_TYPE is NULL)
       AND (SP.PARTITION_TYPE = 0 OR SP.PARTITION_TYPE is NULL)
       AND (0 = sys_privilege_check('table_acc', 1)
@@ -15840,23 +15480,6 @@ JOIN OCEANBASE.__ALL_OPTSTAT_GLOBAL_PREFS GP
 
 # 21426: DBA_DB_LINKS # abandoned in seekdb
 
-# 21427: CDB_OB_MLOGS # abandoned in 4.3
-# 21428: CDB_OB_MVIEWS # abandoned in 4.3
-# 21429: CDB_OB_MVIEW_REFRESH_STATS_SYS_DEFAULTS # abandoned in 4.3
-# 21430: CDB_OB_MVIEW_REFRESH_STATS_PARAMS # abandoned in 4.3
-# 21431: CDB_OB_MVIEW_REFRESH_RUN_STATS # abandoned in 4.3
-# 21432: CDB_OB_MVIEW_REFRESH_STATS # abandoned in 4.3
-# 21433: CDB_OB_MVIEW_REFRESH_CHANGE_STATS # abandoned in 4.3
-# 21434: CDB_OB_MVIEW_REFRESH_STMT_STATS # abandoned in 4.3
-# 21435: DBA_OB_MLOGS # abandoned in 4.3
-# 21436: DBA_OB_MVIEWS # abandoned in 4.3
-# 21437: DBA_OB_MVIEW_REFRESH_STATS_SYS_DEFAULTS # abandoned in 4.3
-# 21438: DBA_OB_MVIEW_REFRESH_STATS_PARAMS # abandoned in 4.3
-# 21439: DBA_OB_MVIEW_REFRESH_RUN_STATS # abandoned in 4.3
-# 21440: DBA_OB_MVIEW_REFRESH_STATS # abandoned in 4.3
-# 21441: DBA_OB_MVIEW_REFRESH_CHANGE_STATS # abandoned in 4.3
-# 21442: DBA_OB_MVIEW_REFRESH_STMT_STATS # abandoned in 4.3
-
 # 21443: DBA_WR_CONTROL # removed
 # 21444: CDB_WR_CONTROL
 # 21444: CDB_WR_CONTROL # removed
@@ -16273,426 +15896,6 @@ def_table_schema(
 # 21524: CDB_OB_LS_REPLICA_TASK_HISTORY (abandoned)
 
 # 21522: CDB_UNUSED_COL_TABS
-def_table_schema(
-    owner           = 'suzhi.yt',
-    table_name      = 'DBA_MVIEW_LOGS',
-    table_id        = '21526',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      CAST(A.DATABASE_NAME AS CHAR(128)) AS LOG_OWNER,
-      CAST(D.TABLE_NAME AS CHAR(128)) AS MASTER,
-      CAST(B.TABLE_NAME AS CHAR(128)) AS LOG_TABLE,
-      CAST(NULL AS CHAR(128)) AS LOG_TRIGGER,
-      CAST(IF(D.TABLE_MODE & 66048 = 66048, 'YES', 'NO') AS  CHAR(3)) AS ROWIDS,
-      CAST(IF(D.TABLE_MODE & 66048 = 0, 'YES', 'NO') AS  CHAR(3)) AS PRIMARY_KEY,
-      CAST('NO' AS CHAR(3)) AS OBJECT_ID,
-      CAST(
-        IF((
-          SELECT COUNT(*)
-            FROM oceanbase.__all_column C1,
-                 oceanbase.__all_column C2
-            WHERE
-              B.TABLE_ID = C1.TABLE_ID
-              AND C1.COLUMN_ID >= 16
-              AND C1.COLUMN_ID < 65520
-              AND D.TABLE_ID = C2.TABLE_ID
-              AND C2.ROWKEY_POSITION != 0
-              AND C1.COLUMN_ID != C2.COLUMN_ID
-          ) = 0, 'NO', 'YES') AS CHAR(3)
-      ) AS FILTER_COLUMNS,
-      CAST('YES' AS CHAR(3)) AS SEQUENCE,
-      CAST('YES' AS CHAR(3)) AS INCLUDE_NEW_VALUES,
-      CAST(IF(C.PURGE_MODE = 1, 'YES', 'NO') AS CHAR(3)) AS PURGE_ASYNCHRONOUS,
-      CAST(IF(C.PURGE_MODE = 2, 'YES', 'NO') AS CHAR(3)) AS PURGE_DEFERRED,
-      CAST(C.PURGE_START AS DATETIME) AS PURGE_START,
-      CAST(C.PURGE_NEXT AS CHAR(200)) AS PURGE_INTERVAL,
-      CAST(C.LAST_PURGE_DATE AS DATETIME) AS LAST_PURGE_DATE,
-      CAST(0 AS SIGNED) AS LAST_PURGE_STATUS,
-      C.LAST_PURGE_ROWS AS NUM_ROWS_PURGED,
-      CAST('YES' AS CHAR(3)) AS COMMIT_SCN_BASED,
-      CAST('NO' AS CHAR(3)) AS STAGING_LOG,
-      B.DOP AS PURGE_DOP,
-      C.LAST_PURGE_TIME AS LAST_PURGE_TIME
-    FROM
-      oceanbase.__all_database A,
-      oceanbase.__all_table B,
-      oceanbase.__all_mlog C,
-      oceanbase.__all_table D
-    WHERE
-      A.DATABASE_ID = B.DATABASE_ID
-      AND B.TABLE_ID = C.MLOG_ID
-      AND B.TABLE_TYPE = 15
-      AND B.DATA_TABLE_ID = D.TABLE_ID
-""".replace("\n", " ")
-)
-
-def_table_schema(
-    owner           = 'suzhi.yt',
-    table_name      = 'DBA_MVIEWS',
-    table_id        = '21528',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      CAST(A.DATABASE_NAME AS CHAR(128)) AS OWNER,
-      CAST(B.TABLE_NAME AS CHAR(128)) AS MVIEW_NAME,
-      CAST(D.TABLE_NAME AS CHAR(128)) AS CONTAINER_NAME,
-      B.VIEW_DEFINITION AS QUERY,
-      CAST(LENGTH(B.VIEW_DEFINITION) AS SIGNED) AS QUERY_LEN,
-      CAST('N' AS CHAR(1)) AS UPDATABLE,
-      CAST(NULL AS CHAR(128)) AS UPDATE_LOG,
-      CAST(NULL AS CHAR(128)) AS MASTER_ROLLBACK_SEG,
-      CAST(NULL AS CHAR(128)) AS MASTER_LINK,
-      CAST(
-        CASE ((B.TABLE_MODE >> 27) & 1)
-          WHEN 0 THEN 'N'
-          WHEN 1 THEN 'Y'
-          ELSE NULL
-        END AS CHAR(1)
-      ) AS REWRITE_ENABLED,
-      CAST(NULL AS CHAR(9)) AS REWRITE_CAPABILITY,
-      CAST(
-        CASE C.REFRESH_MODE
-          WHEN 0 THEN 'NEVER'
-          WHEN 1 THEN 'DEMAND'
-          WHEN 2 THEN 'COMMIT'
-          WHEN 3 THEN 'STATEMENT'
-          WHEN 4 THEN 'MAJOR_COMPACTION'
-          ELSE NULL
-        END AS CHAR(32)
-      ) AS REFRESH_MODE,
-      CAST(
-        CASE C.REFRESH_METHOD
-          WHEN 0 THEN 'NEVER'
-          WHEN 1 THEN 'COMPLETE'
-          WHEN 2 THEN 'FAST'
-          WHEN 3 THEN 'FORCE'
-          ELSE NULL
-        END AS CHAR(8)
-      ) AS REFRESH_METHOD,
-      CAST(
-        CASE C.BUILD_MODE
-          WHEN 0 THEN 'IMMEDIATE'
-          WHEN 1 THEN 'DEFERRED'
-          WHEN 2 THEN 'PERBUILT'
-          ELSE NULL
-        END AS CHAR(9)
-      ) AS BUILD_MODE,
-      CAST(NULL AS CHAR(18)) AS FAST_REFRESHABLE,
-      CAST(
-        CASE C.LAST_REFRESH_TYPE
-          WHEN 0 THEN 'COMPLETE'
-          WHEN 1 THEN 'FAST'
-          ELSE 'NA'
-        END AS CHAR(8)
-      ) AS LAST_REFRESH_TYPE,
-      CAST(C.LAST_REFRESH_DATE AS DATETIME) AS LAST_REFRESH_DATE,
-      CAST(DATE_ADD(C.LAST_REFRESH_DATE, INTERVAL C.LAST_REFRESH_TIME SECOND) AS DATETIME) AS LAST_REFRESH_END_TIME,
-      CAST(NULL AS CHAR(19)) AS STALENESS,
-      CAST(NULL AS CHAR(19)) AS AFTER_FAST_REFRESH,
-      CAST(IF(C.BUILD_MODE = 2, 'Y', 'N') AS CHAR(1)) AS UNKNOWN_PREBUILT,
-      CAST('N' AS CHAR(1)) AS UNKNOWN_PLSQL_FUNC,
-      CAST('N' AS CHAR(1)) AS UNKNOWN_EXTERNAL_TABLE,
-      CAST('N' AS CHAR(1)) AS UNKNOWN_CONSIDER_FRESH,
-      CAST('N' AS CHAR(1)) AS UNKNOWN_IMPORT,
-      CAST('N' AS CHAR(1)) AS UNKNOWN_TRUSTED_FD,
-      CAST(NULL AS CHAR(19)) AS COMPILE_STATE,
-      CAST('Y' AS CHAR(1)) AS USE_NO_INDEX,
-      CAST(NULL AS DATETIME) AS STALE_SINCE,
-      CAST(NULL AS SIGNED) AS NUM_PCT_TABLES,
-      CAST(NULL AS SIGNED) AS NUM_FRESH_PCT_REGIONS,
-      CAST(NULL AS SIGNED) AS NUM_STALE_PCT_REGIONS,
-      CAST('NO' AS CHAR(3)) AS SEGMENT_CREATED,
-      CAST(NULL AS CHAR(128)) AS EVALUATION_EDITION,
-      CAST(NULL AS CHAR(128)) AS UNUSABLE_BEFORE,
-      CAST(NULL AS CHAR(128)) AS UNUSABLE_BEGINNING,
-      CAST(NULL AS CHAR(100)) AS DEFAULT_COLLATION,
-      CAST(
-        CASE ((B.TABLE_MODE >> 28) & 1)
-          WHEN 0 THEN 'N'
-          WHEN 1 THEN 'Y'
-          ELSE NULL
-        END AS CHAR(1)
-      ) AS ON_QUERY_COMPUTATION,
-      C.REFRESH_DOP AS REFRESH_DOP,
-      C.data_sync_scn AS DATA_SYNC_SCN,
-      CAST(
-        CASE C.data_sync_scn
-          WHEN 0 THEN 'NOT AVAILABLE'
-          ELSE TIMESTAMPDIFF(SECOND, SCN_TO_TIMESTAMP(C.data_sync_scn), NOW())
-        END AS CHAR(128)
-      ) AS DATA_SYNC_DELAY
-    FROM
-      oceanbase.__all_database A,
-      oceanbase.__all_table B,
-      oceanbase.__all_mview C,
-      oceanbase.__all_table D
-    WHERE A.DATABASE_ID = B.DATABASE_ID
-      AND B.TABLE_ID = C.MVIEW_ID
-      AND B.TABLE_TYPE = 7
-      AND B.DATA_TABLE_ID = D.TABLE_ID
-""".replace("\n", " ")
-)
-
-def_table_schema(
-    owner           = 'suzhi.yt',
-    table_name      = 'DBA_MVREF_STATS_SYS_DEFAULTS',
-    table_id        = '21530',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      CAST(PARAMETER_NAME AS CHAR(16)) AS PARAMETER_NAME,
-      CAST(VALUE AS CHAR(40)) AS VALUE
-    FROM
-    (
-      /* COLLECTION_LEVEL */
-      SELECT
-        'COLLECTION_LEVEL' PARAMETER_NAME,
-        CASE IFNULL(MAX(COLLECTION_LEVEL), 1)
-          WHEN 0 THEN 'NONE'
-          WHEN 1 THEN 'TYPICAL'
-          WHEN 2 THEN 'ADVANCED'
-          ELSE NULL
-        END VALUE
-      FROM
-        oceanbase.__all_mview_refresh_stats_sys_defaults
-
-      UNION ALL
-
-      /* RETENTION_PERIOD */
-      SELECT
-        'RETENTION_PERIOD' PARAMETER_NAME,
-        CAST(IFNULL(MAX(RETENTION_PERIOD), 31) AS CHAR) VALUE
-      FROM
-        oceanbase.__all_mview_refresh_stats_sys_defaults
-    )
-""".replace("\n", " ")
-)
-
-def_table_schema(
-    owner           = 'suzhi.yt',
-    table_name      = 'DBA_MVREF_STATS_PARAMS',
-    table_id        = '21532',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      CAST(MV_OWNER AS CHAR(128)) AS MV_OWNER,
-      CAST(MV_NAME AS CHAR(128)) AS MV_NAME,
-      CAST(
-        CASE COLLECTION_LEVEL
-          WHEN 0 THEN 'NONE'
-          WHEN 1 THEN 'TYPICAL'
-          WHEN 2 THEN 'ADVANCED'
-          ELSE NULL
-        END AS CHAR(8)
-      ) AS COLLECTION_LEVEL,
-      RETENTION_PERIOD
-    FROM
-    (
-      WITH DEFVALS AS
-      (
-        SELECT
-          IFNULL(MAX(COLLECTION_LEVEL), 1) AS COLLECTION_LEVEL,
-          IFNULL(MAX(RETENTION_PERIOD), 31) AS RETENTION_PERIOD
-        FROM
-          oceanbase.__all_mview_refresh_stats_sys_defaults
-      )
-
-      SELECT
-        A.DATABASE_NAME MV_OWNER,
-        B.TABLE_NAME MV_NAME,
-        IFNULL(C.COLLECTION_LEVEL, D.COLLECTION_LEVEL) COLLECTION_LEVEL,
-        IFNULL(C.RETENTION_PERIOD, D.RETENTION_PERIOD) RETENTION_PERIOD
-      FROM
-        oceanbase.__all_database A,
-        oceanbase.__all_table B,
-        (
-          SELECT MVIEW_ID, COLLECTION_LEVEL, RETENTION_PERIOD FROM oceanbase.__all_mview_refresh_stats_params
-          RIGHT OUTER JOIN
-          (
-            SELECT MVIEW_ID FROM oceanbase.__all_mview
-          )
-          USING (MVIEW_ID)
-        ) C,
-        DEFVALS D
-      WHERE A.DATABASE_ID = B.DATABASE_ID
-        AND B.TABLE_ID = C.MVIEW_ID
-        AND B.TABLE_TYPE = 7
-    )
-""".replace("\n", " ")
-)
-
-def_table_schema(
-    owner           = 'suzhi.yt',
-    table_name      = 'DBA_MVREF_RUN_STATS',
-    table_id        = '21534',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      CAST(A.USER_NAME AS CHAR(128)) AS RUN_OWNER,
-      B.REFRESH_ID AS REFRESH_ID,
-      B.NUM_MVS_TOTAL AS NUM_MVS,
-      CAST(B.MVIEWS AS CHAR(4000)) AS MVIEWS,
-      CAST(B.BASE_TABLES AS CHAR(4000)) AS BASE_TABLES,
-      CAST(B.METHOD AS CHAR(4000)) AS METHOD,
-      CAST(B.ROLLBACK_SEG AS CHAR(4000)) AS ROLLBACK_SEG,
-      CAST(IF(B.PUSH_DEFERRED_RPC = 1, 'Y', 'N') AS CHAR(1)) AS PUSH_DEFERRED_RPC,
-      CAST(IF(B.REFRESH_AFTER_ERRORS = 1, 'Y', 'N') AS CHAR(1)) AS REFRESH_AFTER_ERRORS,
-      B.PURGE_OPTION AS PURGE_OPTION,
-      B.PARALLELISM AS PARALLELISM,
-      B.HEAP_SIZE AS HEAP_SIZE,
-      CAST(IF(B.ATOMIC_REFRESH = 1, 'Y', 'N') AS CHAR(1)) AS ATOMIC_REFRESH,
-      CAST(IF(B.NESTED = 1, 'Y', 'N') AS CHAR(1)) AS NESTED,
-      CAST(IF(B.OUT_OF_PLACE = 1, 'Y', 'N') AS CHAR(1)) AS OUT_OF_PLACE,
-      B.NUMBER_OF_FAILURES AS NUMBER_OF_FAILURES,
-      CAST(B.START_TIME AS DATETIME) AS START_TIME,
-      CAST(B.END_TIME AS DATETIME) AS END_TIME,
-      B.ELAPSED_TIME AS ELAPSED_TIME,
-      CAST(0 AS SIGNED) AS LOG_SETUP_TIME,
-      B.LOG_PURGE_TIME AS LOG_PURGE_TIME,
-      CAST(IF(B.COMPLETE_STATS_AVALIABLE = 1, 'Y', 'N') AS CHAR(1)) AS COMPLETE_STATS_AVAILABLE
-    FROM
-      oceanbase.__all_user A,
-      oceanbase.__all_mview_refresh_run_stats B,
-      (
-        SELECT
-          C1.REFRESH_ID AS REFRESH_ID
-        FROM
-          oceanbase.__all_mview_refresh_stats C1,
-          oceanbase.__all_table C2
-        WHERE C1.MVIEW_ID = C2.TABLE_ID
-        GROUP BY REFRESH_ID
-      ) C
-    WHERE A.USER_ID = B.RUN_USER_ID
-      AND B.REFRESH_ID = C.REFRESH_ID
-""".replace("\n", " ")
-)
-
-def_table_schema(
-    owner           = 'suzhi.yt',
-    table_name      = 'DBA_MVREF_STATS',
-    table_id        = '21536',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      CAST(A.DATABASE_NAME AS CHAR(128)) AS MV_OWNER,
-      CAST(B.TABLE_NAME AS CHAR(128)) AS MV_NAME,
-      C.REFRESH_ID AS REFRESH_ID,
-      CAST(
-        CASE C.REFRESH_TYPE
-          WHEN 0 THEN 'COMPLETE'
-          WHEN 1 THEN 'FAST'
-          ELSE NULL
-        END AS CHAR(30)
-      ) AS REFRESH_METHOD,
-      CAST(NULL AS CHAR(4000)) AS REFRESH_OPTIMIZATIONS,
-      CAST(NULL AS CHAR(4000)) AS ADDITIONAL_EXECUTIONS,
-      CAST(C.START_TIME AS DATETIME) AS START_TIME,
-      CAST(C.END_TIME AS DATETIME) AS END_TIME,
-      C.ELAPSED_TIME AS ELAPSED_TIME,
-      CAST(0 AS SIGNED) AS LOG_SETUP_TIME,
-      C.LOG_PURGE_TIME AS LOG_PURGE_TIME,
-      C.INITIAL_NUM_ROWS AS INITIAL_NUM_ROWS,
-      C.FINAL_NUM_ROWS AS FINAL_NUM_ROWS,
-      C.RESULT AS RESULT
-    FROM
-      oceanbase.__all_database A,
-      oceanbase.__all_table B,
-      oceanbase.__all_mview_refresh_stats C
-    WHERE A.DATABASE_ID = B.DATABASE_ID
-      AND B.TABLE_ID = C.MVIEW_ID
-      AND B.TABLE_TYPE = 7
-""".replace("\n", " ")
-)
-
-def_table_schema(
-    owner           = 'suzhi.yt',
-    table_name      = 'DBA_MVREF_CHANGE_STATS',
-    table_id        = '21538',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      CAST(C.DATABASE_NAME AS CHAR(128)) AS TBL_OWNER,
-      CAST(D.TABLE_NAME AS CHAR(128)) AS TBL_NAME,
-      CAST(A.DATABASE_NAME AS CHAR(128)) AS MV_OWNER,
-      CAST(B.TABLE_NAME AS CHAR(128)) AS MV_NAME,
-      E.REFRESH_ID AS REFRESH_ID,
-      E.NUM_ROWS_INS AS NUM_ROWS_INS,
-      E.NUM_ROWS_UPD AS NUM_ROWS_UPD,
-      E.NUM_ROWS_DEL AS NUM_ROWS_DEL,
-      CAST(0 AS SIGNED) AS NUM_ROWS_DL_INS,
-      CAST('N' AS CHAR(1)) AS PMOPS_OCCURRED,
-      CAST(NULL AS CHAR(4000)) AS PMOP_DETAILS,
-      E.NUM_ROWS AS NUM_ROWS
-    FROM
-      oceanbase.__all_database A,
-      oceanbase.__all_table B,
-      oceanbase.__all_database C,
-      oceanbase.__all_table D,
-      oceanbase.__all_mview_refresh_change_stats E
-    WHERE A.DATABASE_ID = B.DATABASE_ID
-      AND C.DATABASE_ID = D.DATABASE_ID
-      AND E.MVIEW_ID = B.TABLE_ID
-      AND E.DETAIL_TABLE_ID = D.TABLE_ID
-""".replace("\n", " ")
-)
-
-def_table_schema(
-    owner           = 'suzhi.yt',
-    table_name      = 'DBA_MVREF_STMT_STATS',
-    table_id        = '21540',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      CAST(A.DATABASE_NAME AS CHAR(128)) AS MV_OWNER,
-      CAST(B.TABLE_NAME AS CHAR(128)) AS MV_NAME,
-      C.REFRESH_ID AS REFRESH_ID,
-      C.STEP AS STEP,
-      CAST(C.SQLID AS CHAR(32)) AS SQLID,
-      C.STMT AS STMT,
-      C.EXECUTION_TIME AS EXECUTION_TIME,
-      C.EXECUTION_PLAN AS EXECUTION_PLAN
-    FROM
-      oceanbase.__all_database A,
-      oceanbase.__all_table B,
-      oceanbase.__all_mview_refresh_stmt_stats C
-    WHERE A.DATABASE_ID = B.DATABASE_ID
-      AND B.TABLE_ID = C.MVIEW_ID
-""".replace("\n", " ")
-)
-
 # 21541: GV$OB_SESSION_PS_INFO # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_session_ps_info)
 
 # 21542: V$OB_SESSION_PS_INFO # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_session_ps_info)
@@ -18149,75 +17352,6 @@ def_table_schema(
 
 
 def_table_schema(
-    owner           = 'zg410411',
-    table_name      = 'DBA_MVIEW_RUNNING_JOBS',
-    table_id        = '21652',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      B.TABLE_NAME AS TABLE_NAME,
-      CAST (
-       CASE A.JOB_TYPE
-        WHEN 0 THEN 'INVALID'
-        WHEN 1 THEN 'COMPLETE REFRESH'
-        WHEN 2 THEN 'FAST REFRESH'
-        WHEN 3 THEN 'PURGE MLOG'
-        ELSE NULL
-       END AS CHAR(64)
-      ) AS JOB_TYPE,
-      A.SESSION_ID AS SESSION_ID,
-      A.READ_SNAPSHOT AS READ_SNAPSHOT,
-      A.PARALLEL AS PARALLEL,
-      A.JOB_START_TIME AS JOB_START_TIME
-    FROM oceanbase.__all_virtual_mview_running_job A,
-         oceanbase.__all_table B
-    WHERE A.table_id = B.table_id
-""".replace("\n", " ")
-)
-
-def_table_schema(
-    owner           = 'zg410411',
-    table_name      = 'DBA_MVIEW_DEPS',
-    table_id        = '21654',
-    table_type      = 'SYSTEM_VIEW',
-    rowkey_columns  = [],
-    normal_columns  = [],
-    gm_columns      = [],
-    in_tenant_space = True,
-    view_definition = """
-    SELECT
-      D.DATABASE_NAME AS MVIEW_OWNER,
-      B.TABLE_NAME AS MVIEW_NAME,
-      E.DATABASE_NAME AS DEP_OWNER,
-      C.TABLE_NAME AS DEP_NAME,
-      CAST (
-       CASE C.TABLE_TYPE
-        WHEN 3 THEN 'TABLE'
-        WHEN 4 THEN 'VIEW'
-        WHEN 7 THEN 'MV'
-        WHEN 14 THEN 'EXTERNAL TABLE'
-        ELSE 'INVALID TYPE'
-       END AS CHAR(64)
-      ) AS DEP_TYPE
-    FROM oceanbase.__all_mview_dep A,
-         oceanbase.__all_table B,
-         oceanbase.__all_table C,
-         oceanbase.__all_database D,
-         oceanbase.__all_database E
-    WHERE A.mview_id = B.table_id
-    AND   A.p_obj = C.table_id
-    AND   B.database_id = D.database_id
-    AND   C.database_id = E.database_id
-    AND   (C.table_mode >> 24 & 1 ) = 0
-""".replace("\n", " ")
-)
-
-
-def_table_schema(
   owner           = 'zhaoziqian.zzq',
   table_name      = 'DBA_OB_DYNAMIC_PARTITION_TABLES',
   table_id        = '21655',
@@ -18976,30 +18110,6 @@ def_sys_index_table(
 
 # 101093: idx_kv_ttl_task_table_id (abandoned)
 # 101094: idx_kv_ttl_task_history_upd_time (abandoned)
-
-def_sys_index_table(
-  index_name = 'idx_mview_refresh_run_stats_num_mvs_current',
-  index_table_id = 101095,
-  index_columns = ['num_mvs_current'],
-  index_using_type = 'USING_BTREE',
-  index_type = 'INDEX_TYPE_NORMAL_LOCAL',
-  keywords = all_def_keywords['__all_mview_refresh_run_stats'])
-
-def_sys_index_table(
-  index_name = 'idx_mview_refresh_stats_end_time',
-  index_table_id = 101096,
-  index_columns = ['end_time'],
-  index_using_type = 'USING_BTREE',
-  index_type = 'INDEX_TYPE_NORMAL_LOCAL',
-  keywords = all_def_keywords['__all_mview_refresh_stats'])
-
-def_sys_index_table(
-  index_name = 'idx_mview_refresh_stats_mview_end_time',
-  index_table_id = 101097,
-  index_columns = ['mview_id', 'end_time'],
-  index_using_type = 'USING_BTREE',
-  index_type = 'INDEX_TYPE_NORMAL_LOCAL',
-  keywords = all_def_keywords['__all_mview_refresh_stats'])
 
 def_sys_index_table(
   index_name = 'idx_client_to_server_session_info_client_session_id',

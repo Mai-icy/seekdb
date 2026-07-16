@@ -68,7 +68,6 @@
 #include "share/schema/ob_catalog_schema_struct.h"
 #include "share/schema/ob_ccl_schema_struct.h"
 #include "ob_ddl_args.h"
-#include "ob_mview_args.h"
 #include "share/inner_table/ob_load_inner_table_schema.h"
 #include "share/ai_service/ob_ai_model_info.h"
 #include "share/schema/ob_location_schema_struct.h"
@@ -100,7 +99,6 @@ using share::schema::ObTableSchema;
 using share::schema::ObPartitionLevel;
 using share::schema::ObSimpleTableSchemaV2;
 using share::schema::PARTITION_LEVEL_MAX;
-using share::schema::ObMVAvailableFlag;
 typedef common::ObSArray<common::ObAddr> ObServerList;
 static const int64_t MAX_COUNT = 128;
 static const int64_t OB_DEFAULT_ARRAY_SIZE = 8;
@@ -675,10 +673,7 @@ public:
     REBUILD_INDEX,
     ALTER_PRIMARY_KEY,
     ADD_PRIMARY_KEY,
-    DROP_PRIMARY_KEY,
-    ADD_MLOG,
-    DROP_MLOG,
-    RENAME_MLOG
+    DROP_PRIMARY_KEY
   };
 
   static const char *to_type_str(const IndexActionType type)
@@ -704,12 +699,6 @@ public:
       str = "add primary key";
     } else if (DROP_PRIMARY_KEY == type) {
       str = "drop primary key";
-    } else if (ADD_MLOG == type) {
-      str = "add materialized view log";
-    } else if (DROP_MLOG == type) {
-      str = "drop materialized view log";
-    } else if (RENAME_MLOG == type) {
-      str = "rename materialized view log";
     }
     return str;
   }
@@ -941,16 +930,11 @@ struct ObRebuildIndexArg: public ObIndexArg
   OB_UNIS_VERSION(1);
   //if add new member,should add to_string and serialize function
 public:
-  enum RebuildIndexType {
-    REBUILD_INDEX_TYPE_VEC = 0,
-    REBUILD_INDEX_TYPE_MLOG = 1
-  };
   ObRebuildIndexArg() : ObIndexArg(),
     vidx_refresh_info_()
   {
     index_action_type_ = REBUILD_INDEX;
     index_table_id_ = common::OB_INVALID_ID;
-    rebuild_index_type_ = REBUILD_INDEX_TYPE_VEC;
   }
   virtual ~ObRebuildIndexArg() {}
 
@@ -958,12 +942,9 @@ public:
     int ret = common::OB_SUCCESS;
     if (OB_FAIL(ObIndexArg::assign(other))) {
       SHARE_LOG(WARN, "fail to assign base", K(ret));
-    } else if (OB_FAIL(create_mlog_arg_.assign(other.create_mlog_arg_))) {
-      SHARE_LOG(WARN, "fail to assign create mlog arg", K(ret));
     } else {
       index_table_id_ = other.index_table_id_;
       vidx_refresh_info_ = other.vidx_refresh_info_;
-      rebuild_index_type_ = other.rebuild_index_type_;
     }
     return ret;
   }
@@ -973,19 +954,10 @@ public:
     ObIndexArg::reset();
     index_action_type_ = REBUILD_INDEX;
     vidx_refresh_info_.reset();
-    // in 4.3.5.3, we add rebuild_index_type_ field to support mlog,
-    // before that, the rebuild index task was only used for vec index.
-    // to ensure compatibility, the default value is set to vec index.
-    rebuild_index_type_ = REBUILD_INDEX_TYPE_VEC;
-    create_mlog_arg_.reset();
   }
-  bool is_rebuild_mlog() const { return REBUILD_INDEX_TYPE_MLOG == rebuild_index_type_; }
-  bool is_rebuild_vec_index() const { return REBUILD_INDEX_TYPE_VEC == rebuild_index_type_; }
   bool is_valid() const { return ObIndexArg::is_valid(); }
   uint64_t index_table_id_;
   share::schema::ObVectorIndexRefreshInfo vidx_refresh_info_;
-  RebuildIndexType rebuild_index_type_;
-  ObCreateMLogArg create_mlog_arg_;
 
   DECLARE_VIRTUAL_TO_STRING;
 };
@@ -1729,7 +1701,6 @@ public:
       is_add_to_scheduler_(false),
       inner_sql_exec_addr_(),
       local_session_var_(&allocator_),
-      mview_refresh_info_(),
       alter_algorithm_(INPLACE),
       alter_auto_partition_attr_(false),
       rebuild_index_arg_list_(),
@@ -1737,10 +1708,6 @@ public:
       client_session_create_ts_(0),
       lock_priority_(transaction::tablelock::ObTableLockPriority::NORMAL),
       is_direct_load_partition_(false),
-      is_alter_mview_attributes_(false),
-      alter_mview_arg_(),
-      is_alter_mlog_attributes_(false),
-      alter_mlog_arg_(),
       part_storage_cache_policy_(),
       data_version_(0)
   {
@@ -1853,7 +1820,6 @@ public:
                K_(hidden_table_id),
                K_(inner_sql_exec_addr),
                K_(local_session_var),
-               K_(mview_refresh_info),
                K_(alter_algorithm),
                K_(alter_auto_partition_attr),
                K_(rebuild_index_arg_list),
@@ -1861,10 +1827,6 @@ public:
                K_(client_session_create_ts),
                K_(lock_priority),
                K_(is_direct_load_partition),
-               K_(is_alter_mview_attributes),
-               K_(alter_mview_arg),
-               K_(is_alter_mlog_attributes),
-               K_(alter_mlog_arg),
                K_(part_storage_cache_policy),
                K_(data_version));
 private:
@@ -1899,7 +1861,6 @@ public:
   bool is_add_to_scheduler_;
   common::ObAddr inner_sql_exec_addr_;
   share::ObLocalSessionVar local_session_var_;
-  ObMViewRefreshInfo mview_refresh_info_;
   AlterAlgorithm alter_algorithm_;
   bool alter_auto_partition_attr_;
   common::ObSArray<ObTableSchema> rebuild_index_arg_list_;  // pre split
@@ -1907,10 +1868,6 @@ public:
   int64_t client_session_create_ts_;
   transaction::tablelock::ObTableLockPriority lock_priority_;
   bool is_direct_load_partition_;
-  bool is_alter_mview_attributes_;
-  ObAlterMViewArg alter_mview_arg_;
-  bool is_alter_mlog_attributes_;
-  ObAlterMLogArg alter_mlog_arg_;
   common::ObString part_storage_cache_policy_;
   uint64_t data_version_;
   int serialize_index_args(char *buf, const int64_t data_len, int64_t &pos) const;
@@ -2887,8 +2844,7 @@ public:
       error_info_(),
       is_alter_view_(false),
       sequence_ddl_arg_(),
-      dep_infos_(),
-      mv_ainfo_()
+      dep_infos_()
   {}
   bool is_valid() const;
   virtual bool is_allow_when_upgrade() const;
@@ -2909,7 +2865,6 @@ public:
   bool is_alter_view_;
   ObSequenceDDLArg sequence_ddl_arg_;
   common::ObSArray<oceanbase::share::schema::ObDependencyInfo> dep_infos_;
-  common::ObSArray<ObMVAdditionalInfo> mv_ainfo_;
 };
 
 
@@ -4138,30 +4093,6 @@ public:
   ObString database_name_;
   int64_t task_id_;
   int error_code_;
-};
-
-struct ObUpdateMViewStatusArg : public ObDDLArg
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObUpdateMViewStatusArg():
-    ObDDLArg(),
-    mview_table_id_(common::OB_INVALID_ID),
-    mv_available_flag_(ObMVAvailableFlag::IS_MV_UNAVAILABLE),
-    convert_status_(true),
-    in_offline_ddl_white_list_(false)
-  {}
-  bool is_valid() const;
-  virtual bool is_allow_when_disable_ddl() const { return false; };
-  virtual bool is_allow_when_upgrade() const { return true; }
-  virtual bool is_in_offline_ddl_white_list() const { return in_offline_ddl_white_list_; }
-  TO_STRING_KV(K_(mview_table_id), K_(mv_available_flag), K_(convert_status), K_(in_offline_ddl_white_list));
-
-public:
-  uint64_t mview_table_id_;
-  enum ObMVAvailableFlag mv_available_flag_;
-  bool convert_status_;
-  bool in_offline_ddl_white_list_;
 };
 
 struct ObMergeFinishArg
@@ -6328,38 +6259,6 @@ public:
 
 
 
-
-struct ObCheckNestedMViewMdsArg final
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObCheckNestedMViewMdsArg() : mview_id_(common::OB_INVALID_ID),
-                               refresh_id_(common::OB_INVALID_ID),
-                               target_data_sync_scn_()
-  {}
-  ~ObCheckNestedMViewMdsArg() {}
-  bool is_valid() {
-    return 1UL != OB_INVALID_TENANT_ID && mview_id_ != OB_INVALID_ID;
-  }
-  TO_STRING_KV(K_(mview_id), K_(refresh_id), K(target_data_sync_scn_));
-public:
-
-  uint64_t mview_id_;
-  uint64_t refresh_id_;
-  share::SCN target_data_sync_scn_;
-};
-
-struct ObCheckNestedMViewMdsRes final
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObCheckNestedMViewMdsRes() : target_data_sync_scn_(), ret_(OB_SUCCESS) {}
-  ~ObCheckNestedMViewMdsRes() {}
-  TO_STRING_KV(K_(target_data_sync_scn), K_(ret));
-public:
-  share::SCN target_data_sync_scn_;
-  int ret_;
-};
 
 struct ObCreateTableGroupRes : ObParallelDDLRes
 {

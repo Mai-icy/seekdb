@@ -111,8 +111,6 @@ enum ObDDLType
   DDL_CREATE_INDEX = 5,
   DDL_DROP_INDEX = 6,
   DDL_CREATE_FTS_INDEX = 7,
-  DDL_CREATE_MLOG = 8,
-  DDL_DROP_MLOG = 9,
   DDL_CREATE_PARTITIONED_LOCAL_INDEX = 10,
   DDL_DROP_LOB = 11,
   DDL_DROP_FTS_INDEX = 12,
@@ -128,7 +126,6 @@ enum ObDDLType
   DDL_DROP_VEC_IVFSQ8_INDEX = 22,
   DDL_DROP_VEC_IVFPQ_INDEX = 23,
   DDL_DROP_VEC_SPIV_INDEX = 24,
-  DDL_REPLACE_MLOG = 25,
   DDL_CREATE_VEC_SPIV_INDEX = 26, // placeholder of spiv post build
 
   ///< @note tablet split.
@@ -164,8 +161,6 @@ enum ObDDLType
   DDL_DIRECT_LOAD = 1011, // load data
   DDL_DIRECT_LOAD_INSERT = 1012, // insert into select
   // 1013 was used by removed table restore DDL. Do not reuse.
-  DDL_MVIEW_COMPLETE_REFRESH = 1014,
-  DDL_CREATE_MVIEW = 1015,
   // 1016 is reserved. Do not reuse.
   DDL_MODIFY_AUTO_INCREMENT_WITH_REDEFINITION = 1017,
   DDL_PARTITION_SPLIT_RECOVERY_TABLE_REDEFINITION = 1018,
@@ -204,8 +199,7 @@ enum ObDDLTaskType
   // 12 was used by removed recover restore table DDL. Do not reuse.
   PARTITION_SPLIT_RECOVERY_TASK = 13,
   PARTITION_SPLIT_RECOVERY_CLEANUP_GARBAGE_TASK = 14,
-  SWITCH_VEC_INDEX_NAME_TASK = 15,
-  SWITCH_MLOG_NAME_TASK = 16
+  SWITCH_VEC_INDEX_NAME_TASK = 15
 };
 
 enum ObDDLTaskStatus { // FARM COMPAT WHITELIST
@@ -227,7 +221,6 @@ enum ObDDLTaskStatus { // FARM COMPAT WHITELIST
   CHECK_TABLE_EMPTY = 15,
   WAIT_CHILD_TASK_FINISH = 16,
   REPENDING = 17,
-  START_REFRESH_MVIEW_TASK = 18,
   WAIT_FROZE_END = 19,
   WAIT_COMPACTION_END = 20,
   WAIT_DATA_TABLE_SPLIT_END = 21,
@@ -256,7 +249,6 @@ enum ObDDLTaskStatus { // FARM COMPAT WHITELIST
   GENERATE_PQ_CENTROID_TABLE_SCHEMA = 44,
   WAIT_PQ_CENTROID_TABLE_COMPLEMENT = 45,
   LOAD_DICTIONARY = 46,
-  PURGE_OLD_MLOG = 47,
   BUILD_DATA = 48,
   WAIT_DATA_COMPLEMENT = 49,
 
@@ -346,9 +338,6 @@ static const char* ddl_task_status_to_str(const ObDDLTaskStatus &task_status) {
     case ObDDLTaskStatus::REPENDING:
       str = "REPENDING";
       break;
-    case ObDDLTaskStatus::START_REFRESH_MVIEW_TASK:
-      str = "START_REFRESH_MVIEW_TASK";
-      break;
     case ObDDLTaskStatus::WAIT_FROZE_END:
       str = "WAIT_FROZE_END";
       break;
@@ -432,9 +421,6 @@ static const char* ddl_task_status_to_str(const ObDDLTaskStatus &task_status) {
       break;
     case ObDDLTaskStatus::WAIT_PQ_CENTROID_TABLE_COMPLEMENT:
       str = "WAIT_PQ_CENTROID_TABLE_COMPLEMENT";
-      break;
-    case ObDDLTaskStatus::PURGE_OLD_MLOG:
-      str = "PURGE_OLD_MLOG";
       break;
     case ObDDLTaskStatus::BUILD_DATA:
       str = "BUILD_DATA";
@@ -1141,19 +1127,6 @@ public:
       const ObString &partition_names,
       ObSqlString &sql_string);
 
-  static int generate_build_mview_replica_sql(const int64_t mview_table_id,
-      const int64_t container_table_id,
-      share::schema::ObSchemaGetterGuard &schema_guard,
-      const int64_t snapshot_version,
-      const uint64_t mview_target_data_sync_scn,
-      const int64_t execution_id,
-      const int64_t task_id,
-      const int64_t parallelism,
-      const bool use_schema_version_hint_for_src_table,
-      const common::ObIArray<share::schema::ObBasedSchemaObjectInfo> &based_schema_object_infos,
-      const ObString &mview_select_sql,
-      ObSqlString &sql_string);
-
   static int get_tablet_leader_addr(
       share::ObLocationService *location_service,
       const common::ObTabletID &tablet_id,
@@ -1169,14 +1142,6 @@ public:
       const ObString &table_name,
       const int64_t schema_version,
       ObSqlString &sql_string);
-
-  static int generate_mview_ddl_schema_hint_str(const uint64_t mview_table_id,
-      share::schema::ObSchemaGetterGuard &schema_guard,
-      const common::ObIArray<share::schema::ObBasedSchemaObjectInfo> &based_schema_object_infos,
-      ObSqlString &sql_string);
-
-  static int generate_order_by_str_for_mview(const schema::ObTableSchema &container_table_schema,
-                                             ObSqlString &rowkey_column_sql_string);
 
   static int ddl_get_tablet(
       const storage::ObLSHandle &ls_handle,
@@ -1357,10 +1322,7 @@ public:
       case DDL_TABLE_REDEFINITION:
       case DDL_DIRECT_LOAD:
       case DDL_DIRECT_LOAD_INSERT:
-      case DDL_MVIEW_COMPLETE_REFRESH:
-      case DDL_CREATE_MVIEW:
       case DDL_CREATE_INDEX:
-      case DDL_CREATE_MLOG:
       case DDL_CREATE_FTS_INDEX:
       case DDL_CREATE_VEC_INDEX:
       case DDL_CREATE_PARTITIONED_LOCAL_INDEX:
@@ -1380,8 +1342,7 @@ public:
   }
   static int get_global_index_table_ids(const schema::ObTableSchema &table_schema, ObIArray<uint64_t> &global_index_table_ids, share::schema::ObSchemaGetterGuard &schema_guard);
   static bool use_idempotent_mode();
-  static bool is_mview_not_retryable(const share::ObDDLType task_type);
-  static int64_t get_real_parallelism(const int64_t parallelism, const bool is_mv_refresh);
+  static int64_t get_real_parallelism(const int64_t parallelism);
   static int get_tablet_ids(
       const int64_t table_id,
       const int64_t target_table_id,
@@ -1391,8 +1352,7 @@ public:
       const uint64_t table_id,
       const uint64_t target_table_id,
       int64_t &snapshot_version,
-      rootserver::ObDDLTask* task,
-      const common::ObIArray<common::ObTabletID> *extra_mv_tablet_ids = NULL);
+      rootserver::ObDDLTask* task);
   static int release_snapshot(
       rootserver::ObDDLTask* task,
       const uint64_t table_id,
@@ -1570,8 +1530,7 @@ private:
       const uint64_t table_id,
       const uint64_t target_table_id,
       rootserver::ObRootService *root_service,
-      const int64_t snapshot_version,
-      const common::ObIArray<common::ObTabletID> *extra_mv_tablet_ids);
+      const int64_t snapshot_version);
 
   static int check_table_column_checksum_error(const int64_t table_id);
 

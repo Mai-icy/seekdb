@@ -65,7 +65,6 @@ public:
   SYS_DDL_SCHEDULER_FUNC(modify_redef_task);
   SYS_DDL_SCHEDULER_FUNC(on_column_checksum_calc_reply);
   SYS_DDL_SCHEDULER_FUNC(on_ddl_task_finish);
-  SYS_DDL_SCHEDULER_FUNC(on_ddl_task_prepare);
   SYS_DDL_SCHEDULER_FUNC(on_sstable_complement_job_reply);
   SYS_DDL_SCHEDULER_FUNC(prepare_alter_table_arg);
   SYS_DDL_SCHEDULER_FUNC(recover_task);

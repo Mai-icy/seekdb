@@ -179,7 +179,6 @@
 #include "observer/virtual_table/ob_all_virtual_ddl_diagnose_info.h"
 #include "observer/virtual_table/ob_all_virtual_change_stream_refresh_stat.h"
 #include "observer/virtual_table/ob_all_virtual_dynamic_partition_table.h"
-#include "observer/virtual_table/ob_all_virtual_tenant_mview_running_job.h"
 #include "observer/virtual_table/ob_all_virtual_tenant_vector_mem_info.h"
 #include "observer/virtual_table/ob_all_virtual_ccl_status.h"
 #include "observer/virtual_table/ob_show_create_location.h"
@@ -2083,14 +2082,6 @@ int ObVTIterCreator::create_vt_iter(ObVTableScanParam &params,
             ObAllVirtualTenantSchedulerRunningJob *running_job = NULL;
             if (OB_SUCC(NEW_VIRTUAL_TABLE(ObAllVirtualTenantSchedulerRunningJob, running_job))) {
               running_job->set_session_mgr(GCTX.session_mgr_);
-              vt_iter = static_cast<ObVirtualTableIterator *>(running_job);
-            }
-            break;
-          }
-          case OB_ALL_VIRTUAL_MVIEW_RUNNING_JOB_TID:
-          {
-            ObAllVirtualTenantMviewRunningJob *running_job = NULL;
-            if (OB_SUCC(NEW_VIRTUAL_TABLE(ObAllVirtualTenantMviewRunningJob, running_job))) {
               vt_iter = static_cast<ObVirtualTableIterator *>(running_job);
             }
             break;

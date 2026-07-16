@@ -712,7 +712,6 @@ int ObVectorIndexRefresher::do_rebuild() {
       rebuild_index_arg.index_action_type_ = obcall::ObIndexArg::ADD_INDEX;
       rebuild_index_arg.parallelism_ = refresh_ctx_->idx_parallel_creation_;
       rebuild_index_arg.vidx_refresh_info_.index_params_ = idx_parameters;
-      rebuild_index_arg.rebuild_index_type_ = obcall::ObRebuildIndexArg::RebuildIndexType::REBUILD_INDEX_TYPE_VEC;
 
       if (OB_FAIL(rebuild_index_arg.based_schema_object_infos_.push_back(
               ObBasedSchemaObjectInfo(domain_table_schema->get_table_id(), TABLE_SCHEMA,

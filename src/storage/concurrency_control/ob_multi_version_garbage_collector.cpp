@@ -19,7 +19,6 @@
 #include "storage/tx_storage/ob_ls_service.h"
 #include "storage/tx/ob_trans_service.h"
 #include "storage/tx/ob_weak_read_util.h"
-#include "rootserver/mview/ob_mview_maintenance_service.h"
 #include "share/ob_server_struct.h"
 #include "lib/container/ob_array.h"
 #include "share/ob_io_device_helper.h"
@@ -509,13 +508,6 @@ int ObMultiVersionGarbageCollector::study_min_active_txn_version(
     MVCC_LOG(WARN, "get min active snaphot version failed", K(ret));
   }
 
-  share::SCN min_mview_mds_snapshot;
-  if (FAILEDx(share::g_mp->m_view_maintenance_service()->get_min_mview_mds_snapshot(min_mview_mds_snapshot))) {
-    MVCC_LOG(WARN, "get min mview active snaphot version failed", K(ret));
-  } else if (min_mview_mds_snapshot.is_valid() && min_mview_mds_snapshot < min_active_txn_version) {
-    MVCC_LOG(INFO, "study_min_active_txn_version", K(min_active_txn_version), K(min_mview_mds_snapshot));
-    min_active_txn_version = min_mview_mds_snapshot;
-  }
   return ret;
 }
 

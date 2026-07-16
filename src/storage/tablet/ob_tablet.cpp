@@ -93,7 +93,6 @@ ObTableStoreCache::ObTableStoreCache()
     recycle_version_(0),
     last_major_column_count_(0),
     last_major_macro_block_cnt_(0),
-    is_tablet_referenced_by_collect_mv_(false),
     last_major_compressor_type_(ObCompressorType::INVALID_COMPRESSOR),
     last_major_latest_row_store_type_(ObRowStoreType::MAX_ROW_STORE)
 {
@@ -107,18 +106,15 @@ void ObTableStoreCache::reset()
   recycle_version_ = 0;
   last_major_column_count_ = 0;
   last_major_macro_block_cnt_ = 0;
-  is_tablet_referenced_by_collect_mv_ = false;
   last_major_compressor_type_ = ObCompressorType::INVALID_COMPRESSOR;
   last_major_latest_row_store_type_ = ObRowStoreType::MAX_ROW_STORE;
 }
 
 int ObTableStoreCache::init(
     const ObSSTableArray &major_tables,
-    const ObSSTableArray &minor_tables,
-    const bool is_tablet_referenced_by_collect_mv)
+    const ObSSTableArray &minor_tables)
 {
   int ret = OB_SUCCESS;
-  is_tablet_referenced_by_collect_mv_ = is_tablet_referenced_by_collect_mv;
   major_table_cnt_ = major_tables.count();
   minor_table_cnt_ = minor_tables.count();
   last_major_snapshot_version_ = 0;
@@ -344,8 +340,7 @@ int ObTablet::init_for_first_time_creation(
   } else if (OB_FAIL(try_update_start_scn())) {
     LOG_WARN("failed to update start scn", K(ret), K(table_store_addr_));
   } else if (OB_FAIL(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-      table_store_addr_.get_ptr()->get_minor_sstables(),
-      storage_schema_addr_.get_ptr()->is_tablet_referenced_by_collect_mv()))) {
+      table_store_addr_.get_ptr()->get_minor_sstables()))) {
     LOG_WARN("failed to init table store cache", K(ret), KPC(this));
   } else if (OB_FAIL(check_sstable_column_checksum())) {
     LOG_WARN("failed to check sstable column checksum", K(ret), KPC(this));
@@ -447,8 +442,7 @@ int ObTablet::init_for_merge(
   }
 
   if (FAILEDx(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-                                      table_store_addr_.get_ptr()->get_minor_sstables(),
-                                      storage_schema_addr_.get_ptr()->is_tablet_referenced_by_collect_mv()))) {
+                                      table_store_addr_.get_ptr()->get_minor_sstables()))) {
     LOG_WARN("failed to init table store cache", K(ret), KPC(this));
   } else if (OB_FAIL(try_update_start_scn())) {
     LOG_WARN("failed to update start scn", K(ret), K(param), K(table_store_addr_));
@@ -619,8 +613,7 @@ int ObTablet::init_with_migrate_param(
 
       if (OB_FAIL(ret)) {
       } else if (OB_FAIL(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-              table_store_addr_.get_ptr()->get_minor_sstables(),
-              storage_schema_addr_.get_ptr()->is_tablet_referenced_by_collect_mv()))) {
+              table_store_addr_.get_ptr()->get_minor_sstables()))) {
         LOG_WARN("failed to init table store cache", K(ret), KPC(this));
       } else if (OB_FAIL(build_read_info(allocator, nullptr /*tablet*/))) {
         LOG_WARN("fail to build read info", K(ret));
@@ -707,8 +700,7 @@ int ObTablet::init_for_defragment(
     LOG_WARN("fail to init aggregated info", K(ret));
   } else if (FALSE_IT(set_initial_addr())) {
   } else if (OB_FAIL(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-  table_store_addr_.get_ptr()->get_minor_sstables(),
-  storage_schema_addr_.get_ptr()->is_tablet_referenced_by_collect_mv()))) {
+  table_store_addr_.get_ptr()->get_minor_sstables()))) {
     LOG_WARN("failed to init table store cache", K(ret), KPC(this));
   } else if (OB_FAIL(check_table_store_flag_match_with_table_store_(table_store_addr_.get_ptr()))) {
     LOG_WARN("failed to check table store flag match with table store", K(ret), K(old_tablet), K_(table_store_addr));
@@ -859,8 +851,7 @@ int ObTablet::init_for_sstable_replace(
   } else if (OB_FAIL(try_update_start_scn())) {
     LOG_WARN("failed to update start scn", K(ret), K(param), K(table_store_addr_));
   } else if (OB_FAIL(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-      table_store_addr_.get_ptr()->get_minor_sstables(),
-      storage_schema_addr_.get_ptr()->is_tablet_referenced_by_collect_mv()))) {
+      table_store_addr_.get_ptr()->get_minor_sstables()))) {
     LOG_WARN("failed to init table store cache", K(ret), KPC(this));
   } else if (FALSE_IT(finish_medium_scn = get_last_major_snapshot_version())) {
   } else if (is_tablet_fork && FALSE_IT(tablet_meta_.extra_medium_info_.reset())) {
@@ -1342,8 +1333,7 @@ int ObTablet::init_with_update_medium_info(
   }
 
   if (FAILEDx(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-      table_store_addr_.get_ptr()->get_minor_sstables(),
-      storage_schema_addr_.get_ptr()->is_tablet_referenced_by_collect_mv()))) {
+      table_store_addr_.get_ptr()->get_minor_sstables()))) {
     LOG_WARN("failed to init table store cache", K(ret), KPC(this));
   } else if (OB_FAIL(init_aggregated_info(allocator, nullptr/* link_writer, tmp_tablet do no write */))) {
     LOG_WARN("fail to init aggregated info", K(ret));
@@ -1499,8 +1489,7 @@ int ObTablet::init_with_replace_members(
   if (FAILEDx(build_read_info(allocator, nullptr /*tablet*/))) {
     LOG_WARN("failed to build read info", K(ret));
   } else if (OB_FAIL(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-      table_store_addr_.get_ptr()->get_minor_sstables(),
-      storage_schema_addr_.get_ptr()->is_tablet_referenced_by_collect_mv()))) {
+      table_store_addr_.get_ptr()->get_minor_sstables()))) {
     LOG_WARN("failed to init table store cache", K(ret), KPC(this));
   } else if (OB_FAIL(inner_inc_macro_ref_cnt())) { // full tablet only increases data macro blocks' ref cnt
     LOG_WARN("failed to increase sstables ref cnt", K(ret));
@@ -1574,8 +1563,7 @@ int ObTablet::init_with_mds_sstable(
   }
 
   if (FAILEDx(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-      table_store_addr_.get_ptr()->get_minor_sstables(),
-      storage_schema_addr_.get_ptr()->is_tablet_referenced_by_collect_mv()))) {
+      table_store_addr_.get_ptr()->get_minor_sstables()))) {
     LOG_WARN("failed to init table store cache", K(ret), KPC(this));
   } else if (CLICK() && FAILEDx(build_read_info(*allocator_, nullptr /*tablet*/))) {
     LOG_WARN("failed to build read info", K(ret));
@@ -1761,8 +1749,7 @@ int ObTablet::inner_init_compat_normal_tablet(
 
   if (OB_FAIL(ret)) {
   } else if (CLICK_FAIL(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-      table_store_addr_.get_ptr()->get_minor_sstables(),
-      storage_schema_addr_.get_ptr()->is_tablet_referenced_by_collect_mv()))) {
+      table_store_addr_.get_ptr()->get_minor_sstables()))) {
     LOG_WARN("failed to init table store cache", K(ret), KPC(this));
   } else if (CLICK_FAIL(build_read_info(*allocator_, nullptr /*tablet*/))) {
     LOG_WARN("failed to build read info", K(ret));
@@ -2262,8 +2249,7 @@ int ObTablet::deserialize_post_work(common::ObArenaAllocator &allocator)
       if (OB_FAIL(load_storage_schema(arena_allocator, schema))) {
         LOG_WARN("load storage schema failed", K(ret));
       } else if (OB_FAIL(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
-                                              table_store_addr_.get_ptr()->get_minor_sstables(),
-                                              schema->is_tablet_referenced_by_collect_mv()))) {
+                                              table_store_addr_.get_ptr()->get_minor_sstables()))) {
         LOG_WARN("failed to init table store cache", K(ret), KPC(this));
       } else if (tablet_meta_.max_sync_storage_schema_version_ > schema->schema_version_) {
         LOG_INFO("tablet meta status is not right, upgrade may happened. fix max_sync_schema_version on purpose",
@@ -2359,8 +2345,7 @@ int ObTablet::load_deserialize_v1(
   } else if (OB_FAIL(pull_memtables(allocator))) {
     LOG_WARN("fail to pull memtable", K(ret), K(len), K(pos));
   } else if (OB_FAIL(table_store_cache_.init(table_store_addr_.ptr_->get_major_sstables(),
-                                             table_store_addr_.ptr_->get_minor_sstables(),
-                                             false))) {
+                                             table_store_addr_.ptr_->get_minor_sstables()))) {
     LOG_WARN("failed to init table store cache", K(ret), KPC(this));
   } else {
     set_initial_addr();
@@ -2740,15 +2725,10 @@ int ObTablet::deserialize(
         }
       }
       if (OB_SUCC(ret) && !storage_schema_addr_.addr_.is_none()) {
-        ObStorageSchema *storage_schema = nullptr;
-        if (OB_FAIL(load_storage_schema(allocator, storage_schema))) {
-          LOG_WARN("failed to load storage schema", K(ret));
-        } else if (OB_FAIL(table_store_cache_.init(table_store->get_major_sstables(),
-                table_store->get_minor_sstables(),
-                storage_schema->is_tablet_referenced_by_collect_mv()))) {
+        if (OB_FAIL(table_store_cache_.init(table_store->get_major_sstables(),
+                table_store->get_minor_sstables()))) {
           LOG_WARN("failed to init table store cache", K(ret), KPC(this));
         }
-        ObTabletObjLoadHelper::free(allocator, storage_schema);
       }
     }
 
@@ -5775,8 +5755,6 @@ int ObTablet::get_kept_snapshot_info(
 
     if (!tablet_meta_.ha_status_.is_data_status_complete()) {
       use_multi_version_start_on_tablet = true;
-    } else if (ObSnapShotType::SNAPSHOT_FOR_MAJOR_REFRESH_MV == snapshot_info.snapshot_type_ && 0 == snapshot_info.snapshot_) {
-      use_multi_version_start_on_tablet = true; // if exist new mv in restore, use special snapshot info
     } else if (min_reserved_snapshot_on_ls > 0) {
       snapshot_info.update_by_smaller_snapshot(ObStorageSnapshotInfo::SNAPSHOT_FOR_LS_RESERVED, min_reserved_snapshot_on_ls);
       snapshot_info.update_by_smaller_snapshot(ObStorageSnapshotInfo::SNAPSHOT_FOR_MIN_MEDIUM, min_medium_snapshot);

@@ -243,8 +243,6 @@ int ObPhyLocationGetter::get_phy_locations(const ObIArray<ObTableLocation> &tabl
         const ObTableLocation &table_location = table_locations.at(i);
         ObCandiTableLoc &candi_table_loc = candi_table_locs.at(i);
         NG_TRACE(calc_partition_location_begin);
-        // Here it is assumed that the materialized view's replica table has a copy on each server,
-        // Therefore here we do not check if materialized view can be generated, it is guaranteed to be generated
         if (OB_FAIL(table_location.calculate_candi_tablet_locations(exec_ctx,
                                                                     params,
                                                                     candi_table_loc.get_phy_part_loc_info_list_for_update(),

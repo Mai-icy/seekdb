@@ -24,7 +24,6 @@
 #include "storage/ob_storage_rpc.h"
 #include "storage/ls/ob_ls_meta_package.h"                      // ObLSMetaPackage
 #include "share/resource_limit_calculator/ob_resource_limit_calculator.h"
-#include "storage/mview/ob_major_mv_merge_info.h"
 #include "storage/tx/ob_tx_result_struct.h"
 
 namespace oceanbase
@@ -184,7 +183,6 @@ private:
                        const ObMigrationStatus &migration_status,
                        const ObRestoreStatus &restore_status,
                        const share::SCN &create_scn,
-                       const ObMajorMVMergeInfo &major_mv_merge_info,
                        ObLS *&ls);
   int inner_del_ls_(ObLS *&ls);
   int add_ls_to_map_(ObLS *ls);

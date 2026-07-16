@@ -162,7 +162,6 @@ private:
   int check_build_local_index_single_replica(bool &is_end);
   int check_need_verify_checksum(bool &need_verify);
   bool is_sstable_complete_task_submitted();
-  int update_mlog_last_purge_scn();
   bool is_create_partitioned_local_index();
   int serialize_and_update_message();
 private:

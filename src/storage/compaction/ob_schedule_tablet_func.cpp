@@ -231,38 +231,15 @@ int ObScheduleTabletFunc::get_schedule_execute_info(
     int64_t &schedule_scn)
 {
   int ret = OB_SUCCESS;
-  const ObLSID &ls_id = ls_status_.ls_id_;
-  const ObTabletID &tablet_id = tablet.get_tablet_id();
-
   bool schedule_flag = false;
   const int64_t last_major_snapshot = tablet.get_last_major_snapshot_version();
   ObMediumCompactionInfo::ObCompactionType compaction_type = ObMediumCompactionInfo::COMPACTION_TYPE_MAX;
   schedule_scn = 0; // medium_snapshot in medium info
-  bool is_mv_major_refresh_tablet = false;
-  ObArenaAllocator temp_allocator("GetMediumInfo", OB_MALLOC_NORMAL_BLOCK_SIZE); // for load medium info
-  const ObMediumCompactionInfoList *medium_list = nullptr;
-  ObStorageSchema *storage_schema = nullptr;
-
   if (OB_ISNULL(tablet_status_.medium_list())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("medium list in tablet status is null", KR(ret), K_(tablet_status));
-  } else if (OB_FAIL(tablet.load_storage_schema(temp_allocator, storage_schema))) {
-    // temp solution(load storage schema to decide whether tablet is MV)
-    // TODO replace with new func on tablet later @lana
-      LOG_WARN("failed to load storage schema", K(ret), K(tablet));
-  } else if (FALSE_IT(is_mv_major_refresh_tablet = storage_schema->is_mv_major_refresh())) {
-  } else if (is_mv_major_refresh_tablet &&
-             ObBasicMergeScheduler::INIT_COMPACTION_SCN == last_major_snapshot) {
-    int tmp_ret = OB_SUCCESS;
-    if (OB_TMP_FAIL(ADD_SUSPECT_INFO(MEDIUM_MERGE, share::ObDiagnoseTabletType::TYPE_MEDIUM_MERGE,
-                                     ls_id, tablet_id, ObSuspectInfoType::SUSPECT_MV_IN_CREATION,
-                                     last_major_snapshot))) {
-      LOG_WARN("failed to add suspect info", K(tmp_ret));
-    }
-    LOG_INFO("mv creation has not finished, can not schedule mv tablet", K(ret),
-             K(last_major_snapshot));
   } else if (OB_FAIL(tablet_status_.medium_list()->get_next_schedule_info(
-    last_major_snapshot, merge_version_, is_mv_major_refresh_tablet, compaction_type, schedule_scn))) {
+    last_major_snapshot, merge_version_, compaction_type, schedule_scn))) {
     if (OB_NO_NEED_MERGE != ret) {
       LOG_WARN("failed to get next schedule info", KR(ret), K(last_major_snapshot), K_(merge_version));
     }

@@ -70,7 +70,6 @@
 #include "observer/ob_server_event_history_table_operator.h"
 #include "share/index_usage/ob_index_usage_info_mgr.h"
 #include "sql/optimizer/stat/ob_opt_stat_monitor_manager.h"
-#include "rootserver/mview/ob_mview_maintenance_service.h"
 #include "observer/vector_index/ob_plugin_vector_index_service.h"
 #include "observer/change_stream/ob_change_stream_mgr.h"
 #include "share/roaringbitmap/ob_rb_memory_mgr.h"
@@ -2014,7 +2013,6 @@ int ObServer::obs_construct_modules()
   if (OB_SUCC(ret) && OB_FAIL(mtl_new_default(mods_tenant_srs_))) { SERVER_LOG(WARN, "mods_tenant_srs_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_new_default(mods_index_usage_info_mgr_))) { SERVER_LOG(WARN, "mods_index_usage_info_mgr_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_new_default(mods_tablet_memtable_mgr_pool_))) { SERVER_LOG(WARN, "mods_tablet_memtable_mgr_pool_ fail", KR(ret)); }
-  if (OB_SUCC(ret) && OB_FAIL(mtl_new_default(mods_m_view_maintenance_service_))) { SERVER_LOG(WARN, "mods_m_view_maintenance_service_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_new_default(mods_resource_limit_calculator_))) { SERVER_LOG(WARN, "mods_resource_limit_calculator_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_new_default(mods_global_iterator_pool_))) { SERVER_LOG(WARN, "mods_global_iterator_pool_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_new_default(mods_rb_mem_mgr_))) { SERVER_LOG(WARN, "mods_rb_mem_mgr_ fail", KR(ret)); }
@@ -2098,7 +2096,6 @@ int ObServer::obs_init_modules()
   if (OB_SUCC(ret) && OB_FAIL(omt::ObTenantSrs::mtl_init(mods_tenant_srs_))) { SERVER_LOG(WARN, "mods_tenant_srs_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(ObIndexUsageInfoMgr::mtl_init(mods_index_usage_info_mgr_))) { SERVER_LOG(WARN, "mods_index_usage_info_mgr_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(storage::ObTabletMemtableMgrPool::mtl_init(mods_tablet_memtable_mgr_pool_))) { SERVER_LOG(WARN, "mods_tablet_memtable_mgr_pool_ fail", KR(ret)); }
-  if (OB_SUCC(ret) && OB_FAIL(rootserver::ObMViewMaintenanceService::mtl_init(mods_m_view_maintenance_service_))) { SERVER_LOG(WARN, "mods_m_view_maintenance_service_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(ObResourceLimitCalculator::mtl_init(mods_resource_limit_calculator_))) { SERVER_LOG(WARN, "mods_resource_limit_calculator_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(ObGlobalIteratorPool::mtl_init(mods_global_iterator_pool_))) { SERVER_LOG(WARN, "mods_global_iterator_pool_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(common::ObRbMemMgr::mtl_init(mods_rb_mem_mgr_))) { SERVER_LOG(WARN, "mods_rb_mem_mgr_ fail", KR(ret)); }
@@ -2150,7 +2147,6 @@ int ObServer::obs_start_modules()
   if (OB_SUCC(ret) && OB_FAIL(ObOptStatMonitorManager::mtl_start(mods_opt_stat_monitor_manager_))) { SERVER_LOG(WARN, "mods_opt_stat_monitor_manager_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_start_default(mods_tenant_srs_))) { SERVER_LOG(WARN, "mods_tenant_srs_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_start_default(mods_index_usage_info_mgr_))) { SERVER_LOG(WARN, "mods_index_usage_info_mgr_ fail", KR(ret)); }
-  if (OB_SUCC(ret) && OB_FAIL(mtl_start_default(mods_m_view_maintenance_service_))) { SERVER_LOG(WARN, "mods_m_view_maintenance_service_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_start_default(mods_rb_mem_mgr_))) { SERVER_LOG(WARN, "mods_rb_mem_mgr_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_start_default(mods_plugin_vector_index_service_))) { SERVER_LOG(WARN, "mods_plugin_vector_index_service_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(mtl_start_default(mods_tenant_ai_service_))) { SERVER_LOG(WARN, "mods_tenant_ai_service_ fail", KR(ret)); }
@@ -2165,7 +2161,6 @@ void ObServer::obs_stop_modules()
   rootserver::ObDDLScheduler::mtl_stop(mods_ddl_scheduler_);
   mtl_stop_default(mods_plugin_vector_index_service_);
   mtl_stop_default(mods_rb_mem_mgr_);
-  mtl_stop_default(mods_m_view_maintenance_service_);
   mtl_stop_default(mods_index_usage_info_mgr_);
   mtl_stop_default(mods_tenant_srs_);
   ObOptStatMonitorManager::mtl_stop(mods_opt_stat_monitor_manager_);
@@ -2215,7 +2210,6 @@ void ObServer::obs_wait_modules()
   rootserver::ObDDLScheduler::mtl_wait(mods_ddl_scheduler_);
   mtl_wait_default(mods_plugin_vector_index_service_);
   mtl_wait_default(mods_rb_mem_mgr_);
-  mtl_wait_default(mods_m_view_maintenance_service_);
   mtl_wait_default(mods_index_usage_info_mgr_);
   mtl_wait_default(mods_tenant_srs_);
   ObOptStatMonitorManager::mtl_wait(mods_opt_stat_monitor_manager_);
@@ -2269,7 +2263,6 @@ void ObServer::obs_destroy_modules()
   mtl_destroy_default(mods_rb_mem_mgr_);
   ObGlobalIteratorPool::mtl_destroy(mods_global_iterator_pool_);
   mtl_destroy_default(mods_resource_limit_calculator_);
-  mtl_destroy_default(mods_m_view_maintenance_service_);
   mtl_destroy_default(mods_tablet_memtable_mgr_pool_);
   mtl_destroy_default(mods_index_usage_info_mgr_);
   mtl_destroy_default(mods_tenant_srs_);

@@ -115,9 +115,6 @@ enum ObLogBaseType
   //for tenant clone
   CLONE_SCHEDULER_LOG_BASE_TYPE = 42,
 
-  // for mview maintenance service
-  MVIEW_MAINTENANCE_SERVICE_LOG_BASE_TYPE = 43,
-
   // for DBMS_SCHEDULER
   DBMS_SCHEDULER_LOG_BASE_TYPE = 45,
 
@@ -231,8 +228,6 @@ int log_base_type_to_string(const ObLogBaseType log_type,
     strncpy(str ,"CLONE_SCHEDULER", str_len);
   } else if (log_type == TABLE_LOAD_RESOURCE_SERVICE_LOG_BASE_TYPE) {
     strncpy(str ,"TABLE_LOAD_RESOURCE_SERVICE", str_len);
-  } else if (log_type == MVIEW_MAINTENANCE_SERVICE_LOG_BASE_TYPE) {
-    strncpy(str, "MVIEW_MAINTENANCE_SERVICE_LOG_BASE_TYPE", str_len);
   } else if (log_type == TABLE_LOCK_LOG_BASE_TYPE) {
     strncpy(str ,"TABLE_LOCK", str_len);
   } else if (log_type == SHARED_STORAGE_PRE_WARM_LOG_BASE_TYPE) {

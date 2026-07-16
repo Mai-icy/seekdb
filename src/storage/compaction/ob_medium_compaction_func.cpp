@@ -1099,9 +1099,6 @@ int ObMediumCompactionScheduleFunc::submit_medium_clog(
   if (OB_UNLIKELY(!tablet_handle_.is_valid())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("invalid tablet_handle", K(ret), K(tablet_handle_));
-  } else if (OB_UNLIKELY(medium_info.is_invalid_mview_compaction())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("invalid mview compaction", K(ret), K(tablet_handle_), K(medium_info));
   } else if (FALSE_IT(tablet = tablet_handle_.get_obj())) {
   } else if (OB_FAIL(tablet->submit_medium_compaction_clog(medium_info, allocator_))) {
     LOG_WARN("failed to submit medium compaction clog", K(ret), K(medium_info));

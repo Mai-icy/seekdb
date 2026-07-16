@@ -51,7 +51,6 @@
 #include "lib/hash/ob_multi_mod_ref_mgr.h"
 #include "storage/tx_storage/ob_tablet_gc_service.h"
 #include "storage/tx_storage/ob_empty_shell_task.h"
-#include "storage/mview/ob_major_mv_merge_info.h"
 #include "observer/vector_index/ob_plugin_vector_index_scheduler.h"
 #include "storage/ls/ob_freezer_define.h"
 
@@ -84,9 +83,6 @@ struct ObLSVTInfo
   share::SCN tablet_change_checkpoint_scn_;
   share::SCN reserved_scn_;
   bool tx_blocked_;
-  share::SCN mv_major_merge_scn_;
-  share::SCN mv_publish_scn_;
-  share::SCN mv_safe_scn_;
   int64_t required_data_disk_size_;
   TO_STRING_KV(K_(ls_id),
                K_(replica_type),
@@ -100,9 +96,6 @@ struct ObLSVTInfo
                K_(tablet_change_checkpoint_scn),
                K_(reserved_scn),
                K_(tx_blocked),
-               K_(mv_major_merge_scn),
-               K_(mv_publish_scn),
-               K_(mv_safe_scn),
                K_(required_data_disk_size));
 };
 // Diagnose vtable statistics information
@@ -204,8 +197,7 @@ public:
   int init(const share::ObLSID &ls_id,
            const ObMigrationStatus &migration_status,
            const ObRestoreStatus &restore_status,
-           const share::SCN &create_scn,
-           const ObMajorMVMergeInfo &major_mv_merge_info);
+           const share::SCN &create_scn);
   // I am ready to work now.
   int stop();
   void wait();
@@ -400,9 +392,6 @@ public:
   {
     return ls_meta_.set_tablet_change_checkpoint_scn(ls_epoch_, tablet_change_checkpoint_scn);
   }
-  int set_major_mv_merge_scn(const share::SCN &scn) { return ls_meta_.set_major_mv_merge_scn(ls_epoch_, scn); }
-  int set_major_mv_merge_scn_safe_calc(const share::SCN &scn) { return ls_meta_.set_major_mv_merge_scn_safe_calc(ls_epoch_, scn); }
-  int set_major_mv_merge_scn_publish(const share::SCN &scn) { return ls_meta_.set_major_mv_merge_scn_publish(ls_epoch_, scn); }
   int set_restore_status(const ObRestoreStatus &restore_status);
   // get restore status
   // @param [out] restore status.

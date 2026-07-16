@@ -58,10 +58,9 @@ private:
   bool is_all_tasks_finished();
   bool is_running_tasks_before_finished();
   int refresh_ls_location_map();
-  int push_tablet_execution_id(share::ObDDLType task_type,
-    const bool ddl_can_retry,
-    const common::ObIArray<common::ObTabletID> &tablets,
-    int64_t &new_task_execution_id);
+  int push_tablet_execution_id(const bool ddl_can_retry,
+                               const common::ObIArray<common::ObTabletID> &tablets,
+                               int64_t &new_task_execution_id);
   int push_task_execution_id(int64_t &new_task_execution_id);
   void destroy();
 private:

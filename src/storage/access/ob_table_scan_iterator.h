@@ -32,7 +32,6 @@
 #include "ob_multiple_skip_scan_merge.h"
 #include "ob_multiple_multi_skip_scan_merge.h"
 #include "ob_single_merge.h"
-#include "ob_multiple_mview_merge.h"
 #include "storage/tx_storage/ob_access_service.h"
 #include "storage/tx_storage/ob_ls_map.h"
 #include "storage/tx/ob_trans_service.h"
@@ -116,7 +115,6 @@ private:
   ObMemtableRowSampleIterator *memtable_row_sample_iterator_;
   ObRowSampleIterator *row_sample_iterator_;
   ObBlockSampleIterator *block_sample_iterator_; // TODO: @yuanzhe refactor
-  ObMviewMergeWrapper *mview_merge_wrapper_;
   // we should consider the constructor cost
   ObTableAccessParam main_table_param_;
   ObTableAccessContext main_table_ctx_;

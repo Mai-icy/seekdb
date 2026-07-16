@@ -69,12 +69,6 @@ const char *oceanbase::share::get_ddl_type(ObDDLType ddl_type)
     case ObDDLType::DDL_CREATE_FTS_INDEX:
       ret_name = "DDL_CREATE_FTS_INDEX";
       break;
-    case ObDDLType::DDL_CREATE_MLOG:
-      ret_name = "DDL_CREATE_MLOG";
-      break;
-    case ObDDLType::DDL_DROP_MLOG:
-      ret_name = "DDL_DROP_MLOG";
-      break;
     case ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX:
       ret_name = "DDL_CREATE_PARTITIONED_LOCAL_INDEX";
       break;
@@ -178,12 +172,6 @@ const char *oceanbase::share::get_ddl_type(ObDDLType ddl_type)
       break;
     case ObDDLType::DDL_DIRECT_LOAD_INSERT:
       ret_name = "DDL_DIRECT_LOAD_INSERT";
-      break;
-    case ObDDLType::DDL_MVIEW_COMPLETE_REFRESH:
-      ret_name = "DDL_MVIEW_COMPLETE_REFRESH";
-      break;
-    case ObDDLType::DDL_CREATE_MVIEW:
-      ret_name = "DDL_CREATE_MVIEW";
       break;
     case ObDDLType::DDL_MODIFY_AUTO_INCREMENT_WITH_REDEFINITION:
       ret_name = "DDL_MODIFY_AUTO_INCREMENT_WITH_REDEFINITION";
@@ -780,36 +768,6 @@ int ObDDLUtil::append_multivalue_extra_column(const ObTableSchema &dest_table_sc
 
 
 
-
-int ObDDLUtil::generate_order_by_str_for_mview(const ObTableSchema &container_table_schema,
-                                               ObSqlString &rowkey_column_sql_string)
-{
-  int ret = OB_SUCCESS;
-  rowkey_column_sql_string.reset();
-  const ObRowkeyInfo &rowkey_info = container_table_schema.get_rowkey_info();
-  if (container_table_schema.is_table_without_pk()) {
-    /* do nothing */
-  } else if (OB_UNLIKELY(rowkey_info.get_size() < 1)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpcted rowkey size", K(ret), K(rowkey_info.get_size()));
-  } else if (OB_FAIL(rowkey_column_sql_string.append(" order by "))) {
-    LOG_WARN("append failed", KR(ret));
-  } else {
-    uint64_t column_id = OB_INVALID_ID;
-    int64_t sel_pos = 0;
-    for (int col_idx = 0; OB_SUCC(ret) && col_idx < rowkey_info.get_size(); ++col_idx) {
-      if (OB_FAIL(rowkey_info.get_column_id(col_idx, column_id))) {
-        LOG_WARN("Failed to get column id", K(ret));
-      } else if (OB_UNLIKELY(1 > (sel_pos = column_id - OB_APP_MIN_COLUMN_ID + 1))) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpcted select position", K(ret), K(sel_pos), K(column_id));
-      } else if (OB_FAIL(rowkey_column_sql_string.append_fmt("%s %ld", 0 != col_idx ? ",": "", sel_pos))) {
-        LOG_WARN("append fmt failed", K(ret));
-      }
-    }
-  }
-  return ret;
-}
 
 int ObDDLUtil::get_tablet_leader_addr(
     share::ObLocationService *location_service,
@@ -1720,11 +1678,6 @@ bool ObDDLUtil::use_idempotent_mode()
 
 // int64_t ObDDLUtil::get_parallel_idx moved definition to storage/ddl/ob_ddl_common_storage_impl.cpp(accesses blocksstable members)
 
-bool ObDDLUtil::is_mview_not_retryable(const share::ObDDLType task_type)
-{
-  return (task_type == DDL_MVIEW_COMPLETE_REFRESH);
-}
-
 
 #ifdef OB_BUILD_SHARED_STORAGE
 int ObDDLUtil::upload_block_for_ss(const char *buf, const int64_t len, const blocksstable::MacroBlockId &macro_block_id)
@@ -2554,7 +2507,7 @@ int ObDDLDiagnoseInfo::generate_session_longops_message_v1(ObDDLTaskStatInfo &st
                               MAX_LONG_OPS_MESSAGE_LENGTH,
                               pos,
                               "STATUS: REPLICA BUILD, PARALLELISM: %ld, ROW_SCANNED: %ld, ROW_SORTED: %ld, ROW_INSERTED: %ld",
-                              ObDDLUtil::get_real_parallelism(parallelism_, false/*is mv refresh*/),
+                              ObDDLUtil::get_real_parallelism(parallelism_),
                               row_scanned_,
                               row_sorted_ + row_merge_sorted_,
                               row_inserted_file_))) {

@@ -57,9 +57,6 @@ typedef common::ObSEArray<common::ObStoreRange, common::OB_DEFAULT_MULTI_GET_ROW
 
 static const int64_t EXIST_READ_SNAPSHOT_VERSION = share::OB_MAX_SCN_TS_NS - 1;
 static const int64_t MERGE_READ_SNAPSHOT_VERSION = share::OB_MAX_SCN_TS_NS - 2;
-// static const int64_t MV_LEFT_MERGE_READ_SNAPSHOT_VERSION = INT64_MAX - 3;
-// static const int64_t MV_RIGHT_MERGE_READ_SNAPSHOT_VERSION = INT64_MAX - 4;
-// static const int64_t MV_MERGE_READ_SNAPSHOT_VERSION = INT64_MAX - 5;
 // static const int64_t BUILD_INDEX_READ_SNAPSHOT_VERSION = INT64_MAX - 6;
 // static const int64_t WARM_UP_READ_SNAPSHOT_VERSION = INT64_MAX - 7;
 static const int64_t GET_BATCH_ROWS_READ_SNAPSHOT_VERSION = share::OB_MAX_SCN_TS_NS - 8;

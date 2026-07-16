@@ -1348,7 +1348,7 @@ int ObDictTableMeta::build_column_id_arr_(const share::schema::ObTableSchema &ta
 {
   int ret = OB_SUCCESS;
   column_id_arr_order_by_table_def_.reset();
-  if (table_schema.is_view_table() && !table_schema.is_materialized_view()) {
+  if (table_schema.is_view_table()) {
     DDLOG(DEBUG, "build_column_id_arr_ skip view", KPC(this));
   } else {
     ObColumnIterByPrevNextID pre_next_id_iter(table_schema);

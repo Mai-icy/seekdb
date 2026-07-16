@@ -450,13 +450,13 @@ public:
       const share::ObDDLType ddl_type,
       bool &has_conflict_ddl);
 
-  static int check_has_index_or_mlog_task(
+  static int check_has_index_task(
       common::ObISQLClient &proxy,
       const ObTableSchema &index_schema,
       const uint64_t data_table_id,
       bool &has_index_task);
 
-  static int get_create_index_or_mlog_task_cnt(
+  static int get_create_index_task_cnt(
     common::ObISQLClient &proxy,
     const uint64_t data_table_id,
     int64_t &task_cnt);
@@ -685,7 +685,6 @@ public:
   int64_t get_execution_id() const;
   static int calc_next_execution_id(
       int64_t execution_id,
-      const share::ObDDLType ddl_type,
       const bool ddl_can_retry,
       int64_t &next_execution_id);
   static int push_task_execution_id(

@@ -917,7 +917,6 @@ int ObCreateTableArg::assign(const ObCreateTableArg &other)
   OX(is_alter_view_ = other.is_alter_view_);
   OZ(sequence_ddl_arg_.assign(other.sequence_ddl_arg_));
   OZ(dep_infos_.assign(other.dep_infos_));
-  OZ(mv_ainfo_.assign(other.mv_ainfo_));
 
   return ret;
 }
@@ -956,8 +955,7 @@ OB_SERIALIZE_MEMBER((ObCreateTableArg, ObDDLArg),
                     error_info_,
                     is_alter_view_,
                     sequence_ddl_arg_,
-                    dep_infos_,
-                    mv_ainfo_);
+                    dep_infos_);
 
 bool ObCreateTableArg::is_allow_when_upgrade() const
 {
@@ -1526,7 +1524,6 @@ OB_DEF_SERIALIZE(ObAlterTableArg)
               is_add_to_scheduler_,
               inner_sql_exec_addr_,
               local_session_var_,
-              mview_refresh_info_,
               alter_algorithm_,
               alter_auto_partition_attr_,
               rebuild_index_arg_list_,
@@ -1542,10 +1539,6 @@ OB_DEF_SERIALIZE(ObAlterTableArg)
   }
 
   LST_DO_CODE(OB_UNIS_ENCODE,
-              is_alter_mview_attributes_,
-              alter_mview_arg_,
-              is_alter_mlog_attributes_,
-              alter_mlog_arg_,
               part_storage_cache_policy_,
               data_version_);
 
@@ -1638,7 +1631,6 @@ OB_DEF_DESERIALIZE(ObAlterTableArg)
               is_add_to_scheduler_,
               inner_sql_exec_addr_,
               local_session_var_,
-              mview_refresh_info_,
               alter_algorithm_,
               alter_auto_partition_attr_,
               rebuild_index_arg_list_,
@@ -1653,10 +1645,6 @@ OB_DEF_DESERIALIZE(ObAlterTableArg)
     }
   }
   LST_DO_CODE(OB_UNIS_DECODE,
-              is_alter_mview_attributes_,
-              alter_mview_arg_,
-              is_alter_mlog_attributes_,
-              alter_mlog_arg_,
               part_storage_cache_policy_,
               data_version_);
   return ret;
@@ -1703,7 +1691,6 @@ OB_DEF_SERIALIZE_SIZE(ObAlterTableArg)
                 is_add_to_scheduler_,
                 inner_sql_exec_addr_,
                 local_session_var_,
-                mview_refresh_info_,
                 alter_algorithm_,
                 alter_auto_partition_attr_,
                 rebuild_index_arg_list_,
@@ -1711,10 +1698,6 @@ OB_DEF_SERIALIZE_SIZE(ObAlterTableArg)
                 client_session_create_ts_,
                 lock_priority_,
                 is_direct_load_partition_,
-                is_alter_mview_attributes_,
-                alter_mview_arg_,
-                is_alter_mlog_attributes_,
-                alter_mlog_arg_,
                 part_storage_cache_policy_,
                 data_version_);
   }
@@ -2417,17 +2400,13 @@ DEF_TO_STRING(ObRebuildIndexArg) {
        K_(database_name),
        K_(index_action_type),
        K_(index_table_id),
-       K_(vidx_refresh_info),
-       K_(rebuild_index_type),
-       K_(create_mlog_arg));
+       K_(vidx_refresh_info));
   J_OBJ_END();
   return pos;
 }
 OB_SERIALIZE_MEMBER((ObRebuildIndexArg, ObIndexArg),
                     index_table_id_,
-                    vidx_refresh_info_,
-                    rebuild_index_type_,
-                    create_mlog_arg_);
+                    vidx_refresh_info_);
 
 
 DEF_TO_STRING(ObAlterIndexParallelArg)
@@ -3436,13 +3415,6 @@ bool ObUpdateIndexStatusArg::is_valid() const
 
 
 
-bool ObUpdateMViewStatusArg::is_valid() const
-{
-  return (OB_INVALID_ID != mview_table_id_)
-         && (ObMVAvailableFlag::IS_MV_UNAVAILABLE == mv_available_flag_
-             || ObMVAvailableFlag::IS_MV_AVAILABLE == mv_available_flag_);
-}
-
 OB_SERIALIZE_MEMBER((ObUpdateIndexStatusArg, ObDDLArg),
                     index_table_id_,
                     status_,
@@ -3452,12 +3424,6 @@ OB_SERIALIZE_MEMBER((ObUpdateIndexStatusArg, ObDDLArg),
                     database_name_,
                     task_id_,
                     error_code_);
-
-OB_SERIALIZE_MEMBER((ObUpdateMViewStatusArg, ObDDLArg),
-                    mview_table_id_,
-                    mv_available_flag_,
-                    convert_status_,
-                    in_offline_ddl_white_list_);
 
 OB_SERIALIZE_MEMBER(ObMergeFinishArg, server_, frozen_version_);
 
@@ -5008,9 +4974,6 @@ OB_SERIALIZE_MEMBER(ObCancelGatherStatsArg, task_id_);
 
 
 
-
-OB_SERIALIZE_MEMBER(ObCheckNestedMViewMdsArg, mview_id_, refresh_id_, target_data_sync_scn_);
-OB_SERIALIZE_MEMBER(ObCheckNestedMViewMdsRes, target_data_sync_scn_, ret_);
 
 OB_SERIALIZE_MEMBER((ObCreateTableGroupRes, ObParallelDDLRes), tablegroup_id_);
 

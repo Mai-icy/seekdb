@@ -117,7 +117,6 @@ public:
   virtual table::ObTableObjectPoolMgr * table_object_pool_mgr() { return nullptr; }
   virtual share::ObIndexUsageInfoMgr * index_usage_info_mgr() { return nullptr; }
   virtual storage::ObTabletMemtableMgrPool * tablet_memtable_mgr_pool() { return nullptr; }
-  virtual rootserver::ObMViewMaintenanceService * m_view_maintenance_service() { return nullptr; }
   virtual share::ObResourceLimitCalculator * resource_limit_calculator() { return nullptr; }
   virtual storage::ObGlobalIteratorPool * global_iterator_pool() { return nullptr; }
   virtual common::ObRbMemMgr * rb_mem_mgr() { return nullptr; }

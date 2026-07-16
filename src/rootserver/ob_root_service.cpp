@@ -36,7 +36,6 @@
 #include "rootserver/ob_partition_exchange.h"
 #include "rootserver/ob_schema2ddl_sql.h"
 #include "rootserver/ob_index_builder.h"
-#include "rootserver/ob_mlog_builder.h"
 #include "rootserver/ob_ddl_sql_generator.h"
 #include "rootserver/ddl_task/ob_ddl_task.h"
 #include "rootserver/ddl_task/ob_constraint_task.h"
@@ -56,7 +55,6 @@
 #include "parallel_ddl/ob_create_table_helper.h" // ObCreateTableHelper
 #include "parallel_ddl/ob_create_table_like_helper.h" // ObCreateTableLikeHelper
 #include "rootserver/parallel_ddl/ob_create_view_helper.h"  // ObCreateViewHelper
-#include "rootserver/parallel_ddl/ob_create_materialized_view_helper.h"  // ObCreateMaterializedViewHelper
 #include "parallel_ddl/ob_set_comment_helper.h" //ObCommentHelper
 #include "parallel_ddl/ob_create_index_helper.h" // ObCreateIndexHelper
 #include "parallel_ddl/ob_update_index_status_helper.h" // ObUpdateIndexStatusHelper
@@ -1158,20 +1156,11 @@ int ObRootService::parallel_create_table(const ObCreateTableArg &arg, ObCreateTa
   } else if (OB_FAIL(parallel_ddl_pre_check_())) {
     LOG_WARN("pre check failed before parallel ddl execute", KR(ret));
   } else if (arg.schema_.is_view_table()) {
-    if (arg.schema_.is_materialized_view()) {
-      ObCreateMaterializedViewHelper create_mv_helper(schema_service_, arg, res, nullptr /*external trans*/,is_parallel);
-      if (OB_FAIL(create_mv_helper.init(ddl_service_))) {
-        LOG_WARN("fail to init create materialized view helper", KR(ret));
-      } else if (OB_FAIL(create_mv_helper.execute())) {
-        LOG_WARN("fail to execute create materialized view", KR(ret));
-      }
-    } else {
-      ObCreateViewHelper create_view_helper(schema_service_, arg, res, nullptr /*external trans*/,is_parallel);
-      if (OB_FAIL(create_view_helper.init(ddl_service_))) {
-        LOG_WARN("fail to init create view helper", KR(ret));
-      } else if (OB_FAIL(create_view_helper.execute())) {
-        LOG_WARN("fail to execute create view", KR(ret));
-      }
+    ObCreateViewHelper create_view_helper(schema_service_, arg, res, nullptr /*external trans*/,is_parallel);
+    if (OB_FAIL(create_view_helper.init(ddl_service_))) {
+      LOG_WARN("fail to init create view helper", KR(ret));
+    } else if (OB_FAIL(create_view_helper.execute())) {
+      LOG_WARN("fail to execute create view", KR(ret));
     }
   } else {
     ObCreateTableHelper create_table_helper(schema_service_, arg, res);
@@ -1317,30 +1306,6 @@ int ObRootService::maintain_obj_dependency_info(const obcall::ObDependencyObjDDL
   return ret;
 }
 
-int ObRootService::mview_complete_refresh(const obcall::ObMViewCompleteRefreshArg &arg,
-                                          obcall::ObMViewCompleteRefreshRes &res)
-{
-  LOG_DEBUG("receive mview complete refresh arg", K(arg));
-  int ret = OB_SUCCESS;
-  if (!inited_) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("not init", KR(ret));
-  } else if (!arg.is_valid()) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid arg", KR(ret), K(arg));
-  } else {
-    ObSchemaGetterGuard schema_guard;
-    if (OB_FAIL(ddl_service_.get_tenant_schema_guard_with_version_in_inner_table(schema_guard))) {
-      LOG_WARN("get schema guard in inner table failed", KR(ret));
-    } else if (OB_FAIL(check_parallel_ddl_conflict(schema_guard, arg))) {
-      LOG_WARN("check parallel ddl conflict failed", KR(ret), K(arg));
-    } else if (OB_FAIL(ddl_service_.mview_complete_refresh(arg, res, schema_guard))) {
-      LOG_WARN("failed to mview complete refresh", KR(ret), K(arg));
-    }
-  }
-  return ret;
-}
-
 int ObRootService::execute_ddl_task(const obcall::ObAlterTableArg &arg,
                                     common::ObSArray<uint64_t> &obj_ids)
 {
@@ -1437,12 +1402,6 @@ int ObRootService::execute_ddl_task(const obcall::ObAlterTableArg &arg,
       case share::SWITCH_VEC_INDEX_NAME_TASK: {
         if (OB_FAIL(ddl_service_.switch_index_name_and_status_for_vec_index_table(const_cast<ObAlterTableArg &>(arg)))) {
           LOG_WARN("make recovert restore task visible failed", K(ret), K(arg));
-        }
-        break;
-      }
-      case share::SWITCH_MLOG_NAME_TASK: {
-        if (OB_FAIL(ddl_service_.switch_index_name_and_status_for_mlog_table(const_cast<ObAlterTableArg &>(arg)))) {
-          LOG_WARN("failed to switch index name and status for mlog table", K(ret), K(arg));
         }
         break;
       }
@@ -1952,32 +1911,6 @@ int ObRootService::create_index(const ObCreateIndexArg &arg, obcall::ObAlterTabl
                         "table_id", table_id_buffer,
                         "schema_version", res.schema_version_);
   LOG_INFO("finish create index ddl", K(ret), K(arg), K(res), "ddl_event_info", ObDDLEventInfo());
-  return ret;
-}
-
-int ObRootService::create_mlog(const obcall::ObCreateMLogArg &arg, obcall::ObCreateMLogRes &res)
-{
-  int ret = OB_SUCCESS;
-  if (!inited_) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("not init", KR(ret));
-  } else if (!arg.is_valid()) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid arg", KR(ret), K(arg));
-  } else {
-    ObSchemaGetterGuard schema_guard;
-    ObMLogBuilder mlog_builder(ddl_service_);
-    if (OB_FAIL(ddl_service_.get_tenant_schema_guard_with_version_in_inner_table(
-        schema_guard))) {
-      LOG_WARN("get schema guard in inner table failed", K(ret));
-    } else if (OB_FAIL(check_parallel_ddl_conflict(schema_guard, arg))) {
-      LOG_WARN("check parallel ddl conflict failed", K(ret));
-    } else if (OB_FAIL(mlog_builder.init())) {
-      LOG_WARN("failed to init mlog builder", KR(ret));
-    } else if (OB_FAIL(mlog_builder.create_or_replace_mlog(schema_guard, arg, res))) {
-      LOG_WARN("failed to create mlog", KR(ret), K(arg));
-    }
-  }
   return ret;
 }
 
@@ -2753,21 +2686,6 @@ int ObRootService::update_index_status(const obcall::ObUpdateIndexStatusArg &arg
                         "task_id", arg.task_id_,
                         "index_table_id", arg.index_table_id_,
                         "data_table_id", arg.data_table_id_);
-  return ret;
-}
-
-int ObRootService::update_mview_status(const obcall::ObUpdateMViewStatusArg &arg)
-{
-  int ret = OB_SUCCESS;
-  if (!inited_) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("not init", K(ret));
-  } else if (!arg.is_valid()) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid arg", KR(ret), K(arg));
-  } else if (OB_FAIL(ddl_service_.update_mview_status(arg))) {
-    LOG_WARN("update mview table status failed", KR(ret), K(arg));
-  }
   return ret;
 }
 
@@ -4116,11 +4034,6 @@ int ObRootService::table_allow_ddl_operation(const obcall::ObAlterTableArg &arg)
       ret = OB_OP_NOT_ALLOW;
       LOG_WARN("try to alter invisible table schema", K(schema->get_session_id()), K(arg));
       LOG_USER_ERROR(OB_OP_NOT_ALLOW, "try to alter invisible table");
-    }
-  } else if ((schema->required_by_mview_refresh() || schema->is_mlog_table()) &&
-             !arg.is_alter_mlog_attributes_) {
-    if (OB_FAIL(ObResolverUtils::check_allowed_alter_operations_for_mlog(arg, *schema))) {
-      LOG_WARN("failed to check allowed alter operation for mlog", KR(ret), K(arg));
     }
   }
   return ret;

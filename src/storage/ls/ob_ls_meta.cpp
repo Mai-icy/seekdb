@@ -53,8 +53,7 @@ ObLSMeta::ObLSMeta()
     all_id_meta_(),
     saved_info_(),
     reserved_scn_(SCN::min_scn()),
-    rebuild_info_(),
-    major_mv_merge_info_()
+    rebuild_info_()
 {
 }
 
@@ -74,8 +73,7 @@ ObLSMeta::ObLSMeta(const ObLSMeta &ls_meta)
     tablet_change_checkpoint_scn_(ls_meta.tablet_change_checkpoint_scn_),
     saved_info_(ls_meta.saved_info_),
     reserved_scn_(ls_meta.reserved_scn_),
-    rebuild_info_(ls_meta.rebuild_info_),
-    major_mv_merge_info_(ls_meta.major_mv_merge_info_)
+    rebuild_info_(ls_meta.rebuild_info_)
 {
   int ret = OB_SUCCESS;
   all_id_meta_.update_all_id_meta(ls_meta.all_id_meta_);
@@ -136,7 +134,6 @@ ObLSMeta &ObLSMeta::operator=(const ObLSMeta &other)
     saved_info_ = other.saved_info_;
     reserved_scn_ = other.reserved_scn_;
     rebuild_info_ = other.rebuild_info_;
-    major_mv_merge_info_ = other.major_mv_merge_info_;
   }
   return *this;
 }
@@ -159,7 +156,6 @@ void ObLSMeta::reset()
   saved_info_.reset();
   reserved_scn_ = SCN::min_scn();
   rebuild_info_.reset();
-  major_mv_merge_info_.reset();
 }
 
 LSN ObLSMeta::get_clog_base_lsn() const
@@ -229,90 +225,6 @@ int ObLSMeta::set_tablet_change_checkpoint_scn(
       LOG_INFO("update tablet change checkpoint scn", K(ls_id_),
           "old_scn", tablet_change_checkpoint_scn_, "new_scn", tablet_change_checkpoint_scn);
       tablet_change_checkpoint_scn_ = tablet_change_checkpoint_scn;
-    }
-  }
-
-  return ret;
-}
-
-ObMajorMVMergeInfo ObLSMeta::get_major_mv_merge_info() const
-{
-  ObReentrantRLockGuard guard(rw_lock_);
-  return major_mv_merge_info_;
-}
-
-int ObLSMeta::set_major_mv_merge_scn(const int64_t ls_epoch, const SCN &major_mv_merge_scn)
-{
-  int ret = OB_SUCCESS;
-  ObReentrantWLockGuard update_guard(update_lock_);
-  if (OB_FAIL(check_can_update_())) {
-    LOG_WARN("ls meta cannot update", K(ret), K(*this));
-  } else if (major_mv_merge_info_.major_mv_merge_scn_ >= major_mv_merge_scn) {
-    LOG_INFO("old_scn is less than new_scn, skip", K(ls_id_),
-          "old_scn", major_mv_merge_info_.major_mv_merge_scn_, "new_scn", major_mv_merge_scn);
-  } else {
-    ObLSMeta tmp(*this);
-    tmp.major_mv_merge_info_.major_mv_merge_scn_ = major_mv_merge_scn;
-
-    if (OB_FAIL(write_slog_(ls_epoch, tmp))) {
-      LOG_WARN("write slog failed", K(ret));
-    } else {
-      ObReentrantWLockGuard guard(rw_lock_);
-      LOG_INFO("update major_mv_merge_scn", K(ls_id_),
-          "old_scn", major_mv_merge_info_.major_mv_merge_scn_, "new_scn", major_mv_merge_scn);
-      major_mv_merge_info_.major_mv_merge_scn_ = major_mv_merge_scn;
-    }
-  }
-
-  return ret;
-}
-
-int ObLSMeta::set_major_mv_merge_scn_safe_calc(const int64_t ls_epoch, const SCN &major_mv_merge_scn_safe_calc)
-{
-  int ret = OB_SUCCESS;
-  ObReentrantWLockGuard update_guard(update_lock_);
-  if (OB_FAIL(check_can_update_())) {
-    LOG_WARN("ls meta cannot update", K(ret), K(*this));
-  } else if (major_mv_merge_info_.major_mv_merge_scn_safe_calc_ >= major_mv_merge_scn_safe_calc) {
-    LOG_INFO("old_scn is not less than new_scn, skip", K(ls_id_),
-          "old_scn", major_mv_merge_info_.major_mv_merge_scn_safe_calc_, "new_scn", major_mv_merge_scn_safe_calc);
-  } else {
-    ObLSMeta tmp(*this);
-    tmp.major_mv_merge_info_.major_mv_merge_scn_safe_calc_ = major_mv_merge_scn_safe_calc;
-
-    if (OB_FAIL(write_slog_(ls_epoch, tmp))) {
-      LOG_WARN("write slog failed", K(ret));
-    } else {
-      ObReentrantWLockGuard guard(rw_lock_);
-      LOG_INFO("update major_mv_merge_scn_safe_calc", K(ls_id_),
-          "old_scn", major_mv_merge_info_.major_mv_merge_scn_safe_calc_, "new_scn", major_mv_merge_scn_safe_calc);
-      major_mv_merge_info_.major_mv_merge_scn_safe_calc_ = major_mv_merge_scn_safe_calc;
-    }
-  }
-
-  return ret;
-}
-
-int ObLSMeta::set_major_mv_merge_scn_publish(const int64_t ls_epoch, const SCN &major_mv_merge_scn_publish)
-{
-  int ret = OB_SUCCESS;
-  ObReentrantWLockGuard update_guard(update_lock_);
-  if (OB_FAIL(check_can_update_())) {
-    LOG_WARN("ls meta cannot update", K(ret), K(*this));
-  } else if (major_mv_merge_info_.major_mv_merge_scn_publish_ >= major_mv_merge_scn_publish) {
-    LOG_INFO("old_scn is not less than new_scn, skip", K(ls_id_),
-          "old_scn", major_mv_merge_info_.major_mv_merge_scn_publish_, "new_scn", major_mv_merge_scn_publish);
-  } else {
-    ObLSMeta tmp(*this);
-    tmp.major_mv_merge_info_.major_mv_merge_scn_publish_ = major_mv_merge_scn_publish;
-
-    if (OB_FAIL(write_slog_(ls_epoch, tmp))) {
-      LOG_WARN("write slog failed", K(ret));
-    } else {
-      ObReentrantWLockGuard guard(rw_lock_);
-      LOG_INFO("update major_mv_merge_scn_publish", K(ls_id_),
-          "old_scn", major_mv_merge_info_.major_mv_merge_scn_publish_, "new_scn", major_mv_merge_scn_publish);
-      major_mv_merge_info_.major_mv_merge_scn_publish_ = major_mv_merge_scn_publish;
     }
   }
 
@@ -576,7 +488,6 @@ int ObLSMeta::update_ls_meta(
       if (update_restore_status) {
         restore_status_ = ls_restore_status;
       }
-      major_mv_merge_info_ = src_ls_meta.major_mv_merge_info_;
       // store format doesn't change
     }
     LOG_INFO("update ls meta", K(ret), K(tmp), K(src_ls_meta), K(*this));
@@ -710,14 +621,12 @@ int ObLSMeta::init(
     const share::ObLSID &ls_id,
     const ObMigrationStatus &migration_status,
     const ObRestoreStatus &restore_status,
-    const SCN &create_scn,
-    const ObMajorMVMergeInfo &major_mv_merge_info)
+    const SCN &create_scn)
 {
   int ret = OB_SUCCESS;
   if (!ls_id.is_valid()
       || !ObMigrationStatusHelper::is_valid(migration_status)
-      || !restore_status.is_valid()
-      || !major_mv_merge_info.is_valid()) {
+      || !restore_status.is_valid()) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("init ls meta get invalid argument", K(ret), K(ls_id),
              K(migration_status), K(restore_status));
@@ -731,7 +640,6 @@ int ObLSMeta::init(
     migration_status_ = migration_status;
     restore_status_ = restore_status;
     reserved_scn_ = SCN::min_scn();
-    major_mv_merge_info_ = major_mv_merge_info;
   }
   return ret;
 }
@@ -986,8 +894,7 @@ OB_SERIALIZE_MEMBER(ObLSMeta,
                     all_id_meta_,
                     saved_info_,
                     reserved_scn_,
-                    rebuild_info_,
-                    major_mv_merge_info_);
+                    rebuild_info_);
 
 }
 }

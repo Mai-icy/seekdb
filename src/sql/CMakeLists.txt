@@ -30,17 +30,6 @@ ob_set_subtarget(ob_sql common
 ob_set_subtarget(ob_sql common_mixed
   privilege_check/ob_privilege_check.cpp
   privilege_check/ob_ai_model_priv_util.cpp
-  resolver/mv/ob_mv_checker.cpp
-  resolver/mv/ob_mv_provider.cpp
-  resolver/mv/ob_mv_printer.cpp
-  resolver/mv/ob_simple_mav_printer.cpp
-  resolver/mv/ob_simple_mjv_printer.cpp
-  resolver/mv/ob_simple_join_mav_printer.cpp
-  resolver/mv/ob_outer_join_mjv_printer.cpp
-  resolver/mv/ob_union_all_mv_printer.cpp
-  resolver/mv/ob_major_refresh_mjv_printer.cpp
-  resolver/mv/ob_mv_dep_utils.cpp
-  resolver/mv/ob_alter_mview_utils.cpp
 )
 
 ob_set_subtarget(ob_sql hybrid_search
@@ -422,7 +411,6 @@ ob_set_subtarget(ob_sql engine_cmd
   engine/cmd/ob_empty_query_executor.cpp
   engine/cmd/ob_get_diagnostics_executor.cpp
   engine/cmd/ob_index_executor.cpp
-  engine/cmd/ob_mlog_executor.cpp
   engine/cmd/ob_kill_executor.cpp
   engine/cmd/ob_kill_session_arg.cpp
   engine/cmd/ob_load_data_direct_impl.cpp
@@ -688,7 +676,6 @@ ob_set_subtarget(ob_sql engine_expr
   engine/expr/ob_expr_extract_cert_expired_time.cpp
   engine/expr/ob_expr_transaction_id.cpp
   engine/expr/ob_expr_inner_row_cmp_val.cpp
-  engine/expr/ob_expr_last_refresh_scn.cpp
   engine/expr/ob_expr_json_utils.cpp
   engine/expr/ob_expr_array.cpp
   engine/expr/ob_expr_vector.cpp
@@ -1401,8 +1388,6 @@ ob_set_subtarget(ob_sql resolver_ddl
   resolver/ddl/ob_create_index_stmt.cpp
   resolver/ddl/ob_create_location_resolver.cpp
   resolver/ddl/ob_create_location_stmt.cpp
-  resolver/ddl/ob_create_mlog_resolver.cpp
-  resolver/ddl/ob_create_mlog_stmt.cpp
   resolver/ddl/ob_create_outline_resolver.cpp
   resolver/ddl/ob_create_package_resolver.cpp
   resolver/ddl/ob_create_routine_resolver.cpp
@@ -1425,8 +1410,6 @@ ob_set_subtarget(ob_sql resolver_ddl
   resolver/ddl/ob_drop_index_stmt.cpp
   resolver/ddl/ob_drop_location_resolver.cpp
   resolver/ddl/ob_drop_location_stmt.cpp
-  resolver/ddl/ob_drop_mlog_resolver.cpp
-  resolver/ddl/ob_drop_mlog_stmt.cpp
   resolver/ddl/ob_drop_outline_resolver.cpp
   resolver/ddl/ob_drop_package_resolver.cpp
   resolver/ddl/ob_drop_routine_resolver.cpp
@@ -1566,11 +1549,9 @@ ob_set_subtarget(ob_sql rewrite
   rewrite/ob_transform_expr_pullup.cpp
   rewrite/ob_transformer_impl.cpp
   rewrite/ob_transform_conditional_aggr_coalesce.cpp
-  rewrite/ob_transform_mv_rewrite.cpp
   rewrite/ob_union_find.cpp
   rewrite/ob_transform_decorrelate.cpp
   rewrite/ob_transform_late_materialization.cpp
-  rewrite/ob_transform_mv_rewrite_prepare.cpp
   rewrite/ob_transform_distinct_aggregate.cpp
 )
 

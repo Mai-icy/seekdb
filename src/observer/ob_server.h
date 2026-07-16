@@ -471,7 +471,6 @@ public:
   table::ObTableObjectPoolMgr * table_object_pool_mgr() override { return mods_table_object_pool_mgr_; }
   share::ObIndexUsageInfoMgr * index_usage_info_mgr() override { return mods_index_usage_info_mgr_; }
   storage::ObTabletMemtableMgrPool * tablet_memtable_mgr_pool() override { return mods_tablet_memtable_mgr_pool_; }
-  rootserver::ObMViewMaintenanceService * m_view_maintenance_service() override { return mods_m_view_maintenance_service_; }
   share::ObResourceLimitCalculator * resource_limit_calculator() override { return mods_resource_limit_calculator_; }
   storage::ObGlobalIteratorPool * global_iterator_pool() override { return mods_global_iterator_pool_; }
   common::ObRbMemMgr * rb_mem_mgr() override { return mods_rb_mem_mgr_; }
@@ -575,7 +574,6 @@ private:
   table::ObTableObjectPoolMgr * mods_table_object_pool_mgr_ = nullptr;
   share::ObIndexUsageInfoMgr * mods_index_usage_info_mgr_ = nullptr;
   storage::ObTabletMemtableMgrPool * mods_tablet_memtable_mgr_pool_ = nullptr;
-  rootserver::ObMViewMaintenanceService * mods_m_view_maintenance_service_ = nullptr;
   share::ObResourceLimitCalculator * mods_resource_limit_calculator_ = nullptr;
   storage::ObGlobalIteratorPool * mods_global_iterator_pool_ = nullptr;
   common::ObRbMemMgr * mods_rb_mem_mgr_ = nullptr;

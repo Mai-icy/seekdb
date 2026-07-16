@@ -405,9 +405,6 @@ int ObTableLoadService::check_support_direct_load(ObSchemaGetterGuard &schema_gu
       if (table_schema->is_view_table()) {
         LOG_WARN("direct-load does not support view table", KR(ret));
         FORWARD_USER_ERROR_MSG(ret, "%sdirect-load does not support view table", tmp_prefix);
-      } else if (table_schema->is_mlog_table()) {
-        LOG_WARN("direct-load does not support materialized view log table", KR(ret));
-        FORWARD_USER_ERROR_MSG(ret, "%sdirect-load does not support materialized view log table", tmp_prefix);
       } else {
         LOG_WARN("direct-load does not support non-user table", KR(ret));
         FORWARD_USER_ERROR_MSG(ret, "%sdirect-load does not support non-user table", tmp_prefix);
@@ -436,16 +433,6 @@ int ObTableLoadService::check_support_direct_load(ObSchemaGetterGuard &schema_gu
       ret = OB_NOT_SUPPORTED;
       LOG_WARN("direct-load does not support table with trigger enabled", KR(ret), K(trigger_enabled));
       FORWARD_USER_ERROR_MSG(ret, "%sdirect-load does not support table with trigger enabled", tmp_prefix);
-    }
-    // check if table has mlog
-    else if (table_schema->has_mlog_table() && !table_schema->mv_container_table()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("direct-load does not support table with materialized view log", KR(ret));
-      FORWARD_USER_ERROR_MSG(ret, "%sdirect-load does not support table with materialized view log", tmp_prefix);
-    } else if (table_schema->table_referenced_by_fast_lsm_mv()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("direct-load does not support table required by materialized view", KR(ret));
-      FORWARD_USER_ERROR_MSG(ret, "%sdirect-load does not support table required by materialized view", tmp_prefix);
     }
     // check for full text search index
     else if (OB_FAIL(check_support_direct_load_for_fts_index(schema_guard, table_schema, method, load_mode))) {

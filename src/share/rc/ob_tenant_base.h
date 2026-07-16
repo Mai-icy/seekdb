@@ -151,7 +151,6 @@ namespace rootserver
   class ObPrimaryMajorFreezeService;
   class ObRestoreMajorFreezeService;
   class ObDBMSSchedService;
-  class ObMViewMaintenanceService;
   class ObDDLScheduler;
   class ObDDLServiceLauncher;
   class ObSysTenantLoadSysPackageService;
@@ -316,7 +315,6 @@ using ObTableScanIteratorObjPool = common::ObServerObjectPool<oceanbase::storage
       table::ObTableObjectPoolMgr*,                \
       share::ObIndexUsageInfoMgr*,                  \
       storage::ObTabletMemtableMgrPool*,            \
-      rootserver::ObMViewMaintenanceService*,       \
       PublicBlockGCService                          \
       share::ObResourceLimitCalculator*,            \
       storage::ObGlobalIteratorPool*,                \

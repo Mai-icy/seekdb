@@ -54,21 +54,7 @@ int ObDASIndexDMLAdaptor<DAS_OP_TABLE_INSERT, ObDASDMLIterator>::write_rows(cons
 {
   int ret = OB_SUCCESS;
   ObAccessService *as = share::g_mp->access_service();
-  if (ctdef.table_param_.get_data_table().is_mlog_table()
-      && !ctdef.is_access_mlog_as_master_table_) {
-    ObDASMLogDMLIterator mlog_iter(ls_id, tablet_id, dml_param_, &iter, DAS_OP_TABLE_INSERT);
-    if (OB_FAIL(as->insert_rows(ls_id,
-                                tablet_id,
-                                *tx_desc_,
-                                dml_param_,
-                                ctdef.column_ids_,
-                                &mlog_iter,
-                                affected_rows))) {
-      if (OB_TRY_LOCK_ROW_CONFLICT != ret) {
-        LOG_WARN("insert rows to access service failed", K(ret));
-      }
-    }
-  } else if (rtdef.use_put_) {
+  if (rtdef.use_put_) {
     ret = as->put_rows(ls_id,
                        tablet_id,
                        *tx_desc_,
@@ -314,17 +300,9 @@ int ObDASInsertOp::insert_row_with_fetch()
     } else if (OB_FAIL(dml_iter.rewind(index_ins_ctdef, nullptr/*fts_doc_word_info*/))) {
       LOG_WARN("rewind dml iter failed", K(ret));
     } else {
-      ObDASMLogDMLIterator mlog_iter(ls_id_, index_tablet_id, dml_param, &dml_iter, DAS_OP_TABLE_INSERT);
-      ObDatumRowIterator *new_iter = nullptr;
-      if (index_ins_ctdef->table_param_.get_data_table().is_mlog_table()
-          && !index_ins_ctdef->is_access_mlog_as_master_table_) {
-        new_iter = &mlog_iter;
-      } else {
-        new_iter = &dml_iter;
-      }
       if (OB_FAIL(insert_index_with_fetch(dml_param,
                                           as,
-                                          *new_iter,
+                                          dml_iter,
                                           result_iter,
                                           index_ins_ctdef,
                                           index_ins_rtdef,

@@ -406,7 +406,7 @@ int ObDASIndexDMLAdaptor<DAS_OP_TABLE_UPDATE, ObDASUpdIterator>::write_rows(cons
   ObAccessService *as = share::g_mp->access_service();
   if (OB_UNLIKELY((ctdef.table_param_.get_data_table().is_vector_delta_buffer() ||
                   ctdef.table_param_.get_data_table().is_hybrid_vector_index_log()) &&
-                  !ctdef.is_access_mlog_as_master_table_)) {
+                  !ctdef.is_access_main_table_)) {
     // for vector delta buffer/hybrid log table, only do insert when DML with main table
     if (OB_FAIL(as->insert_rows(ls_id, tablet_id, *tx_desc_, dml_param_,
                                 ctdef.column_ids_, &iter, affected_rows))) {
@@ -424,20 +424,6 @@ int ObDASIndexDMLAdaptor<DAS_OP_TABLE_UPDATE, ObDASUpdIterator>::write_rows(cons
                                        ctdef.column_ids_, &iter, affected_rows))) {
       if (OB_TRY_LOCK_ROW_CONFLICT != ret) {
         LOG_WARN("insert rows to access service failed", K(ret), K(ls_id), K(tablet_id));
-      }
-    }
-  } else if (ctdef.table_param_.get_data_table().is_mlog_table()
-      && !ctdef.is_access_mlog_as_master_table_) {
-    ObDASMLogDMLIterator mlog_iter(ls_id, tablet_id, dml_param_, &iter, DAS_OP_TABLE_UPDATE);
-    if (OB_FAIL(as->insert_rows(ls_id,
-                                tablet_id,
-                                *tx_desc_,
-                                dml_param_,
-                                ctdef.column_ids_,
-                                &mlog_iter,
-                                affected_rows))) {
-      if (OB_TRY_LOCK_ROW_CONFLICT != ret) {
-        LOG_WARN("delete rows to access service failed", K(ret));
       }
     }
   } else if (OB_FAIL(as->update_rows(ls_id,

@@ -32,7 +32,6 @@
 #include "storage/tx/ob_id_service.h"
 #include "storage/ls/ob_ls_saved_info.h"
 #include "share/scn.h"
-#include "storage/mview/ob_major_mv_merge_info.h"
 
 namespace oceanbase
 {
@@ -109,16 +108,11 @@ public:
   int get_rebuild_info(ObLSRebuildInfo &rebuild_info) const;
   int get_create_type(int64_t &create_type) const;
   int check_ls_need_online(bool &need_online) const;
-  ObMajorMVMergeInfo get_major_mv_merge_info() const;
-  int set_major_mv_merge_scn(const int64_t ls_epoch, const SCN &major_mv_merge_scn);
-  int set_major_mv_merge_scn_safe_calc(const int64_t ls_epoch, const SCN &major_mv_merge_scn_safe_calc);
-  int set_major_mv_merge_scn_publish(const int64_t ls_epoch, const SCN &major_mv_merge_scn_publish);
   int init(
       const share::ObLSID &ls_id,
       const ObMigrationStatus &migration_status,
       const ObRestoreStatus &restore_status,
-      const share::SCN &create_scn,
-      const ObMajorMVMergeInfo &major_mv_merge_info);
+      const share::SCN &create_scn);
 
   ObReplicaType get_replica_type() const
   { return unused_replica_type_; }
@@ -201,7 +195,6 @@ private:
   ObLSSavedInfo saved_info_;
   share::SCN reserved_scn_;
   ObLSRebuildInfo rebuild_info_;
-  ObMajorMVMergeInfo major_mv_merge_info_;
 };
 
 }  // namespace storage

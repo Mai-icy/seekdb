@@ -306,8 +306,7 @@ int ObDDLTabletScheduler::confirm_batch_tablets_status(const int64_t execution_i
 // so push_tablet_execution_id does the following:
 // 1.push tablet execution id, and check if the tablet execution id is pushed more than once
 // 2.push task execution id anyway, it is no need to check task execution id, we always push task execution id high to avoid different inner sql has same task execution id.
-int ObDDLTabletScheduler::push_tablet_execution_id(share::ObDDLType task_type,
-                                                   const bool ddl_can_retry,
+int ObDDLTabletScheduler::push_tablet_execution_id(const bool ddl_can_retry,
                                                    const common::ObIArray<common::ObTabletID> &tablets,
                                                    int64_t &new_task_execution_id)
 {
@@ -331,8 +330,8 @@ int ObDDLTabletScheduler::push_tablet_execution_id(share::ObDDLType task_type,
           tablet_execution_id = -1;
           ret = OB_SUCCESS;
         }
-      } else if (OB_FAIL(ObDDLTask::calc_next_execution_id(tablet_execution_id, task_type, ddl_can_retry, next_tablet_execution_id))) {
-        LOG_WARN("calc next execution id failed", K(ret), K(tablet_execution_id), K(task_type), K(ddl_can_retry));
+      } else if (OB_FAIL(ObDDLTask::calc_next_execution_id(tablet_execution_id, ddl_can_retry, next_tablet_execution_id))) {
+        LOG_WARN("calc next execution id failed", K(ret), K(tablet_execution_id), K(ddl_can_retry));
       } else if (OB_FAIL(tablet_id_to_execution_id_map_.set_refactored(tablet, next_tablet_execution_id, true))) {
         LOG_WARN("set tablet execution id failed", K(ret), K(tablet), K(next_tablet_execution_id));
       }
@@ -520,7 +519,7 @@ int ObDDLTabletScheduler::get_unfinished_tablets(const share::ObDDLType task_typ
     LOG_WARN("fail to get ls host left disk space", K(ret), K(ls_id), K(leader_addr), K(left_space_size));
   } else if (OB_FAIL(calculate_candidate_tablets(left_space_size, tablet_queue, tablets))) {
     LOG_WARN("fail to use strategy to get tablets", K(ret), K(left_space_size), K(tablet_queue), K(tablets));
-  } else if (OB_FAIL(push_tablet_execution_id(task_type, ddl_can_retry, tablets, new_execution_id))) {
+  } else if (OB_FAIL(push_tablet_execution_id(ddl_can_retry, tablets, new_execution_id))) {
     LOG_WARN("failed to push tablet execution id", K(ret), K(task_type), K(ddl_can_retry), K(tablets), K(new_execution_id));
   } else {
     TCWLockGuard guard(lock_);

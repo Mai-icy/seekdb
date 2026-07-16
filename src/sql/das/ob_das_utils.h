@@ -132,12 +132,6 @@ public:
     }
     return ret;
   }
-  static int generate_mlog_row(const share::ObLSID &ls_id,
-                               const common::ObTabletID &tablet_id,
-                               const storage::ObDMLBaseParam &dml_param,
-                               blocksstable::ObDatumRow &row,
-                               ObDASOpType op_type,
-                               bool is_old_row);
 };
 }  // namespace sql
 }  // namespace oceanbase

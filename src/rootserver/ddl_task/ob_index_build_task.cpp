@@ -25,7 +25,6 @@
 #include "rootserver/ddl_task/ob_sys_ddl_util.h" // for ObSysDDLSchedulerUtil
 #include "rootserver/ob_ddl_service_launcher.h" // for ObDDLServiceLauncher
 #include "rootserver/ob_root_service.h"
-#include "share/schema/ob_mlog_info.h"
 
 using namespace oceanbase::rootserver;
 using namespace oceanbase::common;
@@ -409,11 +408,6 @@ int ObIndexBuildTask::init(
   } else if (OB_ISNULL(index_schema)) {
     ret = OB_TABLE_NOT_EXIST;
     LOG_WARN("fail to get table schema", K(ret));
-  } else if (OB_UNLIKELY((ObIndexArg::ADD_MLOG == create_index_arg_.index_action_type_)
-      && (!index_schema->is_mlog_table()))) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("index action is add_mlog but index schema is not mlog",
-        KR(ret), K(create_index_arg_.index_action_type_), K(index_schema->get_table_type()));
   } else {
     set_gmt_create(ObTimeUtility::current_time());
     task_type_ = task_type;
@@ -489,24 +483,6 @@ int ObIndexBuildTask::init(const ObDDLTaskRecord &task_record)
     LOG_WARN("ddl sim failure", K(task_record.task_id_));
   } else if (OB_FAIL(deserialize_params_from_message(task_record.message_.ptr(), task_record.message_.length(), pos))) {
     LOG_WARN("deserialize params from message failed", KR(ret));
-  } else if (ObIndexArg::ADD_MLOG == create_index_arg_.index_action_type_) {
-    ObSchemaGetterGuard schema_guard;
-    const ObTableSchema *index_schema = nullptr;
-    if (OB_FAIL(ObMultiVersionSchemaService::get_instance().get_tenant_schema_guard(
-                schema_guard, schema_version))) {
-      LOG_WARN("fail to get schema guard", KR(ret), K(index_table_id), K(schema_version));
-    } else if (OB_FAIL(schema_guard.check_formal_guard())) {
-      LOG_WARN("schema_guard is not formal", KR(ret), K(index_table_id));
-    } else if (OB_FAIL(schema_guard.get_table_schema( index_table_id, index_schema))) {
-      LOG_WARN("fail to get table schema", KR(ret), K(index_table_id));
-    } else if (OB_ISNULL(index_schema)) {
-      ret = OB_TABLE_NOT_EXIST;
-      LOG_WARN("fail to get table schema", KR(ret));
-    } else if (OB_UNLIKELY((!index_schema->is_mlog_table()))) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("index action is add_mlog but index schema is not mlog",
-          KR(ret), K(create_index_arg_.index_action_type_), K(index_schema->get_table_type()));
-    }
   }
   if (OB_SUCC(ret)) {
     task_type_ = task_record.ddl_type_;
@@ -517,7 +493,7 @@ int ObIndexBuildTask::init(const ObDDLTaskRecord &task_record)
     snapshot_version_ = task_record.snapshot_version_;
     execution_id_ = task_record.execution_id_;
     task_status_ = static_cast<ObDDLTaskStatus>(task_record.task_status_);
-    task_type_ = task_record.ddl_type_; // could be create index / mlog
+    task_type_ = task_record.ddl_type_;
     consensus_schema_version_ = task_record.consensus_schema_version_;
     if (ObDDLTaskStatus::VALIDATE_CHECKSUM == task_status_) {
       sstable_complete_ts_ = ObTimeUtility::current_time();
@@ -718,10 +694,7 @@ int ObIndexBuildTask::wait_trans_end()
   }
 
   if (snapshot_version_ > 0 || OB_FAIL(ret)) {
-    // a newly-created mlog is empty
-    ObDDLTaskStatus next_status = (ObIndexArg::ADD_MLOG == create_index_arg_.index_action_type_) ?
-                                      ObDDLTaskStatus::TAKE_EFFECT : ObDDLTaskStatus::REDEFINITION;
-    (void)switch_status(next_status, true, ret);
+    (void)switch_status(ObDDLTaskStatus::REDEFINITION, true, ret);
     LOG_INFO("wait_trans_end finished", K(ret), K(*this));
   }
   return ret;
@@ -1538,9 +1511,6 @@ int ObIndexBuildTask::enable_index()
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("index status not match", K(ret), K(index_table_id_), K(index_status));
         }
-      } else if ((ObIndexArg::ADD_MLOG == create_index_arg_.index_action_type_)
-          && OB_FAIL(update_mlog_last_purge_scn())) {
-        LOG_WARN("failed to update mlog last purge scn", KR(ret));
       } else if (OB_FAIL(update_index_status_in_schema(*index_schema, INDEX_STATUS_AVAILABLE, schema_guard))) {
         LOG_WARN("fail to try notify index take effect", K(ret), K(index_table_id_));
       } else {
@@ -1710,17 +1680,6 @@ int ObIndexBuildTask::clean_on_failed()
         } else if (index_schema->is_in_recyclebin()) {
           // index is already in recyclebin, skip get index name, use a fake one, this is just to pass IndexArg validity check
           index_name = "__fake";
-        } else if (ObIndexArg::ADD_MLOG == create_index_arg_.index_action_type_) {
-          const ObString &data_table_name = data_table_schema->get_table_name_str();
-          if (OB_FAIL(index_schema->get_mlog_name(index_name))) {
-            LOG_WARN("failed to get mlog name", KR(ret));
-          } else if (OB_FALSE_IT(index_action_type = obcall::ObIndexArg::DROP_MLOG)) {
-          } else if ((0 == parent_task_id_) && create_index_arg_.ddl_stmt_str_.empty()) {
-            if (OB_FAIL(drop_index_sql.append_fmt("drop materialized view log on %.*s",
-                data_table_name.length(), data_table_name.ptr()))) {
-              LOG_WARN("failed to generate drop mlog sql", KR(ret), K(data_table_name));
-            }
-          }
         } else if (OB_FAIL(index_schema->get_index_name(index_name))) {
           LOG_WARN("get index name failed", K(ret));
         } else if (0 == parent_task_id_) {
@@ -1977,42 +1936,6 @@ int64_t ObIndexBuildTask::get_serialize_param_size() const
       + ObDDLTask::get_serialize_param_size()
       + serialization::encoded_length_i8(is_retryable_ddl_)
       + tablet_scheduler_.get_serialize_size();
-}
-
-int ObIndexBuildTask::update_mlog_last_purge_scn()
-{
-  int ret = OB_SUCCESS;
-  if (OB_ISNULL(GCTX.sql_proxy_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("sql proxy is null", KR(ret));
-  } else {
-    ObMySQLTransaction trans;
-    ObMLogInfo mlog_info;
-    if (OB_FAIL(trans.start(GCTX.sql_proxy_))) {
-      LOG_WARN("failed to start trans", KR(ret));
-    } else if (OB_FAIL(ObMLogInfo::fetch_mlog_info(trans, index_table_id_, mlog_info, true/*for_update*/))) {
-      LOG_WARN("failed to fetch mlog info", KR(ret));
-    } else {
-      mlog_info.set_last_purge_scn(snapshot_version_);
-      mlog_info.set_last_purge_date(ObTimeUtility::current_time());
-      mlog_info.set_last_purge_time(0);
-      mlog_info.set_last_purge_rows(0);
-      char trace_id_buf[OB_MAX_TRACE_ID_BUFFER_SIZE] = {'\0'};
-      if (OB_FAIL(mlog_info.set_last_purge_trace_id(ObCurTraceId::get_trace_id_str(trace_id_buf, sizeof(trace_id_buf))))) {
-        LOG_WARN("failed to set last purge trace id", KR(ret));
-      } else if (OB_FAIL(ObMLogInfo::update_mlog_last_purge_info(trans, mlog_info))) {
-        LOG_WARN("failed to update mlog last purge info", KR(ret), K(mlog_info));
-      }
-    }
-    if (trans.is_started()) {
-      int tmp_ret = OB_SUCCESS;
-      if (OB_SUCCESS != (tmp_ret = trans.end(OB_SUCC(ret)))) {
-        LOG_ERROR("failed to commit trans", KR(ret), KR(tmp_ret));
-        ret = OB_SUCC(ret) ? tmp_ret : ret;
-      }
-    }
-  }
-  return ret;
 }
 
 int ObIndexBuildTask::serialize_and_update_message()

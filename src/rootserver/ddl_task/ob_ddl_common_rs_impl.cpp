@@ -21,7 +21,6 @@
 #include "observer/ob_service.h"
 #include "share/ob_ddl_common.h"
 #include "observer/omt/ob_multi_tenant.h"  // previously hidden behind the server_struct include chain, make the dependency explicit
-#include "storage/mview/ob_mview_refresh_helper.h"
 #include "storage/ob_storage_rpc.h"
 #include "storage/ob_storage_rpc_arg.h"
 #include "share/ob_rpc_struct.h"
@@ -101,8 +100,7 @@ int ObDDLUtil::hold_snapshot(
     const uint64_t table_id,
     const uint64_t target_table_id,
     rootserver::ObRootService *root_service,
-    const int64_t snapshot_version,
-    const common::ObIArray<common::ObTabletID> *extra_mv_tablet_ids)
+    const int64_t snapshot_version)
 {
   int ret = OB_SUCCESS;
   if (OB_ISNULL(task) || OB_ISNULL(root_service)) {
@@ -157,12 +155,6 @@ int ObDDLUtil::hold_snapshot(
       if (OB_FAIL(ddl_service.get_snapshot_mgr().batch_acquire_snapshot(
           trans, SNAPSHOT_FOR_DDL, schema_version, snapshot_scn, nullptr, tablet_ids))) {
         LOG_WARN("batch acquire snapshot failed", K(ret), K(tablet_ids));
-      } else if (OB_NOT_NULL(extra_mv_tablet_ids) &&
-                 !extra_mv_tablet_ids->empty() &&
-                 OB_FAIL(ddl_service.get_snapshot_mgr().batch_acquire_snapshot(
-                     trans, SNAPSHOT_FOR_MAJOR_REFRESH_MV, schema_version, snapshot_scn,
-                     nullptr, *extra_mv_tablet_ids))) {
-        LOG_WARN("batch acquire mv snapshot failed", K(ret), K(extra_mv_tablet_ids));
       }
     }
     task->add_event_info("hold snapshot finish");
@@ -458,54 +450,6 @@ int ObDDLUtil::get_data_information(const uint64_t task_id,
   return ret;
 }
 
-int ObDDLUtil::generate_mview_ddl_schema_hint_str(const uint64_t mview_table_id,
-    share::schema::ObSchemaGetterGuard &schema_guard,
-    const ObIArray<ObBasedSchemaObjectInfo> &based_schema_object_infos,
-    ObSqlString &sql_string)
-{
-  int ret = OB_SUCCESS;
-  ObArenaAllocator allocator("ObDDLTmp");
-  ObString database_name;
-  ObString table_name;
-  for (int64_t i = 0; OB_SUCC(ret) && i < based_schema_object_infos.count(); ++i) {
-    const ObBasedSchemaObjectInfo &based_info = based_schema_object_infos.at(i);
-    const ObTableSchema *table_schema = nullptr;
-    const ObDatabaseSchema *database_schema = nullptr;
-    database_name.reset();
-    table_name.reset();
-    allocator.reuse();
-    if (OB_FAIL(schema_guard.get_table_schema( based_info.schema_id_, table_schema))) {
-      LOG_WARN("fail to get table schema", KR(ret), K(based_info));
-    } else if (OB_ISNULL(table_schema)) {
-      ret = OB_TABLE_NOT_EXIST;
-      LOG_WARN("table not exist", KR(ret), K(based_info));
-    } else if (OB_FAIL(schema_guard.get_database_schema( table_schema->get_database_id(),
-                                                        database_schema))) {
-      LOG_WARN("fail to get database schema", KR(ret),
-               K(table_schema->get_database_id()));
-    } else if (OB_ISNULL(database_schema)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("error unexpected, database schema must not be nullptr", KR(ret));
-    } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
-                 allocator, database_schema->get_database_name_str(), database_name))) {
-      LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(database_schema->get_database_name_str()));
-    } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
-                 allocator, table_schema->get_table_name_str(), table_name))) {
-      LOG_WARN("fail to generate new name with escape character", KR(ret),
-               K(table_schema->get_table_name_str()));
-    } else {
-      if (OB_FAIL(sql_string.append_fmt("ob_ddl_schema_version(`%.*s`.`%.*s`, %ld) ",
-                                        static_cast<int>(database_name.length()), database_name.ptr(),
-                                        static_cast<int>(table_name.length()), table_name.ptr(),
-                                        based_info.schema_version_))) {
-        LOG_WARN("append sql string failed", KR(ret));
-      }
-    }
-  }
-  return ret;
-}
-
 int ObDDLUtil::generate_build_replica_sql(const int64_t data_table_id,
     const int64_t dest_table_id,
     const int64_t schema_version,
@@ -550,7 +494,7 @@ int ObDDLUtil::generate_build_replica_sql(const int64_t data_table_id,
     ObArray<int64_t> select_column_ids;
     ObArray<int64_t> order_column_ids;
     bool is_shadow_column = false;
-    const int64_t real_parallelism = ObDDLUtil::get_real_parallelism(parallelism, false/*is mv refresh*/);
+    const int64_t real_parallelism = ObDDLUtil::get_real_parallelism(parallelism);
     const bool is_rowkey_doc_aux_table = dest_table_schema->is_rowkey_doc_id();
     uint64_t doc_id_col_id = OB_INVALID_ID;
     uint64_t ft_id_col_id = OB_INVALID_ID;
@@ -799,136 +743,12 @@ int ObDDLUtil::generate_build_replica_sql(const int64_t data_table_id,
   return ret;
 }
 
-int ObDDLUtil::generate_build_mview_replica_sql(const int64_t mview_table_id,
-    const int64_t container_table_id,
-    ObSchemaGetterGuard &schema_guard,
-    const int64_t snapshot_version,
-    const uint64_t mview_target_data_sync_scn,
-    const int64_t execution_id,
-    const int64_t task_id,
-    const int64_t parallelism,
-    const bool use_schema_version_hint_for_src_table,
-    const ObIArray<ObBasedSchemaObjectInfo> &based_schema_object_infos,
-    const ObString &mview_select_sql,
-    ObSqlString &sql_string)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(OB_INVALID_ID == mview_table_id ||
-                  OB_INVALID_ID == container_table_id || snapshot_version <= 0 ||
-                  execution_id < 0 || task_id <= 0 || based_schema_object_infos.empty())) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid arguments", KR(ret), K(mview_table_id), K(container_table_id),
-             K(snapshot_version), K(execution_id), K(task_id), K(based_schema_object_infos));
-  } else {
-    const ObTableSchema *mview_table_schema = nullptr;
-    const ObTableSchema *container_table_schema = nullptr;
-    const ObDatabaseSchema *database_schema = nullptr;
-    if (OB_FAIL(schema_guard.get_table_schema( mview_table_id, mview_table_schema))) {
-      LOG_WARN("fail to get table schema", KR(ret), K(mview_table_id));
-    } else if (OB_ISNULL(mview_table_schema)) {
-      ret = OB_ERR_MVIEW_NOT_EXIST;
-      LOG_WARN("fail to get mview table schema", KR(ret), K(mview_table_id));
-    } else if (OB_FAIL(schema_guard.get_table_schema( container_table_id,
-                                                     container_table_schema))) {
-      LOG_WARN("fail to get table schema", KR(ret), K(container_table_id));
-    } else if (OB_ISNULL(container_table_schema)) {
-      ret = OB_TABLE_NOT_EXIST;
-      LOG_WARN("fail to get table schema", KR(ret), K(container_table_id));
-    } else if (OB_FAIL(schema_guard.get_database_schema( mview_table_schema->get_database_id(), database_schema))) {
-      LOG_WARN("fail to get database schema", KR(ret),
-               K(mview_table_schema->get_database_id()));
-    } else if (OB_ISNULL(database_schema)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("error unexpected, database schema must not be nullptr", KR(ret));
-    } else {
-      ObArenaAllocator allocator("ObDDLTmp");
-      ObString database_name;
-      ObString container_table_name;
-      ObSqlString src_table_schema_version_hint;
-      ObSqlString rowkey_column_sql_string;
-      if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
-            allocator, database_schema->get_database_name_str(), database_name))) {
-        LOG_WARN("fail to generate new name with escape character", KR(ret),
-                 K(database_schema->get_database_name_str()));
-      } else if (OB_FAIL(sql::ObSQLUtils::generate_new_name_with_escape_character(
-                   allocator, container_table_schema->get_table_name_str(), container_table_name))) {
-        LOG_WARN("fail to generate new name with escape character", KR(ret),
-                 K(container_table_schema->get_table_name_str()));
-      } else if (use_schema_version_hint_for_src_table) {
-        int64_t based_schema_version = OB_INVALID_VERSION;
-        for (int64_t i = 0; OB_SUCC(ret) && i < based_schema_object_infos.count(); ++i) {
-          const ObBasedSchemaObjectInfo &based_info = based_schema_object_infos.at(i);
-          const ObTableSchema *based_table_schema = nullptr;
-          if (OB_FAIL(schema_guard.get_table_schema( based_info.schema_id_,
-                                                    based_table_schema))) {
-            LOG_WARN("fail to get table schema", KR(ret), K(based_info));
-          } else if (OB_ISNULL(based_table_schema)) {
-            ret = OB_OLD_SCHEMA_VERSION;
-            LOG_WARN("based table is not exist", KR(ret), K(based_info));
-          } else if (OB_UNLIKELY(based_table_schema->get_schema_version() !=
-                                 based_info.schema_version_)) {
-            ret = OB_OLD_SCHEMA_VERSION;
-            LOG_WARN("based table schema version is changed", KR(ret), K(based_info),
-                     KPC(based_table_schema));
-          }
-        }
-        if (OB_FAIL(ret)) {
-        } else if (OB_FAIL(generate_mview_ddl_schema_hint_str(mview_table_id, schema_guard, based_schema_object_infos,
-                     src_table_schema_version_hint))) {
-          LOG_WARN("failed to generated mview ddl schema hint", KR(ret));
-        }
-      }
-      const bool nested_consistent_refresh = mview_target_data_sync_scn == OB_INVALID_SCN_VAL ? false : true;
-      const int64_t real_parallelism = ObDDLUtil::get_real_parallelism(parallelism, true/*is mv refresh*/);
-      if (OB_FAIL(ret)) {
-      } else if (!nested_consistent_refresh) {
-        const ObString &select_sql_string = mview_table_schema->get_view_schema().get_view_definition_str();
-        if (OB_FAIL(sql_string.assign_fmt("INSERT /*+ append monitor enable_parallel_dml parallel(%ld) opt_param('ddl_execution_id', %ld) opt_param('ddl_task_id', %ld) use_px */ INTO `%.*s`.`%.*s`"
-                                          " SELECT /*+ %.*s */ * from (%.*s) as of snapshot %ld %.*s;",
-            real_parallelism, execution_id, task_id,
-            static_cast<int>(database_name.length()), database_name.ptr(),
-            static_cast<int>(container_table_name.length()), container_table_name.ptr(),
-            static_cast<int>(src_table_schema_version_hint.length()), src_table_schema_version_hint.ptr(),
-            static_cast<int>(select_sql_string.length()), select_sql_string.ptr(),
-            snapshot_version,
-            static_cast<int>(rowkey_column_sql_string.length()), rowkey_column_sql_string.ptr()))) {
-          LOG_WARN("fail to assign sql string", KR(ret));
-        }
-      } else if (nested_consistent_refresh) {
-        std::string select_sql(mview_select_sql.ptr());
-        std::string real_sql;
-        if (mview_select_sql.empty()) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("nested sync refresh with empty sql string", K(mview_select_sql), K(mview_table_id));
-        } else if (OB_FAIL(ObMViewRefreshHelper::replace_all_snapshot_zero(
-                           select_sql, snapshot_version, real_sql))) {
-          LOG_WARN("fail to replace snapshot", K(ret));
-        } else {
-          if (OB_FAIL(sql_string.assign_fmt("INSERT /*+ append monitor enable_parallel_dml parallel(%ld) opt_param('ddl_execution_id', %ld) "
-                                              " opt_param('ddl_task_id', %ld) use_px */ INTO `%.*s`.`%.*s`"
-                                              " SELECT /*+ %.*s */ * from (%.*s);",
-                                            real_parallelism, execution_id, task_id,
-                                            static_cast<int>(database_name.length()), database_name.ptr(),
-                                            static_cast<int>(container_table_name.length()), container_table_name.ptr(),
-                                            static_cast<int>(src_table_schema_version_hint.length()), src_table_schema_version_hint.ptr(),
-                                            static_cast<int>(real_sql.length()), real_sql.c_str()))) {
-            LOG_WARN("fail to assign sql string", KR(ret));
-          }
-        }
-      }
-    LOG_INFO("execute sql", K(sql_string));
-    }
-  }
-  return ret;
-}
-
 int ObDDLUtil::obtain_snapshot(
     const share::ObDDLTaskStatus next_task_status,
     const uint64_t table_id,
     const uint64_t target_table_id,
     int64_t &snapshot_version,
-    rootserver::ObDDLTask* task,
-    const common::ObIArray<common::ObTabletID> *extra_mv_tablet_ids)
+    rootserver::ObDDLTask* task)
 {
   int ret = OB_SUCCESS;
   rootserver::ObDDLWaitTransEndCtx* wait_trans_ctx = nullptr;
@@ -979,7 +799,7 @@ int ObDDLUtil::obtain_snapshot(
         } else if (persisted_snapshot > 0) {
           // found a persisted snapshot, do not hold it again.
           FLOG_INFO("found a persisted snapshot in inner table", "task_id", task->get_task_id(), K(persisted_snapshot), K(new_fetched_snapshot));
-        } else if (OB_FAIL(hold_snapshot(trans, task, table_id, target_table_id, GCTX.root_service_, new_fetched_snapshot, extra_mv_tablet_ids))) {
+        } else if (OB_FAIL(hold_snapshot(trans, task, table_id, target_table_id, GCTX.root_service_, new_fetched_snapshot))) {
           if (OB_SNAPSHOT_DISCARDED == ret) {
             wait_trans_ctx->reset();
           } else {
@@ -1610,15 +1430,10 @@ int ObDDLUtil::check_table_empty(
   return ret;
 }
 
-int64_t ObDDLUtil::get_real_parallelism(const int64_t parallelism, const bool is_mv_refresh)
+int64_t ObDDLUtil::get_real_parallelism(const int64_t parallelism)
 {
-  int64_t real_parallelism = 0L;
-  if (is_mv_refresh) {
-    real_parallelism = std::max(static_cast<int64_t>(2), parallelism);
-  } else {
-    real_parallelism = std::min(oceanbase::ObMacroDataSeq::MAX_PARALLEL_IDX + 1, std::max(static_cast<int64_t>(1), parallelism));
-  }
-  return real_parallelism;
+  return std::min(oceanbase::ObMacroDataSeq::MAX_PARALLEL_IDX + 1,
+                  std::max(static_cast<int64_t>(1), parallelism));
 }
 
 int ObCheckTabletDataComplementOp::do_check_tablets_merge_status(const int64_t snapshot_version,

@@ -4253,7 +4253,6 @@ int ObJoinOrder::get_valid_index_ids(const uint64_t table_id,
   } else if (OB_FAIL(schema_guard->get_can_read_index_array(ref_table_id,
                                                             tids,
                                                             index_count,
-                                                            false,
                                                             can_use_global_index,
                                                             false /*domain index*/,
                                                             false /*spatial index*/,
@@ -4517,7 +4516,6 @@ int ObJoinOrder::fill_opt_info_index_name(const uint64_t table_id,
   } else if (OB_FAIL(schema_guard->get_can_read_index_array(base_table_id,
                                                             index_ids,
                                                             index_count,
-                                                            false,
                                                             true /*global index*/,
                                                             true /*domain index*/))) {
     LOG_WARN("failed to get can read index", K(base_table_id), K(ret));
@@ -16748,7 +16746,6 @@ int ObJoinOrder::compute_fd_item_set_for_table_scan(const uint64_t table_id,
   } else if (OB_FAIL(schema_guard->get_can_read_index_array(table_ref_id,
                                                             index_tids,
                                                             index_count,
-                                                            false,
                                                             true  /*global index*/,
                                                             false /*domain index*/))) {
     LOG_WARN("failed to get can read index", K(ret), K(table_ref_id));

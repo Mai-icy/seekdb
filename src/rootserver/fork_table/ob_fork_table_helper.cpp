@@ -146,19 +146,6 @@ int check_fork_table_supported(const ObTableSchema &src_table_schema,
     ret = OB_ERR_OPERATION_ON_RECYCLE_OBJECT;
     LOG_WARN("can fork table from table in recyclebin", K(ret),
              K(src_table_schema));
-  } else if (src_table_schema.has_mlog_table()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("fork table on table with materialized view log is not supported",
-             KR(ret));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED,
-                   "fork table on table with materialized view log is");
-  } else if (src_table_schema.table_referenced_by_fast_lsm_mv()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN(
-        "fork table on table required by materialized view is not supported",
-        KR(ret));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED,
-                   "fork table on table required by materialized view is");
   } else if (OB_FAIL(check_table_index_features(
                  src_table_schema, schema_guard, has_semantic_index,
                  has_ivf_index, has_spatial_index, has_global_index,

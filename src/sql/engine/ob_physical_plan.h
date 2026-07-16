@@ -439,8 +439,6 @@ public:
   const ObSubSchemaCtx &get_subschema_ctx() const { return subschema_ctx_; }
   int set_all_local_session_vars(ObIArray<ObLocalSessionVar> *all_local_session_vars);
   ObIArray<ObLocalSessionVar> & get_all_local_session_vars() { return all_local_session_vars_; }
-  inline const ObIArray<uint64_t> &get_mview_ids() const { return mview_ids_; }
-  int set_mview_ids(const ObIArray<uint64_t> &mview_ids) { return mview_ids_.assign(mview_ids); }
   ObFixedArray<uint64_t, common::ObIAllocator> &get_dml_table_ids() { return dml_table_ids_; }
   const ObIArray<uint64_t> &get_dml_table_ids() const { return dml_table_ids_; }
   void set_direct_load_need_sort(const bool direct_load_need_sort)
@@ -646,7 +644,6 @@ private:
 public:
   bool udf_has_dml_stmt_;
 private:
-  common::ObFixedArray<uint64_t, common::ObIAllocator> mview_ids_;
   bool enable_inc_direct_load_; // for incremental direct load
   bool enable_replace_; // for incremental direct load
   bool insert_overwrite_; // for insert overwrite

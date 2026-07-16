@@ -60,7 +60,7 @@ public:
         && (nullptr == rowkey_read_info_ || rowkey_read_info_->is_valid());
   }
   int refresh_lob_column_out_status();
-  bool enable_fuse_row_cache(const ObQueryFlag &query_flag, const StorageScanType scan_type) const;
+  bool enable_fuse_row_cache(const ObQueryFlag &query_flag) const;
   int build_index_filter_for_row_store(common::ObIAllocator *allocator);
   const ObITableReadInfo *get_read_info(const bool is_get = false) const
   {
@@ -110,10 +110,6 @@ public:
   OB_INLINE int64_t get_group_idx_col_index() const
   {
     return (read_info_ != nullptr && read_info_ != rowkey_read_info_) ? read_info_->get_group_idx_col_index() : common::OB_INVALID_INDEX;
-  }
-  OB_INLINE int64_t get_mview_old_new_col_index() const
-  {
-    return (read_info_ != nullptr && read_info_ != rowkey_read_info_) ? read_info_->get_mview_old_new_col_index() : common::OB_INVALID_INDEX;
   }
   OB_INLINE bool need_truncate_filter() const
   {

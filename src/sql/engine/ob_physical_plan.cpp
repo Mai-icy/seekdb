@@ -118,7 +118,6 @@ ObPhysicalPlan::ObPhysicalPlan(MemoryContext &mem_context /* = CURRENT_CONTEXT *
     is_batch_params_execute_(false),
     all_local_session_vars_(&allocator_),
     udf_has_dml_stmt_(false),
-    mview_ids_(&allocator_),
     enable_inc_direct_load_(false),
     enable_replace_(false),
     insert_overwrite_(false),
@@ -222,7 +221,6 @@ void ObPhysicalPlan::reset()
   udf_has_dml_stmt_ = false;
   is_inner_sql_ = false;
   is_batch_params_execute_ = false;
-  mview_ids_.reset();
   enable_inc_direct_load_ = false;
   enable_replace_ = false;
   insert_overwrite_ = false;
@@ -801,7 +799,6 @@ OB_SERIALIZE_MEMBER(ObPhysicalPlan,
                     disable_auto_memory_mgr_,
                     udf_has_dml_stmt_,
                     stat_.format_sql_id_,
-                    mview_ids_,
                     enable_inc_direct_load_,
                     enable_replace_,
                     insert_overwrite_,

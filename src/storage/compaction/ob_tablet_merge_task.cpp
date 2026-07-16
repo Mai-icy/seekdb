@@ -46,9 +46,7 @@ ObMergeParameter::ObMergeParameter(
   : static_param_(static_param),
     merge_range_(),
     trans_state_mgr_(nullptr),
-    error_location_(nullptr),
-    mview_merge_param_(nullptr),
-    allocator_(nullptr)
+    error_location_(nullptr)
 {
 }
 
@@ -62,18 +60,11 @@ void ObMergeParameter::reset()
   merge_range_.reset();
   trans_state_mgr_ = nullptr;
   error_location_ = nullptr;
-  if (nullptr != mview_merge_param_) {
-    mview_merge_param_->~ObMviewMergeParameter();
-    allocator_->free(mview_merge_param_);
-    mview_merge_param_ = nullptr;
-  }
-  allocator_ = nullptr;
 }
 
 int ObMergeParameter::init(
     compaction::ObBasicTabletMergeCtx &merge_ctx,
-    const int64_t idx,
-    ObIAllocator *allocator)
+    const int64_t idx)
 {
   int ret = OB_SUCCESS;
   if (OB_UNLIKELY(!merge_ctx.is_valid() || idx < 0 || idx >= static_param_.concurrent_cnt_)) {
@@ -84,7 +75,6 @@ int ObMergeParameter::init(
   } else {
     const ObMergeType merge_type = static_param_.get_merge_type();
     merge_version_range_ = static_param_.version_range_;
-    allocator_ = allocator;
     if (is_major_merge_type(merge_type)) {
       // major merge should only read data between two major freeze points
       // but there will be some minor sstables which across major freeze points
@@ -108,29 +98,12 @@ int ObMergeParameter::init(
       }
     }
   }
-  if (OB_SUCC(ret)) {
-    const ObStorageSchema *schema = nullptr;
-    if (OB_ISNULL(schema = get_schema())) {
-      ret = OB_INVALID_ARGUMENT;
-      LOG_WARN("schema is null", K(ret), K(*this));;
-    } else if (schema->is_mv_major_refresh_table() && is_major_merge_type(static_param_.get_merge_type()) && OB_FAIL(init_mview_merge_param(allocator))) {
-      STORAGE_LOG(WARN, "failed to init mview merge param", K(ret));
-    }
+  if (OB_SUCC(ret) && OB_ISNULL(get_schema())) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("schema is null", K(ret), K(*this));
   }
   if (OB_SUCC(ret)) {
     FLOG_INFO("success to init ObMergeParameter", K(ret), K(idx), K_(static_param_.merge_scn), K_(merge_version_range));
-  }
-  return ret;
-}
-
-int ObMergeParameter::init_mview_merge_param(ObIAllocator *allocator)
-{
-  int ret = OB_SUCCESS;
-  if (OB_ISNULL(mview_merge_param_ = OB_NEWx(ObMviewMergeParameter, allocator))) {
-    ret = OB_ALLOCATE_MEMORY_FAILED;
-    STORAGE_LOG(WARN, "failed to alloc mview merge param", K(ret));
-  } else if (OB_FAIL(mview_merge_param_->init(*this))) {
-     STORAGE_LOG(WARN, "Failed to init mview merge param", K(ret));
   }
   return ret;
 }

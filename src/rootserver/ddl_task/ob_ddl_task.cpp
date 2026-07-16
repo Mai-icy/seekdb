@@ -393,18 +393,6 @@ int ObDDLTask::get_ddl_type_str(const int64_t ddl_type, const char *&ddl_type_st
     case DDL_DROP_VEC_IVFPQ_INDEX:
       ddl_type_str = "drop vec index";
       break;
-    case DDL_MVIEW_COMPLETE_REFRESH:
-      ddl_type_str = "mview complete refresh";
-      break;
-    case DDL_CREATE_MVIEW:
-      ddl_type_str = "create mview";
-      break;
-    case DDL_CREATE_MLOG:
-      ddl_type_str = "create materialized view log";
-      break;
-    case DDL_DROP_MLOG:
-      ddl_type_str = "drop materialized view log";
-      break;
     case DDL_AUTO_SPLIT_BY_RANGE:
       ddl_type_str = "auto split by range";
       break;
@@ -422,9 +410,6 @@ int ObDDLTask::get_ddl_type_str(const int64_t ddl_type, const char *&ddl_type_st
       break;
     case DDL_PARTITION_SPLIT_RECOVERY_TABLE_REDEFINITION:
       ddl_type_str = "partition split recovery table redefinition";
-      break;
-    case DDL_REPLACE_MLOG:
-      ddl_type_str = "replace materialized view log";
       break;
     default:
       ret = OB_ERR_UNEXPECTED;
@@ -1055,10 +1040,10 @@ int64_t ObDDLTask::get_execution_id() const
 // calculate task execution id or tablet execution id
 // @param execution_id: task execution id or tablet execution id
 // @param next_execution_id: next task execution id or next tablet execution id
-int ObDDLTask::calc_next_execution_id(int64_t execution_id, const ObDDLType ddl_type, const bool ddl_can_retry, int64_t &next_execution_id)
+int ObDDLTask::calc_next_execution_id(int64_t execution_id, const bool ddl_can_retry, int64_t &next_execution_id)
 {
   int ret = OB_SUCCESS;
-  if (ObDDLUtil::use_idempotent_mode() || ObDDLUtil::is_mview_not_retryable(ddl_type)) {
+  if (ObDDLUtil::use_idempotent_mode()) {
     if (1 == execution_id && !ddl_can_retry) {
       ret = OB_TASK_EXPIRED;
     } else {
@@ -1094,7 +1079,7 @@ int ObDDLTask::push_task_execution_id(const int64_t task_id, const ObDDLType ddl
     if (OB_FAIL(ObDDLTaskRecordOperator::select_for_update(trans, task_id, task_status, task_execution_id, ret_code, unused_snapshot_ver))) {
       LOG_WARN("select for update failed", K(ret), K(task_id));
     } else {
-      if (OB_FAIL(calc_next_execution_id(task_execution_id, ddl_type, ddl_can_retry, new_task_execution_id))) {
+      if (OB_FAIL(calc_next_execution_id(task_execution_id, ddl_can_retry, new_task_execution_id))) {
         LOG_WARN("calc next execution id failed", K(ret), K(task_execution_id), K(ddl_type), K(ddl_can_retry), K(new_task_execution_id));
       } else if (OB_FAIL(ObDDLTaskRecordOperator::update_execution_id(trans, task_id, new_task_execution_id))) {
         LOG_WARN("update execution id failed", K(ret));
@@ -3173,8 +3158,7 @@ int ObDDLTaskRecordOperator::check_has_conflict_ddl(
           } else if (task_record.task_id_ != task_id) {
             switch (ddl_type) {
               case ObDDLType::DDL_DROP_TABLE: {
-                if ((task_record.ddl_type_ == ObDDLType::DDL_DROP_INDEX
-                    || task_record.ddl_type_ == ObDDLType::DDL_DROP_MLOG)
+                if (task_record.ddl_type_ == ObDDLType::DDL_DROP_INDEX
                     && task_record.target_object_id_ != task_record.object_id_) {
                   LOG_WARN("conflict with ddl", K(task_record));
                   has_conflict_ddl = true;
@@ -3194,7 +3178,6 @@ int ObDDLTaskRecordOperator::check_has_conflict_ddl(
               case ObDDLType::DDL_TABLE_REDEFINITION:
               case ObDDLType::DDL_DIRECT_LOAD:
               case ObDDLType::DDL_DIRECT_LOAD_INSERT:
-              case ObDDLType::DDL_MVIEW_COMPLETE_REFRESH:
               case ObDDLType::DDL_PARTITION_SPLIT_RECOVERY_TABLE_REDEFINITION:
                 has_conflict_ddl = true;
                 break;
@@ -3226,8 +3209,8 @@ int ObDDLTaskRecordOperator::check_rebuild_index_task_exist(const uint64_t data_
                   OB_INVALID_ID == index_table_id)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arg", K(ret), K(index_table_id), K(data_table_id));
-  } else if (OB_FAIL(sql_string.assign_fmt(" SELECT object_id, target_object_id, UNHEX(message) as message_unhex FROM %s WHERE ddl_type in (%d, %d)", 
-                                             OB_ALL_DDL_TASK_STATUS_TNAME, ObDDLType::DDL_REBUILD_INDEX, ObDDLType::DDL_REPLACE_MLOG))) {
+  } else if (OB_FAIL(sql_string.assign_fmt(" SELECT object_id, target_object_id, UNHEX(message) as message_unhex FROM %s WHERE ddl_type = %d",
+                                             OB_ALL_DDL_TASK_STATUS_TNAME, ObDDLType::DDL_REBUILD_INDEX))) {
     LOG_WARN("assign sql string failed", K(ret));
   } else {
     LOG_DEBUG("check_rebuild_index_task_exist target id", K(data_table_id), K(index_table_id));
@@ -3277,7 +3260,7 @@ int ObDDLTaskRecordOperator::check_rebuild_index_task_exist(const uint64_t data_
   return ret;
 }
 
-int ObDDLTaskRecordOperator::check_has_index_or_mlog_task(
+int ObDDLTaskRecordOperator::check_has_index_task(
     common::ObISQLClient &proxy,
     const ObTableSchema &index_schema,
     const uint64_t data_table_id,
@@ -3291,7 +3274,7 @@ int ObDDLTaskRecordOperator::check_has_index_or_mlog_task(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arg", K(ret), K(data_table_id));
   } else {
-    if (ObVecIndexBuildTask::is_rebuild_dense_vec_index_task(index_schema) || index_schema.is_mlog_table()) {
+    if (ObVecIndexBuildTask::is_rebuild_dense_vec_index_task(index_schema)) {
       ObArenaAllocator allocator(ObModIds::OB_SCHEMA);
       if (OB_FAIL(check_rebuild_index_task_exist(data_table_id, index_table_id, proxy, allocator, has_index_task))) {
         LOG_WARN("fail to check rebuild vec index task", K(ret), K(data_table_id), K(index_table_id));
@@ -3302,9 +3285,9 @@ int ObDDLTaskRecordOperator::check_has_index_or_mlog_task(
       ObSqlString sql_string;
       SMART_VAR(ObMySQLProxy::MySQLResult, res) {
         sqlclient::ObMySQLResult *result = NULL;
-        if (OB_FAIL(sql_string.assign_fmt("SELECT EXISTS(SELECT 1 FROM %s WHERE object_id = %lu AND target_object_id = %lu AND ddl_type IN (%d, %d, %d, %d, %d)) as has",
-            OB_ALL_DDL_TASK_STATUS_TNAME, data_table_id, index_table_id, ObDDLType::DDL_CREATE_INDEX, ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX, ObDDLType::DDL_DROP_INDEX,
-            ObDDLType::DDL_CREATE_MLOG, ObDDLType::DDL_DROP_MLOG))) {
+        if (OB_FAIL(sql_string.assign_fmt("SELECT EXISTS(SELECT 1 FROM %s WHERE object_id = %lu AND target_object_id = %lu AND ddl_type IN (%d, %d, %d)) as has",
+            OB_ALL_DDL_TASK_STATUS_TNAME, data_table_id, index_table_id, ObDDLType::DDL_CREATE_INDEX,
+            ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX, ObDDLType::DDL_DROP_INDEX))) {
           LOG_WARN("assign sql string failed", K(ret));
         } else if (OB_FAIL(proxy.read(res, sql_string.ptr()))) {
           LOG_WARN("query ddl task record failed", K(ret), K(sql_string));
@@ -3322,7 +3305,7 @@ int ObDDLTaskRecordOperator::check_has_index_or_mlog_task(
   return ret;
 }
 
-int ObDDLTaskRecordOperator::get_create_index_or_mlog_task_cnt(
+int ObDDLTaskRecordOperator::get_create_index_task_cnt(
     common::ObISQLClient &proxy,
     const uint64_t data_table_id,
     int64_t &task_cnt)
@@ -3335,9 +3318,9 @@ int ObDDLTaskRecordOperator::get_create_index_or_mlog_task_cnt(
     ObSqlString sql_string;
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       sqlclient::ObMySQLResult *result = NULL;
-      if (OB_FAIL(sql_string.assign_fmt("SELECT COUNT(*) as cnt FROM %s WHERE object_id = %lu AND ddl_type IN (%d, %d, %d, %d, %d, %d)",
-          OB_ALL_DDL_TASK_STATUS_TNAME, data_table_id, 
-            ObDDLType::DDL_CREATE_INDEX, ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX, ObDDLType::DDL_CREATE_MLOG,
+      if (OB_FAIL(sql_string.assign_fmt("SELECT COUNT(*) as cnt FROM %s WHERE object_id = %lu AND ddl_type IN (%d, %d, %d, %d, %d)",
+          OB_ALL_DDL_TASK_STATUS_TNAME, data_table_id,
+            ObDDLType::DDL_CREATE_INDEX, ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX,
             ObDDLType::DDL_CREATE_VEC_INDEX, ObDDLType::DDL_CREATE_MULTIVALUE_INDEX, ObDDLType::DDL_CREATE_FTS_INDEX))) {
         LOG_WARN("assign sql string failed", K(ret));
       } else if (OB_FAIL(proxy.read(res, sql_string.ptr()))) {

@@ -354,10 +354,7 @@ int ObBlockStatIterator::init_memtable_access_param(
     ObTableScanParam &scan_param)
 {
   int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(scan_param.is_mview_query())) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("mview query not supported for block stat iterator", K(ret));
-  } else if (OB_FAIL(main_table_param_.init(scan_param, &tablet_handle))) {
+  if (OB_FAIL(main_table_param_.init(scan_param, &tablet_handle))) {
     LOG_WARN("failed to init main table param", K(ret));
   } else {
     ObVersionRange trans_version_range;

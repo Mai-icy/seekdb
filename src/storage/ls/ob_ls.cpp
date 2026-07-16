@@ -36,7 +36,6 @@
 #include "storage/tx/ob_trans_id_service.h"
 #include "observer/vector_index/ob_plugin_vector_index_service.h"
 #include "src/observer/table_load/resource/ob_table_load_resource_manager.h"
-#include "rootserver/mview/ob_mview_maintenance_service.h"
 #include "storage/tx_storage/ob_tenant_freezer.h"
 
 namespace oceanbase
@@ -83,8 +82,7 @@ ObLS::~ObLS()
 int ObLS::init(const share::ObLSID &ls_id,
                const ObMigrationStatus &migration_status,
                const ObRestoreStatus &restore_status,
-               const SCN &create_scn,
-               const ObMajorMVMergeInfo &major_mv_merge_info)
+               const SCN &create_scn)
 {
   int ret = OB_SUCCESS;
   int tmp_ret = OB_SUCCESS;
@@ -103,9 +101,8 @@ int ObLS::init(const share::ObLSID &ls_id,
   } else if (OB_FAIL(ls_meta_.init(ls_id,
                                    migration_status,
                                    restore_status,
-                                   create_scn,
-                                   major_mv_merge_info))) {
-    LOG_WARN("failed to init ls meta", K(ret), K(ls_id), K(major_mv_merge_info));
+                                   create_scn))) {
+    LOG_WARN("failed to init ls meta", K(ret), K(ls_id));
   } else if (OB_FAIL(ls_freezer_.init(this))) {
     LOG_WARN("init freezer failed", K(ret), K(ls_id));
   } else {
@@ -730,7 +727,6 @@ int ObLS::register_sys_service()
     {
       ObIngressBWAllocService *ingress_service = GCTX.net_frame_->get_ingress_service();
       REGISTER_TO_LOGSERVICE(NET_ENDPOINT_INGRESS_LOG_BASE_TYPE, ingress_service);
-      REGISTER_TO_LOGSERVICE(MVIEW_MAINTENANCE_SERVICE_LOG_BASE_TYPE, share::g_mp->m_view_maintenance_service());
       REGISTER_TO_LOGSERVICE(TABLE_LOAD_RESOURCE_SERVICE_LOG_BASE_TYPE, share::g_mp->table_load_resource_service());
       REGISTER_TO_LOGSERVICE(DBMS_SCHEDULER_LOG_BASE_TYPE, share::g_mp->dbms_sched_service());
       REGISTER_TO_LOGSERVICE(SYS_DDL_SCHEDULER_LOG_BASE_TYPE, share::g_mp->ddl_scheduler());
@@ -768,7 +764,6 @@ int ObLS::register_user_service()
   const ObLSID &ls_id = ls_meta_.ls_id_;
 
   if (ls_id.is_sys_ls()) {
-    REGISTER_TO_LOGSERVICE(MVIEW_MAINTENANCE_SERVICE_LOG_BASE_TYPE, share::g_mp->m_view_maintenance_service());
     REGISTER_TO_LOGSERVICE(TABLE_LOAD_RESOURCE_SERVICE_LOG_BASE_TYPE, share::g_mp->table_load_resource_service());
     REGISTER_TO_LOGSERVICE(DBMS_SCHEDULER_LOG_BASE_TYPE, share::g_mp->dbms_sched_service());
     REGISTER_TO_LOGSERVICE(VEC_INDEX_SERVICE_LOG_BASE_TYPE, share::g_mp->plugin_vector_index_service());
@@ -893,7 +888,6 @@ void ObLS::unregister_sys_service_()
     {
       ObIngressBWAllocService *ingress_service = GCTX.net_frame_->get_ingress_service();
       UNREGISTER_FROM_LOGSERVICE(NET_ENDPOINT_INGRESS_LOG_BASE_TYPE, ingress_service);
-      UNREGISTER_FROM_LOGSERVICE(MVIEW_MAINTENANCE_SERVICE_LOG_BASE_TYPE, share::g_mp->m_view_maintenance_service());
       UNREGISTER_FROM_LOGSERVICE(TABLE_LOAD_RESOURCE_SERVICE_LOG_BASE_TYPE, share::g_mp->table_load_resource_service());
       UNREGISTER_FROM_LOGSERVICE(DBMS_SCHEDULER_LOG_BASE_TYPE, share::g_mp->dbms_sched_service());
       UNREGISTER_FROM_LOGSERVICE(SYS_DDL_SCHEDULER_LOG_BASE_TYPE, share::g_mp->ddl_scheduler());
@@ -913,7 +907,6 @@ void ObLS::unregister_sys_service_()
 void ObLS::unregister_user_service_()
 {
   if (ls_meta_.ls_id_.is_sys_ls()) {
-    UNREGISTER_FROM_LOGSERVICE(MVIEW_MAINTENANCE_SERVICE_LOG_BASE_TYPE, share::g_mp->m_view_maintenance_service());
     UNREGISTER_FROM_LOGSERVICE(TABLE_LOAD_RESOURCE_SERVICE_LOG_BASE_TYPE, share::g_mp->table_load_resource_service());
     UNREGISTER_FROM_LOGSERVICE(DBMS_SCHEDULER_LOG_BASE_TYPE, share::g_mp->dbms_sched_service());
     UNREGISTER_FROM_LOGSERVICE(VEC_INDEX_SERVICE_LOG_BASE_TYPE, share::g_mp->plugin_vector_index_service());
@@ -1134,9 +1127,6 @@ int ObLS::get_ls_info(ObLSVTInfo &ls_info)
       ls_info.tablet_change_checkpoint_scn_ = ls_meta_.get_tablet_change_checkpoint_scn();
       ls_info.reserved_scn_ = ls_meta_.get_reserved_scn();
       ls_info.tx_blocked_ = tx_blocked;
-      ls_info.mv_major_merge_scn_ = ls_meta_.get_major_mv_merge_info().major_mv_merge_scn_;
-      ls_info.mv_publish_scn_ = ls_meta_.get_major_mv_merge_info().major_mv_merge_scn_publish_;
-      ls_info.mv_safe_scn_ = ls_meta_.get_major_mv_merge_info().major_mv_merge_scn_safe_calc_;
       ls_info.required_data_disk_size_ = required_data_disk_size;
       if (tx_blocked) {
         TRANS_LOG(INFO, "current ls is blocked", K(ls_info));

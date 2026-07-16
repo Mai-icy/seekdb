@@ -33,7 +33,6 @@
 #include "storage/access/ob_table_access_param.h"
 #include "storage/access/ob_table_access_context.h"
 #include "storage/access/ob_micro_block_handle_mgr.h"
-#include "sql/session/ob_sql_session_mgr.h"
 
 namespace oceanbase
 {
@@ -43,11 +42,6 @@ namespace storage
 {
 struct ObTransNodeDMLStat;
 }
-namespace observer
-{
-class ObInnerSQLResult;
-}
-
 namespace compaction
 {
 struct ObMergeParameter;
@@ -375,40 +369,6 @@ private:
   bool last_mvcc_row_already_output_;
   bool have_macro_output_row_;
   const bool reuse_uncommit_row_;
-};
-
-class ObPartitionMVRowMergeIter final : public ObPartitionMergeIter
-{
-public:
-  struct ObMVSqlResource
-  {
-    ObMVSqlResource();
-    ~ObMVSqlResource();
-    TO_STRING_KV(K_(free_session_ctx), KP_(session), KP_(conn), KP_(sql_result));
-    ObISQLClient::ReadResult read_result_;
-    sql::ObFreeSessionCtx free_session_ctx_;
-    sql::ObSQLSessionInfo *session_;
-    sqlclient::ObISQLConnection *conn_;
-    observer::ObInnerSQLResult *sql_result_;
-  };
-  ObPartitionMVRowMergeIter(common::ObIAllocator &allocator);
-  virtual ~ObPartitionMVRowMergeIter();
-  virtual int init(const ObMergeParameter &merge_param,
-           const int64_t refresh_sql_idx,
-           const ObITableReadInfo *read_info) override;
-  virtual int next() override;
-  TO_STRING_KV(K_(is_delete), K_(is_replace), K_(sql_idx), K_(sql_read_col_cnt), K_(store_col_cnt), K_(mv_sql_resource));
-protected:
-  virtual int inner_init(const ObMergeParameter &merge_param) override;
-  virtual bool inner_check(const ObMergeParameter &merge_param) override;
-private:
-  bool is_delete_;
-  bool is_replace_;
-  int64_t sql_idx_;
-  int64_t sql_read_col_cnt_;
-  int64_t store_col_cnt_;
-  blocksstable::ObDatumRow result_row_;
-  ObMVSqlResource mv_sql_resource_;
 };
 
 static const int64_t DEFAULT_ITER_COUNT = 16;

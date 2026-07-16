@@ -56,7 +56,6 @@ ob_set_subtarget(ob_share ALONE
   ob_tenant_mgr.cpp
   parameter/ob_parameter_attr.cpp
   ob_ddl_args.cpp
-  ob_mview_args.cpp
   ob_lonely_table_clean_rpc_struct.cpp
 )
 
@@ -327,10 +326,6 @@ ob_set_subtarget(ob_share schema
   schema/ob_server_schema_service.cpp
   schema/ob_table_schema.cpp
   schema/ob_latest_schema_guard.cpp
-  schema/ob_mlog_info.cpp
-  schema/ob_mview_info.cpp
-  schema/ob_mview_refresh_stats_params.cpp
-  schema/ob_mview_refresh_stats.cpp
   schema/ob_list_row_values.cpp
   schema/ob_catalog_schema_struct.cpp
   schema/ob_catalog_mgr.cpp

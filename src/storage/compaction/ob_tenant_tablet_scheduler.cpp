@@ -235,8 +235,7 @@ ObTenantTabletScheduler::ObTenantTabletScheduler()
    minor_ls_tablet_iter_(false/*is_major*/),
    gc_sst_tablet_iter_(false/*is_major*/),
    timer_task_mgr_(),
-   batch_size_mgr_(),
-   mview_validation_()
+   batch_size_mgr_()
 {
   STATIC_ASSERT(static_cast<int64_t>(NO_MAJOR_MERGE_TYPE_CNT) == ARRAYSIZEOF(MERGE_TYPES), "merge type array len is mismatch");
 }
@@ -1138,7 +1137,6 @@ int ObTenantTabletScheduler::schedule_all_tablets_medium()
     const int64_t merge_version = get_frozen_version();
     if (merge_version > merged_version_) {
       try_finish_merge_progress(merge_version);
-      mview_validation_.refresh(merge_version);
     }
     if (OB_FAIL(medium_loop_.init(get_schedule_batch_size()))) {
       LOG_WARN("failed to init medium loop", K(ret));

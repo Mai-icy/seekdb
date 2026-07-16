@@ -465,9 +465,6 @@ int ObCandiTableLoc::all_select_leader(bool &is_on_same_server,
   }
   return ret;
 }
-// Currently only used for mv, if to be used elsewhere, note the OB_NO_READABLE_REPLICA return code,
-// Check if the usage is appropriate, as it involves retries.
-
 int ObCandiTableLoc::get_all_servers(common::ObIArray<common::ObAddr> &servers) const
 {
   int ret = OB_SUCCESS;
