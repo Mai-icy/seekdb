@@ -354,6 +354,7 @@ private:
   int64_t last_palf_epoch_;
   int64_t rebuild_replica_log_lag_threshold_;//for rebuild test
   bool enable_log_cache_;
+  bool enable_fetch_log_engine_;
 
   LogIOWorkerConfig log_io_worker_config_;
   bool diskspace_enough_;

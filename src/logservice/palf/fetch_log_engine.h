@@ -89,9 +89,10 @@ public:
   FetchLogEngine();
   ~FetchLogEngine() { destroy(); }
 public:
-  int init(IPalfEnvImpl *palf_env_impl, ObILogAllocator *alloc_mgr);
+  int init(IPalfEnvImpl *palf_env_impl, ObILogAllocator *alloc_mgr, const bool enabled = true);
   void destroy();
   int submit_fetch_log_task(FetchLogTask *fetch_log_task);
+  bool is_enabled() const { return is_inited_ && enabled_; }
 public:
   int start();
   int stop();
@@ -109,6 +110,7 @@ private:
   typedef common::ObSpinLockGuard SpinLockGuard;
 private:
   bool is_inited_;
+  bool enabled_;
   IPalfEnvImpl *palf_env_impl_;
   common::ObILogAllocator *allocator_;
   share::SCN replayable_point_;

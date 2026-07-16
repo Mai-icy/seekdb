@@ -3588,7 +3588,6 @@ int ObLogicalOperator::check_stmt_can_be_packed(const ObDMLStmt *stmt, bool &nee
 {
   int ret = OB_SUCCESS;
   need_pack = false;
-  #ifndef OB_BUILD_EMBED_MODE
   ObSQLSessionInfo *session_info = NULL;
   if (OB_ISNULL(stmt) || OB_ISNULL(get_plan()) ||
       OB_ISNULL(session_info = get_plan()->get_optimizer_context().get_session_info())) {
@@ -3596,11 +3595,9 @@ int ObLogicalOperator::check_stmt_can_be_packed(const ObDMLStmt *stmt, bool &nee
     LOG_WARN("get unexpected null", K(ret));
   } else {
     bool has_var_assign = get_plan()->get_optimizer_context().has_var_assign();
-    bool is_var_assign_only_in_root = get_plan()->get_optimizer_context().is_var_assign_only_in_root_stmt();
     need_pack = stmt->is_select_stmt() && (!session_info->is_inner()) && LOG_EXCHANGE == type_
                  && (ObPhyPlanType::OB_PHY_PLAN_DISTRIBUTED == get_phy_plan_type()) && !has_var_assign;
   }
-  #endif
   return ret;
 }
 

@@ -25,7 +25,6 @@
 #include "share/ob_schema_status_proxy.h"  // ObSchemaStatusProxy
 #include "share/ob_all_tenant_info.h"  // ObAllTenantInfo, ObAllTenantInfoProxy
 #include "observer/ob_service.h"  // ObService
-#include "lib/ob_running_mode.h"
 
 namespace oceanbase
 {
@@ -41,9 +40,6 @@ int ObStandbySchemaRefreshTrigger::init()
   if (is_inited_) {
     ret = OB_INIT_TWICE;
     LOG_WARN("init twice", KR(ret));
-  } else if (lib::is_embed_mode()) {
-    is_inited_ = true;
-    LOG_INFO("ObStandbySchemaRefreshTrigger skip init in embed mode");
   } else if (OB_FAIL(timer_.init("StandbySchema", ObMemAttr("StandbySchema")))) {
     LOG_WARN("failed to init standby schema refresh trigger timer", KR(ret));
   } else if (OB_FAIL(schedule_())) {
@@ -69,7 +65,7 @@ int ObStandbySchemaRefreshTrigger::stop()
 int ObStandbySchemaRefreshTrigger::wait()
 {
   int ret = OB_SUCCESS;
-  if (is_inited_ && is_scheduled_ && !lib::is_embed_mode()) {
+  if (is_inited_ && is_scheduled_) {
     timer_.wait_task(*this);
     is_scheduled_ = false;
   }

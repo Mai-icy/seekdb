@@ -3731,6 +3731,12 @@ int PalfHandleImpl::get_log(const common::ObAddr &server,
     ret = OB_INVALID_ARGUMENT;
     PALF_LOG(WARN, "invalid arguments", K(ret), K(server), K(msg_proposal_id), K(prev_lsn),
         K(start_lsn), K(fetch_log_size), K(fetch_log_count), K(accepted_mode_pid));
+  } else if (OB_ISNULL(fetch_log_engine_)) {
+    ret = OB_ERR_UNEXPECTED;
+    PALF_LOG(WARN, "fetch log engine is null", K(ret), KPC(this));
+  } else if (!fetch_log_engine_->is_enabled()) {
+    ret = OB_NOT_SUPPORTED;
+    PALF_LOG(WARN, "fetch log engine is disabled", K(ret), K_(palf_id));
   } else if (OB_FAIL(try_update_proposal_id_(server, msg_proposal_id))) {
     PALF_LOG(WARN, "try_update_proposal_id_ failed", KR(ret), KPC(this), K(server), K(msg_proposal_id));
   } else {

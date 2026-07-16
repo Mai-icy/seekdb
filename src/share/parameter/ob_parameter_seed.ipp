@@ -2051,9 +2051,6 @@ DEF_PARAM(_ob_java_odps_data_transfer_mode, STR_WITH_CHECKER, OB_CLUSTER_PARAMET
 DEF_PARAM(_use_odps_jni_connector, BOOL, OB_CLUSTER_PARAMETER, "False",
          "Enable or disable jni connector for external odps table",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_parquet_row_group_prebuffer_size, CAP, OB_CLUSTER_PARAMETER, "0M", "[0M,)",
-        "the parquet prefetch maximum row group size. Range: [0, +∞)",
-        ObParameterAttr(Section::SSTABLE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(px_node_policy, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "DATA", common::ObConfigPxNodePolicyChecker,
                      "Determining the candidate pool for PX calculation nodes."
                      "\"DATA\": All data nodes involved in the current SQL."
@@ -2198,14 +2195,6 @@ DEF_PARAM(_orc_filter_pushdown_level, INT, OB_CLUSTER_PARAMETER, "4", "[0, 4]",
         "where 0 disables filter pushdown, 1 pushes filters down to the file level, "
         "2 pushes filters down to the stripe level, 3 pushes filters down to the row index level "
         "and 4 pushes filters down to the encoding level. The default value is 4.",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE))
-
-DEF_PARAM(_parquet_filter_pushdown_level, INT, OB_CLUSTER_PARAMETER, "4", "[0, 4]",
-        "This parameter is used to control the predicate push level of the PARQUET external table. "
-        "The optional value is 0, which means disabling filter condition pushdown, "
-        "1, which means pushdown to file level, 2, which means pushdown to RowGroup level, "
-        "3, which means pushdown to Page level and 4, which means pushdown to Encoding level. "
-        "The default value is 4.",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE))
 
 DEF_PARAM(_advance_checkpoint_interval, TIME, OB_CLUSTER_PARAMETER, "10m", "[0m,12h]",
