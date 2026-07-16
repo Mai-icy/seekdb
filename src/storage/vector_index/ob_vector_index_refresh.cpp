@@ -18,10 +18,12 @@
 #define USING_LOG_PREFIX STORAGE
 
 #include "storage/vector_index/ob_vector_index_refresh.h"
+#include "share/inner_table/ob_inner_table_schema_constants.h"
 #include "share/rc/ob_module_provider.h"
 #include "rootserver/ob_rs_serial_call.h"
 #include "storage/tablelock/ob_lock_inner_connection_util.h"
 #include "sql/engine/cmd/ob_ddl_executor_util.h"
+#include "observer/vector_index/ob_vector_index_async_task.h"
 
 namespace oceanbase {
 namespace storage {
@@ -483,7 +485,8 @@ int ObVectorIndexRefresher::do_refresh() {
         common::sqlclient::ObMySQLResult *result = nullptr;
         ObSqlString select_sql;
         if (OB_FAIL(select_sql.append_fmt(
-                "select tablet_id from oceanbase.__all_tablet_to_ls where table_id = %lu",
+                "select tablet_id from oceanbase.%s where table_id = %lu",
+                OB_ALL_TABLET_TO_TABLE_TNAME,
                 domain_table_schema->get_table_id()))) {
           LOG_WARN("fail to assign sql", KR(ret));
         } else if (OB_FAIL(refresh_ctx_->trans_->read(

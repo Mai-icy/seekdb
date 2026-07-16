@@ -516,7 +516,6 @@ static const NonReservedKeyword Mysql_none_reserved_keywords[] =
   {"longtext", LONGTEXT},
   {"loop", LOOP},
   {"low_priority", LOW_PRIORITY},
-  {"ls", LS},
   {"major", MAJOR},
   {"manhattan", MANHATTAN},
   {"manual", MANUAL},
