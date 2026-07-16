@@ -275,7 +275,6 @@ struct ObTableAccessContext
     K_(need_scn),
     K_(need_release_truncate_part_filter),
     K_(timeout),
-    K_(ls_id),
     K_(tablet_id),
     K_(query_flag),
     K_(sql_mode),
@@ -333,7 +332,6 @@ public:
   bool need_scn_;
   bool need_release_truncate_part_filter_;
   int64_t timeout_;
-  share::ObLSID ls_id_;
   common::ObTabletID tablet_id_;
   common::ObQueryFlag query_flag_;
   ObSQLMode sql_mode_;

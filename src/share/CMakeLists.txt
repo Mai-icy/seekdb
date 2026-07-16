@@ -109,9 +109,7 @@ ob_set_subtarget(ob_share common
   ob_event_history_table_operator.cpp
   ob_schema_version_info.cpp
   ob_freeze_info_proxy.cpp
-  ob_gais_client.cpp
   ob_gais_msg.cpp
-  ob_gais_rpc.cpp
   session/ob_local_session_var.cpp
   ob_global_autoinc_service.cpp
   ob_global_merge_table_operator.cpp
@@ -124,7 +122,6 @@ ob_set_subtarget(ob_share common
   ob_list_parser.cpp
   ob_local_device.cpp
   ob_locality_info.cpp
-  ob_ls_id.cpp
   ob_table_range.cpp
   ob_max_id_fetcher.cpp
   ob_max_id_cache.cpp
@@ -162,7 +159,6 @@ ob_set_subtarget(ob_share common
   ob_admin_dump_helper.cpp
   ob_inner_kv_table_operator.cpp
   ob_inner_table_operator.cpp
-  ob_standby_upgrade.cpp
   ob_common_id.cpp
   ob_cluster_event_history_table_operator.cpp
   scn.cpp
@@ -181,7 +177,6 @@ ob_set_subtarget(ob_share common_mixed
   diagnosis/ob_sql_monitor_statname.cpp
   interrupt/ob_global_interrupt_call.cpp
   interrupt/ob_interrupt_message.cpp
-  location_cache/ob_location_service.cpp
   ls/ob_ls_restore_status.cpp
   ob_sys_time_zone_util.cpp
   ls/ob_restore_status.cpp
@@ -227,7 +222,6 @@ ob_set_subtarget(ob_share common_mixed
   storage/ob_rootservice_job_table_storage.cpp
   storage_cache_policy/ob_storage_cache_common.cpp
   storage_cache_policy/ob_storage_cache_partition_sql_helper.cpp
-  partition_table/ob_partition_location.cpp
   longops_mgr/ob_i_longops.cpp
   longops_mgr/ob_longops_mgr.cpp
   ob_module_data_arg.cpp
@@ -236,13 +230,11 @@ ob_set_subtarget(ob_share common_mixed
 ob_set_subtarget(ob_share tablet
   tablet/ob_tablet_info.cpp
   tablet/ob_tablet_table_operator.cpp
-  tablet/ob_tablet_to_ls_operator.cpp
+  tablet/ob_tablet_mapping_operator.cpp
   tablet/ob_tablet_table_iterator.cpp
   tablet/ob_tablet_meta_table_storage.cpp
-  tablet/ob_tablet_to_ls_iterator.cpp
   tablet/ob_tablet_filter.cpp
   tablet/ob_tablet_to_table_history_operator.cpp
-  tablet/ob_tenant_tablet_to_ls_map.cpp
 )
 
 ob_set_subtarget(ob_share config

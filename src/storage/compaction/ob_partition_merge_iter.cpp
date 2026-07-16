@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX STORAGE_COMPACTION
 #include "ob_partition_merge_iter.h"
 #include "ob_tablet_merge_ctx.h"
+#include "storage/memtable/ob_memtable_iterator.h"
 
 namespace oceanbase
 {
@@ -53,7 +54,7 @@ ObPartitionMergeIter::ObPartitionMergeIter(common::ObIAllocator &allocator)
     is_rowkey_first_row_already_output_(false),
     is_rowkey_shadow_row_reused_(false),
     is_delete_insert_merge_(false),
-    is_ha_compeleted_(true)
+    is_restore_complete_(true)
 {
 }
 
@@ -88,7 +89,7 @@ void ObPartitionMergeIter::reset()
   is_rowkey_first_row_already_output_ = false;
   is_rowkey_shadow_row_reused_ = false;
   is_delete_insert_merge_ = false;
-  is_ha_compeleted_ = true;
+  is_restore_complete_ = true;
   ObMergeIter::reset();
 }
 
@@ -108,7 +109,7 @@ int ObPartitionMergeIter::init_query_base_params(const ObMergeParameter &merge_p
     LOG_WARN("Failed to init table access param", K(ret), KPC(this));
   } else if (OB_FAIL(snapshot_version.convert_for_tx(merge_param.merge_version_range_.snapshot_version_))) {
       LOG_WARN("Failed to convert", K(ret), K_(merge_param.merge_version_range_.snapshot_version));
-  } else if (OB_FAIL(store_ctx_.init_for_read(static_param.ls_handle_,
+  } else if (OB_FAIL(store_ctx_.init_for_read(static_param.ls_,
                                               INT64_MAX, // query_expire_ts
                                               -1, // lock_timeout_us
                                               snapshot_version))) {
@@ -258,7 +259,7 @@ int64_t ObPartitionMergeIter::to_string(char *buf, const int64_t buf_len) const
         J_COMMA();
       }
       J_KV(K_(iter_row_count), KPC(curr_row_), K_(iter_row_id), K_(last_macro_block_reused),
-        K_(is_rowkey_first_row_already_output), K_(is_base_iter), K_(is_delete_insert_merge), K_(is_ha_compeleted));
+        K_(is_rowkey_first_row_already_output), K_(is_base_iter), K_(is_delete_insert_merge), K_(is_restore_complete));
     } else {
       J_KV(K_(is_inited));
     }
@@ -1033,7 +1034,7 @@ int ObPartitionMinorRowMergeIter::common_minor_inner_init(const ObMergeParameter
   void *buf = nullptr;
   check_committing_trans_compacted_ = true;
   is_delete_insert_merge_ = merge_param.is_delete_insert_merge();
-  is_ha_compeleted_ = merge_param.is_ha_compeleted();
+  is_restore_complete_ = merge_param.is_restore_complete();
   if (OB_FAIL(merge_param.get_schema()->get_stored_column_count_in_sstable(row_column_cnt))) {
     LOG_WARN("Failed to get full store column count", K(ret));
   } else if (OB_FAIL(row_queue_.init(row_column_cnt))) {
