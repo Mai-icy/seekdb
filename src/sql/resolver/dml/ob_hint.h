@@ -226,7 +226,6 @@ struct ObOptParamHint
     DEF(ENABLE_PARTIAL_DISTINCT_PUSHDOWN,)          \
     DEF(ENABLE_RUNTIME_FILTER_ADAPTIVE_APPLY, )     \
     DEF(ENABLE_GROUPING_SETS_EXPANSION,)            \
-    DEF(EXTENDED_SQL_PLAN_MONITOR_METRICS, )        \
     DEF(APPROX_COUNT_DISTINCT_PRECISION,)           \
 
 
@@ -460,7 +459,6 @@ struct ObGlobalHint {
                K_(log_level),
                K_(parallel),
                K_(dml_parallel),
-               K_(monitor),
                K_(pdml_option),
                K_(param_option),
                K_(alloc_op_hints),
@@ -490,7 +488,6 @@ struct ObGlobalHint {
   common::ObString log_level_;
   int64_t parallel_;
   int64_t dml_parallel_;
-  bool monitor_;
   ObPDMLOption pdml_option_;
   ObParamOption param_option_;
   common::ObSArray<ObDopHint> dops_;
@@ -519,8 +516,7 @@ public:
         plan_cache_policy_(OB_USE_PLAN_CACHE_INVALID),
         force_trace_log_(false),
         log_level_(),
-        parallel_(-1),
-        monitor_(false)
+        parallel_(-1)
   {}
 
   ObPhyPlanHint(const ObGlobalHint &global_hint)
@@ -529,8 +525,7 @@ public:
         plan_cache_policy_(global_hint.plan_cache_policy_),
         force_trace_log_(global_hint.force_trace_log_),
         log_level_(global_hint.log_level_),
-        parallel_(global_hint.parallel_),
-        monitor_(global_hint.monitor_)
+        parallel_(global_hint.parallel_)
   {}
 
   int deep_copy(const ObPhyPlanHint &other, common::ObIAllocator &allocator);
@@ -538,7 +533,7 @@ public:
   void reset();
 
   TO_STRING_KV(K_(read_consistency), K_(query_timeout), K_(plan_cache_policy),
-               K_(force_trace_log), K_(log_level), K_(parallel), K_(monitor));
+               K_(force_trace_log), K_(log_level), K_(parallel));
 
   common::ObConsistencyLevel read_consistency_;
   int64_t query_timeout_;
@@ -546,7 +541,6 @@ public:
   bool force_trace_log_;
   common::ObString log_level_;
   int64_t parallel_;
-  bool monitor_;
 };
 
 struct ObLeadingTable {
