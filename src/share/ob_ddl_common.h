@@ -64,7 +64,7 @@ class ObDDLMacroBlockWriter;
 class ObLobMacroBlockWriter;
 class ObDDLTableSchema;
 class ObWriteMacroParam;
-class ObDirectLoadBatchRows;
+class ObDDLBatchRows;
 class ObITabletSliceWriter;
 class ObLS;
 struct ObDDLWriteStat;
@@ -91,7 +91,7 @@ using storage::ObColumnSchemaItem;
 using storage::ObStorageSchema;
 using storage::ObDDLTableSchema;
 using storage::ObDDLIndependentDag;
-using storage::ObDirectLoadBatchRows;
+using storage::ObDDLBatchRows;
 using storage::ObITabletSliceWriter;
 using storage::ObDDLWriteStat;
 using storage::ObLS;
@@ -150,9 +150,7 @@ enum ObDDLType
   DDL_ADD_COLUMN_OFFLINE = 1008, // only add columns
   DDL_COLUMN_REDEFINITION = 1009, // only add/drop columns
   DDL_TABLE_REDEFINITION = 1010,
-  DDL_DIRECT_LOAD = 1011, // load data
-  DDL_DIRECT_LOAD_INSERT = 1012, // insert into select
-  // 1013 was used by removed table restore DDL. Do not reuse.
+  // 1011-1013 were used by removed DDL types. Do not reuse.
   // 1016 is reserved. Do not reuse.
   DDL_MODIFY_AUTO_INCREMENT_WITH_REDEFINITION = 1017,
 
@@ -419,11 +417,6 @@ static inline bool is_long_running_ddl(const ObDDLType type)
   return is_simple_table_long_running_ddl(type) || is_double_table_long_running_ddl(type);
 }
 
-static inline bool is_direct_load_task(const ObDDLType type)
-{
-  return DDL_DIRECT_LOAD == type || DDL_DIRECT_LOAD_INSERT == type;
-}
-
 static inline bool is_complement_data_relying_on_dag(const ObDDLType type)
 {
   return DDL_DROP_COLUMN == type
@@ -454,21 +447,6 @@ static inline bool is_ddl_stmt_packet_retry_err(const int ret)
       || OB_TRANS_NEED_ROLLBACK == ret // transaction killed by leader switch
       || OB_ERR_DDL_RESOURCE_NOT_ENOUGH == ret // tenant ddl resource not enough
       ;
-}
-
-static inline bool is_direct_load_retry_err(const int ret)
-{
-  return is_ddl_stmt_packet_retry_err(ret)
-    || ret == OB_TABLET_NOT_EXIST
-    || ret == OB_TASK_EXPIRED
-    || ret == OB_TRANS_CTX_NOT_EXIST
-    || ret == OB_SCHEMA_ERROR
-    || ret == OB_SCHEMA_EAGAIN
-    || ret == OB_SCHEMA_NOT_UPTODATE
-    || ret == OB_ERR_WAIT_REMOTE_SCHEMA_REFRESH
-    || ret == OB_ERR_REMOTE_SCHEMA_NOT_FULL
-    || ret == OB_SQL_RETRY_SPM
-    ;
 }
 
 static inline bool is_column_redifinition_like_ddl_type(const ObDDLType type)
@@ -757,6 +735,10 @@ public:
   static int check_schema_version_refreshed(const int64_t target_schema_version);
   static bool reach_time_interval(const int64_t i, volatile int64_t &last_time);
   static int is_major_exist(const common::ObTabletID &tablet_id, bool &is_exist);
+#ifdef OB_BUILD_SHARED_STORAGE
+  static int upload_block_for_ss(const char* buf, const int64_t len, const blocksstable::MacroBlockId &macro_block_id);
+  static int update_tablet_gc_info(const ObTabletID &tablet_id, const int64_t pre_snapshot_version, const int64_t new_snapshot_version);
+#endif
   static int set_tablet_autoinc_seq(const ObTabletID &tablet_id, const int64_t seq_value);
   static int check_table_compaction_checksum_error(const uint64_t table_id);
   static int get_temp_store_compress_type(const ObCompressorType schema_compr_type,
@@ -779,8 +761,6 @@ public:
       case DDL_ADD_COLUMN_OFFLINE:
       case DDL_COLUMN_REDEFINITION:
       case DDL_TABLE_REDEFINITION:
-      case DDL_DIRECT_LOAD:
-      case DDL_DIRECT_LOAD_INSERT:
       case DDL_CREATE_INDEX:
       case DDL_CREATE_FTS_INDEX:
       case DDL_CREATE_VEC_INDEX:
@@ -897,10 +877,6 @@ public:
       const ObWriteMacroParam &param,
       ObIAllocator &allocator,
       ObDDLMacroBlockWriter *&macro_block_writer);
-  static int init_inc_macro_block_writer(
-      const ObWriteMacroParam &param,
-      ObIAllocator &allocator,
-      ObDDLMacroBlockWriter *&macro_block_writer);
   static int prepare_lob_writer(
       const ObTabletID &tablet_id,
       const int64_t slice_idx,
@@ -947,7 +923,7 @@ public:
   static int init_batch_rows(
       const ObDDLTableSchema &ddl_table_schema,
       const int64_t batch_size,
-      ObDirectLoadBatchRows &batch_rows);
+      ObDDLBatchRows &batch_rows);
   static bool is_vector_index_complement(const ObIndexType index_type);
   static int64_t generate_idempotent_value(
       const int64_t slice_count,

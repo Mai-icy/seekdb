@@ -453,8 +453,6 @@ public:
   transaction::ObTxLoopWorker * tx_loop_worker() override { return mods_tx_loop_worker_; }
   storage::ObAccessService * access_service() override { return mods_access_service_; }
   datadict::ObDataDictService * data_dict_service() override { return mods_data_dict_service_; }
-  observer::ObTableLoadService * table_load_service() override { return mods_table_load_service_; }
-  observer::ObTableLoadResourceService * table_load_resource_service() override { return mods_table_load_resource_service_; }
   concurrency_control::ObMultiVersionGarbageCollector * multi_version_garbage_collector() override { return mods_multi_version_garbage_collector_; }
   ObTestModule * test_module() override { return mods_test_module_; }
   storage::ObEmptyReadBucket * empty_read_bucket() override { return mods_empty_read_bucket_; }
@@ -553,8 +551,6 @@ private:
   transaction::ObTxLoopWorker * mods_tx_loop_worker_ = nullptr;
   storage::ObAccessService * mods_access_service_ = nullptr;
   datadict::ObDataDictService * mods_data_dict_service_ = nullptr;
-  observer::ObTableLoadService * mods_table_load_service_ = nullptr;
-  observer::ObTableLoadResourceService * mods_table_load_resource_service_ = nullptr;
   concurrency_control::ObMultiVersionGarbageCollector * mods_multi_version_garbage_collector_ = nullptr;
   ObTestModule * mods_test_module_ = nullptr;
   storage::ObEmptyReadBucket * mods_empty_read_bucket_ = nullptr;

@@ -31,7 +31,6 @@
 #include "sql/engine/px/ob_granule_util.h"
 #include "sql/optimizer/ob_pwj_comparer.h"
 #include "sql/das/ob_das_context.h"
-#include "sql/engine/cmd/ob_table_direct_insert_ctx.h"
 #include "pl/ob_pl_package_guard.h"
 #include "common/udt/ob_udt_type.h"
 #include "common/udt/ob_collection_type.h"
@@ -527,7 +526,6 @@ public:
     eval_res_allocator_.set_attr(attr);
     eval_tmp_allocator_.set_attr(attr);
   }
-  ObTableDirectInsertCtx &get_table_direct_insert_ctx() { return table_direct_insert_ctx_; }
   void set_errcode(const int errcode) { ATOMIC_STORE(&errcode_, errcode); }
   int get_errcode() const { return ATOMIC_LOAD(&errcode_); }
   int get_sqludt_meta_by_subschema_id(uint16_t subschema_id, ObSqlUDTMeta &udt_meta) const;
@@ -765,8 +763,6 @@ protected:
   // indicate if eval_tmp_allocator_ is used
   bool tmp_alloc_used_;
   // -------------------
-  // for direct insert
-  ObTableDirectInsertCtx table_direct_insert_ctx_;
   // for deadlock detect, set in do_close_plan
   int errcode_;
   // for feedback

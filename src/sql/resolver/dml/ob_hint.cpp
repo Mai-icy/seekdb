@@ -284,11 +284,6 @@ void ObGlobalHint::merge_opt_features_version_hint(uint64_t opt_features_version
   }
 }
 
-void ObGlobalHint::merge_direct_load_hint(const ObDirectLoadHint &other)
-{
-  direct_load_hint_.merge(other);
-}
-
 // zhanyue todo: try remove this later
 bool ObGlobalHint::has_hint_exclude_concurrent() const
 {
@@ -311,13 +306,11 @@ bool ObGlobalHint::has_hint_exclude_concurrent() const
          || !dops_.empty()
          || false != disable_transform_
          || false != disable_cost_based_transform_
-         || false != has_append()
          || !opt_params_.empty()
          || !ob_ddl_schema_versions_.empty()
          || has_gather_opt_stat_hint()
          || false != has_dbms_stats_hint_
          || -1 != dynamic_sampling_
-         || has_direct_load()
          || ObParallelDASOption::NOT_SPECIFIED != parallel_das_dml_option_
          || !px_node_hint_.empty();
 }
@@ -349,7 +342,6 @@ void ObGlobalHint::reset()
   has_dbms_stats_hint_ = false;
   dynamic_sampling_ = ObGlobalHint::UNSET_DYNAMIC_SAMPLING;
   alloc_op_hints_.reuse();
-  direct_load_hint_.reset();
   parallel_das_dml_option_ = ObParallelDASOption::NOT_SPECIFIED;
   px_node_hint_.reset();
 }
@@ -378,7 +370,6 @@ int ObGlobalHint::merge_global_hint(const ObGlobalHint &other)
   has_dbms_stats_hint_ |= other.has_dbms_stats_hint_;
   merge_parallel_das_dml_hint(other.parallel_das_dml_option_);
   merge_dynamic_sampling_hint(other.dynamic_sampling_);
-  merge_direct_load_hint(other.direct_load_hint_);
   if (OB_FAIL(merge_alloc_op_hints(other.alloc_op_hints_))) {
     LOG_WARN("failed to merge alloc op hints", K(ret));
   } else if (OB_FAIL(merge_dop_hint(other.dops_))) {
@@ -562,9 +553,6 @@ int ObGlobalHint::print_global_hint(PlanText &plan_text) const
   if (OB_SUCC(ret) && has_dbms_stats_hint()) {
     PRINT_GLOBAL_HINT_STR("DBMS_STATS");
   }
-  if (OB_SUCC(ret) && OB_FAIL(direct_load_hint_.print_direct_load_hint(plan_text))) {
-    LOG_WARN("failed to print direct load hint", KR(ret));
-  }
   if (OB_SUCC(ret) && OB_FAIL(px_node_hint_.print_px_node_hint(plan_text))) {
     LOG_WARN("failed to print px node hint", K(ret));
   }
@@ -588,9 +576,6 @@ int ObOptimizerStatisticsGatheringHint::print_osg_hint(PlanText &plan_text) cons
   }
   if (OB_SUCC(ret) && (flags_ & OB_OPT_STATS_GATHER)) {
     PRINT_GLOBAL_HINT_STR("GATHER_OPTIMIZER_STATISTICS");
-  }
-  if (OB_SUCC(ret) && (flags_ & OB_APPEND_HINT)) {
-    PRINT_GLOBAL_HINT_STR("APPEND");
   }
   return ret;
 }
@@ -3186,59 +3171,6 @@ int ObAllocOpHint::assign(const ObAllocOpHint& other) {
   id_ = other.id_;
   flags_ = other.flags_;
   alloc_level_ = other.alloc_level_;
-  return ret;
-}
-
-DEFINE_ENUM_FUNC(ObDirectLoadHint::LoadMethod, load_method, DIRECT_LOAD_METHOD_DEF, ObDirectLoadHint::);
-
-void ObDirectLoadHint::reset()
-{
-  flags_ = 0;
-  max_error_row_count_ = 0;
-  load_method_ = INVALID_LOAD_METHOD;
-}
-
-void ObDirectLoadHint::merge(const ObDirectLoadHint &other)
-{
-  has_no_direct_ |= other.has_no_direct_;
-  if (other.has_direct_) {
-    has_direct_ = other.has_direct_;
-    need_sort_ = other.need_sort_;
-    max_error_row_count_ = other.max_error_row_count_;
-    load_method_ = other.load_method_;
-  }
-}
-
-int ObDirectLoadHint::print_direct_load_hint(PlanText &plan_text) const
-{
-  const char* outline_indent = ObQueryHint::get_outline_indent(plan_text.is_oneline_);
-  char *buf = plan_text.buf_;
-  int64_t &buf_len = plan_text.buf_len_;
-  int64_t &pos = plan_text.pos_;
-
-  return print_direct_load_hint_(buf, buf_len, pos, outline_indent);
-}
-
-int ObDirectLoadHint::print_direct_load_hint(char *buf, int64_t buf_len, int64_t &pos) const
-{
-  return print_direct_load_hint_(buf, buf_len, pos, ""/*indent*/);
-}
-
-int ObDirectLoadHint::print_direct_load_hint_(char *buf, int64_t buf_len, int64_t &pos, const char *indent) const
-{
-  int ret = OB_SUCCESS;
-  if (has_no_direct_) {
-    if (OB_FAIL(BUF_PRINTF("%sNO_DIRECT", indent))) {
-      LOG_WARN("failed to print no_direct hint", KR(ret));
-    }
-  } else if (has_direct_) {
-    const char *need_sort_str = need_sort_ ? "TRUE" : "FALSE";
-    const char *load_method_str = get_load_method_string(load_method_);
-    if (OB_FAIL(BUF_PRINTF("%sDIRECT(%s, %ld, '%s')",
-                           indent, need_sort_str, max_error_row_count_, load_method_str))) {
-      LOG_WARN("failed to print direct load hint", KR(ret));
-    }
-  }
   return ret;
 }
 

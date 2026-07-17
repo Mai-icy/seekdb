@@ -294,7 +294,6 @@ void ObTenantMetaMemMgr::init_pool_arr()
   pool_arr_[static_cast<int>(ObITable::TableType::TX_DATA_MEMTABLE)] = &tx_data_memtable_pool_;
   pool_arr_[static_cast<int>(ObITable::TableType::TX_CTX_MEMTABLE)] = &tx_ctx_memtable_pool_;
   pool_arr_[static_cast<int>(ObITable::TableType::LOCK_MEMTABLE)] = &lock_memtable_pool_;
-  pool_arr_[static_cast<int>(ObITable::TableType::DIRECT_LOAD_MEMTABLE)] = &ddl_kv_pool_;
 }
 
 int ObTenantMetaMemMgr::start()
@@ -1047,30 +1046,6 @@ void ObTenantMetaMemMgr::release_ddl_kv(ObDDLKV *ddl_kv)
   }
 }
 
-int ObTenantMetaMemMgr::acquire_direct_load_memtable(ObTableHandleV2 &handle)
-{
-  int ret = OB_SUCCESS;
-  ObDDLKV *ddl_kv = nullptr;
-  handle.reset();
-  if (OB_UNLIKELY(!is_inited_)) {
-    ret = OB_NOT_INIT;
-    STORAGE_LOG(WARN, "ObTenantMetaMemMgr hasn't been initialized", K(ret));
-  } else if (OB_FAIL(ddl_kv_pool_.acquire(ddl_kv))) {
-    STORAGE_LOG(WARN, "fail to acquire ddl kv object", K(ret));
-  } else {
-    handle.set_table(ddl_kv, this, ObITable::TableType::DIRECT_LOAD_MEMTABLE);
-    ddl_kv = nullptr;
-  }
-
-  if (OB_FAIL(ret)) {
-    handle.reset();
-    if (OB_NOT_NULL(ddl_kv)) {
-      release_ddl_kv(ddl_kv);
-    }
-  }
-  return ret;
-
-}
 int ObTenantMetaMemMgr::acquire_data_memtable(ObTableHandleV2 &handle)
 {
   int ret = OB_SUCCESS;
