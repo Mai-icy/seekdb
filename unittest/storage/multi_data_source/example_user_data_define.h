@@ -21,7 +21,7 @@
 #include "lib/utility/ob_unify_serialize.h"
 #include "lib/utility/serialization.h"
 #include "meta_programming/ob_meta_serialization.h"
-#include "common_define.h"
+#include "storage/multi_data_source/common_define.h"
 
 namespace oceanbase {
 namespace unittest {

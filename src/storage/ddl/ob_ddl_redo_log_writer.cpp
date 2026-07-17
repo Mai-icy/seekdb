@@ -423,7 +423,6 @@ int ObDDLRedoLogWriter::local_write_ddl_macro_redo(
 
   palf::LSN lsn;
   const bool need_nonblock= false;
-  const bool allow_compression = false;
   SCN base_scn = SCN::min_scn();
   SCN scn;
   int64_t real_sleep_us = 0;
@@ -480,7 +479,6 @@ int ObDDLRedoLogWriter::local_write_ddl_macro_redo(
                                          buffer_size,
                                          base_scn,
                                          need_nonblock,
-                                         allow_compression,
                                          cb,
                                          lsn,
                                          scn))) {
@@ -524,7 +522,6 @@ int ObDDLRedoLogWriter::local_write_ddl_start_log(
 
   palf::LSN lsn;
   const bool need_nonblock= false;
-  const bool allow_compression = false;
   SCN scn = SCN::min_scn();
   ObDDLRedoLockGuard guard(log.get_table_key().get_tablet_id().hash());
   if (OB_ISNULL(cb = op_alloc(ObDDLStartClogCb))) {
@@ -547,7 +544,6 @@ int ObDDLRedoLogWriter::local_write_ddl_start_log(
                                          buffer_size,
                                          SCN::min_scn(),
                                          need_nonblock,
-                                         allow_compression,
                                          cb,
                                          lsn,
                                          scn))) {
@@ -615,7 +611,6 @@ int ObDDLRedoLogWriter::local_write_ddl_commit_log(
 
   palf::LSN lsn;
   const bool need_nonblock= false;
-  const bool allow_compression = false;
   SCN base_scn = SCN::min_scn();
   SCN scn = SCN::min_scn();
 if (OB_ISNULL(buffer = static_cast<char *>(ob_malloc(buffer_size, ObMemAttr("DDL_COMMIT_LOG"))))) {
@@ -638,7 +633,6 @@ if (OB_ISNULL(buffer = static_cast<char *>(ob_malloc(buffer_size, ObMemAttr("DDL
                                          buffer_size,
                                          base_scn,
                                          need_nonblock,
-                                         allow_compression,
                                          cb,
                                          lsn,
                                          scn))) {
@@ -717,7 +711,6 @@ int ObDDLRedoLogWriter::write_auto_fork_log(
                                                                   buffer_size,
                                                                   SCN::min_scn(),
                                                                   need_nonblock,
-                                                                  false/*allow_compression*/,
                                                                   cb,
                                                                   lsn,
                                                                   scn))) {

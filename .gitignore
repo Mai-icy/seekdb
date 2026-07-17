@@ -121,16 +121,6 @@ src/lib/oberror
 src/lib/profile/obperf
 src/lib/regex/regex/re
 src/lib/regex/strings/conf_to_src
-src/logservice/libobcdc/tests/*.sh
-src/logservice/libobcdc/tests/conf
-src/logservice/libobcdc/tests/etc
-src/logservice/libobcdc/tests/fetcher_integration_test*
-src/logservice/libobcdc/tests/fetcher_integration_test_add_dispatch_discard
-src/logservice/libobcdc/tests/fetcher_integration_test_fetch_log
-src/logservice/libobcdc/tests/fetcher_integration_test_heartbeater
-src/logservice/libobcdc/tests/log
-src/logservice/libobcdc/tests/oblog_tailf
-src/logservice/libobcdc/tests/run
 src/libtable/examples/kvtable_example
 src/libtable/examples/pstore_example
 src/libtable/examples/table_example
@@ -295,7 +285,6 @@ tools/obtest/lib/libobserver.so.0
 tools/obtest/lib/libobserver.so.0.0.0
 tools/obtest/log/
 tools/obtest/mytest.log*
-tools/obtest/obcdc/
 tools/obtest/oblog/
 tools/obtest/observer.debug
 tools/obtest/rollback_sql_post.txt
@@ -359,7 +348,6 @@ unittest/common/small_allocator
 unittest/lib/*.log*
 unittest/lib/hash.data
 unittest/lib/observer.pfda
-unittest/libobcdc/nopretest_test*
 unittest/obproxy/*checker
 unittest/obproxy/.conf/
 unittest/obproxy/etc/
