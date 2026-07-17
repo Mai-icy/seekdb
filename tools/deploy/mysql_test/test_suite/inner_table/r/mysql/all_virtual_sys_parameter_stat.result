@@ -60,6 +60,7 @@ debug_sync_timeout
 default_auto_increment_mode
 default_compress_func
 default_enable_extended_rowid
+default_load_mode
 default_progressive_merge_num
 default_row_format
 default_storage_cache_policy
@@ -67,6 +68,7 @@ default_table_merge_engine
 default_table_organization
 devname
 diag_syslog_per_error_limit
+direct_load_allow_fallback
 disk_io_thread_count
 dtl_buffer_size
 dump_data_dictionary_to_log_interval
@@ -370,7 +372,6 @@ _enable_spf_batch_rescan
 _enable_sql_ccl_rule
 _enable_ss_migration_prewarm
 _enable_ss_replica_prewarm
-_enable_system_tenant_memory_limit
 _enable_tenant_sql_net_thread
 _enable_topn_runtime_filter
 _enable_trace_session_leak
@@ -439,6 +440,7 @@ _object_storage_io_timeout
 _ob_ddl_temp_file_compress_func
 _ob_ddl_timeout
 _ob_elr_fast_freeze_threshold
+_ob_enable_direct_load
 _ob_enable_dynamic_worker
 _ob_enable_fast_freeze
 _ob_enable_fast_parser
@@ -520,7 +522,6 @@ _stall_threshold_for_dynamic_worker
 _storage_meta_memory_limit_percentage
 _storage_stream_rpc_buffer_size
 _stream_rpc_max_wait_timeout
-_system_tenant_limit_mode
 _temporary_file_io_area_size
 _trace_control_info
 _trx_max_log_cb_limit
