@@ -690,7 +690,7 @@ int ObDMLResolver::check_column_json_type(ParseNode *tab_col, bool &is_json_cst,
                   const ObJtColBaseInfo& info = *table_item->json_table_def_->all_cols_.at(i);
                   const ObString& cur_column_name = info.col_name_;
                   if (info.col_type_ == static_cast<int32_t>(COL_TYPE_QUERY)) {
-                    if (ObCharset::case_compat_mode_equal(cur_column_name, col_name)) {
+                    if (ObCharset::case_insensitive_equal(cur_column_name, col_name)) {
                       is_json_type = true;
                       break;
                     }
@@ -3010,7 +3010,7 @@ int ObDMLResolver::resolve_snapshot_query_node(const ParseNode *time_node, Table
           && ObUInt64Type != expr->get_result_type().get_type()) {
         ObRawExprResType res_type;
         res_type.set_uint64();
-        res_type.set_accuracy(ObAccuracy::DDL_DEFAULT_ACCURACY2[MYSQL_MODE][ObUInt64Type]);
+        res_type.set_accuracy(ObAccuracy::DDL_DEFAULT_ACCURACY2[0][ObUInt64Type]);
         OZ(ObRawExprUtils::create_cast_expr(*params_.expr_factory_, expr, res_type, dst_expr,
                                             session_info_, use_default_cm, cm));
         if (OB_SUCC(ret)) {
@@ -4046,7 +4046,6 @@ int ObDMLResolver::resolve_str_const(const ParseNode &parse_tree, ObString& path
   ObCollationType collation_connection = CS_TYPE_INVALID;
   ObCharsetType character_set_connection = CHARSET_INVALID;
   bool enable_decimal_int = false;
-  ObCompatType compat_type = COMPAT_MYSQL57;
   bool enable_mysql_compatible_dates = false;
   if (OB_ISNULL(params_.expr_factory_) || OB_ISNULL(params_.session_info_)) {
     ret = OB_NOT_INIT;
@@ -4055,8 +4054,6 @@ int ObDMLResolver::resolve_str_const(const ParseNode &parse_tree, ObString& path
     LOG_WARN("fail to get collation_connection", K(ret));
   } else if (OB_FAIL(params_.session_info_->get_character_set_connection(character_set_connection))) {
     LOG_WARN("fail to get character_set_connection", K(ret));
-  } else if (OB_FAIL(session_info->get_compatibility_control(compat_type))) {
-    LOG_WARN("failed to get compat type", K(ret));
   } else if (OB_FAIL(ObSQLUtils::check_enable_decimalint(session_info, enable_decimal_int))) {
     LOG_WARN("fail to check enable decimal int", K(ret));
   } else if (OB_FAIL(ObSQLUtils::check_enable_mysql_compatible_dates(session_info, false,
@@ -4073,7 +4070,6 @@ int ObDMLResolver::resolve_str_const(const ParseNode &parse_tree, ObString& path
                                              &parents_expr_info,
                                              session_info->get_sql_mode(),
                                              enable_decimal_int,
-                                             compat_type,
                                              enable_mysql_compatible_dates,
                                              session_info->get_min_const_integer_precision(),
                                              nullptr != params_.secondary_namespace_))) {
@@ -8195,7 +8191,7 @@ int ObDMLResolver::resolve_function_table_column_item(const TableItem &table_ite
       CK (OB_NOT_NULL(column_item));
       if (OB_SUCC(ret)
           && column_item->table_id_ == table_item.table_id_
-          && ObCharset::case_compat_mode_equal(column_item->column_name_, column_name)) {
+          && ObCharset::case_insensitive_equal(column_item->column_name_, column_name)) {
         col_item = column_item;
         break;
       }
@@ -8348,7 +8344,7 @@ int ObDMLResolver::resolve_json_table_check_dup_name(const ObJsonTableDef* table
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("info is null", K(ret));
       } else if (info->col_type_ == static_cast<int32_t>(NESTED_COL_TYPE)) {
-      } else if (ObCharset::case_compat_mode_equal(info->col_name_, column_name)) {
+      } else if (ObCharset::case_insensitive_equal(info->col_name_, column_name)) {
         exists = true;
         break;
       }
@@ -9255,7 +9251,7 @@ int ObDMLResolver::resolve_generated_table_column_item(const TableItem &table_it
       SelectItem &ref_select_item = ref_stmt->get_select_item(i);
       if (column_id != OB_INVALID_ID
             ? i + OB_APP_MIN_COLUMN_ID == column_id
-            : ObCharset::case_compat_mode_equal(column_name, ref_select_item.alias_name_)) {
+            : ObCharset::case_insensitive_equal(column_name, ref_select_item.alias_name_)) {
         ObRawExpr *select_expr = ref_select_item.expr_;
         if (OB_FAIL(params_.expr_factory_->create_raw_expr(T_REF_COLUMN, col_expr))) {
           LOG_WARN("create column expr failed", K(ret));
@@ -10481,9 +10477,6 @@ int ObDMLResolver::inner_resolve_hints(const ParseNode &node,
       } else if (T_END_OUTLINE_DATA == hint_node->type_) {
         if (OB_UNLIKELY(!in_outline_data)) {
           LOG_TRACE("Unpaired END_OUTLINE_DATA in outline data");
-        } else if (!global_hint.has_valid_opt_features_version()) {
-          reset_outline_hints = true;
-          LOG_TRACE("get outline data without opt features version");
         } else {
           get_outline_data = true;
           in_outline_data = false;
@@ -10754,21 +10747,6 @@ int ObDMLResolver::resolve_global_hint(const ParseNode &hint_node,
     }
     case T_CURSOR_SHARING_EXACT: {
       global_hint.merge_param_option_hint(ObParamOption::EXACT);
-      break;
-    }
-    case T_OPTIMIZER_FEATURES_ENABLE: {
-      CHECK_HINT_PARAM(hint_node, 1) {
-        uint64_t version = 0;
-        ObString ver_str(child0->str_len_, child0->str_value_);
-        if (ver_str.empty()) {
-          global_hint.merge_opt_features_version_hint(LASTED_COMPAT_VERSION);
-        } else if (OB_FAIL(ObClusterVersion::get_version(ver_str, version))) {
-          ret = OB_SUCCESS; // just ignore this invalid hint
-          LOG_WARN("failed to get version in hint");
-        } else {
-          global_hint.merge_opt_features_version_hint(version);
-        }
-      }
       break;
     }
     case T_NO_QUERY_TRANSFORMATION: {

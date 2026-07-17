@@ -53,7 +53,7 @@ namespace sql {
   }
   class ObTenantSQLSessionMgr;
   class ObTenantSqlMemoryManager;
-  class ObPlanBaselineMgr;
+  class ObPlanMonitorNodeList;
   class ObDataAccessService;
   class ObPlanCache;
   class ObPsCache;
@@ -262,12 +262,10 @@ using ObTableScanIteratorObjPool = common::ObServerObjectPool<oceanbase::storage
       transaction::ObTimestampAccess*,               \
       transaction::ObTransIDService*,                \
       transaction::ObUniqueIDService*,               \
-      sql::ObPlanBaselineMgr*,                       \
       sql::ObPsCache*,                               \
       sql::ObPlanCache*,                             \
       sql::dtl::ObTenantDfc*,                        \
       omt::ObPxPools*,                               \
-      lib::Worker::CompatMode,                       \
       sql::ObTenantSqlMemoryManager*,                \
       sql::dtl::ObDTLIntermResultManager*,           \
       sql::ObDataAccessService*,                     \

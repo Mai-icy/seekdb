@@ -741,8 +741,7 @@ int ObExprOperator::aggregate_collations(ObObjMeta &type,
       }
     }
     if (OB_SUCC(ret)) {
-      if ((flags & OB_COLL_ALLOW_NEW_CONV) &&
-          unknown_cs &&
+      if (unknown_cs &&
           coll_level != CS_LEVEL_EXPLICIT) {
         ret = OB_CANT_AGGREGATE_2COLLATIONS;
         LOG_WARN("Illegal mix of collations",K(ret), K(unknown_cs));
@@ -815,16 +814,10 @@ int ObExprOperator::aggregate_two_collation(const ObCollationLevel level1,
                                             uint32_t flags)
 {
   int ret = OB_SUCCESS;
-  if (flags & OB_COLL_ALLOW_NEW_CONV) {
-    ret = ObCharset::aggregate_collation_new(level1, type1,
-                                              level2, type2,
-                                              res_level, res_type,
-                                              flags);
-  } else {
-    ret = ObCharset::aggregate_collation_old(level1, type1,
-                                              level2, type2,
-                                              res_level, res_type);
-  }
+  ret = ObCharset::aggregate_collation_new(level1, type1,
+                                            level2, type2,
+                                            res_level, res_type,
+                                            flags);
   if (OB_CANT_AGGREGATE_2COLLATIONS == ret) {
     const char* coll_type1 = ObCharset::collation_name(type1);
     const char* coll_level1 = ObCharset::collation_level(level1);
@@ -840,21 +833,6 @@ int ObExprOperator::aggregate_two_collation(const ObCollationLevel level1,
   return ret;
 }
 
-int ObExprOperator::enable_old_charset_aggregation(const ObBasicSessionInfo *session, uint32_t &flags)
-{
-  int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
-  if (OB_ISNULL(session)) {
-    LOG_TRACE("use new charset aggregation rule");
-  } else if (OB_FAIL(session->is_old_charset_aggregation_enabled(enable_old_rule))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else if (enable_old_rule) {
-    flags &= ~OB_COLL_ALLOW_NEW_CONV;
-    LOG_TRACE("old charset aggregation rule is enabled because variables control", K(enable_old_rule));
-  }
-  return ret;
-}
-
 int ObExprOperator::aggregate_charsets_for_string_result(
   ObObjMeta &type,
   const ObObjMeta *types,
@@ -862,14 +840,9 @@ int ObExprOperator::aggregate_charsets_for_string_result(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_ALLOW_NUMERIC_CONV | OB_COLL_ALLOW_NEW_CONV;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_ALLOW_NUMERIC_CONV;
+  ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -880,14 +853,9 @@ int ObExprOperator::aggregate_charsets_for_string_result(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_ALLOW_NUMERIC_CONV | OB_COLL_ALLOW_NEW_CONV;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_ALLOW_NUMERIC_CONV;
+  ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -898,14 +866,9 @@ int ObExprOperator::aggregate_charsets_for_comparison(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_DISALLOW_NONE | OB_COLL_ALLOW_NEW_CONV;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_DISALLOW_NONE;
+  ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -917,14 +880,9 @@ int ObExprOperator::aggregate_charsets_for_comparison(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_DISALLOW_NONE | OB_COLL_ALLOW_NEW_CONV;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type.get_calc_meta(), types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_DISALLOW_NONE;
+  ret = aggregate_charsets(type.get_calc_meta(), types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -936,15 +894,9 @@ int ObExprOperator::aggregate_charsets_for_string_result_with_comparison(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_ALLOW_NUMERIC_CONV | OB_COLL_ALLOW_NEW_CONV |
-                   OB_COLL_DISALLOW_NONE;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_ALLOW_NUMERIC_CONV | OB_COLL_DISALLOW_NONE;
+  ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -1411,7 +1363,7 @@ int ObExprOperator::aggregate_temporal_accuracy_for_merge(ObExprResType &type,
       }
     }
     if (OB_UNLIKELY(scale < 0)) {
-      type.set_scale(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][type.get_type()].get_scale());
+      type.set_scale(ObAccuracy::MAX_ACCURACY2[0][type.get_type()].get_scale());
     } else {
       type.set_scale(scale);
     }
@@ -5721,27 +5673,7 @@ int ObLocationExprOperator::calc_(const ObExpr &expr, const ObExpr &sub_arg,
       pos_int = pos->get_int();
     } else {
       has_result = true;
-      ObSolidifiedVarsGetter helper(expr, ctx, ctx.exec_ctx_.get_my_session());
-      const ObSQLSessionInfo *session = ctx.exec_ctx_.get_my_session();
-      uint64_t compat_version = 0;
-      ObCompatType compat_type = COMPAT_MYSQL57;
-      bool is_enable = false;
-      if (OB_ISNULL(session)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("session info is null", K(ret));
-      } else if (OB_FAIL(helper.get_compat_version(compat_version))) {
-        LOG_WARN("failed to get compat version", K(ret));
-      } else if (OB_FAIL(ObCompatControl::check_feature_enable(compat_version,
-                                                               ObCompatFeatureType::FUNC_LOCATE_NULL,
-                                                               is_enable))) {
-        LOG_WARN("failed to check feature enable", K(ret));
-      } else if (OB_FAIL(session->get_compatibility_control(compat_type))) {
-        LOG_WARN("failed to get compat type", K(ret));
-      } else if (is_enable && COMPAT_MYSQL8 == compat_type) {
-        res_datum.set_null();
-      } else {
-        res_datum.set_int(0);
-      }
+      res_datum.set_int(0);
     }
   }
 

@@ -18,7 +18,6 @@
 #include "ob_partition_exchange.h"
 #include "observer/schema/ob_schema_service_sql_impl.h"
 #include "ob_root_service.h"
-#include "share/ob_sql_client_decorator.h" // ObSQLClientRetryWeak
 #include "share/tablet/ob_tablet_to_table_history_operator.h" // ObTabletToTableHistoryOperator
 #include "share/tablet/ob_tablet_mapping_operator.h"
 #include "storage/tablet/ob_tablet_binding_helper.h"
@@ -2357,7 +2356,7 @@ int ObPartitionExchange::update_table_all_monitor_modified_(const uint64_t new_t
     int64_t updates = 0;
     int64_t deletes = 0;
     common::sqlclient::ObMySQLResult *result = NULL;
-    ObSQLClientRetryWeak sql_client_retry_weak(GCTX.sql_proxy_);
+    auto &sql_client_retry_weak = *GCTX.sql_proxy_;
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       if (OB_FAIL(sql_client_retry_weak.read(res, monitor_modified_read_sql_string.ptr()))) {
         LOG_WARN("fail to execute sql", K(ret), K(monitor_modified_read_sql_string));

@@ -129,13 +129,11 @@ public:
   ~ObTxCtx() { destroy(); }
   void destroy();
   int init(const uint32_t session_id,
-           const uint32_t client_sid,
            const uint32_t associated_session_id,
            const ObTransID &trans_id,
            const int64_t trans_expired_time,
            const uint64_t cluster_version,
            ObTransService *trans_service,
-           const uint64_t cluster_id,
            ObLSTxCtxMgr *ls_ctx_mgr,
            const bool for_replay,
            const TxCtxSource ctx_source,
@@ -198,7 +196,6 @@ public:
   bool is_table_lock_killed() const;
 
   uint32_t get_session_id() const { return session_id_; }
-  uint32_t get_client_sid() const { return client_sid_; }
 
   // for elr
   bool is_can_elr() const { return can_elr_; }
@@ -652,7 +649,6 @@ private:
 private:
   bool is_inited_;
   memtable::ObMemtableCtx mt_ctx_;
-  uint64_t cluster_id_;
   share::SCN end_log_ts_;
   int64_t stmt_expired_time_;
 

@@ -429,13 +429,8 @@ DEFINE_ERROR(OB_ENCODING_EST_SIZE_OVERFLOW, -4397, -1, "HY000", "Encoding estima
 DEFINE_ERROR(OB_INVALID_SUB_PARTITION_TYPE, -4398, 1500, "HY000", "It is only possible to mix RANGE/LIST partitioning with HASH/KEY partitioning for subpartitioning");
 DEFINE_ERROR(OB_ERR_UNEXPECTED_UNIT_STATUS, -4399, -1, "HY000", "Unit status is not expected");
 DEFINE_ERROR(OB_AUTOINC_CACHE_NOT_EQUAL, -4400, -1, "HY000", "Autoinc cache's autoinc version is not equal to request's autoinc version");
-DEFINE_ERROR(OB_ERR_KILL_CLIENT_SESSION, -4401, 4401, "HY000", "Client Session need be killed");
-DEFINE_ERROR(OB_ERR_KILL_CLIENT_SESSION_FAILED, -4402, -1, "HY000", "Kill Client Session failed");
 DEFINE_ERROR(OB_IMPROPER_OS_PARAM, -4403, -1, "HY000", "OS params check failed, because the operating system has improper parameter configurations");
 DEFINE_ERROR(OB_IO_TIMEOUT, -4404, 4012, "HY000", "IO timeout");
-DEFINE_ERROR_EXT_DEP(OB_INVALID_LICENSE, -4405, -1, "HY000", "license is invalid", "license is invalid because: %s");
-DEFINE_ERROR(OB_LICENSE_EXPIRED, -4406, -1, "HY000", "license is expired");
-DEFINE_ERROR_EXT_DEP(OB_LICENSE_SCOPE_EXCEEDED, -4407, -1, "HY000", "The current license does not include this feature module", "The current license does not include this feature module: %s");
 DEFINE_ERROR(OB_MIGRATE_TX_DATA_NOT_CONTINUES, -4408, -1, "HY000", "migrate tx data not continues");
 // 余留位置
 ////////////////////////////////////////////////////////////////
@@ -1365,7 +1360,6 @@ DEFINE_ERROR(OB_ERR_MODIFY_READ_ONLY_VIEW, -5723, -1, "HY000", "cannot perform a
 DEFINE_ERROR(OB_ERR_INVALID_INITRANS_VALUE, -5724, -1, "HY000", "invalid INITRANS option value");
 DEFINE_ERROR(OB_ERR_INVALID_MAXTRANS_VALUE, -5725, -1, "HY000", "invalid MAXTRANS option value");
 DEFINE_ERROR(OB_ERR_INVALID_PCTFREE_OR_PCTUSED_VALUE, -5726, -1, "HY000", "invalid value for PCTFREE or PCTUSED");
-DEFINE_ERROR(OB_ERR_PROXY_REROUTE, -5727, -1, "HY000", "SQL request should be rerouted");
 DEFINE_ERROR(OB_ERR_ILLEGAL_ARGUMENT_FOR_FUNCTION, -5728, -1, "HY000", "illegal argument for function");
 DEFINE_ERROR_DEP(OB_ERR_OPERATOR_CANNOT_BE_USED_WITH_LIST, -5729, -1, "HY000", "this operator cannot be used with lists");
 DEFINE_ERROR(OB_ERR_INVALID_SAMPLING_RANGE, -5730, -1, "HY000", "SAMPLE percentage must be in the range [0.000001,100)");

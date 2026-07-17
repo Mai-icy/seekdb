@@ -189,7 +189,7 @@ public:
   using ObISQLClient::read;
   // execute update sql
   virtual int write(const char *sql, const int32_t group_id, int64_t &affected_rows) override;
-  int write(const ObString sql, int64_t &affected_rows, int64_t compatibility_mode,
+  int write(const ObString sql, int64_t &affected_rows,
         const ObSessionParam *session_param = nullptr,
         const common::ObAddr *sql_exec_addr = nullptr);
   using ObISQLClient::write;

@@ -3208,7 +3208,7 @@ CAST_FUNC_NAME(int, decimalint)
     ObScale in_scale = 0;
     ObPrecision out_prec = expr.datum_meta_.precision_;
     ObPrecision in_prec =
-      ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][expr.args_[0]->datum_meta_.type_]
+      ObAccuracy::MAX_ACCURACY2[0][expr.args_[0]->datum_meta_.type_]
         .get_precision();
     const static int64_t DECINT64_MAX = get_scale_factor<int64_t>(MAX_PRECISION_DECIMAL_INT_64);
     if (in_prec > MAX_PRECISION_DECIMAL_INT_64 && in_val < DECINT64_MAX) {
@@ -3493,7 +3493,7 @@ CAST_FUNC_NAME(uint, decimalint)
     ObScale out_scale = expr.datum_meta_.scale_;
     ObPrecision out_prec = expr.datum_meta_.precision_;
     ObPrecision in_prec =
-      ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][expr.args_[0]->datum_meta_.type_]
+      ObAccuracy::MAX_ACCURACY2[0][expr.args_[0]->datum_meta_.type_]
         .get_precision();
     const static uint64_t DECINT64_MAX = get_scale_factor<uint64_t>(MAX_PRECISION_DECIMAL_INT_64);
     if (in_prec > MAX_PRECISION_DECIMAL_INT_64 && in_val < DECINT64_MAX) {
@@ -10144,7 +10144,7 @@ int get_accuracy_from_parse_node(const ObExpr &expr, ObEvalCtx &ctx,
           ObAccuracy::DDL_DEFAULT_ACCURACY[dest_type].get_length() : text_length);
     } else {
       const ObAccuracy &def_acc =
-        ObAccuracy::DDL_DEFAULT_ACCURACY2[MYSQL_MODE][dest_type];
+        ObAccuracy::DDL_DEFAULT_ACCURACY2[0][dest_type];
       if (ObNumberType == dest_type && 0 == node.int16_values_[2]) {
         accuracy.set_precision(def_acc.get_precision());
       } else {
@@ -15275,7 +15275,7 @@ int ObObjCaster::is_order_consistent(const ObObjMeta &from,
     ObCollationType from_cs_type = from.get_collation_type();
     ObCollationType to_cs_type = to.get_collation_type();
     uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                     OB_COLL_ALLOW_NUMERIC_CONV | OB_COLL_ALLOW_NEW_CONV;
+                     OB_COLL_ALLOW_NUMERIC_CONV;
     if (OB_FAIL(sql::ObExprOperator::aggregate_two_collation(from.get_collation_level(),
                                                         from_cs_type,
                                                         to.get_collation_level(),

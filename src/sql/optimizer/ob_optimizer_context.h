@@ -471,7 +471,6 @@ ObOptimizerContext(ObSQLSessionInfo *session_info,
   // 2. corresponding batch rescan configuration must be enabled
   void init_batch_rescan_flags(const bool enable_batch_nlj,
                                const bool enable_batch_spf,
-                               const uint64_t opt_version,
                                const int64_t batch_rescan_flag)
   {
     enable_nlj_batch_rescan_ = enable_batch_nlj;

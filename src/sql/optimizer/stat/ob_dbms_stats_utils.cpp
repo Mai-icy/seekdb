@@ -1353,12 +1353,9 @@ int ObDbmsStatsUtils::check_all_cols_range_skew(const ObIArray<ObColumnStatParam
 int ObDbmsStatsUtils::implicit_commit_before_gather_stats(sql::ObExecContext &ctx)
 {
   int ret = OB_SUCCESS;
-  uint64_t optimizer_features_enable_version = 0;
   if (OB_ISNULL(ctx.get_my_session())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(ret), K(ctx.get_my_session()));
-  } else if (OB_FAIL(ctx.get_my_session()->get_optimizer_features_enable_version(optimizer_features_enable_version))) {
-    LOG_WARN("failed to get_optimizer_features_enable_version", K(ret));
   } else if (OB_FAIL(ObResultSet::implicit_commit_before_cmd_execute(*ctx.get_my_session(), ctx, stmt::T_ANALYZE))) {
     LOG_WARN("failed to implicit commit before cmd execute", K(ret));
   } else {/*do nothing*/}
@@ -1476,7 +1473,7 @@ int ObDbmsStatsUtils::check_can_async_gather_stats(sql::ObExecContext &ctx)
     
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(ctx.get_sql_proxy());
+      auto &sql_client_retry_weak = *ctx.get_sql_proxy();
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -1740,7 +1737,7 @@ int ObDbmsStatsUtils::fetch_need_cancel_async_gather_stats_task(ObIAllocator &al
     
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(ctx.get_sql_proxy());
+      auto &sql_client_retry_weak = *ctx.get_sql_proxy();
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {

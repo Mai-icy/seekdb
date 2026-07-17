@@ -300,15 +300,9 @@ struct ObGlobalHint {
   int assign(const ObGlobalHint &other);
 
 // optimizer version define, move defines below to other file later
-#define COMPAT_VERSION_1_0_0_0    (oceanbase::common::cal_version(1, 0, 0, 0))
-#define LASTED_COMPAT_VERSION     COMPAT_VERSION_1_0_0_0
-  static bool is_valid_opt_features_version(uint64_t version)
-  { return version > 0 && (LASTED_COMPAT_VERSION >= version || CLUSTER_CURRENT_VERSION >= version); }
-
   static const common::ObConsistencyLevel UNSET_CONSISTENCY = common::INVALID_CONSISTENCY;
   static const int64_t UNSET_QUERY_TIMEOUT = -1;
   static const int64_t UNSET_MAX_CONCURRENT = -1;
-  static const uint64_t UNSET_OPT_FEATURES_VERSION = 0;
   static const int64_t DEFAULT_PARALLEL = 1;
   static const int64_t UNSET_PARALLEL = 0;
   static const int64_t SET_ENABLE_AUTO_DOP = -1;
@@ -332,7 +326,6 @@ struct ObGlobalHint {
   void merge_plan_cache_hint(ObPlanCachePolicy policy);
   void merge_log_level_hint(const ObString &log_level);
   void merge_read_consistency_hint(ObConsistencyLevel read_consistency, int64_t frozen_version);
-  void merge_opt_features_version_hint(uint64_t opt_features_version);
   void merge_osg_hint(int8_t flag);
   void merge_dynamic_sampling_hint(int64_t dynamic_sampling);
 
@@ -350,7 +343,6 @@ struct ObGlobalHint {
   bool enable_auto_dop() const { return SET_ENABLE_AUTO_DOP == parallel_; }
   bool enable_manual_dop() const { return SET_ENABLE_MANUAL_DOP == parallel_; }
   bool is_topk_specified() const { return topk_precision_ > 0 || sharding_minimum_row_count_ > 0; }
-  bool has_valid_opt_features_version() const { return is_valid_opt_features_version(opt_features_version_); }
   bool disable_query_transform() const { return disable_transform_; }
   bool disable_cost_based_transform() const { return disable_cost_based_transform_; }
   inline bool has_dbms_stats_hint() const { return has_dbms_stats_hint_; }
@@ -392,7 +384,6 @@ struct ObGlobalHint {
                K_(param_option),
                K_(alloc_op_hints),
                K_(dops),
-               K_(opt_features_version),
                K_(disable_transform),
                K_(disable_cost_based_transform),
                K_(opt_params),
@@ -420,7 +411,6 @@ struct ObGlobalHint {
   ObPDMLOption pdml_option_;
   ObParamOption param_option_;
   common::ObSArray<ObDopHint> dops_;
-  uint64_t opt_features_version_;
   bool disable_transform_;
   bool disable_cost_based_transform_;
   ObOptParamHint opt_params_;

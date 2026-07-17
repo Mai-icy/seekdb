@@ -79,10 +79,6 @@ public:
 
   OB_INLINE void pause() { pause_flag_ = true; }
 
-  Status check_qtime_throttle();
-  Status check_throttle();
-  Status check_rate_limiter();
-
   OB_INLINE int64_t get_query_start_time() const { return query_start_time_; }
   OB_INLINE int64_t get_query_enqueue_time() const { return query_enqueue_time_; }
   OB_INLINE ObTenant* get_tenant() { return tenant_; }

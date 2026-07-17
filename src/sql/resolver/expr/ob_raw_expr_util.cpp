@@ -7225,8 +7225,6 @@ int ObRawExprUtils::build_inner_wf_aggr_status_expr(ObRawExprFactory &factory,
   return ret;
 }
 
-// only for rollup distributor and collector
-
 int ObRawExprUtils::build_pseudo_ddl_slice_id(ObRawExprFactory &factory,
                                                 const ObSQLSessionInfo &session_info,
                                                 ObRawExpr *&out)

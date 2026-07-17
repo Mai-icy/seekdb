@@ -47,13 +47,11 @@ using namespace tablelock;
 bool ObTxCtx::is_inited() const { return ATOMIC_LOAD(&is_inited_); }
 
 int ObTxCtx::init(const uint32_t session_id,
-                         const uint32_t client_sid,
                          const uint32_t associated_session_id,
                          const ObTransID &trans_id,
                          const int64_t trans_expired_time,
                          const uint64_t cluster_version,
                          ObTransService *trans_service,
-                         const uint64_t cluster_id,
                          ObLSTxCtxMgr *ls_ctx_mgr,
                          const bool for_replay,
                          const TxCtxSource ctx_source,
@@ -98,7 +96,6 @@ int ObTxCtx::init(const uint32_t session_id,
 
   if (OB_SUCC(ret)) {
     session_id_ = session_id;
-    client_sid_ = client_sid;
     associated_session_id_ = associated_session_id;
     addr_ = trans_service->get_server();
     trans_id_ = trans_id;
@@ -113,7 +110,6 @@ int ObTxCtx::init(const uint32_t session_id,
     last_request_ts_ = ctx_create_time_;
 
     last_check_tx_status_ts_ = ObClockGenerator::getClock();
-    cluster_id_ = cluster_id;
     pending_write_ = 0;
     block_frozen_memtable_ = nullptr;
 
@@ -148,7 +144,7 @@ int ObTxCtx::init(const uint32_t session_id,
                        OB_ID(trans_id), trans_id,
                        OB_ID(ref), get_ref());
   TRANS_LOG(TRACE, "tx ctx init", K(ret), K(trans_id), K(trans_expired_time),
-            K(cluster_version), KP(trans_service), K(cluster_id));
+            K(cluster_version), KP(trans_service));
   return ret;
 }
 
@@ -852,8 +848,6 @@ int ObTxCtx::iterate_tx_lock_stat(ObTxLockStatIterator &iter)
       if (OB_FAIL(tx_lock_stat.init(get_addr(),
                                     memtable_key_info_arr.at(i),
                                     get_session_id(),
-                                    get_client_sid(),
-                                    0,
                                     get_trans_id(),
                                     get_ctx_create_time(),
                                     get_trans_expired_time()))) {
@@ -2530,7 +2524,7 @@ int ObTxCtx::init_log_block_(ObTxLogBlock &log_block,
 {
   ObTxLogBlockHeader &header = log_block.get_header();
   // the log_entry_no will be backfill before log-block to be submitted
-  header.init(cluster_id_, cluster_version_, -1 /*log_entry_no*/, trans_id_);
+  header.init(cluster_version_, -1 /*log_entry_no*/, trans_id_);
   if (OB_UNLIKELY(serial_final)) { header.set_serial_final(); }
   if (OB_UNLIKELY(has_async_index_redo_)) { header.set_has_async_index(); }
   return log_block.init_for_fill(suggested_buf_size);
@@ -2539,7 +2533,7 @@ int ObTxCtx::init_log_block_(ObTxLogBlock &log_block,
 inline int ObTxCtx::reuse_log_block_(ObTxLogBlock &log_block)
 {
   ObTxLogBlockHeader &header = log_block.get_header();
-  header.init(cluster_id_, cluster_version_, exec_info_.next_log_entry_no_, trans_id_);
+  header.init(cluster_version_, exec_info_.next_log_entry_no_, trans_id_);
   if (OB_UNLIKELY(has_async_index_redo_)) { header.set_has_async_index(); }
   return log_block.reuse_for_fill();
 }
@@ -4800,7 +4794,6 @@ int ObTxCtx::get_tx_ctx_table_info_(ObTxCtxTableInfo &info)
     TRANS_LOG(WARN, "fail to assign exec_info", K(ret), KPC(this));
   } else {
     info.tx_id_ = trans_id_;
-    info.cluster_id_ = cluster_id_;
     if (cluster_version_accurate_) {
       info.cluster_version_ = cluster_version_;
     } else {

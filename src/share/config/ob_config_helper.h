@@ -534,21 +534,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(ObConfigPlanCacheGCChecker);
 };
 
-class ObConfigQueryRateLimitChecker
-  : public ObConfigChecker
-{
-public:
-  ObConfigQueryRateLimitChecker() {}
-  virtual ~ObConfigQueryRateLimitChecker() {};
-  bool check(const ObConfigItem &t) const;
-
-  static constexpr int64_t MAX_QUERY_RATE_LIMIT = 200000;
-  static constexpr int64_t MIN_QUERY_RATE_LIMIT = 10;
-private:
-  DISALLOW_COPY_AND_ASSIGN(ObConfigQueryRateLimitChecker);
-};
-
-
 class ObConfigAuditModeChecker
   : public ObConfigChecker
 {

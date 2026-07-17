@@ -202,14 +202,7 @@ public:
     if (v.session_.is_terminate(ret)) {
       v.no_more_test_ = true;
       v.retry_type_ = RETRY_TYPE_NONE;
-      // In the kill client session scenario, the server session will be marked
-      // with the SESSION_KILLED mark. In the retry scenario, there will be an error
-      // code covering 5066, so the judgment logic is added here.
-      if (ret == OB_ERR_SESSION_INTERRUPTED && v.err_ == OB_ERR_KILL_CLIENT_SESSION) {
-        v.client_ret_ = v.err_;
-      } else{
-        v.client_ret_ = ret; // session terminated
-      }
+      v.client_ret_ = ret; // session terminated
       LOG_WARN("execution was terminated", K(ret), K(v.client_ret_), K(v.err_));
     } else if (THIS_WORKER.is_timeout()) {
       v.no_more_test_ = true;
@@ -623,14 +616,7 @@ public:
     } else if (v.session_.is_terminate(ret)) {
       v.no_more_test_ = true;
       v.retry_type_ = RETRY_TYPE_NONE;
-      // In the kill client session scenario, the server session will be marked
-      // with the SESSION_KILLED mark. In the retry scenario, there will be an error
-      // code covering 5066, so the judgment logic is added here.
-      if (ret == OB_ERR_SESSION_INTERRUPTED && v.err_ == OB_ERR_KILL_CLIENT_SESSION) {
-        v.client_ret_ = v.err_;
-      } else{
-        v.client_ret_ = ret; // session terminated
-      }
+      v.client_ret_ = ret; // session terminated
       LOG_WARN("execution was terminated", K(ret), K(v.client_ret_), K(v.err_));
     } else if (THIS_WORKER.is_timeout()) {
       v.no_more_test_ = true;
@@ -919,11 +905,9 @@ void ObQueryRetryCtrl::empty_proc(ObRetryParam &v)
   // This is the case where err is not in the retry error code list, and client_ret needs to be set to the corresponding value
   v.client_ret_ = v.err_;
   v.retry_type_ = RETRY_TYPE_NONE;
-  if (OB_ERR_PROXY_REROUTE != v.client_ret_) {
-    LOG_DEBUG("no retry handler for this err code, no need retry", K(v),
-             K(THIS_WORKER.get_timeout_ts()), K(v.result_.get_stmt_type()),
-             K(v.session_.get_retry_info().get_last_query_retry_err()));
-  }
+  LOG_DEBUG("no retry handler for this err code, no need retry", K(v),
+            K(THIS_WORKER.get_timeout_ts()), K(v.result_.get_stmt_type()),
+            K(v.session_.get_retry_info().get_last_query_retry_err()));
 }
 
 void ObQueryRetryCtrl::before_func(ObRetryParam &v)
@@ -943,10 +927,8 @@ void ObQueryRetryCtrl::before_func(ObRetryParam &v)
 void ObQueryRetryCtrl::after_func(ObRetryParam &v)
 {
   if (OB_TRY_LOCK_ROW_CONFLICT == v.client_ret_
-        || OB_ERR_PROXY_REROUTE == v.client_ret_
         || (v.is_from_pl_ && OB_READ_NOTHING == v.client_ret_)) {
     //Lock conflict will not be printed to avoid log flooding
-    // Secondary routing does not print
     // PL inside the OB_READ_NOTHING does not print logs
   } else {
     LOG_WARN_RET(v.client_ret_, "[RETRY] check if need retry", K(v), "need_retry", RETRY_TYPE_NONE != v.retry_type_);

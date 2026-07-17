@@ -161,7 +161,6 @@ ob_set_subtarget(ob_share common
   ob_cluster_event_history_table_operator.cpp
   scn.cpp
   ob_throttling_utils.cpp
-  ob_compatibility_control.cpp
   ob_batch_selector.cpp
   ob_internal_table_change_notifier.cpp
 )

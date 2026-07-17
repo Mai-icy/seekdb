@@ -182,13 +182,6 @@ ObMultiTenant::ObMultiTenant()
   }
 }
 
-static int init_compat_mode(lib::Worker::CompatMode &compat_mode)
-{
-  int ret = OB_SUCCESS;
-  compat_mode = lib::Worker::CompatMode::MYSQL;
-  return ret;
-}
-
 
 template<typename T>
 static int server_obj_pool_mtl_new(common::ObServerObjectPool<T> *&pool)
@@ -348,7 +341,6 @@ int ObMultiTenant::construct_meta_for_hidden_sys(ObTenantMeta &meta)
   } else if (OB_FAIL(unit.init(unit_id,
                         share::ObUnitInfoGetter::ObUnitStatus::UNIT_NORMAL,
                         unit_config,
-                        lib::Worker::CompatMode::MYSQL,
                         create_timestamp,
                         has_memstore,
                         false /*is_removed*/,
@@ -1095,26 +1087,9 @@ void ObMultiTenant::remove_tenant()
     LOG_ERROR("unexpected condition", K(ret));
   } else {
     LOG_INFO("removed_tenant begin to stop");
-    bool need_force_kill_session = false;
-    bool is_prepare_unit_gc = false;
-    int64_t prepare_unit_gc_ts = false;
     tenant_->stop();
-    is_prepare_unit_gc = tenant_->is_prepare_unit_gc();
-    prepare_unit_gc_ts = tenant_->get_prepare_unit_gc_ts();
-    const int64_t unit_gc_wait_time = GCONF.unit_gc_wait_time;
-    if (GCONF._enable_unit_gc_wait) {
-      if (!is_prepare_unit_gc) {
-        tenant_->set_prepare_unit_gc();
-        need_force_kill_session = false;
-      } else {
-        need_force_kill_session = (prepare_unit_gc_ts > 0 &&
-            ObTimeUtility::current_time() - prepare_unit_gc_ts > unit_gc_wait_time);
-      }
-    } else {
-      need_force_kill_session = true;
-    }
-    LOG_INFO("removed_tenant begin to kill tenant session", K(prepare_unit_gc_ts), K(need_force_kill_session), K(GCONF._enable_unit_gc_wait));
-    if (OB_FAIL(GCTX.session_mgr_->kill_tenant( need_force_kill_session))) {
+    LOG_INFO("removed_tenant begin to kill tenant session");
+    if (OB_FAIL(GCTX.session_mgr_->kill_tenant())) {
       LOG_WARN("fail to kill tenant session", K(ret));
     }
   }
@@ -1345,7 +1320,6 @@ int ObMultiTenant::gen_sys_tenant_unit_(ObUnitInfoGetter::ObTenantConfig &unit)
   } else if (OB_FAIL(unit.init(1/*unit_id*/,
                                ObUnitInfoGetter::ObUnitStatus::UNIT_NORMAL,
                                unit_config,
-                               lib::Worker::CompatMode::MYSQL/*compat_mode*/,
                                0/*create_timestamp*/,
                                true/*has_memstore*/,
                                false/*is_removed*/,
@@ -2061,7 +2035,6 @@ int ObServer::obs_init_modules()
   if (OB_SUCC(ret) && OB_FAIL(ObPlanCache::mtl_init(mods_plan_cache_))) { SERVER_LOG(WARN, "mods_plan_cache_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(ObTenantDfc::mtl_init(mods_tenant_dfc_))) { SERVER_LOG(WARN, "mods_tenant_dfc_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(ObPxPools::mtl_init(mods_px_pools_))) { SERVER_LOG(WARN, "mods_px_pools_ fail", KR(ret)); }
-  if (OB_SUCC(ret) && OB_FAIL(init_compat_mode(mods_compat_mode_))) { SERVER_LOG(WARN, "mods_compat_mode_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(ObTenantSqlMemoryManager::mtl_init(mods_tenant_sql_memory_manager_))) { SERVER_LOG(WARN, "mods_tenant_sql_memory_manager_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(ObDTLIntermResultManager::mtl_init(mods_dtl_interm_result_manager_))) { SERVER_LOG(WARN, "mods_dtl_interm_result_manager_ fail", KR(ret)); }
   if (OB_SUCC(ret) && OB_FAIL(ObDataAccessService::mtl_init(mods_data_access_service_))) { SERVER_LOG(WARN, "mods_data_access_service_ fail", KR(ret)); }

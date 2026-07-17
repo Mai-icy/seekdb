@@ -614,8 +614,8 @@ int ObExpandAggregateUtils::expand_var_expr(ObAggFunRawExpr *aggr_expr,
     // Due to the current issue with division implementation in mysql mode, there are some inconsistencies in precision, so we temporarily add cast to explicitly convert to maximum precision
     ObRawExprResType dst_type;
     dst_type.set_number();
-    dst_type.set_scale(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][ObNumberType].get_scale());
-    dst_type.set_precision(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][ObNumberType].get_precision());
+    dst_type.set_scale(ObAccuracy::MAX_ACCURACY2[0][ObNumberType].get_scale());
+    dst_type.set_precision(ObAccuracy::MAX_ACCURACY2[0][ObNumberType].get_precision());
     if (OB_FAIL(ObRawExprUtils::build_common_binary_op_expr(expr_factory_,
                                                             T_OP_MUL,
                                                             parma_expr,
@@ -1764,8 +1764,8 @@ int ObExpandAggregateUtils::expand_mysql_variance_expr(ObAggFunRawExpr *aggr_exp
     // Due to the current issue with division implementation in mysql mode, there are some inconsistencies in precision, so we temporarily add cast for explicit conversion to avoid it
     ObRawExprResType dst_type;
     dst_type.set_number();
-    dst_type.set_scale(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][ObNumberType].get_scale());
-    dst_type.set_precision(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][ObNumberType].get_precision());
+    dst_type.set_scale(ObAccuracy::MAX_ACCURACY2[0][ObNumberType].get_scale());
+    dst_type.set_precision(ObAccuracy::MAX_ACCURACY2[0][ObNumberType].get_precision());
     ObRawExprResType result_type;
     result_type.set_double();
     result_type.set_scale(ObAccuracy(PRECISION_UNKNOWN_YET, SCALE_UNKNOWN_YET).get_scale());

@@ -364,7 +364,6 @@ ob_set_subtarget(ob_storage tx
   tx/ob_tx_api.cpp
   tx/ob_tx_elr_util.cpp
   tx/ob_tx_elr_handler.cpp
-  tx/ob_trans_stat.cpp
   tx/ob_tx_stat.cpp
   tx/ob_tx_retain_ctx_mgr.cpp
   tx/ob_ls_tx_ctx_mgr_stat.cpp

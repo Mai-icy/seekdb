@@ -189,7 +189,7 @@ int ObIndexSSTableBuildTask::process()
         } else if (OB_FAIL(DDL_SIM(task_id_, CREATE_INDEX_BUILD_SSTABLE_FAILED))) {
           LOG_WARN("ddl sim failure: create index build sstable failed", K(ret), K(task_id_));
         } else if (OB_FAIL(user_sql_proxy->write(sql_string.ptr(), affected_rows,
-                    ObCompatibilityMode::MYSQL_MODE, &session_param, nullptr))) {
+                    &session_param, nullptr))) {
           LOG_WARN("fail to execute build replica sql", K(ret));
         }
 

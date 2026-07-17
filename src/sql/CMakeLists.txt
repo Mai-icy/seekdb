@@ -1060,7 +1060,6 @@ ob_set_subtarget(ob_sql engine_px
   engine/px/exchange/ob_row_heap.cpp
   engine/px/exchange/ob_transmit_op.cpp
   engine/px/datahub/components/ob_dh_barrier.cpp
-  engine/px/datahub/components/ob_dh_rollup_key.cpp
   engine/px/datahub/components/ob_dh_sample.cpp
   engine/px/datahub/components/ob_dh_winbuf.cpp
   engine/px/datahub/components/ob_dh_range_dist_wf.cpp
@@ -1541,7 +1540,6 @@ ob_set_subtarget(ob_sql session
   session/ob_sql_session_mgr.cpp
   session/ob_sys_params_mgr.cpp
   session/ob_user_resource_mgr.cpp
-  session/ob_sess_info_verify.cpp
   session/ob_local_session_var.cpp
   session/ob_system_variable.cpp
   session/ob_system_variable_factory.cpp

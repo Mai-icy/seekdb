@@ -2024,7 +2024,6 @@ void ObTenantDagWorker::run1()
   ObIDag *dag = NULL;
   ObITask *cur_task = NULL;
   lib::set_thread_name("DAG");
-  lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::INVALID;
   while (!has_set_stop()) {
     ret = OB_SUCCESS;
     if (DWS_RUNNABLE == status_ && NULL != task_) {
@@ -2047,24 +2046,18 @@ void ObTenantDagWorker::run1()
         }
         ObCurTraceId::set(dag_id);
         lib::set_thread_name(dag->get_dag_type_str(dag->get_type()));
-        if (OB_UNLIKELY(lib::Worker::CompatMode::INVALID == (compat_mode = dag->get_compat_mode()))) {
-          ret = OB_ERR_UNEXPECTED;
-          COMMON_LOG(WARN, "invalid compat mode", K(ret), K(*dag));
-        } else {
 #ifdef ERRSIM
-          const ObErrsimModuleType type(dag->get_module_type());
-          THIS_WORKER.set_module_type(type);
+        const ObErrsimModuleType type(dag->get_module_type());
+        THIS_WORKER.set_module_type(type);
 #endif
-          THIS_WORKER.set_compatibility_mode(compat_mode);
-          if (is_compaction_dag(dag->get_type())) {
-            THIS_WORKER.set_log_reduction_mode(LogReductionMode::REFINED);
-          } else {
-            THIS_WORKER.set_log_reduction_mode(LogReductionMode::NONE);
-          }
-          if (OB_FAIL(task_->do_work())) {
-            if (!dag->ignore_warning()) {
-              COMMON_LOG(WARN, "failed to do work", K(ret), K(*task_), K(compat_mode));
-            }
+        if (is_compaction_dag(dag->get_type())) {
+          THIS_WORKER.set_log_reduction_mode(LogReductionMode::REFINED);
+        } else {
+          THIS_WORKER.set_log_reduction_mode(LogReductionMode::NONE);
+        }
+        if (OB_FAIL(task_->do_work())) {
+          if (!dag->ignore_warning()) {
+            COMMON_LOG(WARN, "failed to do work", K(ret), K(*task_));
           }
         }
       }

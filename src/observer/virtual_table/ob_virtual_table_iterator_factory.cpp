@@ -166,7 +166,6 @@
 #include "observer/virtual_table/ob_all_virtual_session_ps_info.h"
 #include "observer/virtual_table/ob_information_schema_enable_roles_table.h"
 #include "observer/virtual_table/ob_all_virtual_tenant_scheduler_running_job.h"
-#include "observer/virtual_table/ob_all_virtual_compatibility_control.h"
 #include "observer/virtual_table/ob_all_virtual_dml_stats.h"
 #include "observer/virtual_table/ob_all_virtual_sql_stat.h"
 #include "observer/virtual_table/ob_all_virtual_vector_index_info.h"
@@ -1964,16 +1963,6 @@ int ObVTIterCreator::create_vt_iter(ObVTableScanParam &params,
             ObInfoSchemaEnableRolesTable *enable_roles = NULL;
             if (OB_SUCC(NEW_VIRTUAL_TABLE(ObInfoSchemaEnableRolesTable, enable_roles))) {
               vt_iter = static_cast<ObVirtualTableIterator *>(enable_roles);
-            }
-            break;
-          }
-          case OB_ALL_VIRTUAL_COMPATIBILITY_CONTROL_TID: {
-            ObVirtualCompatibilityConflictControl *compatibility_control = NULL;
-            if (OB_FAIL(NEW_VIRTUAL_TABLE(ObVirtualCompatibilityConflictControl, compatibility_control))) {
-              SERVER_LOG(ERROR, "ObVirtualCompatibilityConflictControl construct fail", K(ret));
-            } else {
-              compatibility_control->set_allocator(&allocator);
-              vt_iter = static_cast<ObVirtualTableIterator *>(compatibility_control);
             }
             break;
           }

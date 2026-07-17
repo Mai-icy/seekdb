@@ -146,15 +146,14 @@ int ObLS::init(const ObRestoreStatus &restore_status,
   return ret;
 }
 
-int ObLS::create_ls_inner_tablet(const lib::Worker::CompatMode compat_mode,
-                                 const SCN &create_scn)
+int ObLS::create_ls_inner_tablet(const SCN &create_scn)
 {
   int ret = OB_SUCCESS;
   int tmp_ret = OB_SUCCESS;
-  if (OB_FAIL(tx_table_.create_tablet(compat_mode, create_scn))) {
-    LOG_WARN("tx table create tablet failed", K(ret), K_(ls_meta), K(compat_mode), K(create_scn));
-  } else if (OB_FAIL(lock_table_.create_tablet(compat_mode, create_scn))) {
-    LOG_WARN("lock table create tablet failed", K(ret), K_(ls_meta), K(compat_mode), K(create_scn));
+  if (OB_FAIL(tx_table_.create_tablet(create_scn))) {
+    LOG_WARN("tx table create tablet failed", K(ret), K_(ls_meta), K(create_scn));
+  } else if (OB_FAIL(lock_table_.create_tablet(create_scn))) {
+    LOG_WARN("lock table create tablet failed", K(ret), K_(ls_meta), K(create_scn));
   }
   if (OB_FAIL(ret)) {
     do {

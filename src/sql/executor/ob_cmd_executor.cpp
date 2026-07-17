@@ -681,14 +681,6 @@ int ObCmdExecutor::execute(ObExecContext &ctx, ObICmd &cmd)
         DEFINE_EXECUTE_CMD(ObAlterRoleStmt, ObAlterRoleExecutor);
         break;
       }
-      case stmt::T_ENABLE_SQL_THROTTLE: {
-        DEFINE_EXECUTE_CMD(ObEnableSqlThrottleStmt, ObEnableSqlThrottleExecutor);
-        break;
-      }
-      case stmt::T_DISABLE_SQL_THROTTLE: {
-        DEFINE_EXECUTE_CMD(ObDisableSqlThrottleStmt, ObDisableSqlThrottleExecutor);
-        break;
-      }
       case stmt::T_CREATE_DIRECTORY: {
         DEFINE_EXECUTE_CMD(ObCreateDirectoryStmt, ObCreateDirectoryExecutor);
         break;

@@ -723,16 +723,9 @@ public:
     } else if (OB_FAIL(ad_result->brs_holder_.save(ctx.max_batch_size_))) {
       SQL_LOG(WARN, "backup datum failed", K(ret));
     } else if (agg_ctx.has_rollup_ && group_id > 0) {
-      if (group_id > agg_ctx.rollup_context_->start_partial_rollup_idx_
-          && group_id <= agg_ctx.rollup_context_->end_partial_rollup_idx_) {
-        // Group id greater than zero in sort based group by must be rollup,
-        // distinct set is sorted and iterated in rollup_process(), rewind here.
-        if (OB_FAIL(ad_result->rewind())) {
-          SQL_LOG(WARN, "rewind iterator failed", K(ret));
-        }
-        SQL_LOG(DEBUG, "debug process distinct batch", K(group_id),
-                K(agg_ctx.rollup_context_->start_partial_rollup_idx_),
-                K(agg_ctx.rollup_context_->end_partial_rollup_idx_));
+      // The distinct set was iterated while producing the rollup row.
+      if (OB_FAIL(ad_result->rewind())) {
+        SQL_LOG(WARN, "rewind iterator failed", K(ret));
       }
     }
     char *skip_mem = nullptr;

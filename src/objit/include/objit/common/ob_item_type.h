@@ -1063,7 +1063,6 @@ typedef enum ObItemType
   T_INNER_AGGR_CODE = 3004,
   T_PSEUDO_SORT_KEY = 3005,
   T_PSEUDO_CALC_PART_SORT_KEY = 3006,
-  T_PSEUDO_ROLLUP_ID = 3007,
   T_PSEUDO_DUP_EXPR = 3008,
   T_PSEUDO_STMT_ID = 3009,
   T_PSEUDO_RANDOM = 3010,
@@ -1987,7 +1986,7 @@ typedef enum ObItemType
   T_BEGIN_OUTLINE_DATA = 4153,
   T_END_OUTLINE_DATA = 4154,
   T_OUTLINE_HINT = 4155,
-  T_OPTIMIZER_FEATURES_ENABLE = 4156,
+  // 4156: optimizer features version hint abandoned, id reserved
   T_OPT_PARAM_HINT = 4157,
 
   T_CREATE_ROLE = 4158,
@@ -2292,16 +2291,7 @@ typedef enum ObItemType
   T_REVERSE = 4438,
   T_AUTO = 4439,
 
-  // sql throttling
-  T_ENABLE_SQL_THROTTLE = 4441,
-  T_DISABLE_SQL_THROTTLE = 4442,
-  T_RT = 4443,
-  T_CPU = 4444,
-  T_IO = 4445,
-  T_NETWORK = 4446,
-  T_LOGICAL_READS = 4447,
-  T_QUEUE_TIME = 4448,
-  T_SQL_THROTTLE_METRICS = 4449,
+  // 4441-4449: SQL throttling abandoned, ids reserved
   // 4450: T_BACKUP_SET_ENCRYPTION abandoned, id reserved
   // 4451: T_BACKUP_SET_DECRYPTION abandoned, id reserved
   T_GROUPING_SETS_LIST = 4452,

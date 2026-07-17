@@ -1338,10 +1338,6 @@ ObAggregateProcessor::ObAggregateProcessor(ObEvalCtx &eval_ctx,
       distinct_aggr_count_(0),
       aggr_code_expr_(nullptr),
       aggr_stage_(ObThreeStageAggrStage::NONE_STAGE),
-      rollup_status_(ObRollupStatus::NONE_ROLLUP),
-      rollup_id_expr_(nullptr),
-      start_partial_rollup_idx_(0),
-      end_partial_rollup_idx_(0),
       dir_id_(-1),
       tmp_store_row_(nullptr),
       io_event_observer_(nullptr),
@@ -1364,8 +1360,6 @@ int ObAggregateProcessor::init()
   has_order_by_ = false;
   has_group_concat_ = false;
   distinct_count_ = 0;
-  start_partial_rollup_idx_ = 0;
-  end_partial_rollup_idx_ = 0;
   removal_info_.reset();
   (void)0;
   
@@ -1774,12 +1768,9 @@ int ObAggregateProcessor::collect_group_row(GroupRow *group_row,
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("distinct set is NULL", K(ret));
         } else {
-          if (group_id > 0 && group_id > start_partial_rollup_idx_ &&
-              group_id <= end_partial_rollup_idx_) {
+          if (group_id > 0) {
             // Group id greater than zero in sort based group by must be rollup,
             // distinct set is sorted and iterated in rollup_process(), rewind here.
-            // if partial rollup, then group_id > 0 may not sort
-            //    the first partial_rolup_idx_ group need sort
             if (OB_FAIL(ad_result->rewind())) {
               LOG_WARN("rewind iterator failed", K(ret));
             }
@@ -2111,16 +2102,6 @@ int ObAggregateProcessor::collect_result_batch(const ObIArray<ObExpr *> &group_e
     if (OB_NOT_NULL(group_row->groupby_store_row_) &&
         OB_FAIL(group_row->groupby_store_row_->to_expr(group_exprs, eval_ctx_))) {
       LOG_WARN("failed to convert store row to expr", K(ret));
-    } else if (ROLLUP_DISTRIBUTOR == rollup_status_) {
-      if (OB_ISNULL(rollup_id_expr_)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected status: rollup_id_expr_ is null", K(ret));
-      } else {
-        ObDatum &datum = rollup_id_expr_->locate_datum_for_write(eval_ctx_);
-        datum.set_int(*reinterpret_cast<int64_t *>(group_row->groupby_store_row_->get_extra_payload()));
-        rollup_id_expr_->set_evaluated_projected(eval_ctx_);
-        LOG_DEBUG("debug grouping_id expr", K(ret));
-      }
     } else {
       LOG_DEBUG("debug group by exprs", K(ret), K(ROWEXPR2STR(eval_ctx_, group_exprs)),
         K(start_group_idx + loop_idx), K(output_brs.size_ + loop_idx));
@@ -2151,23 +2132,18 @@ int ObAggregateProcessor::process_distinct_batch(
     LOG_WARN("distinct set is NULL", K(ret));
   } else {
     // In non-rollup group_id must be 0
-    if (group_id > 0 && group_id > start_partial_rollup_idx_ &&
-              group_id <= end_partial_rollup_idx_) {
+    if (group_id > 0) {
       // Group id greater than zero in sort based group by must be rollup,
       // distinct set is sorted and iterated in rollup_process(), rewind here.
       if (OB_FAIL(extra_info->rewind())) {
         LOG_WARN("rewind iterator failed", K(ret));
       }
-      LOG_DEBUG("debug process distinct batch", K(group_id),
-        K(start_partial_rollup_idx_), K(end_partial_rollup_idx_));
     } else {
       if (!enable_hash_distinct_) {
         if (OB_FAIL(extra_info->unique_sort_op_->sort())) {
           LOG_WARN("sort failed", K(ret));
         }
       }
-      LOG_DEBUG("debug process distinct batch", K(group_id),
-        K(start_partial_rollup_idx_), K(end_partial_rollup_idx_));
     }
   }
   if (OB_SUCC(ret)) {
@@ -5112,11 +5088,10 @@ int ObAggregateProcessor::linear_inter_calc(const ObAggrInfo &aggr_info,
         ObDatumMeta factor_meta;
         factor_meta.type_ = ObNumberType;
         factor_meta.cs_type_ = CS_TYPE_BINARY;
-        ObCompatibilityMode compat_mode = MYSQL_MODE;
         factor_meta.scale_
-            = ObAccuracy::DDL_DEFAULT_ACCURACY2[compat_mode][ObNumberType].get_scale();
+            = ObAccuracy::DDL_DEFAULT_ACCURACY2[0][ObNumberType].get_scale();
         factor_meta.precision_
-            = ObAccuracy::DDL_DEFAULT_ACCURACY2[compat_mode][ObNumberType].get_precision();
+            = ObAccuracy::DDL_DEFAULT_ACCURACY2[0][ObNumberType].get_precision();
         if (OB_FAIL(arith->setup_datum_metas(factor_meta /* factor meta */,
                                              order_expr->datum_meta_ /* prev meta */,
                                              order_expr->datum_meta_ /* cur meta */))) {

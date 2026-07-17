@@ -247,7 +247,6 @@ protected:
 
 private:
   friend class ObIOResult;
-  lib::Worker::CompatMode compat_mode_;
 };
 
 template <typename T>

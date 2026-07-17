@@ -504,14 +504,13 @@ struct ObLogPlanHint
 
   TO_STRING_KV(K_(is_outline_data), K_(join_order),
                K_(table_hints), K_(join_hints),
-               K_(normal_hints), K_(optimizer_features_enable_version));
+               K_(normal_hints));
 
   bool is_outline_data_;
   LogLeadingHint join_order_;
   common::ObSEArray<LogTableHint, 4, common::ModulePageAllocator, true> table_hints_;
   common::ObSEArray<LogJoinHint, 8, common::ModulePageAllocator, true> join_hints_;
   common::ObSEArray<const ObHint*, 8, common::ModulePageAllocator, true> normal_hints_;
-  uint64_t optimizer_features_enable_version_;
 };
 
 }

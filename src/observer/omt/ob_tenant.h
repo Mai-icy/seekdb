@@ -35,7 +35,6 @@
 #include "share/rc/ob_context.h"
 #include "observer/omt/ob_th_worker.h"
 #include "ob_retry_queue.h"
-#include "lib/utility/ob_query_rate_limiter.h"
 #include "observer/omt/ob_tenant_meta.h"
 #include "lib/thread/ob_adaptive_worker_pool.h"
 #include "lib/lock/ob_tc_rwlock.h"      // TCRWLock
@@ -161,36 +160,6 @@ private:
   common::hash::ObHashMap<int64_t, ObPxPool *> pool_map_;
 };
 
-struct ObSqlThrottleMetrics
-{
-  int64_t priority_;
-  double rt_;
-  double cpu_;
-  int64_t io_;
-  double network_;
-  int64_t logical_reads_;
-  double queue_time_;
-
-  ObSqlThrottleMetrics()
-      : priority_(-1),
-        rt_(-1),
-        cpu_(-1),
-        io_(-1),
-        network_(-1),
-        logical_reads_(-1),
-        queue_time_(-1)
-  {}
-
-  TO_STRING_KV(
-    K_(priority),
-    K_(rt),
-    K_(cpu),
-    K_(io),
-    K_(network),
-    K_(logical_reads),
-    K_(queue_time));
-};
-
 // Forward declarations
 class ObThWorker;
 
@@ -253,7 +222,6 @@ public:
   void inc_ddl_thread_count() { ATOMIC_INC(&total_ddl_thread_cnt_); };
   void dec_ddl_thread_count() { ATOMIC_DEC(&total_ddl_thread_cnt_); };
   bool check_ddl_thread_is_limit(const int64_t cpu_quota_concurrency) { return ATOMIC_LOAD(&total_ddl_thread_cnt_) >= static_cast<int64_t>(unit_min_cpu() * cpu_quota_concurrency); }
-  lib::Worker::CompatMode get_compat_mode() const;
   OB_INLINE share::ObTenantSpace &ctx() { return *ctx_; }
   int rdlock();
   int wrlock();
@@ -301,23 +269,6 @@ public:
   OB_INLINE double get_token_usage() const { return 0; }
   OB_INLINE int64_t get_worker_time() const { return 0; }
   int64_t get_cpu_time() const;
-  // sql throttle
-  void update_sql_throttle_metrics(const ObSqlThrottleMetrics &metrics)
-  { st_metrics_ = metrics; }
-  const ObSqlThrottleMetrics &get_sql_throttle_metrics() const
-  { return st_metrics_; }
-
-  void update_sql_throughput(const int64_t throughput)
-  {
-    if (throughput < 0) {
-      sql_limiter_.set_rate(-1);
-    } else {
-      sql_limiter_.set_rate(throughput);
-    }
-  }
-  lib::ObRateLimiter &get_sql_rate_limiter()
-  { return sql_limiter_; }
-
   // Node balance thread would periodically check tenant status by
   // calling this function.
   void periodically_check();
@@ -387,8 +338,6 @@ public:
 
   share::ObTenantSpace *ctx_;
 
-  ObSqlThrottleMetrics st_metrics_;
-  lib::ObQueryRateLimiter sql_limiter_;
   int64_t default_group_throttled_time_us_;
 }; // end of class ObTenant
 

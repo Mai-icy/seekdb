@@ -440,7 +440,7 @@ int ObOptStatMonitorManager::get_column_usage_from_table(ObExecContext &ctx,
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(ctx.get_sql_proxy());
+      auto &sql_client_retry_weak = *ctx.get_sql_proxy();
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, select_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(select_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -869,7 +869,7 @@ int ObOptStatMonitorManager::do_get_opt_stats_expired_table_info(const ObSqlStri
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy_);
+      auto &sql_client_retry_weak = *mysql_proxy_;
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, select_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(select_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -1256,7 +1256,7 @@ int ObOptStatMonitorManager::check_table_stat_expired_by_dml_info(const uint64_t
       LOG_TRACE("check table stat expired by dml info", K(select_sql));
       SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
         sqlclient::ObMySQLResult *client_result = NULL;
-        ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy_);
+        auto &sql_client_retry_weak = *mysql_proxy_;
         if (OB_FAIL(sql_client_retry_weak.read(proxy_result, select_sql.ptr()))) {
           LOG_WARN("failed to execute sql", K(ret), K(select_sql));
         } else if (OB_ISNULL(client_result = proxy_result.get_result())) {

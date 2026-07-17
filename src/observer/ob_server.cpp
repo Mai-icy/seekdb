@@ -173,7 +173,6 @@ ObServer::ObServer()
     duty_task_(),
     sql_mem_task_(),
     ctas_clean_up_task_(),
-    refresh_active_time_task_(),
     refresh_cpu_frequency_task_(),
     schema_status_proxy_(sql_proxy_),
     is_log_dir_empty_(false),
@@ -411,8 +410,6 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
       LOG_ERROR("init ddl heart beat task container failed", KR(ret));
     } else if (OB_FAIL(init_redef_heart_beat_task())) {
       LOG_ERROR("init redef heart beat task failed", KR(ret));
-    } else if (OB_FAIL(init_refresh_active_time_task())) {
-      LOG_ERROR("init refresh active time task failed", KR(ret));
     } else if (OB_FAIL(init_refresh_cpu_frequency())) {
       LOG_ERROR("init refresh cpu frequency failed", KR(ret));
     } else if (OB_FAIL(ObOptStatManager::get_instance().init(
@@ -2467,8 +2464,7 @@ bool ObServer::ObCTASCleanUp::operator()(sql::ObSQLSessionMgr::Key key,
                                          sql::ObSQLSessionInfo *sess_info)
 {
   int ret = OB_SUCCESS;
-  if ((ObCTASCleanUp::TEMP_TAB_PROXY_RULE == get_cleanup_type() && get_drop_flag())
-      || (ObCTASCleanUp::TEMP_TAB_PROXY_RULE != get_cleanup_type() && false == get_drop_flag())) {
+  if (false == get_drop_flag()) {
     //do nothing
   } else if (OB_ISNULL(sess_info)) {
     ret = OB_ERR_UNEXPECTED;
@@ -2504,97 +2500,9 @@ bool ObServer::ObCTASCleanUp::operator()(sql::ObSQLSessionMgr::Key key,
         (void)sess_info->unlock_query();
         LOG_DEBUG("current session reusing session id that created temporary table", K(sess_info->get_sess_create_time()));
       }
-    } else { //4. Proxy temporary table cleanup
-      if (sess_info->get_sess_create_time() < get_schema_version() + 100) {
-        (void)sess_info->unlock_query();
-        ATOMIC_STORE(&obs_->need_ctas_cleanup_, true); //The session that created the temporary table is still alive and needs to be checked in the next schedule
-        LOG_DEBUG("session that creates temporary table is still alive");
-      } else {
-        set_drop_flag(true);
-        (void)sess_info->unlock_query();
-        LOG_DEBUG("current session reusing session id that created temporary table", K(sess_info->get_sess_create_time()));
-      }
     }
   }
   return OB_SUCCESS == ret;
-}
-
-//Traverse the current session, if the session has updated sess_active_time recently, execute alter system refresh tables in session xxx
-//Synchronously update the last active time of all temporary tables under the current session
-bool ObServer::ObRefreshTime::operator()(sql::ObSQLSessionMgr::Key key,
-                                             sql::ObSQLSessionInfo *sess_info)
-{
-  int ret = OB_SUCCESS;
-  UNUSED(key);
-  if (OB_ISNULL(sess_info)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("session info is NULL", KR(ret));
-  } else if (OB_FAIL(sess_info->try_lock_query())) {
-    if (OB_UNLIKELY(OB_EAGAIN != ret)) {
-      LOG_WARN("fail to try lock query", KR(ret));
-    } else {
-      ret = OB_SUCCESS;
-      LOG_WARN("try lock query fail with code OB_EGAIN",
-          K(sess_info->get_server_sid()), K(sess_info->get_sessid_for_table()));
-    }
-  } else {
-    sess_info->refresh_temp_tables_sess_active_time();
-    (void)sess_info->unlock_query();
-  }
-  return OB_SUCCESS == ret;
-}
-
-ObServer::ObRefreshTimeTask::ObRefreshTimeTask()
-: obs_(nullptr), is_inited_(false)
-{}
-
-int ObServer::ObRefreshTimeTask::init(ObServer *obs, common::ObTimer &timer)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(is_inited_)) {
-    ret = OB_INIT_TWICE;
-    LOG_ERROR("ObRefreshTimeTask has already been inited", KR(ret));
-  } else if (OB_ISNULL(obs)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_ERROR("ObRefreshTimeTask init with null ptr", KR(ret), K(obs));
-  } else {
-    obs_ = obs;
-    is_inited_ = true;
-    if (OB_FAIL(timer.schedule(*this, REFRESH_INTERVAL, true /*schedule repeatly*/))) {
-      LOG_ERROR("fail to schedule task ObRefreshTimeTask", KR(ret));
-    }
-  }
-  return ret;
-}
-
-
-void ObServer::ObRefreshTimeTask::runTimerTask()
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(!is_inited_)) {
-    ret = OB_NOT_INIT;
-    LOG_ERROR("ObRefreshTimeTask has not been inited", KR(ret));
-  } else if (OB_ISNULL(obs_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_ERROR("ObRefreshTimeTask cleanup task got null ptr", KR(ret));
-  } else if (OB_FAIL(obs_->refresh_temp_table_sess_active_time())) {
-    LOG_ERROR("ObRefreshTimeTask clean up task failed", KR(ret));
-  }
-
-  LOG_WARN("LICQ, ObRefreshTimeTask::runTimerTask", KR(ret));
-}
-
-int ObServer::refresh_temp_table_sess_active_time()
-{
-  int ret = OB_SUCCESS;
-  ObRefreshTime refesh_time(this);
-  if (OB_ISNULL(GCTX.session_mgr_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_ERROR("session mgr is null", KR(ret));
-  } else if (OB_FAIL(GCTX.session_mgr_->for_each_session(refesh_time))) {
-    LOG_WARN("failed to traverse each session to check table need be dropped", KR(ret));
-  }
-  return ret;
 }
 
 ObServer::ObRefreshCpuFreqTimeTask::ObRefreshCpuFreqTimeTask()
@@ -2652,15 +2560,6 @@ int ObServer::refresh_cpu_frequency()
   return ret;
 }
 
-int ObServer::init_refresh_active_time_task()
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(refresh_active_time_task_.init(this, server_gtimer_))) {
-    LOG_ERROR("fail to init refresh active time task", KR(ret));
-  }
-  return ret;
-}
-
 int ObServer::init_ctas_clean_up_task()
 {
   int ret = OB_SUCCESS;
@@ -2704,11 +2603,8 @@ int ObServer::init_refresh_cpu_frequency()
 //     a), the last active time of the session <the creation time of T, the table T is in the process of being created and cannot be DROP;
 //     b), the last active time of the session >= the creation time of T, sess_id is reused, the ession of the original table T has been disconnected, and you can DROP;
 //2.2, there is no session, its id = T->session_id, T can be DROP;
-//3. For temporary tables: distinguish between direct connection creation and ob proxy creation;
-//3.1 Direct connection mode, the judgment deletion condition is the same as 2#, the difference is that the last active time of the session needs to be replaced with the session creation time;
-//3.2 ob proxy mode, a), the interval between the current time and the sess_active_time of the table schema exceeds the maximum timeout of the session, and DROP is required;
-//                 b), when a# is not met, all sessions need to be traversed to determine whether there is a session with the same id s1, s1->sess creation time> T creation time (same as rule 2.1#),
-//                     When s1 exists, it is considered that session id reuse has occurred, and T still needs to be DROP;
+//3. For temporary tables, the judgment deletion condition is the same as 2#,
+//   except that the session creation time is used instead of the last active time.
 //It has been optimized before calling this interface, only need_ctas_cleanup_=true will be here
 // Temporary table cleanup is performed in the DML resolve phase for the first
 // temporary table access after session creation to avoid frequent background deletes.
@@ -2788,7 +2684,6 @@ int ObServer::clean_up_invalid_tables_by_tenant()
           drop_table_arg.table_type_ = table_schema->get_table_type();
           drop_table_arg.session_id_ = table_schema->get_session_id();
           drop_table_arg.to_recyclebin_ = false;
-          drop_table_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL;
           table_item.table_name_ = table_schema->get_table_name_str();
           table_item.mode_ = table_schema->get_name_case_mode();
           if (OB_FAIL(schema_guard.get_database_schema( table_schema->get_database_id(), database_schema))) {

@@ -347,7 +347,7 @@ bool ObIOFlag::is_need_close_dev_and_fd() const
 
 /******************             IOCallback              **********************/
 ObIOCallback::ObIOCallback(const ObIOCallbackType type)
-  : type_(type), compat_mode_(static_cast<lib::Worker::CompatMode>(lib::get_compat_mode()))
+  : type_(type)
 {
 
 }
@@ -359,7 +359,6 @@ ObIOCallback::~ObIOCallback()
 
 int ObIOCallback::process(const char *data_buffer, const int64_t size)
 {
-  lib::set_compat_mode(compat_mode_);
   return inner_process(data_buffer, size);
 }
 

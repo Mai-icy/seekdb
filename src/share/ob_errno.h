@@ -39,7 +39,7 @@ constexpr int OB_SCHEMA_ERROR = -4029;
 constexpr int OB_TENANT_OUT_OF_MEM = -4030;
 constexpr int OB_UNKNOWN_OBJ = -4031;
 constexpr int OB_TOO_MANY_SSTABLE = -4037;
-constexpr int OB_KILLED_BY_THROTTLING = -4039;
+// -4039: SQL throttling error abandoned, id reserved
 constexpr int OB_USER_NOT_EXIST = -4042;
 constexpr int OB_PASSWORD_WRONG = -4043;
 constexpr int OB_SKEY_VERSION_WRONG = -4044;
@@ -271,11 +271,8 @@ constexpr int OB_ENCODING_EST_SIZE_OVERFLOW = -4397;
 constexpr int OB_INVALID_SUB_PARTITION_TYPE = -4398;
 constexpr int OB_ERR_UNEXPECTED_UNIT_STATUS = -4399;
 constexpr int OB_AUTOINC_CACHE_NOT_EQUAL = -4400;
-constexpr int OB_ERR_KILL_CLIENT_SESSION = -4401;
-constexpr int OB_ERR_KILL_CLIENT_SESSION_FAILED = -4402;
 constexpr int OB_IMPROPER_OS_PARAM = -4403;
 constexpr int OB_IO_TIMEOUT = -4404;
-constexpr int OB_LICENSE_EXPIRED = -4406;
 constexpr int OB_MIGRATE_TX_DATA_NOT_CONTINUES = -4408;
 constexpr int OB_IMPORT_NOT_IN_SERVER = -4505;
 constexpr int OB_CONVERT_ERROR = -4507;
@@ -1025,7 +1022,6 @@ constexpr int OB_ERR_MODIFY_READ_ONLY_VIEW = -5723;
 constexpr int OB_ERR_INVALID_INITRANS_VALUE = -5724;
 constexpr int OB_ERR_INVALID_MAXTRANS_VALUE = -5725;
 constexpr int OB_ERR_INVALID_PCTFREE_OR_PCTUSED_VALUE = -5726;
-constexpr int OB_ERR_PROXY_REROUTE = -5727;
 constexpr int OB_ERR_ILLEGAL_ARGUMENT_FOR_FUNCTION = -5728;
 constexpr int OB_ERR_INVALID_SAMPLING_RANGE = -5730;
 constexpr int OB_ERR_SPECIFY_DATABASE_NOT_ALLOWED = -5731;
@@ -1973,7 +1969,6 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_NEED_RETRY__USER_ERROR_MSG "Need retry"
 #define OB_TOO_MANY_SSTABLE__USER_ERROR_MSG "Too many sstable"
 #define OB_NOT_MASTER__USER_ERROR_MSG "The seekdb or zone is not the master"
-#define OB_KILLED_BY_THROTTLING__USER_ERROR_MSG "Request has killed by sql throttle"
 #define OB_DECRYPT_FAILED__USER_ERROR_MSG "Decrypt error"
 #define OB_USER_NOT_EXIST__USER_ERROR_MSG "Can not find any matching row in the user table'%.*s'"
 #define OB_PASSWORD_WRONG__USER_ERROR_MSG "Access denied for user '%.*s'@'%.*s' (using password: %s)"
@@ -2292,13 +2287,8 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_INVALID_SUB_PARTITION_TYPE__USER_ERROR_MSG "It is only possible to mix RANGE/LIST partitioning with HASH/KEY partitioning for subpartitioning"
 #define OB_ERR_UNEXPECTED_UNIT_STATUS__USER_ERROR_MSG "Unit status is not expected"
 #define OB_AUTOINC_CACHE_NOT_EQUAL__USER_ERROR_MSG "Autoinc cache's autoinc version is not equal to request's autoinc version"
-#define OB_ERR_KILL_CLIENT_SESSION__USER_ERROR_MSG "Client Session need be killed"
-#define OB_ERR_KILL_CLIENT_SESSION_FAILED__USER_ERROR_MSG "Kill Client Session failed"
 #define OB_IMPROPER_OS_PARAM__USER_ERROR_MSG "OS params check failed, because the operating system has improper parameter configurations"
 #define OB_IO_TIMEOUT__USER_ERROR_MSG "IO timeout"
-#define OB_INVALID_LICENSE__USER_ERROR_MSG "license is invalid because: %s"
-#define OB_LICENSE_EXPIRED__USER_ERROR_MSG "license is expired"
-#define OB_LICENSE_SCOPE_EXCEEDED__USER_ERROR_MSG "The current license does not include this feature module: %s"
 #define OB_MIGRATE_TX_DATA_NOT_CONTINUES__USER_ERROR_MSG "migrate tx data not continues"
 #define OB_IMPORT_NOT_IN_SERVER__USER_ERROR_MSG "Import not in service"
 #define OB_CONVERT_ERROR__USER_ERROR_MSG "Convert error"
@@ -3169,7 +3159,6 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_ERR_INVALID_INITRANS_VALUE__USER_ERROR_MSG "invalid INITRANS option value"
 #define OB_ERR_INVALID_MAXTRANS_VALUE__USER_ERROR_MSG "invalid MAXTRANS option value"
 #define OB_ERR_INVALID_PCTFREE_OR_PCTUSED_VALUE__USER_ERROR_MSG "invalid value for PCTFREE or PCTUSED"
-#define OB_ERR_PROXY_REROUTE__USER_ERROR_MSG "SQL request should be rerouted"
 #define OB_ERR_ILLEGAL_ARGUMENT_FOR_FUNCTION__USER_ERROR_MSG "illegal argument for function"
 #define OB_ERR_OPERATOR_CANNOT_BE_USED_WITH_LIST__USER_ERROR_MSG "this operator cannot be used with lists"
 #define OB_ERR_INVALID_SAMPLING_RANGE__USER_ERROR_MSG "SAMPLE percentage must be in the range [0.000001,100)"
@@ -4293,7 +4282,7 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_ERR_DATA_TOO_LONG_MSG_FMT_V2__USER_ERROR_MSG "Data too long for column '%.*s' at row %ld"
 #define OB_ERR_INVALID_DATE_MSG_FMT_V2__USER_ERROR_MSG "Incorrect datetime value for column '%.*s' at row %ld"
 
-extern int g_all_ob_errnos[2356];
+extern int g_all_ob_errnos[2353];
 
   const char *ob_error_name(const int oberr);
   const char* ob_error_cause(const int oberr);

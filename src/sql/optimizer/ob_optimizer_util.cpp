@@ -5388,7 +5388,7 @@ bool ObOptimizerUtil::is_lossless_type_conv(const ObRawExprResType &child_type, 
        }
     } else if (ObYearTC == child_tc) {
       if (ObNumberTC == dst_tc) {
-        ObAccuracy lossless_acc = ObAccuracy::DDL_DEFAULT_ACCURACY2[ObCompatibilityMode::MYSQL_MODE][child_type.get_type()];
+        ObAccuracy lossless_acc = ObAccuracy::DDL_DEFAULT_ACCURACY2[0][child_type.get_type()];
         if (dst_acc.get_precision() - dst_acc.get_scale() >= lossless_acc.get_precision() - lossless_acc.get_scale()) {
           is_lossless = true;
          }
@@ -5460,7 +5460,7 @@ int ObOptimizerUtil::is_lossless_column_cast(const ObRawExpr *expr,
       // mysql mode allows lossless type conversion, which can be referred to
       if (ObIntTC == child_tc || ObUIntTC == child_tc) {
         if (ObNumberTC == dst_tc || ObDecimalIntTC == dst_tc) {
-          // ObAccuracy lossless_acc = ObAccuracy::DDL_DEFAULT_ACCURACY2[ObCompatibilityMode::MYSQL_MODE][child_type.get_type()];
+          // ObAccuracy lossless_acc = ObAccuracy::DDL_DEFAULT_ACCURACY2[0][child_type.get_type()];
           ObAccuracy lossless_acc = child_type.get_accuracy();
           if ((dst_acc.get_scale() >= 0 &&
                dst_acc.get_precision() - dst_acc.get_scale() >= lossless_acc.get_precision()) ||

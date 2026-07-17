@@ -441,7 +441,6 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
         //4, refresh schema, reset table's sess id to 0
         if (OB_SUCC(ret)) {
           obcall::ObAlterTableRes res;
-          alter_table_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL;
           bool finish = false;
           while (OB_SUCC(ret) && !finish) {
             if (OB_FAIL(rootserver::serial_call([&]{ return GCTX.root_service_->alter_table(alter_table_arg, res); }))) {
@@ -466,7 +465,6 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
           if (OB_LIKELY(need_clean)) {
             int tmp_ret = OB_SUCCESS;
             obcall::ObDDLRes res;
-            drop_table_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL;
             if (OB_SUCCESS != (tmp_ret = rootserver::serial_call([&]{ return GCTX.root_service_->drop_table(drop_table_arg, res); }))) {
               LOG_WARN("failed to drop table", K(drop_table_arg), K(ret));
             } else {
@@ -672,7 +670,6 @@ int ObAlterTableExecutor::alter_table_rpc_v2(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret));
   } else {
-    alter_table_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL;
   }
   for (int64_t i = 0; OB_SUCC(ret) && i < index_arg_list.size(); ++i) {
     obcall::ObIndexArg *index_arg = index_arg_list.at(i);
@@ -1726,7 +1723,6 @@ int ObDropTableExecutor::execute(ObExecContext &ctx, ObDropTableStmt &stmt)
       //impossible
     } else if (FALSE_IT(my_session->get_foreign_key_checks(foreign_key_checks))) {
     } else if (FALSE_IT(tmp_arg.foreign_key_checks_ = foreign_key_checks)) {
-    } else if (FALSE_IT(tmp_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL)) {
     } else {
       bool is_parallel_drop = false;
       if (!ObSchemaUtils::is_support_parallel_drop(table_type)) {
@@ -1888,7 +1884,6 @@ int ObTruncateTableExecutor::execute(ObExecContext &ctx, ObTruncateTableStmt &st
       int64_t foreign_key_checks = 0;
       my_session->get_foreign_key_checks(foreign_key_checks);
       tmp_arg.foreign_key_checks_ = foreign_key_checks;
-      tmp_arg.compat_mode_ = lib::Worker::CompatMode::MYSQL;
       int64_t affected_rows = 0;
       bool use_parallel_truncate = false;
       

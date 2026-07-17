@@ -209,7 +209,6 @@ public:
                                        ObLogicalOperator *op,
                                        bool is_root_job = true);
   inline static void exprs_not_support_vectorize(const ObIArray<ObRawExpr *> &exprs,
-                                                 const bool need_return_lob_locator,
                                                  bool &found);
   inline uint64_t get_cur_cluster_version() { return cur_cluster_version_; }
 
@@ -337,7 +336,6 @@ private:
   int generate_spec(ObLogTempTableTransformation &op, ObTempTableTransformationOpSpec &spec, const bool in_root_job);
 
   int set_3stage_info(ObLogGroupBy &op, ObGroupBySpec &spec);
-  int set_rollup_adaptive_info(ObLogGroupBy &op, ObMergeGroupBySpec &spec);
   int generate_spec(ObLogGroupBy &op, ObScalarAggregateSpec &spec, const bool in_root_job);
   int generate_spec(ObLogGroupBy &op, ObScalarAggregateVecSpec &spec, const bool in_root_job);
   int generate_spec(ObLogGroupBy &op, ObMergeGroupBySpec &spec, const bool in_root_job);
@@ -423,7 +421,6 @@ private:
   int generate_spec(ObLogExchange &op, ObPxOrderedCoordSpec &spec, const bool in_root_job);
   int generate_spec(ObLogExchange &op, ObPxMSCoordSpec &spec, const bool in_root_job);
   int generate_spec(ObLogExchange &op, ObPxMSCoordVecSpec &spec, const bool in_root_job);
-  int check_rollup_distributor(ObPxTransmitSpec *spec);
 
   // for remote execute
   int generate_spec(ObLogExchange &op, ObDirectTransmitSpec &spec, const bool in_root_job);

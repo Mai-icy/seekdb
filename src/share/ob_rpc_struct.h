@@ -466,8 +466,7 @@ public:
     ObDDLArg(),
     if_exist_(false),
     to_recyclebin_(false),
-    is_add_to_scheduler_(false),
-    compat_mode_(lib::Worker::CompatMode::INVALID)
+    is_add_to_scheduler_(false)
   {}
 
   ObDropDatabaseArg &operator=(const ObDropDatabaseArg &other) = delete;
@@ -482,7 +481,6 @@ public:
   bool if_exist_;
   bool to_recyclebin_;
   bool is_add_to_scheduler_;
-  lib::Worker::CompatMode compat_mode_;
 };
 
 struct ObCreateTablegroupArg : public ObDDLArg
@@ -1036,7 +1034,6 @@ public:
       database_name_(),
       table_name_(),
       is_add_to_scheduler_(false),
-      compat_mode_(lib::Worker::CompatMode::INVALID),
       foreign_key_checks_(false)
   {}
 
@@ -1051,7 +1048,6 @@ public:
   common::ObString database_name_;
   common::ObString table_name_;
   bool is_add_to_scheduler_;
-  lib::Worker::CompatMode compat_mode_;
   bool foreign_key_checks_;
 };
 
@@ -1083,8 +1079,8 @@ public:
   ObRenameTableArg() :
       ObDDLArg(),
       rename_table_items_(),
-      client_session_id_(0),
-      client_session_create_ts_(0),
+      lock_session_id_(0),
+      lock_session_create_ts_(0),
       lock_priority_(transaction::tablelock::ObTableLockPriority::NORMAL)
   {}
   bool is_valid() const;
@@ -1092,8 +1088,8 @@ public:
 
   
   common::ObSArray<ObRenameTableItem> rename_table_items_;
-  uint32_t client_session_id_;
-  int64_t client_session_create_ts_;
+  uint32_t lock_session_id_;
+  int64_t lock_session_create_ts_;
   transaction::tablelock::ObTableLockPriority lock_priority_;
 };
 struct ObStartRedefTableArg final
@@ -1473,7 +1469,6 @@ public:
        READ_ONLY,
        LOCALITY,
        SESSION_ID,
-       SESSION_ACTIVE_TIME,
        STORE_FORMAT,
        DUPLICATE_SCOPE,
        ENABLE_ROW_MOVEMENT,
@@ -1542,7 +1537,6 @@ public:
       sequence_ddl_arg_(),
       sql_mode_(0),
       ddl_task_type_(share::INVALID_TASK),
-      compat_mode_(lib::Worker::CompatMode::INVALID),
       table_id_(common::OB_INVALID_ID),
       hidden_table_id_(common::OB_INVALID_ID),
       is_alter_columns_(false),
@@ -1560,8 +1554,8 @@ public:
       local_session_var_(&allocator_),
       alter_algorithm_(INPLACE),
       rebuild_index_arg_list_(),
-      client_session_id_(0),
-      client_session_create_ts_(0),
+      lock_session_id_(0),
+      lock_session_create_ts_(0),
       lock_priority_(transaction::tablelock::ObTableLockPriority::NORMAL),
       part_storage_cache_policy_(),
       data_version_(0)
@@ -1603,7 +1597,6 @@ public:
   ObAlterTableArg(const ObAlterTableArg &other) = delete;
   virtual bool is_allow_when_disable_ddl() const;
   virtual bool is_allow_when_upgrade() const;
-  bool is_refresh_sess_active_time() const;
   inline void set_tz_info_map(const common::ObTZInfoMap *tz_info_map)
   {
     tz_info_wrap_.set_tz_info_map(tz_info_map);
@@ -1646,7 +1639,6 @@ public:
                K_(alter_constraint_type),
                "nls_formats", common::ObArrayWrap<common::ObString>(nls_formats_, common::ObNLSFormatEnum::NLS_MAX),
                K_(ddl_task_type),
-               K_(compat_mode),
                K_(is_alter_columns),
                K_(is_alter_indexs),
                K_(is_alter_options),
@@ -1664,8 +1656,8 @@ public:
                K_(local_session_var),
                K_(alter_algorithm),
                K_(rebuild_index_arg_list),
-               K_(client_session_id),
-               K_(client_session_create_ts),
+               K_(lock_session_id),
+               K_(lock_session_create_ts),
                K_(lock_priority),
                K_(part_storage_cache_policy),
                K_(data_version));
@@ -1685,7 +1677,6 @@ public:
   ObSequenceDDLArg sequence_ddl_arg_;
   ObSQLMode sql_mode_;
   share::ObDDLTaskType ddl_task_type_;
-  lib::Worker::CompatMode compat_mode_;
   int64_t table_id_; // to check if the table we get is correct
   int64_t hidden_table_id_; // to check if the hidden table we get is correct
   bool is_alter_columns_;
@@ -1703,8 +1694,8 @@ public:
   share::ObLocalSessionVar local_session_var_;
   AlterAlgorithm alter_algorithm_;
   common::ObSArray<ObTableSchema> rebuild_index_arg_list_;
-  uint32_t client_session_id_;
-  int64_t client_session_create_ts_;
+  uint32_t lock_session_id_;
+  int64_t lock_session_create_ts_;
   transaction::tablelock::ObTableLockPriority lock_priority_;
   common::ObString part_storage_cache_policy_;
   uint64_t data_version_;
@@ -1842,8 +1833,7 @@ public:
       to_recyclebin_(false),
       foreign_key_checks_(true),
       is_add_to_scheduler_(false),
-      force_drop_(false),
-      compat_mode_(lib::Worker::CompatMode::INVALID)
+      force_drop_(false)
   {}
   bool is_valid() const;
   ObDropTableArg &operator=(const ObDropTableArg &other) = delete;
@@ -1863,7 +1853,6 @@ public:
   bool foreign_key_checks_;
   bool is_add_to_scheduler_;
   bool force_drop_;
-  lib::Worker::CompatMode compat_mode_;
   common::ObArenaAllocator allocator_;
 };
 
@@ -2493,13 +2482,11 @@ public:
   int init(const ObIArray<common::ObTabletID> &tablet_ids,
            const common::ObTabletID data_tablet_id,
            const common::ObIArray<int64_t> &table_schema_index,
-           const lib::Worker::CompatMode &mode,
            const bool is_create_bind_hidden_tablets,
            const ObIArray<int64_t> &create_commit_versions);
   int init(const ObIArray<common::ObTabletID> &tablet_ids,
            const common::ObTabletID data_tablet_id,
            const common::ObIArray<int64_t> &table_schema_index,
-           const lib::Worker::CompatMode &mode,
            const bool is_create_bind_hidden_tablets,
            const ObIArray<int64_t> &create_commit_versions,
            const ObIArray<share::ObForkTabletInfo> &fork_tablet_infos);
@@ -2513,7 +2500,6 @@ public:
   common::ObTabletID data_tablet_id_; // or orig tablet id if is create hidden tablets
   //the index of table_schemas_ in ObBatchCreateTabletArg
   common::ObSArray<int64_t> table_schema_index_;
-  lib::Worker::CompatMode compat_mode_;
   bool is_create_bind_hidden_tablets_;
   ObSArray<int64_t> create_commit_versions_;
   common::ObSArray<share::ObForkTabletInfo> fork_tablet_infos_;
@@ -3996,18 +3982,16 @@ public:
     : db_name_(),
       package_name_(),
       package_type_(share::schema::INVALID_PACKAGE_TYPE),
-      compatible_mode_(-1),
       error_info_() {}
   virtual ~ObDropPackageArg() {}
   bool is_valid() const;
   virtual bool is_allow_when_upgrade() const { return true; }
-  TO_STRING_KV(K_(db_name), K_(package_name), K_(package_type), K_(compatible_mode), K_(error_info));
+  TO_STRING_KV(K_(db_name), K_(package_name), K_(package_type), K_(error_info));
 
   
   common::ObString db_name_;
   common::ObString package_name_;
   share::schema::ObPackageType package_type_;
-  int64_t compatible_mode_;
   share::schema::ObErrorInfo error_info_;
 };
 
@@ -5165,61 +5149,6 @@ public:
   common::ObString ccl_rule_name_;
 };
 
-// session info self-verification arg
-struct ObSessInfoVerifyArg
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObSessInfoVerifyArg() : sess_id_(0), proxy_sess_id_(0) {}
-  ~ObSessInfoVerifyArg() {}
-  bool is_valid() const;
-  void reset() { sess_id_ = 0;
-                 proxy_sess_id_ = 0; }
-  int assign(const ObSessInfoVerifyArg &other)
-  {
-    int ret = common::OB_SUCCESS;
-    sess_id_ = other.sess_id_;
-    proxy_sess_id_ = other.proxy_sess_id_;
-    return ret;
-  }
-  void set_sess_id(uint32_t sess_id) { sess_id_ = sess_id; }
-  uint32_t get_sess_id() { return sess_id_; }
-  void set_proxy_sess_id(uint64_t proxy_sess_id) { proxy_sess_id_ = proxy_sess_id; }
-  uint64_t get_proxy_sess_id() { return proxy_sess_id_; }
-  TO_STRING_KV(K_(sess_id), K_(proxy_sess_id));
-private:
-  uint32_t sess_id_;
-  uint64_t proxy_sess_id_;
-};
-
-// session info self-verification result
-struct ObSessionInfoVeriRes
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObSessionInfoVeriRes() : verify_info_buf_(),
-    allocator_(common::ObModIds::OB_SQL_SESSION), need_verify_(false) {}
-  ~ObSessionInfoVeriRes() {}
-  bool is_valid() const;
-  void reset() {  verify_info_buf_.reset();
-                  need_verify_ = false;
-                  allocator_.reset(); }
-  int assign(const ObSessionInfoVeriRes &other)
-  {
-    int ret = common::OB_SUCCESS;
-    verify_info_buf_.assign_ptr(other.verify_info_buf_.ptr(),
-                            static_cast<int32_t>(other.verify_info_buf_.length()));
-    need_verify_ = other.need_verify_;
-    return ret;
-  }
-  void set_info_check_buf(common::ObString verify_info_buf) { verify_info_buf_ = verify_info_buf; }
-  common::ObString &get_info_check_buf() {return verify_info_buf_;}
-  TO_STRING_KV(K_(verify_info_buf), K_(need_verify));
-  common::ObString verify_info_buf_;
-  common::ObArenaAllocator allocator_;
-  bool need_verify_;
-};
-
 struct ObGetServerResourceInfoArg
 {
   OB_UNIS_VERSION(1);
@@ -5352,151 +5281,6 @@ public:
   bool with_prefetch_node_;
   share::SequenceCacheNode cache_node_;
   share::SequenceCacheNode prefetch_node_;
-};
-
-// kill client session arg
-struct ObKillClientSessionArg
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObKillClientSessionArg() : create_time_(0), client_sess_id_(0) {}
-  ~ObKillClientSessionArg() {}
-  bool is_valid() const;
-  void reset() { create_time_ = 0;
-                 client_sess_id_ = 0; }
-  int assign(const ObKillClientSessionArg &other)
-  {
-    int ret = common::OB_SUCCESS;
-    create_time_ = other.create_time_;
-    client_sess_id_ = other.client_sess_id_;
-    return ret;
-  }
-  void set_create_time(int64_t create_time) { create_time_ = create_time; }
-  int64_t get_create_time() { return create_time_; }
-  void set_client_sess_id(uint32_t client_sess_id) { client_sess_id_ = client_sess_id; }
-  uint32_t get_client_sess_id() { return client_sess_id_; }
-  TO_STRING_KV(K_(create_time), K_(client_sess_id));
-private:
-  int64_t create_time_;
-  uint32_t client_sess_id_;
-};
-
-// kill client session result
-struct ObKillClientSessionRes
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObKillClientSessionRes() : can_kill_client_sess_(false) {}
-  ~ObKillClientSessionRes() {}
-  void reset() {  can_kill_client_sess_ = false;}
-  int assign(const ObKillClientSessionRes &other)
-  {
-    int ret = common::OB_SUCCESS;
-    can_kill_client_sess_ = other.can_kill_client_sess_;
-    return ret;
-  }
-  void set_can_kill_client_sess(bool can_kill_client_sess) { can_kill_client_sess_ = can_kill_client_sess; }
-  bool get_can_kill_client_sess() {return can_kill_client_sess_;}
-  TO_STRING_KV(K_(can_kill_client_sess));
-  bool can_kill_client_sess_;
-};
-
-// kill query client session arg
-struct ObKillQueryClientSessionArg
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObKillQueryClientSessionArg() : client_sess_id_(0) {}
-  ~ObKillQueryClientSessionArg() {}
-  bool is_valid() const;
-  void reset() { client_sess_id_ = 0; }
-  int assign(const ObKillQueryClientSessionArg &other)
-  {
-    int ret = common::OB_SUCCESS;
-    client_sess_id_ = other.client_sess_id_;
-    return ret;
-  }
-  void set_client_sess_id(uint32_t client_sess_id) { client_sess_id_ = client_sess_id; }
-  uint32_t get_client_sess_id() { return client_sess_id_; }
-  TO_STRING_KV(K_(client_sess_id));
-private:
-  uint32_t client_sess_id_;
-};
-
-
-// kill client session arg & Authentication
-struct ObClientSessionCreateTimeAndAuthArg
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObClientSessionCreateTimeAndAuthArg() : client_sess_id_(0), user_id_(0), has_user_super_privilege_(false) {}
-  ~ObClientSessionCreateTimeAndAuthArg() {}
-  bool is_valid() const;
-  void reset()
-  {
-    client_sess_id_ = 0;
-    
-    user_id_ = 0;
-    has_user_super_privilege_ = false;
-  }
-  int assign(const ObClientSessionCreateTimeAndAuthArg &other)
-  {
-    int ret = common::OB_SUCCESS;
-    client_sess_id_ = other.client_sess_id_;
-    
-    user_id_ = other.user_id_;
-    has_user_super_privilege_ = other.has_user_super_privilege_;
-    return ret;
-  }
-  void set_client_sess_id(uint32_t client_sess_id) { client_sess_id_ = client_sess_id; }
-  uint32_t get_client_sess_id() { return client_sess_id_; }
-  
-  
-  void set_user_id(uint64_t user_id) { user_id_ = user_id; }
-  uint64_t get_user_id() { return user_id_; }
-  void set_has_user_super_privilege(bool has_user_super_privilege)
-  {
-    has_user_super_privilege_ = has_user_super_privilege;
-  }
-  bool is_has_user_super_privilege() { return has_user_super_privilege_; }
-  TO_STRING_KV(K_(client_sess_id), K_(user_id), K_(has_user_super_privilege));
-private:
-  uint32_t client_sess_id_;
-  
-  uint64_t user_id_;
-  bool has_user_super_privilege_;
-};
-
-// kill client session result
-struct ObClientSessionCreateTimeAndAuthRes
-{
-  OB_UNIS_VERSION(1);
-public:
-  ObClientSessionCreateTimeAndAuthRes() : client_sess_create_time_(0), have_kill_auth_(false) {}
-  ~ObClientSessionCreateTimeAndAuthRes() {}
-  bool is_valid() const;
-  void reset()
-  {
-    client_sess_create_time_ = 0;
-    have_kill_auth_ = false;
-  }
-  int assign(const ObClientSessionCreateTimeAndAuthRes &other)
-  {
-    int ret = common::OB_SUCCESS;
-    client_sess_create_time_ = other.client_sess_create_time_;
-    have_kill_auth_ = other.have_kill_auth_;
-    return ret;
-  }
-  void set_client_create_time(int64_t client_sess_create_time)
-  {
-    client_sess_create_time_ = client_sess_create_time;
-  }
-  int64_t get_client_create_time() { return client_sess_create_time_; }
-  void set_have_kill_auth(bool have_kill_auth) { have_kill_auth_ = have_kill_auth; }
-  bool is_have_kill_auth() {return have_kill_auth_;}
-  TO_STRING_KV(K_(client_sess_create_time), K_(have_kill_auth));
-  int64_t client_sess_create_time_;
-  bool have_kill_auth_;
 };
 
 struct ObCancelGatherStatsArg

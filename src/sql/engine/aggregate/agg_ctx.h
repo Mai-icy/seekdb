@@ -202,25 +202,6 @@ struct RemovalInfo
   }
 };
 
-struct RollupContext
-{
-  RollupContext() : start_partial_rollup_idx_(0), end_partial_rollup_idx_(0)
-  {}
-  void reset()
-  {
-    start_partial_rollup_idx_ = 0;
-    end_partial_rollup_idx_ = 0;
-  }
-  inline void set_partial_rollup_idx(int64_t start, int64_t end)
-  {
-    start_partial_rollup_idx_ = start;
-    end_partial_rollup_idx_ = end;
-  }
-
-  int64_t start_partial_rollup_idx_; // rollup partial idx
-  int64_t end_partial_rollup_idx_;   // rollup partial idx
-};
-
 struct RuntimeContext
 {
   RuntimeContext(sql::ObEvalCtx &eval_ctx, ObIArray<ObAggrInfo> &aggr_infos,
@@ -231,7 +212,7 @@ struct RuntimeContext
     op_monitor_info_(nullptr), io_event_observer_(nullptr), agg_row_meta_(),
     agg_rows_(ModulePageAllocator(label, ObCtxIds::WORK_AREA)),
     agg_extras_(ModulePageAllocator(label, ObCtxIds::WORK_AREA)), removal_info_(),
-    win_func_agg_(false), hp_infras_mgr_(nullptr), rollup_context_(nullptr), distinct_count_(0),
+    win_func_agg_(false), hp_infras_mgr_(nullptr), distinct_count_(0),
     flag_(0), rb_allocator_(nullptr)
   {}
 
@@ -444,7 +425,6 @@ struct RuntimeContext
   RemovalInfo removal_info_;
   bool win_func_agg_;
   ObHashPartInfrasVecMgr *hp_infras_mgr_;
-  RollupContext *rollup_context_;
   uint32_t distinct_count_;
   union {
     uint16_t flag_;

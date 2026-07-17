@@ -1712,7 +1712,7 @@ int ObAutoIncInnerTableProxy::next_autoinc_value(const AutoincKey &key,
             ObMySQLResult *result = NULL;
             ObISQLClient *sql_client = &trans;
             ObASHSetInnerSqlWaitGuard ash_inner_sql_guard(ObInnerSqlWaitTypeId::SEQUENCE_LOAD);
-            ObSQLClientRetryWeak sql_client_retry_weak(sql_client);
+            auto &sql_client_retry_weak = *sql_client;
             if (OB_FAIL(sql_client_retry_weak.read(res, sql))) {
               LOG_WARN(" failed to read data", K(ret));
             } else if (NULL == (result = res.get_result())) {
@@ -1846,15 +1846,13 @@ int ObAutoIncInnerTableProxy::get_autoinc_value(const AutoincKey &key,
                         table_name,
                         ObSchemaUtils::get_extract_schema_id(key.table_id_),
                         key.column_id_);
-    ObISQLClient *sql_client = mysql_proxy_;
-    ObSQLClientRetryWeak sql_client_retry_weak(sql_client);
     if (OB_ISNULL(mysql_proxy_)) {
       ret = OB_NOT_INIT;
       LOG_WARN("mysql proxy is null", K(ret));
     } else if (sql_len >= OB_MAX_SQL_LENGTH || sql_len <= 0) {
       ret = OB_SIZE_OVERFLOW;
       LOG_WARN("failed to format sql. size not enough", K(ret), K(sql_len));
-    } else if (OB_FAIL(sql_client_retry_weak.read(res, sql))) {
+    } else if (OB_FAIL(mysql_proxy_->read(res, sql))) {
       LOG_WARN(" failed to read data", K(ret));
     } else if (NULL == (result = res.get_result())) {
       LOG_WARN("failed to get result", K(ret));
@@ -1945,7 +1943,7 @@ int ObAutoIncInnerTableProxy::get_autoinc_value_in_batch(const common::ObIArray<
         int64_t column_id = 0;
         uint64_t seq_value = 0;
         ObISQLClient *sql_client = mysql_proxy_;
-        ObSQLClientRetryWeak sql_client_retry_weak(sql_client);
+        auto &sql_client_retry_weak = *sql_client;
         if (OB_FAIL(sql_client_retry_weak.read(res, sql.ptr()))) {
           LOG_WARN(" failed to read data", K(ret));
         } else if (NULL == (result = res.get_result())) {
@@ -2024,7 +2022,7 @@ int ObAutoIncInnerTableProxy::sync_autoinc_value(const AutoincKey &key,
         ObASHSetInnerSqlWaitGuard ash_inner_sql_guard(ObInnerSqlWaitTypeId::SEQUENCE_LOAD);
         ObMySQLResult *result = NULL;
         ObISQLClient *sql_client = &trans;
-        ObSQLClientRetryWeak sql_client_retry_weak(sql_client);
+        auto &sql_client_retry_weak = *sql_client;
         if (OB_FAIL(sql_client_retry_weak.read(res, sql.ptr()))) {
           LOG_WARN("failed to read data", K(ret));
         } else if (NULL == (result = res.get_result())) {
@@ -2167,7 +2165,7 @@ int ObAutoIncInnerTableProxy::read_and_push_inner_table(const AutoincKey &key,
       SMART_VAR(ObMySQLProxy::MySQLResult, res) {
         ObMySQLResult *result = NULL;
         ObISQLClient *sql_client = &trans;
-        ObSQLClientRetryWeak sql_client_retry_weak(sql_client);
+        auto &sql_client_retry_weak = *sql_client;
         if (OB_FAIL(sql_client_retry_weak.read(res, sql.ptr()))) {
           LOG_WARN("failed to read data", K(ret));
         } else if (NULL == (result = res.get_result())) {

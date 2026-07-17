@@ -107,12 +107,8 @@ int ObQueryHint::set_outline_data_hints(const ObGlobalHint &global_hint,
   } else if (OB_FAIL(append_hints(stmt_id, hints))) {
     LOG_WARN("failed to assign global hint.", K(ret));
   } else {
-    if (global_hint_.has_valid_opt_features_version()) {
-      is_valid_outline_ = true;
-      outline_stmt_id_ = stmt_id;
-    } else {
-      user_def_outline_ = true;
-    }
+    is_valid_outline_ = true;
+    outline_stmt_id_ = stmt_id;
     ObHint *cur_hint = NULL;
     for (int64_t i = 0; OB_SUCC(ret) && i < hints.count(); ++i) {
       if (OB_ISNULL(cur_hint = hints.at(i))) {
@@ -256,11 +252,6 @@ int ObQueryHint::check_and_set_params_from_hint(const ObResolverParams &params, 
   } else {
     if (global_hint_.query_timeout_ > 0) {
       THIS_WORKER.set_timeout_ts(session_info->get_query_start_time() + global_hint_.query_timeout_);
-    }
-    if (global_hint_.has_valid_opt_features_version()) {
-      query_ctx->optimizer_features_enable_version_ = global_hint_.opt_features_version_;
-    } else if (OB_FAIL(session_info->get_optimizer_features_enable_version(query_ctx->optimizer_features_enable_version_))) {
-      LOG_WARN("failed to check ddl schema version", K(ret));
     }
   }
   return ret;
@@ -1357,7 +1348,6 @@ void ObLogPlanHint::reset()
   table_hints_.reuse();
   join_hints_.reuse();
   normal_hints_.reuse();
-  optimizer_features_enable_version_ = LASTED_COMPAT_VERSION;
 }
 
 int ObLogPlanHint::init_log_plan_hint(ObSqlSchemaGuard &schema_guard,
@@ -1367,7 +1357,6 @@ int ObLogPlanHint::init_log_plan_hint(ObSqlSchemaGuard &schema_guard,
   int ret = OB_SUCCESS;
   reset();
   is_outline_data_ = query_hint.has_outline_data();
-  optimizer_features_enable_version_ = stmt.get_query_ctx()->optimizer_features_enable_version_;
   const ObStmtHint &stmt_hint = stmt.get_stmt_hint();
   if (OB_FAIL(join_order_.init_leading_info(stmt, query_hint, stmt_hint.get_normal_hint(T_LEADING)))) {
     LOG_WARN("failed to get leading hint info", K(ret));

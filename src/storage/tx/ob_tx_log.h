@@ -663,7 +663,6 @@ public:
 public:
   void reset()
   {
-    org_cluster_id_ = 0;
     cluster_version_ = 0;
     log_entry_no_ = 0;
     tx_id_ = 0;
@@ -673,37 +672,32 @@ public:
   {
     reset();
   };
-  ObTxLogBlockHeader(const uint64_t org_cluster_id,
-                     const int64_t cluster_version,
+  ObTxLogBlockHeader(const int64_t cluster_version,
                      const int64_t log_entry_no,
                      const ObTransID &tx_id)
     : __log_entry_no_(log_entry_no_), flags_(0)
   {
-    init(org_cluster_id, cluster_version, log_entry_no, tx_id);
+    init(cluster_version, log_entry_no, tx_id);
   }
-  void init(const uint64_t org_cluster_id,
-            const int64_t cluster_version,
+  void init(const int64_t cluster_version,
             const int64_t log_entry_no,
             const ObTransID &tx_id) {
-    org_cluster_id_ = org_cluster_id;
     cluster_version_ = cluster_version;
     log_entry_no_ = log_entry_no;
     tx_id_ = tx_id;
     flags_ = 0;
   }
-  uint64_t get_org_cluster_id() const { return org_cluster_id_; }
   int64_t get_cluster_version() const { return cluster_version_; }
   int64_t get_log_entry_no() const { return log_entry_no_; }
   void set_log_entry_no(int64_t entry_no) { log_entry_no_ = entry_no; }
   const ObTransID &get_tx_id() const { return tx_id_; }
 
-  bool is_valid() const { return org_cluster_id_ >= 0; }
   void set_serial_final() { flags_ |= SERIAL_FINAL; }
   bool is_serial_final() const { return (flags_ & SERIAL_FINAL) == SERIAL_FINAL; }
   void set_has_async_index() { flags_ |= HAS_ASYNC_INDEX; }
   bool has_async_index() const { return (flags_ & HAS_ASYNC_INDEX) == HAS_ASYNC_INDEX; }
   uint8_t flags() const { return flags_; }
-  TO_STRING_KV(K_(org_cluster_id), K_(cluster_version), K_(log_entry_no), K_(tx_id), K_(flags));
+  TO_STRING_KV(K_(cluster_version), K_(log_entry_no), K_(tx_id), K_(flags));
 
 public:
   // the last serial log
@@ -711,7 +705,6 @@ public:
   // tx contains redo that involves tables with async indexes (for Change Stream fast filtering)
   static const uint8_t HAS_ASYNC_INDEX = ((uint8_t)1) << 1;
 private:
-  uint64_t org_cluster_id_;
   int64_t cluster_version_;
   int64_t log_entry_no_;
   FixSizeTrait_int64_t __log_entry_no_; // serialize helper member, hiden for others

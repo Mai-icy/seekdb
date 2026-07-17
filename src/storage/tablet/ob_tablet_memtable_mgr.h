@@ -79,7 +79,6 @@ public: // derived from ObIMemtableMgr
   virtual int init_storage_recorder(const ObTabletID &tablet_id,
                                     const int64_t max_saved_schema_version,
                                     const int64_t max_saved_medium_scn,
-                                    const lib::Worker::CompatMode compat_mode,
                                     logservice::ObLogHandler *log_handler) override;
   virtual int set_frozen_for_all_memtables() override;
 

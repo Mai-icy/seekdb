@@ -799,11 +799,6 @@ public:
   // used by ScalarAggregate operator when there's no input rows
   int collect_for_empty_set();
 
-  inline void set_partial_rollup_idx(int64_t start, int64_t end)
-  {
-    start_partial_rollup_idx_ = start;
-    end_partial_rollup_idx_ = end;
-  }
   inline void set_in_window_func() { in_window_func_ = true; }
   inline bool has_distinct() const { return has_distinct_; }
   inline bool has_extra() const { return has_extra_; }
@@ -864,13 +859,6 @@ public:
   typedef int (ObAggregateProcessor::*process_fun)(GroupRow &group_row);
   typedef int (ObAggregateProcessor::*collect_fun)(const int64_t group_id, const ObExpr *diff_expr);
 
-  void set_rollup_info(
-    ObRollupStatus rollup_status,
-    ObExpr *rollup_id_expr)
-  {
-    rollup_status_ = rollup_status;
-    rollup_id_expr_ = rollup_id_expr;
-  }
   void set_3stage_info(
     const ObThreeStageAggrStage aggr_stage,
     const int64_t aggr_code_idx,
@@ -1346,12 +1334,6 @@ private:
   ObIArray<int64_t> *dist_aggr_group_idxes_;
   ObExpr *aggr_code_expr_;
   ObThreeStageAggrStage aggr_stage_;
-
-  // for Rollup Distributor and Rollup Collector
-  ObRollupStatus rollup_status_;
-  ObExpr *rollup_id_expr_;
-  int64_t start_partial_rollup_idx_; // rollup partial idx
-  int64_t end_partial_rollup_idx_; // rollup partial idx
 
   int64_t dir_id_;
   ObChunkDatumStore::ShadowStoredRow *tmp_store_row_;

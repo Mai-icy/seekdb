@@ -762,7 +762,6 @@ int ObTxAbortLog::init_tx_data_backup(const share::SCN &start_scn)
 
 // ============================== Tx Log Block =============================
 OB_SERIALIZE_MEMBER(ObTxLogBlockHeader,
-                    org_cluster_id_,
                     cluster_version_,
                     __log_entry_no_,
                     tx_id_,
@@ -791,19 +790,14 @@ void ObTxLogBlock::reset()
 int ObTxLogBlock::reuse_for_fill()
 {
   int ret = OB_SUCCESS;
-  if (!header_.is_valid()) {
-    ret = OB_ERR_UNEXPECTED;
-    TRANS_LOG(ERROR, "must init header before reuse", K(ret));
-  } else {
-    log_base_header_.reset();
-    cur_log_type_ = ObTxLogType::UNKNOWN;
-    cb_arg_array_.reset();
-    big_segment_buf_ = nullptr;
-    pos_ = 0;
-    // reserve place for headers, header will be filled back
-    pos_ += log_base_header_.get_serialize_size(); // assume FIXED size
-    pos_ += header_.get_serialize_size();
-  }
+  log_base_header_.reset();
+  cur_log_type_ = ObTxLogType::UNKNOWN;
+  cb_arg_array_.reset();
+  big_segment_buf_ = nullptr;
+  pos_ = 0;
+  // reserve place for headers, header will be filled back
+  pos_ += log_base_header_.get_serialize_size(); // assume FIXED size
+  pos_ += header_.get_serialize_size();
   return ret;
 }
 
@@ -820,7 +814,7 @@ int ObTxLogBlock::init_for_fill(const int64_t suggested_buf_size)
   int ret = OB_SUCCESS;
   // accept the suggested buffer size
   const int64_t buf_size = suggested_buf_size;
-  if (OB_NOT_NULL(replay_buf_) || !header_.is_valid()) {
+  if (OB_NOT_NULL(replay_buf_)) {
     ret = OB_INVALID_ARGUMENT;
     TRANS_LOG(ERROR, "invalid argument", K(*this), K_(header));
   } else if (OB_FAIL(fill_buf_.init(buf_size))) {

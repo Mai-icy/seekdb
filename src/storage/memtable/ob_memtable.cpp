@@ -107,7 +107,6 @@ ObMemtable::ObMemtable()
       max_data_schema_version_(0),
       recommend_snapshot_version_(share::SCN::invalid_scn()),
       state_(ObMemtableState::INVALID),
-      mode_(lib::Worker::CompatMode::INVALID),
       minor_merged_time_(0),
       max_column_cnt_(0) {}
 
@@ -155,11 +154,6 @@ int ObMemtable::init(const ObITable::TableKey &table_key,
     TRANS_LOG(WARN, "failed to set_table_key", K(ret), K(table_key));
   } else {
     ls_ = tenant_ls;
-    if (table_key.get_tablet_id().is_sys_tablet()) {
-      mode_ = lib::Worker::CompatMode::MYSQL;
-    } else {
-      mode_ = share::g_mp->compat_mode();
-    }
     state_ = ObMemtableState::ACTIVE;
     init_timestamp_ = ObTimeUtility::current_time();
     contain_hotspot_row_ = false;

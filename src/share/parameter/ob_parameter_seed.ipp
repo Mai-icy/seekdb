@@ -123,10 +123,6 @@ DEF_PARAM(max_string_print_length, INT, OB_CLUSTER_PARAMETER, "500", "[0,]",
 DEF_PARAM(enable_record_trace_id, BOOL, OB_CLUSTER_PARAMETER, "False",
          "specifies whether record app trace id is turned on.",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(enable_rich_error_msg, BOOL, OB_CLUSTER_PARAMETER, "false",
-         "specifies whether add ip:port, time and trace id to user error message. "
-         "The default value is FALSE.",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(debug_sync_timeout, TIME, OB_CLUSTER_PARAMETER, "0", "[0,)",
          "Enable the debug sync facility and "
          "optionally specify a default wait timeout in micro seconds. "
@@ -186,7 +182,6 @@ DEF_PARAM(rootservice_list, STR_LIST, OB_CLUSTER_PARAMETER, "",
              ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(cluster, STR, OB_CLUSTER_PARAMETER, "obcluster", "Name of the cluster",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-// During DRC replication, ob_org_cluster_id uses the range [0xffff0000,0xffffffff],
 // while the cluster_id written by user SQL into clog must not fall within [0xffff0000,0xffffffff],
 // because the cluster_id written by user SQL into clog is determined by the cluster_id system config,
 // so the cluster_id system config range is [1, 0xffff0000 - 1], namely [1,4294901759].
@@ -345,14 +340,6 @@ DEF_PARAM(workers_per_cpu_quota, INT, OB_CLUSTER_PARAMETER, "10", "[2,20]",
         "the ratio(integer) between the number of system allocated workers vs "
         "the maximum number of threads that can be scheduled concurrently. Range: [2, 20]",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(large_query_worker_percentage, DBL, OB_CLUSTER_PARAMETER, "30", "[0,100]",
-        "the percentage of the workers reserved to serve large query request. "
-        "Range: [0, 100] in percentage",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE))
-DEF_PARAM(large_query_threshold, TIME, OB_CLUSTER_PARAMETER, "5s", "[0ms,)",
-         "threshold for execution time beyond "
-         "which a request may be paused and rescheduled as a \\'large request\\', 0ms means disable \\'large request\\'. Range: [0ms, +∞)",
-         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_ob_max_thread_num, INT, OB_CLUSTER_PARAMETER, "0", "[0,10000)",
          "ob max thread number "
          "upper limit of observer thread count. Range: [0, 10000), 0 means no limit.",
@@ -1284,9 +1271,6 @@ DEF_PARAM(_max_schema_slot_num, INT, OB_CLUSTER_PARAMETER, "128", "[2,256]",
 DEF_PARAM(_enable_add_fulltext_index_to_existing_table, BOOL, OB_CLUSTER_PARAMETER, "False",
          "enable create fulltext index after table is created",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_ob_query_rate_limit, INT_WITH_CHECKER, OB_CLUSTER_PARAMETER, "-1", common::ObConfigQueryRateLimitChecker,
-        "the maximun throughput allowed for a tenant per observer instance",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_xa_gc_timeout, TIME, OB_CLUSTER_PARAMETER, "24h", "[1s,)",
         "specifies the threshold value for a xa record to be considered as obsolete",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -1372,9 +1356,6 @@ DEF_PARAM(connection_control_max_connection_delay, INT, OB_CLUSTER_PARAMETER, "2
         "The maximum delay in milliseconds for server response to failed connection attempts, "
         "if connection_control_failed_connections_threshold is greater than zero",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(ob_proxy_readonly_transaction_routing_policy, BOOL, OB_CLUSTER_PARAMETER, "false",
-         "Proxy route policy for readonly sql: whether regard begining read only stmts as in transaction",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(job_queue_processes, INT, OB_CLUSTER_PARAMETER, "1000", "[0,16384]",
         "specifies the maximum number of job slaves per instance that can be created "
         "for the execution of DBMS_JOB and DBMS_SCHEDULER jobs.",

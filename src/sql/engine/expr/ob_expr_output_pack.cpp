@@ -240,10 +240,7 @@ int ObExprOutputPack::convert_string_value_charset(common::ObObj &value,
 {
   int ret = OB_SUCCESS;
   ObCharsetType charset_type = CHARSET_INVALID;
-  ObCharsetType ncharset_type = CHARSET_INVALID;
   if (OB_FAIL(my_session.get_character_set_results(charset_type))) {
-    LOG_WARN("fail to get result charset", K(ret));
-  } else if (OB_FAIL(my_session.get_ncharacter_set_connection(ncharset_type))) {
     LOG_WARN("fail to get result charset", K(ret));
   } else {
     OZ (value.convert_string_value_charset(charset_type, alloc));
@@ -259,14 +256,11 @@ int ObExprOutputPack::convert_text_value_charset(common::ObObj& value,
 {
   int ret = OB_SUCCESS;
   ObCharsetType charset_type = CHARSET_INVALID;
-  ObCharsetType ncharset_type = CHARSET_INVALID;
   ObString raw_str = value.get_string();
   if (OB_ISNULL(raw_str.ptr()) || raw_str.length() == 0) {
     // may need return error?
     LOG_DEBUG("get null lob locator v2", K(ret));
   } else if (OB_FAIL(my_session.get_character_set_results(charset_type))) {
-    LOG_WARN("fail to get result charset", K(ret));
-    } else if (OB_FAIL(my_session.get_ncharacter_set_connection(ncharset_type))) {
     LOG_WARN("fail to get result charset", K(ret));
   }
   if (OB_FAIL(ret)) {
@@ -337,12 +331,6 @@ int ObExprOutputPack::process_lob_locator_results(common::ObObj& value,
                                                   sql::ObExecContext &exec_ctx)
 {
   int ret = OB_SUCCESS;
-  // 1. if client is_use_lob_locator, return lob locator
-  // 2. if client is_use_lob_locator, but not support outrow lob, return lob locator with inrow data
-  //    refer to sz/aibo1m
-  // 3. if client does not support use_lob_locator ,,return full lob data without locator header
-  bool is_use_lob_locator = my_session.is_client_use_lob_locator();
-  bool is_support_outrow_locator_v2 = my_session.is_client_support_lob_locatorv2();
   if (!(value.is_lob() || value.is_json() || value.is_geometry() || value.is_roaringbitmap())) {
     // not lob types, do nothing
   } else {
@@ -530,4 +518,3 @@ int ObExprOutputPack::process_oneline(const ObExpr &expr, ObEvalCtx &ctx, ObSQLS
 
 }//namespace sql
 }//namespace oceambase
-

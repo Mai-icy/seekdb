@@ -179,7 +179,6 @@ const int64_t OB_INVALID_PARTITION_ID = 0;
 const int64_t OB_MIN_CLUSTER_ID = 1;
 const int64_t OB_MAX_CLUSTER_ID = 4294901759;
 const int64_t OB_INVALID_CLUSTER_ID = -1;
-const int64_t OB_INVALID_ORG_CLUSTER_ID = 0;
 const int64_t OB_MAX_ITERATOR = 16;
 const int64_t MAX_IP_ADDR_LENGTH = 46; //Adapting for Windows 
 const int64_t MAX_IP_PORT_LENGTH = MAX_IP_ADDR_LENGTH + 6;
@@ -344,7 +343,6 @@ const int64_t OB_MAX_SET_STMT_SIZE = 256;
 const int64_t OB_MAX_NAMED_WINDOW_FUNCTION_NUM = 127;
 const uint64_t OB_DEFAULT_GROUP_CONCAT_MAX_LEN = 1024;
 const uint64_t OB_DEFAULT_EXTENDED_GROUP_CONCAT_MAX_LEN = 32767;
-const int64_t OB_DEFAULT_OB_INTERM_RESULT_MEM_LIMIT = 2LL * 1024LL * 1024LL * 1024LL;
 // The maximum table name length that the user can specify
 const int64_t OB_MAX_USER_TABLE_NAME_LENGTH_MYSQL = 64;  // Compatible with mysql, the OB code logic is greater than the time error
 const int64_t OB_MAX_EXTENDED_USER_TABLE_NAME_LENGTH = 128; // Error is reported when the logic is greater than
@@ -1538,8 +1536,6 @@ const char *const OB_MYSQL_FAILOVER_MODE_OFF = "off";
 const char *const OB_MYSQL_FAILOVER_MODE_ON = "on";
 const char *const OB_MYSQL_SERVICE_NAME = "__proxy_service_name";
 
-const char *const OB_MYSQL_CLIENT_ATTRIBUTE_CAPABILITY_FLAG = "__ob_client_attribute_capability_flag";
-
 const char *const OB_SYS_TENANT_LOCALITY_STRATEGY = "sys_tenant_locality_strategy";
 const char *const OB_AUTO_LOCALITY_STRATEGY = "auto_locality_strategy";
 
@@ -2189,11 +2185,6 @@ enum ObConsistencyLevel
   FROZEN = 1,
   WEAK,
   STRONG,
-};
-
-enum ObCompatibilityMode
-{
-  MYSQL_MODE = 0,
 };
 
 enum ObOrderType
