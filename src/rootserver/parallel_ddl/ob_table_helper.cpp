@@ -28,7 +28,6 @@
 #include "sql/resolver/ddl/ob_fts_index_builder_util.h"
 #include "sql/engine/cmd/ob_partition_executor_utils.h"
 #include "rootserver/ob_location_ddl_service.h"
-#include "rootserver/ob_dynamic_partition_manager.h"
 #include "share/schema/ob_table_sql_service.h"
 #include "share/schema/ob_sequence_sql_service.h"
 #include "share/schema/ob_multi_version_schema_service.h"
@@ -741,25 +740,11 @@ int ObTableHelper::inner_generate_table_schema_(const ObCreateTableArg &arg, ObT
     }
   }
 
-  // check auto_partition validity
-  if (FAILEDx(new_table.check_validity_for_auto_partition())) {
-    LOG_WARN("fail to check auto partition setting", KR(ret), K(new_table), K(arg));
-  }
   if (OB_SUCC(ret)) {
     if (OB_FAIL(new_table.set_storage_cache_policy(arg.schema_.get_storage_cache_policy()))) {
       LOG_WARN("fail to set storage_cache_policy", K(ret), K(arg.schema_.get_storage_cache_policy()));
     }
   }
-
-  if (OB_SUCC(ret) && !new_table.get_dynamic_partition_policy().empty()) {
-    bool is_supported = false;
-    if (OB_FAIL(ObDynamicPartitionManager::check_is_supported(new_table))) {
-      LOG_WARN("fail to check dynamic partition is supported", KR(ret), K(new_table));
-    } else if (OB_FAIL(ObDynamicPartitionManager::check_is_valid(new_table))) {
-      LOG_WARN("fail to check dynamic partition is valid", KR(ret), K(new_table));
-    }
-  }
-
 
   return ret;
 }
@@ -801,8 +786,7 @@ int ObTableHelper::inner_generate_aux_table_schema_(const ObCreateTableArg &arg)
         index_schema.reset();
         obcall::ObCreateIndexArg &index_arg = const_cast<obcall::ObCreateIndexArg&>(arg.index_arg_list_.at(i));
         if (!index_arg.index_schema_.is_partitioned_table()
-            && !data_table->is_partitioned_table()
-            && !data_table->is_auto_partitioned_table()) {
+            && !data_table->is_partitioned_table()) {
           if (INDEX_TYPE_NORMAL_GLOBAL == index_arg.index_type_) {
             index_arg.index_type_ = INDEX_TYPE_NORMAL_GLOBAL_LOCAL_STORAGE;
           } else if (INDEX_TYPE_UNIQUE_GLOBAL == index_arg.index_type_) {

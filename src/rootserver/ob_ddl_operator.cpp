@@ -35,7 +35,6 @@
 #include "pl/ob_pl_persistent.h"
 #include "pl/pl_cache/ob_pl_cache_mgr.h"
 #include "pl/pl_recompile/ob_pl_recompile_task_helper.h"
-#include "observer/scheduler/ob_scheduled_manage_dynamic_partition.h"
 #include "share/schema/ob_ccl_rule_sql_service.h"
 #include "share/schema/ob_dependency_info.h"  // relocated-definition owner
 #include "share/schema/ob_multi_version_schema_service.h"  // relocated-definition owner
@@ -1712,98 +1711,7 @@ int ObDDLOperator::inc_table_schema_version(ObMySQLTransaction &trans,
   return ret;
 }
 
-// split_table_partitions() will modify __all_part and __all_table:
-// 1. add split partitions' information into __all_part based on inc_table_schema
-//    which records the setting of split partitions
-// 2. modify part_idx, partition_type of origin partition in __all_part
-//    based on upd_table_schema which records the setting of changed origin partitions
-// 3. modify part_num of table in __all_table based on new_table_schema
-//    which records the setting of table
-int ObDDLOperator::split_table_partitions(const ObTableSchema &orig_table_schema,
-                                          ObTableSchema &inc_table_schema,
-                                          ObTableSchema &new_table_schema,
-                                          ObTableSchema &upd_table_schema,
-                                          ObMySQLTransaction &trans)
-{
-  int ret = OB_SUCCESS;
-
-  int64_t new_schema_version = OB_INVALID_VERSION;
-  ObSchemaService *schema_service = schema_service_.get_schema_service();
-
-  if (OB_ISNULL(schema_service)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("schema_service is NULL", KR(ret));
-  } else if (OB_FAIL(schema_service_.gen_new_schema_version(new_schema_version))) {
-    LOG_WARN("fail to gen new schema_version", KR(ret));
-  } else if (OB_FAIL(schema_service->get_table_sql_service().add_split_inc_part_info(trans,
-                                                                                     orig_table_schema,
-                                                                                     inc_table_schema,
-                                                                                     new_schema_version))) {
-    LOG_WARN("add split inc part info failed", KR(ret),
-                                               K(new_table_schema),
-                                               K(inc_table_schema),
-                                               K(new_schema_version));
-  } else if (orig_table_schema.is_partitioned_table()) {
-    if (OB_FAIL(schema_service->get_table_sql_service().update_part_info(trans,
-                                                                         orig_table_schema,
-                                                                         upd_table_schema,
-                                                                         new_schema_version))) {
-      LOG_WARN("update split part info failed", KR(ret),
-                                                K(orig_table_schema),
-                                                K(upd_table_schema),
-                                                K(new_schema_version));
-    }
-  } else { // !orig_table_schema.is_partitioned_table()
-    if (orig_table_schema.is_user_table() || orig_table_schema.is_global_index_table()) {
-      const ObRowkeyInfo& partition_key_info = new_table_schema.get_partition_key_info();
-      if (partition_key_info.get_size() == 0) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("invalid partition key numbers", KR(ret), K(orig_table_schema), K(new_table_schema));
-      } else {
-        for (int64_t i = 0; OB_SUCC(ret) && i < partition_key_info.get_size(); i++) {
-          const ObRowkeyColumn* partition_key_column = partition_key_info.get_column(i);
-          if (OB_ISNULL(partition_key_column)) {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_ERROR("partition_key_column is null", KR(ret), K(new_table_schema));
-          } else {
-            ObColumnSchemaV2* column_schema = new_table_schema.get_column_schema(
-                                                      partition_key_column->column_id_);
-
-            if (OB_ISNULL(column_schema)) {
-              ret = OB_ERR_UNEXPECTED;
-              LOG_WARN("unexpected null", KR(ret), K(orig_table_schema), K(new_table_schema),
-                                          KPC(partition_key_column));
-            } else if (FALSE_IT(column_schema->set_schema_version(new_schema_version))) {
-            } else if (OB_FAIL(schema_service->get_table_sql_service()
-                                    .update_single_column(trans, orig_table_schema, new_table_schema,
-                                                          *column_schema, false, /* record_ddl_operation */
-                                                          false /*need_del_stats*/))) {
-              LOG_WARN("update single column failed", KR(ret), K(orig_table_schema),
-                                                      K(new_table_schema), KPC(column_schema));
-            }
-          }
-        } // end for
-      }
-    } else if (!orig_table_schema.is_index_local_storage() &&
-               !orig_table_schema.is_aux_lob_table()) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("not supported table type", KR(ret), K(orig_table_schema));
-    } else {
-      // do nothing
-    }
-  }
-
-  if (OB_SUCC(ret)){
-    new_table_schema.set_schema_version(new_schema_version);
-    if (OB_FAIL(schema_service->get_table_sql_service()
-                           .update_splitting_partition_option(trans, new_table_schema))) {
-      LOG_WARN("update splitting partition option failed", KR(ret), K(new_table_schema));
-    }
-  }
-
-  return ret;
-}
-
+// Truncating partitions updates __all_part and __all_table.
 int ObDDLOperator::truncate_table_partitions(const share::schema::ObTableSchema &orig_table_schema,
                                              share::schema::ObTableSchema &inc_table_schema,
                                              share::schema::ObTableSchema &del_table_schema,
@@ -2051,39 +1959,6 @@ int ObDDLOperator::drop_table_partitions(const ObTableSchema &orig_table_schema,
                             .update_partition_option(trans, new_table_schema))) {
       LOG_WARN("update partition option failed", K(ret), K(part_num), K(inc_part_num));
     }
-  }
-  return ret;
-}
-
-int ObDDLOperator::drop_table_splitted_partitions(const ObTableSchema &orig_table_schema,
-                                                  ObTableSchema &inc_table_schema,
-                                                  ObMySQLTransaction &trans)
-{
-  int ret = OB_SUCCESS;
-  bool is_truncate_table = false;
-  bool is_truncate_partition = true; // in order to avoid logging operation in drop_inc_part_info()
-
-  int64_t new_schema_version = OB_INVALID_VERSION;
-  ObSchemaService *schema_service = schema_service_.get_schema_service();
-
-  if (OB_ISNULL(schema_service)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("schema_service is NULL", K(ret));
-  } else if (OB_FAIL(schema_service_.gen_new_schema_version(new_schema_version))) {
-    LOG_WARN("fail to gen new schema_version", K(ret));
-  } else if (OB_FAIL(schema_service->get_table_sql_service().drop_inc_part_info(trans,
-                                                                                orig_table_schema,
-                                                                                inc_table_schema,
-                                                                                new_schema_version,
-                                                                                is_truncate_partition,
-                                                                                is_truncate_table))) {
-    LOG_WARN("delete inc part info failed", K(ret));
-  } else if (OB_FAIL(schema_service->get_table_sql_service().
-                                        update_data_table_schema_version(trans,
-                                                                         orig_table_schema.get_table_id(),
-                                                                         false,
-                                                                         new_schema_version))) {
-    LOG_WARN("fail to update schema version", K(ret));
   }
   return ret;
 }
@@ -3637,8 +3512,7 @@ int ObDDLOperator::update_index_status(
   return ret;
 }
 
-// "alter table ... partition by" clause need to call this function to modify index type
-// when enable auto partitioning feature for non-partitioned table and it has global local index
+// "alter table ... partition by" clause needs to call this function to modify index type.
 int ObDDLOperator::update_index_type(const ObTableSchema &data_table_schema,
                                      const uint64_t index_table_id,
                                      const share::schema::ObIndexType index_type,
@@ -4868,8 +4742,6 @@ int ObDDLOperator::init_tenant_schemas(
     LOG_WARN("insert default databases failed,", K(ret));
   } else if (OB_FAIL(init_tenant_optimizer_stats_info(sys_variable, trans))) {
     LOG_WARN("failed to init tenant optimizer stats info", K(ret));
-  } else if (OB_FAIL(init_tenant_scheduled_job(sys_variable, trans))) {
-    LOG_WARN("init tenant scheduled job failed", KR(ret));
   } else if (OB_FAIL(init_tenant_users(tenant_schema, sys_variable, trans))) {
     LOG_WARN("insert default user failed", K(ret));
   } else if (OB_FAIL(init_tenant_recompile_pl_obj(sys_variable, trans))) {
@@ -7960,19 +7832,6 @@ int ObDDLOperator::alter_target_sequence_start_with(const ObSequenceSchema &sequ
     LOG_ERROR("schema_service_impl must not null", K(ret));
   } else if (OB_FAIL(schema_service_impl->get_sequence_sql_service().alter_sequence_start_with(sequence_schema, trans))) {
     LOG_WARN("fail to alter sequence start with", K(ret), K(sequence_schema));
-  }
-  return ret;
-}
-
-int ObDDLOperator::init_tenant_scheduled_job(
-  const ObSysVariableSchema &sys_variable,
-  ObMySQLTransaction &trans)
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(ObScheduledManageDynamicPartition::create_jobs(
-                     sys_variable,
-                     trans))) {
-    LOG_WARN("create scheduled trigger partition balance job failed", KR(ret));
   }
   return ret;
 }

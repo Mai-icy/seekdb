@@ -1091,9 +1091,6 @@ int ObSchemaRetrieveUtils::fill_table_schema(const bool check_deleted,
                 ObCollationType, true /* skip null error*/,
                 ignore_column_error,
                 CS_TYPE_INVALID);
-    EXTRACT_BOOL_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, auto_part, partition_option, true, ignore_column_error, false);
-    EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, auto_part_size, partition_option, int64_t, true, ignore_column_error, -1);
-
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_AND_DEFAULT_VALUE(result, association_table_id,
     table_schema, true, ignore_column_error, common::OB_INVALID_ID);
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_AND_DEFAULT_VALUE(result, define_user_id,
@@ -1160,16 +1157,10 @@ int ObSchemaRetrieveUtils::fill_table_schema(const bool check_deleted,
       result, index_params, table_schema, true, ignore_column_error, "");
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, semistruct_encoding_type, table_schema,
         int64_t, true/*skip null error*/, ignore_column_error, 0);
-    EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
-      result, dynamic_partition_policy, table_schema, true/*skip_null_error*/, true/*skip_column_error*/, "");
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, external_location_id, table_schema,
                                                         uint64_t, true, true, common::OB_INVALID_ID);
     EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
       result, external_sub_path, table_schema, true/*skip null*/, true/*ignore column error*/, empty_str);
-    if (OB_SUCC(ret)) {
-      bool with_dynamic_partition_policy = !table_schema.get_dynamic_partition_policy().empty();
-      table_schema.set_with_dynamic_partition_policy(with_dynamic_partition_policy);
-    }
   }
   if (OB_SUCC(ret) && OB_FAIL(fill_sys_table_lob_tid(table_schema))) {
     SHARE_SCHEMA_LOG(WARN, "fail to fill lob table id for inner table", K(ret), K(table_schema.get_table_id()));
@@ -3124,8 +3115,6 @@ int ObSchemaRetrieveUtils::fill_table_schema(const bool check_deleted,
         table_schema.get_sub_part_option().set_part_num(0);
         table_schema.set_def_sub_part_num(0);
       }
-      EXTRACT_BOOL_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, auto_part, partition_option, true, ignore_column_error, false);
-      EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, auto_part_size, partition_option, int64_t, true, ignore_column_error, -1);
       EXTRACT_INT_FIELD_TO_CLASS_MYSQL_AND_DEFAULT_VALUE(result, association_table_id,
       table_schema, true, ignore_column_error, common::OB_INVALID_ID);
 
@@ -3165,14 +3154,6 @@ int ObSchemaRetrieveUtils::fill_table_schema(const bool check_deleted,
       } else {
         table_schema.set_storage_cache_policy_type(policy_type);
       }
-    }
-
-    ObString dynamic_partition_policy;
-    EXTRACT_VARCHAR_FIELD_MYSQL_WITH_DEFAULT_VALUE(
-      result, "dynamic_partition_policy", dynamic_partition_policy, true/*skip_null_error*/, true/*skip_column_error*/, "");
-    if (OB_SUCC(ret)) {
-      bool with_dynamic_partition_policy = !dynamic_partition_policy.empty();
-      table_schema.set_with_dynamic_partition_policy(with_dynamic_partition_policy);
     }
 
   }
