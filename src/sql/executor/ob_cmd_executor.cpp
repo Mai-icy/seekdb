@@ -117,8 +117,6 @@
 #include "sql/resolver/dcl/ob_alter_role_stmt.h"
 #include "sql/resolver/ddl/ob_drop_context_resolver.h"
 #include "sql/engine/cmd/ob_context_executor.h"
-#include "sql/resolver/cmd/ob_olap_async_job_stmt.h"
-#include "sql/engine/cmd/ob_olap_async_job_executor.h"
 #include "sql/resolver/cmd/ob_event_stmt.h"
 #include "sql/engine/cmd/ob_event_executor.h"
 #include "sql/engine/cmd/ob_ccl_rule_executor.h"
@@ -718,10 +716,6 @@ int ObCmdExecutor::execute(ObExecContext &ctx, ObICmd &cmd)
       }
       case stmt::T_ALTER_SYSTEM_RESET_PARAMETER: {
         DEFINE_EXECUTE_CMD(ObResetConfigStmt, ObResetConfigExecutor);
-        break;
-      }
-      case stmt::T_OLAP_ASYNC_JOB_CANCEL: {
-        DEFINE_EXECUTE_CMD(ObOLAPAsyncCancelJobStmt, ObOLAPAsyncCancelJobExecutor);
         break;
       }
       case stmt::T_EVENT_JOB_CREATE: {

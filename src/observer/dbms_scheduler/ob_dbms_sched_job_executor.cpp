@@ -112,19 +112,6 @@ int ObDBMSSchedJobExecutor::init_session(
   } else {
     OX (session.set_shadow(false));
   }
-  if (OB_SUCC(ret)) {
-    if (job_info.is_olap_async_job()) {
-      const int64_t QUERY_TIMEOUT_US = ((job_info.get_max_run_duration() - OLAP_ASYNC_JOB_DEVIATION_SECOND) * 1000000L);
-      const int64_t TRX_TIMEOUT_US = ((job_info.get_max_run_duration() - OLAP_ASYNC_JOB_DEVIATION_SECOND) * 1000000L);
-      ObObj query_timeout_obj;
-      ObObj trx_timeout_obj;
-      query_timeout_obj.set_int(QUERY_TIMEOUT_US);
-      trx_timeout_obj.set_int(TRX_TIMEOUT_US);
-      OZ (session.update_sys_variable(SYS_VAR_OB_QUERY_TIMEOUT, query_timeout_obj));
-      OZ (session.update_sys_variable(SYS_VAR_OB_TRX_TIMEOUT, trx_timeout_obj));
-    }
-  }
-
   return ret;
 }
 
@@ -247,10 +234,7 @@ int ObDBMSSchedJobExecutor::run_dbms_sched_job(
     LOG_WARN("failed to create session", KR(ret));
   } else {
     if (job_info.get_what().length() != 0) { // action
-      if (job_info.is_olap_async_job()){
-        OZ (what.append_fmt("%.*s",
-            job_info.get_what().length(), job_info.get_what().ptr()));        
-      } else if (job_info.is_mysql_event_job()) { //mysql event
+      if (job_info.is_mysql_event_job()) { //mysql event
         OZ (what.append_fmt("%.*s",
               job_info.get_what().length(), job_info.get_what().ptr()));          
       } else {

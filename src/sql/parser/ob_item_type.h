@@ -2530,10 +2530,6 @@ typedef enum ObItemType
   T_PARTITION_EXPR = 4702,
   T_CACHE_INDEX = 4703,
   T_LOAD_INDEX_INTO_CACHE = 4704,
-  //olap async job
-  T_OLAP_ASYNC_JOB_SUBMIT = 4706,
-  T_OLAP_ASYNC_JOB_CANCEL = 4707,
-  T_SHOW_OLAP_ASYNC_JOB_STATUS = 4708,
   T_USE_ADAPTIVE = 4709,
   T_NO_USE_ADAPTIVE = 4710,
   T_SHOW_CHECK_PARTITION = 4711,
@@ -2928,7 +2924,6 @@ typedef enum ObOutlineType
                            || (op) == T_SHOW_PROCEDURE_CODE || (op) == T_SHOW_FUNCTION_CODE \
                            || (op) == T_SHOW_ENGINE || (op) == T_SHOW_OPEN_TABLES \
                            || (op) == T_SHOW_PLUGINS || (op) == T_SHOW_CHECK_TABLE \
-                           || (op) == T_SHOW_OLAP_ASYNC_JOB_STATUS                \
                            || (op) == T_SHOW_CREATE_LOCATION \
                            || (op) == T_SHOW_LOCATIONS)
 
