@@ -883,7 +883,6 @@ void ObTenant::check_worker_count()
   }
 }
 
-// This interface is unnecessary after adding htap
 int ObTenant::acquire_more_worker(int64_t num, int64_t &succ_num, bool force)
 {
   int ret = OB_SUCCESS;

@@ -827,7 +827,6 @@ public:
                     insert_column_number_(0),
                     params_count_(0),
                     allocated_buffer_cnt_(0),
-                    non_string_type_direct_insert_column_count_(0),
 
                     //statistics
                     total_err_lines_(0),
@@ -954,7 +953,6 @@ private:
   int64_t insert_column_number_;
   int64_t params_count_;
   int64_t allocated_buffer_cnt_;
-  int64_t non_string_type_direct_insert_column_count_;
 
   //statistics
   int64_t total_err_lines_;
