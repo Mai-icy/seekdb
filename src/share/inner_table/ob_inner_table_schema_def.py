@@ -6459,7 +6459,6 @@ def_table_schema(
 
   normal_columns = [
     ('job_id', 'int'),
-    ('job_type', 'varchar:OB_MAX_PARAMETERS_NAME_LENGTH'),
     ('table_name', 'varchar:OB_MAX_TABLE_NAME_LENGTH'),
     ('file_path', 'varchar:MAX_PATH_SIZE'),
     ('table_column', 'int'),
@@ -6477,18 +6476,7 @@ def_table_schema(
     ('total_insert_task', 'int'),
     ('shuffle_rt_sum', 'int'),
     ('insert_rt_sum', 'int'),
-    ('total_wait_secs', 'int'),
-    ('max_allowed_error_rows', 'int'),
-    ('detected_error_rows', 'int'),
-    ('coordinator_received_rows', 'int'),
-    ('coordinator_last_commit_segment_id', 'int'),
-    ('coordinator_status', 'varchar:OB_MAX_PARAMETERS_NAME_LENGTH'),
-    ('coordinator_trans_status', 'varchar:OB_MAX_PARAMETERS_NAME_LENGTH'),
-    ('store_processed_rows', 'int'),
-    ('store_last_commit_segment_id', 'int'),
-    ('store_status', 'varchar:OB_MAX_PARAMETERS_NAME_LENGTH'),
-    ('store_trans_status', 'varchar:OB_MAX_PARAMETERS_NAME_LENGTH'),
-    ('message', 'varchar:MAX_LOAD_DATA_MESSAGE_LENGTH')
+    ('total_wait_secs', 'int')
   ],  vtable_route_policy = 'local'
   )
 # 12245: __all_virtual_backup_task # abandoned
@@ -9820,7 +9808,7 @@ view_definition = """
 SELECT
  (case M.TABLE_TYPE
     when 0 then 'MEMTABLE' when 1 then 'TX_DATA_MEMTABLE' when 2 then 'TX_CTX_MEMTABLE'
-    when 3 then 'LOCK_MEMTABLE' when 4 then 'DIRECT_LOAD_MEMTABLE' when 10 then 'MAJOR' when 11 then 'MINOR'
+    when 3 then 'LOCK_MEMTABLE' when 10 then 'MAJOR' when 11 then 'MINOR'
     when 12 then 'MINI' when 13 then 'META'
     when 14 then 'DDL_DUMP' when 15 then 'REMOTE_LOGICAL_MINOR' when 16 then 'DDL_MEM'
     when 17 then 'DDL_MEM_MINI_SSTABLE' when 18 then 'MDS_MINI' when 19 then 'MDS_MINOR'

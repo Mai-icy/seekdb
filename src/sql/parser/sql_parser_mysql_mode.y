@@ -112,7 +112,6 @@
 %nonassoc LOWER_COMMA
 %nonassoc REMAP
 %nonassoc ',' WITH
-%nonassoc OVERWRITE
 %left	UNION EXCEPT MINUS
 %left	INTERSECT
 %left LOWER_ON /*on expr*/
@@ -205,12 +204,8 @@ DISTINCT_PUSHDOWN NO_DISTINCT_PUSHDOWN
 USE_HASH_SET NO_USE_HASH_SET
 USE_DISTRIBUTED_DML NO_USE_DISTRIBUTED_DML
 PUSHDOWN
-// no direct load
-NO_DIRECT
-// direct load data hint
-DIRECT
 // hint related to optimizer statistics
-APPEND NO_GATHER_OPTIMIZER_STATISTICS GATHER_OPTIMIZER_STATISTICS DBMS_STATS
+NO_GATHER_OPTIMIZER_STATISTICS GATHER_OPTIMIZER_STATISTICS DBMS_STATS
 // optimizer dynamic sampling hint
 DYNAMIC_SAMPLING
 // other
@@ -384,7 +379,7 @@ END_P SET_VAR DELIMITER
 
         ZONE ZONE_LIST OPTIMIZER_COSTS
 
-        ORGANIZATION OVERWRITE
+        ORGANIZATION
 //-----------------------------non_reserved keyword end---------------------------------------------
 %type <node> sql_stmt stmt_list stmt opt_end_p
 %type <node> select_stmt update_stmt delete_stmt
@@ -8976,28 +8971,6 @@ insert_with_opt_hint opt_priority opt_ignore opt_into single_table_insert opt_on
                            $1->children_[1], /* hint */
                            $3 /*ignore node*/);
 }
-| insert_with_opt_hint opt_priority opt_ignore OVERWRITE single_table_insert
-{
-  (void)($2);
-  (void)($4);
-  if (NULL == $5) {
-    yyerror(NULL, result, "invalid single table insert node\n");
-    YYABORT_UNEXPECTED;
-  }
-
-  ParseNode *overwrite_node;
-  malloc_terminal_node(overwrite_node, result->malloc_pool_, T_INT);
-  overwrite_node->value_ = 1;
-  overwrite_node->is_hidden_const_ = 1;
-
-  $5->children_[2] = NULL; /*duplicate key node is null*/
-  malloc_non_terminal_node($$, result->malloc_pool_, T_INSERT, 5,
-                           $5, /*single or multi table insert node*/
-                           $1->children_[0], /* is replacement */
-                           $1->children_[1], /* hint */
-                           $3, /*ignore node*/
-                           overwrite_node);
-}
 | replace_with_opt_hint opt_low_priority opt_ignore opt_into single_table_insert
 {
   (void)($2);
@@ -10323,22 +10296,6 @@ READ_CONSISTENCY '(' consistency_level ')'
 | LOAD_BATCH_SIZE '(' INTNUM ',' STRING_VALUE ')'
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_LOAD_BATCH_SIZE, 2, $3, $5);
-}
-| DIRECT '(' BOOL_VALUE ',' INTNUM ')'
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_DIRECT, 3, $3, $5, NULL);
-}
-| DIRECT '(' BOOL_VALUE ',' INTNUM ',' STRING_VALUE ')'
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_DIRECT, 3, $3, $5, $7);
-}
-| NO_DIRECT
-{
-  malloc_terminal_node($$, result->malloc_pool_, T_NO_DIRECT);
-}
-| APPEND
-{
-  malloc_terminal_node($$, result->malloc_pool_, T_APPEND);
 }
 | ENABLE_PARALLEL_DML
 {
@@ -21661,7 +21618,6 @@ ACCESS_INFO
 |       RB_OR_AGG
 |       RB_AND_AGG
 |       ORGANIZATION
-|       OVERWRITE
 |       OPTIMIZER_COSTS
 |       MICRO_INDEX_CLUSTERED
 |       TENANT_STS_CREDENTIAL

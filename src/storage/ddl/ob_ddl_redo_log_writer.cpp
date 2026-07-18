@@ -42,19 +42,6 @@ bool ObDDLFullNeedStopWriteChecker::check_need_stop_write()
   return ddl_kv_mgr_handle_.get_obj()->get_count() >= ObTabletDDLKvMgr::MAX_DDL_KV_CNT_IN_STORAGE - 1;
 }
 
-bool ObDDLIncNeedStopWriteChecker::check_need_stop_write()
-{
-  int ret = OB_SUCCESS;
-  bool ret_value = false;
-  ObProtectedMemtableMgrHandle *memtable_mgr_handle = nullptr;
-  if (OB_FAIL(tablet_.get_protected_memtable_mgr_handle(memtable_mgr_handle))) {
-    LOG_WARN("failed to get protected memtable mgr handle", K(ret));
-  } else if (memtable_mgr_handle->get_memtable_count() >= common::MAX_MEMSTORE_CNT - 1) {
-    ret_value = true;
-  }
-  return ret_value;
-}
-
 int ObDDLCtrlSpeedItem::init()
 {
   int ret = OB_SUCCESS;
@@ -1105,8 +1092,7 @@ ObDDLRedoLogWriterCallbackInitParam::ObDDLRedoLogWriterCallbackInitParam()
     need_submit_io_(true),
     merge_slice_idx_(0),
     macro_meta_store_(nullptr),
-    write_stat_(nullptr),
-    tx_desc_(nullptr)
+    write_stat_(nullptr)
 {
 }
 
@@ -1139,7 +1125,6 @@ void ObDDLRedoLogWriterCallbackInitParam::reset()
   merge_slice_idx_ = 0;
   macro_meta_store_ = nullptr;
   write_stat_ = nullptr;
-  tx_desc_ = nullptr;
 }
 
 ObDDLRedoLogWriterCallback::ObDDLRedoLogWriterCallback()

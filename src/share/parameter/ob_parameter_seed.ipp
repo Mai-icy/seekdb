@@ -1525,9 +1525,6 @@ DEF_PARAM(enable_user_defined_rewrite_rules, BOOL, OB_CLUSTER_PARAMETER, "False"
 DEF_PARAM(_ob_plan_cache_auto_flush_interval, TIME, OB_CLUSTER_PARAMETER, "0s", "[0s,)",
          "time interval for auto periodic flush plan cache. Range: [0s, +∞)",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_ob_enable_direct_load, BOOL, OB_CLUSTER_PARAMETER, "True",
-         "Enable or disable direct path load",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_display_mysql_version, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "5.7.25", common::ObMySQLVersionLengthChecker,
         "dynamic mysql version of mysql mode observer",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -1863,17 +1860,6 @@ DEF_PARAM(_enable_compatible_monotonic, BOOL, OB_CLUSTER_PARAMETER, "True",
 DEF_PARAM(enable_lock_priority, BOOL, OB_CLUSTER_PARAMETER, "False",
          "specifies whether to enable lock priority, which, when activated, gives certain DDL operations the highest table lock precedence.",
          ObParameterAttr(Section::TRANS, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(default_load_mode, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "DISABLED", common::ObDefaultLoadModeChecker,
-                     "Specifies default load data path."
-                     "\"DISABLED\" represent load data not in direct load path (default value)."
-                     "\"FULL_DIRECT_WRITE\" represent load data in full direct load path with insert semantics."
-                     "\"INC_DIRECT_WRITE\" represent load data in inc direct load path with insert semantics."
-                     "\"INC_REPLACE_DIRECT_WRITE\" represent load data in inc direct load path with replace semantics.",
-                     ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE),
-                     "DISABLED, FULL_DIRECT_WRITE, INC_DIRECT_WRITE, INC_REPLACE_DIRECT_WRITE");
-DEF_PARAM(direct_load_allow_fallback, BOOL, OB_CLUSTER_PARAMETER, "True",
-        "Control whether an error is reported when direct load of the derivative operation scenario is not supported.",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 // regexp engine
 DEF_PARAM(_regex_engine, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "ICU", common::ObConfigRegexpEngineChecker,
         "specifies the regexp engine. Values: ICU(International Components for Unicode)",

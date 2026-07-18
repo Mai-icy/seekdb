@@ -1246,8 +1246,6 @@ int ObIndexBuildTask::check_need_verify_checksum(bool &need_verify)
     ObArenaAllocator allocator("uk_checksum");
     if (parent_task_id_ != 0 && OB_FAIL(ObDDLTaskRecordOperator::get_ddl_task_record( parent_task_id_, *GCTX.sql_proxy_, allocator, task_record))) {
       LOG_WARN("fail to get ddl task record", K(ret), K(parent_task_id_));
-    } else if (share::is_direct_load_task(task_record.ddl_type_)) {
-      need_verify = false;
     } else {
       need_verify = true;
     }

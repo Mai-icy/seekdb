@@ -151,12 +151,6 @@ const char *oceanbase::share::get_ddl_type(ObDDLType ddl_type)
     case ObDDLType::DDL_TABLE_REDEFINITION:
       ret_name = "DDL_TABLE_REDEFINITION";
       break;
-    case ObDDLType::DDL_DIRECT_LOAD:
-      ret_name = "DDL_DIRECT_LOAD";
-      break;
-    case ObDDLType::DDL_DIRECT_LOAD_INSERT:
-      ret_name = "DDL_DIRECT_LOAD_INSERT";
-      break;
     case ObDDLType::DDL_MODIFY_AUTO_INCREMENT_WITH_REDEFINITION:
       ret_name = "DDL_MODIFY_AUTO_INCREMENT_WITH_REDEFINITION";
       break;
@@ -769,7 +763,6 @@ bool ObDDLUtil::need_reshape(const ObObjMeta &col_type)
 
 // the lob is processed by column here,
 // ddl routine require idempotence, so the lob cells must write by row. in order to build the row, invlaid lob cells (like null or nop) need output.
-// direct load routine does not require idempotence, so the invalid lob cells need not to output.
 // moved definition to sql/resolver/ddl/ob_ddl_resolver.cpp(vector vocabulary)
 
 

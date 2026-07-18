@@ -36,7 +36,6 @@
 #include "storage/tx/ob_committer_define.h"
 #include "storage/tx/ob_trans_result.h"
 #include "storage/tx/ob_xa_define.h"
-#include "storage/tx/ob_direct_load_tx_ctx_define.h"
 #include "storage/tx/ob_multi_data_source_tx_buffer_node.h"
 #include "storage/tx/ob_tx_on_demand_print.h"
 #include "storage/tx/ob_tx_seq.h"
@@ -1286,8 +1285,7 @@ public:
                K_(xid),
                K_(need_checksum),
                K_(serial_final_scn),
-               K_(serial_final_seq_no),
-               K(dli_batch_set_.size()));
+               K_(serial_final_seq_no));
     return pos;
   }
   ObTxState state_;
@@ -1316,7 +1314,6 @@ public:
   // used to decide whether a branch level savepoint rollback log
   // need set pre-barrier to wait previous redo replayed
   ObTxSEQ serial_final_seq_no_;
-  ObDLIBatchSet dli_batch_set_;
 };
 
 // Undefine macOS system macro to avoid conflict

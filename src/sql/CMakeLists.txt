@@ -410,7 +410,6 @@ ob_set_subtarget(ob_sql engine_cmd
   engine/cmd/ob_index_executor.cpp
   engine/cmd/ob_kill_executor.cpp
   engine/cmd/ob_kill_session_arg.cpp
-  engine/cmd/ob_load_data_direct_impl.cpp
   engine/cmd/ob_load_data_file_reader.cpp
   engine/cmd/ob_load_data_executor.cpp
   engine/cmd/ob_load_data_impl.cpp
@@ -440,8 +439,6 @@ ob_set_subtarget(ob_sql engine_cmd
   engine/cmd/ob_xa_executor.cpp
   engine/cmd/ob_context_executor.cpp
   engine/cmd/ob_event_executor.cpp
-  engine/cmd/ob_table_direct_insert_ctx.cpp
-  engine/cmd/ob_table_direct_insert_service.cpp
   engine/cmd/ob_mock_executor.cpp
   engine/cmd/ob_olap_async_job_executor.cpp
   engine/cmd/ob_catalog_executor.cpp
@@ -1018,10 +1015,6 @@ ob_set_subtarget(ob_sql engine_pdml
   engine/pdml/static/ob_px_sstable_insert_op.cpp
 )
 
-ob_set_subtarget(ob_sql engine_direct_load
-  engine/direct_load/ob_table_direct_insert_op.cpp
-)
-
 ob_set_subtarget(ob_sql engine_px
   engine/px/ob_dfo.cpp
   engine/px/ob_dfo_mgr.cpp
@@ -1235,7 +1228,6 @@ ob_set_subtarget(ob_sql optimizer
   optimizer/ob_log_optimizer_stats_gathering.cpp
   optimizer/ob_dynamic_sampling.cpp
   optimizer/ob_log_values_table_access.cpp
-  optimizer/ob_direct_load_optimizer_ctx.cpp
   optimizer/ob_log_expand.cpp
 )
 

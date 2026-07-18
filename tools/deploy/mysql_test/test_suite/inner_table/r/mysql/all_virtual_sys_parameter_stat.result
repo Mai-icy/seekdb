@@ -60,7 +60,6 @@ debug_sync_timeout
 default_auto_increment_mode
 default_compress_func
 default_enable_extended_rowid
-default_load_mode
 default_progressive_merge_num
 default_row_format
 default_storage_cache_policy
@@ -68,7 +67,6 @@ default_table_merge_engine
 default_table_organization
 devname
 diag_syslog_per_error_limit
-direct_load_allow_fallback
 disk_io_thread_count
 dtl_buffer_size
 dump_data_dictionary_to_log_interval
@@ -440,7 +438,6 @@ _object_storage_io_timeout
 _ob_ddl_temp_file_compress_func
 _ob_ddl_timeout
 _ob_elr_fast_freeze_threshold
-_ob_enable_direct_load
 _ob_enable_dynamic_worker
 _ob_enable_fast_freeze
 _ob_enable_fast_parser

@@ -1049,9 +1049,6 @@ Timestamp{whitespace}?\"[^\"]*\" {
 <hint>NO_PUSH_SUBQ  { return NO_PUSH_SUBQ; }
 <hint>TRACE_LOG { return TRACE_LOG; }
 <hint>LOAD_BATCH_SIZE { return LOAD_BATCH_SIZE; }
-<hint>NO_DIRECT { return NO_DIRECT; }
-<hint>DIRECT { return DIRECT; }
-<hint>APPEND { return APPEND; }
 <hint>TRACING { return TRACING; }
 <hint>DOP { return DOP; }
 <hint>FORCE_REFRESH_LOCATION_CACHE { return FORCE_REFRESH_LOCATION_CACHE; }

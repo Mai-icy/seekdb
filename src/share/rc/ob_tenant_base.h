@@ -154,8 +154,6 @@ namespace rootserver
 namespace observer
 {
   class ObTenantMetaChecker;
-  class ObTableLoadService;
-  class ObTableLoadResourceService;
   class ObStartupAccelTaskHandler;
   class ObTabletTableUpdater;
   class ObTenantQueryRespTimeCollector;
@@ -289,8 +287,6 @@ using ObTableScanIteratorObjPool = common::ObServerObjectPool<oceanbase::storage
       transaction::ObTxLoopWorker *,                 \
       storage::ObAccessService*,                     \
       datadict::ObDataDictService*,                  \
-      observer::ObTableLoadService*,                 \
-      observer::ObTableLoadResourceService*,         \
       concurrency_control::ObMultiVersionGarbageCollector*, \
       ObTestModule*,                                 \
       storage::ObEmptyReadBucket*,                  \
