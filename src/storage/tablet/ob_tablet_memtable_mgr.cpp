@@ -121,17 +121,16 @@ int ObTabletMemtableMgr::init_storage_recorder(
     const ObTabletID &tablet_id,
     const int64_t max_saved_schema_version,
     const int64_t max_saved_medium_scn,
-    const lib::Worker::CompatMode compat_mode,
     logservice::ObLogHandler *log_handler)
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL(schema_recorder_.init(tablet_id, max_saved_schema_version, compat_mode, log_handler))) {
+  if (OB_FAIL(schema_recorder_.init(tablet_id, max_saved_schema_version, log_handler))) {
     TRANS_LOG(WARN, "failed to init schema recorder", K(ret), K(max_saved_schema_version), KP(log_handler));
   } else if (OB_FAIL(medium_info_recorder_.init(tablet_id, max_saved_medium_scn, log_handler))) {
     TRANS_LOG(WARN, "failed to init medium info recorder", K(ret), K(max_saved_medium_scn), KP(log_handler));
   } else {
     TRANS_LOG(INFO, "success to init storage recorder", K(ret), K(tablet_id), K(max_saved_schema_version),
-      K(max_saved_medium_scn), K(compat_mode));
+      K(max_saved_medium_scn));
   }
   return ret;
 }

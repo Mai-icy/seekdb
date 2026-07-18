@@ -2323,13 +2323,10 @@ int ObRawExprResolverImpl::process_datatype_or_questionmark(const ParseNode &nod
   ObCollationType nation_collation = OB_NOT_NULL(ctx_.session_info_) ? ctx_.session_info_->get_nls_collation_nation() : CS_TYPE_INVALID;
   uint64_t tenant_data_ver = 0;
   bool enable_decimal_int = false;
-  ObCompatType compat_type = COMPAT_MYSQL57;
   bool enable_mysql_compatible_dates = false;
   if (OB_ISNULL(session_info)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("session info is null", K(ret));
-  } else if (OB_FAIL(session_info->get_compatibility_control(compat_type))) {
-    LOG_WARN("failed to get compat type", K(ret));
   } else if (OB_FAIL(ObSQLUtils::check_enable_decimalint(session_info, enable_decimal_int))) {
     LOG_WARN("fail to check enable decimal int", K(ret));
   } else if (OB_FAIL(ObSQLUtils::check_enable_mysql_compatible_dates(session_info, false,
@@ -2349,7 +2346,6 @@ int ObRawExprResolverImpl::process_datatype_or_questionmark(const ParseNode &nod
                                              &(ctx_.parents_expr_info_),
                                              session_info->get_sql_mode(),
                                              enable_decimal_int, // FIXME: enable decimal int
-                                             compat_type,
                                              enable_mysql_compatible_dates,
                                              session_info->get_min_const_integer_precision(),
                                              nullptr != ctx_.secondary_namespace_,

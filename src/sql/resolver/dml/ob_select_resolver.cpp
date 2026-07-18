@@ -1465,7 +1465,7 @@ int ObSelectResolver::resolve_field_list(const ParseNode &node)
   ParseNode *alias_node = NULL;
   bool is_bald_star = false;
   ObSelectStmt *select_stmt = NULL;
-  bool enable_modify_null_name = false;
+  const bool enable_modify_null_name = true;
   ObExecContext *exec_ctx = NULL;
   //LOG_INFO("resolve_select_1", "usec", ObSQLUtils::get_usec());
   current_scope_ = T_FIELD_LIST_SCOPE;
@@ -1473,9 +1473,6 @@ int ObSelectResolver::resolve_field_list(const ParseNode &node)
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(session_info_),
         K(select_stmt), K(ret));
-  } else if (OB_FAIL(session_info_->check_feature_enable(ObCompatFeatureType::PROJECT_NULL,
-                                                         enable_modify_null_name))) {
-    LOG_WARN("failed to check feature enable", K(ret));
   } else {
     exec_ctx = session_info_->get_cur_exec_ctx();
   }
@@ -5208,13 +5205,10 @@ int ObSelectResolver::check_union_to_values_table_valid(const ParseNode &parse_n
   int64_t top = 0;
   bool is_type_same = false;
   is_valid = true;
-  uint64_t optimizer_version = 0;
   const ParseNode *set_node = parse_node.children_[PARSE_SELECT_SET];
   if (OB_ISNULL(session_info_) || OB_ISNULL(set_node)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("got unexpected ptr", K(ret));
-  } else if (OB_FAIL(session_info_->get_optimizer_features_enable_version(optimizer_version))) {
-    LOG_WARN("failed to get optimizer feature enable version", K(ret));
   } else if ((T_SET_UNION != set_node->type_ && T_SET_UNION_ALL != set_node->type_) ||
              params_.is_from_create_view_ || params_.is_from_create_table_ ||
              in_pl_ || is_prepare_stage_) {

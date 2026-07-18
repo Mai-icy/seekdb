@@ -463,7 +463,6 @@ int ObSqlParameterization::transform_tree(TransformTreeCtx &ctx,
   int ret = OB_SUCCESS;
   int64_t value_level = NO_VALUES;
   int64_t assign_level = NO_VALUES;
-  ObCompatType compat_type = COMPAT_MYSQL57;
   bool enable_mysql_compatible_dates = false;
   if (OB_ISNULL(ctx.top_node_)
       || OB_ISNULL(ctx.allocator_)
@@ -478,8 +477,6 @@ int ObSqlParameterization::transform_tree(TransformTreeCtx &ctx,
                K(ctx.fixed_param_store_),
                K(ctx.params_),
                K(ret));
-  } else if (OB_FAIL(session_info.get_compatibility_control(compat_type))) {
-    LOG_WARN("failed to get compat type", K(ret));
   } else if (NULL == ctx.tree_) {
     // do nothing
   } else if (OB_FAIL(ObSQLUtils::check_enable_mysql_compatible_dates(&session_info, false/*is_ddl*/,
@@ -546,7 +543,6 @@ int ObSqlParameterization::transform_tree(TransformTreeCtx &ctx,
                               static_cast<ObCollationType>(server_collation),
                               NULL, session_info.get_sql_mode(),
                               enable_decimal_int,
-                              compat_type,
                               enable_mysql_compatible_dates,
                               session_info.get_min_const_integer_precision(),
                               ctx.is_from_pl_,
@@ -2328,7 +2324,7 @@ int ObSqlParameterization::get_select_item_param_info(const common::ObIArray<ObP
   int64_t expr_pos = tree->raw_sql_offset_;
   int64_t buf_len = SelectItemParamInfo::PARAMED_FIELD_BUF_LEN;
   ObSEArray<TraverseStackFrame, 64> stack_frames;
-  bool enable_modify_null_name = false;
+  const bool enable_modify_null_name = true;
 
   if (T_PROJECT_STRING != tree->type_ || OB_ISNULL(tree->children_) || tree->num_child_ <= 0) {
     ret = OB_INVALID_ARGUMENT;
@@ -2438,9 +2434,6 @@ int ObSqlParameterization::get_select_item_param_info(const common::ObIArray<ObP
   // MySQL sets the alias of standalone null value("\N","null"...) to "NULL" during projection.
   if (OB_FAIL(ret)) {
     // do nothing
-  } else if (OB_FAIL(session.check_feature_enable(ObCompatFeatureType::PROJECT_NULL,
-                                                  enable_modify_null_name))) {
-    LOG_WARN("failed to check feature enable", K(ret));
   } else if (1 == param_info.params_idx_.count() &&
              0 == ObString(param_info.name_len_, param_info.paramed_field_name_).compare("?") &&
              enable_modify_null_name) {

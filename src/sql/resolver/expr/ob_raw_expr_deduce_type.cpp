@@ -1730,11 +1730,10 @@ int ObRawExprDeduceType::visit(ObAggFunRawExpr &expr)
               if (from_type != to_type) {
                 result_type.set_type(to_type);
               }
-              enum ObCompatibilityMode compat_mode = MYSQL_MODE;
               result_type.set_scale(
-                  ObAccuracy::DDL_DEFAULT_ACCURACY2[compat_mode][to_type].get_scale());
+                  ObAccuracy::DDL_DEFAULT_ACCURACY2[0][to_type].get_scale());
               result_type.set_precision(
-                  ObAccuracy::DDL_DEFAULT_ACCURACY2[compat_mode][to_type].get_precision());
+                  ObAccuracy::DDL_DEFAULT_ACCURACY2[0][to_type].get_precision());
               expr.set_result_type(result_type);
               ObCastMode def_cast_mode = CM_NONE;
               result_type.set_calc_type(result_type.get_type());
@@ -1816,9 +1815,9 @@ int ObRawExprDeduceType::visit(ObAggFunRawExpr &expr)
         } else {
           result_type.set_type(ObNumberType);
           result_type.set_scale(
-            ObAccuracy::DDL_DEFAULT_ACCURACY2[MYSQL_MODE][ObNumberType].get_scale());
+            ObAccuracy::DDL_DEFAULT_ACCURACY2[0][ObNumberType].get_scale());
           result_type.set_precision(
-            ObAccuracy::DDL_DEFAULT_ACCURACY2[MYSQL_MODE][ObNumberType].get_precision());
+            ObAccuracy::DDL_DEFAULT_ACCURACY2[0][ObNumberType].get_precision());
           expr.set_result_type(result_type);
           //group-related rank comparison is special, new engine needs separate cast determination
           ObCastMode def_cast_mode = CM_NONE;
@@ -1950,7 +1949,7 @@ int ObRawExprDeduceType::visit(ObAggFunRawExpr &expr)
         ObPrecision child_prec = expr.get_param_expr(0)->get_result_type().get_precision();
         if (child_prec == PRECISION_UNKNOWN_YET) {
           // unknown precision, use default precision
-          child_prec = ObAccuracy::DDL_DEFAULT_ACCURACY2[MYSQL_MODE][child_type].get_precision();
+          child_prec = ObAccuracy::DDL_DEFAULT_ACCURACY2[0][child_type].get_precision();
         }
         result_type.set_calc_precision(child_prec);
       }
@@ -2026,11 +2025,10 @@ int ObRawExprDeduceType::add_median_percentile_implicit_cast(ObAggFunRawExpr &ex
     res_type.set_calc_accuracy(res_type.get_accuracy());
     ObExprResType res_number_type;
     res_number_type.set_number();
-    enum ObCompatibilityMode compat_mode = MYSQL_MODE;
     res_number_type.set_scale(
-        ObAccuracy::DDL_DEFAULT_ACCURACY2[compat_mode][ObNumberType].get_scale());
+        ObAccuracy::DDL_DEFAULT_ACCURACY2[0][ObNumberType].get_scale());
     res_number_type.set_precision(
-        ObAccuracy::DDL_DEFAULT_ACCURACY2[compat_mode][ObNumberType].get_precision());
+        ObAccuracy::DDL_DEFAULT_ACCURACY2[0][ObNumberType].get_precision());
     res_number_type.set_calc_meta(res_number_type.get_obj_meta());
     res_number_type.set_calc_accuracy(res_number_type.get_accuracy());
     const int64_t cast_order_idx = expr.get_real_param_count();//order item expr pos
@@ -2446,7 +2444,7 @@ int ObRawExprDeduceType::visit(ObWinFunRawExpr &expr)
 {
   int ret = OB_SUCCESS;
   ObRawExprResType result_number_type;
-  result_number_type.set_accuracy(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][ObNumberType]);
+  result_number_type.set_accuracy(ObAccuracy::MAX_ACCURACY2[0][ObNumberType]);
   result_number_type.set_number();
 
   common::ObIArray<ObRawExpr *> &func_params = expr.get_func_params();
@@ -3120,9 +3118,9 @@ int ObRawExprDeduceType::set_agg_regr_result_type(ObAggFunRawExpr &expr, ObExprR
     } else {
       result_type.set_type(to_type);
       result_type.set_scale(
-        ObAccuracy::DDL_DEFAULT_ACCURACY2[MYSQL_MODE][to_type].get_scale());
+        ObAccuracy::DDL_DEFAULT_ACCURACY2[0][to_type].get_scale());
       result_type.set_precision(
-        ObAccuracy::DDL_DEFAULT_ACCURACY2[MYSQL_MODE][to_type].get_precision());
+        ObAccuracy::DDL_DEFAULT_ACCURACY2[0][to_type].get_precision());
       expr.set_result_type(result_type);
     }
     }

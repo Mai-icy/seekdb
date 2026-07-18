@@ -243,10 +243,8 @@ int ObTxReplayExecutor::try_get_tx_ctx_()
       ObTxCreateArg arg(true, /* for_replay */
                         TxCtxSource::REPLAY,
                         tx_id,
-                        log_block_.get_header().get_org_cluster_id(),
                         cluster_version,
                         0, /*session_id*/
-                        0, /*client_sid*/
                         0, /*associated_session_id*/
                         INT64_MAX,         /*trans_expired_time_*/
                         ls_tx_srv_->get_trans_service());

@@ -190,7 +190,6 @@ int TestDDLOperator::create_tenant(const char *tenant_name, uint64_t &tenant_id)
     tenant_schema.set_tenant_name(tenant_name);
     tenant_schema.set_comment("this is a test tenant");
     tenant_schema.add_zone("test");
-    tenant_schema.set_compatibility_mode(ObCompatibilityMode::MYSQL_MODE);
   }
 
   if (OB_SUCC(ret)) {

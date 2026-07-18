@@ -77,10 +77,8 @@ int ObDBMSSchedJobExecutor::init_session(
   const bool print_info_log = true;
   const bool is_sys_tenant = true;
   ObPCMemPctConf pc_mem_conf;
-  ObObj compatibility_mode;
   ObObj sql_mode;
   {
-    compatibility_mode.set_int(0);
     sql_mode.set_uint(ObUInt64Type, DEFAULT_MYSQL_MODE);
   }
   OX (session.set_inner_session());
@@ -89,7 +87,6 @@ int ObDBMSSchedJobExecutor::init_session(
   OZ (session.init_tenant(tenant_name.ptr()));
   OZ (session.load_all_sys_vars(schema_guard));
   OZ (session.update_sys_variable(share::SYS_VAR_SQL_MODE, sql_mode));
-  OZ (session.update_sys_variable(share::SYS_VAR_OB_COMPATIBILITY_MODE, compatibility_mode));
   OZ (session.set_default_database(database_name));
   OZ (session.get_pc_mem_conf(pc_mem_conf));
   CK (OB_NOT_NULL(GCTX.sql_engine_));
@@ -181,8 +178,7 @@ int ObDBMSSchedJobExecutor::create_session(
     LOG_WARN("session_mgr_ is null", KR(ret));
   } else if (OB_FAIL(GCTX.session_mgr_->create_sessid(sid))) {
     LOG_WARN("alloc session id failed", KR(ret));
-  } else if (OB_FAIL(GCTX.session_mgr_->create_session(
-                sid, ObTimeUtility::current_time(), session_info))) {
+  } else if (OB_FAIL(GCTX.session_mgr_->create_session(sid, session_info))) {
     LOG_WARN("create session failed", K(ret), K(sid));
     session_info = NULL;
   } else if (OB_ISNULL(session_info)) {

@@ -1312,7 +1312,7 @@ int ObLSTabletService::replay_create_inner_tablet(
     LOG_WARN("fail to read tablet buf from disk", K(ret), K(disk_addr));
   } else if (OB_FAIL(tablet->deserialize_for_replay(allocator, buf, buf_len, pos))) {
     LOG_WARN("fail to deserialize tablet", K(ret), KP(buf), K(buf_len));
-  } else if (OB_FAIL(tablet->init_shared_params(key.tablet_id_, tablet->get_tablet_meta().compat_mode_))) {
+  } else if (OB_FAIL(tablet->init_shared_params(key.tablet_id_))) {
     LOG_WARN("fail to init shared params", K(ret), K(key));
   }
   return ret;
@@ -1358,8 +1358,7 @@ int ObLSTabletService::replay_create_tablet(
     } else if (OB_FAIL(tablet->deserialize_for_replay(allocator, buf, buf_len, pos))) {
       LOG_WARN("fail to deserialize tablet", K(ret), KP(buf), K(buf_len), K(pos));
     } else if (FALSE_IT(time_guard.click("Deserialize"))) {
-    } else if (OB_FAIL(tablet->init_shared_params(tablet_id,
-                                                  tablet->get_tablet_meta().compat_mode_))) {
+    } else if (OB_FAIL(tablet->init_shared_params(tablet_id))) {
       LOG_WARN("failed to init shared params", K(ret), K(tablet_id));
     } else if (OB_FAIL(tablet_id_set_.set(tablet_id))) {
       LOG_WARN("fail to set tablet id set", K(ret), K(tablet_id));
@@ -1527,7 +1526,6 @@ int ObLSTabletService::create_tablet(
     const share::SCN &create_scn,
     const int64_t snapshot_version,
     const ObCreateTabletSchema &create_tablet_schema,
-    const lib::Worker::CompatMode &compat_mode,
     const bool need_create_empty_major_sstable,
     const share::SCN &clog_checkpoint_scn,
     const share::SCN &mds_checkpoint_scn,
@@ -5529,7 +5527,6 @@ int ObLSTabletService::create_ls_inner_tablet(
   } else if (OB_UNLIKELY(!tablet_id.is_valid())
       || OB_UNLIKELY(!major_frozen_scn.is_valid())
       || OB_UNLIKELY(!create_tablet_schema.is_valid())
-      || OB_UNLIKELY(lib::Worker::CompatMode::INVALID == create_tablet_schema.get_compat_mode())
       || OB_UNLIKELY(!create_scn.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid args", K(ret), K(tablet_id), K(major_frozen_scn),

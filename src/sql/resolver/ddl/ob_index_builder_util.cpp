@@ -737,7 +737,6 @@ int ObIndexBuilderUtil::adjust_ordinary_index_column_args(
   int ret = OB_SUCCESS;
   ObIArray<ObColumnSortItem> &sort_items = arg.index_columns_;
   ObArray<ObColumnSortItem> new_sort_items;
-  lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
   for (int64_t i = 0; OB_SUCC(ret) && i < sort_items.count(); ++i) {
     int64_t old_cnt = data_schema.get_column_count();
     ObColumnSortItem new_sort_item = sort_items.at(i);
@@ -813,20 +812,18 @@ int ObIndexBuilderUtil::adjust_ordinary_index_column_args(
             LOG_WARN("build generated column expr failed", K(ret));
           } else if (!expr->is_column_ref_expr()) {
             //real index expr, so generate hidden generated column in data table schema
-            if (lib::Worker::CompatMode::MYSQL == compat_mode) {
-              if (ob_is_geometry(expr->get_result_type().get_type())) {
-                ret = OB_ERR_SPATIAL_FUNCTIONAL_INDEX;
-                LOG_WARN("Spatial functional index is not supported.", K(ret));
-              } else if (ob_is_json_tc(expr->get_result_type().get_type())) {
-                ret = OB_ERR_FUNCTIONAL_INDEX_ON_JSON_OR_GEOMETRY_FUNCTION;
-                LOG_WARN("Cannot create a functional index on an expression that returns a JSON or GEOMETRY.",K(ret));
-              } else if (ob_is_collection_sql_type(expr->get_result_type().get_type())) {
-                ret = OB_ERR_FUNCTIONAL_INDEX_ON_FIELD;
-                LOG_WARN("Cannot create a functional index on an expression that returns a ARRAY.",K(ret));
-              } else if (ob_is_text_tc(expr->get_result_type().get_type())) {
-                ret = OB_ERR_FUNCTIONAL_INDEX_ON_LOB;
-                LOG_WARN("Cannot create a functional index on an expression that returns a BLOB or TEXT.", K(ret));
-              }
+            if (ob_is_geometry(expr->get_result_type().get_type())) {
+              ret = OB_ERR_SPATIAL_FUNCTIONAL_INDEX;
+              LOG_WARN("Spatial functional index is not supported.", K(ret));
+            } else if (ob_is_json_tc(expr->get_result_type().get_type())) {
+              ret = OB_ERR_FUNCTIONAL_INDEX_ON_JSON_OR_GEOMETRY_FUNCTION;
+              LOG_WARN("Cannot create a functional index on an expression that returns a JSON or GEOMETRY.",K(ret));
+            } else if (ob_is_collection_sql_type(expr->get_result_type().get_type())) {
+              ret = OB_ERR_FUNCTIONAL_INDEX_ON_FIELD;
+              LOG_WARN("Cannot create a functional index on an expression that returns a ARRAY.",K(ret));
+            } else if (ob_is_text_tc(expr->get_result_type().get_type())) {
+              ret = OB_ERR_FUNCTIONAL_INDEX_ON_LOB;
+              LOG_WARN("Cannot create a functional index on an expression that returns a BLOB or TEXT.", K(ret));
             }
             if (OB_FAIL(ret)) {
             } else if (OB_ISNULL(GCTX.schema_service_)) {
@@ -844,7 +841,7 @@ int ObIndexBuilderUtil::adjust_ordinary_index_column_args(
               new_sort_item.column_name_ = gen_col->get_column_name_str();
               new_sort_item.is_func_index_ = false;
             }
-            if (OB_SUCC(ret) && lib::Worker::CompatMode::MYSQL == compat_mode) {
+            if (OB_SUCC(ret)) {
               ObSEArray<ObRawExpr*, 4> dep_columns;
               if (OB_FAIL(ObRawExprUtils::extract_column_exprs(expr, dep_columns))) {
                 LOG_WARN("extract column exprs failed", K(ret), K(expr));

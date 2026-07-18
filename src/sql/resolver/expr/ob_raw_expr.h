@@ -5180,7 +5180,6 @@ private:
 //   T_PDML_PARTITION_ID: carry partition id of row to above PDML operators.
 //   T_PSEUDO_GROUP_ID: carry the batch group id for DAS batch rescan.
 //   T_INNER_AGGR_CODE: carry aggregate code for 3-stage aggregation.
-//   T_PSEUDO_ROLLUP_ID: carry aggregate code for rollup distributor and collector.
 class ObOpPseudoColumnRawExpr : public ObTerminalRawExpr
 {
 public:

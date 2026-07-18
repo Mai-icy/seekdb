@@ -12422,7 +12422,7 @@ int ObTransformUtils::check_is_json_constraint(ObTransformerCtx *ctx,
           const ObJtColBaseInfo& info = *table->json_table_def_->all_cols_.at(i);
           const ObString& cur_column_name = info.col_name_;
           if (info.col_type_ == static_cast<int32_t>(COL_TYPE_QUERY)) {
-            if (ObCharset::case_compat_mode_equal(cur_column_name, col_item.column_name_)) {
+            if (ObCharset::case_insensitive_equal(cur_column_name, col_item.column_name_)) {
               is_json = true;
               break;
             }

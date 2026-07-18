@@ -1083,7 +1083,6 @@ int ObLoadDataSPImpl::exec_insert(ObInsertTask &task, ObInsertResult& result)
 
   if (OB_SUCC(ret) && OB_FAIL(GCTX.sql_proxy_->write(sql_str.string(),
                                                      affected_rows,
-                                                     get_compatibility_mode(),
                                                      &param))) {
     LOG_WARN("fail to exec insert remote", K(ret), "task_id", task.task_id_);
   }

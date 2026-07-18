@@ -217,8 +217,7 @@ OB_STMT_TYPE_DEF_UNKNOWN_AT(T_DIAGNOSTICS, no_priv_needed, 233)
 OB_STMT_TYPE_DEF(T_SHOW_QUERY_RESPONSE_TIME, err_stmt_type_priv, 236, ACTION_TYPE_ALTER_USER)
 OB_STMT_TYPE_DEF_UNKNOWN_AT(T_SHOW_PROFILE, err_stmt_type_priv, 237)
 
-OB_STMT_TYPE_DEF_UNKNOWN_AT(T_ENABLE_SQL_THROTTLE, no_priv_needed, 250)
-OB_STMT_TYPE_DEF_UNKNOWN_AT(T_DISABLE_SQL_THROTTLE, no_priv_needed, 251)
+// 250-251: SQL throttling abandoned, ids reserved
 // 252: T_BACKUP_SET_ENCRYPTION abandoned, id reserved
 // 253: T_BACKUP_SET_DECRYPTION abandoned, id reserved
 

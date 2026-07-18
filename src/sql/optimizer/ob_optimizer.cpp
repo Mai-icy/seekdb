@@ -831,7 +831,7 @@ int ObOptimizer::extract_opt_ctx_basic_flags(const ObDMLStmt &stmt, ObSQLSession
     LOG_WARN("failed to get das batch rescan flag", K(ret));
   } else {
     ctx_.init_batch_rescan_flags(enable_use_batch_nlj, enable_spf_batch_rescan,
-      query_ctx->optimizer_features_enable_version_, das_batch_rescan_flag);
+      das_batch_rescan_flag);
     ctx_.set_storage_estimation_enabled(storage_estimation_enabled);
     ctx_.set_serial_set_order(force_serial_set_order);
     ctx_.set_has_var_assign(has_var_assign);

@@ -1451,8 +1451,6 @@ int ObVectorIndexDag::init(ObPluginVectorIndexMgr *mgr, ObPluginVectorIndexTaskC
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", KR(ret), KP(mgr), KP(task_ctx));
   } else {
-    compat_mode_ = lib::Worker::CompatMode::MYSQL; // only support mysql now
-
     param_.table_id_ = task_ctx->index_table_id_;
     param_.tablet_id_ = task_ctx->index_tablet_id_;
     param_.task_ctx_ = task_ctx;

@@ -277,7 +277,6 @@ int ObTablet::init_for_first_time_creation(
     const share::ObForkTabletInfo &fork_info)
 {
   int ret = OB_SUCCESS;
-  const lib::Worker::CompatMode compat_mode = create_tablet_schema.get_compat_mode();
   const int64_t default_max_sync_medium_scn = 0;
   ObTableHandleV2 table_handle;
   bool is_table_row_store = false;
@@ -292,25 +291,24 @@ int ObTablet::init_for_first_time_creation(
       //|| OB_UNLIKELY(create_scn <= OB_INVALID_TIMESTAMP)
       || OB_UNLIKELY(OB_INVALID_VERSION == snapshot_version)
       || OB_UNLIKELY(!create_tablet_schema.is_valid())
-      || OB_UNLIKELY(lib::Worker::CompatMode::INVALID == compat_mode)
       || OB_ISNULL(freezer)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid args", K(ret), K(tablet_id), K(data_tablet_id),
-        K(create_scn), K(snapshot_version), K(create_tablet_schema), K(compat_mode), KP(freezer));
+        K(create_scn), K(snapshot_version), K(create_tablet_schema), KP(freezer));
   } else if (OB_UNLIKELY(!pointer_hdl_.is_valid())
       || OB_ISNULL(log_handler_)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("tablet pointer handle is invalid", K(ret), K_(pointer_hdl), K_(log_handler));
   } else if (!need_create_empty_major_sstable && FALSE_IT(table_store_flag.set_without_major_sstable())) {
   } else if (FALSE_IT(table_store_flag.set_is_user_data_table(create_tablet_schema.is_user_data_table()))) {
-  } else if (OB_FAIL(init_shared_params(tablet_id, compat_mode))) {
-    LOG_WARN("failed to init shared params", K(ret), K(tablet_id), K(compat_mode), KP(freezer));
+  } else if (OB_FAIL(init_shared_params(tablet_id))) {
+    LOG_WARN("failed to init shared params", K(ret), K(tablet_id), KP(freezer));
   } else if (OB_FAIL(tablet_meta_.init(tablet_id, data_tablet_id,
-      create_scn, snapshot_version, compat_mode, table_store_flag, create_tablet_schema.get_schema_version()/*create_schema_version*/,
+      create_scn, snapshot_version, table_store_flag, create_tablet_schema.get_schema_version()/*create_schema_version*/,
       clog_checkpoint_scn, mds_checkpoint_scn, micro_index_clustered,
       false/*has_truncate_info*/, fork_info))) {
     LOG_WARN("failed to init tablet meta", K(ret), K(tablet_id), K(data_tablet_id),
-        K(create_scn), K(snapshot_version), K(compat_mode), K(table_store_flag));
+        K(create_scn), K(snapshot_version), K(table_store_flag));
   } else if (OB_FAIL(pull_memtables(allocator))) {
     LOG_WARN("fail to pull memtable", K(ret));
   } else {
@@ -2158,7 +2156,6 @@ int ObTablet::deserialize_meta_v1(
   } else if (OB_FAIL(serialization::decode_i32(buf, len, new_pos, &tablet_meta_.length_))) {
     LOG_WARN("failed to deserialize tablet meta's length", K(ret), K(len), K(new_pos));
   } else if (tablet_meta_.TABLET_META_VERSION == tablet_meta_.version_) {
-    int8_t compat_mode = -1;
     tablet_meta_.ddl_execution_id_ = 0;
     if (OB_UNLIKELY(tablet_meta_.length_ > len - pos)) {
       ret = OB_ERR_UNEXPECTED;
@@ -2183,8 +2180,6 @@ int ObTablet::deserialize_meta_v1(
       LOG_WARN("failed to deserialize snapshot version", K(ret), K(len));
     } else if (new_pos - pos < tablet_meta_.length_ && OB_FAIL(serialization::decode_i64(buf, len, new_pos, &tablet_meta_.multi_version_start_))) {
       LOG_WARN("failed to deserialize multi version start", K(ret), K(len));
-    } else if (new_pos - pos < tablet_meta_.length_ && OB_FAIL(serialization::decode_i8(buf, len, new_pos, &compat_mode))) {
-      LOG_WARN("failed to deserialize compat mode", K(ret), K(len), K(new_pos));
     } else if (new_pos - pos < tablet_meta_.length_ && OB_FAIL(auto_inc_seq.deserialize(allocator, buf, len, new_pos))) { // get autoinc seq
       LOG_WARN("failed to deserialize auto inc seq", K(ret), K(len), K(new_pos));
     } else if (new_pos - pos < tablet_meta_.length_ && OB_FAIL(tablet_meta_.restore_state_.deserialize(buf, len, new_pos))) {
@@ -2218,7 +2213,6 @@ int ObTablet::deserialize_meta_v1(
       LOG_WARN("tablet's length doesn't match standard length", K(ret), K(new_pos), K(pos), K_(tablet_meta_.length));
     } else {
       pos = new_pos;
-      tablet_meta_.compat_mode_ = static_cast<lib::Worker::CompatMode>(compat_mode);
       tablet_meta_.is_inited_ = true;
     }
   } else {
@@ -4720,9 +4714,7 @@ int ObTablet::get_ddl_kv_mgr(ObDDLKvMgrHandle &ddl_kv_mgr_handle, bool try_creat
   return ret;
 }
 
-int ObTablet::init_shared_params(
-    const common::ObTabletID &tablet_id,
-    const lib::Worker::CompatMode compat_mode)
+int ObTablet::init_shared_params(const common::ObTabletID &tablet_id)
 {
   int ret = OB_SUCCESS;
   ObProtectedMemtableMgrHandle *protected_handle = NULL;
@@ -4746,7 +4738,6 @@ int ObTablet::init_shared_params(
     } else if (OB_FAIL(protected_handle->init(tablet_id,
                                                0 /* max_saved_schema_version */,
                                                0 /* max_saved_medium_scn */,
-                                               compat_mode,
                                                ls->get_log_handler(),
                                                ls->get_freezer(),
                                                share::g_mp->tenant_meta_mem_mgr()))) {

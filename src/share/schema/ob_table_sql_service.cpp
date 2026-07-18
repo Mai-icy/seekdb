@@ -2896,7 +2896,6 @@ int ObTableSqlService::gen_table_dml_without_check(
       || OB_FAIL(dml.add_column("index_column_num", table.get_index_column_num()))
       || OB_FAIL(dml.add_column("max_used_column_id", table.get_max_used_column_id()))
       || OB_FAIL(dml.add_column("session_id", table.get_session_id()))
-      || OB_FAIL(dml.add_column("sess_active_time", table.get_sess_active_time()))
       //|| OB_FAIL(dml.add_column("create_host", table.get_create_host()))
       || OB_FAIL(dml.add_column("tablet_size", table.get_tablet_size()))
       || OB_FAIL(dml.add_column("pctfree", table.get_pctfree()))
@@ -3855,7 +3854,6 @@ int ObTableSqlService::update_tablegroup(ObSchemaGetterGuard &schema_guard,
 
 int ObTableSqlService::gen_column_dml_without_check(
     const ObColumnSchemaV2 &column,
-    const lib::Worker::CompatMode compat_mode,
     share::ObDMLSqlSplicer &dml)
 {
   int ret = OB_SUCCESS;
@@ -3914,7 +3912,7 @@ int ObTableSqlService::gen_column_dml_without_check(
         orig_default_value.assign_ptr(orig_default_value_buf, static_cast<int32_t>(orig_default_value_len));
         cur_default_value.assign_ptr(cur_default_value_buf, static_cast<int32_t>(cur_default_value_len));
       }
-      LOG_TRACE("begin gen_column_dml", K(ret), K(compat_mode), K(orig_default_value), K(cur_default_value),  K(orig_default_value_len), K(cur_default_value_len));
+      LOG_TRACE("begin gen_column_dml", K(ret), K(orig_default_value), K(cur_default_value), K(orig_default_value_len), K(cur_default_value_len));
     }
   }
   LOG_TRACE("begin gen_column_dml", K(ret), K(orig_default_value), K(cur_default_value), K(column));
@@ -3989,9 +3987,8 @@ int ObTableSqlService::gen_column_dml(
     ObDMLSqlSplicer &dml)
 {
   int ret = OB_SUCCESS;
-  lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
-  if (OB_FAIL(gen_column_dml_without_check(column, compat_mode, dml))) {
-    LOG_WARN("failed to gen_column_dml_without_check", KR(ret), K(compat_mode));
+  if (OB_FAIL(gen_column_dml_without_check(column, dml))) {
+    LOG_WARN("failed to gen_column_dml_without_check", KR(ret));
   }
   LOG_DEBUG("gen column dml", K(column.get_table_id()), K(column.get_column_id()),
             K(column.is_nullable()), K(column.get_stored_column_flags()), K(column.get_column_flags()));

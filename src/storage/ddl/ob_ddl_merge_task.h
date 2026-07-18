@@ -64,8 +64,6 @@ public:
 
   virtual int fill_dag_key(char *buf, const int64_t buf_len) const override;
   virtual bool ignore_warning() override;
-  virtual lib::Worker::CompatMode get_compat_mode() const override
-  { return lib::Worker::CompatMode::MYSQL; } // TODO@wenqu: confirm it
   virtual bool is_ha_dag() const override { return false; }
 private:
   int check_allow_major_merge();

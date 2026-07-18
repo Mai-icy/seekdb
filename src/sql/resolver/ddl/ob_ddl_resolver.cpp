@@ -1087,7 +1087,6 @@ int ObDDLResolver::resolve_table_option(const ParseNode *option_node, const bool
   } else {
     database_name = database_name_;
   }
-  CHECK_COMPATIBILITY_MODE(session_info_);
   if (OB_FAIL(ret)) {
     //do nothing
   } else if (OB_FAIL(schema_checker_->get_database_id(database_name, database_id)))  {
@@ -4890,7 +4889,6 @@ int ObDDLResolver::init_empty_session(const common::ObTimeZoneInfoWrap &tz_info_
     ddl_info.set_ddl_check_default_value(true);
     empty_session.set_ddl_info(ddl_info);
     empty_session.set_nls_formats(nls_formats);
-    empty_session.set_compatibility_mode(ObCompatibilityMode::MYSQL_MODE);
     empty_session.set_sql_mode(sql_mode);
     empty_session.set_default_database(db_schema->get_database_name_str());
     empty_session.set_database_id(table_schema.get_database_id());
@@ -5259,7 +5257,6 @@ int ObDDLResolver::calc_default_value(share::schema::ObColumnSchemaV2 &column,
       } else if (OB_FAIL(empty_session.set_tz_info_wrap(tz_info_wrap))) {
         LOG_WARN("fail to set set_tz_info_wrap", K(ret));
       } else if (FALSE_IT(empty_session.set_nls_formats(nls_formats))) {
-      } else if (FALSE_IT(empty_session.set_compatibility_mode(ObCompatibilityMode::MYSQL_MODE))) {
       } else if (FALSE_IT(empty_session.set_sql_mode(DEFAULT_MYSQL_MODE))) {
       } else if (FALSE_IT(empty_session.set_ddl_info(ddl_info))) {
         LOG_WARN("fail to set ddl_info", K(ret));

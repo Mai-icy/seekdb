@@ -584,8 +584,6 @@ int ObExecContext::check_status()
     ObInterruptCode &ic = GET_INTERRUPT_CODE();
     ret = ic.code_;
     LOG_WARN("px execution was interrupted", K(ic), K(ret));
-  } else if (lib::Worker::WS_OUT_OF_THROTTLE == THIS_WORKER.check_wait()) {
-    ret = OB_KILLED_BY_THROTTLING;
   } else if (OB_UNLIKELY((OB_SUCCESS != (ret = CHECK_MEM_STATUS())))) {
     LOG_WARN("Exceeded memory usage limit", K(ret));
   }
@@ -622,8 +620,6 @@ int ObExecContext::check_status_ignore_interrupt()
     LOG_WARN("session info is null", K(ret));
   } else if (my_session_->is_terminate(ret)){
     LOG_WARN("execution was terminated", K(ret));
-  } else if (lib::Worker::WS_OUT_OF_THROTTLE == THIS_WORKER.check_wait()) {
-    ret = OB_KILLED_BY_THROTTLING;
   }
   int tmp_ret = OB_SUCCESS;
   if (OB_SUCCESS != (tmp_ret = check_extra_status())) {
@@ -842,9 +838,7 @@ int ObExecContext::init_physical_plan_ctx(const ObPhysicalPlan &plan)
     }
     if (OB_SUCC(ret)) {
       if (stmt::T_SELECT == plan.get_stmt_type()) { // select has weak
-        if (sql_ctx_->is_protocol_weak_read_) {
-          consistency = WEAK;
-        } else if (OB_UNLIKELY(phy_plan_hint.read_consistency_ != INVALID_CONSISTENCY)) {
+        if (OB_UNLIKELY(phy_plan_hint.read_consistency_ != INVALID_CONSISTENCY)) {
           consistency = phy_plan_hint.read_consistency_;
         } else {
           consistency = my_session_->get_consistency_level();

@@ -78,11 +78,10 @@ int ObAlterTableResolver::resolve(const ParseNode &parse_tree)
       SQL_RESV_LOG(WARN, "failed to set_nls_formats", K(ret));
     } else if (OB_FAIL(alter_table_stmt->fill_session_vars(*session_info_))) {
       SQL_RESV_LOG(WARN, "failed to init local session vars with session", K(ret));
-    } else if (OB_FAIL(alter_table_stmt->set_lock_priority(session_info_))) {
-      SQL_RESV_LOG(WARN, "set lock priority failed", K(ret));
     } else {
-      alter_table_stmt->set_client_session_info(session_info_->get_client_sid(),
-                                                session_info_->get_client_create_time());
+      alter_table_stmt->set_lock_priority();
+      alter_table_stmt->set_lock_session_info(session_info_->get_server_sid(),
+                                              session_info_->get_sess_create_time());
       stmt_ = alter_table_stmt;
     }
     //resolve table
@@ -1363,7 +1362,6 @@ int ObAlterTableResolver::resolve_add_index(const ParseNode &node)
     ParseNode *table_option_node = nullptr;
     ParseNode *index_partition_option = nullptr;
     bool is_index_part_specified = false;
-    CHECK_COMPATIBILITY_MODE(session_info_);
     if (OB_FAIL(ret)) {
     } else {
       // mysql mode
@@ -4174,7 +4172,6 @@ int ObAlterTableResolver::resolve_alter_table_column_definition(AlterColumnSchem
   // }
   if (OB_SUCC(ret)) {
     ParseNode *pos_node = NULL;
-    CHECK_COMPATIBILITY_MODE(session_info_);
     if (OB_UNLIKELY(GEN_COLUMN_DEFINITION_NUM_CHILD == node->num_child_)) {
     // generated column with pos_column
       pos_node = node->children_[5];

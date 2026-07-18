@@ -395,15 +395,6 @@ static const _error _error_OB_NOT_MASTER = {
       .str_error             = "The seekdb or zone is not the master",
       .str_user_error        = "The seekdb or zone is not the master"
 };
-static const _error _error_OB_KILLED_BY_THROTTLING = {
-      .error_name            = "OB_KILLED_BY_THROTTLING",
-      .error_cause           = "Internal Error",
-      .error_solution        = "Contact OceanBase Support",
-      .mysql_errno           = -1,
-      .sqlstate              = "HY000",
-      .str_error             = "Request has killed by sql throttle",
-      .str_user_error        = "Request has killed by sql throttle"
-};
 static const _error _error_OB_DECRYPT_FAILED = {
       .error_name            = "OB_DECRYPT_FAILED",
       .error_cause           = "Internal Error",
@@ -3265,24 +3256,6 @@ static const _error _error_OB_AUTOINC_CACHE_NOT_EQUAL = {
       .sqlstate              = "HY000",
       .str_error             = "Autoinc cache's autoinc version is not equal to request's autoinc version",
       .str_user_error        = "Autoinc cache's autoinc version is not equal to request's autoinc version"
-};
-static const _error _error_OB_ERR_KILL_CLIENT_SESSION = {
-      .error_name            = "OB_ERR_KILL_CLIENT_SESSION",
-      .error_cause           = "Internal Error",
-      .error_solution        = "Contact OceanBase Support",
-      .mysql_errno           = 4401,
-      .sqlstate              = "HY000",
-      .str_error             = "Client Session need be killed",
-      .str_user_error        = "Client Session need be killed"
-};
-static const _error _error_OB_ERR_KILL_CLIENT_SESSION_FAILED = {
-      .error_name            = "OB_ERR_KILL_CLIENT_SESSION_FAILED",
-      .error_cause           = "Internal Error",
-      .error_solution        = "Contact OceanBase Support",
-      .mysql_errno           = -1,
-      .sqlstate              = "HY000",
-      .str_error             = "Kill Client Session failed",
-      .str_user_error        = "Kill Client Session failed"
 };
 static const _error _error_OB_IMPROPER_OS_PARAM = {
       .error_name            = "OB_IMPROPER_OS_PARAM",
@@ -11131,15 +11104,6 @@ static const _error _error_OB_ERR_INVALID_PCTFREE_OR_PCTUSED_VALUE = {
       .sqlstate              = "HY000",
       .str_error             = "invalid value for PCTFREE or PCTUSED",
       .str_user_error        = "invalid value for PCTFREE or PCTUSED"
-};
-static const _error _error_OB_ERR_PROXY_REROUTE = {
-      .error_name            = "OB_ERR_PROXY_REROUTE",
-      .error_cause           = "Internal Error",
-      .error_solution        = "Contact OceanBase Support",
-      .mysql_errno           = -1,
-      .sqlstate              = "HY000",
-      .str_error             = "SQL request should be rerouted",
-      .str_user_error        = "SQL request should be rerouted"
 };
 static const _error _error_OB_ERR_ILLEGAL_ARGUMENT_FOR_FUNCTION = {
       .error_name            = "OB_ERR_ILLEGAL_ARGUMENT_FOR_FUNCTION",
@@ -21268,7 +21232,6 @@ struct ObStrErrorInit
     _errors[-OB_NEED_RETRY] = &_error_OB_NEED_RETRY;
     _errors[-OB_TOO_MANY_SSTABLE] = &_error_OB_TOO_MANY_SSTABLE;
     _errors[-OB_NOT_MASTER] = &_error_OB_NOT_MASTER;
-    _errors[-OB_KILLED_BY_THROTTLING] = &_error_OB_KILLED_BY_THROTTLING;
     _errors[-OB_DECRYPT_FAILED] = &_error_OB_DECRYPT_FAILED;
     _errors[-OB_USER_NOT_EXIST] = &_error_OB_USER_NOT_EXIST;
     _errors[-OB_PASSWORD_WRONG] = &_error_OB_PASSWORD_WRONG;
@@ -21587,8 +21550,6 @@ struct ObStrErrorInit
     _errors[-OB_INVALID_SUB_PARTITION_TYPE] = &_error_OB_INVALID_SUB_PARTITION_TYPE;
     _errors[-OB_ERR_UNEXPECTED_UNIT_STATUS] = &_error_OB_ERR_UNEXPECTED_UNIT_STATUS;
     _errors[-OB_AUTOINC_CACHE_NOT_EQUAL] = &_error_OB_AUTOINC_CACHE_NOT_EQUAL;
-    _errors[-OB_ERR_KILL_CLIENT_SESSION] = &_error_OB_ERR_KILL_CLIENT_SESSION;
-    _errors[-OB_ERR_KILL_CLIENT_SESSION_FAILED] = &_error_OB_ERR_KILL_CLIENT_SESSION_FAILED;
     _errors[-OB_IMPROPER_OS_PARAM] = &_error_OB_IMPROPER_OS_PARAM;
     _errors[-OB_IO_TIMEOUT] = &_error_OB_IO_TIMEOUT;
     _errors[-OB_MIGRATE_TX_DATA_NOT_CONTINUES] = &_error_OB_MIGRATE_TX_DATA_NOT_CONTINUES;
@@ -22461,7 +22422,6 @@ struct ObStrErrorInit
     _errors[-OB_ERR_INVALID_INITRANS_VALUE] = &_error_OB_ERR_INVALID_INITRANS_VALUE;
     _errors[-OB_ERR_INVALID_MAXTRANS_VALUE] = &_error_OB_ERR_INVALID_MAXTRANS_VALUE;
     _errors[-OB_ERR_INVALID_PCTFREE_OR_PCTUSED_VALUE] = &_error_OB_ERR_INVALID_PCTFREE_OR_PCTUSED_VALUE;
-    _errors[-OB_ERR_PROXY_REROUTE] = &_error_OB_ERR_PROXY_REROUTE;
     _errors[-OB_ERR_ILLEGAL_ARGUMENT_FOR_FUNCTION] = &_error_OB_ERR_ILLEGAL_ARGUMENT_FOR_FUNCTION;
     _errors[-OB_ERR_OPERATOR_CANNOT_BE_USED_WITH_LIST] = &_error_OB_ERR_OPERATOR_CANNOT_BE_USED_WITH_LIST;
     _errors[-OB_ERR_INVALID_SAMPLING_RANGE] = &_error_OB_ERR_INVALID_SAMPLING_RANGE;

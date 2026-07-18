@@ -1376,11 +1376,9 @@ int ObDDLStorageUtil::convert_to_storage_schema(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid args", K(ret), KP(table_schema));
   } else {
-    lib::Worker::CompatMode compat_mode;
-    if (FALSE_IT(compat_mode = lib::Worker::CompatMode::MYSQL)) {
-    } else if (OB_FAIL(ObTabletObjLoadHelper::alloc_and_new(allocator, storage_schema))) {
+    if (OB_FAIL(ObTabletObjLoadHelper::alloc_and_new(allocator, storage_schema))) {
       LOG_WARN("alloc and new failed", K(ret));
-    } else if (OB_FAIL(storage_schema->init(allocator, *table_schema, compat_mode))) {
+    } else if (OB_FAIL(storage_schema->init(allocator, *table_schema))) {
       LOG_WARN("failed to copy storage schema", K(ret));
     }
     if (OB_FAIL(ret)) {

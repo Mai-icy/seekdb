@@ -537,7 +537,6 @@ int ObStaticEngineCG::clear_all_exprs_specific_flag(
 }
 
 void ObStaticEngineCG::exprs_not_support_vectorize(const ObIArray<ObRawExpr *> &exprs,
-                                                   const bool need_return_lob_locator,
                                                    bool &found)
 {
   FOREACH_CNT_X(e, exprs, !found) {
@@ -3897,29 +3896,6 @@ int ObStaticEngineCG::generate_dml_tsc_ids(const ObOpSpec &spec, const ObLogical
   return ret;
 }
 
-int ObStaticEngineCG::check_rollup_distributor(ObPxTransmitSpec *spec)
-{
-  int ret = OB_SUCCESS;
-  if (spec->is_rollup_hybrid_) {
-    ObOpSpec *root = spec->get_child(0);
-    while (OB_NOT_NULL(root) && OB_SUCC(ret)) {
-      if (ObPhyOperatorType::PHY_MONITORING_DUMP == root->type_) {
-        root = root->get_child(0);
-      } else if (ObPhyOperatorType::PHY_MATERIAL == root->type_ ||
-                  ObPhyOperatorType::PHY_VEC_MATERIAL == root->type_) {
-        root = root->get_child(0);
-      } else if (ObPhyOperatorType::PHY_MERGE_GROUP_BY == root->type_
-        || ObPhyOperatorType::PHY_VEC_MERGE_GROUP_BY == root->type_) {
-        break;
-      } else {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected status: invalid operator type", K(ret), K(root->type_));
-      }
-    }
-  }
-  return ret;
-}
-
 int ObStaticEngineCG::generate_basic_transmit_spec(
   ObLogExchange &op, ObPxTransmitSpec &spec, const bool in_root_job)
 {
@@ -3959,11 +3935,9 @@ int ObStaticEngineCG::generate_basic_transmit_spec(
     spec.set_dfo_id(op.get_dfo_id());
     spec.set_slave_mapping_type(op.get_slave_mapping_type());
     spec.need_null_aware_shuffle_ = op.need_null_aware_shuffle();
-    spec.is_rollup_hybrid_ = op.is_rollup_hybrid();
     spec.is_wf_hybrid_ = op.is_wf_hybrid();
     spec.sample_type_ = op.get_sample_type();
     spec.repartition_table_id_ = op.get_repartition_table_id();
-    OZ(check_rollup_distributor(&spec));
     spec.use_rich_format_ &= op.support_rich_format_vectorize();
     LOG_TRACE("CG transmit", K(op.get_dfo_id()), K(op.get_op_id()),
               K(op.get_dist_method()), K(op.get_unmatch_row_dist_method()),
@@ -4683,7 +4657,6 @@ int ObStaticEngineCG::generate_spec(ObLogGroupBy &op, ObMergeGroupBySpec &spec,
     spec.by_pass_enabled_ = false;
     spec.llc_ndv_est_enabled_ = false;
     OZ(set_3stage_info(op, spec));
-    OZ(set_rollup_adaptive_info(op, spec));
     if (OB_FAIL(ret)) {
     } else if (OB_FAIL(generate_dist_aggr_group(op, spec))) {
       LOG_WARN("failed to generate distinct aggregate function duplicate columns", K(ret));
@@ -4764,52 +4737,6 @@ int ObStaticEngineCG::set_3stage_info(ObLogGroupBy &op, ObGroupBySpec &spec)
   int ret = OB_SUCCESS;
   spec.aggr_stage_ = op.get_aggr_stage();
   spec.aggr_code_idx_ = op.get_aggr_code_idx();
-  return ret;
-}
-
-int ObStaticEngineCG::set_rollup_adaptive_info(ObLogGroupBy &op, ObMergeGroupBySpec &spec)
-{
-  int ret = OB_SUCCESS;
-  spec.rollup_status_ = op.get_rollup_status();
-  spec.is_parallel_ = ObRollupStatus::ROLLUP_DISTRIBUTOR == spec.rollup_status_ ? true : false;
-  if (nullptr != op.get_rollup_id_expr()) {
-    OZ(generate_rt_expr(*op.get_rollup_id_expr(), spec.rollup_id_expr_));
-  }
-  if (OB_SUCC(ret) && 0 < op.get_inner_sort_keys().count()) {
-    ObIArray<OrderItem> &sork_keys = op.get_inner_sort_keys();
-    if (!op.has_encode_sort()) {
-      if (OB_FAIL(spec.sort_exprs_.init(sork_keys.count()))) {
-        LOG_WARN("failed to init all exprs", K(ret));
-      }
-    } else {
-      if (1 != op.get_inner_ecd_sort_keys().count()) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected status: encode sortkey expr more than one", K(ret), K(op.get_inner_ecd_sort_keys().count()));
-      } else {
-        ObExpr *encode_expr = nullptr;
-        OrderItem order_item = op.get_inner_ecd_sort_keys().at(0);
-        if (OB_FAIL(spec.sort_exprs_.init(1 + sork_keys.count()))) {
-          LOG_WARN("failed to init all exprs", K(ret));
-        } else if (OB_FAIL(generate_rt_expr(*order_item.expr_, encode_expr))) {
-          LOG_WARN("failed to generate rt expr", K(ret));
-        } else if (OB_FAIL(spec.sort_exprs_.push_back(encode_expr))) {
-          LOG_WARN("failed to push back expr", K(ret));
-        }
-      }
-    }
-
-    if (OB_FAIL(ret)) {
-      // do nothing
-    } else if (OB_FAIL(fill_sort_info(sork_keys, spec.sort_collations_, spec.sort_exprs_))) {
-      LOG_WARN("failed to sort info", K(ret));
-    } else if (OB_FAIL(fill_sort_funcs(
-        spec.sort_collations_, spec.sort_cmp_funcs_, spec.sort_exprs_))) {
-      LOG_WARN("failed to sort funcs", K(ret));
-    } else {
-      spec.enable_encode_sort_ = op.has_encode_sort();
-      LOG_TRACE("debug enable encode sort", K(op.has_encode_sort()));
-    }
-  }
   return ret;
 }
 
@@ -9170,8 +9097,7 @@ int ObStaticEngineCG::check_op_vectorization(ObLogicalOperator *op, ObSqlSchemaG
       disable_vectorize = true;
     }
     if (!disable_vectorize) {
-      const bool need_return_lob_locator = op->get_plan()->get_optimizer_context().get_session_info()->need_return_lob_locator();
-      exprs_not_support_vectorize(tsc->get_access_exprs(), need_return_lob_locator, disable_vectorize);
+      exprs_not_support_vectorize(tsc->get_access_exprs(), disable_vectorize);
     }
     if (OB_FAIL(ret)) {
     } else if (tsc->is_multivalue_index_scan()) {

@@ -165,7 +165,7 @@
 
 %token/*for hint*/
 // hint structure
-BEGIN_OUTLINE_DATA END_OUTLINE_DATA OPTIMIZER_FEATURES_ENABLE QB_NAME
+BEGIN_OUTLINE_DATA END_OUTLINE_DATA QB_NAME
 // global hint
 FROZEN_VERSION TOPK QUERY_TIMEOUT READ_CONSISTENCY LOG_LEVEL USE_PLAN_CACHE
 TRACE_LOG LOAD_BATCH_SIZE TRANS_PARAM OPT_PARAM OB_DDL_SCHEMA_VERSION FORCE_REFRESH_LOCATION_CACHE
@@ -509,7 +509,6 @@ END_P SET_VAR DELIMITER
 %type <node> dump_memory_stmt
 %type <node> create_savepoint_stmt rollback_savepoint_stmt release_savepoint_stmt
 %type <node> opt_qb_name opt_qb_name_list_with_quotes parallel_hint pq_set_hint_desc pq_subquery_hint_desc
-%type <node> opt_sql_throttle_for_priority opt_sql_throttle_using_cond sql_throttle_one_or_more_metrics sql_throttle_metric
 %type <node> get_format_unit
 %type <node> new_or_old new_or_old_column_ref diagnostics_info_ref
 %type <node> on_empty on_error json_on_response opt_returning_type opt_on_empty_or_error json_value_expr opt_ascii opt_truncate_clause
@@ -10148,10 +10147,6 @@ global_hint
 {
   malloc_terminal_node($$, result->malloc_pool_, T_END_OUTLINE_DATA);
 }
-| OPTIMIZER_FEATURES_ENABLE '(' STRING_VALUE ')'
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_OPTIMIZER_FEATURES_ENABLE, 1, $3);
-}
 | QB_NAME '(' qb_name_string ')'
 {
   malloc_non_terminal_node($$, result->malloc_pool_, T_QB_NAME, 1, $3);
@@ -17256,18 +17251,6 @@ alter_with_opt_hint SYSTEM UPGRADE VIRTUAL SCHEMA
   malloc_terminal_node($$, result->malloc_pool_, T_UPGRADE_VIRTUAL_SCHEMA);
 }
 |
-alter_with_opt_hint SYSTEM ENABLE SQL THROTTLE opt_sql_throttle_for_priority opt_sql_throttle_using_cond
-{
-  (void)($1);
-  malloc_non_terminal_node($$, result->malloc_pool_, T_ENABLE_SQL_THROTTLE, 2, $6, $7);
-}
-|
-alter_with_opt_hint SYSTEM DISABLE SQL THROTTLE
-{
-  (void)($1);
-  malloc_terminal_node($$, result->malloc_pool_, T_DISABLE_SQL_THROTTLE);
-}
-|
 alter_with_opt_hint DISKGROUP relation_name ADD DISK STRING_VALUE opt_disk_alias ip_port opt_zone_desc
 {
   (void)($1);
@@ -17417,18 +17400,6 @@ normal_relation_factor opt_key_or_index '(' name_list ')'
 }
 ;
 
-opt_sql_throttle_for_priority:
-FOR PRIORITY COMP_LE INTNUM
-{
-  $$ = $4;
-}
-|
-{
-
-  $$ = NULL;
-}
-;
-
 opt_table_list:
 normal_relation_factor
 {
@@ -17493,51 +17464,6 @@ EXTENDED
 { $$ = NULL; }
 ;
 
-
-opt_sql_throttle_using_cond:
-USING sql_throttle_one_or_more_metrics
-{
-  merge_nodes($$, result, T_SQL_THROTTLE_METRICS, $2);
-}
-;
-
-sql_throttle_one_or_more_metrics:
-sql_throttle_metric sql_throttle_one_or_more_metrics
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_LINK_NODE, 2, $1, $2);
-}
-| sql_throttle_metric
-{
-  $$ = $1;
-}
-;
-
-sql_throttle_metric:
-RT COMP_EQ int_or_decimal
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_RT, 1, $3);
-}
-| CPU COMP_EQ int_or_decimal
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_CPU, 1, $3);
-}
-| IO COMP_EQ INTNUM
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_IO, 1, $3);
-}
-| NETWORK COMP_EQ int_or_decimal
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_NETWORK, 1, $3);
-}
-| LOGICAL_READS COMP_EQ INTNUM
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_LOGICAL_READS, 1, $3);
-}
-| QUEUE_TIME COMP_EQ int_or_decimal
-{
-  malloc_non_terminal_node($$, result->malloc_pool_, T_QUEUE_TIME, 1, $3);
-}
-;
 
 opt_disk_alias:
 NAME opt_equal_mark relation_name_or_string

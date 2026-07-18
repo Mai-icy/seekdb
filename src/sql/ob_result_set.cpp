@@ -278,14 +278,6 @@ int ObResultSet::start_stmt()
     LOG_WARN("fail to get autocommit", K(ret));
   } else {
     bool in_trans = my_session_.get_in_transaction();
-    // 1. Regardless of whether it is within a transaction, as long as it is not a select and the plan is REMOTE, feedback to the client that it does not hit
-    // 2. feedback this misshit to obproxy (bug#6255177)
-    // 3. For multi-stmt, only feedback the first partition hit information to the client
-    // 4. Need to consider the retry situation, need to feedback to the client is the first successful partition hit.
-    if (OB_SUCC(ret) && stmt::T_SELECT != stmt_type_) {
-      my_session_.partition_hit().try_set_bool(
-          OB_PHY_PLAN_REMOTE != phy_plan->get_plan_type());
-    }
     if (OB_FAIL(ret)) {
       // do nothing
     } else if (ObSqlTransUtil::is_remote_trans(
@@ -854,12 +846,6 @@ int ObResultSet::do_close(int *client_ret)
     ret = ins_ret;
   }
 
-  if (OB_SUCC(ret)) {
-    if (!get_exec_context().get_das_ctx().is_partition_hit()) {
-      my_session_.partition_hit().try_set_bool(false);
-    }
-  }
-
   int prev_ret = ret;
   bool async = false; // for debug purpose
   if (OB_TRANS_XA_BRANCH_FAIL == ret) {
@@ -872,10 +858,6 @@ int ObResultSet::do_close(int *client_ret)
       my_session_.disassociate_xa();
     }
   } else if (OB_NOT_NULL(physical_plan_)) {
-    //Because of the async close result we need set the partition_hit flag
-    //to the call back param, than close the result.
-    //But the das framwork set the partition_hit after result is closed.
-    //So we need to set the partition info at here.
     if (is_end_trans_async()) {
       ObCurTraceId::TraceId *cur_trace_id = NULL;
       if (OB_ISNULL(cur_trace_id = ObCurTraceId::get_trace_id())) {
@@ -1106,9 +1088,7 @@ int ObResultSet::get_read_consistency(ObConsistencyLevel &consistency)
   } else {
     const ObPhyPlanHint &phy_hint = physical_plan_->get_phy_plan_hint();
     if (stmt::T_SELECT == stmt_type_) { // select has weak
-      if (exec_ctx_->get_sql_ctx()->is_protocol_weak_read_) {
-        consistency = WEAK;
-      } else if (OB_UNLIKELY(phy_hint.read_consistency_ != INVALID_CONSISTENCY)) {
+      if (OB_UNLIKELY(phy_hint.read_consistency_ != INVALID_CONSISTENCY)) {
         consistency = phy_hint.read_consistency_;
       } else {
         consistency = my_session_.get_consistency_level();
@@ -1428,7 +1408,7 @@ int ObResultSet::construct_display_field_name(common::ObField &field,
   int32_t buf_len = MAX_COLUMN_CHAR_LENGTH * 2;
   int32_t pos = 0;
   int32_t name_pos = 0;
-  bool enable_modify_null_name = false;
+  const bool enable_modify_null_name = true;
   if (!field.is_paramed_select_item_ || NULL == field.paramed_ctx_) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(field.is_paramed_select_item_), K(field.paramed_ctx_));
@@ -1436,9 +1416,6 @@ int ObResultSet::construct_display_field_name(common::ObField &field,
     // 1. Parameterized cname length is 0, indicating that column names are specified
     // 2. Specified an alias, the alias exists in cname_, use it directly
     // do nothing
-  } else if (OB_FAIL(my_session_.check_feature_enable(ObCompatFeatureType::PROJECT_NULL,
-                                                      enable_modify_null_name))) {
-    LOG_WARN("failed to check feature enable", K(ret));
   } else if (OB_ISNULL(buf = static_cast<char *>(get_mem_pool().alloc(buf_len)))) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("failed to allocate memory", K(ret), K(buf_len));
@@ -1553,11 +1530,8 @@ int ObResultSet::construct_display_field_name(common::ObField &field,
 }
 
 
-void ObResultSet::replace_lob_type(const ObSQLSessionInfo &session,
-                                  const ObField &field,
-                                  obmysql::ObMySQLField &mfield)
+void ObResultSet::replace_lob_type(obmysql::ObMySQLField &mfield)
 {
-  bool is_use_lob_locator = session.is_client_use_lob_locator();
   // mysql mode
   // issue: 52728955, 52735855, 52731784, 52734963, 52729976
   // compat mysql .net driver 5.7, longblob, json, gis length is max u32

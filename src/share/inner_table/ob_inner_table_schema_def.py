@@ -508,7 +508,6 @@ all_table_def = dict(
       ('partition_schema_version', 'int', 'true', '0'),
       ('session_id', 'int', 'true', '0'),
       ('pk_comment', 'varchar:MAX_TABLE_COMMENT_LENGTH', 'false', ''),
-      ('sess_active_time', 'int', 'true', '0'),
       ('row_store_type', 'varchar:OB_MAX_STORE_FORMAT_NAME_LENGTH', 'true', 'encoding_row_store'),
       ('store_format', 'varchar:OB_MAX_STORE_FORMAT_NAME_LENGTH', 'true', ''),
       ('duplicate_scope', 'int', 'true', '0'),
@@ -1405,7 +1404,6 @@ all_routine_def = dict(
       ('flag', 'int', 'false'),
       ('owner_id', 'int', 'false'),
       ('priv_user', 'varchar:OB_MAX_USER_NAME_LENGTH_STORE', 'true'),
-      ('comp_flag', 'int', 'true'),
       ('exec_env', 'varchar:OB_MAX_PROC_ENV_LENGTH', 'true'),
       ('routine_body', 'longtext', 'true'),
       ('comment', 'varchar:MAX_TENANT_COMMENT_LENGTH', 'true'),
@@ -1473,7 +1471,6 @@ all_package_def = dict(
       ('type', 'int', 'false'),
       ('flag', 'int', 'false'),
       ('owner_id', 'int', 'false'),
-      ('comp_flag', 'int', 'true'),
       ('exec_env', 'varchar:OB_MAX_PROC_ENV_LENGTH', 'true'),
       ('source', 'longtext', 'true'),
       ('comment', 'varchar:MAX_TENANT_COMMENT_LENGTH', 'true'),
@@ -1754,7 +1751,6 @@ all_trigger_def = dict(
     ('package_spec_source', 'varchar:OB_MAX_TRIGGER_BODY_LENGTH', 'true'),
     ('package_body_source', 'varchar:OB_MAX_TRIGGER_BODY_LENGTH', 'true'),
     ('package_flag', 'int', 'false'),
-    ('package_comp_flag', 'int', 'false'),
     ('package_exec_env', 'varchar:OB_MAX_PROC_ENV_LENGTH', 'true'),
     ('sql_mode', 'int', 'false'),
     ('trigger_priv_user', 'varchar:OB_MAX_USER_NAME_LENGTH_STORE', 'true'),
@@ -3180,23 +3176,7 @@ def_table_schema(
   ]
   )
 
-def_table_schema(
-  owner = 'yangyifei.yyf',
-  table_name = '__all_client_to_server_session_info',
-  table_id = '497',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('server_session_id', 'int')
-  ],
-  in_tenant_space = True,
-  is_cluster_private = False,
-  meta_record_in_sys = False,
-  normal_columns = [
-    ('client_session_id', 'int'),
-    ('client_session_create_ts', 'timestamp')
-  ]
-  )
+# 497: __all_client_to_server_session_info (removed)
 
 # 500: __all_tenant_snapshot_job (abandoned)
 
@@ -4489,10 +4469,9 @@ def_table_schema(
 
   normal_columns = [
   ('session_id', 'int'),
-	  ('trans_id', 'int'),
-	  ('state', 'int'),
-	  ('cluster_id', 'int'),
-	  ('write_state', 'varchar:1024', 'true'),
+  ('trans_id', 'int'),
+  ('state', 'int'),
+  ('write_state', 'varchar:1024', 'true'),
   ('isolation_level', 'int'),
   ('snapshot_version', 'uint', 'true'),
   ('access_mode', 'int'),
@@ -4978,7 +4957,6 @@ def_table_schema(
   ],
 
   normal_columns = [
-    ('compat_mode', 'bigint:20'),
     ('unit_min_cpu', 'double'),
     ('unit_max_cpu', 'double'),
     ('slice', 'double'),
@@ -7611,8 +7589,6 @@ def_table_schema(
     ('NESTED_SQL_DELTA', 'bigint', 'false',  '0'),
     ('SOURCE_IP', 'varchar:MAX_IP_ADDR_LENGTH'),
     ('SOURCE_PORT', 'int'),
-    ('ROUTE_MISS_TOTAL', 'bigint', 'false',  '0'),
-    ('ROUTE_MISS_DELTA', 'bigint', 'false',  '0'),
     ('FIRST_LOAD_TIME', 'timestamp', 'true'),
     ('PLAN_CACHE_HIT_TOTAL', 'bigint', 'false', '0'),
     ('PLAN_CACHE_HIT_DELTA', 'bigint', 'false', '0')
@@ -7689,7 +7665,6 @@ def_table_schema(
   enable_column_def_enum = True,
   in_tenant_space = True,
   normal_columns = [
-    ('proxy_session_id', 'uint'),
     ('session_id', 'uint'),
     ('ps_client_stmt_id', 'int'),
     ('ps_inner_stmt_id', 'int'),
@@ -7725,22 +7700,7 @@ def_table_schema(
 # 12470: __all_virtual_ls_compaction_status
 # 12471: __all_virtual_tablet_compaction_status
 # 12472: __all_virtual_tablet_checksum_error_info (abandoned)
-
-def_table_schema(
-  owner = 'sean.yyj',
-  table_name = '__all_virtual_compatibility_control',
-  table_id = '12473',
-  table_type = 'VIRTUAL_TABLE',
-  in_tenant_space = True,
-  gm_columns = [],
-  rowkey_columns = [],
-  normal_columns = [
-    ('name', 'varchar:OB_MAX_CONFIG_NAME_LEN'),
-    ('description', 'varchar:OB_MAX_CONFIG_INFO_LEN'),
-    ('is_enable', 'bool'),
-    ('enable_versions', 'longtext')
-  ]
-  )
+# 12473: __all_virtual_compatibility_control (removed)
 
 
 # 12479: __all_virtual_res_mgr_directive # removed (single-tenant: iterate VT mechanism deleted)
@@ -14255,13 +14215,12 @@ def_table_schema(
       WHEN state = 5 THEN 'IN_TERMINATE'
       WHEN state = 6 THEN 'ABORTED'
       WHEN state = 7 THEN 'ROLLED_BACK'
-	      WHEN state = 8 THEN 'COMMIT_TIMEOUT'
-	      WHEN state = 9 THEN 'COMMIT_UNKNOWN'
-	      WHEN state = 10 THEN 'COMMITTED'
-	      ELSE 'UNKNOWN'
-	      END AS STATE,
-	    cluster_id AS CLUSTER_ID,
-	    write_state AS WRITE_STATE,
+      WHEN state = 8 THEN 'COMMIT_TIMEOUT'
+      WHEN state = 9 THEN 'COMMIT_UNKNOWN'
+      WHEN state = 10 THEN 'COMMITTED'
+      ELSE 'UNKNOWN'
+      END AS STATE,
+    write_state AS WRITE_STATE,
     CASE
       WHEN isolation_level = -1 THEN 'INVALID'
       WHEN isolation_level = 0 THEN 'READ UNCOMMITTED'
@@ -15398,25 +15357,7 @@ def_table_schema(
 # 21543: GV$OB_TRACEPOINT_INFO # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_tracepoint_info)
 
 # 21544: V$OB_TRACEPOINT_INFO # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_tracepoint_info)
-
-def_table_schema(
-  owner = 'sean.yyj',
-  tablegroup_id   = 'OB_INVALID_ID',
-  table_name      = 'V$OB_COMPATIBILITY_CONTROL',
-  table_id        = '21545',
-  gm_columns      = [],
-  rowkey_columns  = [],
-  table_type      = 'SYSTEM_VIEW',
-  in_tenant_space = True,
-  view_definition = """SELECT
-      name as NAME,
-      description as DESCRIPTION,
-      CASE is_enable WHEN 1 THEN 'TRUE' ELSE 'FALSE' END AS IS_ENABLE,
-      enable_versions as ENABLE_VERSIONS
-    FROM oceanbase.__all_virtual_compatibility_control
-""".replace("\n", " "),
-  normal_columns  = []
-  )
+# 21545: V$OB_COMPATIBILITY_CONTROL (removed)
 
 # 21546: removed (legacy resource manager deleted)
 
@@ -17467,13 +17408,12 @@ def_sys_index_table(
 # 101093: idx_kv_ttl_task_table_id (abandoned)
 # 101094: idx_kv_ttl_task_history_upd_time (abandoned)
 
-def_sys_index_table(
-  index_name = 'idx_client_to_server_session_info_client_session_id',
-  index_table_id = 101099,
-  index_columns = ['client_session_id'],
-  index_using_type = 'USING_BTREE',
-  index_type = 'INDEX_TYPE_NORMAL_LOCAL',
-  keywords = all_def_keywords['__all_client_to_server_session_info'])
+# 101095: idx_mview_refresh_run_stats_num_mvs_current (removed)
+
+# 101096: idx_mview_refresh_stats_end_time (removed)
+# 101097: idx_mview_refresh_stats_mview_end_time (removed)
+
+# 101099: idx_client_to_server_session_info_client_session_id (removed)
 
 def_sys_index_table(
   index_name = 'idx_column_privilege_name',

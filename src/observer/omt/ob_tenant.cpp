@@ -350,9 +350,7 @@ ObTenant::ObTenant(const int64_t epoch,
       disable_user_sched_(false),
       token_change_ts_(0),
       completion_cnt_(0),
-      ctx_(nullptr),
-      st_metrics_(),
-      sql_limiter_()
+      ctx_(nullptr)
 {
 }
 
@@ -488,12 +486,6 @@ void ObTenant::set_tenant_super_block(const ObTenantSuperBlock &super_block)
 {
   TCWLockGuard guard(meta_lock_);
   tenant_meta_.super_block_ = super_block;
-}
-
-Worker::CompatMode ObTenant::get_compat_mode() const
-{
-  TCRLockGuard guard(meta_lock_);
-  return tenant_meta_.unit_.mode_;
 }
 
 ObUnitInfoGetter::ObUnitStatus  ObTenant::get_unit_status()

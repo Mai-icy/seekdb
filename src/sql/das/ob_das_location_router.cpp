@@ -1188,7 +1188,7 @@ int ObDASTabletMapper::get_tablet_and_subpart_id_for_list_part(const ObTableSche
     const bool fill_tablet_id = true;
     if (FAILEDx(ObPartitionUtils::fill_tablet_and_object_ids(fill_tablet_id,
                                                              part_idx,
-                                                             partition_indexes, 
+                                                             partition_indexes,
                                                              table_schema,
                                                              related_table,
                                                              tablet_ids,

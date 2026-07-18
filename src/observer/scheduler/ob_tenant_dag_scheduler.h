@@ -622,7 +622,6 @@ public:
   virtual int create_first_task() { return common::OB_SUCCESS; }
   virtual int64_t get_data_size() const { return 0; }
   virtual int fill_dag_key(char *buf, const int64_t buf_len) const = 0;
-  virtual lib::Worker::CompatMode get_compat_mode() const = 0;
   int remove_task(ObITask &task);
 protected:
   void inc_running_task_cnt() { ++running_task_cnt_; }

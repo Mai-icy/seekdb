@@ -542,18 +542,6 @@ bool ObConfigVectorMemoryChecker::check(const obcall::ObAdminSetConfigItem &t)
   return is_valid;
 }
 
-bool ObConfigQueryRateLimitChecker::check(const ObConfigItem &t) const
-{
-  bool is_valid = false;
-  int64_t value = ObConfigIntParser::get(t.str(), is_valid);
-  if (is_valid) {
-    is_valid = (-1 == value ||
-                (value >= MIN_QUERY_RATE_LIMIT &&
-                 value <= MAX_QUERY_RATE_LIMIT));
-  }
-  return is_valid;
-}
-
 bool ObLogDiskUsagePercentageChecker::check(const ObConfigItem &t) const
 {
   bool is_valid = false;

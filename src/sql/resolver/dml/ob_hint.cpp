@@ -277,13 +277,6 @@ void ObGlobalHint::merge_read_consistency_hint(ObConsistencyLevel read_consisten
   }
 }
 
-void ObGlobalHint::merge_opt_features_version_hint(uint64_t opt_features_version)
-{
-  if (is_valid_opt_features_version(opt_features_version)) {
-    opt_features_version_ = std::max(opt_features_version_, opt_features_version);
-  }
-}
-
 // zhanyue todo: try remove this later
 bool ObGlobalHint::has_hint_exclude_concurrent() const
 {
@@ -333,7 +326,6 @@ void ObGlobalHint::reset()
   pdml_option_ = ObPDMLOption::NOT_SPECIFIED;
   param_option_ = ObParamOption::NOT_SPECIFIED;
   dops_.reuse();
-  opt_features_version_ = UNSET_OPT_FEATURES_VERSION;
   disable_transform_ = false;
   disable_cost_based_transform_ = false;
   opt_params_.reset();
@@ -363,7 +355,6 @@ int ObGlobalHint::merge_global_hint(const ObGlobalHint &other)
   merge_parallel_hint(other.parallel_);
   merge_dml_parallel_hint(other.dml_parallel_);
   merge_param_option_hint(other.param_option_);
-  merge_opt_features_version_hint(other.opt_features_version_);
   disable_transform_ |= other.disable_transform_;
   disable_cost_based_transform_ |= other.disable_cost_based_transform_;
   osg_hint_.flags_ |= other.osg_hint_.flags_;
@@ -514,25 +505,6 @@ int ObGlobalHint::print_global_hint(PlanText &plan_text) const
       LOG_WARN("unexpected param hint value", K(ret), K_(param_option));
     } else {
       PRINT_GLOBAL_HINT_STR("CURSOR_SHARING_EXACT");
-    }
-  }
-  // OPTIMIZER_FEATURES_ENABLE
-  if (OB_SUCC(ret) && (has_valid_opt_features_version())) {
-    int64_t cur_pos = 0;
-    // if enabled trace point outline valid check tp_no = 551 and opt_features_version_ is LASTED_COMPAT_VERSION,
-    // just print OPTIMIZER_FEATURES_ENABLE('') to avoid mysqltest changed repeatedly after upgrade LASTED_COMPAT_VERSION
-    const bool print_empty_str = (OB_SUCCESS != (OB_E(EventTable::EN_EXPLAIN_GENERATE_PLAN_WITH_OUTLINE) OB_SUCCESS)
-                                 && LASTED_COMPAT_VERSION == opt_features_version_);
-    if (OB_FAIL(BUF_PRINTF("%s%s(\'", outline_indent, "OPTIMIZER_FEATURES_ENABLE"))) {
-      LOG_WARN("failed to print hint", K(ret));
-    } else if (!print_empty_str &&
-               OB_UNLIKELY(0 == (cur_pos = ObClusterVersion::print_version_str(buf + pos,
-                                                                               buf_len - pos,
-                                                                               opt_features_version_)))) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("failed to print version str", K(ret), K(opt_features_version_));
-    } else if (OB_FALSE_IT(pos += cur_pos)) {
-    } else if (OB_FAIL(BUF_PRINTF("\')"))) {
     }
   }
   if (OB_SUCC(ret) && disable_query_transform()) {
