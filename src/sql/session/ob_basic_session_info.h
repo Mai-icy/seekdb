@@ -1124,8 +1124,6 @@ public:
   int reset_tx_variable_if_remote_trans(const ObPhyPlanType& type);
   int check_tx_read_only_privilege(const ObSqlTraits &sql_traits);
   int get_group_concat_max_len(uint64_t &group_concat_max_len) const;
-  // The parameters max_allowed_pkt and net_buffer_len are named this way instead of max_allowed_packet and net_buffer_length,
-  // is to avoid naming conflicts in lib/regex/include/mysql.h so that the compilation can pass
   int get_max_allowed_packet(int64_t &max_allowed_pkt) const;
   int get_net_buffer_length(int64_t &net_buffer_len) const;
   /// @}

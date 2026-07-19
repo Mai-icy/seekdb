@@ -39,7 +39,7 @@ constexpr int OB_SCHEMA_ERROR = -4029;
 constexpr int OB_TENANT_OUT_OF_MEM = -4030;
 constexpr int OB_UNKNOWN_OBJ = -4031;
 constexpr int OB_TOO_MANY_SSTABLE = -4037;
-// -4039: SQL throttling error abandoned, id reserved
+constexpr int OB_KILLED_BY_THROTTLING = -4039;
 constexpr int OB_USER_NOT_EXIST = -4042;
 constexpr int OB_PASSWORD_WRONG = -4043;
 constexpr int OB_SKEY_VERSION_WRONG = -4044;
@@ -1438,26 +1438,14 @@ constexpr int OB_INVALID_MASK = -7299;
 constexpr int OB_GEO_IN_DIFFERENT_COORDINATE = -7300;
 constexpr int OB_ERR_DOMAIN_COLUMN_DUPLICATE = -7301;
 constexpr int OB_ERR_PARSING_SPATIAL_PARAM = -7302;
-constexpr int OB_ERR_INVALID_XML_DATATYPE = -7402;
-constexpr int OB_ERR_XML_MISSING_COMMA = -7403;
 constexpr int OB_ERR_INVALID_XPATH_EXPRESSION = -7404;
 constexpr int OB_ERR_EXTRACTVALUE_MULTI_NODES = -7405;
-constexpr int OB_ERR_XML_FRAMENT_CONVERT = -7406;
-constexpr int OB_INVALID_PRINT_OPTION = -7407;
-constexpr int OB_XML_CHAR_LEN_TOO_SMALL = -7408;
 constexpr int OB_XPATH_EXPRESSION_UNSUPPORTED = -7409;
 constexpr int OB_EXTRACTVALUE_NOT_LEAF_NODE = -7410;
-constexpr int OB_XML_INSERT_FRAGMENT = -7411;
 constexpr int OB_ERR_NO_ORDER_MAP_SQL = -7412;
-constexpr int OB_ERR_XMLELEMENT_ALIASED = -7413;
-constexpr int OB_INVALID_ALTERATIONG_DATATYPE = -7414;
-constexpr int OB_INVALID_MODIFICATION_OF_COLUMNS = -7415;
-constexpr int OB_ERR_NULL_FOR_XML_CONSTRUCTOR = -7416;
-constexpr int OB_ERR_XML_INDEX = -7417;
 constexpr int OB_ERR_UPDATE_XML_WITH_INVALID_NODE = -7418;
 constexpr int OB_LOB_VALUE_NOT_EXIST = -7419;
 constexpr int OB_ERR_JSON_FUN_UNSUPPORTED_TYPE = -7420;
-constexpr int OB_ERR_XQUERY_MULTI_VALUE = -7421;
 constexpr int OB_ERR_LACK_XQUERY_LITERAL = -7423;
 constexpr int OB_ERR_XQUERY_TYPE_MISMATCH = -7425;
 constexpr int OB_ERR_XQUERY_UNSUPPORTED = -7428;
@@ -1969,6 +1957,7 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_NEED_RETRY__USER_ERROR_MSG "Need retry"
 #define OB_TOO_MANY_SSTABLE__USER_ERROR_MSG "Too many sstable"
 #define OB_NOT_MASTER__USER_ERROR_MSG "The seekdb or zone is not the master"
+#define OB_KILLED_BY_THROTTLING__USER_ERROR_MSG "Request has killed by sql throttle"
 #define OB_DECRYPT_FAILED__USER_ERROR_MSG "Decrypt error"
 #define OB_USER_NOT_EXIST__USER_ERROR_MSG "Can not find any matching row in the user table'%.*s'"
 #define OB_PASSWORD_WRONG__USER_ERROR_MSG "Access denied for user '%.*s'@'%.*s' (using password: %s)"
@@ -3685,26 +3674,14 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_GEO_IN_DIFFERENT_COORDINATE__USER_ERROR_MSG "geometry objects are in different coordinate systems"
 #define OB_ERR_DOMAIN_COLUMN_DUPLICATE__USER_ERROR_MSG "cannot create multiple domain indexes on a column list using same"
 #define OB_ERR_PARSING_SPATIAL_PARAM__USER_ERROR_MSG "internal error while parsing spatial parameters"
-#define OB_ERR_INVALID_XML_DATATYPE__USER_ERROR_MSG "inconsistent datatypes: expected %s got %s"
-#define OB_ERR_XML_MISSING_COMMA__USER_ERROR_MSG "missing comma"
 #define OB_ERR_INVALID_XPATH_EXPRESSION__USER_ERROR_MSG "XPATH syntax error: ''"
 #define OB_ERR_EXTRACTVALUE_MULTI_NODES__USER_ERROR_MSG "EXTRACTVALUE cannot extract values of multiple nodes"
-#define OB_ERR_XML_FRAMENT_CONVERT__USER_ERROR_MSG "Cannot convert XML fragment to the required datatype"
-#define OB_INVALID_PRINT_OPTION__USER_ERROR_MSG "The specified printing option is invalid"
-#define OB_XML_CHAR_LEN_TOO_SMALL__USER_ERROR_MSG "character length specified for XMLSerialize is too small."
 #define OB_XPATH_EXPRESSION_UNSUPPORTED__USER_ERROR_MSG "Only constant XPATH queries are supported"
 #define OB_EXTRACTVALUE_NOT_LEAF_NODE__USER_ERROR_MSG "EXTRACTVALUE can only retrieve value of leaf node"
-#define OB_XML_INSERT_FRAGMENT__USER_ERROR_MSG "Cannot insert XML fragments"
 #define OB_ERR_NO_ORDER_MAP_SQL__USER_ERROR_MSG "cannot ORDER objects without MAP or ORDER method"
-#define OB_ERR_XMLELEMENT_ALIASED__USER_ERROR_MSG "parameter %d of function XMLELEMENT must be aliased"
-#define OB_INVALID_ALTERATIONG_DATATYPE__USER_ERROR_MSG "invalid alteration of datatype"
-#define OB_INVALID_MODIFICATION_OF_COLUMNS__USER_ERROR_MSG "invalid modification of columns"
-#define OB_ERR_NULL_FOR_XML_CONSTRUCTOR__USER_ERROR_MSG "Expected XML tag , got no content"
-#define OB_ERR_XML_INDEX__USER_ERROR_MSG "cannot create index on expression with datatype ADT '%.*s'"
 #define OB_ERR_UPDATE_XML_WITH_INVALID_NODE__USER_ERROR_MSG "XML nodes must be updated with valid nodes and of the same type'"
 #define OB_LOB_VALUE_NOT_EXIST__USER_ERROR_MSG "LOB value does not exist"
 #define OB_ERR_JSON_FUN_UNSUPPORTED_TYPE__USER_ERROR_MSG "Input to JSON generation function has unsupported data type"
-#define OB_ERR_XQUERY_MULTI_VALUE__USER_ERROR_MSG "XPTY0004 - XQuery dynamic type mismatch: expected singleton sequence - got multi-item sequence"
 #define OB_ERR_PARSE_XQUERY_EXPR__USER_ERROR_MSG "XPST0003 - error during parsing the XQuery expression : %.*s"
 #define OB_ERR_LACK_XQUERY_LITERAL__USER_ERROR_MSG "XQuery string literal expected"
 #define OB_ERR_TOO_MANY_PREFIX_DECLARE__USER_ERROR_MSG "XPST0033 - too many declarations for namespace prefix %.*s"
@@ -3827,7 +3804,6 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_FILE_OR_DIRECTORY_EXIST__USER_ERROR_MSG "file or directory already exist"
 #define OB_FILE_OR_DIRECTORY_PERMISSION_DENIED__USER_ERROR_MSG "file or directory permission denied"
 #define OB_TOO_MANY_OPEN_FILES__USER_ERROR_MSG "too many open files"
-#define OB_S3_ERROR__USER_ERROR_MSG "S3 error"
 #define OB_TENANT_SNAPSHOT_NOT_EXIST__USER_ERROR_MSG "Tenant snapshot \'%.*s\' does not exist"
 #define OB_TENANT_SNAPSHOT_EXIST__USER_ERROR_MSG "Tenant snapshot \'%.*s\' already exist"
 #define OB_TENANT_SNAPSHOT_TIMEOUT__USER_ERROR_MSG "Tenant snapshot task timeout. %.*s"
@@ -3839,7 +3815,6 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_INVALID_STORAGE_DEST__USER_ERROR_MSG "storage destination is not valid"
 #define OB_STORAGE_DEST_NOT_CONNECT__USER_ERROR_MSG "can not connect to storage destination"
 #define OB_OBJECT_STORAGE_PERMISSION_DENIED__USER_ERROR_MSG "no I/O operation permission of the object storage"
-#define OB_S3_REGION_MISMATCH__USER_ERROR_MSG "the specified s3_region does not match the endpoint"
 #define OB_INVALID_OBJECT_STORAGE_ENDPOINT__USER_ERROR_MSG "object storage endpoint is invalid"
 #define OB_RESTORE_SOURCE_NOT_ENOUGH__USER_ERROR_MSG "%s"
 #define OB_OBJECT_NOT_EXIST__USER_ERROR_MSG "cannot find object on object storage"
@@ -4282,7 +4257,7 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_ERR_DATA_TOO_LONG_MSG_FMT_V2__USER_ERROR_MSG "Data too long for column '%.*s' at row %ld"
 #define OB_ERR_INVALID_DATE_MSG_FMT_V2__USER_ERROR_MSG "Incorrect datetime value for column '%.*s' at row %ld"
 
-extern int g_all_ob_errnos[2353];
+extern int g_all_ob_errnos[2336];
 
   const char *ob_error_name(const int oberr);
   const char* ob_error_cause(const int oberr);

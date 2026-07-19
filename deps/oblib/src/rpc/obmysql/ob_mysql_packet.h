@@ -24,6 +24,8 @@ namespace oceanbase
 namespace obmysql
 {
 
+static constexpr uint8_t CURSOR_TYPE_READ_ONLY = 1;
+
 #define INTERNAL_MYSQL_CMD_START 64
 
 static const int64_t OB_MYSQL_MAX_PACKET_LENGTH = (1L << 24); //3bytes , 16M

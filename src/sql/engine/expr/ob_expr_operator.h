@@ -1018,7 +1018,7 @@ inline bool ObExprOperator::is_type_valid(const common::ObObjType &type)
 
 inline bool ObExprOperator::is_type_valid_regexp(const common::ObObjType &type)
 {
-  return (is_type_valid(type) && type != ObRoaringBitmapType);
+  return is_type_valid(type);
 }
 
 inline void ObExprOperator::calc_result_flag1(ObExprResType &type,

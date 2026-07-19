@@ -20,8 +20,6 @@
 #include "common/mysqlclient/ob_isql_client.h"
 #include "common/timezone/ob_time_convert.h"  // ObNLSFormatEnum (self-contained include)
 #include "common/mysqlclient/ob_mysql_result.h"
-#include "common/mysqlclient/ob_mysql_statement.h"
-#include "common/mysqlclient/ob_mysql_connection_pool.h"
 
 namespace oceanbase
 {

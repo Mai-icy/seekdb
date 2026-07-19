@@ -774,11 +774,6 @@ int ObTenant::recv_request(ObRequest &req)
     }
   }
 
-  if (OB_SIZE_OVERFLOW == ret || (GCONF._faststack_req_queue_size_threshold.get_value() > 0 &&
-      req_queue_.size() >= GCONF._faststack_req_queue_size_threshold.get_value())) {
-    IGNORE_RETURN faststack();
-  }
-
   return ret;
 }
 

@@ -618,7 +618,7 @@ int ObOptimizer::check_pdml_insert_up_enabled(const ObDelUpdStmt &pdml_stmt,
         // 1. insert into heap table.
         is_use_pdml = false;
       } else {
-        // 2. exist gis/lob/json/array/roaringbitmap/generated column.
+        // 2. exist gis/lob/json/array/generated column.
         for (ObTableSchema::const_column_iterator col_iter = table_schema->column_begin();
              NULL != col_iter && col_iter != table_schema->column_end();
              col_iter++) {
@@ -627,7 +627,6 @@ int ObOptimizer::check_pdml_insert_up_enabled(const ObDelUpdStmt &pdml_stmt,
               || ob_is_text_tc(data_type)
               || ob_is_json(data_type)
               || ob_is_collection_sql_type(data_type)
-              || ob_is_roaringbitmap(data_type)
               || (*col_iter)->is_generated_column()) {
             is_use_pdml = false;
             break;

@@ -673,23 +673,6 @@ bool ObConfigUpgradeStageChecker::check(const ObConfigItem &t) const
 }
 
 
-bool ObConfigSTScredentialChecker::check(const ObConfigItem &t) const
-{
-  int ret = OB_SUCCESS;
-  bool flag = true;
-  const char *tmp_credential = t.str();
-  ObStsCredential key;
-  if (OB_ISNULL(tmp_credential) || OB_UNLIKELY(strlen(tmp_credential) <= 0 
-      || strlen(tmp_credential) > OB_MAX_STS_CREDENTIAL_LENGTH)) {
-    flag = false;
-    OB_LOG(WARN, "invalid sts credential", KP(tmp_credential));
-  } else if (OB_FAIL(check_sts_credential_format(tmp_credential, key))) {
-    flag = false;
-    OB_LOG(WARN, "fail to check sts credential format", K(ret), K(key), KP(tmp_credential));
-  }
-  return flag;
-}
-
 bool ObConfigStorageCachePolicyChecker::check(const ObConfigItem &t) const
 {
   bool is_valid = false;
@@ -1153,27 +1136,6 @@ bool ObConfigReplicaParallelMigrationChecker::check(const ObConfigItem &t) const
   return 0 == v_str.case_compare("auto")
       || 0 == v_str.case_compare("on")
       || 0 == v_str.case_compare("off");
-}
-
-bool ObConfigS3URLEncodeTypeChecker::check(const ObConfigItem &t) const
-{
-  // When compliantRfc3986Encoding is set to true:
-  // - Adhere to RFC 3986 by supporting the encoding of reserved characters
-  //   such as '-', '_', '.', '$', '@', etc.
-  // - This approach mitigates inconsistencies in server behavior when accessing
-  //   COS using the S3 SDK.
-  // Otherwise, the reserved characters will not be encoded,
-  // following the default behavior of the S3 SDK.
-  bool bret = false;
-  common::ObString tmp_str(t.str());
-  if (0 == tmp_str.case_compare("default")) {
-    bret = true;
-  } else if (0 == tmp_str.case_compare("compliantRfc3986Encoding")) {
-    bret = true;
-  } else {
-    bret = false;
-  }
-  return bret;
 }
 
 bool ObConfigDefaultTableOrganizationChecker::check(const obcall::ObAdminSetConfigItem &t)

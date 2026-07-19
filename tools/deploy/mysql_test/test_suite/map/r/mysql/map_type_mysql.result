@@ -65,8 +65,6 @@ select array_union(map(1,11), [1,2]);
 ERROR 22000: Invalid data type for the operation
 select element_at(map(1,11), 1);
 ERROR 22000: Invalid data type for the operation
-select rb_build(map(1,11));
-ERROR 22000: Invalid data type for the operation
 select WEIGHT_STRING(map(1,11));
 ERROR 22000: Invalid data type for the operation
 select ASCII(map(1,11));

@@ -15,6 +15,7 @@
  */
 
 #define USING_LOG_PREFIX COMMON_MYSQLP
+#include "common/mysqlclient/ob_isql_connection.h"
 #include "common/mysqlclient/ob_isql_connection_pool.h"
 #include "common/mysqlclient/ob_mysql_proxy.h"
 #include "common/sql_mode/ob_sql_mode_utils.h"

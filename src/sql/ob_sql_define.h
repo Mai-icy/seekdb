@@ -124,11 +124,7 @@ enum JtColType {
   COL_TYPE_VALUE, // 4
   NESTED_COL_TYPE, // 5
   COL_TYPE_QUERY_JSON_COL, // 6
-  COL_TYPE_VAL_EXTRACT_XML, // 7
-  COL_TYPE_XMLTYPE_XML, // 8
-  COL_TYPE_ORDINALITY_XML = 9,
-  COL_TYPE_RB_ITERATE = 10,
-  COL_TYPE_UNNEST = 11,
+  COL_TYPE_UNNEST, // 7
 };
 
 enum ObNameTypeClass
@@ -740,8 +736,7 @@ static bool is_fixed_length_storage(ObObjType type) {
       || ObJsonTC == tc
       || ObGeometryTC == tc
       || ObUserDefinedSQLTC == tc
-      || ObDecimalIntTC == tc
-      || ObRoaringBitmapTC == tc) {
+      || ObDecimalIntTC == tc) {
     is_fixed = false;
   }
   return is_fixed;
@@ -763,7 +758,6 @@ static bool is_fixed_length(ObObjType type) {
       || ObGeometryTC == tc
       || ObUserDefinedSQLTC == tc
       || ObDecimalIntTC == tc
-      || ObRoaringBitmapTC == tc
       || ObCollectionSQLTC == tc) {
     is_fixed = false;
   }

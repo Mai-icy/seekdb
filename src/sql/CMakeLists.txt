@@ -145,7 +145,6 @@ set_source_files_properties(
   engine/aggregate/ob_hash_agg_variant.cpp
   engine/aggregate/ob_scalar_aggregate_vec_op.cpp
   engine/aggregate/ob_merge_groupby_vec_op.cpp
-  engine/aggregate/rb_agg.cpp
   engine/aggregate/single_row.cpp
   engine/aggregate/single_row_count.cpp
   engine/aggregate/single_row_count_sum.cpp
@@ -332,7 +331,6 @@ ob_set_subtarget(ob_sql engine_aggregate_vec
 )
 
 ob_set_subtarget(ob_sql engine_aggregate_scalar
-  engine/aggregate/rb_agg.cpp
   engine/aggregate/single_row.cpp
   engine/aggregate/single_row_count.cpp
   engine/aggregate/single_row_count_sum.cpp
@@ -640,18 +638,6 @@ ob_set_subtarget(ob_sql engine_expr
   engine/expr/ob_expr_tokenize.cpp
   engine/expr/ob_expr_gtid.cpp
   engine/expr/ob_expr_inner_table_option_printer.cpp
-  engine/expr/ob_expr_rb_build_empty.cpp
-  engine/expr/ob_expr_rb_is_empty.cpp
-  engine/expr/ob_expr_rb_func_helper.cpp
-  engine/expr/ob_expr_rb_build_varbinary.cpp
-  engine/expr/ob_expr_rb_to_varbinary.cpp
-  engine/expr/ob_expr_rb_cardinality.cpp
-  engine/expr/ob_expr_rb_calc_cardinality.cpp
-  engine/expr/ob_expr_rb_calc.cpp
-  engine/expr/ob_expr_rb_to_string.cpp
-  engine/expr/ob_expr_rb_from_string.cpp
-  engine/expr/ob_expr_rb_select.cpp
-  engine/expr/ob_expr_rb_build.cpp
   engine/expr/ob_expr_array_contains.cpp
   engine/expr/ob_expr_array_to_string.cpp
   engine/expr/ob_expr_string_to_array.cpp
@@ -927,8 +913,6 @@ ob_set_subtarget(ob_sql engine_expr
   engine/expr/ob_expr_map_keys.cpp
   engine/expr/ob_expr_spiv_dim.cpp
   engine/expr/ob_expr_spiv_value.cpp
-  engine/expr/ob_expr_rb_to_array.cpp
-  engine/expr/ob_expr_rb_contains.cpp
   engine/expr/ob_expr_semantic_distance.cpp
   engine/expr/ob_expr_ai/ob_ai_func.cpp
   engine/expr/ob_expr_ai/ob_ai_func_client.cpp

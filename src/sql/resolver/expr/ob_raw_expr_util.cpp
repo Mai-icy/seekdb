@@ -3453,10 +3453,6 @@ int ObRawExprUtils::try_add_cast_expr_above(ObRawExprFactory *expr_factory,
                   && (dst_type.is_character_type() || dst_type.is_null()))
             || (src_type.is_character_type() && dst_type.is_character_type())))
       {
-      // cases like: select xmltype(var)||xmltype(var) as "res1" from t1 t;
-      // xmltype is a lp constructor, an implicit cast is added to cast PL xmltype to SQL xmltype
-      // when deduce concat, another cast is needed to cast SQL xmltype to string
-      // it is a unary cast (cast from string to xmltype is not allowed)
       ret = OB_ERR_UNEXPECTED;
 #ifdef DEBUG
       LOG_ERROR("try to add implicit cast again, check if type deduction is correct",

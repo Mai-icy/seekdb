@@ -723,7 +723,7 @@ insert into test(c3) values ('[[[]]]');
 insert into test(c3) values ('[[[[]]]]');
 ERROR 22000: array type mismatch found between definition and data
 drop table test;
-create table test(arr ARRAY(FLOAT), c1 int, c2 float, c3 decimal(3,3), c4 bit(20), c5 geometry, c6 roaringbitmap, c7 json);
+create table test(arr ARRAY(FLOAT), c1 int, c2 float, c3 decimal(3,3), c4 bit(20), c5 geometry, c6 json);
 select * from test where arr = c1;
 ERROR 22000: Invalid data type for the operation
 select * from test where arr = c2;
@@ -735,8 +735,6 @@ ERROR 22000: Invalid data type for the operation
 select * from test where arr = c5;
 ERROR 22000: Invalid data type for the operation
 select * from test where arr = c6;
-ERROR 22000: Invalid data type for the operation
-select * from test where arr = c7;
 ERROR 22000: Invalid data type for the operation
 drop table test;
 drop table if exists t1;

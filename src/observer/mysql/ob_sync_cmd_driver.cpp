@@ -22,7 +22,7 @@
 #include "sql/resolver/cmd/ob_variable_set_stmt.h"
 #include "observer/mysql/obmp_query.h"
 #include "rpc/obmysql/packet/ompk_row.h"
-#include "sql/engine/expr/ob_expr_xml_func_helper.h"
+#include "sql/engine/expr/ob_expr_sql_udt_utils.h"
 
 namespace oceanbase
 {
@@ -254,11 +254,11 @@ int ObSyncCmdDriver::response_query_result(ObMySQLResultSet &result)
         LOG_WARN("convert text value charset failed", K(ret));
       }
       if (OB_FAIL(ret)) {
-      } else if ((value.is_lob() || value.is_json() || value.is_geometry() || value.is_roaringbitmap())
+      } else if ((value.is_lob() || value.is_json() || value.is_geometry())
                   && OB_FAIL(process_lob_locator_results(value, result))) {
         LOG_WARN("convert lob locator to longtext failed", K(ret));
       } else if ((value.is_collection_sql_type() || value.is_geometry()) &&
-                 OB_FAIL(ObXMLExprHelper::process_sql_udt_results(value, result))) {
+                 OB_FAIL(ObSqlUdtUtils::convert_result_for_client(value, result))) {
         LOG_WARN("convert udt to client format failed", K(ret), K(value.get_udt_subschema_id()));
       }
     }

@@ -655,10 +655,7 @@ int ObSql::fill_select_result_set(ObResultSet &result_set, ObSqlCtx *context, co
           } else if (OB_FAIL(result_set.get_exec_context().get_sqludt_meta_by_subschema_id(tmp_subschema_id, udt_meta))) {
             LOG_WARN("failed to get udt meta", K(ret), K(tmp_subschema_id));
           } else if(ObObjUDTUtil::ob_is_supported_sql_udt(udt_meta.udt_id_)) {
-            // common udt constructors or functions set udt id , but xml exprs not
-            if (udt_meta.udt_id_ == T_OBJ_XML) {
-              field.accuracy_.set_accuracy(T_OBJ_XML);
-            } else if (udt_id != udt_meta.udt_id_) {
+            if (udt_id != udt_meta.udt_id_) {
               ret = OB_ERR_UNEXPECTED;
               LOG_WARN("udt id mismarch", K(ret), K(udt_id), K(udt_meta.udt_id_));
             }

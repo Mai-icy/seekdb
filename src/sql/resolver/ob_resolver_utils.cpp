@@ -112,9 +112,7 @@ int ObResolverUtils::get_all_function_table_column_names(const TableItem &table_
   if (OB_SUCC(ret)
       && !coll_type->get_element_type().is_obj_type()
       && !coll_type->get_element_type().is_record_type()
-      && !coll_type->get_element_type().is_collection_type()
-      && !(coll_type->get_element_type().is_opaque_type()
-            && coll_type->get_element_type().get_user_type_id() == T_OBJ_XML)) {
+      && !coll_type->get_element_type().is_collection_type()) {
     ret = OB_NOT_SUPPORTED;
     LOG_WARN("not suppoert type in table function", K(ret), KPC(coll_type));
     ObString err;
@@ -123,7 +121,6 @@ int ObResolverUtils::get_all_function_table_column_names(const TableItem &table_
     LOG_USER_ERROR(OB_NOT_SUPPORTED, err.ptr());
   }
   if (OB_SUCC(ret) && (coll_type->get_element_type().is_obj_type()
-                      || coll_type->get_element_type().is_opaque_type()
                       || coll_type->get_element_type().is_collection_type())) {
     OZ (column_names.push_back(ObString("COLUMN_VALUE")));
   }
@@ -5013,13 +5010,6 @@ int ObResolverUtils::resolve_data_type(const ParseNode &type_node,
       data_type.set_scale(default_accuracy.get_scale());
       data_type.set_charset_type(CHARSET_BINARY);
       data_type.set_collation_type(CS_TYPE_INVALID);
-      break;
-    }
-    case ObRoaringBitmapTC: {
-      data_type.set_length(length);
-      data_type.set_scale(default_accuracy.get_scale());
-      data_type.set_charset_type(CHARSET_BINARY);
-      data_type.set_collation_type(CS_TYPE_BINARY);
       break;
     }
     default:

@@ -61,6 +61,7 @@ namespace sql
 
 #define LBCA_OP_FLAG  1
 
+struct ObSqlCtx;
 class ObSqlSchemaGuard;
 class ObSchemaChecker
 {

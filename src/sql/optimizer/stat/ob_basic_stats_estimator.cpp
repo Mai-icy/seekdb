@@ -20,6 +20,7 @@
 #include "sql/optimizer/ob_storage_estimator.h"
 #include "sql/optimizer/stat/ob_topk_hist_estimator.h"
 #include "observer/ob_service.h"
+#include "common/mysqlclient/ob_isql_connection.h"
 namespace oceanbase
 {
 namespace common

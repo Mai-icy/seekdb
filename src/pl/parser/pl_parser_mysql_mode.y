@@ -229,7 +229,7 @@ void obpl_mysql_wrap_get_user_var_into_subquery(ObParseCtx *parse_ctx, ParseNode
       SCHEDULE SCHEMA_NAME SECOND SECURITY SUBCLASS_ORIGIN TABLE_NAME TO USER TYPE VALUE DATETIME TIMESTAMP TIME DATE YEAR
       TEXT NCHAR NVARCHAR BOOL BOOLEAN ENUM BIT FIXED SIGNED STARTS ROLE CANCEL JOB XA RECOVER COMPILE REUSE SETTINGS
       GEOMETRY POINT LINESTRING POLYGON MULTIPOINT MULTILINESTRING MULTIPOLYGON GEOMETRYCOLLECTION GEOMCOLLECTION
-      ROARINGBITMAP SERIAL
+      SERIAL
 //-----------------------------non_reserved keyword end---------------------------------------------
 %right END_KEY
 %left ELSE IF ELSEIF
@@ -870,7 +870,6 @@ unreserved_keyword:
   | MULTIPOLYGON
   | GEOMETRYCOLLECTION
   | GEOMCOLLECTION
-  | ROARINGBITMAP
   | COMPILE
   | REUSE
   | SETTINGS
@@ -2697,11 +2696,6 @@ scalar_data_type:
     malloc_terminal_node($$, parse_ctx->mem_pool_, T_GEOMETRY);
     $$->int32_values_[0] = 0; /* length */
     $$->int32_values_[1] = 7; /* geometrycollection, geometry uses collation type value convey sub geometry type. */
-  }
-  | ROARINGBITMAP
-  {
-    malloc_terminal_node($$, parse_ctx->mem_pool_, T_ROARINGBITMAP);
-    $$->int32_values_[0] = 0; /* length */
   }
   | SERIAL
     {

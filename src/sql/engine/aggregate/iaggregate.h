@@ -84,9 +84,7 @@ inline bool has_extra_info(ObAggrInfo &info)
   case T_FUNC_SYS_ARRAY_AGG:
   case T_FUN_HYBRID_HIST:
   case T_FUN_TOP_FRE_HIST:
-  case T_FUN_AGG_UDF:
-  case T_FUN_SYS_RB_OR_CARDINALITY_AGG:
-  case T_FUN_SYS_RB_AND_CARDINALITY_AGG: {
+  case T_FUN_AGG_UDF: {
     has = true;
     break;
   }
@@ -1070,7 +1068,6 @@ inline constexpr bool is_var_len_agg_cell(VecValueTypeClass vec_tc)
          || vec_tc == VEC_TC_GEO
          || vec_tc == VEC_TC_UDT
          || vec_tc == VEC_TC_COLLECTION
-         || vec_tc == VEC_TC_ROARINGBITMAP
          || vec_tc == VEC_TC_EXTEND;
 }
 

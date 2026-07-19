@@ -16,9 +16,8 @@
 
 #define USING_LOG_PREFIX COMMON_MYSQLP
 #include "ob_sql_client_decorator.h"
+#include "common/mysqlclient/ob_isql_connection.h"
 using namespace oceanbase::common;
-using namespace oceanbase::share;
-using namespace oceanbase::share::schema;
 
 int ObSQLClientRetry::escape(const char *from, const int64_t from_size,
                              char *to, const int64_t to_size, int64_t &out_size)

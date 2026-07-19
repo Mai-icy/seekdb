@@ -666,8 +666,6 @@ namespace share
   static const char* const OB_SV_EXTERNAL_USER = "external_user";
   static const char* const OB_SV_HAVE_CRYPT = "have_crypt";
   static const char* const OB_SV_HAVE_DYNAMIC_LOADING = "have_dynamic_loading";
-  static const char* const OB_SV_KEYRING_AWS_CONF_FILE = "keyring_aws_conf_file";
-  static const char* const OB_SV_KEYRING_AWS_DATA_FILE = "keyring_aws_data_file";
   static const char* const OB_SV_LANGUAGE = "language";
   static const char* const OB_SV_LC_MESSAGES_DIR = "lc_messages_dir";
   static const char* const OB_SV_LOWER_CASE_FILE_SYSTEM = "lower_case_file_system";
@@ -713,8 +711,6 @@ namespace share
   static const char* const OB_SV_INNODB_STATS_PERSISTENT_SAMPLE_PAGES = "innodb_stats_persistent_sample_pages";
   static const char* const OB_SV_INNODB_STATS_SAMPLE_PAGES = "innodb_stats_sample_pages";
   static const char* const OB_SV_INNODB_STATS_TRANSIENT_SAMPLE_PAGES = "innodb_stats_transient_sample_pages";
-  static const char* const OB_SV_KEYRING_AWS_CMK_ID = "keyring_aws_cmk_id";
-  static const char* const OB_SV_KEYRING_AWS_REGION = "keyring_aws_region";
   static const char* const OB_SV_KEYRING_ENCRYPTED_FILE_DATA = "keyring_encrypted_file_data";
   static const char* const OB_SV_KEYRING_ENCRYPTED_FILE_PASSWORD = "keyring_encrypted_file_password";
   static const char* const OB_SV_KEYRING_FILE_DATA = "keyring_file_data";

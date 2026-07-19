@@ -3376,8 +3376,6 @@ int ObBasicSessionInfo::get_group_concat_max_len(uint64_t &group_concat_max_len)
 {
   return get_uint64_sys_var(SYS_VAR_GROUP_CONCAT_MAX_LEN, group_concat_max_len);
 }
-// The parameters max_allowed_pkt and net_buffer_len are named this way instead of max_allowed_packet and net_buffer_length,
-// To avoid naming conflicts in lib/regex/include/mysql.h, allowing the compilation to pass
 int ObBasicSessionInfo::get_max_allowed_packet(int64_t &max_allowed_pkt) const
 {
   return get_int64_sys_var(SYS_VAR_MAX_ALLOWED_PACKET, max_allowed_pkt);

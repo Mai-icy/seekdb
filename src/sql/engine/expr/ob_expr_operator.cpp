@@ -1099,8 +1099,6 @@ int ObExprOperator::is_same_kind_type_for_case(const ObExprResType &type1, const
       match = ob_is_json(type2.get_type());
     } else if (type1.is_geometry()) {
       match = type2.is_geometry();
-    } else if (type1.is_roaringbitmap()) {
-      match = type2.is_roaringbitmap();
     }
   }
   return ret;
@@ -1213,9 +1211,6 @@ int ObExprOperator::aggregate_result_type_for_merge(
       } else if (ob_is_geometry(res_type)) {
         type.set_geometry();
         type.set_length((ObAccuracy::DDL_DEFAULT_ACCURACY[ObGeometryType]).get_length());
-      } else if (ob_is_roaringbitmap(res_type)) {
-        type.set_roaringbitmap();
-        type.set_length((ObAccuracy::DDL_DEFAULT_ACCURACY[ObRoaringBitmapType]).get_length());
       } else if (ob_is_collection_sql_type(res_type)) {
         if (OB_FAIL(aggregate_collection_sql_type(type_ctx, type, types, param_num))) {
           LOG_WARN("aggregate_collection_sql_type fail", K(ret));
@@ -1591,7 +1586,6 @@ ObObjType ObExprOperator::enumset_calc_types_[2 /*use_subschema*/][ObMaxTC] =
     ObNullType, /*COLLECTION*/
     ObVarcharType, /*ObMySQLDateTC*/
     ObVarcharType, /*ObMySQLDateTimeTC*/
-    ObVarcharType, /*ObRoaringBitmapTC*/
   },
   {
     ObUInt64Type,/*ObNullTC*/
@@ -1623,7 +1617,6 @@ ObObjType ObExprOperator::enumset_calc_types_[2 /*use_subschema*/][ObMaxTC] =
     ObNullType, /*COLLECTION*/
     ObMySQLDateType, /*ObMySQLDateTC*/
     ObMySQLDateTimeType, /*ObMySQLDateTimeTC*/
-    ObVarcharType, /*ObRoaringBitmapTC*/
   },
 };
 ////////////////////////////////////////////////////////////////
@@ -2100,10 +2093,6 @@ int ObExprOperator::calc_cmp_type2(ObExprResType &type,
                   || type_ == T_OP_NOT_IN)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("Incorrect cmp type with geometry arguments", K(type1), K(type2), K(type_), K(ret));
-  } else if ((type1.is_roaringbitmap() || type2.is_roaringbitmap())
-             && !(type_ == T_FUN_SYS_NULLIF)) {
-    ret = OB_ERR_INVALID_TYPE_FOR_OP;
-    LOG_WARN("Incorrect cmp type with roaringbitmap arguments", K(type1), K(type2), K(type_), K(ret));
 #if defined(__ANDROID__)
   } else if ((type_ == T_OP_EQ || type_ == T_OP_NE || type_ == T_OP_NSEQ
                  || type_ == T_OP_SQ_EQ || type_ == T_OP_SQ_NE || type_ == T_OP_SQ_NSEQ)
@@ -2170,12 +2159,8 @@ int ObExprOperator::calc_cmp_type3(ObExprResType &type,
   int ret = OB_SUCCESS;
   // cmp type
   ObObjType cmp_type = type1.get_type();
-  if (type1.is_roaringbitmap() || type2.is_roaringbitmap() || type3.is_roaringbitmap()) {
-    ret = OB_ERR_INVALID_TYPE_FOR_OP;
-    LOG_WARN("Incorrect cmp type with roaringbitmap arguments", K(type1), K(type2), K(type3), K(type_),K(ret));
-  }
 #if defined(__ANDROID__)
-  else if (type1.is_collection_sql_type() || type2.is_collection_sql_type() || type3.is_collection_sql_type()) {
+  if (type1.is_collection_sql_type() || type2.is_collection_sql_type() || type3.is_collection_sql_type()) {
     if (!type1.is_collection_sql_type()
         && type2.is_collection_sql_type()
         && type3.is_collection_sql_type()) {
@@ -2186,7 +2171,8 @@ int ObExprOperator::calc_cmp_type3(ObExprResType &type,
     LOG_WARN("Incorrect cmp type with collection arguments", K(type1), K(type2), K(type3), K(type_), K(ret));
   }
 #endif
-  else if (OB_SUCC(ObExprResultTypeUtil::get_relational_cmp_type(cmp_type, type2.get_type(), cmp_type))) {
+  if (OB_SUCC(ret)
+      && OB_SUCC(ObExprResultTypeUtil::get_relational_cmp_type(cmp_type, type2.get_type(), cmp_type))) {
     if (OB_UNLIKELY(ObMaxType == cmp_type)) {
       ret = OB_INVALID_ARGUMENT; // not compatible input
     } else if (OB_SUCC(ObExprResultTypeUtil::get_relational_cmp_type(cmp_type, cmp_type, type3.get_type()))) {

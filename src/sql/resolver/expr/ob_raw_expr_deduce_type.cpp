@@ -1443,26 +1443,6 @@ int ObRawExprDeduceType::visit(ObAggFunRawExpr &expr)
         }
         break;
       }
-      case T_FUN_SYS_RB_BUILD_AGG: {
-        if (OB_FAIL(set_rb_result_type(expr, result_type))) {
-          LOG_WARN("set rb_agg result type failed", K(ret));
-        }
-        break;
-      }
-      case T_FUN_SYS_RB_OR_AGG:
-      case T_FUN_SYS_RB_AND_AGG: {
-        if (OB_FAIL(set_rb_calc_result_type(expr, result_type))) {
-          LOG_WARN("set rb_agg result type failed", K(ret));
-        }
-        break;
-      }
-      case T_FUN_SYS_RB_OR_CARDINALITY_AGG:
-      case T_FUN_SYS_RB_AND_CARDINALITY_AGG: {
-        if (OB_FAIL(set_rb_cardinality_result_type(expr, result_type))) {
-          LOG_WARN("set rb_cardinality_agg result type failed", K(ret));
-        }
-        break;
-      }
       case T_FUN_GROUP_CONCAT: {
         need_add_cast = true;
         if (OB_FAIL(set_agg_group_concat_result_type(expr, result_type))) {
@@ -1512,9 +1492,6 @@ int ObRawExprDeduceType::visit(ObAggFunRawExpr &expr)
         } else if (OB_UNLIKELY(ob_is_geometry(child_expr->get_data_type()))) {
           ret = OB_INVALID_ARGUMENT;
           LOG_WARN("Incorrect geometry arguments", K(child_expr->get_data_type()), K(ret));
-        } else if (OB_UNLIKELY(ob_is_roaringbitmap(child_expr->get_data_type()))) {
-          ret = OB_INVALID_ARGUMENT;
-          LOG_WARN("Incorrect roaringbitmap arguments", K(child_expr->get_data_type()), K(ret));
         } else { //mysql mode
           result_type = child_expr->get_result_type();
           ObObjType obj_type = result_type.get_type();
@@ -2292,13 +2269,8 @@ int ObRawExprDeduceType::visit(ObSysFunRawExpr &expr)
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("session is NULL", K(ret));
   } else if (NULL == op) {
-    if (T_RB_ITERATE_EXPRESSION == expr.get_expr_type()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "rb_iterate usage");
-    } else {
-      ret = OB_ALLOCATE_MEMORY_FAILED;
-      LOG_ERROR("Get expression operator failed", "expr type", expr.get_expr_type());
-    }
+    ret = OB_ALLOCATE_MEMORY_FAILED;
+    LOG_ERROR("Get expression operator failed", "expr type", expr.get_expr_type());
   } else if (T_FUN_SYS_CAST == expr.get_expr_type() &&
              OB_FAIL(adjust_cast_as_signed_unsigned(expr))) {
     LOG_WARN("failed to adjust cast as signed unsigned", K(ret), K(expr));
@@ -3044,9 +3016,6 @@ int ObRawExprDeduceType::set_agg_min_max_result_type(ObAggFunRawExpr &expr,
   } else if (OB_UNLIKELY(ob_is_geometry(child_expr->get_data_type()))) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("Incorrect geometry arguments", K(child_expr->get_data_type()), K(ret));
-  } else if (OB_UNLIKELY(ob_is_roaringbitmap(child_expr->get_data_type()))) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("Incorrect roaringbitmap arguments", K(child_expr->get_data_type()), K(ret));
   } else if (OB_UNLIKELY(ob_is_collection_sql_type(child_expr->get_data_type()))) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("Incorrect collection arguments", K(child_expr->get_data_type()), K(ret));
@@ -3233,68 +3202,6 @@ int ObRawExprDeduceType::set_array_agg_result_type(ObAggFunRawExpr &expr,
         result_type.set_collection(subschema_id);
         expr.set_result_type(result_type);
       }
-    }
-  }
-  return ret;
-}
-
-int ObRawExprDeduceType::set_rb_result_type(ObAggFunRawExpr &expr, 
-                                               ObExprResType& result_type)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(expr.get_real_param_count() != 1)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("get unexpected error", K(ret), K(expr.get_param_count()), K(expr.get_real_param_count()), K(expr));
-  } else {
-    result_type.set_type(ObRoaringBitmapType);
-    result_type.set_collation_type(CS_TYPE_BINARY);
-    result_type.set_collation_level(CS_LEVEL_IMPLICIT);
-    result_type.set_accuracy(ObAccuracy::DDL_DEFAULT_ACCURACY[ObRoaringBitmapType]);
-    expr.set_result_type(result_type);
-  }
-  return ret;
-}
-
-int ObRawExprDeduceType::set_rb_calc_result_type(ObAggFunRawExpr &expr, 
-                                               ObExprResType& result_type)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(expr.get_real_param_count() != 1)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("get unexpected error", K(ret), K(expr.get_param_count()), K(expr.get_real_param_count()), K(expr));
-  } else {
-    ObObjType type1 = expr.get_param_expr(0)->get_result_type().get_type();
-    if (!(type1 == ObHexStringType || type1 == ObRoaringBitmapType || ob_is_null(type1))) {
-      ret = OB_ERR_INVALID_TYPE_FOR_ARGUMENT;
-      LOG_WARN("invalid roaringbitmap data type provided.", K(ret), K(type1));
-    } else {
-      result_type.set_type(ObRoaringBitmapType);
-      result_type.set_collation_type(CS_TYPE_BINARY);
-      result_type.set_collation_level(CS_LEVEL_IMPLICIT);
-      result_type.set_accuracy(ObAccuracy::DDL_DEFAULT_ACCURACY[ObRoaringBitmapType]);
-      expr.set_result_type(result_type);
-    }
-  }
-  return ret;
-}
-
-int ObRawExprDeduceType::set_rb_cardinality_result_type(ObAggFunRawExpr &expr, 
-                                                        ObExprResType& result_type)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(expr.get_real_param_count() != 1)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("get unexpected error", K(ret), K(expr.get_param_count()), K(expr.get_real_param_count()), K(expr));
-  } else {
-    ObObjType type1 = expr.get_param_expr(0)->get_result_type().get_type();
-    if (!(type1 == ObHexStringType || type1 == ObRoaringBitmapType || ob_is_null(type1))) {
-      ret = OB_ERR_INVALID_TYPE_FOR_ARGUMENT;
-      LOG_WARN("invalid roaringbitmap data type provided.", K(ret), K(type1));
-    } else {
-      result_type.set_uint64();
-      result_type.set_scale(common::ObAccuracy::DDL_DEFAULT_ACCURACY[common::ObUInt64Type].scale_);
-      result_type.set_precision(common::ObAccuracy::DDL_DEFAULT_ACCURACY[common::ObUInt64Type].precision_);
-      expr.set_result_type(result_type);
     }
   }
   return ret;
