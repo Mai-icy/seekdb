@@ -223,7 +223,6 @@ ss_cache_maxsize_percpu
 ss_cache_max_percentage
 stack_size
 standby_db_fetch_log_rpc_timeout
-standby_fetch_log_bandwidth_limit
 storage_meta_cache_priority
 storage_rowsets_size
 strict_check_os_params
@@ -495,7 +494,6 @@ _rowsets_target_maxsize
 _rpc_checksum
 _schema_memory_recycle_interval
 _send_bloom_filter_size
-_server_standby_fetch_log_bandwidth_limit
 _session_context_size
 _sort_area_size
 _sqlexec_disable_hash_based_distagg_tiv

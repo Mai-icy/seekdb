@@ -880,12 +880,6 @@ DEF_PARAM(rpc_memory_limit_percentage, INT, OB_CLUSTER_PARAMETER, "0", "[0,100]"
 DEF_PARAM(_max_rpc_packet_size, CAP, OB_CLUSTER_PARAMETER, "2047MB", "[2M,2047M]",
         "the max rpc packet size when sending RPC or responding RPC results",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(standby_fetch_log_bandwidth_limit, CAP, OB_CLUSTER_PARAMETER, "0MB", "[0M,10000G]",
-        "the max bandwidth in bytes per second that can be occupied by the sum of the synchronizing log from primary cluster of all servers in the standby cluster",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_server_standby_fetch_log_bandwidth_limit, CAP, OB_CLUSTER_PARAMETER, "0MB", "[0M,1000G]",
-        "the max bandwidth in bytes per second that can be occupied by the synchronizing log from primary cluster of a server in standby cluster",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
 //// location cache config
 DEF_PARAM(virtual_table_location_cache_expire_time, TIME, OB_CLUSTER_PARAMETER, "8s", "[1s,)",
