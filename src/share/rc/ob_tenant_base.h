@@ -123,6 +123,10 @@ namespace logservice
 {
   class ObLogService;
 }
+namespace datadict
+{
+  class ObDataDictService;
+}
 namespace compaction
 {
   class ObTenantCompactionProgressMgr;
@@ -280,6 +284,7 @@ using ObTableScanIteratorObjPool = common::ObServerObjectPool<oceanbase::storage
       storage::ObTenantFreezeInfoMgr*,               \
       transaction::ObTxLoopWorker *,                 \
       storage::ObAccessService*,                     \
+      datadict::ObDataDictService*,                  \
       concurrency_control::ObMultiVersionGarbageCollector*, \
       ObTestModule*,                                 \
       storage::ObEmptyReadBucket*,                  \

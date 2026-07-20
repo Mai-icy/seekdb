@@ -51,6 +51,7 @@ ObLogService::ObLogService() :
   apply_service_(),
   replay_service_(),
   ls_adapter_(),
+  rpc_proxy_(),
   monitor_(),
   update_palf_opts_lock_()
 {}
@@ -147,6 +148,7 @@ void ObLogService::destroy()
   apply_service_.destroy();
   replay_service_.destroy();
   ls_adapter_.destroy();
+  rpc_proxy_.destroy();
   if (NULL != palf_env_) {
     PalfEnv::destroy_palf_env(palf_env_);
     palf_env_ = NULL;
@@ -212,6 +214,8 @@ int ObLogService::init(const PalfOptions &options,
     CLOG_LOG(WARN, "failed to init apply_service", K(ret));
   } else if (OB_FAIL(replay_service_.init(palf_env_, &ls_adapter_, alloc_mgr))) {
     CLOG_LOG(WARN, "failed to init replay_service", K(ret));
+  } else if (OB_FAIL(rpc_proxy_.init())) {
+    CLOG_LOG(WARN, "LogServiceRpcProxy init failed", K(ret));
   } else {
     net_keepalive_adapter_ = net_keepalive_adapter;
     alloc_mgr_ = alloc_mgr;
