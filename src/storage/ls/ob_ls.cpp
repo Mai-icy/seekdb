@@ -686,7 +686,7 @@ int ObLS::register_common_service()
 int ObLS::register_local_services_()
 {
   int ret = OB_SUCCESS;
-  
+
   ObIngressBWAllocService *ingress_service = GCTX.net_frame_->get_ingress_service();
   REGISTER_TO_LOGSERVICE(NET_ENDPOINT_INGRESS_LOG_BASE_TYPE, ingress_service);
   REGISTER_TO_LOGSERVICE(DBMS_SCHEDULER_LOG_BASE_TYPE, share::g_mp->dbms_sched_service());
