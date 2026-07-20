@@ -1508,7 +1508,6 @@ typedef enum ObItemType
   T_PARALLEL = 3655,
   T_TABLE_PARALLEL = 3656,
   T_NO_PARALLEL = 3657,
-  T_MONITOR = 3658,
   T_PQ_DISTRIBUTE = 3659,
   T_PQ_DISTRIBUTE_WINDOW = 3660,
   T_WIN_FUNC_IDX_LIST = 3661,
@@ -1530,7 +1529,6 @@ typedef enum ObItemType
   T_STAT = 3677,
   T_GATHER_OPTIMIZER_STATISTICS = 3678,
   T_NO_GATHER_OPTIMIZER_STATISTICS = 3679,
-  T_APPEND = 3680,
   T_DBMS_STATS = 3681,
 
   T_KILL = 3682,
@@ -2226,7 +2224,6 @@ typedef enum ObItemType
   // 4373: T_CANCEL_RECOVER_TABLE abandoned, id reserved
   T_GEN_ROWS = 4374,
   T_LOAD_BATCH_SIZE = 4375,
-  T_DIRECT = 4376, // direct load data
   T_REMOTE_OSS = 4377,
   T_RECOVER_TABLE_REMAP = 4379,
   T_PHYSICAL_RESTORE_UNTIL = 4380,
@@ -2538,16 +2535,10 @@ typedef enum ObItemType
   T_PARTITION_EXPR = 4702,
   T_CACHE_INDEX = 4703,
   T_LOAD_INDEX_INTO_CACHE = 4704,
-  //olap async job
-  T_OLAP_ASYNC_JOB_SUBMIT = 4706,
-  T_OLAP_ASYNC_JOB_CANCEL = 4707,
-  T_SHOW_OLAP_ASYNC_JOB_STATUS = 4708,
   T_USE_ADAPTIVE = 4709,
   T_NO_USE_ADAPTIVE = 4710,
   T_SHOW_CHECK_PARTITION = 4711,
   T_DUPLICATE_READ_CONSISTENCY = 4713,
-  T_NO_DIRECT = 4714,
-
   //odps external table
   T_EXTERNAL_PROPERTIES = 4715,
   T_ACCESSTYPE = 4716,
@@ -2939,7 +2930,6 @@ typedef enum ObOutlineType
                            || (op) == T_SHOW_PROCEDURE_CODE || (op) == T_SHOW_FUNCTION_CODE \
                            || (op) == T_SHOW_ENGINE || (op) == T_SHOW_OPEN_TABLES \
                            || (op) == T_SHOW_PLUGINS || (op) == T_SHOW_CHECK_TABLE \
-                           || (op) == T_SHOW_OLAP_ASYNC_JOB_STATUS                \
                            || (op) == T_SHOW_CREATE_LOCATION \
                            || (op) == T_SHOW_LOCATIONS)
 
