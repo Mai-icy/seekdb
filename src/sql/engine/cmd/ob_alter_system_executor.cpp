@@ -475,20 +475,6 @@ int ObRefreshMemStatExecutor::execute(ObExecContext &ctx, ObRefreshMemStatStmt &
   return ret;
 }
 
-int ObWashMemFragmentationExecutor::execute(ObExecContext &ctx, ObWashMemFragmentationStmt &stmt)
-{
-  int ret = OB_SUCCESS;
-  ObTaskExecutorCtx *task_exec_ctx = GET_TASK_EXECUTOR_CTX(ctx);
-  if (OB_ISNULL(task_exec_ctx)) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("get task executor context failed");
-  } else if (OB_FAIL(GCTX.root_service_->admin_wash_memory_fragmentation(
-                         stmt.get_rpc_arg()))) {
-    LOG_WARN("wash memory fragmentation failed", K(ret), "rpc_arg", stmt.get_rpc_arg());
-  }
-  return ret;
-}
-
 int ObRefreshIOCalibraitonExecutor::execute(ObExecContext &ctx, ObRefreshIOCalibraitonStmt &stmt)
 {
   int ret = OB_SUCCESS;

@@ -382,12 +382,6 @@ int ObRootService::init(ObServerConfig &config,
     sql_proxy_.assign(sql_proxy);
     sql_proxy_.set_inactive();
 
-    if (OB_FAIL(oracle_sql_proxy_.init(sql_proxy.get_pool()))) {
-      FLOG_WARN("init oracle sql proxy failed", KR(ret));
-    } else {
-      oracle_sql_proxy_.set_inactive();
-    }
-
     schema_service_ = schema_service;
   }
 
@@ -514,7 +508,6 @@ int ObRootService::start_service()
     LOG_INFO("ERRSIM here", KR(ret));
   } else {
     sql_proxy_.set_active();
-    oracle_sql_proxy_.set_active();
     tenant_ddl_service_.restart();
 #ifndef OB_BUILD_LITE
     if (OB_FAIL(hb_checker_.start())) {
@@ -598,8 +591,6 @@ int ObRootService::stop()
     //in_service_ = false;
     sql_proxy_.set_inactive();
     FLOG_INFO("sql_proxy set inactive finished");
-    oracle_sql_proxy_.set_inactive();
-    FLOG_INFO("oracle_sql_proxy set inactive finished");
 
     // let RS stop failed after proxy inactive
     if (OB_UNLIKELY(ERRSIM_RS_STOP_ERROR)) {
@@ -3929,27 +3920,6 @@ int ObRootService::admin_refresh_memory_stat(const ObAdminRefreshMemStatArg &arg
     }
   }
   ROOTSERVICE_EVENT_ADD("root_service", "admin_refresh_memory_stat", K(ret));
-  return ret;
-}
-
-int ObRootService::admin_wash_memory_fragmentation(const ObAdminWashMemFragmentationArg &arg)
-{
-  int ret = OB_SUCCESS;
-  if (!inited_) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("not init", K(ret));
-  } else {
-    ObSystemAdminCtx ctx;
-    if (OB_FAIL(init_sys_admin_ctx(ctx))) {
-      LOG_WARN("init_sys_admin_ctx failed", K(ret));
-    } else {
-      ObAdminWashMemFragmentation admin_util(ctx);
-      if (OB_FAIL(admin_util.execute(arg))) {
-        LOG_WARN("execute refresh memory stat failed", K(ret));
-      }
-    }
-  }
-  ROOTSERVICE_EVENT_ADD("root_service", "admin_wash_memory_fragmentation", K(ret));
   return ret;
 }
 

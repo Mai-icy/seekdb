@@ -61,11 +61,13 @@ private:
   bool is_inited_;
 };
 
-class TelemetryTask : public common::ObTimerTask {
+class TelemetryTask {
 public:
   TelemetryTask(bool embed_mode);
-  virtual void runTimerTask() override;
+  int report();
   bool embed_mode_;
+private:
+  static int report_(bool embed_mode);
 };
 
 class ObService
@@ -190,7 +192,6 @@ public:
   int set_tracepoint(const obcall::ObAdminSetTPArg &arg);
   int cancel_sys_task(const share::ObTaskId &task_id);
   int refresh_memory_stat();
-  int wash_memory_fragmentation();
   ////////////////////////////////////////////////////////////////
   // misc functions
 

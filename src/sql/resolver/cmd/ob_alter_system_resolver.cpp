@@ -1145,28 +1145,6 @@ int ObRefreshMemStatResolver::resolve(const ParseNode &parse_tree)
   return ret;
 }
 
-int ObWashMemFragmentationResolver::resolve(const ParseNode &parse_tree)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(T_WASH_MEMORY_FRAGMENTATION != parse_tree.type_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("type is not T_WASH_MEMORY_FRAGMENTATION", "type", get_type_name(parse_tree.type_));
-  } else {
-    ObWashMemFragmentationStmt *stmt = create_stmt<ObWashMemFragmentationStmt>();
-    if (NULL == stmt) {
-      ret = OB_ALLOCATE_MEMORY_FAILED;
-      LOG_ERROR("create ObWashMemFragmentationStmt failed");
-    } else {
-      stmt_ = stmt;
-      if (OB_UNLIKELY(NULL == parse_tree.children_)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("children should not be null");
-      }
-    }
-  }
-  return ret;
-}
-
 int ObRefreshIOCalibrationResolver::resolve(const ParseNode &parse_tree)
 {
   int ret = OB_SUCCESS;
@@ -1254,7 +1232,8 @@ static int alter_system_set_reset_constraint_check_and_add_item_mysql_mode(obcal
   return ret;
 }
 
-static int alter_system_set_reset_constraint_check_and_add_item_oracle_mode(obcall::ObAdminSetConfigArg &rpc_arg, ObAdminSetConfigItem &item, ObSchemaChecker *& schema_checker)
+static int alter_system_set_reset_add_config_item(obcall::ObAdminSetConfigArg &rpc_arg,
+                                                  ObAdminSetConfigItem &item)
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(rpc_arg.items_.push_back(item))) {
@@ -1963,7 +1942,7 @@ int ObAlterDiskgroupDropDiskResolver::resolve(const ParseNode &parse_tree)
 
 
 
-// for oracle mode grammer: alter system set sys_var = val
+// Resolve ALTER SYSTEM SET sys_var = val.
 int ObAlterSystemSetResolver::resolve(const ParseNode &parse_tree)
 {
   int ret = OB_SUCCESS;
@@ -2101,12 +2080,12 @@ int ObAlterSystemSetResolver::resolve(const ParseNode &parse_tree)
                   }
                 }
                 if (OB_SUCC(ret)) {
-                  if (OB_FAIL(alter_system_set_reset_constraint_check_and_add_item_oracle_mode(
-                      setconfig_stmt->get_rpc_arg(), item, schema_checker_))) {
-                    LOG_WARN("constraint check failed", K(ret));
+                  if (OB_FAIL(alter_system_set_reset_add_config_item(
+                      setconfig_stmt->get_rpc_arg(), item))) {
+                    LOG_WARN("add config item failed", K(ret));
                   } else if (OB_SUCC(ret) && (0 == STRCASECMP(item.name_.ptr(), DEFAULT_TABLE_ORGANIZATION))) {
                     LOG_WARN("can not set default_table_organization", "item", item);
-                    LOG_USER_NOTE(OB_NOT_SUPPORTED, "'ALTER SYSTEM SET DEFAULT_TABLE_ORGANIZATION' syntax in the oracle tenant is");
+                    LOG_USER_NOTE(OB_NOT_SUPPORTED, "'ALTER SYSTEM SET DEFAULT_TABLE_ORGANIZATION' syntax is");
                   }
                 }
               }
@@ -2432,9 +2411,9 @@ int ObAlterSystemResetResolver::resolve(const ParseNode &parse_tree)
                 }
               }
               if (OB_SUCC(ret)) {
-                if (OB_FAIL(alter_system_set_reset_constraint_check_and_add_item_oracle_mode(
-                    setconfig_stmt->get_rpc_arg(), item, schema_checker_))) {
-                  LOG_WARN("constraint check failed", KR(ret));
+                if (OB_FAIL(alter_system_set_reset_add_config_item(
+                    setconfig_stmt->get_rpc_arg(), item))) {
+                  LOG_WARN("add config item failed", KR(ret));
                 }
               }
             }

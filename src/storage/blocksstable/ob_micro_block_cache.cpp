@@ -47,7 +47,7 @@ ObMicroBlockCacheKey::ObMicroBlockCacheKey(const blocksstable::ObMicroIndexInfo 
 ObMicroBlockCacheKey::ObMicroBlockCacheKey(const ObMicroBlockCacheKey &other)
 {
   mode_ = other.mode_;
-  
+
   if (is_logic_key()) {
     logic_micro_id_ = other.logic_micro_id_;
   } else {
@@ -66,7 +66,7 @@ void ObMicroBlockCacheKey::set(const MacroBlockId &block_id,
                                const int64_t size)
 {
   mode_ = ObMicroBlockCacheKeyMode::PHYSICAL_KEY_MODE;
-  
+
   block_id_.macro_id_ = block_id;
   block_id_.offset_ = offset;
   block_id_.size_ = size;
@@ -76,7 +76,7 @@ void ObMicroBlockCacheKey::set(const MacroBlockId &block_id,
 void ObMicroBlockCacheKey::set(const ObMicroBlockId &micro_id)
 {
   mode_ = ObMicroBlockCacheKeyMode::PHYSICAL_KEY_MODE;
-  
+
   block_id_ = micro_id;
   data_checksum_ = 0;
 }
@@ -85,7 +85,7 @@ void ObMicroBlockCacheKey::set(const ObLogicMicroBlockId &logic_micro_id,
                                const int64_t data_checksum)
 {
   mode_ = ObMicroBlockCacheKeyMode::LOGICAL_KEY_MODE;
-  
+
   logic_micro_id_ = logic_micro_id;
   data_checksum_ = data_checksum;
 }
@@ -95,7 +95,7 @@ int ObMicroBlockCacheKey::assign(const ObMicroBlockCacheKey &other)
   int ret = OB_SUCCESS;
   if (this != &other) {
     mode_ = other.mode_;
-    
+
     data_checksum_ = other.data_checksum_;
     if (ObMicroBlockCacheKeyMode::LOGICAL_KEY_MODE == other.mode_) {
       logic_micro_id_ = other.logic_micro_id_;
@@ -968,7 +968,7 @@ int ObIMicroBlockCache::prefetch(
     read_info.offset_ = idx_row.get_block_offset();
     read_info.size_ = idx_row.get_block_size();
     read_info.io_timeout_ms_ = max(THIS_WORKER.get_timeout_remain() / 1000, 0);
-    
+
     read_info.logic_micro_id_ = idx_row.get_logic_micro_id();
     read_info.micro_crc_ = idx_row.get_data_checksum();
     if (is_major_macro_preread) {
@@ -1019,7 +1019,7 @@ int ObIMicroBlockCache::prefetch(
   read_info.offset_ = offset;
   read_info.size_ = size;
   read_info.io_timeout_ms_ = max(THIS_WORKER.get_timeout_remain() / 1000, 0);
-  
+
   read_info.bypass_micro_cache_ = true;
   // only prefetch_multi_block need preread major macro
   read_info.is_major_macro_preread_ = true;
@@ -1232,7 +1232,7 @@ int ObDataMicroBlockCache::load_block(
       macro_read_info.offset_ = micro_block_id.offset_;
       macro_read_info.size_ = micro_block_id.size_;
       macro_read_info.io_timeout_ms_ = GCONF._data_storage_io_timeout / 1000L;
-      
+
       macro_read_info.logic_micro_id_ = logic_micro_id;
       macro_read_info.micro_crc_ = data_checksum;
 
@@ -1536,7 +1536,7 @@ int ObIndexMicroBlockCache::load_block(
       macro_read_info.offset_ = micro_block_id.offset_;
       macro_read_info.size_ = micro_block_id.size_;
       macro_read_info.io_timeout_ms_ = GCONF._data_storage_io_timeout / 1000L;
-      
+
       macro_read_info.logic_micro_id_ = logic_micro_id;
       macro_read_info.micro_crc_ = data_checksum;
 
@@ -1551,7 +1551,7 @@ int ObIndexMicroBlockCache::load_block(
         }
       } else if (OB_FAIL(macro_handle.wait())) {
         LOG_WARN("Fail to wait io finish", K(ret), K(macro_read_info));
-      } 
+      }
       // the reason why block_data.get_buf() can be released by this allocator directly is that the
       // memory is deep coiped in ObSyncSingleMicroBLockIOCallback. Maybe we should deep copy the memory in any case.
       raw_idx_block_buf = const_cast<char *>(block_data.get_buf());
@@ -1713,7 +1713,7 @@ int ObKVCacheMap::get_batch_data_block_cache_key(
         iter = iter->next_;
       }
     }
-    if (OB_SUCC(ret)) { 
+    if (OB_SUCC(ret)) {
       bucket_start_pos_ = end_pos >= bucket_num_ ? 0 : end_pos;
     }
   }

@@ -228,8 +228,8 @@ public:
                                           const share::schema::ObTableSchema &new_table_schema,
                                           const ObIArray<uint64_t> &column_ids,
                                           const share::schema::ObColumnGroupSchema &column_group);
-  int update_origin_column_group_with_new_schema(ObMySQLTransaction &trans, 
-                                                const share::schema::ObTableSchema &origin_table_schema, 
+  int update_origin_column_group_with_new_schema(ObMySQLTransaction &trans,
+                                                const share::schema::ObTableSchema &origin_table_schema,
                                                 const share::schema::ObTableSchema &new_table_schema);
   int insert_single_column(common::ObMySQLTransaction &trans,
                            const share::schema::ObTableSchema &new_table_schema,
@@ -829,7 +829,7 @@ private:
                                      share::schema::ObSchemaGetterGuard &schema_guard);
   int update_table_version_of_db(const share::schema::ObDatabaseSchema &database_schema,
                                  common::ObMySQLTransaction &trans);
-  
+
   int get_user_id_for_inner_ur(
       share::schema::ObUserInfo &user,
       bool &is_inner_ur,

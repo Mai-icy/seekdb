@@ -169,19 +169,6 @@ private:
   obcall::ObAdminRefreshMemStatArg rpc_arg_;
 };
 
-class ObWashMemFragmentationStmt : public ObSystemCmdStmt
-{
-public:
-  ObWashMemFragmentationStmt() : ObSystemCmdStmt(stmt::T_WASH_MEMORY_FRAGMENTATION) {}
-  virtual ~ObWashMemFragmentationStmt() {}
-
-  obcall::ObAdminWashMemFragmentationArg &get_rpc_arg() { return rpc_arg_; }
-
-  TO_STRING_KV(N_STMT_TYPE, ((int)stmt_type_), K_(rpc_arg));
-private:
-  obcall::ObAdminWashMemFragmentationArg rpc_arg_;
-};
-
 class ObRefreshIOCalibraitonStmt : public ObSystemCmdStmt
 {
 public:

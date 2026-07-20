@@ -96,8 +96,6 @@ DEF_SIMPLE_CMD_RESOLVER(ObAdminMergeResolver);
 
 DEF_SIMPLE_CMD_RESOLVER(ObRefreshMemStatResolver);
 
-DEF_SIMPLE_CMD_RESOLVER(ObWashMemFragmentationResolver);
-
 DEF_SIMPLE_CMD_RESOLVER(ObRefreshIOCalibrationResolver);
 
 DEF_SIMPLE_CMD_RESOLVER(ObSetTPResolver);

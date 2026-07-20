@@ -60,12 +60,12 @@
     LOG_WARN("invalid arguments", a, b);        \
   }
 
-// Reference document: 
+// Reference document:
 // Check every argument and stop to print if anyone of them is false
 #define CK(...)                                                         \
   if (OB_SUCC(ret)) { CONCAT(CK_, ARGS_NUM(__VA_ARGS__))(__VA_ARGS__) }
 
-// Reference document: 
+// Reference document:
 // execute an instruction
 #define OX(statement)                           \
   if (OB_SUCC(ret)) {                           \

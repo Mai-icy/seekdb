@@ -654,7 +654,7 @@ public:
   common::ObString new_db_name_;
   common::ObString new_table_name_;
   common::ObString create_host_; //Temporary table is valid
-  // oracle not support like, mysql not support identity, so here just define it for call create_user_tables()
+  // Defined for create_user_tables() identity sequence arguments.
   ObSequenceDDLArg sequence_ddl_arg_;
   int64_t session_id_;
   uint64_t define_user_id_;
@@ -2073,7 +2073,7 @@ public:
 
   
   uint64_t session_id_; //Pass in session id when deleting table
-  int64_t sess_create_time_; //When deleting oracle temporary table data, pass in the creation time of sess
+  int64_t sess_create_time_; //Pass session creation time when deleting temporary table data
   share::schema::ObTableType table_type_;
   common::ObSArray<ObTableItem> tables_;
   bool if_exist_;
@@ -3508,7 +3508,7 @@ public:
   bool if_not_exist_;
   common::ObSArray<share::schema::ObUserInfo> user_infos_;
   uint64_t creator_id_;
-  common::ObString primary_zone_; // only used in oracle mode
+  common::ObString primary_zone_;
   bool is_create_role_;
 };
 
@@ -3732,7 +3732,7 @@ public:
   common::ObSEArray<uint64_t, 4> ref_col_ids_;
   uint64_t grantor_id_;
   // used to save the user_name and host_name that cannot be stored in role[0] and role[1]
-  // to support grant xxx to multiple user in oracle mode
+  // Used to support grant xxx to multiple users.
   common::ObSArray<common::ObString> remain_roles_;
   bool is_inner_;
   common::ObSEArray<uint64_t, 4> sel_col_ids_;
@@ -4023,10 +4023,6 @@ struct ObAdminRefreshSchemaArg : public ObServerZoneArg
 };
 
 struct ObAdminRefreshMemStatArg : public ObServerZoneArg
-{
-};
-
-struct ObAdminWashMemFragmentationArg : public ObServerZoneArg
 {
 };
 
@@ -5400,7 +5396,7 @@ public:
   share::schema::ObReferenceObjTable::DependencyObjKeyItemPairs update_dep_objs_;
   share::schema::ObReferenceObjTable::DependencyObjKeyItemPairs delete_dep_objs_;
   share::schema::ObTableSchema schema_;
-  bool reset_view_column_infos_; // for oracle mode, recompile invalid view will reset its data type to undefined
+  bool reset_view_column_infos_;
 };
 
 struct ObCheckServerEmptyArg

@@ -183,6 +183,7 @@ TEST_F(TestBlockSet, BigBlockOrigin)
   }
 }
 
+
 TEST_F(TestBlockSet, Single)
 {
   uint64_t sz = INTACT_NORMAL_AOBJECT_SIZE;

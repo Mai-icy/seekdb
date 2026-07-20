@@ -31,7 +31,6 @@ struct ObCtxAttr
   bool enable_dirty_list_ = false;
   bool enable_no_log_ = false;
   int parallel_ = DEFAULT_CTX_PARALLEL;
-  bool disable_sync_wash_ = false;
 };
 
 struct ObCtxAttrCenter

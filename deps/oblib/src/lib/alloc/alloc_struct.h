@@ -303,7 +303,10 @@ struct ABlock {
     };
   };
 
-  uint64_t alloc_bytes_;
+  union {
+    uint64_t alloc_bytes_; // valid when in_use_
+    int64_t free_time_us_; // valid for dirty free blocks before purge
+  };
   uint32_t ablock_size_;
   union {
     ObjectSet *obj_set_;
