@@ -27,7 +27,7 @@ namespace share
 {
 
 // ObBackupStorageInfo is the storage-info vocabulary type still used by live local-file
-// IO paths (SELECT INTO OUTFILE, LOAD DATA INFILE, logservice external storage).
+// IO paths (SELECT INTO OUTFILE and LOAD DATA INFILE).
 const int64_t OB_MAX_BACKUP_PATH_LENGTH = 1024;
 const int64_t OB_BACKUP_LS_DIR_NAME_LENGTH = 64;
 const char *const OB_STR_LS = "logstream";
