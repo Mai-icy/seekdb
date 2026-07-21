@@ -1700,20 +1700,6 @@ DEF_PARAM(_ha_diagnose_history_recycle_interval, TIME, OB_CLUSTER_PARAMETER, "7d
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
 
-// index usage
-DEF_PARAM(_iut_enable, BOOL, OB_CLUSTER_PARAMETER, "True",
-        "specifies whether allow the index table usage start monitoring.",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
-DEF_PARAM(_iut_max_entries, INT, OB_CLUSTER_PARAMETER, "30000", "[0,]",
-        "maximum of index entries to be monitoring.",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE))
-
-DEF_PARAM(_iut_stat_collection_type, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "SAMPLED", common::ObConfigIndexStatsModeChecker,
-    "specify index table usage stat collection type, values: SAMPLED, ALL",
-    ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE),
-    "SAMPLED, ALL");
-
 DEF_PARAM(optimizer_index_cost_adj, INT, OB_CLUSTER_PARAMETER, "0", "[0,100]",
         "adjust costing of index scan",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
