@@ -50,7 +50,6 @@ struct ObStorageSnapshotInfo
     SNAPSHOT_ON_TABLET,
     SNAPSHOT_FOR_LS_RESERVED,
     SNAPSHOT_FOR_MIN_MEDIUM,
-    SNAPSHOT_FOR_SPLIT,
     SNAPSHOT_MAX,
   };
   ObStorageSnapshotInfo();
@@ -182,10 +181,6 @@ private:
     ObTenantFreezeInfoMgr &mgr_;
   };
 
-  void check_tenant_in_restore_with_mv_(
-       bool &need_check_mview,
-       share::ObSchemaGetterGuard &schema_guard,
-       const share::schema::ObSimpleTenantSchema *&tenant_schema);
 private:
   ReloadTask reload_task_;
   UpdateLSResvSnapshotTask update_reserved_snapshot_task_;
@@ -194,7 +189,7 @@ private:
   common::RWLock lock_;
   int64_t cur_idx_;
   int64_t last_change_ts_;
-  int tg_id_;
+  common::ObTimer reload_timer_;
   bool inited_;
 };
 

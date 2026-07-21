@@ -1069,7 +1069,6 @@ int ObBlockManager::mark_macro_blocks(
       MacroBlockId macro_id;
       MOD_SCOPE
       {
-        CONSUMER_GROUP_FUNC_GUARD(ObFunctionType::PRIO_GC_MACRO_BLOCK);
         if (OB_FAIL(mark_tenant_blocks(mark_info, macro_id_set, tmp_status))) {
           LOG_WARN("fail to mark tenant blocks", K(ret));
         } else if (OB_FALSE_IT(share::g_mp->shared_macro_block_mgr()->get_cur_shared_block(macro_id))) {
@@ -1178,8 +1177,7 @@ int ObBlockManager::mark_sstable_blocks(
   if (OB_UNLIKELY(!handle.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(handle));
-  } else if (OB_FAIL(handle.get_obj()->get_all_sstables(
-                 table_store_iter, true /* unpac cosstable */))) {
+  } else if (OB_FAIL(handle.get_obj()->get_all_sstables(table_store_iter))) {
     LOG_WARN("fail to get all sstables", K(ret));
   } else {
     while (OB_SUCC(ret)) {
@@ -1696,7 +1694,7 @@ int ObBlockManager::InspectBadBlockTask::check_block(
 
 int ObBlockManager::extend_file_size_if_need() {
   int ret = OB_SUCCESS;
-  int64_t reserved_size = ObStorageLoggerManager::RESERVED_DISK_SIZE;
+  int64_t reserved_size = ObServerStorageMetaService::SLOG_RESERVED_DISK_SIZE;
 
   if (OB_ISNULL(io_device_)) {
     ret = OB_NOT_INIT;
@@ -1950,19 +1948,8 @@ void ObIOBenchRunner::run1()
       io_info.fd_.device_handle_ = &LOCAL_DEVICE_INSTANCE;
       io_info.offset_ = ObRandom::rand(0, OB_DEFAULT_MACRO_BLOCK_SIZE - load_.size_);
       io_info.timeout_us_ = MAX_IO_WAIT_TIME_MS * 1000;
-#ifdef OB_BUILD_SHARED_STORAGE
-      if (false) {
-        io_info.fd_.first_id_ = ObIOFd::NORMAL_FILE_ID; // first_id is not used in shared storage mode;
-        io_info.fd_.second_id_ = OB_SERVER_FILE_MGR.get_io_calibration_fd();
-        io_info.offset_ += block_idx * OB_DEFAULT_MACRO_BLOCK_SIZE;
-      } else {
-        io_info.fd_.first_id_ = block_handles_[block_idx].get_macro_id().first_id();
-        io_info.fd_.second_id_ = block_handles_[block_idx].get_macro_id().second_id();
-      }
-#else
       io_info.fd_.first_id_ = block_handles_[block_idx].get_macro_id().first_id();
       io_info.fd_.second_id_ = block_handles_[block_idx].get_macro_id().second_id();
-#endif
 
       if (ObIOMode::WRITE == load_.mode_) {
         io_info.offset_ = lower_align(io_info.offset_, DIO_READ_ALIGN_SIZE);
@@ -2002,14 +1989,6 @@ void ObIOBenchController::run1()
   const int64_t MAX_CALIBRATION_BLOCK_COUNT = 20LL * 1024LL * 1024LL * 1024LL / OB_DEFAULT_MACRO_BLOCK_SIZE;
   int64_t free_block_count = OB_STORAGE_OBJECT_MGR.get_free_macro_block_count();
   int64_t total_block_count = OB_STORAGE_OBJECT_MGR.get_total_macro_block_count();
-#ifdef OB_BUILD_SHARED_STORAGE
-  if (false) {
-    const int64_t free_disk_size = OB_SERVER_DISK_SPACE_MGR.get_free_disk_size();
-    free_block_count = free_disk_size / OB_DEFAULT_MACRO_BLOCK_SIZE;
-    total_block_count = free_block_count;
-  }
-#endif
-
   if (free_block_count <= MIN_CALIBRATION_BLOCK_COUNT
       || 1.0 * free_block_count / total_block_count < MIN_FREE_SPACE_PERCENTAGE) {
     ret = OB_SERVER_OUTOF_DISK_SPACE;
@@ -2021,14 +2000,6 @@ void ObIOBenchController::run1()
     if (OB_FAIL(runner.init(benchmark_block_count))) {
       LOG_WARN("init benchmark runner failed", K(ret), K(benchmark_block_count));
     }
-#ifdef OB_BUILD_SHARED_STORAGE
-    if (OB_SUCC(ret)) {
-      if (false && OB_FAIL(OB_SERVER_FILE_MGR.create_io_calibration_file(
-          benchmark_block_count))) {
-        LOG_WARN("fail to create io calibration file", KR(ret), K(benchmark_block_count));
-      }
-    }
-#endif
   }
 
   // execute io benchmark
@@ -2067,13 +2038,6 @@ void ObIOBenchController::run1()
       LOG_WARN("update io ability failed", K(ret));
     }
   }
-
-#ifdef OB_BUILD_SHARED_STORAGE
-  int tmp_ret = OB_SUCCESS;
-  if (false && OB_TMP_FAIL(OB_SERVER_FILE_MGR.delete_io_calibration_file())) {
-    LOG_ERROR("fail to delete io calibration file", KR(tmp_ret));
-  }
-#endif
 
   ret_code_ = ret;
   finish_ts_ = ObTimeUtility::fast_current_time();

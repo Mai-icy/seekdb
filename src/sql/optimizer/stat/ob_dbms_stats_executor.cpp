@@ -52,7 +52,6 @@ int ObDbmsStatsExecutor::gather_table_stats(ObExecContext &ctx,
   int ret = OB_SUCCESS;
   LOG_TRACE("begin to gather table stats", K(param));
   PartitionIdBlockMap partition_id_block_map;
-  PartitionIdSkipRateMap partition_id_skip_rate_map;
   GatherHelper gather_helper(running_monitor);
   ObMySQLTransaction backup_trans;
   if (OB_FAIL(backup_trans.start(ctx.get_sql_proxy()))) {
@@ -64,12 +63,11 @@ int ObDbmsStatsExecutor::gather_table_stats(ObExecContext &ctx,
                  ctx, backup_trans, param, ObTimeUtility::current_time(), true))) {
     LOG_ERROR("failed to backup opt stats", K(ret));
   } else if (OB_FAIL(
-                 prepare_gather_stats(ctx, param, partition_id_block_map, partition_id_skip_rate_map, gather_helper))) {
+                 prepare_gather_stats(ctx, param, partition_id_block_map, gather_helper))) {
     LOG_WARN("failed to prepare gather stats", K(ret));
   } else if (OB_FAIL(gather_partition_stats(ctx,
                                             param,
                                             &partition_id_block_map,
-                                            &partition_id_skip_rate_map,
                                             gather_helper,
                                             running_monitor.failed_part_ids_))) {
     LOG_WARN("failed to gather gather stats", K(ret));
@@ -78,7 +76,6 @@ int ObDbmsStatsExecutor::gather_table_stats(ObExecContext &ctx,
     if (OB_SUCCESS != (tmp_ret = collect_last_part_and_global_if_timeout(ctx,
                                                                          param,
                                                                          &partition_id_block_map,
-                                                                         &partition_id_skip_rate_map,
                                                                          gather_helper,
                                                                          temp_failed_part_ids))) {
       LOG_WARN("fail to collect last part stats", K(tmp_ret));
@@ -119,7 +116,6 @@ int ObDbmsStatsExecutor::update_dml_modified_info(sqlclient::ObISQLConnection *c
 int ObDbmsStatsExecutor::gather_partition_stats(ObExecContext &ctx,
                                                 const ObTableStatParam &param,
                                                 const PartitionIdBlockMap *partition_id_block_map,
-                                                const PartitionIdSkipRateMap *partition_id_skip_rate_map,
                                                 GatherHelper &gather_helper,
                                                 ObIArray<int64_t> &failed_part_ids)
 {
@@ -168,7 +164,6 @@ int ObDbmsStatsExecutor::gather_partition_stats(ObExecContext &ctx,
                                                    batch_task_col_infos,
                                                    derive_param,
                                                    partition_id_block_map,
-                                                   partition_id_skip_rate_map,
                                                    gather_helper))) {
             LOG_WARN("failed to gather statts", K(ret));
           } else if (OB_FAIL(update_dml_modified_info(gather_trans.get_connection(), derive_param))) {
@@ -233,7 +228,6 @@ int ObDbmsStatsExecutor::collect_last_part_and_global_if_timeout(
     ObExecContext &ctx,
     const ObTableStatParam &origin_param,
     const PartitionIdBlockMap *partition_id_block_map,
-    const PartitionIdSkipRateMap *partition_id_skip_rate_map,
     GatherHelper &gather_helper,
     ObIArray<int64_t> &failed_part_ids)
 {
@@ -281,7 +275,6 @@ int ObDbmsStatsExecutor::collect_last_part_and_global_if_timeout(
     if (OB_SUCC(ret) && OB_FAIL(gather_partition_stats(ctx,
                                                        temp_stat_param,
                                                        partition_id_block_map,
-                                                       partition_id_skip_rate_map,
                                                        gather_helper,
                                                        failed_part_ids))) {
       LOG_WARN("failed to collect global or part ", K(ret));
@@ -299,7 +292,6 @@ int ObDbmsStatsExecutor::do_split_gather_stats(ObExecContext &ctx,
                                                ObIArray<TaskColumnParam> &batch_task_col_infos,
                                                ObTableStatParam &derive_param,
                                                const PartitionIdBlockMap *partition_id_block_map,
-                                               const PartitionIdSkipRateMap *partition_id_skip_rate_map,
                                                GatherHelper &gather_helper)
 {
   int ret = OB_SUCCESS;
@@ -341,7 +333,6 @@ int ObDbmsStatsExecutor::do_split_gather_stats(ObExecContext &ctx,
                                                     StatLevel::SUBPARTITION_LEVEL,
                                                     taskInfo.sub_part_infos_,
                                                     partition_id_block_map,
-                                                    partition_id_skip_rate_map,
                                                     gather_helper,
                                                     derive_param,
                                                     all_table_tats))) {
@@ -390,7 +381,6 @@ int ObDbmsStatsExecutor::do_split_gather_stats(ObExecContext &ctx,
                                                       StatLevel::PARTITION_LEVEL,
                                                       taskInfo.part_infos_,
                                                       partition_id_block_map,
-                                                      partition_id_skip_rate_map,
                                                       gather_helper,
                                                       derive_param,
                                                       all_table_tats))) {
@@ -441,7 +431,6 @@ int ObDbmsStatsExecutor::do_split_gather_stats(ObExecContext &ctx,
                                                         StatLevel::TABLE_LEVEL,
                                                         dummy_part_infos,
                                                         partition_id_block_map,
-                                                        partition_id_skip_rate_map,
                                                         gather_helper,
                                                         derive_param,
                                                         all_table_tats))) {
@@ -694,7 +683,6 @@ int ObDbmsStatsExecutor::construct_part_to_subpart_map(const ObTableStatParam &s
 int ObDbmsStatsExecutor::prepare_gather_stats(ObExecContext &ctx,
                                               const ObTableStatParam &param,
                                               PartitionIdBlockMap &partition_id_block_map,
-                                              PartitionIdSkipRateMap &partition_id_skip_rate_map,
                                               GatherHelper &gather_helper)
 {
   int ret = OB_SUCCESS;
@@ -703,26 +691,14 @@ int ObDbmsStatsExecutor::prepare_gather_stats(ObExecContext &ctx,
                                             ObModIds::OB_HASH_BUCKET_TABLE_STATISTICS,
                                             ObModIds::OB_HASH_BUCKET_TABLE_STATISTICS))) {
     LOG_WARN("failed to create hash map", K(ret));
-  } else if (OB_FAIL(partition_id_skip_rate_map.create(10000,
-                                                       ObModIds::OB_HASH_BUCKET_TABLE_STATISTICS,
-                                                       ObModIds::OB_HASH_BUCKET_TABLE_STATISTICS))) {
-    LOG_WARN("failed to create hash map", K(ret));
   } else if (OB_FALSE_IT(start_time = ObTimeUtility::current_time())) {
     //do nothing
   } else if (param.need_estimate_block_ &&
              OB_FAIL(ObBasicStatsEstimator::estimate_block_count(
-                 ctx, param, partition_id_block_map, gather_helper.use_column_store_))) {
+                 ctx, param, partition_id_block_map))) {
     LOG_WARN("failed to estimate block count", K(ret));
   } else if (OB_FAIL(gather_helper.running_monitor_.audit_.add_flush_block_count_audit(ObTimeUtility::current_time() -
                                                                                        start_time))) {
-    LOG_WARN("failed to add flush stats audit", K(ret));
-  } else if (OB_FALSE_IT(start_time = ObTimeUtility::current_time())) {
-    //do nothing
-  } else if (param.skip_rate_sample_cnt_ != 0 && OB_FAIL(ObBasicStatsEstimator::estimate_skip_rate(
-                                                     ctx, param, partition_id_skip_rate_map, partition_id_block_map))) {
-    LOG_WARN("failed to estimate_skip_rate", K(ret));
-  } else if (OB_FAIL(gather_helper.running_monitor_.audit_.add_flush_skip_rate_audit(ObTimeUtility::current_time() -
-                                                                                     start_time))) {
     LOG_WARN("failed to add flush stats audit", K(ret));
   } else if (OB_FAIL(determine_auto_sample_table(ctx, const_cast<ObTableStatParam&>(param)))) {
       LOG_WARN("failed to determine auto sample table", K(ret));
@@ -752,7 +728,6 @@ int ObDbmsStatsExecutor::do_gather_stats_with_retry(ObExecContext &ctx,
                                                     StatLevel stat_level,
                                                     const ObIArray<PartInfo> &gather_partition_infos,
                                                     const PartitionIdBlockMap *partition_id_block_map,
-                                                    const PartitionIdSkipRateMap *partition_id_skip_rate_map,
                                                     GatherHelper &gather_helper,
                                                     ObTableStatParam &derive_param,
                                                     ObIArray<ObOptTableStat *> &all_tstats)
@@ -771,10 +746,8 @@ int ObDbmsStatsExecutor::do_gather_stats_with_retry(ObExecContext &ctx,
     } else if (OB_FAIL(ObDbmsStatsUtils::prepare_gather_stat_param(derive_param,
                                                                    stat_level,
                                                                    partition_id_block_map,
-                                                                   partition_id_skip_rate_map,
                                                                    true,
                                                                    gather_helper.gather_vectorize_,
-                                                                   gather_helper.use_column_store_,
                                                                    gather_param))) {
       LOG_WARN("failed to prepare gather stat param", K(ret));
     } else if (OB_FAIL(do_gather_stats(ctx,
@@ -1342,7 +1315,6 @@ int ObDbmsStatsExecutor::gather_index_stats(ObExecContext &ctx,
   ObOptStat global_opt_stat;
   ObOptStatGatherParam gather_param;
   PartitionIdBlockMap partition_id_block_map;
-  bool use_column_store = false;
   ObSEArray<ObOptColumnStat*, 4> copy_stats;
   LOG_TRACE("begin gather index stats", K(param));
   if (OB_FAIL(partition_id_block_map.create(10000,
@@ -1350,15 +1322,13 @@ int ObDbmsStatsExecutor::gather_index_stats(ObExecContext &ctx,
                                             ObModIds::OB_HASH_BUCKET_TABLE_STATISTICS))) {
     LOG_WARN("failed to create hash map", K(ret));
   } else if (param.need_estimate_block_ && OB_FAIL(ObBasicStatsEstimator::estimate_block_count(
-                                               ctx, param, partition_id_block_map, use_column_store))) {
+                                               ctx, param, partition_id_block_map))) {
     LOG_WARN("failed to estimate block count", K(ret));
   } else if (OB_FAIL(ObDbmsStatsUtils::prepare_gather_stat_param(param,
                                                                  INVALID_LEVEL,
                                                                  &partition_id_block_map,
-                                                                 NULL,
                                                                  false,
                                                                  DEFAULT_STAT_GATHER_VECTOR_BATCH_SIZE,
-                                                                 use_column_store,
                                                                  gather_param))) {
     LOG_WARN("failed to prepare gather stat param", K(ret));
   } else if (OB_FAIL(gather_param.column_params_.assign(param.column_params_))) {
@@ -1501,8 +1471,7 @@ int ObDbmsStatsExecutor::update_online_stat(ObExecContext &ctx,
                                             ObTableStatParam &param,
                                             share::schema::ObSchemaGetterGuard *schema_guard,
                                             const TabStatIndMap &online_table_stats,
-                                            const ColStatIndMap &online_column_stats,
-                                            const ObIArray<ObOptDmlStat *> *dml_stats)
+                                            const ColStatIndMap &online_column_stats)
 {
   int ret = OB_SUCCESS;
   ObArenaAllocator allocator("ObOnlineStat", OB_MALLOC_NORMAL_BLOCK_SIZE);
@@ -1539,8 +1508,6 @@ int ObDbmsStatsExecutor::update_online_stat(ObExecContext &ctx,
                                                                          need_reset_trx_lock_timeout,
                                                                          conn))) {
         LOG_WARN("failed to prepare conn and store session for online stats", K(ret));
-      } else if (nullptr != dml_stats && ObOptStatMonitorManager::update_dml_stat_info_from_direct_load(*dml_stats, conn)) {
-        LOG_WARN("fail to update dml stat info", K(ret));
       } else if (OB_FAIL(ObDbmsStatsUtils::get_current_opt_stats(allocator,
                                                                  conn,
                                                                  param,
@@ -1628,17 +1595,11 @@ int ObDbmsStatsExecutor::prepare_conn_and_store_session_for_online_stats(sql::Ob
     session->set_query_start_time(ObTimeUtility::current_time());
     session->set_inner_session();
     session->set_nested_count(-1);
-    //2.2 modify seesion compatible mode
-    ObObj mysql_mode;
-    mysql_mode.set_int(0);
-    if (OB_FAIL(session->update_sys_variable(share::SYS_VAR_OB_COMPATIBILITY_MODE, mysql_mode))) {
-      LOG_WARN("failed to update sys variable for compatibility mode", K(ret));
-    } else {
-      //2.3.modify session database name and database id and catalog id
-      if (OB_FAIL(session->set_internal_catalog_db())) {
+    //2.2 modify session database name and database id and catalog id
+    if (OB_FAIL(session->set_internal_catalog_db())) {
         LOG_WARN("failed to set session catalog and database", K(ret));
       } else {
-        //2.4 modify session trx lock timeout
+        //2.3 modify session trx lock timeout
         old_trx_lock_timeout = session->get_trx_lock_timeout();
         ObObj trx_lock_timeout;
         trx_lock_timeout.set_int(0);
@@ -1655,7 +1616,6 @@ int ObDbmsStatsExecutor::prepare_conn_and_store_session_for_online_stats(sql::Ob
             LOG_WARN("failed to acquire conn", K(ret));
           }
         }
-      }
     }
   }
   return ret;
@@ -1797,7 +1757,7 @@ int ObDbmsStatsExecutor::fetch_gather_task_addr(ObCommonSqlProxy *sql_proxy,
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(sql_proxy);
+      auto &sql_client_retry_weak = *sql_proxy;
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {

@@ -28,7 +28,6 @@
 #include "sql/resolver/ddl/ob_fts_index_builder_util.h"
 #include "sql/engine/cmd/ob_partition_executor_utils.h"
 #include "rootserver/ob_location_ddl_service.h"
-#include "rootserver/ob_dynamic_partition_manager.h"
 #include "share/schema/ob_table_sql_service.h"
 #include "share/schema/ob_sequence_sql_service.h"
 #include "share/schema/ob_multi_version_schema_service.h"
@@ -413,12 +412,8 @@ int ObTableHelper::create_tablets_()
     if (OB_FAIL(ret)) {
     } else {
       ObArray<const ObTableSchema*> schemas;
-      common::ObArray<share::ObLSID> ls_id_array;
       ObArray<bool> need_create_empty_majors;
       ObArray<uint64_t> table_ids;
-      if (OB_FAIL(ls_id_array.push_back(ObLSID(SYS_LS)))) {
-        LOG_WARN("fail to push back sys ls", KR(ret));
-      }
       for (int64_t i = 0; OB_SUCC(ret) && i < new_tables_.count(); i++) {
         const ObTableSchema &new_table = new_tables_.at(i);
         const uint64_t table_id = new_table.get_table_id();
@@ -432,7 +427,7 @@ int ObTableHelper::create_tablets_()
           }
         } else {
           if (OB_FAIL(table_creator.add_create_tablets_of_table_arg(
-                     new_table, ls_id_array, tenant_data_version, true/*need create major sstable*/))) {
+                     new_table, tenant_data_version, true/*need create major sstable*/))) {
             LOG_WARN("create table partitions failed", KR(ret), K(new_table));
           }
         }
@@ -447,7 +442,7 @@ int ObTableHelper::create_tablets_()
                                                               K(last_schema_version));
       } else if (schemas.count() > 0) {
         if (OB_FAIL(table_creator.add_create_tablets_of_tables_arg(
-                   schemas, ls_id_array, tenant_data_version, need_create_empty_majors /*need create major sstable*/))) {
+                   schemas, tenant_data_version, need_create_empty_majors /*need create major sstable*/))) {
           LOG_WARN("create table partitions failed", KR(ret), K(data_table));
         } else if (OB_FAIL(table_creator.execute())) {
           LOG_WARN("execute create partition failed", KR(ret));
@@ -745,25 +740,11 @@ int ObTableHelper::inner_generate_table_schema_(const ObCreateTableArg &arg, ObT
     }
   }
 
-  // check auto_partition validity
-  if (FAILEDx(new_table.check_validity_for_auto_partition())) {
-    LOG_WARN("fail to check auto partition setting", KR(ret), K(new_table), K(arg));
-  }
   if (OB_SUCC(ret)) {
     if (OB_FAIL(new_table.set_storage_cache_policy(arg.schema_.get_storage_cache_policy()))) {
       LOG_WARN("fail to set storage_cache_policy", K(ret), K(arg.schema_.get_storage_cache_policy()));
     }
   }
-
-  if (OB_SUCC(ret) && !new_table.get_dynamic_partition_policy().empty()) {
-    bool is_supported = false;
-    if (OB_FAIL(ObDynamicPartitionManager::check_is_supported(new_table))) {
-      LOG_WARN("fail to check dynamic partition is supported", KR(ret), K(new_table));
-    } else if (OB_FAIL(ObDynamicPartitionManager::check_is_valid(new_table))) {
-      LOG_WARN("fail to check dynamic partition is valid", KR(ret), K(new_table));
-    }
-  }
-
 
   return ret;
 }
@@ -805,8 +786,7 @@ int ObTableHelper::inner_generate_aux_table_schema_(const ObCreateTableArg &arg)
         index_schema.reset();
         obcall::ObCreateIndexArg &index_arg = const_cast<obcall::ObCreateIndexArg&>(arg.index_arg_list_.at(i));
         if (!index_arg.index_schema_.is_partitioned_table()
-            && !data_table->is_partitioned_table()
-            && !data_table->is_auto_partitioned_table()) {
+            && !data_table->is_partitioned_table()) {
           if (INDEX_TYPE_NORMAL_GLOBAL == index_arg.index_type_) {
             index_arg.index_type_ = INDEX_TYPE_NORMAL_GLOBAL_LOCAL_STORAGE;
           } else if (INDEX_TYPE_UNIQUE_GLOBAL == index_arg.index_type_) {

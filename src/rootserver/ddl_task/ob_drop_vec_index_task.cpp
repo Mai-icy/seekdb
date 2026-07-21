@@ -62,7 +62,6 @@ int ObDropVecIndexTask::init(
     const ObVecIndexDDLChildTaskInfo &vec_index_snapshot_data,
     const ObVecIndexDDLChildTaskInfo &hybrid_embedded_vec,
     const int64_t schema_version,
-    const int64_t consumer_group_id,
     const uint64_t tenant_data_version,
     const obcall::ObDropIndexArg &drop_index_arg)
 {
@@ -121,7 +120,6 @@ int ObDropVecIndexTask::init(
       schema_version_ = schema_version;
       task_id_ = task_id;
       parent_task_id_ = 0; // no parent task
-      consumer_group_id_ = consumer_group_id;
       task_version_ = OB_DROP_VEC_INDEX_TASK_VERSION;
       
       dst_schema_version_ = schema_version;
@@ -166,8 +164,6 @@ int ObDropVecIndexTask::init(const ObDDLTaskRecord &task_record)
       LOG_WARN("deserialize params from message failed", K(ret));
     } else {
       is_inited_ = true;
-      // set up span during recover task
-      ddl_tracing_.open_for_recovery();
     }
   }
   return ret;
@@ -346,7 +342,6 @@ int ObDropVecIndexTask::process()
   } else if (OB_FAIL(check_switch_succ())) {
     LOG_WARN("check need retry failed", K(ret));
   } else {
-    ddl_tracing_.restore_span_hierarchy();
     const ObDDLTaskStatus status = static_cast<ObDDLTaskStatus>(task_status_);
     switch (status) {
       case ObDDLTaskStatus::PREPARE:
@@ -393,7 +388,6 @@ int ObDropVecIndexTask::process()
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("error unexpected, task status is not valid", K(ret), K(task_status_));
     }
-    ddl_tracing_.release_span_hierarchy();
   }
   return ret;
 }
@@ -1016,7 +1010,6 @@ int ObDropVecIndexTask::send_build_single_replica_request()
     param.parallelism_ = std::max(parallelism_, static_cast<int64_t>(1));
     param.execution_id_ = execution_id_; // should >= 0
     param.data_format_version_ = data_format_version_; // should > 0
-    param.consumer_group_id_ = consumer_group_id_;
     param.is_no_logging_ = is_no_logging_;
 
     if (OB_FAIL(ObDDLUtil::get_tablets(vec_index_snapshot_data_.table_id_, param.source_tablet_ids_))) {

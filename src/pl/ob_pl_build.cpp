@@ -275,7 +275,6 @@ int ObPLBuilder::compile(
   bool is_prepare_protocol/*=false*/)
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(pl_compile);
   int64_t compile_start = ObTimeUtility::current_time();
   uint64_t block_hash = OB_INVALID_ID;
   int64_t resolve_end = 0;
@@ -334,7 +333,6 @@ int ObPLBuilder::compile(
       OZ (func.get_exec_env().load(session_info_, &(func.get_allocator())));
     }
     resolve_end = ObTimeUtility::current_time();
-    FLT_SET_TAG(pl_compile_resolve_time, resolve_end - init_end);
     //Step 3：Code Generator
     if (OB_SUCC(ret)) {
       {
@@ -402,7 +400,6 @@ int ObPLBuilder::compile(
   int64_t compile_end = ObTimeUtility::current_time();
   OX (func.get_stat_for_update().compile_time_ = compile_end - compile_start);
   OX (session_info_.add_plsql_compile_time(compile_end - compile_start));
-  FLT_SET_TAG(pl_compile_cg_time, compile_end - resolve_end);
   LOG_INFO(">>>>>>>>Final Build Anonymous Block Time: ", K(ret), K(stmt_id), K(compile_end - compile_start));
   return ret;
 }
@@ -456,8 +453,6 @@ int ObPLBuilder::compile(
   const share::schema::ObRoutineInfo &routine, ObPLFunctionAST &func_ast, ObPLFunction &func)
 {
   int ret = OB_SUCCESS;
-
-  FLTSpanGuard(pl_compile);
   ObPLBuilderEnvGuard env_guard(routine, session_info_, schema_guard_, func_ast, ret);
   const share::schema::ObDatabaseSchema *db_schema = NULL;
 
@@ -539,7 +534,6 @@ int ObPLBuilder::compile(
 
   int64_t parse_end = ObTimeUtility::current_time();
   LOG_INFO(">>>>>>>>Parse Time: ", K(routine.get_routine_id()), K(routine.get_routine_name()), K(parse_end - init_end));
-  FLT_SET_TAG(pl_compile_parser_time, parse_end - init_end);
   //Step 3: Resolver
   if (OB_SUCC(ret)) {
     bool is_prepare_protocol = false;
@@ -571,7 +565,6 @@ int ObPLBuilder::compile(
 
   int64_t resolve_end = ObTimeUtility::current_time();
   LOG_INFO(">>>>>>>>Resolve Time: ", K(routine.get_routine_id()), K(routine.get_routine_name()), K(resolve_end - parse_end));
-  FLT_SET_TAG(pl_compile_resolve_time, resolve_end - parse_end);
   //Step 4: Code Generator
   if (OB_SUCC(ret)) {
     {
@@ -604,7 +597,6 @@ int ObPLBuilder::compile(
 
   int64_t cg_end = ObTimeUtility::current_time();
   LOG_INFO(">>>>>>>>CG Time: ", K(routine.get_routine_id()), K(routine.get_routine_name()), K(cg_end - resolve_end));
-  FLT_SET_TAG(pl_compile_cg_time, cg_end - resolve_end);
   int64_t final_end = ObTimeUtility::current_time();
   LOG_INFO(">>>>>>>>Final Build Routine Time: ", K(routine.get_routine_id()), K(routine.get_routine_name()), K(final_end - init_start));
   
@@ -760,7 +752,6 @@ int ObPLBuilder::analyze_package(const ObString &source,
   if (OB_SUCC(ret)) {
     ObPLParser parser(allocator_, session_info_.get_charsets4parser(), session_info_.get_sql_mode());
     ObStmtNodeTree *parse_tree = NULL;
-    CHECK_COMPATIBILITY_MODE(&session_info_);
     ObPLResolver resolver(allocator_,
                           session_info_,
                           schema_guard_,
@@ -839,7 +830,6 @@ int ObPLBuilder::build_package(const ObPackageInfo &package_info,
                                   ObPLPackage &package)
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(pl_compile);
   bool saved_trigger_flag = session_info_.is_for_trigger_package();
   ObString source;
   ObString copy_exec_env;
@@ -883,7 +873,6 @@ int ObPLBuilder::build_package(const ObPackageInfo &package_info,
   OZ (analyze_package(source, parent_ns,
                       package_ast, package_info.is_for_trigger()));
   int64_t resolve_end = ObTimeUtility::current_time();
-  FLT_SET_TAG(pl_compile_resolve_time, resolve_end - compile_start);
 
   if (OB_SUCC(ret)) {
     {
@@ -975,7 +964,6 @@ int ObPLBuilder::build_package(const ObPackageInfo &package_info,
   } else {
     OX (package.get_stat_for_update().type_ = ObPLCacheObjectType::PACKAGE_TYPE);
   }
-  FLT_SET_TAG(pl_compile_cg_time, compile_end - resolve_end);
   LOG_INFO(">>>>>>>>Final Build Package Time: ", K(package.get_id()), K(package.get_name()), K(compile_end - compile_start));
   return ret;
 }
@@ -1468,8 +1456,6 @@ void ObPLBuilderEnvGuard::init(const Info &info,
 {
   ObExecEnv env;
   bool need_set_db = true;
-  bool invoker_set_db = false;
-  uint64_t compat_version = 0;
   bool is_invoker_right = OB_NOT_NULL(parent_ns) ? parent_ns->get_compile_flag().compile_with_invoker_right()
                                                  : info.is_invoker_right();
   OX (need_reset_exec_env_ = false);
@@ -1480,19 +1466,6 @@ void ObPLBuilderEnvGuard::init(const Info &info,
   if (OB_SUCC(ret) && old_exec_env_ != env) {
     OZ (env.store(session_info_));
     OX (need_reset_exec_env_ = true);
-  }
-
-  OZ (session_info_.get_compatibility_version(compat_version));
-  OZ (ObCompatControl::check_feature_enable(compat_version, ObCompatFeatureType::INVOKER_RIGHT_COMPILE, invoker_set_db));
-  
-  if (OB_SUCC(ret)) {
-    if (invoker_set_db) {
-      // alway set db in compile phase when version greater or equal than 4.3.5.2
-      need_set_db = true;
-    } else if (true) {
-      // Definer-right routines need the database set during compile.
-      need_set_db = !is_invoker_right;
-    }
   }
 
   if (OB_SUCC(ret) && is_invoker_right) {

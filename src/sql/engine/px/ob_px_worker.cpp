@@ -149,17 +149,6 @@ void PxWorkerFunctor::operator ()(bool need_exec)
   } else if (OB_NOT_NULL(sqc_handler) && OB_LIKELY(!sqc_handler->has_interrupted())) {
     THIS_WORKER.set_worker_level(sqc_handler->get_rpc_level());
     THIS_WORKER.set_curr_request_level(sqc_handler->get_rpc_level());
-    LOG_TRACE("init flt ctx", K(sqc_handler->get_flt_ctx()));
-    if (sqc_handler->get_flt_ctx().trace_id_.is_inited()) {
-      OBTRACE->init(sqc_handler->get_flt_ctx());
-    }
-    FLTSpanGuard(px_task);
-
-    FLT_SET_TAG(task_id, task_arg_.task_.get_task_id(),
-                dfo_id, task_arg_.task_.get_dfo_id(),
-                sqc_id, task_arg_.task_.get_sqc_id(),
-                qc_id, task_arg_.task_.get_qc_id(),
-                group_id, THIS_WORKER.get_group_id());
     // Do not set thread local log level while log level upgrading (OB_LOGGER.is_info_as_wdiag)
     if (OB_LOGGER.is_info_as_wdiag()) {
       ObThreadLogLevelUtils::clear();
@@ -216,12 +205,6 @@ void PxWorkerFunctor::operator ()(bool need_exec)
     LOG_WARN("already interrupted");
   }
 
-  if (OB_ISNULL(sqc_handler)) {
-    // do nothing
-  } else if (sqc_handler->get_flt_ctx().trace_id_.is_inited()) {
-    OBTRACE->reset();
-  }
-
   //if start worker failed, still need set task state, interrupt qc
   if (OB_FAIL(ret)) {
     if (task_arg_.sqc_task_ptr_ != NULL) {
@@ -256,7 +239,7 @@ ObPxThreadWorker::~ObPxThreadWorker()
 int ObPxThreadWorker::run(ObPxRpcInitTaskArgs &task_arg)
 {
   int ret = OB_SUCCESS;
-  int64_t group_id = THIS_WORKER.get_group_id();
+  int64_t group_id = 0;
   omt::ObPxPools* px_pools = share::g_mp->px_pools();
   if (OB_ISNULL(px_pools)) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
@@ -329,22 +312,12 @@ int ObPxLocalWorker::run(ObPxRpcInitTaskArgs &task_arg)
 {
   int ret = OB_SUCCESS;
   ObDIActionGuard action_guard("FastDFO");
-  ObPxSqcHandler *h = task_arg.get_sqc_handler();
-  if (OB_ISNULL(h)) {
-  } else if (h->get_flt_ctx().trace_id_.is_inited()) {
-    OBTRACE->init(h->get_flt_ctx());
-  }
 
   {
-    FLTSpanGuard(px_task);
     ObPxTaskProcess task_proc(gctx_, task_arg);
     ret = task_proc.process();
   }
 
-  if (OB_ISNULL(h)) {
-  } else if (h->get_flt_ctx().trace_id_.is_inited()) {
-    OBTRACE->reset();
-  }
   return ret;
 }
 

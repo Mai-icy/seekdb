@@ -24,7 +24,6 @@
 #include "common/ob_tablet_id.h"
 #include "share/ob_errno.h"
 #include "lib/worker.h"
-#include "share/ob_ls_id.h"
 #include "cmath"
 #ifdef __linux__
 #include <features.h>
@@ -289,11 +288,6 @@ inline bool is_has_no_readable_replica_err(int err)
   return OB_NO_READABLE_REPLICA == err;
 }
 
-inline bool is_partition_splitting(const int err)
-{
-  return OB_PARTITION_IS_SPLITTING == err;
-}
-
 inline bool is_id_not_ready_err(const int err)
 {
   return OB_GTS_NOT_READY == err || OB_GTI_NOT_READY == err;
@@ -419,9 +413,7 @@ enum ObDmlEventType
 };
 
 const char *const NORMAL_MODE_STR = "normal";
-const char *const FLASHBACK_MODE_STR = "physical_flashback";
 const char *const ARBITRATION_MODE_STR = "arbitration";
-const char *const FLASHBACK_VERIFY_MODE_STR = "physical_flashback_verify";
 const char *const DISABLED_CLUSTER_MODE_STR = "disabled_cluster";
 const char *const DISABLED_WITH_READONLY_CLUSTER_MODE_STR = "disabled_with_readonly_cluster";
 static const int64_t MODIFY_GC_SNAPSHOT_INTERVAL = 2 * 1000 * 1000; //2s

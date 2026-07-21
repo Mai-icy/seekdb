@@ -69,33 +69,21 @@ private:
   int64_t get_user_id();
   int64_t get_database_id();
   int get_conn_id(uint32_t &conn_id) const;
-  int get_client_addr_port(int32_t &client_addr_port) const;
-  int get_client_conn_id(uint32_t &conn_id) const;
-  int get_client_create_time(int64_t &client_create_time) const;
-  int get_proxy_capability(uint64_t &cap) const;
-
-  int get_client_attribute_capability(uint64_t &cap) const;
 
   int get_user_tenant(ObSMConnection &conn);
 
   int check_client_property(ObSMConnection &conn);
-  int check_common_property(ObSMConnection &conn, obmysql::ObMySQLCapabilityFlags &client_cap);
-  int check_update_proxy_capability(ObSMConnection &conn) const;
-  int check_update_client_capability(uint64_t &cap) const;
-  int check_user_cluster(const ObString &server_cluster, const int64_t server_cluster_id) const;
   int init_process_single_stmt(const sql::ObMultiStmtItem &multi_stmt_item,
                                sql::ObSQLSessionInfo &session,
                                bool has_more_result) const;
   int init_connect_process(common::ObString &init_sql,
                            sql::ObSQLSessionInfo &session) const;
-  int init_connection_group(ObSMConnection &conn);
   int verify_connection() const;
   int verify_identify(ObSMConnection &conn, sql::ObSQLSessionInfo &session);
   int verify_ip_white_list() const;
 
   int switch_lock_status_for_current_login_user(bool do_lock);
-  int switch_lock_status_for_user(const ObString &host_name,
-                                  ObCompatibilityMode compat_mode, bool do_lock);
+  int switch_lock_status_for_user(const ObString &host_name, bool do_lock);
   int get_last_failed_login_info(const uint64_t user_id,
                                  ObISQLClient &sql_client,
                                  int64_t &current_failed_login_num,

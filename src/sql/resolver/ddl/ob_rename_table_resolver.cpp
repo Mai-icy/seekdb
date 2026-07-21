@@ -51,17 +51,16 @@ int ObRenameTableResolver::resolve(const ParseNode &parser_tree)
     if (NULL == (rename_table_stmt = create_stmt<ObRenameTableStmt>())) {
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_ERROR("failed to create rename table stmt", K(ret));
-    } else if (OB_FAIL(rename_table_stmt->set_lock_priority(session_info_))) {
-      LOG_WARN("set lock priority failed", K(ret));
     } else {
+      rename_table_stmt->set_lock_priority();
       stmt_ = rename_table_stmt;
     }
   }
   if (OB_SUCC(ret)) {
     int64_t count = node->num_child_;
     
-    rename_table_stmt->set_client_session_info(session_info_->get_client_sid(),
-                                               session_info_->get_client_create_time());
+    rename_table_stmt->set_lock_session_info(session_info_->get_server_sid(),
+                                             session_info_->get_sess_create_time());
     for (int64_t i = 0; OB_SUCC(ret) && i < count; ++i) {
       ParseNode *rename_node = node->children_[i];
       if (OB_ISNULL(rename_node)) {
@@ -125,20 +124,6 @@ int ObRenameTableResolver::resolve_rename_action(const ParseNode &rename_action_
       rename_table_item.origin_table_id_ = NULL != table_schema ? table_schema->get_table_id() : common::OB_INVALID_ID;
       if (OB_FAIL(rename_table_stmt->add_rename_table_item(rename_table_item))) {
         LOG_WARN("failed to add rename table item", K(rename_table_item), K(ret));
-      } else if (OB_NOT_NULL(table_schema)) {
-        if (table_schema->is_mlog_table()) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("rename materialized view log is not supported", KR(ret));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "rename materialized view log is");
-        } else if (table_schema->has_mlog_table()) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("rename table required with materialized view log is not supported", KR(ret));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "rename table with materialized view log is");
-        } else if (table_schema->table_referenced_by_fast_lsm_mv()) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("rename table required by materialized view is not supported", KR(ret));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "rename table required by materialized view is");
-        }
       }
     }
   }

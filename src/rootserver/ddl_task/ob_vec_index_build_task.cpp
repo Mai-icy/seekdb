@@ -78,7 +78,6 @@ int ObVecIndexBuildTask::init(
     const ObTableSchema *index_schema,
     const int64_t schema_version,
     const int64_t parallelism,
-    const int64_t consumer_group_id,
     const obcall::ObCreateIndexArg &create_index_arg,
     const uint64_t tenant_data_version,
     const int64_t parent_task_id /* = 0 */,
@@ -104,7 +103,6 @@ int ObVecIndexBuildTask::init(
                          OB_ISNULL(index_schema) ||
                          schema_version <= 0 ||
                          parallelism <= 0 ||
-                         consumer_group_id < 0 ||
                          !create_index_arg.is_valid() ||
                          !(tenant_data_version > 0) ||
                          task_status < ObDDLTaskStatus::PREPARE ||
@@ -113,7 +111,6 @@ int ObVecIndexBuildTask::init(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(task_id),
         KPC(data_table_schema), KPC(index_schema), K(schema_version), K(parallelism),
-        K(consumer_group_id), K(create_index_arg.is_valid()), K(create_index_arg),
         K(task_status), K(snapshot_version), K(is_rebuild_index));
   } else if (OB_FAIL(ObVectorIndexUtil::determine_vid_type(*data_table_schema, vid_type))) {
     LOG_WARN("Failed to determine vid type.", K(ret));
@@ -135,7 +132,6 @@ int ObVecIndexBuildTask::init(
     task_id_ = task_id;
     schema_version_ = schema_version;
     parallelism_ = parallelism;
-    consumer_group_id_ = consumer_group_id;
     parent_task_id_ = parent_task_id;
     if (snapshot_version > 0) {
       snapshot_version_ = snapshot_version;
@@ -216,8 +212,6 @@ int ObVecIndexBuildTask::init(const ObDDLTaskRecord &task_record)
       LOG_WARN("init ddl task monitor info failed", K(ret));
     } else {
       is_inited_ = true;
-      // set up span during recover task
-      ddl_tracing_.open_for_recovery();
     }
   }
   return ret;
@@ -244,7 +238,6 @@ int ObVecIndexBuildTask::process()
     // by pass
   } else {
     // switch case for diff create_index_arg, since there are 5 aux tables
-    ddl_tracing_.restore_span_hierarchy();
     const ObDDLTaskStatus status = static_cast<ObDDLTaskStatus>(task_status_);
     switch (status) {
     case ObDDLTaskStatus::PREPARE: {
@@ -312,7 +305,6 @@ int ObVecIndexBuildTask::process()
       LOG_WARN("not expected status", K(ret), K(status), K(*this));
     }
     } // end switch
-    ddl_tracing_.release_span_hierarchy();
   }
   return ret;
 }

@@ -231,7 +231,7 @@ int ObInitSqcP::after_process(int error_code)
     /**
      * Get the local thread according to arg_ parameter and execute task
      */
-    LOG_TRACE("process dfo", K(arg), K(session->get_compatibility_mode()), K(sqc_handler->get_reserved_px_thread_count()));
+    LOG_TRACE("process dfo", K(arg), K(sqc_handler->get_reserved_px_thread_count()));
     ret = startup_normal_sqc(*sqc_handler);
     session->set_session_sleep();
   }
@@ -322,7 +322,6 @@ int ObFastInitSqcReportQCMessageCall::mock_sqc_finish_msg()
             LOG_WARN("serialize RPC channel message fail", K(ret));
           } else if (FALSE_IT(buffer->size() = pos)) {
           } else if (FALSE_IT(pos = 0)) {
-          } else if (false) {
           } else if (OB_FAIL(ch->attach(buffer, inc_recv_buf_cnt))) {
             LOG_WARN("fail to feedup buffer", K(ret));
           } else if (FALSE_IT(ch->free_buffer_count())) {
@@ -406,7 +405,6 @@ int ObInitFastSqcP::process()
     } else {
       LOG_TRACE("process dfo",
                 K(arg),
-                K(session->get_compatibility_mode()),
                 K(sqc_handler->get_reserved_px_thread_count()));
       if (OB_FAIL(startup_normal_sqc(*sqc_handler))) {
         LOG_WARN("fail to startup normal sqc", K(ret));

@@ -32,9 +32,6 @@
 #include "observer/mysql/obmp_stmt_prepare.h"
 #include "observer/mysql/obmp_stmt_fetch.h"
 #include "observer/mysql/obmp_stmt_close.h"
-#include "observer/mysql/obmp_stmt_prexecute.h"
-#include "observer/mysql/obmp_stmt_send_piece_data.h"
-#include "observer/mysql/obmp_stmt_get_piece_data.h"
 #include "observer/mysql/obmp_stmt_send_long_data.h"
 #include "observer/mysql/obmp_stmt_reset.h"
 #include "observer/mysql/obmp_reset_connection.h"
@@ -199,9 +196,6 @@ int ObSrvMySQLXlator::translate(rpc::ObRequest &req, ObReqProcessor *&processor)
           MYSQL_PROCESSOR(ObMPStmtExecute, gctx_);
           MYSQL_PROCESSOR(ObMPStmtFetch, gctx_);
           MYSQL_PROCESSOR(ObMPStmtReset, gctx_);
-          MYSQL_PROCESSOR(ObMPStmtPrexecute, gctx_);
-          MYSQL_PROCESSOR(ObMPStmtSendPieceData, gctx_);
-          MYSQL_PROCESSOR(ObMPStmtGetPieceData, gctx_);
           MYSQL_PROCESSOR(ObMPStmtSendLongData, gctx_);
           MYSQL_PROCESSOR(ObMPResetConnection, gctx_);
           MYSQL_PROCESSOR(ObMPAuthResponse, gctx_);
@@ -275,7 +269,6 @@ ObReqProcessor *ObSrvXlator::get_processor(ObRequest &req)
   } else if (ObRequest::OB_MYSQL == req.get_type()) {
     ret = mysql_xlator_.translate(req, processor);
   } else if (ObRequest::OB_TASK == req.get_type() ||
-             ObRequest::OB_TS_TASK == req.get_type() ||
              ObRequest::OB_SQL_TASK == req.get_type() ||
              ObRequest::OB_DAS_PARALLEL_TASK == req.get_type()) {
     processor = &static_cast<ObSrvTask&>(req).get_processor();
@@ -334,11 +327,6 @@ int ObSrvXlator::release(ObReqProcessor *processor)
     if (ObRequest::OB_TASK == req_type) {
       //Deal with sqltask memory release
       ob_delete(req);
-      req = NULL;
-    } else if (ObRequest::OB_TS_TASK == req_type) {
-      //Deal with the memory release of the transaction task
-      ObTsResponseTaskFactory::free(static_cast<ObTsResponseTask *>(req));
-      //op_reclaim_free(req);
       req = NULL;
     } else if (ObRequest::OB_SQL_TASK == req_type) {
       ObSqlTaskFactory::get_instance().free(static_cast<ObSqlTask *>(req));

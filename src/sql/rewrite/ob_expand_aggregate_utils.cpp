@@ -614,8 +614,8 @@ int ObExpandAggregateUtils::expand_var_expr(ObAggFunRawExpr *aggr_expr,
     // Due to the current issue with division implementation in mysql mode, there are some inconsistencies in precision, so we temporarily add cast to explicitly convert to maximum precision
     ObRawExprResType dst_type;
     dst_type.set_number();
-    dst_type.set_scale(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][ObNumberType].get_scale());
-    dst_type.set_precision(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][ObNumberType].get_precision());
+    dst_type.set_scale(ObAccuracy::MAX_ACCURACY2[0][ObNumberType].get_scale());
+    dst_type.set_precision(ObAccuracy::MAX_ACCURACY2[0][ObNumberType].get_precision());
     if (OB_FAIL(ObRawExprUtils::build_common_binary_op_expr(expr_factory_,
                                                             T_OP_MUL,
                                                             parma_expr,
@@ -1308,9 +1308,7 @@ bool ObExpandAggregateUtils::is_valid_aggr_type(const ObItemType aggr_type)
          aggr_type == T_FUN_STDDEV ||
          aggr_type == T_FUN_STDDEV_POP ||
          aggr_type == T_FUN_STDDEV_SAMP ||
-         aggr_type == T_FUN_APPROX_COUNT_DISTINCT ||
-         aggr_type == T_FUN_SYS_RB_AND_CARDINALITY_AGG ||
-         aggr_type == T_FUN_SYS_RB_OR_CARDINALITY_AGG;
+         aggr_type == T_FUN_APPROX_COUNT_DISTINCT;
 }
 
 bool ObExpandAggregateUtils::is_regr_expr_type(const ObItemType aggr_type)
@@ -1670,13 +1668,6 @@ int ObExpandAggregateUtils::expand_common_aggr_expr(ObAggFunRawExpr *aggr_expr,
                                                   new_aggr_items))) {
       LOG_WARN("failed to expand approxy_count_distinct expr", K(ret));
     }
-  } else if (aggr_expr->get_expr_type() == T_FUN_SYS_RB_AND_CARDINALITY_AGG ||
-             aggr_expr->get_expr_type() == T_FUN_SYS_RB_OR_CARDINALITY_AGG) {
-    if (OB_FAIL(expand_rb_cardinality_expr(aggr_expr,
-                                           replace_expr,
-                                           new_aggr_items))) {
-      LOG_WARN("failed to expand rb cardinality expr", K(ret));
-    }
   } else {/*do nothing*/}
   return ret;
 }
@@ -1720,7 +1711,7 @@ int ObExpandAggregateUtils::expand_avg_expr(ObAggFunRawExpr *aggr_expr,
         if (OB_FAIL(add_aggr_item(new_aggr_items, count_expr))) {
           LOG_WARN("failed to push back aggr item");
         } else if (OB_FAIL(ObRawExprUtils::build_common_binary_op_expr(expr_factory_,
-                                                                      expand_for_mv_ ? T_OP_DIV : T_OP_AGG_DIV,
+                                                                      T_OP_AGG_DIV,
                                                                       sum_expr,
                                                                       count_expr,
                                                                       div_expr))) {
@@ -1764,14 +1755,14 @@ int ObExpandAggregateUtils::expand_mysql_variance_expr(ObAggFunRawExpr *aggr_exp
     // Due to the current issue with division implementation in mysql mode, there are some inconsistencies in precision, so we temporarily add cast for explicit conversion to avoid it
     ObRawExprResType dst_type;
     dst_type.set_number();
-    dst_type.set_scale(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][ObNumberType].get_scale());
-    dst_type.set_precision(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][ObNumberType].get_precision());
+    dst_type.set_scale(ObAccuracy::MAX_ACCURACY2[0][ObNumberType].get_scale());
+    dst_type.set_precision(ObAccuracy::MAX_ACCURACY2[0][ObNumberType].get_precision());
     ObRawExprResType result_type;
     result_type.set_double();
     result_type.set_scale(ObAccuracy(PRECISION_UNKNOWN_YET, SCALE_UNKNOWN_YET).get_scale());
     result_type.set_precision(ObAccuracy(PRECISION_UNKNOWN_YET, SCALE_UNKNOWN_YET).get_precision());
     if (OB_FAIL(ObRawExprUtils::build_common_binary_op_expr(expr_factory_,
-                                                            expand_for_mv_ ? T_OP_MUL : T_OP_AGG_MUL,
+                                                            T_OP_AGG_MUL,
                                                             parma_expr,
                                                             parma_expr,
                                                             multi_expr))) {
@@ -1813,31 +1804,31 @@ int ObExpandAggregateUtils::expand_mysql_variance_expr(ObAggFunRawExpr *aggr_exp
     } else if (OB_FAIL(add_aggr_item(new_aggr_items, count_product_expr))) {
       LOG_WARN("failed to push back aggr item");
     } else if (OB_FAIL(ObRawExprUtils::build_common_binary_op_expr(expr_factory_,
-                                                            expand_for_mv_ ? T_OP_MUL : T_OP_AGG_MUL,
+                                                            T_OP_AGG_MUL,
                                                             cast_sum_expr,
                                                             cast_sum_expr,
                                                             multi_sum_expr))) {
       LOG_WARN("failed to build common binary op expr", K(ret));
     } else if (OB_FAIL(ObRawExprUtils::build_common_binary_op_expr(expr_factory_,
-                                                                   expand_for_mv_ ? T_OP_MUL : T_OP_AGG_MUL,
+                                                                   T_OP_AGG_MUL,
                                                                    count_expr,
                                                                    count_expr,
                                                                    multi_count_expr))) {
       LOG_WARN("failed to build common binary op expr", K(ret));
     } else if (OB_FAIL(ObRawExprUtils::build_common_binary_op_expr(expr_factory_,
-                                                                   expand_for_mv_ ? T_OP_DIV : T_OP_AGG_DIV,
+                                                                   T_OP_AGG_DIV,
                                                                    multi_sum_expr,
                                                                    multi_count_expr,
                                                                    div_expr))) {
       LOG_WARN("failed to build common binary op expr", K(ret));
     } else if (OB_FAIL(ObRawExprUtils::build_common_binary_op_expr(expr_factory_,
-                                                                   expand_for_mv_ ? T_OP_DIV : T_OP_AGG_DIV,
+                                                                   T_OP_AGG_DIV,
                                                                    cast_sum_product_expr,
                                                                    count_product_expr,
                                                                    div_multi_expr))) {
       LOG_WARN("failed to build common binary op expr", K(ret));
     } else if (OB_FAIL(ObRawExprUtils::build_common_binary_op_expr(expr_factory_,
-                                                                   expand_for_mv_ ? T_OP_MINUS : T_OP_AGG_MINUS,
+                                                                   T_OP_AGG_MINUS,
                                                                    div_multi_expr,
                                                                    div_expr,
                                                                    minus_expr))) {
@@ -2050,57 +2041,6 @@ int ObExpandAggregateUtils::expand_approx_count_distinct_expr(ObAggFunRawExpr *a
   return ret;
 }
 
-int ObExpandAggregateUtils::expand_rb_cardinality_expr(ObAggFunRawExpr *aggr_expr,
-                                                       ObRawExpr *&replace_expr,
-                                                       ObIArray<ObAggFunRawExpr*> &new_aggr_items)
-{
-  int ret = OB_SUCCESS;
-  ObRawExpr *parma_expr = NULL;
-  ObAggFunRawExpr *calc_expr = NULL;
-  ObSysFunRawExpr *card_expr = NULL;
-  if (OB_ISNULL(aggr_expr) ||
-      OB_UNLIKELY(aggr_expr->get_expr_type() != T_FUN_SYS_RB_AND_CARDINALITY_AGG &&
-                  aggr_expr->get_expr_type() != T_FUN_SYS_RB_OR_CARDINALITY_AGG) ||
-      OB_UNLIKELY(aggr_expr->get_real_param_exprs().count() != 1) ||
-      OB_ISNULL(parma_expr = aggr_expr->get_real_param_exprs().at(0))) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("get unexpected null", K(ret), K(aggr_expr));
-  } else if (aggr_expr->get_expr_type() == T_FUN_SYS_RB_AND_CARDINALITY_AGG && 
-             OB_FAIL(ObRawExprUtils::build_common_aggr_expr(expr_factory_,
-                                                            session_info_,
-                                                            T_FUN_SYS_RB_AND_AGG,
-                                                            parma_expr,
-                                                            calc_expr))) {
-    LOG_WARN("failed to build common aggr expr", K(ret));
-  } else if (aggr_expr->get_expr_type() == T_FUN_SYS_RB_OR_CARDINALITY_AGG && 
-             OB_FAIL(ObRawExprUtils::build_common_aggr_expr(expr_factory_,
-                                                            session_info_,
-                                                            T_FUN_SYS_RB_OR_AGG,
-                                                            parma_expr,
-                                                            calc_expr))) {
-    LOG_WARN("failed to build common aggr expr", K(ret));
-  } else if (OB_FALSE_IT(calc_expr->set_param_distinct(aggr_expr->is_param_distinct()))) {
-  } else if (OB_FAIL(add_aggr_item(new_aggr_items, calc_expr))) {
-    LOG_WARN("failed to push back aggr item");
-
-  } else if (OB_FAIL(expr_factory_.create_raw_expr(T_FUN_SYS_RB_CARDINALITY, card_expr))) {
-    LOG_WARN("failed to create rb cardinality expr", K(ret));
-  } else if (OB_ISNULL(card_expr)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("sys func expr is null", K(ret), K(card_expr));
-  } else if (OB_FAIL(card_expr->set_param_expr(calc_expr))) {
-    LOG_WARN("failed to set calc_expr param", K(ret));
-  } else if (OB_FAIL(card_expr->formalize(session_info_))) {
-    LOG_WARN("failed to formalize expr", K(ret));
-  } else {
-    ObString func_name = ObString::make_string("rb_cardinality");
-    card_expr->set_func_name(func_name);
-    replace_expr = card_expr;
-  }
-
-  return ret;
-}
-
 int ObExpandAggregateUtils::add_cast_expr(ObRawExpr *expr,
                                           const ObRawExprResType &dst_type,
                                           ObRawExpr *&new_expr)
@@ -2164,4 +2104,3 @@ int ObExpandAggregateUtils::add_win_exprs(ObSelectStmt *select_stmt,
 
 } // namespace sql
 } // namespace oceanbase
-

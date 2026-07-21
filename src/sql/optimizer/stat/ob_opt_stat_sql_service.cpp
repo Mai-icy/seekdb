@@ -106,7 +106,7 @@
                                                               "histogram_type," \
                                                               "global_stats," \
                                                               "user_stats,"\
-                                                              "spare1%s%s) VALUES "
+                                                              "spare1) VALUES "
 
 
 #define INSERT_HISTOGRAM_STAT_SQL "INSERT INTO __all_histogram_stat(table_id," \
@@ -240,7 +240,7 @@
                                             "col_stat.bucket_cnt as bucket_cnt,"     \
                                             "col_stat.density as density,"        \
                                             "col_stat.last_analyzed as last_analyzed,"\
-                                            "col_stat.spare1 as compress_type,%s%s%s"\
+                                            "col_stat.spare1 as compress_type,"\
                                             "hist_stat.endpoint_num as endpoint_num, "    \
                                             "hist_stat.b_endpoint_value as b_endpoint_value," \
                                             "hist_stat.endpoint_repeat_cnt as endpoint_repeat_cnt "\
@@ -304,7 +304,7 @@ int ObOptStatSqlService::fetch_table_stat(const ObOptTableStat::Key &key,
   int ret = OB_SUCCESS;
   ObOptTableStat stat;
   stat.set_table_id(key.get_table_id());
-  ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy_, false, OB_INVALID_TIMESTAMP, false);
+  auto &sql_client_retry_weak = *mysql_proxy_;
   SMART_VAR(ObMySQLProxy::MySQLResult, res) {
     sqlclient::ObMySQLResult *result = NULL;
     ObSqlString sql;
@@ -385,7 +385,7 @@ int ObOptStatSqlService::batch_fetch_table_stats(const uint64_t table_id,
 {
   int ret = OB_SUCCESS;
 
-  ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy_, false, OB_INVALID_TIMESTAMP, false);
+  auto &sql_client_retry_weak = *mysql_proxy_;
   SMART_VAR(ObMySQLProxy::MySQLResult, res)
   {
     sqlclient::ObMySQLResult *result = NULL;
@@ -593,10 +593,7 @@ int ObOptStatSqlService::construct_column_stat_sql(share::schema::ObSchemaGetter
     if (OB_ISNULL(column_stats.at(i))) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("column stat is null", K(ret));
-    } else if (i == 0 &&
-               OB_FAIL(column_stats_sql.append_fmt(REPLACE_COL_STAT_SQL,
-                                                   ", cg_macro_blk_cnt, cg_micro_blk_cnt",
-                                                   ", cg_skip_rate"))) {
+    } else if (i == 0 && OB_FAIL(column_stats_sql.append(REPLACE_COL_STAT_SQL))) {
       LOG_WARN("failed to append sql", K(ret));
     } else if (OB_FAIL(get_column_stat_sql(allocator,
                                            *column_stats.at(i), current_time,
@@ -980,10 +977,7 @@ int ObOptStatSqlService::get_column_stat_sql(ObIAllocator &allocator,
         OB_FAIL(dml_splicer.add_column("histogram_type", stat.get_histogram().get_type())) ||
         OB_FAIL(dml_splicer.add_column("global_stats", 0)) ||
         OB_FAIL(dml_splicer.add_column("user_stats", 0)) ||
-        OB_FAIL(dml_splicer.add_column("spare1", ObOptStatCompressType::ZSTD_1_3_8_COMPRESS)) ||
-        (OB_FAIL(dml_splicer.add_column("cg_macro_blk_cnt", stat.get_cg_macro_blk_cnt()))) ||
-        (OB_FAIL(dml_splicer.add_column("cg_micro_blk_cnt", stat.get_cg_micro_blk_cnt()))) ||
-        (OB_FAIL(dml_splicer.add_long_double_column("cg_skip_rate", stat.get_cg_skip_rate())))) {
+        OB_FAIL(dml_splicer.add_column("spare1", ObOptStatCompressType::ZSTD_1_3_8_COMPRESS))) {
       LOG_WARN("failed to add dml splicer column", K(ret));
     } else if (OB_FAIL(dml_splicer.splice_values(sql_string))) {
       LOG_WARN("failed to get sql string", K(ret));
@@ -1180,7 +1174,7 @@ int ObOptStatSqlService::fetch_column_stat(ObIAllocator &allocator,
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected error", K(key_col_stats), K(ret));
   } else {
-    ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy_, false, OB_INVALID_TIMESTAMP, false);
+    auto &sql_client_retry_weak = *mysql_proxy_;
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       sqlclient::ObMySQLResult *result = NULL;
       ObSqlString sql;
@@ -1189,9 +1183,6 @@ int ObOptStatSqlService::fetch_column_stat(ObIAllocator &allocator,
         ret = OB_NOT_INIT;
         LOG_WARN("sql service has not been initialized.", K(ret));
       } else if (OB_FAIL(sql.append_fmt(FETCH_ALL_COLUMN_STAT_SQL_COL,
-                                        "col_stat.cg_macro_blk_cnt as cg_macro_blk_cnt,",
-                                        "col_stat.cg_micro_blk_cnt as cg_micro_blk_cnt,",
-                                        "col_stat.cg_skip_rate as cg_skip_rate,",
                                         share::OB_ALL_COLUMN_STAT_TNAME,
                                         share::OB_ALL_HISTOGRAM_STAT_TNAME,
                                         keys_list_str.string().length(),
@@ -1401,12 +1392,6 @@ int ObOptStatSqlService::fill_column_stat(ObIAllocator &allocator,
                 }
               }
             }
-          }
-          if (OB_SUCC(ret)) {
-            EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, cg_macro_blk_cnt, *stat, int64_t, true, true, 0);
-            EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, cg_micro_blk_cnt, *stat, int64_t, true, true, 0);
-            EXTRACT_DOUBLE_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
-                  result, cg_skip_rate, *stat, double, true, true, 0);
           }
         }
       }
@@ -1901,16 +1886,15 @@ int ObOptStatSqlService::batch_update_online_col_state(const uint64_t table_id,
 
 int ObOptStatSqlService::fetch_table_rowcnt(const uint64_t table_id,
                                             const ObIArray<ObTabletID> &all_tablet_ids,
-                                            const ObIArray<share::ObLSID> &all_ls_ids,
                                             ObIArray<ObOptTableStat> &tstats)
 {
   int ret = OB_SUCCESS;
   ObSqlString raw_sql;
   ObSqlString tablet_list_str;
-  ObSqlString tablet_ls_list_str;
+  ObSqlString tablet_tuple_list_str;
   uint64_t real_table_id = share::is_real_table_mapping_virtual_table(table_id) ?
                            ObSchemaUtils::get_real_table_mappings_tid(table_id) : table_id;
-  if (OB_FAIL(gen_tablet_list_str(all_tablet_ids, all_ls_ids, tablet_list_str, tablet_ls_list_str))) {
+  if (OB_FAIL(gen_tablet_list_str(all_tablet_ids, tablet_list_str, tablet_tuple_list_str))) {
     LOG_WARN("failed to gen tablet list str", K(ret));
   } else if (OB_FAIL(raw_sql.append_fmt("select /*+opt_param('enable_in_range_optimization','true') opt_param('use_default_opt_stat','true')*/"\
                                          "tablet_id, max(row_count) from "\
@@ -1924,12 +1908,12 @@ int ObOptStatSqlService::fetch_table_rowcnt(const uint64_t table_id,
                                          tablet_list_str.ptr(),
                                          share::OB_ALL_TABLET_CHECKSUM_TNAME,
                                          share::OB_ALL_FREEZE_INFO_TNAME,
-                                         tablet_ls_list_str.ptr()))) {
+                                         tablet_tuple_list_str.ptr()))) {
     LOG_WARN("failed to append fmt", K(ret));
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy_, false, OB_INVALID_TIMESTAMP, false);
+      auto &sql_client_retry_weak = *mysql_proxy_;
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -1976,14 +1960,13 @@ int ObOptStatSqlService::fetch_table_rowcnt(const uint64_t table_id,
 }
 
 int ObOptStatSqlService::gen_tablet_list_str(const ObIArray<ObTabletID> &all_tablet_ids,
-                                             const ObIArray<share::ObLSID> &all_ls_ids,
                                              ObSqlString &tablet_list_str,
-                                             ObSqlString &tablet_ls_list_str)
+                                             ObSqlString &tablet_tuple_list_str)
 {
   int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(all_tablet_ids.empty() || all_tablet_ids.count() != all_ls_ids.count())) {
+  if (OB_UNLIKELY(all_tablet_ids.empty())) {
     ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("get unexpected error", K(ret), K(all_tablet_ids), K(all_ls_ids));
+    LOG_WARN("get unexpected error", K(ret), K(all_tablet_ids));
   } else {
     for (int64_t i = 0; OB_SUCC(ret) && i < all_tablet_ids.count(); ++i) {
       char prefix = i == 0 ? '(' : ' ';
@@ -1993,10 +1976,10 @@ int ObOptStatSqlService::gen_tablet_list_str(const ObIArray<ObTabletID> &all_tab
                                              all_tablet_ids.at(i).id(),
                                              suffix))) {
         LOG_WARN("failed to append fmt", K(ret));
-      } else if (OB_FAIL(tablet_ls_list_str.append_fmt("%c(%lu)%c",
-                                                       prefix,
-                                                       all_tablet_ids.at(i).id(),
-                                                       suffix))) {
+      } else if (OB_FAIL(tablet_tuple_list_str.append_fmt("%c(%lu)%c",
+                                                          prefix,
+                                                          all_tablet_ids.at(i).id(),
+                                                          suffix))) {
         LOG_WARN("failed to append fmt", K(ret));
       } else {/*do nothing*/}
     }
@@ -2244,7 +2227,7 @@ int ObOptStatSqlService::fetch_system_stat(const ObOptSystemStat::Key &key,
                                           ObOptSystemStat &stat)
 {
   int ret = OB_SUCCESS;
-  ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy_, false, OB_INVALID_TIMESTAMP, false);
+  auto &sql_client_retry_weak = *mysql_proxy_;
   
   SMART_VAR(ObMySQLProxy::MySQLResult, res) {
     sqlclient::ObMySQLResult *result = NULL;

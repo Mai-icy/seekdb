@@ -42,13 +42,11 @@ public:
   OB_INLINE void set_sum_flag(const bool t_sum) { t_sum_ = t_sum; }
   OB_INLINE void set_hll_flag(const bool t_hll) { t_hll_ = t_hll; }
   OB_INLINE void set_sum_op_nsize_flag(const bool t_sum_op_nsize) { t_sum_op_nsize_ = t_sum_op_nsize; }
-  OB_INLINE void set_has_rb_agg(const bool t_rb_agg) { t_rb_build_agg_ = t_rb_agg; }
   OB_INLINE bool has_count() const { return t_count_; }
   OB_INLINE bool has_minmax() const { return t_minmax_; }
   OB_INLINE bool has_sum() const { return t_sum_; }
   OB_INLINE bool has_hll() const { return t_hll_; }
   OB_INLINE bool has_sum_op_nsize() const { return t_sum_op_nsize_; }
-  OB_INLINE bool has_rb_agg() const { return t_rb_build_agg_; }
   TO_STRING_KV(K_(t_flag));
 
   union {
@@ -56,10 +54,9 @@ public:
       int16_t t_count_        : 1;
       int16_t t_minmax_       : 1;
       int16_t t_sum_          : 1;
-      int16_t t_rb_build_agg_ : 1;
       int16_t t_hll_          : 1;
       int16_t t_sum_op_nsize_ : 1;
-      int16_t reserved_ : 10;
+      int16_t reserved_ : 11;
     };
     int16_t t_flag_;
   };
@@ -83,10 +80,10 @@ public:
       const bool reserve_memory) override;
   int agg_pushdown_decoder(
       blocksstable::ObIMicroBlockReader *reader,
-      const int32_t col_offset, // column store is 0
+      const int32_t col_offset,
       const ObPushdownRowIdCtx &pd_row_id_ctx); 
   int can_use_index_info(const blocksstable::ObMicroIndexInfo &index_info, const int32_t col_index, bool &can_agg) override;
-  int fill_index_info(const blocksstable::ObMicroIndexInfo &index_info, const bool is_cg) override;
+  int fill_index_info(const blocksstable::ObMicroIndexInfo &index_info) override;
   int collect_result();
   OB_INLINE int set_agg_type_flag(const ObPDAggType agg_type);
   OB_INLINE bool check_need_project(
@@ -96,7 +93,7 @@ public:
       const int64_t row_count)
   {
     bool bret = false;
-    if (agg_type_flag_.has_sum() || agg_type_flag_.has_rb_agg()) {
+    if (agg_type_flag_.has_sum()) {
       bret = true;
     } else {
       for (int64_t i = 0; !bret && i < agg_cells_.count(); ++i) {
@@ -116,8 +113,8 @@ public:
   OB_INLINE bool check_finished() const override { return false; }
   OB_INLINE bool is_agg_finish(const ObPushdownRowIdCtx &pd_row_id_ctx)
   {
-    return OB_INVALID_CS_ROW_ID != agg_row_id_ 
-        && OB_INVALID_CS_ROW_ID != pd_row_id_ctx.bound_row_id_
+    return INVALID_AGG_ROW_ID != agg_row_id_
+        && INVALID_AGG_ROW_ID != pd_row_id_ctx.bound_row_id_
         && ((!pd_row_id_ctx.is_reverse_ && agg_row_id_ >= pd_row_id_ctx.bound_row_id_ ) 
             || (pd_row_id_ctx.is_reverse_ && agg_row_id_ <= pd_row_id_ctx.bound_row_id_));
   }
@@ -128,7 +125,7 @@ public:
   ObSEArray<ObAggCellVec*, 1> agg_cells_;
   ObColumnParam* col_param_;
   sql::ObExpr* project_expr_;
-  int64_t agg_row_id_; // row id in column store, row offset of the microblock in row store.
+  int64_t agg_row_id_;
   int32_t col_offset_; // for row store
   int32_t col_index_;  // for row store
   ObAggTypeFlag agg_type_flag_;
@@ -160,7 +157,7 @@ public:
       const ObFilterResult &res) override;
   virtual int fill_rows(const int64_t group_idx, const int64_t row_count);
   int can_use_index_info(const blocksstable::ObMicroIndexInfo &index_info, bool &can_agg) override;
-  int fill_index_info(const blocksstable::ObMicroIndexInfo &index_info, const bool is_cg) override;
+  int fill_index_info(const blocksstable::ObMicroIndexInfo &index_info) override;
   int collect_aggregated_result() override;
   int get_agg_group(const sql::ObExpr *expr, ObAggGroupVec *&agg_group);
   INHERIT_TO_STRING_KV("ObVectorStore", ObVectorStore, K_(pd_agg_ctx), K_(agg_groups), 

@@ -49,7 +49,6 @@ struct ObQueryFlag
 #define OBSF_BIT_FAST_AGG             1
 #define OBSF_BIT_ITER_UNCOMMITTED_ROW 1
 #define OBSF_BIT_IGNORE_TRANS_STAT    1
-#define OBSF_BIT_IS_LARGE_QUERY       1
 #define OBSF_BIT_IS_SSTABLE_CUT       1
 #define OBSF_BIT_IS_SHOW_SEED         1
 #define OBSF_BIT_SKIP_READ_LOB        1
@@ -62,10 +61,9 @@ struct ObQueryFlag
 #define OBSF_BIT_IS_SELECT_FOLLOWER   1
 #define OBSF_BIT_ENABLE_LOB_PREFETCH  1
 #define OBSF_BIT_IS_BARE_ROW_SCAN     1
-#define OBSF_BIT_MR_MV_SCAN           2
-#define OBSF_BIT_IS_PLAIN_INSERT      1
+#define OBSF_BIT_SNAPSHOT_OPT         1
 #define OBSF_BIT_SKIP_RUNNING_TX      1
-#define OBSF_BIT_RESERVED             19
+#define OBSF_BIT_RESERVED             22
 
   static const uint64_t OBSF_MASK_SCAN_ORDER = (0x1UL << OBSF_BIT_SCAN_ORDER) - 1;
   static const uint64_t OBSF_MASK_DAILY_MERGE =  (0x1UL << OBSF_BIT_DAILY_MERGE) - 1;
@@ -86,7 +84,6 @@ struct ObQueryFlag
   static const uint64_t OBSF_MASK_FAST_AGG = (0x1UL << OBSF_BIT_FAST_AGG) - 1;
   static const uint64_t OBSF_MASK_ITER_UNCOMMITTED_ROW = (0x1UL << OBSF_BIT_ITER_UNCOMMITTED_ROW) - 1;
   static const uint64_t OBSF_MASK_IGNORE_TRANS_STAT = (0x1UL << OBSF_BIT_IGNORE_TRANS_STAT) - 1;
-  static const uint64_t OBSF_MASK_IS_LARGE_QUERY = (0x1UL << OBSF_BIT_IS_LARGE_QUERY) - 1;
   static const uint64_t OBSF_MASK_IS_SSTABLE_CUT = (0x1UL << OBSF_BIT_IS_SSTABLE_CUT) - 1;
   static const uint64_t OBSF_MASK_SKIP_READ_LOB = (0x1UL << OBSF_BIT_SKIP_READ_LOB) - 1;
   static const uint64_t OBSF_MASK_ENABLE_RICH_FORMAT = (0x1UL << OBSF_BIT_ENABLE_RICH_FORMAT) - 1;
@@ -96,7 +93,7 @@ struct ObQueryFlag
   static const uint64_t OBSF_MASK_IS_SELECT_FOLLOWER = (0x1UL << OBSF_BIT_IS_SELECT_FOLLOWER) - 1;
   static const uint64_t OBSF_MASK_ENABLE_LOB_PREFETCH = (0x1UL << OBSF_BIT_ENABLE_LOB_PREFETCH) - 1;
   static const uint64_t OBSF_MASK_IS_DIRECT_SCAN = (0x1UL << OBSF_BIT_IS_BARE_ROW_SCAN) - 1;
-  static const uint64_t OBSF_MASK_IS_PLAIN_INSERT = (0x1UL << OBSF_BIT_IS_PLAIN_INSERT) - 1;
+  static const uint64_t OBSF_MASK_SNAPSHOT_OPT = (0x1UL << OBSF_BIT_SNAPSHOT_OPT) - 1;
   static const uint64_t OBSF_MASK_SKIP_RUNNING_TX = (0x1UL << OBSF_BIT_SKIP_RUNNING_TX) - 1;
 
 
@@ -127,12 +124,6 @@ struct ObQueryFlag
     ReservedMode = 2,
   };
 
-  enum MRMVScanMode
-  {
-    NormalMode = 0,
-    RefreshMode = 1,
-    RealTimeMode = 2,
-  };
   union
   {
     uint64_t flag_;
@@ -160,7 +151,6 @@ struct ObQueryFlag
       uint64_t use_fast_agg_ : OBSF_BIT_FAST_AGG;
       uint64_t iter_uncommitted_row_ : OBSF_BIT_ITER_UNCOMMITTED_ROW;
       uint64_t ignore_trans_stat_: OBSF_BIT_IGNORE_TRANS_STAT;
-      uint64_t is_large_query_ : OBSF_BIT_IS_LARGE_QUERY;
       uint64_t is_sstable_cut_ : OBSF_BIT_IS_SSTABLE_CUT; //0:sstable no need cut, 1: sstable need cut
       uint64_t is_show_seed_   : OBSF_BIT_IS_SHOW_SEED;
       uint64_t skip_read_lob_   : OBSF_BIT_SKIP_READ_LOB;
@@ -173,8 +163,7 @@ struct ObQueryFlag
       uint64_t is_mds_query_ : OBSF_BIT_IS_MDS_QUERY;
       uint64_t enable_lob_prefetch_ : OBSF_BIT_ENABLE_LOB_PREFETCH;
       uint64_t is_bare_row_scan_ : OBSF_BIT_IS_BARE_ROW_SCAN; // 1: to scan mult version row directly without compact.
-      uint64_t mr_mv_scan_ : OBSF_BIT_MR_MV_SCAN; // 0: normal table scan. 1. major refresh mview base table scan in refresh 2. major refresh rt-mview base table scan
-      uint64_t is_plain_insert_gts_opt_ : OBSF_BIT_IS_PLAIN_INSERT;
+      uint64_t use_snapshot_opt_ : OBSF_BIT_SNAPSHOT_OPT;
       uint64_t skip_running_tx_ : OBSF_BIT_SKIP_RUNNING_TX; // 1: skip RUNNING transactions (e.g., for fork operations)
       uint64_t reserved_       : OBSF_BIT_RESERVED;
     };
@@ -194,7 +183,6 @@ struct ObQueryFlag
               const uint64_t join_type = 0,
               const bool multi_version_minor_merge = false,
               const bool need_feedback = false,
-              const bool is_large_query = false,
               const bool is_sstable_cut = false,
               const bool is_mds_query = false)
   {
@@ -214,7 +202,6 @@ struct ObQueryFlag
     join_type_ = join_type & OBSF_MASK_JOIN_TYPE;
     multi_version_minor_merge_ = multi_version_minor_merge & OBSF_MASK_MULTI_VERSION_MERGE;
     is_need_feedback_ = need_feedback & OBSF_MASK_NEED_FEEDBACK;
-    is_large_query_ = is_large_query & OBSF_MASK_IS_LARGE_QUERY;
     is_sstable_cut_ = is_sstable_cut & OBSF_MASK_IS_SSTABLE_CUT;
     is_mds_query_ = is_mds_query & OBSF_MASK_IS_MDS_QUERY;
   }
@@ -244,7 +231,6 @@ struct ObQueryFlag
   inline uint64_t get_join_type() const { return join_type_; }
   inline bool is_multi_version_minor_merge() const { return multi_version_minor_merge_; }
   inline bool is_need_feedback() const { return is_need_feedback_; }
-  inline bool is_large_query() const { return is_large_query_; }
   inline bool is_enable_rich_format() const { return enable_rich_format_; }
   inline bool is_skip_running_tx() const { return skip_running_tx_; }
   inline void set_skip_running_tx(const bool skip) { skip_running_tx_ = skip ? 1 : 0; }
@@ -274,8 +260,8 @@ struct ObQueryFlag
   inline bool is_select_follower() const { return is_select_follower_; }
   inline void set_enable_lob_prefetch() { enable_lob_prefetch_ = true; }
   inline bool enable_lob_prefetch() const { return enable_lob_prefetch_; }
-  inline void set_plain_insert_gts_opt() { is_plain_insert_gts_opt_ = true; }
-  inline bool is_plain_insert_gts_opt() const { return is_plain_insert_gts_opt_; }
+  inline void set_snapshot_opt() { use_snapshot_opt_ = true; }
+  inline bool is_snapshot_opt() const { return use_snapshot_opt_; }
   inline void disable_cache()
   {
     set_not_use_row_cache();
@@ -285,10 +271,6 @@ struct ObQueryFlag
   }
   inline void set_is_new_query_range() { is_new_query_range_ = true; }
   inline bool is_new_query_range() const { return is_new_query_range_; }
-  inline bool is_mr_mview_refresh_base_scan() const { return RefreshMode == mr_mv_scan_;  }
-  inline bool is_mr_rt_mview_base_scan() const { return RealTimeMode == mr_mv_scan_;  }
-  inline bool is_mr_mview_query() const { return is_mr_mview_refresh_base_scan() || is_mr_rt_mview_base_scan(); }
-
   TO_STRING_KV("scan_order", scan_order_,
                "daily_merge", daily_merge_,
                "rmmb_optimize", rmmb_optimize_,
@@ -309,7 +291,6 @@ struct ObQueryFlag
                "use_fast_agg", use_fast_agg_,
                "iter_uncommitted_row", iter_uncommitted_row_,
                "ignore_trans_stat", ignore_trans_stat_,
-               "is_large_query", is_large_query_,
                "is_sstable_cut", is_sstable_cut_,
                "skip_read_lob", skip_read_lob_,
                "is_lookup_for_4377", is_lookup_for_4377_,
@@ -321,8 +302,7 @@ struct ObQueryFlag
                "is_select_follower", is_select_follower_,
                "enable_lob_prefetch", enable_lob_prefetch_,
                "is_bare_row_scan", is_bare_row_scan_,
-               "mr_mv_scan", mr_mv_scan_,
-               "is_plain_insert_gts_opt", is_plain_insert_gts_opt_,
+               "is_snapshot_opt", use_snapshot_opt_,
                "skip_running_tx", skip_running_tx_,
                "reserved", reserved_);
   OB_UNIS_VERSION(1);

@@ -155,15 +155,6 @@ public:
             || stmt_type_ == stmt::T_UPDATE;
   }
 
-  bool is_allowed_reroute() const
-  {
-    return (stmt_type_ == stmt::T_SELECT
-            || stmt_type_ == stmt::T_DELETE
-            || stmt_type_ == stmt::T_UPDATE
-            || stmt_type_ == stmt::T_INSERT
-            || stmt_type_ == stmt::T_REPLACE);
-  }
-
   inline bool is_support_instead_of_trigger_stmt() const {
     return stmt::T_DELETE == stmt_type_
            || stmt::T_UPDATE == stmt_type_
@@ -287,14 +278,9 @@ public:
             // index
             || stmt_type == stmt::T_CREATE_INDEX
             || stmt_type == stmt::T_DROP_INDEX
-            // materialized view log
-            || stmt_type == stmt::T_CREATE_MLOG
-            || stmt_type == stmt::T_DROP_MLOG
-            // flashback
-            || stmt_type == stmt::T_FLASHBACK_DATABASE
-            || stmt_type == stmt::T_FLASHBACK_TABLE_FROM_RECYCLEBIN
-            || stmt_type == stmt::T_FLASHBACK_TABLE_TO_SCN
-            || stmt_type == stmt::T_FLASHBACK_INDEX
+            // recyclebin restore
+            || stmt_type == stmt::T_RECYCLEBIN_RESTORE_DATABASE
+            || stmt_type == stmt::T_RECYCLEBIN_RESTORE_TABLE
             // purge
             || stmt_type == stmt::T_PURGE_RECYCLEBIN
             || stmt_type == stmt::T_PURGE_DATABASE
@@ -408,14 +394,9 @@ public:
         // index
         // || stmt_type == stmt::T_CREATE_INDEX
         // || stmt_type == stmt::T_DROP_INDEX
-        // materialized view log
-        // || stmt_type == stmt::T_CREATE_MLOG
-        // || stmt_type == stmt::T_DROP_MLOG
-        // flashback
-        // || stmt_type == stmt::T_FLASHBACK_DATABASE
-        // || stmt_type == stmt::T_FLASHBACK_TABLE_FROM_RECYCLEBIN
-        // || stmt_type == stmt::T_FLASHBACK_TABLE_TO_SCN
-        // || stmt_type == stmt::T_FLASHBACK_INDEX
+        // recyclebin restore
+        // || stmt_type == stmt::T_RECYCLEBIN_RESTORE_DATABASE
+        // || stmt_type == stmt::T_RECYCLEBIN_RESTORE_TABLE
         // purge
         // || stmt_type == stmt::T_PURGE_RECYCLEBIN
         // || stmt_type == stmt::T_PURGE_DATABASE

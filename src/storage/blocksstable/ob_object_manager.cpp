@@ -32,22 +32,21 @@ int64_t ObStorageObjectOpt::to_string(char *buf, const int64_t buf_len) const
   switch (object_type_) {
   case ObStorageObjectType::PRIVATE_DATA_MACRO:
   case ObStorageObjectType::PRIVATE_META_MACRO: {
-    if(OB_FAIL(databuff_printf(buf, buf_len, pos, "object_type:%s (tablet_id=%lu, transfer_seq=%lu)",
-               get_storage_objet_type_str(object_type_), private_opt_.tablet_id_, private_opt_.tablet_trasfer_seq_))) {
+    if(OB_FAIL(databuff_printf(buf, buf_len, pos, "object_type:%s (tablet_id=%lu)",
+               get_storage_objet_type_str(object_type_), private_opt_.tablet_id_))) {
       LOG_WARN("failed to print data into buf", K(ret), K(buf_len), K(pos), K(get_storage_objet_type_str(object_type_)),
-                                                K(private_opt_.tablet_id_), K(private_opt_.tablet_trasfer_seq_));
+                                                K(private_opt_.tablet_id_));
     }
     break;
   }
   case ObStorageObjectType::SHARED_MAJOR_DATA_MACRO:
   case ObStorageObjectType::SHARED_MAJOR_META_MACRO: {
     if(OB_FAIL(databuff_printf(buf, buf_len, pos,
-               "object_type=%s (tablet_id=%lu,data_seq=%lu,cg_id=%lu)",
+               "object_type=%s (tablet_id=%lu,data_seq=%lu)",
                get_storage_objet_type_str(object_type_),
-               ss_share_opt_.tablet_id_, ss_share_opt_.data_seq_,
-               ss_share_opt_.column_group_id_))) {
+               ss_share_opt_.tablet_id_, ss_share_opt_.data_seq_))) {
       LOG_WARN("failed to print data into buf", K(ret), K(buf_len), K(pos), K(get_storage_objet_type_str(object_type_)),
-                                                K(ss_share_opt_.tablet_id_), K(ss_share_opt_.data_seq_), K(ss_share_opt_.column_group_id_));
+                                                K(ss_share_opt_.tablet_id_), K(ss_share_opt_.data_seq_));
     }
     break;
   }
@@ -71,39 +70,6 @@ int64_t ObStorageObjectOpt::to_string(char *buf, const int64_t buf_len) const
                ss_tenant_level_opt_.tenant_epoch_id_))) {
       LOG_WARN("failed to print data into buf", K(ret), K(buf_len), K(pos), K(get_storage_objet_type_str(object_type_)),
                                                 K(ss_tenant_level_opt_.tenant_epoch_id_));
-    }
-    break;
-  }
-  case ObStorageObjectType::LS_META:
-  case ObStorageObjectType::LS_DUP_TABLE_META:
-  case ObStorageObjectType::LS_ACTIVE_TABLET_ARRAY:
-  case ObStorageObjectType::LS_PENDING_FREE_TABLET_ARRAY:
-  case ObStorageObjectType::LS_TRANSFER_TABLET_ID_ARRAY: {
-    if(OB_FAIL(databuff_printf(buf, buf_len, pos, "object_type=%s (ls_id=%lu)",
-               get_storage_objet_type_str(object_type_), ss_ls_level_opt_.ls_id_))) {
-      LOG_WARN("failed to print data into buf", K(ret), K(buf_len), K(pos), K(get_storage_objet_type_str(object_type_)),
-                                                K(ss_ls_level_opt_.ls_id_));
-    }
-    break;
-  }
-  case ObStorageObjectType::PRIVATE_TABLET_META: {
-    if(OB_FAIL(databuff_printf(buf, buf_len, pos, "object_type=%s (ls_id=%lu,tablet_id=%lu,version=%lu,transfer_seq=%lu)",
-               get_storage_objet_type_str(object_type_),
-               ss_private_tablet_opt_.ls_id_, ss_private_tablet_opt_.tablet_id_, 
-               ss_private_tablet_opt_.version_, ss_private_tablet_opt_.tablet_transfer_seq_))) {
-      LOG_WARN("failed to print data into buf", K(ret), K(buf_len), K(pos), K(get_storage_objet_type_str(object_type_)),
-                                                K(ss_private_tablet_opt_.ls_id_), K(ss_private_tablet_opt_.tablet_id_), 
-                                                K(ss_private_tablet_opt_.version_), K(ss_private_tablet_opt_.tablet_transfer_seq_));
-    }
-    break;
-  }
-  case ObStorageObjectType::PRIVATE_TABLET_CURRENT_VERSION: {
-    if(OB_FAIL(databuff_printf(buf, buf_len, pos,
-        "object_type=%s (ls_id=%lu,tablet_id=%lu)", get_storage_objet_type_str(object_type_),
-        ss_private_tablet_current_version_opt_.ls_id_, ss_private_tablet_current_version_opt_.tablet_id_))) {
-      LOG_WARN("failed to print data into buf", K(ret), K(buf_len), K(pos), K(get_storage_objet_type_str(object_type_)),
-                                                K(ss_private_tablet_current_version_opt_.ls_id_),
-                                                K(ss_private_tablet_current_version_opt_.tablet_id_));
     }
     break;
   }
@@ -131,26 +97,6 @@ int64_t ObStorageObjectOpt::to_string(char *buf, const int64_t buf_len) const
     if(OB_FAIL(databuff_printf(buf, buf_len, pos,
                "object_type=%s", get_storage_objet_type_str(object_type_)))) {
       LOG_WARN("failed to print data into buf", K(ret), K(buf_len), K(pos), K(get_storage_objet_type_str(object_type_)));
-    }
-    break;
-  }
-  case ObStorageObjectType::COMPACTION_SERVER:
-  case ObStorageObjectType::LS_COMPACTION_STATUS:
-  case ObStorageObjectType::LS_COMPACTION_LIST: {
-    if(OB_FAIL(databuff_printf(buf, buf_len, pos, "object_type=%s (ls_id=%lu)",
-               get_storage_objet_type_str(object_type_), ss_compaction_scheduler_opt_.ls_id_))) {
-      LOG_WARN("failed to print data into buf", K(ret), K(buf_len), K(pos), K(get_storage_objet_type_str(object_type_)),
-                                                K(ss_compaction_scheduler_opt_.ls_id_));
-    }
-    break;
-  }
-  case ObStorageObjectType::LS_SVR_COMPACTION_STATUS: {
-    if(OB_FAIL(databuff_printf(buf, buf_len, pos, "object_type=%s (ls_id=%lu, server_id=%lu)",
-               get_storage_objet_type_str(object_type_), ss_ls_svr_compactor_opt_.ls_id_,
-               ss_ls_svr_compactor_opt_.server_id_))) {
-      LOG_WARN("failed to print data into buf", K(ret), K(buf_len), K(pos), K(get_storage_objet_type_str(object_type_)),
-                                                K(ss_ls_svr_compactor_opt_.ls_id_),
-                                                K(ss_ls_svr_compactor_opt_.server_id_));
     }
     break;
   }

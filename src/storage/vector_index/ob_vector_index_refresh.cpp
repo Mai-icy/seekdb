@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-// #define DBMS_VECTOR_MOCK_TEST
 #define USING_LOG_PREFIX STORAGE
 
 #include "storage/vector_index/ob_vector_index_refresh.h"
+#include "share/inner_table/ob_inner_table_schema_constants.h"
 #include "share/rc/ob_module_provider.h"
 #include "rootserver/ob_rs_serial_call.h"
 #include "storage/tablelock/ob_lock_inner_connection_util.h"
 #include "sql/engine/cmd/ob_ddl_executor_util.h"
+#include "observer/vector_index/ob_vector_index_async_task.h"
 
 namespace oceanbase {
 namespace storage {
@@ -399,22 +400,6 @@ int ObVectorIndexRefresher::do_refresh() {
       SMART_VAR(ObMySQLProxy::MySQLResult, res) {
         common::sqlclient::ObMySQLResult *result = nullptr;
         ObSqlString insert_sel_sql;
-#ifdef DBMS_VECTOR_MOCK_TEST
-        if (OB_FAIL(insert_sel_sql.append_fmt(
-                "INSERT INTO `%.*s`.`%.*s` SELECT * FROM `%.*s`.`%.*s` WHERE "
-                "ora_rowscn <= %lu",
-                static_cast<int>(db_schema->get_database_name_str().length()),
-                db_schema->get_database_name_str().ptr(),
-                static_cast<int>(
-                    index_id_tb_schema->get_table_name_str().length()),
-                index_id_tb_schema->get_table_name_str().ptr(),
-                static_cast<int>(db_schema->get_database_name_str().length()),
-                db_schema->get_database_name_str().ptr(),
-                static_cast<int>(
-                    domain_table_schema->get_table_name_str().length()),
-                domain_table_schema->get_table_name_str().ptr(),
-                refresh_ctx_->scn_.get_val_for_sql())))
-#else
         if (OB_FAIL(get_vector_index_col_names(domain_table_schema,
                                                     true,
                                                     col_ids,
@@ -445,7 +430,6 @@ int ObVectorIndexRefresher::do_refresh() {
                     domain_table_schema->get_table_name_str().length()),
                 domain_table_schema->get_table_name_str().ptr(),
                 refresh_ctx_->scn_.get_val_for_sql())))
-#endif
         {
           LOG_WARN("fail to assign sql", KR(ret));
         } else if (OB_FAIL(refresh_ctx_->trans_->write(insert_sel_sql.ptr(), affected_rows))) {
@@ -483,7 +467,8 @@ int ObVectorIndexRefresher::do_refresh() {
         common::sqlclient::ObMySQLResult *result = nullptr;
         ObSqlString select_sql;
         if (OB_FAIL(select_sql.append_fmt(
-                "select tablet_id from oceanbase.__all_tablet_to_ls where table_id = %lu",
+                "select tablet_id from oceanbase.%s where table_id = %lu",
+                OB_ALL_TABLET_TO_TABLE_TNAME,
                 domain_table_schema->get_table_id()))) {
           LOG_WARN("fail to assign sql", KR(ret));
         } else if (OB_FAIL(refresh_ctx_->trans_->read(
@@ -712,7 +697,6 @@ int ObVectorIndexRefresher::do_rebuild() {
       rebuild_index_arg.index_action_type_ = obcall::ObIndexArg::ADD_INDEX;
       rebuild_index_arg.parallelism_ = refresh_ctx_->idx_parallel_creation_;
       rebuild_index_arg.vidx_refresh_info_.index_params_ = idx_parameters;
-      rebuild_index_arg.rebuild_index_type_ = obcall::ObRebuildIndexArg::RebuildIndexType::REBUILD_INDEX_TYPE_VEC;
       
       if (OB_FAIL(rebuild_index_arg.based_schema_object_infos_.push_back(
               ObBasedSchemaObjectInfo(domain_table_schema->get_table_id(), TABLE_SCHEMA,

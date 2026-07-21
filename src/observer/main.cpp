@@ -16,6 +16,38 @@
 
 #define USING_LOG_PREFIX SERVER
 
+#ifdef WITH_COVERAGE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+// Point the coverage runtime at <base_dir>/seekdb.profraw (continuous) from a priority-101
+// constructor, which runs before the runtime's own initializer, so counters go straight there
+// and no default.profraw is ever created.
+extern "C" void __llvm_profile_set_filename(const char *);
+__attribute__((constructor(101)))
+static void seekdb_cov_init_profile_file(int argc, char **argv)
+{
+  const char *base = ".";
+  for (int i = 1; i < argc; ++i) {
+    if (strncmp(argv[i], "--base-dir=", 11) == 0) { base = argv[i] + 11; break; }
+    if (strcmp(argv[i], "--base-dir") == 0 && i + 1 < argc) { base = argv[i + 1]; break; }
+  }
+  char abs_base[1024];
+  if (base[0] == '/') {
+    snprintf(abs_base, sizeof(abs_base), "%s", base);
+  } else {
+    char cwd[1024] = {0};
+    (void)getcwd(cwd, sizeof(cwd));
+    snprintf(abs_base, sizeof(abs_base), "%s/%s", cwd, base);
+  }
+  char val[1100];
+  snprintf(val, sizeof(val), "%s/seekdb%%c.profraw", abs_base);
+  __llvm_profile_set_filename(val);
+  fprintf(stderr, "Coverage: set_filename('%s')\n", val);
+}
+#endif
+
 #include "lib/alloc/malloc_hook.h"
 #include "lib/alloc/ob_malloc_allocator.h"
 #include "lib/allocator/ob_malloc.h"
@@ -363,23 +395,15 @@ static void disable_hugepage_for_self_text()
   fclose(maps);
 }
 
-__attribute__((constructor(101)))
-static void early_disable_hugepage_for_observer()
-{
-  disable_hugepage_for_self_text();
-}
 #endif
 
 using namespace oceanbase::obsys;
 using namespace oceanbase;
 using namespace oceanbase::lib;
 using namespace oceanbase::common;
-using namespace oceanbase::diagnose;
 using namespace oceanbase::observer;
 using namespace oceanbase::share;
 using namespace oceanbase::omt;
-
-namespace oceanbase { namespace share { void ob_init_create_func(); } }
 
 #define MPRINT(format, ...) fprintf(stderr, format "\n", ##__VA_ARGS__)
 #define MPRINTx(format, ...)                                                   \
@@ -639,9 +663,7 @@ int inner_main(int argc, char *argv[])
 
   // Fake routines for current thread.
 
-#ifndef OB_USE_ASAN
   get_mem_leak_checker().init();
-#endif
 
   ObCurTraceId::SeqGenerator::seq_generator_  = ObTimeUtility::current_time();
   static const int  LOG_FILE_SIZE             = DEFAULT_LOG_FILE_SIZE_MB * 1024 * 1024;
@@ -649,9 +671,8 @@ int inner_main(int argc, char *argv[])
   const char *const PID_FILE_NAME             = "run/seekdb.pid";
   int               ret                       = OB_SUCCESS;
 
-  const char *embed_mode = is_embed_mode() ? "embed " : "";
-  MPRINT("Starting seekdb (%s %s %s%s) source revision %s.",
-    OB_OCEANBASE_NAME, OB_SEEKDB_NAME, embed_mode, PACKAGE_VERSION, build_version());
+  MPRINT("Starting seekdb (%s %s %s) source revision %s.",
+    OB_OCEANBASE_NAME, OB_SEEKDB_NAME, PACKAGE_VERSION, build_version());
 
 #ifndef _WIN32
   // change signal mask first (POSIX only).
@@ -764,18 +785,17 @@ int inner_main(int argc, char *argv[])
     // records all WARN and ERROR logs in log directory.
     ObWarningBuffer::set_warn_log_on(true);
     if (OB_SUCC(ret)) {
-      const bool embed_mode = opts->embed_mode_;
       const bool initialize = opts->initialize_;
       lib::Worker worker;
       lib::Worker::set_worker_to_thread_local(&worker);
       ObServer &observer = ObServer::get_instance();
-      LOG_INFO("seekdb starts", "seekdb_version", PACKAGE_STRING);
+      LOG_INFO("seekdb starts", "seekdb_version", PACKAGE_STRING, "embedded", opts->embedded_);
       if (OB_FAIL(observer.init(*opts, log_cfg))) {
         LOG_ERROR("seekdb init fail", K(ret));
       }
       OB_DELETE(ObServerOptions, mem_attr, opts);
       if (OB_FAIL(ret)) {
-      } else if (OB_FAIL(observer.start(embed_mode))) {
+      } else if (OB_FAIL(observer.start())) {
         LOG_ERROR("seekdb start fail", K(ret));
       } else {
         safe_sd_notify(0, "READY=1\n"
@@ -803,13 +823,6 @@ int inner_main(int argc, char *argv[])
   return ret;
 }
 
-#ifdef OB_USE_ASAN
-const char* __asan_default_options()
-{
-  return "abort_on_error=1:disable_coredump=0:unmap_shadow_on_exit=1:log_path=./log/asan.log";
-}
-#endif
-
 #ifdef _WIN32
 static bool has_arg(int argc, char *argv[], const char *name)
 {
@@ -832,6 +845,9 @@ static const char *get_arg_value(int argc, char *argv[], const char *name)
 
 int main(int argc, char *argv[])
 {
+#if defined(__linux__)
+  disable_hugepage_for_self_text();
+#endif
 #ifdef _WIN32
   ::oceanbase::common::g_ob_log_main_entered = true;
 #endif

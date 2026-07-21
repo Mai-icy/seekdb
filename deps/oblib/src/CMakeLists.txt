@@ -37,31 +37,15 @@ target_include_directories(
   $<$<PLATFORM_ID:Windows>:${VCPKG_INCLUDE_DIR}>
   $<$<PLATFORM_ID:Windows>:${VCPKG_INCLUDE_DIR}/libxml2>
   $<$<PLATFORM_ID:Windows>:${CURL_INCLUDE_DIR}>
-  $<$<PLATFORM_ID:Windows>:${VCPKG_INCLUDE_DIR}/mysql>
-  $<$<PLATFORM_ID:Windows>:${VCPKG_INCLUDE_DIR}/mysql/mariadb>
-  $<$<PLATFORM_ID:Windows>:${VCPKG_INCLUDE_DIR}/mysql/mysql>
   $<$<PLATFORM_ID:Windows>:${SQLITE_COMPAT_DIR}>
   $<$<PLATFORM_ID:Windows>:${OB_VSAG_DIR}/include>
   ${DEVTOOLS_DIR}
   ${DEVTOOLS_DIR}/include
-  ${DEP_DIR}/include/apr-1/
   ${DEP_DIR}/include/icu
   ${DEP_DIR}/include/icu/common
-  $<$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>:${DEP_DIR}/include/apache-arrow>
   ${DEP_DIR}/include/fast_float
   ${USSL_INCLUDE_DIRS}
 )
-
-target_include_directories(
-  oblib_base_without_pass INTERFACE
-  ${DEP_DIR}/include/mariadb
-  )
-
-if(OB_BUILD_OBSERVER_LITE)
-  target_include_directories(
-    oblib_base_without_pass INTERFACE
-  )
-endif()
 
 # -Wno-vla-cxx-extension is Clang 18+ only; GCC and older Clang use -Wno-vla-extension
 include(CheckCXXCompilerFlag)
@@ -221,7 +205,7 @@ if(APPLE OR ANDROID)
   set(_LIB_PATH "${DEP_DIR}/lib/")
   # macOS and Android don't have libaio
   set(LIBAIO_LINK_OPTION "")
-  # On macOS, arrow/parquet are in lib/, but s2/protoc/protobuf/lz4/zstd are in lib64/
+  # On macOS, s2/protoc/protobuf/lz4/zstd are in lib64/
   if(APPLE)
     set(_LIB_PATH_EXTRA "${DEP_DIR}/lib64/")
   else()
@@ -251,16 +235,6 @@ set(OBLIB_ABSEIL_LIST
     ${_LIB_PATH}/libabsl_throw_delegate.a
     ${_LIB_PATH}/libabsl_time.a
     ${_LIB_PATH}/libabsl_time_zone.a)
-
-set(LGPL_DEPS "-L${DEP_DIR}/lib/mariadb -lmariadb")
-if (OB_STATIC_LINK_LGPL_DEPS)
-  if(APPLE)
-    # macOS doesn't support -l:libmariadbclient.a format, use direct path
-    set(LGPL_DEPS "-L${DEP_DIR}/lib/mariadb ${DEP_DIR}/lib/mariadb/libmariadbclient.a")
-  else()
-    set(LGPL_DEPS "-L${DEP_DIR}/lib/mariadb -l:libmariadbclient.a")
-  endif()
-endif()
 
 # Check if system is Ubuntu >= 24 for dynamic linking libaio.so.1t64
 if(OB_AIO AND OB_AIO STREQUAL "libaio1t64" AND NOT APPLE)
@@ -306,22 +280,11 @@ if(WIN32)
     ${VCPKG_LIB_DIR}/absl_flags_commandlineflag.lib
     ${VCPKG_LIB_DIR}/absl_flags_commandlineflag_internal.lib
     ${VCPKG_LIB_DIR}/roaring.lib
-    ${VCPKG_LIB_DIR}/libmariadb.lib
     ${VCPKG_LIB_DIR}/zlib.lib
     ${VCPKG_LIB_DIR}/icuin.lib
     ${VCPKG_LIB_DIR}/icudt.lib
     ${VCPKG_LIB_DIR}/icuuc.lib
     ${VCPKG_LIB_DIR}/protobuf-c.lib
-    ${VCPKG_LIB_DIR}/arrow.lib
-    ${VCPKG_LIB_DIR}/parquet.lib
-    ${VCPKG_LIB_DIR}/utf8proc.lib
-    ${VCPKG_LIB_DIR}/thriftmd.lib
-    ${VCPKG_LIB_DIR}/re2.lib
-    ${VCPKG_LIB_DIR}/brotlicommon.lib
-    ${VCPKG_LIB_DIR}/brotlienc.lib
-    ${VCPKG_LIB_DIR}/brotlidec.lib
-    ${VCPKG_LIB_DIR}/bz2.lib
-
     ${VCPKG_LIB_DIR}/sqlite3.lib
     ${VCPKG_LIB_DIR}/pthreadVC3.lib
     ws2_32 crypt32 bcrypt userenv wldap32 advapi32
@@ -337,7 +300,6 @@ else()
     ${_LIB_PATH_EXTRA}/libs2.a
     ${OBLIB_ABSEIL_LIST}
     ${DEP_DIR}/lib/libroaring.a
-    ${LGPL_DEPS}
     $<$<STREQUAL:"${ARCHITECTURE}","x86_64">:${DEP_DIR}/lib/libunwind.a>
     ${DEP_DIR}/lib/sqlite/libsqlite3.a
     ${DEP_DIR}/lib/libz.a
@@ -345,17 +307,12 @@ else()
     ${DEP_DIR}/lib/libicustubdata.a
     ${DEP_DIR}/lib/libicuuc.a
     ${DEP_DIR}/lib/libprotobuf-c.a
-    $<$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>:${_LIB_PATH}/libarrow.a>
-    $<$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>:${_LIB_PATH}/libparquet.a>
-    $<$<AND:$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>,$<NOT:$<PLATFORM_ID:Darwin>>>:${_LIB_PATH}/libarrow_bundled_dependencies.a>
-    $<$<AND:$<NOT:$<BOOL:${BUILD_EMBED_MODE}>>,$<PLATFORM_ID:Darwin>>:-L/opt/homebrew/lib -lutf8proc -lthrift -lre2 -lbrotlicommon -lbrotlienc -lbrotlidec -lbz2 -llz4 -lzstd -lsnappy>
     $<$<PLATFORM_ID:Linux>:-L${DEP_DIR}/var/usr/lib64 -L${DEP_DIR}/var/usr/lib -L${DEP_3RD_DIR}/usr/lib -L${DEP_3RD_DIR}/usr/lib64>
     ${LIBAIO_LINK_OPTION} $<$<NOT:$<BOOL:${ANDROID}>>:-lpthread> -ldl
     $<$<BOOL:${ANDROID}>:-llog>
     $<$<PLATFORM_ID:Linux>:-lrt>
     $<$<PLATFORM_ID:Darwin>:-Wl,-framework,Security -Wl,-framework,CoreFoundation -Wl,-framework,SystemConfiguration -liconv>
     ${ARCH_LDFLAGS}
-    $<$<PLATFORM_ID:Linux>:${DEP_DIR}/lib/libisal.a>
   )
 endif()
 target_link_libraries(oblib_base INTERFACE oblib_base_without_pass oblib_pass)

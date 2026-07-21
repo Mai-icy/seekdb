@@ -41,9 +41,9 @@ OB_DEF_SERIALIZE_SIZE(ObExtraRpcHeader)
 }
 
 #ifdef ERRSIM
-  OB_SERIALIZE_MEMBER(ObRuntimeContext, compat_mode_, module_type_, log_reduction_mode_, extra_rpc_header_);
+  OB_SERIALIZE_MEMBER(ObRuntimeContext, module_type_, log_reduction_mode_, extra_rpc_header_);
 #else
-  OB_SERIALIZE_MEMBER(ObRuntimeContext, compat_mode_, log_reduction_mode_, extra_rpc_header_);
+  OB_SERIALIZE_MEMBER(ObRuntimeContext, log_reduction_mode_, extra_rpc_header_);
 #endif
 
 
@@ -62,13 +62,6 @@ int OB_WEAK_SYMBOL common_yield()
   return OB_SUCCESS;
 }
 
-int OB_WEAK_SYMBOL SET_GROUP_ID(bool is_background)
-{
-  int ret = OB_SUCCESS;
-  UNUSED(is_background);
-  return ret;
-}
-
 }  // namespace lib
 }  // namespace oceanbase
 __thread Worker *Worker::self_;
@@ -76,14 +69,11 @@ __thread Worker *Worker::self_;
 Worker::Worker()
     : group_(nullptr),
       allocator_(nullptr),
-      st_current_priority_(0),
       session_(nullptr),
       cur_request_(nullptr),
       worker_level_(INT32_MAX),
       curr_request_level_(0),
       is_th_worker_(false),
-      group_id_(0),
-      func_type_(0),
       timeout_ts_(INT64_MAX),
       ntp_offset_(0),
       disable_wait_(false)

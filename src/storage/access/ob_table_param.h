@@ -100,7 +100,7 @@ class ColumnMap
       SHADOW_COLUMN_ID_OFFSET + MAX_ARRAY_SIZE - 1;
 
   typedef common::ObFixedArray<int32_t, common::ObIAllocator> ColumnArray;
-  #define IS_SHADOW_COLUMN(column_id) ((column_id >= OB_MIN_SHADOW_COLUMN_ID) && !common::is_mlog_special_column(column_id))
+  #define IS_SHADOW_COLUMN(column_id) (column_id >= OB_MIN_SHADOW_COLUMN_ID)
 
 public:
   ColumnMap(common::ObIAllocator &allocator)
@@ -248,8 +248,7 @@ public:
               const common::ObIArray<uint64_t> &output_column_ids,
               const sql::ObStoragePushdownFlag &pd_pushdown_flag,
               const common::ObIArray<uint64_t> *tsc_out_cols = NULL,
-              const bool force_mysql_mode = false,
-              const bool query_cs_replica = false);
+              const bool force_mysql_mode = false);
 
   // convert aggregate column projector from 'aggregate_column_ids' and 'output_projector_'
   // convert group by column projector from 'group_by_column_ids' and 'output_projector_'
@@ -259,8 +258,6 @@ public:
                   const common::ObIArray<uint64_t> &aggregate_column_ids,
                   const common::ObIArray<uint64_t> &group_by_column_ids,
                   const sql::ObStoragePushdownFlag &pd_pushdown_flag);
-  // convert right table scan parameter of join MV scan.
-  // (right table index back not supported)
   inline uint64_t get_table_id() const { return table_id_; }
   inline int64_t is_spatial_index() const { return is_spatial_index_; }
   inline void set_is_spatial_index(bool is_spatial_index) { is_spatial_index_ = is_spatial_index; }
@@ -270,16 +267,12 @@ public:
   inline void set_is_multivalue_index(bool is_multivalue_index) { is_multivalue_index_ = is_multivalue_index; } 
   inline bool is_vec_index() const { return is_vec_index_; }
   inline void set_is_vec_index(const bool is_vec_index) { is_vec_index_ = is_vec_index; }
-  inline bool is_mlog_table() const { return is_mlog_table_; }
-  inline void set_is_mlog_table(const bool is_mlog_table) { is_mlog_table_ = is_mlog_table; }
   inline int64_t is_partition_table() const { return is_partition_table_; }
   inline void set_is_partition_table(bool is_partition_table) { is_partition_table_ = is_partition_table; }
   inline bool use_lob_locator() const { return use_lob_locator_; }
   inline bool enable_lob_locator_v2() const { return enable_lob_locator_v2_; }
   inline bool &get_enable_lob_locator_v2() { return enable_lob_locator_v2_; }
   inline bool has_virtual_column() const { return has_virtual_column_; }
-  inline bool is_column_replica_table() const { return is_column_replica_table_; }
-  inline bool is_normal_cgs_at_the_end() const { return is_normal_cgs_at_the_end_; }
   inline bool is_enable_semistruct_encoding() const { return is_enable_semistruct_encoding_; }
   inline void set_is_enable_semistruct_encoding(const bool v) { is_enable_semistruct_encoding_ = v; }
   inline const common::ObIArray<int32_t> &get_output_projector() const { return output_projector_; }
@@ -291,8 +284,6 @@ public:
   inline const storage::ObTableReadInfo &get_read_info() const { return main_read_info_; }
   inline const ObString &get_parser_name() const { return parser_name_; }
   inline const ObString &get_parser_property() const { return parser_properties_; }
-  inline const common::ObIArray<storage::ObTableReadInfo *> *get_cg_read_infos() const
-  { return cg_read_infos_.empty() ? nullptr : &cg_read_infos_; }
   inline bool is_safe_filter_with_di() const { return is_safe_filter_with_di_; }
   inline int8_t get_access_virtual_col_cnt() const { return access_virtual_col_cnt_; }
   DECLARE_TO_STRING;
@@ -312,8 +303,7 @@ private:
                                       const common::ObIArray<uint64_t> &output_column_ids,
                                       const common::ObIArray<uint64_t> *tsc_out_cols,
                                       const bool force_mysql_mode,
-                                      const sql::ObStoragePushdownFlag &pd_pushdown_flag,
-                                      const bool query_cs_replica = false);
+                                      const sql::ObStoragePushdownFlag &pd_pushdown_flag);
 
   int construct_pad_projector(
       const ObIArray<ObColumnParam *> &dst_columns,
@@ -352,10 +342,7 @@ private:
   Projector pad_col_projector_;
 
   // need to serialize
-  // version of the mixture read info
-  int16_t read_param_version_;
   storage::ObTableReadInfo main_read_info_;
-  storage::ObFixedMetaObjArray<storage::ObTableReadInfo *> cg_read_infos_;
 
   bool has_virtual_column_;
   // specified to use lob locator or not
@@ -368,13 +355,8 @@ private:
   bool is_spatial_index_;
   bool is_fts_index_;
   bool is_multivalue_index_;
-  bool is_column_replica_table_;
   bool is_vec_index_;
   bool is_partition_table_;
-  // column storage tables created after v435 will place the rowkey/all cg at the start of the table schema column group array
-  bool is_normal_cgs_at_the_end_;
-  // for read time query check of mview
-  bool is_mlog_table_;
   bool is_enable_semistruct_encoding_;
   bool is_safe_filter_with_di_;
   int8_t access_virtual_col_cnt_;

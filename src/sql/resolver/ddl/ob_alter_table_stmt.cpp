@@ -62,17 +62,6 @@ int ObAlterTableStmt::add_column(const share::schema::AlterColumnSchema &column_
   return ret;
 }
 
-int ObAlterTableStmt::add_column_group(const ObColumnGroupSchema &column_group)
-{
-  int ret = OB_SUCCESS;
-  share::schema::AlterTableSchema &alter_table_schema =
-      get_alter_table_arg().alter_table_schema_;
-  if (OB_FAIL(alter_table_schema.add_column_group(column_group))){
-    SQL_RESV_LOG(WARN, "failed to add column schema to alter table schema", K(ret), K(column_group), K(alter_table_schema));
-  }
-  return ret;
-}
-
 int ObAlterTableStmt::add_index_arg(obcall::ObIndexArg *index_arg)
 {
   int ret = OB_SUCCESS;
@@ -149,22 +138,11 @@ int ObAlterTableStmt::set_exchange_partition_arg(const obcall::ObExchangePartiti
   return ret;
 }
 
-int ObAlterTableStmt::set_lock_priority(sql::ObSQLSessionInfo *session)
+void ObAlterTableStmt::set_lock_priority()
 {
-  int ret = OB_SUCCESS;
-  
-  if (!true) {
-    ret = OB_ERR_UNEXPECTED;
-    SQL_RESV_LOG(WARN, "tenant config invalid, can not do rename", K(ret));
-  } else if (GCONF.enable_lock_priority) {
-    if (!ObLockExecutor::proxy_is_support(session)) {
-      ret = OB_NOT_SUPPORTED;
-      SQL_RESV_LOG(WARN, "is in proxy_mode and not support rename", K(ret), KPC(session));
-    } else {
-      alter_table_arg_.lock_priority_ = ObTableLockPriority::HIGH1;
-    }
+  if (GCONF.enable_lock_priority) {
+    alter_table_arg_.lock_priority_ = ObTableLockPriority::HIGH1;
   }
-  return ret;
 }
 
 } //namespace sql

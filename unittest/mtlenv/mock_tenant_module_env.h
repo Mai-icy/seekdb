@@ -43,7 +43,6 @@
 #include "logservice/ob_tenant_mutil_allocator_mgr.h"
 #include "share/ob_device_manager.h"
 #include "share/ob_io_device_helper.h"
-#include "share/resource_manager/ob_cgroup_ctrl.h"
 #include "observer/scheduler/ob_tenant_dag_scheduler.h"
 #include "observer/scheduler/ob_dag_warning_history_mgr.h"
 #include "share/schema/ob_multi_version_schema_service.h"
@@ -59,7 +58,6 @@
 #include "storage/meta_mem/ob_tenant_meta_mem_mgr.h"
 #include "storage/compaction/ob_tenant_tablet_scheduler.h"
 #include "storage/compaction/ob_tenant_medium_checker.h"
-#include "storage/slog/ob_storage_logger_manager.h"
 #include "storage/slog/ob_storage_logger.h"
 #include "storage/compaction/ob_sstable_merge_info_mgr.h"
 #include "storage/compaction/ob_tenant_freeze_info_mgr.h"
@@ -75,7 +73,7 @@
 #include "storage/tx/ob_timestamp_service.h"
 #include "storage/tx/ob_trans_id_service.h"
 #include "storage/ob_tenant_tablet_stat_mgr.h"
-#include "storage/tx/ob_trans_part_ctx.h"
+#include "storage/tx/ob_tx_ctx.h"
 #include "storage/ob_file_system_router.h"
 #include "storage/access/ob_table_scan_iterator.h"
 #include "mtlenv/ob_mittest_utils.h"
@@ -242,10 +240,8 @@ private:
   int64_t mysql_port_;
   ObAddr self_addr_;
   observer::ObSrvNetworkFrame net_frame_;
-  share::ObCgroupCtrl cgroup_ctrl_;
   omt::ObMultiTenant multi_tenant_;
   MockObService ob_service_;
-  share::ObLocationService location_service_;
   share::schema::ObMultiVersionSchemaService &schema_service_;
   sql::ObSql sql_engine_;
   ObSQLSessionMgr session_mgr_;
@@ -327,7 +323,6 @@ int MockTenantModuleEnv::construct_default_tenant_meta(const uint64_t tenant_id,
   } else if (OB_FAIL(unit.init(unit_id,
                         share::ObUnitInfoGetter::ObUnitStatus::UNIT_NORMAL,
                         unit_config,
-                        lib::Worker::CompatMode::MYSQL,
                         create_timestamp,
                         has_memstore,
                         false /*is_removed*/,
@@ -461,13 +456,11 @@ void MockTenantModuleEnv::init_gctx_gconf()
   GCONF.observer_id = 1;
   GCONF.cluster_id = 1;
   GCTX.self_addr_seq_.set_addr(self_addr_);
-  GCTX.location_service_ = &location_service_;
   GCTX.schema_service_ = &schema_service_;
   GCTX.net_frame_ = &net_frame_;
   GCTX.ob_service_ = &ob_service_;
   GCTX.omt_ = &multi_tenant_;
   GCTX.sql_engine_ = &sql_engine_;
-  GCTX.cgroup_ctrl_ = &cgroup_ctrl_;
   GCTX.session_mgr_ = &session_mgr_;
   GCTX.scramble_rand_ = &scramble_rand_;
   (void) GCTX.set_server_id(1);
@@ -516,19 +509,12 @@ int MockTenantModuleEnv::init_before_start_mtl()
     STORAGE_LOG(ERROR, "init server checkpoint slog handler fail", K(ret));
   } else if (OB_FAIL(multi_tenant_.init(self_addr_, &sql_proxy_, false))) {
     STORAGE_LOG(WARN, "fail to init env", K(ret));
-  } else if (OB_FAIL(ObTsMgr::get_instance().init(self_addr_,
-                         schema_service_, location_service_))) {
-    STORAGE_LOG(WARN, "fail to init env", K(ret));
-  } else if (OB_FAIL(ObTsMgr::get_instance().start())) {
-    STORAGE_LOG(WARN, "fail to init env", K(ret));
   } else if (OB_FAIL(tmp_file::ObTmpBlockCache::get_instance().init("tmp_block_cache"))) {
     STORAGE_LOG(WARN, "init tmp block cache failed", KR(ret));
   } else if (OB_FAIL(tmp_file::ObTmpPageCache::get_instance().init("tmp_page_cache"))) {
     STORAGE_LOG(WARN, "init sn tmp page cache failed", KR(ret));
   } else if (OB_SUCCESS != (ret = bandwidth_throttle_.init(1024 * 1024 * 60))) {
     STORAGE_LOG(ERROR, "failed to init bandwidth_throttle_", K(ret));
-  } else if (OB_FAIL(TG_START(lib::TGDefIDs::ServerGTimer))) {
-    STORAGE_LOG(ERROR, "init timer fail", KR(ret));
   } else if (OB_FAIL(ObMdsSchemaHelper::get_instance().init())) {
     STORAGE_LOG(ERROR, "fail to init mds schema helper", K(ret));
   } else if (OB_FAIL(LOG_IO_DEVICE_WRAPPER.init(clog_dir_.c_str(), 8, 128, &OB_IO_MANAGER, &ObDeviceManager::get_instance()))) {
@@ -538,8 +524,6 @@ int MockTenantModuleEnv::init_before_start_mtl()
   } else if (OB_FAIL(tablet_operator_.init(&meta_db_pool_))) {
     STORAGE_LOG(ERROR, "init tablet_operator_ failed", KR(ret));
   } else {
-    // Ignore cgroup error
-    cgroup_ctrl_.init();
     GCTX.sql_proxy_ = &sql_proxy_;
     ObRunningModeConfig::instance().mini_mode_ = true; // make startup_accel_handler_ use only one thread
   }
@@ -612,28 +596,6 @@ int MockTenantModuleEnv::start_()
   } else if (OB_FAIL(tenant->acquire_more_worker(TENANT_WORKER_COUNT, succ_num))) {
   } else if (OB_FAIL(guard_.switch_to(tenant))) { // make module set ready in this thread
     STORAGE_LOG(ERROR, "fail to switch to sys tenant", K(ret));
-  } else {
-    ObLogService *log_service = share::g_mp->log_service();
-    if (OB_ISNULL(log_service) || OB_ISNULL(log_service->palf_env_)) {
-      ret = OB_ERR_UNEXPECTED;
-      STORAGE_LOG(ERROR, "fail to switch to sys tenant", KP(log_service));
-    } else {
-      palf::PalfEnvImpl *palf_env_impl = &log_service->palf_env_->palf_env_impl_;
-      palf::LogIOWorkerWrapper &log_iow_wrapper = palf_env_impl->log_io_worker_wrapper_;
-      palf::LogIOWorkerConfig new_config;
-      palf_env_impl->init_log_io_worker_config_(1, new_config);
-      new_config.io_worker_num_ = 4;
-      log_iow_wrapper.destory_and_free_log_io_workers_();
-      if (OB_FAIL(log_iow_wrapper.create_and_init_log_io_workers_(
-        new_config, palf_env_impl->cb_thread_pool_.get_tg_id(), palf_env_impl->log_alloc_mgr_, palf_env_impl))) {
-        STORAGE_LOG(WARN, "failed to create_and_init_log_io_workers_", K(new_config));
-      } else if (FALSE_IT(log_iow_wrapper.log_writer_parallelism_ = new_config.io_worker_num_)) {
-      } else if (FALSE_IT(log_iow_wrapper.is_user_tenant_ = true)) {
-      } else if (OB_FAIL(log_iow_wrapper.start_()))  {
-        STORAGE_LOG(WARN, "failed to start_ log_iow_wrapper", K(new_config));
-      } else {
-      }
-    }
   }
   return ret;
 }
@@ -663,20 +625,12 @@ void MockTenantModuleEnv::destroy()
   OB_STORAGE_OBJECT_MGR.wait();
   OB_STORAGE_OBJECT_MGR.destroy();
 
-  ObTsMgr::get_instance().stop();
-  ObTsMgr::get_instance().wait();
-  ObTsMgr::get_instance().destroy();
-
   net_frame_.sql_nio_stop();
   net_frame_.stop();
   net_frame_.wait();
   net_frame_.destroy();
   tmp_file::ObTmpBlockCache::get_instance().destroy();
   tmp_file::ObTmpPageCache::get_instance().destroy();
-  TG_STOP(lib::TGDefIDs::ServerGTimer);
-  TG_WAIT(lib::TGDefIDs::ServerGTimer);
-  TG_DESTROY(lib::TGDefIDs::ServerGTimer);
-
   share::g_mp = nullptr;
 
   destroyed_ = true;

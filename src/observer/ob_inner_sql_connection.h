@@ -28,7 +28,6 @@
 #include "observer/mysql/ob_query_retry_ctrl.h"
 #include "observer/ob_inner_sql_transmit_struct.h"
 #include "common/mysqlclient/ob_isql_client.h"
-#include "share/location_cache/ob_location_service.h"
 #include "storage/tablelock/ob_table_lock_common.h"   //ObTableLockMode
 #include "sql/session/ob_sql_session_mgr.h"
 
@@ -160,13 +159,6 @@ public:
                             int64_t &affected_rows, bool is_user_sql = false,
                             const common::ObAddr *sql_exec_addr = nullptr) override;
 
-  // Prepared Statement API for embedded mode
-  int stmt_prepare(const ObString &sql,
-                   uint64_t &stmt_id, int64_t &param_count);
-  int stmt_execute(const uint64_t stmt_id,
-                   const ParamStore &params, int64_t &affected_rows);
-  int stmt_close(const uint64_t stmt_id);
-
   virtual int execute_proc(ObIAllocator &allocator,
                           ParamStore &params,
                           ObString &sql,
@@ -278,7 +270,6 @@ public:
 
 public:// for mds
   int register_multi_data_source(
-                                 const share::ObLSID ls_id,
                                  const transaction::ObTxDataSourceType type,
                                  const char *buf,
                                  const int64_t buf_len,
@@ -356,13 +347,6 @@ private:
 
   // set timeout to session variable
   int set_timeout(int64_t &abs_timeout_us);
-
-  lib::Worker::CompatMode get_compat_mode() const;
-
-  int nonblock_get_leader(
-      const int64_t cluster_id,
-      const share::ObLSID ls_id,
-      common::ObAddr &leader);
 
   int execute_read_inner(const int64_t cluster_id, const ObString &sql,
                          common::ObISQLClient::ReadResult &res, bool is_user_sql = false,

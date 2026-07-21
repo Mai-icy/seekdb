@@ -32,7 +32,6 @@ void ObDASTableLocMeta::light_assign(const ObDASTableLocMeta &other)
   table_loc_id_ = other.table_loc_id_;
   ref_table_id_ = other.ref_table_id_;
   flags_ = other.flags_;
-  route_policy_ = other.route_policy_;
 }
 
 int ObDASTableLocMeta::assign(const ObDASTableLocMeta &other)
@@ -63,12 +62,10 @@ OB_SERIALIZE_MEMBER(ObDASTableLocMeta,
                     table_loc_id_,
                     ref_table_id_,
                     related_table_ids_,
-                    flags_,
-                    route_policy_);
+                    flags_);
 
 OB_SERIALIZE_MEMBER(ObDASTabletLoc,
                     tablet_id_,
-                    ls_id_,
                     server_,
                     flags_,
                     partition_id_,

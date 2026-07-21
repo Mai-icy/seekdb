@@ -27,6 +27,7 @@
 #include "sql/engine/expr/ob_expr_func_round.h"
 
 #include "common/object/ob_object.h"
+#include "rpc/obmysql/ob_mysql_util.h"
 #include "sql/engine/expr/ob_expr_multiset.h"
 
 namespace oceanbase
@@ -740,8 +741,7 @@ int ObExprOperator::aggregate_collations(ObObjMeta &type,
       }
     }
     if (OB_SUCC(ret)) {
-      if ((flags & OB_COLL_ALLOW_NEW_CONV) &&
-          unknown_cs &&
+      if (unknown_cs &&
           coll_level != CS_LEVEL_EXPLICIT) {
         ret = OB_CANT_AGGREGATE_2COLLATIONS;
         LOG_WARN("Illegal mix of collations",K(ret), K(unknown_cs));
@@ -814,16 +814,10 @@ int ObExprOperator::aggregate_two_collation(const ObCollationLevel level1,
                                             uint32_t flags)
 {
   int ret = OB_SUCCESS;
-  if (flags & OB_COLL_ALLOW_NEW_CONV) {
-    ret = ObCharset::aggregate_collation_new(level1, type1,
-                                              level2, type2,
-                                              res_level, res_type,
-                                              flags);
-  } else {
-    ret = ObCharset::aggregate_collation_old(level1, type1,
-                                              level2, type2,
-                                              res_level, res_type);
-  }
+  ret = ObCharset::aggregate_collation_new(level1, type1,
+                                            level2, type2,
+                                            res_level, res_type,
+                                            flags);
   if (OB_CANT_AGGREGATE_2COLLATIONS == ret) {
     const char* coll_type1 = ObCharset::collation_name(type1);
     const char* coll_level1 = ObCharset::collation_level(level1);
@@ -839,21 +833,6 @@ int ObExprOperator::aggregate_two_collation(const ObCollationLevel level1,
   return ret;
 }
 
-int ObExprOperator::enable_old_charset_aggregation(const ObBasicSessionInfo *session, uint32_t &flags)
-{
-  int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
-  if (OB_ISNULL(session)) {
-    LOG_TRACE("use new charset aggregation rule");
-  } else if (OB_FAIL(session->is_old_charset_aggregation_enabled(enable_old_rule))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else if (enable_old_rule) {
-    flags &= ~OB_COLL_ALLOW_NEW_CONV;
-    LOG_TRACE("old charset aggregation rule is enabled because variables control", K(enable_old_rule));
-  }
-  return ret;
-}
-
 int ObExprOperator::aggregate_charsets_for_string_result(
   ObObjMeta &type,
   const ObObjMeta *types,
@@ -861,14 +840,9 @@ int ObExprOperator::aggregate_charsets_for_string_result(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_ALLOW_NUMERIC_CONV | OB_COLL_ALLOW_NEW_CONV;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_ALLOW_NUMERIC_CONV;
+  ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -879,14 +853,9 @@ int ObExprOperator::aggregate_charsets_for_string_result(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_ALLOW_NUMERIC_CONV | OB_COLL_ALLOW_NEW_CONV;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_ALLOW_NUMERIC_CONV;
+  ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -897,14 +866,9 @@ int ObExprOperator::aggregate_charsets_for_comparison(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_DISALLOW_NONE | OB_COLL_ALLOW_NEW_CONV;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_DISALLOW_NONE;
+  ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -916,14 +880,9 @@ int ObExprOperator::aggregate_charsets_for_comparison(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_DISALLOW_NONE | OB_COLL_ALLOW_NEW_CONV;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type.get_calc_meta(), types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_DISALLOW_NONE;
+  ret = aggregate_charsets(type.get_calc_meta(), types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -935,15 +894,9 @@ int ObExprOperator::aggregate_charsets_for_string_result_with_comparison(
   common::ObExprTypeCtx &type_ctx)
 {
   int ret = OB_SUCCESS;
-  bool enable_old_rule = false;
   uint32_t flags = OB_COLL_ALLOW_SUPERSET_CONV | OB_COLL_ALLOW_COERCIBLE_CONV |
-                   OB_COLL_ALLOW_NUMERIC_CONV | OB_COLL_ALLOW_NEW_CONV |
-                   OB_COLL_DISALLOW_NONE;
-  if (OB_FAIL(enable_old_charset_aggregation(type_ctx.get_session(), flags))) {
-    LOG_WARN("failed to check is_old_charset_aggregation_enabled", K(ret));
-  } else {
-    ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
-  }
+                   OB_COLL_ALLOW_NUMERIC_CONV | OB_COLL_DISALLOW_NONE;
+  ret = aggregate_charsets(type, types, param_num, flags, type_ctx);
   return ret;
 }
 
@@ -1146,8 +1099,6 @@ int ObExprOperator::is_same_kind_type_for_case(const ObExprResType &type1, const
       match = ob_is_json(type2.get_type());
     } else if (type1.is_geometry()) {
       match = type2.is_geometry();
-    } else if (type1.is_roaringbitmap()) {
-      match = type2.is_roaringbitmap();
     }
   }
   return ret;
@@ -1260,9 +1211,6 @@ int ObExprOperator::aggregate_result_type_for_merge(
       } else if (ob_is_geometry(res_type)) {
         type.set_geometry();
         type.set_length((ObAccuracy::DDL_DEFAULT_ACCURACY[ObGeometryType]).get_length());
-      } else if (ob_is_roaringbitmap(res_type)) {
-        type.set_roaringbitmap();
-        type.set_length((ObAccuracy::DDL_DEFAULT_ACCURACY[ObRoaringBitmapType]).get_length());
       } else if (ob_is_collection_sql_type(res_type)) {
         if (OB_FAIL(aggregate_collection_sql_type(type_ctx, type, types, param_num))) {
           LOG_WARN("aggregate_collection_sql_type fail", K(ret));
@@ -1410,7 +1358,7 @@ int ObExprOperator::aggregate_temporal_accuracy_for_merge(ObExprResType &type,
       }
     }
     if (OB_UNLIKELY(scale < 0)) {
-      type.set_scale(ObAccuracy::MAX_ACCURACY2[MYSQL_MODE][type.get_type()].get_scale());
+      type.set_scale(ObAccuracy::MAX_ACCURACY2[0][type.get_type()].get_scale());
     } else {
       type.set_scale(scale);
     }
@@ -1498,7 +1446,7 @@ int ObExprOperator::aggregate_numeric_accuracy_for_merge(ObExprResType &type,
         type.set_precision(PRECISION_UNKNOWN_YET);
         type.set_scale(SCALE_UNKNOWN_YET);
       } else {
-        precision = static_cast<ObPrecision>(ObMySQLUtil::float_length(scale));
+        precision = static_cast<ObPrecision>(obmysql::ObMySQLUtil::float_length(scale));
         type.set_precision(precision);
         type.set_scale(max_scale_for_real);
       }
@@ -1638,7 +1586,6 @@ ObObjType ObExprOperator::enumset_calc_types_[2 /*use_subschema*/][ObMaxTC] =
     ObNullType, /*COLLECTION*/
     ObVarcharType, /*ObMySQLDateTC*/
     ObVarcharType, /*ObMySQLDateTimeTC*/
-    ObVarcharType, /*ObRoaringBitmapTC*/
   },
   {
     ObUInt64Type,/*ObNullTC*/
@@ -1670,7 +1617,6 @@ ObObjType ObExprOperator::enumset_calc_types_[2 /*use_subschema*/][ObMaxTC] =
     ObNullType, /*COLLECTION*/
     ObMySQLDateType, /*ObMySQLDateTC*/
     ObMySQLDateTimeType, /*ObMySQLDateTimeTC*/
-    ObVarcharType, /*ObRoaringBitmapTC*/
   },
 };
 ////////////////////////////////////////////////////////////////
@@ -2147,10 +2093,6 @@ int ObExprOperator::calc_cmp_type2(ObExprResType &type,
                   || type_ == T_OP_NOT_IN)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("Incorrect cmp type with geometry arguments", K(type1), K(type2), K(type_), K(ret));
-  } else if ((type1.is_roaringbitmap() || type2.is_roaringbitmap())
-             && !(type_ == T_FUN_SYS_NULLIF)) {
-    ret = OB_ERR_INVALID_TYPE_FOR_OP;
-    LOG_WARN("Incorrect cmp type with roaringbitmap arguments", K(type1), K(type2), K(type_), K(ret));
 #if defined(__ANDROID__)
   } else if ((type_ == T_OP_EQ || type_ == T_OP_NE || type_ == T_OP_NSEQ
                  || type_ == T_OP_SQ_EQ || type_ == T_OP_SQ_NE || type_ == T_OP_SQ_NSEQ)
@@ -2217,12 +2159,8 @@ int ObExprOperator::calc_cmp_type3(ObExprResType &type,
   int ret = OB_SUCCESS;
   // cmp type
   ObObjType cmp_type = type1.get_type();
-  if (type1.is_roaringbitmap() || type2.is_roaringbitmap() || type3.is_roaringbitmap()) {
-    ret = OB_ERR_INVALID_TYPE_FOR_OP;
-    LOG_WARN("Incorrect cmp type with roaringbitmap arguments", K(type1), K(type2), K(type3), K(type_),K(ret));
-  }
 #if defined(__ANDROID__)
-  else if (type1.is_collection_sql_type() || type2.is_collection_sql_type() || type3.is_collection_sql_type()) {
+  if (type1.is_collection_sql_type() || type2.is_collection_sql_type() || type3.is_collection_sql_type()) {
     if (!type1.is_collection_sql_type()
         && type2.is_collection_sql_type()
         && type3.is_collection_sql_type()) {
@@ -2233,7 +2171,8 @@ int ObExprOperator::calc_cmp_type3(ObExprResType &type,
     LOG_WARN("Incorrect cmp type with collection arguments", K(type1), K(type2), K(type3), K(type_), K(ret));
   }
 #endif
-  else if (OB_SUCC(ObExprResultTypeUtil::get_relational_cmp_type(cmp_type, type2.get_type(), cmp_type))) {
+  if (OB_SUCC(ret)
+      && OB_SUCC(ObExprResultTypeUtil::get_relational_cmp_type(cmp_type, type2.get_type(), cmp_type))) {
     if (OB_UNLIKELY(ObMaxType == cmp_type)) {
       ret = OB_INVALID_ARGUMENT; // not compatible input
     } else if (OB_SUCC(ObExprResultTypeUtil::get_relational_cmp_type(cmp_type, cmp_type, type3.get_type()))) {
@@ -3003,233 +2942,6 @@ int ObRelationalExprOperator::eval_pl_udt_compare(const ObExpr &expr,
   }
   return ret;
 }
-
-int ObRelationalExprOperator::eval_min_max_compare(
-    const ObExpr &expr, ObEvalCtx &ctx, ObDatum &expr_datum)
-{
-  int ret = OB_SUCCESS;
-  int cmp_ret = 0;
-  int is_set_null = false;
-  ObDatum *l_datum = NULL;
-  ObDatum *r_datum = NULL;
-  OZ(expr.eval_param_value(ctx, l_datum, r_datum));
-  if (OB_SUCC(ret)) {
-    if (l_datum->is_outrow() || l_datum->is_ext() || 
-        r_datum->is_outrow() || r_datum->is_ext()) {
-      LOG_DEBUG("is min max comparison");
-      if (l_datum->is_null() || r_datum->is_null()) {
-        is_set_null = true;
-        expr_datum.set_null();
-      } else if (OB_FAIL(get_min_max_cmp_ret(l_datum, r_datum, cmp_ret))) {
-        LOG_WARN("fail to get min max cmp ret");
-      } else {
-        ObCmpOp cmp_op = get_cmp_op(expr.type_);
-        if (is_set_null) {
-          if (CO_NE == cmp_op) {
-            expr_datum.set_int(true);
-          } else if (CO_EQ == cmp_op) {
-            expr_datum.set_int(false);
-          } else {
-            expr_datum.set_null();
-          }
-        } else {
-          expr_datum.set_int(is_expected_cmp_ret(cmp_op, cmp_ret));
-        }
-      }
-      LOG_DEBUG("current compare object(ObDatum) min max status", 
-          K(l_datum->is_outrow()),
-          K(l_datum->is_ext()),
-          K(r_datum->is_outrow()),
-          K(r_datum->is_ext()));
-    } else {
-      // normal process
-      LOG_DEBUG("is normal comparison");
-      if (OB_ISNULL(expr.inner_functions_)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected null inner_eval_func in min max compare", K(ret));
-      } else if (OB_ISNULL(expr.inner_functions_[0])) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected null pointer", K(ret));
-      } else if (OB_FAIL(((ObExpr::EvalFunc)expr.inner_functions_[0])(expr, ctx, expr_datum))) {
-        LOG_WARN("fail to eval func", K(ret));
-      }
-    }
-  }
-  return ret;
-}
-
-int ObRelationalExprOperator::eval_batch_min_max_compare(
-    const ObExpr &expr, ObEvalCtx &ctx, const ObBitVector &skip, const int64_t batch_size)
-{
-  int ret = OB_SUCCESS;
-
-  ObDatum *results = expr.locate_batch_datums(ctx);
-  const ObExpr &l_expr = *expr.args_[0];
-  const ObExpr &r_expr = *expr.args_[1];
-  ObBitVector &eval_flags = expr.get_evaluated_flags(ctx);
-  bool need_handle_ext = false;
-
-  for (int64_t i = 0; i < batch_size; ++i) {
-    const ObDatum &l_datum = l_expr.is_batch_result() ? 
-      l_expr.locate_batch_datums(ctx)[i] :  l_expr.locate_expr_datum(ctx, 0);
-    const ObDatum &r_datum = r_expr.is_batch_result() ? 
-      r_expr.locate_batch_datums(ctx)[i] :  r_expr.locate_expr_datum(ctx, 0);
-    if (skip.at(i) || eval_flags.at(i)) {
-      continue;
-    } else if (l_datum.is_outrow() || l_datum.is_ext() ||
-               r_datum.is_outrow() || r_datum.is_ext()) {
-      need_handle_ext = true;
-      break;
-    }
-  }
-  if (need_handle_ext) {  // min max process
-    LOG_DEBUG("is min max comparison");
-    for (int i = 0; OB_SUCC(ret) && i < batch_size; i++) {
-      int cmp_ret = 0;
-      const ObDatum &l_datum = l_expr.is_batch_result() ? 
-        l_expr.locate_batch_datums(ctx)[i] :  l_expr.locate_expr_datum(ctx, 0);
-      const ObDatum &r_datum = r_expr.is_batch_result() ? 
-        r_expr.locate_batch_datums(ctx)[i] :  r_expr.locate_expr_datum(ctx, 0);
-
-      if (skip.at(i) || eval_flags.at(i)) {
-        continue;
-      } else if (l_datum.is_outrow() || l_datum.is_ext() || 
-                 r_datum.is_outrow() || r_datum.is_ext() ) {
-        if (l_datum.is_null() || r_datum.is_null()) {
-          results[i].set_null();
-          eval_flags.set(i);
-        } else if (OB_FAIL(get_min_max_cmp_ret(&l_datum, &r_datum, cmp_ret))) {
-          LOG_WARN("fail to get min max cmp ret");
-        } else {
-          results[i].set_int(is_expected_cmp_ret(get_cmp_op(expr.type_), cmp_ret));
-          eval_flags.set(i);
-        }
-        LOG_DEBUG("current compare object(ObDatum) min max status", 
-          K(l_datum.is_outrow()),
-          K(l_datum.is_ext()),
-          K(r_datum.is_outrow()),
-          K(r_datum.is_ext()));
-      } else {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpect compare, it should be at lease one datum is ext", K(ret));
-      }
-    }
-  } else {
-    LOG_DEBUG("is normal comparison");
-    if (OB_ISNULL(expr.inner_functions_)) {  // normal process
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected null inner_eval_func in min max compare", K(ret));
-    } else if (OB_ISNULL(expr.inner_functions_[1])) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected null pointer", K(ret));
-    } else if (OB_FAIL(((ObExpr::EvalBatchFunc)expr.inner_functions_[1])(expr, ctx, skip, batch_size))) {
-      LOG_WARN("fail to eval func", K(ret));
-    }
-  }
-  return ret;
-}
-
-/*
-  Through the get_payload method, you can obtain the data of obdatum, but you cannot obtain the is_ext information of obdatum.
-  Here, the is_ext attribute is obtained from the vec_uniform_const vector, and the obdatum data is obtained from get_payload.
-*/
-int ObRelationalExprOperator::eval_vector_min_max_compare(
-    const ObExpr &expr, ObEvalCtx &ctx, const ObBitVector &skip, const EvalBound &bound)
-{
-  int ret = OB_SUCCESS;
-
-  ObBitVector &eval_flags = expr.get_evaluated_flags(ctx);
-  ObIVector *res_vec = expr.get_vector(ctx);
-  ObIVector *l_vec = nullptr;
-  ObIVector *r_vec = nullptr;
-
-  if (OB_FAIL(expr.args_[0]->eval_vector(ctx, skip, bound))) {
-    LOG_WARN("failed to eval_vector", K(ret));
-  } else if (OB_FAIL(expr.args_[1]->eval_vector(ctx, skip, bound))) {
-    LOG_WARN("failed to eval_vector", K(ret));
-  } else if (FALSE_IT(l_vec = expr.args_[0]->get_vector(ctx))) {
-  } else if (FALSE_IT(r_vec = expr.args_[1]->get_vector(ctx))) {
-  } else if (OB_ISNULL(l_vec) || OB_ISNULL(r_vec)) {
-   ret = OB_ERR_UNEXPECTED;
-   LOG_WARN("fail to eval vector min max compare", KP(l_vec), K(r_vec));
-  } else {
-    bool has_vec_uniform_const_type = 
-      VEC_UNIFORM_CONST == l_vec->get_format() || VEC_UNIFORM_CONST == r_vec->get_format();
-
-    if (has_vec_uniform_const_type) {
-      ObUniformBase *uniform_l_vec = VEC_UNIFORM_CONST == l_vec->get_format() ? 
-        static_cast<ObUniformBase *>(l_vec) : nullptr;
-      ObUniformBase *uniform_r_vec = VEC_UNIFORM_CONST == r_vec->get_format() ? 
-        static_cast<ObUniformBase *>(r_vec) : nullptr;
-      const ObDatum *l_datums = nullptr == uniform_l_vec ? nullptr : uniform_l_vec->get_datums();
-      const ObDatum *r_datums = nullptr == uniform_r_vec ? nullptr : uniform_r_vec->get_datums();
-      bool need_handle_ext = false;
-      // find ext
-      if (nullptr != l_datums) {
-        need_handle_ext = l_datums[0].is_outrow() || l_datums[0].is_ext() ? true : false;
-      } else if (!need_handle_ext && nullptr != r_datums) {
-        need_handle_ext = r_datums[0].is_outrow() || r_datums[0].is_ext() ? true : false;
-      }
-      if (need_handle_ext) {
-        LOG_DEBUG("is min max comparison");
-        for (int i = bound.start(); OB_SUCC(ret) && i < bound.end(); i++) {
-          int cmp_ret = 0;
-          const char *l_payload = NULL;
-          const char *r_payload = NULL;
-          ObLength l_len = 0;
-          ObLength r_len = 0;
-          // 1. datum from payload, to get is_null.
-          l_vec->get_payload(i, l_payload, l_len);
-          ObDatum l_tmp_datum(l_payload, l_len, l_vec->is_null(i));
-          r_vec->get_payload(i, r_payload, r_len);
-          ObDatum r_tmp_datum(r_payload, r_len, r_vec->is_null(i));
-          // 2. datum from payload, to get is_outrow or is_ext.
-          const ObDatum &l_datum = 
-            VEC_UNIFORM_CONST == l_vec->get_format() ? l_datums[0] : l_tmp_datum;
-          const ObDatum &r_datum = 
-            VEC_UNIFORM_CONST == r_vec->get_format() ? r_datums[0] : r_tmp_datum;
-          if (skip.at(i) || eval_flags.at(i)) {
-            continue;
-          } else if (l_datum.is_outrow() || l_datum.is_ext() || 
-                    r_datum.is_outrow() || r_datum.is_ext() ) {
-            if (l_datum.is_null() || r_datum.is_null()) {
-              res_vec->set_null(i);
-              eval_flags.set(i);
-            } else if (OB_FAIL(get_min_max_cmp_ret(&l_datum, &r_datum, cmp_ret))) {
-              LOG_WARN("fail to get min max cmp ret");
-            } else {
-              res_vec->set_int(i, is_expected_cmp_ret(get_cmp_op(expr.type_), cmp_ret));
-              eval_flags.set(i);
-            }
-            LOG_DEBUG("current compare object(ObDatum) min max status", 
-              K(l_datum.is_outrow()), K(l_datum.is_ext()),
-              K(r_datum.is_outrow()), K(r_datum.is_ext()));
-          } else {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("unexpect compare, it should be at lease one datum is ext", K(ret));
-          }
-        }
-      } else {
-        LOG_DEBUG("is normal comparison");
-        if (OB_ISNULL(expr.inner_functions_)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("unexpected null inner_eval_func in min max compare", K(ret));
-        } else if (OB_ISNULL(expr.inner_functions_[2])) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("unexpected null pointer", K(ret));
-        } else if (OB_FAIL(((ObExpr::EvalVectorFunc)expr.inner_functions_[2])(expr, ctx, skip, bound))) {
-          LOG_WARN("fail to eval func", K(ret));
-        }
-      }
-    } else {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected format, auto split filter should has one VEC_UNIFORM_CONST type", 
-        K(ret), K(l_vec->get_format()), K(r_vec->get_format()));
-    }
-  }
-  return ret;
-}
-
 
 int ObRelationalExprOperator::eval_compare_composite(CollectionPredRes &cmp_result,
                                                      const common::ObObj &obj1,
@@ -5583,7 +5295,7 @@ int ObMinMaxExprOperator::calc_result_meta_for_comparison(
       if (ob_is_real_type(type.get_type())) {
         if (SCALE_UNKNOWN_YET != result_scale && OB_MAX_DOUBLE_FLOAT_SCALE >= result_scale) {
           type.set_scale(result_scale);
-          type.set_precision(static_cast<ObPrecision>(ObMySQLUtil::float_length(result_scale)));
+          type.set_precision(static_cast<ObPrecision>(obmysql::ObMySQLUtil::float_length(result_scale)));
         } else {
           type.set_scale(SCALE_UNKNOWN_YET);
           type.set_precision(PRECISION_UNKNOWN_YET);
@@ -5947,27 +5659,7 @@ int ObLocationExprOperator::calc_(const ObExpr &expr, const ObExpr &sub_arg,
       pos_int = pos->get_int();
     } else {
       has_result = true;
-      ObSolidifiedVarsGetter helper(expr, ctx, ctx.exec_ctx_.get_my_session());
-      const ObSQLSessionInfo *session = ctx.exec_ctx_.get_my_session();
-      uint64_t compat_version = 0;
-      ObCompatType compat_type = COMPAT_MYSQL57;
-      bool is_enable = false;
-      if (OB_ISNULL(session)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("session info is null", K(ret));
-      } else if (OB_FAIL(helper.get_compat_version(compat_version))) {
-        LOG_WARN("failed to get compat version", K(ret));
-      } else if (OB_FAIL(ObCompatControl::check_feature_enable(compat_version,
-                                                               ObCompatFeatureType::FUNC_LOCATE_NULL,
-                                                               is_enable))) {
-        LOG_WARN("failed to check feature enable", K(ret));
-      } else if (OB_FAIL(session->get_compatibility_control(compat_type))) {
-        LOG_WARN("failed to get compat type", K(ret));
-      } else if (is_enable && COMPAT_MYSQL8 == compat_type) {
-        res_datum.set_null();
-      } else {
-        res_datum.set_int(0);
-      }
+      res_datum.set_int(0);
     }
   }
 
@@ -6545,27 +6237,6 @@ int ObRelationalExprOperator::cg_datum_cmp_expr(ObIAllocator &allocator,
     CK(NULL != rt_expr.eval_batch_func_);
     CK(NULL != rt_expr.eval_vector_func_);
 
-    if (OB_SUCC(ret)) {
-      if (raw_expr.has_flag(IS_AUTO_PART_EXPR)) {
-        LOG_DEBUG("set min or max compare func", K(cmp_op));
-        void **inner_func_buf = NULL;
-        const int64_t inner_func_count = 3;
-        if (OB_ISNULL(inner_func_buf = (void **)allocator.alloc(sizeof(void *) * inner_func_count))) {
-          ret = OB_ALLOCATE_MEMORY_FAILED;
-          LOG_WARN("fail to alloc memory for auto part expr inner function buf", K(ret));
-        } else {
-          rt_expr.inner_functions_ = inner_func_buf;
-          rt_expr.inner_func_cnt_ = inner_func_count;
-          rt_expr.inner_functions_[0] = (void*)rt_expr.eval_func_;
-          rt_expr.inner_functions_[1] = (void*)rt_expr.eval_batch_func_;
-          rt_expr.inner_functions_[2] = (void*)rt_expr.eval_vector_func_;
-          // new
-          rt_expr.eval_func_ = &eval_min_max_compare;
-          rt_expr.eval_batch_func_ = &eval_batch_min_max_compare;
-          rt_expr.eval_vector_func_ = &eval_vector_min_max_compare;
-        }
-      }
-    }
   }
   return ret;
 }
@@ -6592,8 +6263,6 @@ int ObRelationalExprOperator::cg_row_cmp_expr(const int row_dimension,
     } else {
       rt_expr.inner_func_cnt_ = row_dimension;
       rt_expr.inner_functions_ = inner_func_buf;
-
-      const ObCmpOp cmp_op = get_cmp_op(raw_expr.get_expr_type());
 
       ObExpr *left_row = rt_expr.args_[0];
       ObExpr *right_row = NULL;
@@ -6646,12 +6315,7 @@ int ObRelationalExprOperator::cg_row_cmp_expr(const int row_dimension,
         }
       } // for end
       if (OB_SUCC(ret)) {
-        if (raw_expr.has_flag(IS_AUTO_PART_EXPR)) {
-          rt_expr.eval_func_ = &min_max_row_eval;
-          LOG_DEBUG("set min or max compare func", K(cmp_op));
-        } else {
-          rt_expr.eval_func_ = &row_eval;
-        }
+        rt_expr.eval_func_ = &row_eval;
       }
     }
   }
@@ -6756,154 +6420,6 @@ int ObRelationalExprOperator::row_cmp(
     } else {
       expr_datum.set_int(
           is_expected_cmp_ret(cmp_op, first_nonequal_cmp_ret));
-    }
-  }
-  return ret;
-}
-
-int ObRelationalExprOperator::min_max_row_eval(
-    const ObExpr &expr, ObEvalCtx &ctx, ObDatum &expr_datum)
-{
-  int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(2 != expr.arg_cnt_
-                  || NULL == expr.args_
-                  || expr.inner_func_cnt_ <= 0
-                  || expr.args_[0]->arg_cnt_ != expr.inner_func_cnt_
-                  || NULL == expr.args_[0]->args_
-                  || NULL == expr.args_[1]->args_
-                  || NULL == expr.inner_functions_)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret));
-  } else {
-    ObExpr *left_row = expr.args_[0];
-    ObExpr *right_row = NULL;
-    if (1 == expr.args_[1]->arg_cnt_ && T_OP_ROW == expr.args_[1]->args_[0]->type_) {
-      if (expr.args_[1]->args_[0]->arg_cnt_ != expr.inner_func_cnt_) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected arg cnt", K(ret), K(expr.inner_func_cnt_),
-                                       K(expr.args_[1]->args_[0]->arg_cnt_));
-      } else {
-        right_row = expr.args_[1]->args_[0];
-      }
-    } else if (OB_UNLIKELY(expr.inner_func_cnt_ != expr.args_[1]->arg_cnt_)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected arg cnt", K(ret), K(expr.inner_func_cnt_), K(expr.args_[1]->arg_cnt_));
-    } else {
-      right_row = expr.args_[1];
-    }
-    ret = min_max_row_cmp(expr, expr_datum, left_row->args_, ctx, right_row->args_, ctx);
-  }
-  return ret;
-}
-
-int ObRelationalExprOperator::min_max_row_cmp(
-    const ObExpr &expr, ObDatum &expr_datum,
-    ObExpr **l_row, ObEvalCtx &l_ctx, ObExpr **r_row, ObEvalCtx &r_ctx)
-{
-  // performance critical, do not check pointer validity.
-  int ret = OB_SUCCESS;
-  ObDatum *left = NULL;
-  ObDatum *right = NULL;
-
-  bool cnt_row_null = false;
-  int first_nonequal_cmp_ret = 0;
-  int i = 0;
-  // locate first non-equal pair
-  for (; OB_SUCC(ret) && i < expr.inner_func_cnt_; i++) {
-    if (OB_FAIL(l_row[i]->eval(l_ctx, left))) {
-      if (OB_FAIL(try_get_inner_row_cmp_ret<true>(ret, first_nonequal_cmp_ret))) {
-        LOG_WARN("failed to eval left in row cmp", K(ret));
-      } else {
-        --i;
-        break;
-      }
-    } else if (left->is_null()) {
-      cnt_row_null = true;
-    } else if (OB_FAIL(r_row[i]->eval(r_ctx, right))) {
-      if (OB_FAIL(try_get_inner_row_cmp_ret<false>(ret, first_nonequal_cmp_ret))) {
-        LOG_WARN("failed to eval right in row cmp", K(ret));
-      } else {
-        --i;
-        break;
-      }
-    } else if (right->is_null()) {
-      cnt_row_null = true;
-    } else if (left->is_ext() || left->is_outrow() || right->is_ext() || right->is_outrow()) {
-      // is_outrow : min
-      // is_ext : max
-      if (OB_FAIL(get_min_max_cmp_ret(left, right, first_nonequal_cmp_ret))) {
-        LOG_WARN("fail to get min max cmp ret");
-      }
-    } else if (OB_FAIL(((DatumCmpFunc)expr.inner_functions_[i])(*left, *right, first_nonequal_cmp_ret))) {
-      LOG_WARN("failed to cmp", K(ret));
-    } else {
-      LOG_DEBUG("min max row cmp", 
-        K(ret), K(left->is_ext()), K(left->is_outrow()), K(right->is_ext()), K(right->is_outrow()));
-    }
-    if (OB_SUCC(ret)) {
-      if (0 != first_nonequal_cmp_ret) {
-        break;
-      }
-    }
-  }  // for end
-  ObCmpOp cmp_op = get_cmp_op(expr.type_);
-  if (OB_FAIL(ret)) {
-    // do nothing
-  } else if (i == expr.inner_func_cnt_) {
-    if (cnt_row_null) {
-      expr_datum.set_null();
-    } else {
-      expr_datum.set_int(is_expected_cmp_ret(cmp_op, 0));
-    }
-  } else {
-    if (cnt_row_null) {
-      if (CO_NE == cmp_op) {
-        expr_datum.set_int(true);
-      } else if (CO_EQ == cmp_op) {
-        expr_datum.set_int(false);
-      } else {
-        expr_datum.set_null();
-      }
-    } else {
-      expr_datum.set_int(
-          is_expected_cmp_ret(cmp_op, first_nonequal_cmp_ret));
-    }
-  }
-  return ret;
-}
-
-int ObRelationalExprOperator::get_min_max_cmp_ret(
-    const ObDatum *left, const ObDatum *right, int &cmp_ret)
-{
-  int ret = OB_SUCCESS;
-  if (OB_ISNULL(left) || OB_ISNULL(right)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret), KP(left), KP(right));
-  } else {
-    bool is_left_min_or_max = left->is_ext() || left->is_outrow();
-    bool is_right_min_or_max = right->is_ext() || right->is_outrow();
-    if (is_left_min_or_max && !is_right_min_or_max) {    // left is ext, right is not ext
-      if (left->is_ext()) { // left is max
-        cmp_ret = 1;
-      } else if (left->is_outrow()) { // left is min
-        cmp_ret = -1;
-      } else {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected cmp result", KPC(left), KPC(right));
-      }
-    } else if (!is_left_min_or_max && is_right_min_or_max) {  // left is not ext,  right is ext
-      if (right->is_ext()) {  // right is max
-        cmp_ret = -1;
-      } else if (right->is_outrow()) {  // right is min
-        cmp_ret = 1;
-      } else {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected cmp result", KPC(left), KPC(right));
-      }
-    } else {   // left and right is all ext
-      // In the scenario filtered by the filter expression, it is impossible for both left and right to be is_ext at the same time
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("Unexpected expr datum compare", K(ret), KPC(left), KPC(right));
     }
   }
   return ret;

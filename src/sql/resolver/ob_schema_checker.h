@@ -61,6 +61,7 @@ namespace sql
 
 #define LBCA_OP_FLAG  1
 
+struct ObSqlCtx;
 class ObSqlSchemaGuard;
 class ObSchemaChecker
 {
@@ -218,8 +219,8 @@ public:
   //                      const bool is_index_table,
   //                      bool &is_rowkey_column) const;
   //int check_is_index_table(uint64_t table_id, bool &is_index_table) const;
-  int get_can_read_index_array(uint64_t table_id, uint64_t *index_tid_array, int64_t &size, bool with_mv) const;
-  int get_can_write_index_array(uint64_t table_id, uint64_t *index_tid_array, int64_t &size, bool only_global = false, bool with_mlog = false) const;
+  int get_can_read_index_array(uint64_t table_id, uint64_t *index_tid_array, int64_t &size) const;
+  int get_can_write_index_array(uint64_t table_id, uint64_t *index_tid_array, int64_t &size, bool only_global = false) const;
   // tenant
   int get_tenant_info(const share::schema::ObTenantSchema *&tenant_schema);
   int get_database_schema(
@@ -265,7 +266,6 @@ public:
                        const common::ObString &database_name,
                        const common::ObString &package_name,
                        const share::schema::ObPackageType type,
-                       const int64_t compatible_mode,
                        const share::schema::ObPackageInfo *&package_info);
   int get_trigger_info(
                        const common::ObString &database_name,
@@ -273,11 +273,9 @@ public:
                        const share::schema::ObTriggerInfo *&tg_info);
   int get_package_id(const uint64_t database_id,
                      const common::ObString &package_name,
-                     const int64_t compatible_mode,
                      uint64_t &package_id);
   int get_package_id(const common::ObString &database_name,
                      const common::ObString &package_name,
-                     const int64_t compatible_mode,
                      uint64_t &package_id);
   int get_routine_id(const ObString &database_name,
                      const ObString &routine_name,
@@ -310,8 +308,6 @@ public:
   int check_mysql_grant_role_priv(const ObSqlCtx &sql_ctx,
                                   const common::ObIArray<uint64_t> &granting_role_ids);
   int check_set_default_role_priv(const ObSqlCtx &sql_ctx);
-
-  static bool enable_mysql_pl_priv_check(share::schema::ObSchemaGetterGuard &schema_guard);
 
   // directory
   int get_directory_id(const common::ObString &directory_name,

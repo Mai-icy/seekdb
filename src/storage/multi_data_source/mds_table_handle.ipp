@@ -68,7 +68,7 @@ struct MdsTableHandleHelper {
   template <int IDX>
   static int get_unit_id(const uint8_t mds_table_id, uint8_t &mds_unit_id) {
     int ret = OB_SUCCESS;
-    if (IDX == mds_table_id) {
+    if (IDX + MDS_TABLE_ID_OFFSET == mds_table_id) {
       ret = InnerInnerHelper<typename TupleIdxType<MdsTableTypeTuple, IDX>::type>::
             template get_unit_id<0>(mds_unit_id);
     } else {
@@ -111,23 +111,9 @@ inline int MdsTableHandle::get_tablet_id(common::ObTabletID &tablet_id) const
   return ret;
 }
 
-inline int MdsTableHandle::get_ls_id(share::ObLSID &ls_id) const
-{
-  int ret = OB_SUCCESS;
-  CHECK_MDS_TABLE_INIT();
-  if (!p_mds_table_base_.is_valid()) {
-    ret = OB_BAD_NULL_ERROR;
-    MDS_LOG(WARN, "p_mds_table_base_ is invalid", K(*this));
-  } else {
-    ls_id = p_mds_table_base_->get_ls_id();
-  }
-  return ret;
-}
-
 template <typename MdsTableType>
 int MdsTableHandle::init(ObIAllocator &allocator,
                          const ObTabletID tablet_id,
-                         const share::ObLSID ls_id,
                          const share::SCN mds_ckpt_scn_from_tablet,// this is used to filter replayed nodes after removed action
                          ObTabletPointer *pointer,
                          ObMdsTableMgr *p_mgr)
@@ -146,13 +132,12 @@ int MdsTableHandle::init(ObIAllocator &allocator,
   if (OB_SUCC(ret)) {
     if (OB_FAIL(p_mds_table.construct(allocator))) {
       MDS_LOG(WARN, "construct mds table impl failed", KP(this), K(lbt()));
-    } else if (OB_FAIL(p_mds_table->init(tablet_id, ls_id, mds_ckpt_scn_from_tablet, pointer, p_mgr))) {
+    } else if (OB_FAIL(p_mds_table->init(tablet_id, mds_ckpt_scn_from_tablet, pointer, p_mgr))) {
       MDS_LOG(WARN, "init mds table failed", KR(ret), K(mds_table_id_),
                     K(typeid(MdsTableType).name()));
     } else {
       p_mds_table_base_ = p_mds_table;
-      uint8_t tablet_id = TupleTypeIdx<MdsTableTypeTuple, MdsTableType>::value;
-      ATOMIC_STORE(&mds_table_id_, tablet_id);
+      ATOMIC_STORE(&mds_table_id_, GET_MDS_TABLE_ID<MdsTableType>::value);
     }
   }
   return ret;
@@ -742,11 +727,8 @@ int MdsTableHandle::scan_all_nodes_to_dump(DUMP_OP &&for_each_op,
 inline int MdsTableHandle::flush(share::SCN need_advanced_rec_scn_lower_limit, share::SCN max_decided_scn)
 {
   int ret = OB_SUCCESS;
-  // return ret;// FIXME: for lixia test, will block CLOG recycle
-#ifndef TEST_MDS_TRANSACTION
   CHECK_MDS_TABLE_INIT();
   ret = p_mds_table_base_->flush(need_advanced_rec_scn_lower_limit, max_decided_scn);
-#endif
   return ret;
 }
 
@@ -786,7 +768,8 @@ inline int MdsTableHandle::get_node_cnt(int64_t &valid_cnt) const
 inline bool MdsTableHandle::is_valid() const
 {
   uint8_t mds_table_id = ATOMIC_LOAD(&mds_table_id_);
-  return mds_table_id >= 0 && mds_table_id < MdsTableTypeTuple::get_element_size();
+  return mds_table_id >= MDS_TABLE_ID_OFFSET
+      && mds_table_id < MDS_TABLE_ID_OFFSET + MdsTableTypeTuple::get_element_size();
 }
 
 inline void MdsTableHandle::reset()
@@ -863,7 +846,7 @@ struct MdsTableUnitConvertHelper {
                       MdsTableBase *p_mds_table,
                       MdsUnit<K, V> *&p_mds_unit) {
     int ret = OB_SUCCESS;
-    if (IDX == mds_table_id) {
+    if (IDX + MDS_TABLE_ID_OFFSET == mds_table_id) {
       ret = InnerInnerHelper<typename TupleIdxType<MdsTableTypeTuple, IDX>::type>::
             template get_unit<0>(p_mds_table, p_mds_unit);
     } else {

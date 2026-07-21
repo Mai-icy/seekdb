@@ -248,12 +248,8 @@ int ObShareUtil::mtl_get_tenant_role(ObTenantRole::Role &tenant_role)
 {
   int ret = OB_SUCCESS;
   tenant_role = ObTenantRole::INVALID_TENANT;
-  if (true) {
+  {
     tenant_role = ObTenantRole::PRIMARY_TENANT;
-  } else {
-    MOD_SCOPE {
-      tenant_role = MTL_GET_TENANT_ROLE_CACHE();
-    }
   }
   if (OB_SUCC(ret) && OB_UNLIKELY(is_invalid_tenant(tenant_role))) {
     ret = OB_NEED_WAIT;
@@ -292,7 +288,7 @@ int ObShareUtil::table_get_tenant_role(ObTenantRole &tenant_role)
   int ret = OB_SUCCESS;
   tenant_role.reset();
   bool is_primary = true;
-  if (true) {
+  {
     if (OB_FAIL(is_primary_cluster(is_primary))) {
       LOG_WARN("fail to check whether is primary cluster", K(is_primary));
     } else if (is_primary) {
@@ -357,10 +353,6 @@ const char *ObShareUtil::replica_type_to_string(const ObReplicaType type)
       str = ENCRYPTION_LOGONLY_REPLICA_STR;
       break;
     }
-    case ObReplicaType::REPLICA_TYPE_COLUMNSTORE: {
-      str = COLUMNSTORE_REPLICA_STR;
-      break;
-    }
     default: {
       str = "INVALID";
       break;
@@ -385,8 +377,6 @@ ObReplicaType ObShareUtil::string_to_replica_type(const ObString &str)
     replica_type = REPLICA_TYPE_FULL;
   } else if (0 == str.case_compare(READONLY_REPLICA_STR) || 0 == str.case_compare(R_REPLICA_STR)) {
     replica_type = REPLICA_TYPE_READONLY;
-  } else if (0 == str.case_compare(COLUMNSTORE_REPLICA_STR) || 0 == str.case_compare(C_REPLICA_STR)) {
-    replica_type = REPLICA_TYPE_COLUMNSTORE;
   } else if (0 == str.case_compare(LOGONLY_REPLICA_STR) || 0 == str.case_compare(L_REPLICA_STR)) {
     replica_type = REPLICA_TYPE_LOGONLY;
   } else if (0 == str.case_compare(ENCRYPTION_LOGONLY_REPLICA_STR) || 0 == str.case_compare(E_REPLICA_STR)) {
@@ -401,13 +391,12 @@ ObReplicaType ObShareUtil::string_to_replica_type(const ObString &str)
   return replica_type;
 }
 
-// get_sys_ls_readable_scn moved definition to storage/tx_storage/ob_ls_service.cpp(real user ObLSService/ObLS complete type, previously hidden behind a removed include chain)
+// The LS readable SCN helper is implemented by storage/tx_storage/ob_ls_service.cpp.
 // Note: master tenant-elim changed the original body(MTL(ObLSService*) -> share::g_mp->ls_service()), HOST must be synced (see routing item)
 
 // check_clog_disk_full_or_hang moved definition to logservice/ob_log_service.cpp(removes share→logservice dependency, declaration remains in this class header)
 // Note: master tenant-elim changed the original body(MTL(logservice::ObLogService*) -> share::g_mp->log_service()), HOST must be synced (see routing item)
 
-// get_tenant_gts moved definition to storage/tx/ob_ts_mgr.cpp(removes share→storage dependency, declaration remains in this class header)
 // Note: master tenant-elim changed the original body(removed the tenant_id parameter, OB_TS_MGR.get_gts removed the tenant_id argument), HOST must be synced (see routing item)
 
 int ObShareUtil::gen_sys_unit(ObUnit &unit)
@@ -489,7 +478,6 @@ int ObShareUtil::gen_default_sys_tenant_schema(schema::ObTenantSchema &tenant_sc
       tenant_schema.set_default_tablegroup_id(OB_INVALID_ID);
       tenant_schema.set_in_recyclebin(false);
       tenant_schema.set_status(schema::ObTenantStatus::TENANT_STATUS_NORMAL);
-      // seekdb is MySQL-only: compatibility_mode field removed from ObTenantSchema.
       // charset_type_ not used, default is ok
       // collation_type_ not used, default is ok
       // name_case_mode_ not used, default is ok

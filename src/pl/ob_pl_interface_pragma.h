@@ -26,13 +26,10 @@
 #include "pl/sys_package/ob_dbms_xplan.h"
 #include "pl/sys_package/ob_dbms_session.h"
 #include "pl/sys_package/ob_dbms_space.h"
-#include "pl/sys_package/ob_dbms_mview_mysql.h"
-#include "pl/sys_package/ob_dbms_mview_stats_mysql.h"
 #include "pl/sys_package/ob_dbms_limit_calculator_mysql.h"
 #include "pl/sys_package/ob_dbms_vector_mysql.h"
 #include "pl/sys_package/ob_dbms_hybrid_vector_mysql.h"
 #include "pl/pl_recompile/ob_pl_recompile_task_helper.h"
-#include "pl/sys_package/ob_dbms_partition.h"
 #include "pl/sys_package/ob_dbms_ai_service.h"
 #include "pl/sys_package/ob_dbms_index_manager.h"
 
@@ -116,7 +113,6 @@
   INTERFACE_DEF(INTERFACE_DBMS_XPLAN_SET_OPT_TRACE_PARAMETER, "SET_OPT_TRACE_PARAMETER", (ObDbmsXplan::set_opt_trace_parameter))
   INTERFACE_DEF(INTERFACE_DBMS_XPLAN_DISPLAY, "DISPLAY", (ObDbmsXplan::display))
   INTERFACE_DEF(INTERFACE_DBMS_XPLAN_DISPLAY_CURSOR, "DISPLAY_CURSOR", (ObDbmsXplan::display_cursor))
-  INTERFACE_DEF(INTERFACE_DBMS_XPLAN_DISPLAY_SQL_PLAN_BASELINE, "DISPLAY_SQL_PLAN_BASELINE", (ObDbmsXplan::display_sql_plan_baseline))
   INTERFACE_DEF(INTERFACE_DBMS_XPLAN_DISPLAY_ACTIVE_SESSION_PLAN, "DISPLAY_ACTIVE_SESSION_PLAN", (ObDbmsXplan::display_active_session_plan))
   //end of dbms xplan
 
@@ -147,28 +143,6 @@
 
 
 
-  // start of dbms_mview_mysql
-#define DEFINE_DBMS_MVIEW_MYSQL_INTERFACE(symbol, func) \
-  INTERFACE_DEF(INTERFACE_##symbol, #symbol, (func))
-
-  DEFINE_DBMS_MVIEW_MYSQL_INTERFACE(DBMS_MVIEW_MYSQL_PURGE_LOG, ObDBMSMViewMysql::purge_log)
-  DEFINE_DBMS_MVIEW_MYSQL_INTERFACE(DBMS_MVIEW_MYSQL_REFRESH, ObDBMSMViewMysql::refresh)
-
-#undef DEFINE_DBMS_MVIEW_MYSQL_INTERFACE
-  // end of dbms_mview_mysql
-
-  // start of dbms_mview_stats_mysql
-#define DEFINE_DBMS_MVIEW_STATS_MYSQL_INTERFACE(symbol, func) \
-  INTERFACE_DEF(INTERFACE_##symbol, #symbol, (func))
-
-  DEFINE_DBMS_MVIEW_STATS_MYSQL_INTERFACE(DBMS_MVIEW_STATS_MYSQL_SET_SYS_DEFAULT, ObDBMSMViewStatsMysql::set_system_default)
-  DEFINE_DBMS_MVIEW_STATS_MYSQL_INTERFACE(DBMS_MVIEW_STATS_MYSQL_SET_MVREF_STATS_PARAMS, ObDBMSMViewStatsMysql::set_mvref_stats_params)
-  DEFINE_DBMS_MVIEW_STATS_MYSQL_INTERFACE(DBMS_MVIEW_STATS_MYSQL_PURGE_REFRESH_STATS, ObDBMSMViewStatsMysql::purge_refresh_stats)
-
-#undef DEFINE_DBMS_MVIEW_STATS_MYSQL_INTERFACE
-  // end of dbms_mview_stats_mysql
-
-
     // start of dbms_vector_mysql
 #define DEFINE_DBMS_VECTOR_MYSQL_INTERFACE(symbol, func) \
   INTERFACE_DEF(INTERFACE_##symbol, #symbol, (func))
@@ -194,10 +168,6 @@
 
   // start of dbms_ddl
   // end of dbms_ddl
-
-  // start of dbms_partition
-  INTERFACE_DEF(INTERFACE_DBMS_PARTITION_MANAGE_DYNAMIC_PARTITION, "DBMS_PARTITION_MANAGE_DYNAMIC_PARTITION", (ObDBMSPartition::manage_dynamic_partition))
-  // end of dbms_partition
 
   // start of dbms_ai_service
   INTERFACE_DEF(INTERFACE_DBMS_AI_SERVICE_CREATE_AI_MODEL_MYSQL, "DBMS_AI_SERVICE_CREATE_AI_MODEL_MYSQL", (ObDBMSAiService::create_ai_model))

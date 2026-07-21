@@ -48,7 +48,6 @@ int ObLobAccessParam::assign(const ObLobAccessParam& other)
 
   
   
-  this->ls_id_ = other.ls_id_;
   this->tablet_id_ = other.tablet_id_;
   this->lob_meta_tablet_id_ = other.lob_meta_tablet_id_;
   this->lob_piece_tablet_id_ = other.lob_piece_tablet_id_;
@@ -364,7 +363,7 @@ int ObLobAccessParam::init_seq_no(const uint64_t modified_len)
         LOG_WARN("get and inc tx seq failed", K(ret), K(need_seq_cnt), KPC(this));
       }
     } else {
-      // do nothing, for direct load has no tx desc, do not use seq no
+      // Callers without a transaction descriptor do not use sequence numbers.
       LOG_DEBUG("tx_desc is null", KPC(this));
     }
   }
@@ -485,7 +484,7 @@ int ObLobAccessParam::get_tx_read_snapshot(ObLobLocatorV2 &locator, transaction:
     } else if (OB_FAIL(locator.get_location_info(location_info))) {
       LOG_WARN("failed to get location info", K(ret), K(locator));
     } else if (OB_FAIL(read_snapshot.build_snapshot_for_lob(
-        tx_info->snapshot_version_, tx_info->snapshot_tx_id_, tx_info->snapshot_seq_, share::ObLSID(location_info->ls_id_)))) {
+        tx_info->snapshot_version_, tx_info->snapshot_tx_id_, tx_info->snapshot_seq_))) {
       LOG_WARN("build_snapshot_for_lob fail", K(ret), KPC(tx_info), KPC(location_info), K(locator));
     }
   } else {

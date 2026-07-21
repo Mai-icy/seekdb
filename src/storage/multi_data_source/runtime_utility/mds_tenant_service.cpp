@@ -17,7 +17,6 @@
 #include "mds_tenant_service.h"
 #include "share/rc/ob_module_provider.h"
 #include "storage/tx_storage/ob_ls_service.h"
-#include "storage/tablet/ob_tablet_iterator.h"
 #include "storage/allocator/ob_mds_allocator.h"  // relocated-definition owner
 #include "storage/allocator/ob_tenant_vector_allocator.h"
 
@@ -36,14 +35,12 @@ int ObTenantMdsService::mtl_init(ObTenantMdsService *&mds_service)
   if (mds_service->is_inited_) {
     ret = OB_INIT_TWICE;
     MDS_LOG(ERROR, "init mds tenant service twice!", KR(ret), KPC(mds_service));
-  } else if (MDS_FAIL(TG_CREATE_TENANT(lib::TGDefIDs::TenantMdsServiceRecyle, mds_service->recyle_timer_id_))) {
-    MDS_LOG(WARN, "fail to create TenantMdsServiceRecyle timer", K(ret));
-  } else if (MDS_FAIL(TG_START(mds_service->recyle_timer_id_))) {
-    MDS_LOG(WARN, "fail to start TenantMdsServiceRecyle timer", K(ret));
-  } else if (MDS_FAIL(TG_CREATE_TENANT(lib::TGDefIDs::TenantMdsServiceDumpStatus, mds_service->dump_status_timer_id_))) {
-    MDS_LOG(WARN, "fail to start TenantMdsServiceDumpStatus timer", K(ret));
-  } else if (MDS_FAIL(TG_START(mds_service->dump_status_timer_id_))) {
-    MDS_LOG(WARN, "fail to start TenantMdsServiceDumpStatus timer", K(ret));
+  } else if (MDS_FAIL(mds_service->recyle_timer_.init(
+      "MdsTRecyle", common::ObMemAttr("MdsTRecyle")))) {
+    MDS_LOG(WARN, "fail to init TenantMdsServiceRecyle timer", K(ret));
+  } else if (MDS_FAIL(mds_service->dump_status_timer_.init(
+      "MdsTDump", common::ObMemAttr("MdsTDump")))) {
+    MDS_LOG(WARN, "fail to init TenantMdsServiceDumpStatus timer", K(ret));
   } else {
     mds_service->is_inited_ = true;
   }
@@ -54,14 +51,14 @@ int ObTenantMdsService::mtl_start(ObTenantMdsService *&mds_service)
 {
   int ret = OB_SUCCESS;
   MDS_TG(10_ms);
-  if (MDS_FAIL(TG_SCHEDULE(mds_service->recyle_timer_id_, mds_service->recyle_timer_task_,
-                           3_s, true/*repeat*/, false/*immediate*/))) {
+  if (MDS_FAIL(mds_service->recyle_timer_.schedule(
+          mds_service->recyle_timer_task_, 3_s, true/*repeat*/, false/*immediate*/))) {
     MDS_LOG(ERROR, "fail to register recycle timer task to timer",
-        KR(ret), K(mds_service->recyle_timer_id_), KPC(mds_service));
-  } else if (MDS_FAIL(TG_SCHEDULE(mds_service->dump_status_timer_id_, mds_service->dump_status_timer_task_,
-                                  15_s, true/*repeat*/, false/*immediate*/))) {
+        KR(ret), KPC(mds_service));
+  } else if (MDS_FAIL(mds_service->dump_status_timer_.schedule(
+          mds_service->dump_status_timer_task_, 15_s, true/*repeat*/, false/*immediate*/))) {
     MDS_LOG(ERROR, "fail to register dump mds table status task to timer",
-        KR(ret), K(mds_service->dump_status_timer_id_), KPC(mds_service));
+        KR(ret), KPC(mds_service));
   }
 
   return ret;
@@ -69,25 +66,17 @@ int ObTenantMdsService::mtl_start(ObTenantMdsService *&mds_service)
 
 void ObTenantMdsService::mtl_stop(ObTenantMdsService *&mds_service)
 {
-  if (nullptr != mds_service) {
-    if (mds_service->recyle_timer_id_ != -1) {
-      TG_STOP(mds_service->recyle_timer_id_);
-    }
-    if (mds_service->dump_status_timer_id_ != -1) {
-      TG_STOP(mds_service->dump_status_timer_id_);
-    }
+  if (nullptr != mds_service && mds_service->is_inited_) {
+    mds_service->recyle_timer_.stop();
+    mds_service->dump_status_timer_.stop();
   }
 }
 
 void ObTenantMdsService::mtl_wait(ObTenantMdsService *&mds_service)
 {
-  if (nullptr != mds_service) {
-    if (mds_service->recyle_timer_id_ != -1) {
-      TG_WAIT(mds_service->recyle_timer_id_);
-    }
-    if (mds_service->dump_status_timer_id_ != -1) {
-      TG_WAIT(mds_service->dump_status_timer_id_);
-    }
+  if (nullptr != mds_service && mds_service->is_inited_) {
+    mds_service->recyle_timer_.wait();
+    mds_service->dump_status_timer_.wait();
   }
 }
 
@@ -101,16 +90,23 @@ void ObTenantMdsService::run_recyle_timer_task()
 }
 void ObTenantMdsService::try_recycle_mds_table_task()
 {
-  #define PRINT_WRAPPER KR(ret), KPC(this), K(tablet_oldest_scn), K(mds_table_handle)
+  #define PRINT_WRAPPER KR(ret)
   int ret = OB_SUCCESS;
+  MDS_TG(1_s);
   ObCurTraceId::init(GCONF.self_addr_);
-  ObTenantMdsService::for_each_ls_in_tenant([](ObLS &ls) -> int {
-    ObTenantMdsService::for_each_mds_table_in_ls(ls, [](ObTablet &tablet) -> int {// FIXME: there is no need scan all tablets
+  ObLS *tenant_ls = nullptr;
+  ObLSService *ls_service = share::g_mp->ls_service();
+  if (OB_ISNULL(ls_service)) {
+    ret = OB_ERR_UNEXPECTED;
+    MDS_LOG_NONE(WARN, "ls service is null");
+  } else if (MDS_FAIL(ls_service->get_ls(tenant_ls))) {
+    MDS_LOG_NONE(WARN, "fail to get log stream");
+  } else if (MDS_FAIL(for_each_mds_table_(*tenant_ls, [](ObTablet &tablet) -> int {
       (void) process_with_tablet_(tablet);
       return OB_SUCCESS;// keep doing ignore error
-    });
-    return OB_SUCCESS;// keep doing ignore error
-  });
+    }))) {
+    MDS_LOG_NONE(WARN, "fail to scan mds tables");
+  }
   #undef PRINT_WRAPPER
 }
 
@@ -123,10 +119,18 @@ void ObTenantMdsService::run_dump_status_timer_task()
 void ObTenantMdsService::dump_special_mds_table_status_task()
 {
   #define PRINT_WRAPPER KR(ret)
+  int ret = OB_SUCCESS;
   MDS_TG(1_s);
   ObCurTraceId::init(GCONF.self_addr_);
-  ObTenantMdsService::for_each_ls_in_tenant([](ObLS &ls) -> int {
-    int ret = OB_SUCCESS;
+  ObLS *tenant_ls = nullptr;
+  ObLSService *ls_service = share::g_mp->ls_service();
+  if (OB_ISNULL(ls_service)) {
+    ret = OB_ERR_UNEXPECTED;
+    MDS_LOG_NONE(WARN, "ls service is null");
+  } else if (MDS_FAIL(ls_service->get_ls(tenant_ls))) {
+    MDS_LOG_NONE(WARN, "fail to get log stream");
+  } else {
+    ObLS &ls = *tenant_ls;
     MDS_TG(1_s);
     MdsTableMgrHandle mds_table_mge_handle;
     share::SCN ls_mds_freezing_scn;
@@ -156,103 +160,26 @@ void ObTenantMdsService::dump_special_mds_table_status_task()
         });
         return OB_SUCCESS;// keep iterating
       });
-    };
-    return OB_SUCCESS;// keep doing ignore error
-  });
-  #undef PRINT_WRAPPER
-}
-
-int ObTenantMdsService::for_each_ls_in_tenant(const ObFunction<int(ObLS &)> &op)
-{
-  #define PRINT_WRAPPER KR(ret)
-  int ret = OB_SUCCESS;
-  MDS_TG(3_s);
-  ObSharedGuard<ObLSIterator> iter;
-  ObLS *ls = nullptr;
-  int64_t succ_num = 0;
-  if (!op.is_valid()) {
-    ret = OB_INVALID_ARGUMENT;
-    MDS_LOG_NONE(WARN, "invalid op");
-  } else if (OB_ISNULL(share::g_mp->ls_service())) {
-    ret = OB_ERR_UNEXPECTED;
-    MDS_LOG_NONE(WARN, "ls service is null", K(ret));
-  } else if (MDS_FAIL(share::g_mp->ls_service()->get_ls_iter(iter, ObLSGetMod::MDS_TABLE_MOD))) {
-    MDS_LOG_NONE(WARN, "fail to get ls iterator");
-  } else {
-    do {
-      if (MDS_FAIL(iter->get_next(ls))) {
-        if (OB_ITER_END != ret) {
-          MDS_LOG_NONE(WARN, "get next iter failed");
-        } else {
-          ret = OB_SUCCESS;
-          break;
-        }
-      } else if (MDS_FAIL(op(*ls))) {
-        MDS_LOG_NONE(WARN, "fail to for each ls", K(succ_num));
-      } else {
-        MDS_LOG_NONE(DEBUG, "succeed to operate one ls", K(ret), "ls_id", ls->get_ls_id());
-      }
-    } while (++succ_num && OB_SUCC(ret));
+    }
   }
-  MDS_LOG_NONE(INFO, "for each ls", K(succ_num));
-  return ret;
   #undef PRINT_WRAPPER
 }
 
-int ObTenantMdsService::for_each_tablet_in_ls(ObLS &ls, const ObFunction<int(ObTablet &)> &op)
+int ObTenantMdsService::for_each_mds_table_(ObLS &ls, const ObFunction<int(ObTablet &)> &op)
 {
-  #define PRINT_WRAPPER KR(ret), K(ls)
+  #define PRINT_WRAPPER KR(ret), K(ids_in_t3m_array.count())
   int ret = OB_SUCCESS;
-  int64_t succ_num = 0;
-  ObLSTabletIterator tablet_iter(storage::ObMDSGetTabletMode::READ_WITHOUT_CHECK);
-  MDS_TG(500_ms);
-  if (!op.is_valid()) {
-    ret = OB_INVALID_ARGUMENT;
-    MDS_LOG_NONE(WARN, "invalid op");
-  } else if (MDS_FAIL(ls.build_tablet_iter(tablet_iter))) {
-    MDS_LOG_NONE(WARN, "failed to build ls tablet iter");
-  } else {
-    ObTabletHandle tablet_handle;
-    ObTablet *tablet = nullptr;
-    do {
-      tablet_handle.reset();
-      tablet = nullptr;
-      if (MDS_FAIL(tablet_iter.get_next_tablet(tablet_handle))) {
-        if (OB_ITER_END != ret && OB_EMPTY_RESULT != ret) {
-          MDS_LOG_NONE(WARN, "failed to get tablet");
-        } else {
-          ret = OB_SUCCESS;
-          break;
-        }
-      } else if (OB_ISNULL(tablet = tablet_handle.get_obj())) {
-        ret = OB_ERR_UNEXPECTED;
-        MDS_LOG_NONE(WARN, "tablet should not be NULL", KPC(tablet));
-      } else if (tablet->get_tablet_meta().tablet_id_.is_ls_inner_tablet()) {
-        // FIXME: there is no mds table on ls inner tablet yet, but there will be
-      } else {
-        op(*tablet);
-      }
-    } while (++succ_num && OB_SUCC(ret));
-    MDS_LOG_NONE(INFO, "for each tablet", K(succ_num));
-  }
-  return ret;
-  #undef PRINT_WRAPPER
-}
-
-int ObTenantMdsService::for_each_mds_table_in_ls(ObLS &ls, const ObFunction<int(ObTablet &)> &op)
-{
-  #define PRINT_WRAPPER KR(ret), K(ls), K(mds_table_total_num), K(ids_in_t3m_array.count())
-  int ret = OB_SUCCESS;
-  int64_t succ_num = 0;
   MDS_TG(10_s);
 
-  int64_t mds_table_total_num = 0;
   MdsTableMgrHandle mgr_handle;
   ObArray<ObTabletID> ids_in_t3m_array;
-  if (MDS_FAIL(ls.get_mds_table_mgr(mgr_handle))) {
+  if (!op.is_valid()) {
+    ret = OB_INVALID_ARGUMENT;
+    MDS_LOG_NONE(WARN, "invalid tablet operation");
+  } else if (MDS_FAIL(ls.get_mds_table_mgr(mgr_handle))) {
     MDS_LOG_NONE(WARN, "fail to get mds table mgr");
   } else if (MDS_FAIL(mgr_handle.get_mds_table_mgr()->for_each_in_t3m_mds_table(
-    [&mds_table_total_num, &ids_in_t3m_array, &ls](MdsTableBase &mds_table) -> int {// with map's bucket lock protected
+    [&ids_in_t3m_array](MdsTableBase &mds_table) -> int {// with map's bucket lock protected
       MDS_TG(1_s);
       int ret = OB_SUCCESS;
       if (MDS_FAIL(ids_in_t3m_array.push_back(mds_table.get_tablet_id()))) {
@@ -267,6 +194,9 @@ int ObTenantMdsService::for_each_mds_table_in_ls(ObLS &ls, const ObFunction<int(
       ObTabletHandle tablet_handle;
       if (OB_FAIL(ls.get_tablet(ids_in_t3m_array[idx], tablet_handle, 1_s, ObMDSGetTabletMode::READ_WITHOUT_CHECK))) {
         MDS_LOG_NONE(WARN, "fail to get tablet_handle", K(ids_in_t3m_array[idx]));
+      } else if (OB_ISNULL(tablet_handle.get_obj())) {
+        ret = OB_ERR_UNEXPECTED;
+        MDS_LOG_NONE(WARN, "tablet is null", K(ids_in_t3m_array[idx]));
       } else if (OB_FAIL(op(*tablet_handle.get_obj()))) {
         MDS_LOG_NONE(WARN, "fail to process with tablet", K(ids_in_t3m_array[idx]));
       }
@@ -278,9 +208,8 @@ int ObTenantMdsService::for_each_mds_table_in_ls(ObLS &ls, const ObFunction<int(
 
 int ObTenantMdsService::process_with_tablet_(ObTablet &tablet)
 {
-  #define PRINT_WRAPPER KR(ret), K(tablet_oldest_scn), K(ls_id), K(tablet_id)
+  #define PRINT_WRAPPER KR(ret), K(tablet_oldest_scn), K(tablet_id)
   int ret = OB_SUCCESS;
-  const share::ObLSID &ls_id = tablet.get_ls_id();
   const common::ObTabletID &tablet_id = tablet.get_tablet_id();
   share::SCN tablet_oldest_scn;
   MDS_TG(10_ms);
@@ -303,9 +232,8 @@ int ObTenantMdsService::process_with_tablet_(ObTablet &tablet)
 
 int ObTenantMdsService::get_tablet_oldest_scn_(ObTablet &tablet, share::SCN &oldest_scn)
 {
-  #define PRINT_WRAPPER KR(ret), K(ls_id), K(tablet_id), K(oldest_scn), K(op.min_mds_ckpt_scn_)
+  #define PRINT_WRAPPER KR(ret), K(tablet_id), K(oldest_scn), K(op.min_mds_ckpt_scn_)
   int ret = OB_SUCCESS;
-  const share::ObLSID &ls_id = tablet.get_ls_id();
   const common::ObTabletID &tablet_id = tablet.get_tablet_id();
   MDS_TG(5_ms);
   oldest_scn = SCN::min_scn();// means can not recycle any node
@@ -313,7 +241,7 @@ int ObTenantMdsService::get_tablet_oldest_scn_(ObTablet &tablet, share::SCN &old
   if (OB_ISNULL(share::g_mp->tenant_meta_mem_mgr())) {
     ret = OB_BAD_NULL_ERROR;
     MDS_LOG_GC(ERROR, "MTL ObTenantMetaMemMgr is NULL");
-  } else if (MDS_FAIL(share::g_mp->tenant_meta_mem_mgr()->scan_all_version_tablets(ObTabletMapKey(ls_id, tablet_id), op))) {
+  } else if (MDS_FAIL(share::g_mp->tenant_meta_mem_mgr()->scan_all_version_tablets(ObTabletMapKey(tablet_id), op))) {
     if (OB_ENTRY_NOT_EXIST == ret) {
       ret = OB_SUCCESS;
       MDS_LOG_GC(WARN, "get_min_mds_ckpt_scn meet OB_ENTRY_NOT_EXIST");

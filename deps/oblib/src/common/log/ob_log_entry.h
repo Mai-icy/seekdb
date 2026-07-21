@@ -80,7 +80,6 @@ enum LogCommand
   //// ChunkServer ... 600 - 799 ////
   OB_LOG_CS_DAILY_MERGE = 600,                //Daily consolidation
   OB_LOG_CS_MIGRATE_PARTITION = 601,        //Migrate tablet
-  OB_LOG_CS_BYPASS_LOAD_PARTITION = 603,        //Bypass import
   OB_LOG_CS_MERGE_PARTITION = 604,              //Merge tablet
   OB_LOG_CS_DEL_PARTITION = 605,                  //Delete tablet
   OB_LOG_CS_DEL_TABLE = 606,                   //Delete table
@@ -112,8 +111,6 @@ enum LogCommand
   OB_LOG_PARTITION_DROP_INDEX = 628,
   OB_LOG_SET_REPLICA_TYPE = 629,
 
-  OB_LOG_SET_PARTITION_SPLIT_INFO = 630,
-  OB_LOG_UPDATE_SPLIT_TABLE_STORE = 631,
   OB_LOG_SET_REFERENCE_TABLES = 632,
   OB_LOG_REMOVE_OLD_TABLE = 633,
   OB_LOG_SET_CLOG_INFO = 634,

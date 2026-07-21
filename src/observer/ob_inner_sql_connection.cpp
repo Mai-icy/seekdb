@@ -22,8 +22,8 @@
 #include "share/ob_time_utility2.h"
 #include "observer/ob_server.h"
 #include "observer/ob_server_event_history_table_operator.h"
+#include "observer/mysql/obmp_base.h"
 #include "ob_inner_sql_read_context.h"
-#include "observer/mysql/obmp_stmt_execute.h"
 
 namespace oceanbase
 {
@@ -76,94 +76,6 @@ private:
   ObString sql_;
 };
 
-// Prepared Statement Prepare Executor
-class ObPsPrepareExecutor : public sqlclient::ObIExecutor
-{
-public:
-  explicit ObPsPrepareExecutor(const ObString &sql) : sql_(sql), stmt_id_(0), param_count_(0) {}
-  virtual ~ObPsPrepareExecutor() {}
-
-  virtual int execute(sql::ObSql &engine, sql::ObSqlCtx &ctx, sql::ObResultSet &res) override
-  {
-    int ret = OB_SUCCESS;
-    SQL_INFO_GUARD(sql_, ObString(OB_MAX_SQL_ID_LENGTH, ctx.sql_id_));
-    ctx.is_prepare_protocol_ = true;
-    ctx.is_prepare_stage_ = true;
-    ret = engine.stmt_prepare(sql_, ctx, res, false);
-    if (OB_SUCC(ret)) {
-      stmt_id_ = res.get_statement_id();
-    }
-    return ret;
-  }
-
-  virtual int process_result(sql::ObResultSet &res) override
-  {
-    int ret = OB_SUCCESS;
-    // Note: do NOT call res.open() here - do_query() already opens the result.
-    sql::ObSQLSessionInfo &session = res.get_session();
-    sql::ObPsSessionInfo *ps_session_info = nullptr;
-    if (OB_SUCCESS == session.get_ps_session_info(stmt_id_, ps_session_info)) {
-      param_count_ = ps_session_info->get_param_count();
-    }
-    return ret;
-  }
-
-  uint64_t get_stmt_id() const { return stmt_id_; }
-  int64_t get_param_count() const { return param_count_; }
-
-  INHERIT_TO_STRING_KV("ObIExecutor", ObIExecutor, K_(sql), K_(stmt_id), K_(param_count));
-
-private:
-  ObString sql_;
-  uint64_t stmt_id_;
-  int64_t param_count_;
-};
-
-// Prepared Statement Execute Executor
-class ObPsExecuteExecutor : public sqlclient::ObIExecutor
-{
-public:
-  ObPsExecuteExecutor(const uint64_t stmt_id, const ParamStore &params)
-    : stmt_id_(stmt_id), params_(params), affected_rows_(0) {}
-  virtual ~ObPsExecuteExecutor() {}
-
-  virtual int execute(sql::ObSql &engine, sql::ObSqlCtx &ctx, sql::ObResultSet &res) override
-  {
-    int ret = OB_SUCCESS;
-    ctx.is_prepare_protocol_ = true;
-    ctx.is_prepare_stage_ = false;
-
-    // Get stmt_type from ps_session_info
-    sql::ObSQLSessionInfo &session = res.get_session();
-    sql::ObPsSessionInfo *ps_session_info = nullptr;
-    sql::stmt::StmtType stmt_type = sql::stmt::T_NONE;
-    if (OB_SUCCESS == session.get_ps_session_info(stmt_id_, ps_session_info)) {
-      stmt_type = ps_session_info->get_stmt_type();
-    }
-
-    ret = engine.stmt_execute(stmt_id_, stmt_type, params_, ctx, res, false);
-    return ret;
-  }
-
-  virtual int process_result(sql::ObResultSet &res) override
-  {
-    // Note: do NOT call res.open() here.
-    // do_query() already opens the result via ObInnerSQLResult::open() -> result_set_->open().
-    // Calling open() again would trigger start_stmt() twice, causing -4016 error.
-    affected_rows_ = res.get_affected_rows();
-    return OB_SUCCESS;
-  }
-
-  int64_t get_affected_rows() const { return affected_rows_; }
-
-  INHERIT_TO_STRING_KV("ObIExecutor", ObIExecutor, K_(stmt_id), K_(affected_rows));
-
-private:
-  uint64_t stmt_id_;
-  const ParamStore &params_;
-  int64_t affected_rows_;
-};
-
 ObInnerSQLConnection::TimeoutGuard::TimeoutGuard(ObInnerSQLConnection &conn)
   : conn_(conn)
 {
@@ -189,15 +101,9 @@ ObInnerSQLConnection::TimeoutGuard::~TimeoutGuard()
     LOG_ERROR("get timeout failed", KR(ret), K(query_timeout), K(trx_timeout));
   } else {
     if (query_timeout != query_timeout_ || trx_timeout != trx_timeout_) {
-      #ifdef OB_BUILD_EMBED_MODE
-      if (conn_.get_session().is_inner() && OB_FAIL(conn_.set_session_timeout(query_timeout_, trx_timeout_))) {
-        LOG_ERROR("set session timeout failed", K(ret));
-      }
-      #else
       if (OB_FAIL(conn_.set_session_timeout(query_timeout_, trx_timeout_))) {
         LOG_ERROR("set session timeout failed", K(ret));
       }
-      #endif
     }
   }
 }
@@ -441,8 +347,6 @@ int ObInnerSQLConnection::init_session_info(
     const bool is_sys_tenant = true;
     ObPCMemPctConf pc_mem_conf;
     session->set_inner_session();
-    ObObj mysql_mode;
-    mysql_mode.set_int(0);
     ObObj mysql_sql_mode;
     mysql_sql_mode.set_uint(ObUInt64Type, DEFAULT_MYSQL_MODE);
     if (!NOT_SPEED_UP_INIT_SESSION_INFO && OB_FAIL(session->load_essential_sys_vars_only(print_info_log, is_sys_tenant))) {
@@ -470,9 +374,6 @@ int ObInnerSQLConnection::init_session_info(
       if (OB_SUCC(ret)) {
         if (OB_FAIL(session->update_sys_variable(
             SYS_VAR_SQL_MODE, mysql_sql_mode))) {
-          LOG_WARN("update sys variables failed", K(ret));
-        } else if (OB_FAIL(session->update_sys_variable(
-            SYS_VAR_OB_COMPATIBILITY_MODE, mysql_mode))) {
           LOG_WARN("update sys variables failed", K(ret));
         } else {
           ObString database_name(OB_SYS_DATABASE_NAME);
@@ -705,7 +606,7 @@ int ObInnerSQLConnection::process_audit_record(sql::ObResultSet &result_set,
 
     audit_record.client_addr_ = session.get_peer_addr();
     audit_record.user_client_addr_ = session.get_user_client_addr();
-    audit_record.user_group_ = THIS_WORKER.get_group_id();
+    audit_record.user_group_ = 0;
     audit_record.execution_id_ = execution_id;
     audit_record.ps_stmt_id_ = ps_stmt_id;
     audit_record.ps_inner_stmt_id_ = ps_stmt_id;
@@ -727,7 +628,6 @@ int ObInnerSQLConnection::process_audit_record(sql::ObResultSet &result_set,
       audit_record.table_scan_ = result_set.get_physical_plan()->contain_table_scan();
       audit_record.plan_id_ = result_set.get_physical_plan()->get_plan_id();
       audit_record.plan_hash_ = result_set.get_physical_plan()->get_plan_hash_value();
-      audit_record.partition_hit_ = session.partition_hit().get_bool();
     }
 
     audit_record.is_executor_rpc_ = false;
@@ -803,9 +703,6 @@ int ObInnerSQLConnection::do_query(sqlclient::ObIExecutor &executor, ObInnerSQLR
       LOG_WARN("executor execute failed", K(ret));
     } else {
       ObSQLSessionInfo &session = res.result_set().get_session();
-      session.set_expect_group_id(group_id_);
-      CONSUMER_GROUP_ID_GUARD(consumer_group_id_);
-      CONSUMER_GROUP_FUNC_GUARD(session.get_ddl_info().is_refreshing_mview() ? ObFunctionType::PRIO_MVIEW : GET_FUNC_TYPE());
       if (OB_ISNULL(res.sql_ctx().schema_guard_)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("schema guard is null");
@@ -990,7 +887,6 @@ int ObInnerSQLConnection::query(sqlclient::ObIExecutor &executor,
             sqlstat_record.record_sqlstat_end_value();
             sqlstat_record.set_rows_processed(res.result_set().get_affected_rows() + res.result_set().get_return_rows());
             sqlstat_record.set_partition_cnt(res.result_set().get_exec_context().get_das_ctx().get_related_tablet_cnt());
-            sqlstat_record.set_is_route_miss(get_session().partition_hit().get_bool()? 0 : 1);
             sqlstat_record.set_is_plan_cache_hit(res.sql_ctx().plan_cache_hit_);
             sqlstat_record.move_to_sqlstat_cache(get_session(),
                                                 res.sql_ctx().cur_sql_,
@@ -1034,7 +930,6 @@ template <typename T>
 int ObInnerSQLConnection::retry_while_no_tenant_resource(const int64_t cluster_id, T function)
 {
   int ret = OB_SUCCESS;
-  share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
   const int64_t max_retry_us = 128 * 1000;
   int64_t retry_us = 2 * 1000;
   bool need_retry = is_in_trans() ? false : true;
@@ -1059,7 +954,7 @@ int ObInnerSQLConnection::retry_while_no_tenant_resource(const int64_t cluster_i
         LOG_WARN("timeout, do not need retry", K(ret), K(abs_timeout_us), K(now));
       } else if (OB_FAIL(function())) {
         if (is_unit_migrate(ret)) {
-          LOG_INFO("failed to get newest location and will force renew", K(ret), K(ls_id));
+          LOG_INFO("failed to get newest location and will force renew", K(ret));
           ob_usleep(retry_us);
           if (retry_us < max_retry_us) {
             retry_us = retry_us * 2;
@@ -1129,8 +1024,6 @@ int ObInnerSQLConnection::start_transaction_inner(
         // remote
       } else {
         TimeoutGuard timeout_guard(*this); // backup && restore worker/session timeout
-        common::ObAddr resource_server_addr; // MYADDR
-        share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
         int64_t query_timeout = OB_INVALID_TIMESTAMP;
         int64_t trx_timeout = OB_INVALID_TIMESTAMP;
         ObSQLMode sql_mode = 0;
@@ -1144,10 +1037,7 @@ int ObInnerSQLConnection::start_transaction_inner(
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("resource_conn_id is not invalid or resource_svr is valid in start_transaction",
               K(ret), K(get_resource_conn_id()), K(get_resource_svr()));
-        } else if (OB_FAIL(nonblock_get_leader(GCONF.cluster_id, ls_id,
-                                               resource_server_addr))) {
-          LOG_WARN("nonblock get leader failed", KR(ret), K(ls_id), K(resource_server_addr));
-        } else if (FALSE_IT(set_resource_svr(resource_server_addr))) {
+        } else if (FALSE_IT(set_resource_svr(GCTX.self_addr()))) {
         } else if (OB_FAIL(get_session_timeout_for_rpc(query_timeout, trx_timeout))) {
           LOG_WARN("fail to get_session_timeout_for_rpc", K(ret), K(query_timeout), K(trx_timeout));
         } else {
@@ -1168,7 +1058,6 @@ int ObInnerSQLConnection::start_transaction_inner(
 }
 
 int ObInnerSQLConnection::register_multi_data_source(
-                                                     const share::ObLSID ls_id,
                                                      const transaction::ObTxDataSourceType type,
                                                      const char *buf,
                                                      const int64_t buf_len,
@@ -1201,16 +1090,14 @@ int ObInnerSQLConnection::register_multi_data_source(
         if (OB_ISNULL(tx_desc = get_session().get_tx_desc())) {
           // TODO ADD LOG and check get_session
           ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("Invalid tx_desc", K(ret), K(ls_id), K(type));
+          LOG_WARN("Invalid tx_desc", K(ret), K(type));
         } else {
           MOD_SCOPE
           {
             if (OB_FAIL(share::g_mp->trans_service()->register_mds_into_tx(*tx_desc,
-                                                                                 ls_id,
                                                                                  type,
                                                                                  buf,
                                                                                  buf_len,
-                                                                                 0,
                                                                                  register_flag))) {
               LOG_WARN("regiser multi data source failed", K(ret), K(type));
             } else if (OB_FAIL(res.close())) {
@@ -1241,8 +1128,8 @@ int ObInnerSQLConnection::register_multi_data_source(
           char *tmp_str = nullptr;
           int64_t pos = 0;
           ObString sql;
-          if (OB_FAIL(mds_str.set(buf, buf_len, type, ls_id, register_flag))) {
-            LOG_WARN("set multi source data in msd_str error", K(ret), K(type), K(ls_id));
+          if (OB_FAIL(mds_str.set(buf, buf_len, type, register_flag))) {
+            LOG_WARN("set multi source data in msd_str error", K(ret), K(type));
           } else if (OB_ISNULL(tmp_str = static_cast<char *>(
                                    ob_malloc(mds_str.get_serialize_size(), "MulTxDataStr")))) {
             ret = OB_ALLOCATE_MEMORY_FAILED;
@@ -1290,7 +1177,6 @@ int ObInnerSQLConnection::forward_request_(const int64_t op_type,
   ObInnerSqlWaitGuard guard(is_inner_session(), nullptr, inner_session_);
   TimeoutGuard timeout_guard(*this); // backup && restore worker/session timeout
   common::ObAddr resource_server_addr; // MYADDR
-  share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
   int64_t query_timeout = OB_INVALID_TIMESTAMP;
   int64_t trx_timeout = OB_INVALID_TIMESTAMP;
   ObSQLMode sql_mode = 0;
@@ -1321,7 +1207,6 @@ int ObInnerSQLConnection::forward_request_(const int64_t op_type,
 int ObInnerSQLConnection::rollback()
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(inner_rollback);
   ObInnerSqlWaitGuard guard(is_inner_session(), nullptr, inner_session_);
   ObSqlQueryExecutor executor("ROLLBACK");
   bool has_tenant_resource = is_resource_conn() || OB_INVALID_ID == get_resource_conn_id();
@@ -1368,7 +1253,6 @@ int ObInnerSQLConnection::rollback()
 int ObInnerSQLConnection::commit()
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(inner_commit);
   ObInnerSqlWaitGuard guard(is_inner_session(), nullptr, inner_session_);
   DEBUG_SYNC(BEFORE_INNER_SQL_COMMIT);
   ObSqlQueryExecutor executor("COMMIT");
@@ -1441,7 +1325,6 @@ int ObInnerSQLConnection::execute_write_inner(const ObString &sql,
     int64_t &affected_rows, bool is_user_sql, const common::ObAddr *sql_exec_addr)
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(inner_execute_write);
   ObSqlQueryExecutor executor(sql);
     const bool local_execute = is_local_execute(GCONF.cluster_id);
     SMART_VAR(ObInnerSQLResult, res, get_session(), is_inner_session(), nullptr) {
@@ -1485,7 +1368,6 @@ int ObInnerSQLConnection::execute_write_inner(const ObString &sql,
       TimeoutGuard timeout_guard(*this); // backup && restore worker/session timeout
       int64_t query_timeout = OB_DEFAULT_SESSION_TIMEOUT;
       int64_t trx_timeout = OB_DEFAULT_SESSION_TIMEOUT;
-      int64_t consumer_group_id = get_group_id();
       ObSQLMode sql_mode = 0;
       const ObSessionDDLInfo &ddl_info = get_session().get_ddl_info();
       bool is_load_data_exec = get_session().is_load_data_exec_session();
@@ -1499,15 +1381,8 @@ int ObInnerSQLConnection::execute_write_inner(const ObString &sql,
           set_resource_svr(*sql_exec_addr);
           set_resource_conn_id(OB_INVALID_ID);
       } else { // not in trans
-        common::ObAddr resource_server_addr;
-        share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
-        if (OB_FAIL(nonblock_get_leader(
-                    GCONF.cluster_id, ls_id, resource_server_addr))) {
-          LOG_WARN("nonblock get leader failed", K(ret), K(ls_id));
-        } else {
-          set_resource_svr(resource_server_addr);
-          set_resource_conn_id(OB_INVALID_ID);
-        }
+        set_resource_svr(GCTX.self_addr());
+        set_resource_conn_id(OB_INVALID_ID);
       }
       if (FAILEDx(get_session_timeout_for_rpc(query_timeout, trx_timeout))) {
         LOG_WARN("fail to get_session_timeout_for_rpc", K(ret), K(query_timeout), K(trx_timeout));
@@ -1596,7 +1471,6 @@ int ObInnerSQLConnection::execute_read_inner(const int64_t cluster_id,
                                              const common::ObAddr *sql_exec_addr)
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(inner_execute_read);
   ObInnerSQLReadContext *read_ctx = NULL;
   const static int64_t ctx_size = sizeof(ObInnerSQLReadContext);
   static_assert(ctx_size <= ObISQLClient::ReadResult::BUF_SIZE, "buffer not enough");
@@ -1649,15 +1523,8 @@ int ObInnerSQLConnection::execute_read_inner(const int64_t cluster_id,
        set_resource_conn_id(OB_INVALID_ID);
        LOG_INFO("set sql exec addr", KR(ret), K(*sql_exec_addr));
     } else {
-      common::ObAddr resource_server_addr;
-      share::ObLSID ls_id(share::ObLSID::SYS_LS_ID);
-      if (OB_FAIL(nonblock_get_leader(
-                  cluster_id, ls_id, resource_server_addr))) {
-        LOG_WARN("nonblock get leader failed", K(ret), K(ls_id), K(cluster_id));
-      } else {
-        set_resource_svr(resource_server_addr);
-        set_resource_conn_id(OB_INVALID_ID);
-      }
+      set_resource_svr(GCTX.self_addr());
+      set_resource_conn_id(OB_INVALID_ID);
     }
     if (FAILEDx(get_session_timeout_for_rpc(query_timeout, trx_timeout))) {
       LOG_WARN("fail to get_session_timeout_for_rpc", K(ret), K(query_timeout), K(trx_timeout));
@@ -1684,55 +1551,10 @@ int ObInnerSQLConnection::execute_read_inner(const int64_t cluster_id,
   return ret;
 }
 
-int ObInnerSQLConnection::nonblock_get_leader(
-    const int64_t cluster_id,
-    const share::ObLSID ls_id,
-    common::ObAddr &leader)
-{
-  int ret = OB_SUCCESS;
-  TimeoutGuard timeout_guard(*this); // backup && restore worker/session timeout
-  int64_t abs_timeout_us = 0;
-  int64_t start_time = ObTimeUtility::current_time();
-  int64_t old_query_start_time = get_session().get_query_start_time();
-  get_session().set_query_start_time(start_time);
-
-  if (OB_ISNULL(GCTX.location_service_)) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("location cache is NULL", K(ret));
-  } else if (OB_FAIL(set_timeout(abs_timeout_us))) {
-    LOG_WARN("set timeout failed", K(ret));
-  } else {
-    int64_t tmp_abs_timeout_us = 0;
-    const int64_t retry_interval_us = 200 * 1000; // 200ms
-    do {
-      ret = OB_SUCCESS;
-      tmp_abs_timeout_us = ObTimeUtility::current_time() + GCONF.location_cache_refresh_sql_timeout;
-      if (THIS_WORKER.is_timeout()) {
-        ret = OB_TIMEOUT;
-        LOG_WARN("already timeout", K(ret), K(THIS_WORKER.get_timeout_ts()));
-      }
-      if (OB_FAIL(ret)) {
-      } else if (OB_FAIL(GCTX.location_service_->get_leader_with_retry_until_timeout(
-                  cluster_id, ls_id, leader, tmp_abs_timeout_us, retry_interval_us))) {
-        LOG_WARN("get leader with retry until timeout failed",  KR(ret), K(ls_id),
-            K(leader), K(cluster_id), K(tmp_abs_timeout_us), K(retry_interval_us));
-      } else if (OB_UNLIKELY(!leader.is_valid())) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("leader addr invalid", K(ret), K(cluster_id), K(ls_id), K(leader));
-      } else {
-        LOG_DEBUG("get participants", K(ls_id), K(leader), K(cluster_id));
-      }
-    } while (is_location_service_renew_error(ret));
-  }
-  get_session().set_query_start_time(old_query_start_time);
-  return ret;
-}
-
 int ObInnerSQLConnection::execute(
     sqlclient::ObIExecutor &executor)
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(inner_execute);
   SMART_VAR(ObInnerSQLResult, res, get_session(), is_inner_session(), nullptr) {
     if (OB_FAIL(res.init())) {
       LOG_WARN("init result set", K(ret));
@@ -1969,11 +1791,6 @@ int ObInnerSQLConnection::set_session_variable(const ObString &name, int64_t val
   if (!inited_) {
     ret = OB_NOT_INIT;
     LOG_WARN("not init", K(ret));
-  } else if (0 == name.case_compare("ob_check_sys_variable")) { // fake system variable
-    if (0 == val) {
-      LOG_TRACE("disable inner sql check sys variable");
-    }
-    (void)get_session().set_check_sys_variable(0 != val);
   } else if (0 == name.case_compare("tx_isolation")) {
     // Isolation level is a string
     ObObj obj;
@@ -2000,11 +1817,6 @@ int ObInnerSQLConnection::set_session_variable(const ObString &name, const ObStr
     LOG_WARN("failed to update sys variable", K(ret), K(name), K(val));
   }
   return ret;
-}
-
-lib::Worker::CompatMode ObInnerSQLConnection::get_compat_mode() const
-{
-  return lib::Worker::CompatMode::MYSQL;
 }
 
 // nested session and sql execute for foreign key.
@@ -2054,9 +1866,7 @@ int ObInnerSQLConnection::create_session_by_mgr()
     LOG_WARN("session_mgr_ or omt_ is NULL", K(ret));
   } else if (OB_FAIL(GCTX.session_mgr_->create_sessid(sid))) {
     LOG_WARN("alloc session id failed", K(ret));
-  } else if (OB_FAIL(GCTX.session_mgr_->create_session(sid,
-                                                      ObTimeUtility::current_time(),
-                                                      inner_session_))) {
+  } else if (OB_FAIL(GCTX.session_mgr_->create_session(sid, inner_session_))) {
     inner_session_ = NULL;
     LOG_WARN("create session failed", K(ret), K(sid));
   } else {
@@ -2164,51 +1974,6 @@ ObInnerSQLSessionGuard::ObInnerSQLSessionGuard(sql::ObSQLSessionInfo *session)
 ObInnerSQLSessionGuard::~ObInnerSQLSessionGuard()
 {
   THIS_WORKER.set_session(last_session_);
-}
-
-// Prepared Statement API Implementation
-
-int ObInnerSQLConnection::stmt_prepare(const ObString &sql,
-                                        uint64_t &stmt_id, int64_t &param_count)
-{
-  int ret = OB_SUCCESS;
-  LOG_INFO("[PS_DEBUG] stmt_prepare called", K(sql), K(inited_), KP(ob_sql_));
-  ObPsPrepareExecutor executor(sql);
-  LOG_INFO("[PS_DEBUG] calling execute(executor)");
-  if (OB_FAIL(execute(executor))) {
-    LOG_WARN("stmt_prepare execute failed", K(ret), K(sql));
-  } else {
-    stmt_id = executor.get_stmt_id();
-    param_count = executor.get_param_count();
-    LOG_INFO("[PS_DEBUG] stmt_prepare success", K(sql), K(stmt_id), K(param_count));
-  }
-  return ret;
-}
-
-int ObInnerSQLConnection::stmt_execute(const uint64_t stmt_id,
-                                        const ParamStore &params, int64_t &affected_rows)
-{
-  int ret = OB_SUCCESS;
-  ObPsExecuteExecutor executor(stmt_id, params);
-  if (OB_FAIL(execute(executor))) {
-    LOG_WARN("stmt_execute failed", K(ret), K(stmt_id));
-  } else {
-    affected_rows = executor.get_affected_rows();
-    LOG_DEBUG("stmt_execute success", K(stmt_id), K(affected_rows));
-  }
-  return ret;
-}
-
-int ObInnerSQLConnection::stmt_close(const uint64_t stmt_id)
-{
-  int ret = OB_SUCCESS;
-  sql::ObSQLSessionInfo &session = get_session();
-  if (OB_FAIL(session.close_ps_stmt(stmt_id))) {
-    LOG_WARN("close_ps_stmt failed", K(ret), K(stmt_id));
-  } else {
-    LOG_DEBUG("stmt_close success", K(stmt_id));
-  }
-  return ret;
 }
 
 } // end of namespace observer

@@ -43,8 +43,7 @@ typedef common::ParamStore ParamStore;
 enum ObPSCursorType
 {
   ObNormalType,
-  ObExecutePsCursorType,
-  ObPrexecutePsCursorType
+  ObExecutePsCursorType
 };
 
 class ObPSAnalysisChecker
@@ -120,7 +119,6 @@ public:
                                     const uint32_t type,
                                     sql::ObSQLSessionInfo *session,
                                     const ObCharsetType charset,
-                                    const ObCharsetType ncharset,
                                     const ObCollationType cs_type,
                                     const char *& data,
                                     const common::ObTimeZoneInfo *tz_info,
@@ -154,7 +152,6 @@ public:
   }
   int init_for_arraybinding(ObIAllocator &alloc);
   int init_arraybinding_paramstore(ObIAllocator &alloc);
-  int init_arraybinding_fields_and_row(ObMySQLResultSet &result);
   int set_session_active(sql::ObSQLSessionInfo &session) const;
   int after_do_process_for_arraybinding(ObMySQLResultSet &result);
   inline void set_arraybounding(bool is_arraybinding) { is_arraybinding_ = is_arraybinding; }
@@ -247,9 +244,7 @@ protected:
                         const bool force_sync_resp,
                         bool &async_resp_used,
                         ObPsStmtId &inner_stmt_id);
-  virtual bool is_prexecute() const { return false; }
   inline bool is_execute_ps_cursor() { return ObExecutePsCursorType == ps_cursor_type_; }
-  inline bool is_prexecute_ps_cursor() { return ObPrexecutePsCursorType == ps_cursor_type_; }
   inline bool is_ps_cursor() { return ObNormalType != ps_cursor_type_; }
   inline void set_ps_cursor_type(ObPSCursorType type) { ps_cursor_type_ = type; }
   inline bool is_pl_stmt(sql::stmt::StmtType stmt_type) const
@@ -299,28 +294,16 @@ private:
                            bool fore_sync_resp,
                            bool &async_resp_used);
 
-  int try_batch_multi_stmt_optimization(sql::ObSQLSessionInfo &session,
-                                        bool has_more_result,
-                                        bool force_sync_resp,
-                                        bool &async_resp_used,
-                                        bool &optimization_done);
-
-  int is_arraybinding_returning(sql::ObSQLSessionInfo &session, bool &is_ab_return);
-
-
   //
-  // %charset is current charset of data, %cs_type and %ncs_type is destination collation.
+  // %charset is current charset of data and %cs_type is destination collation.
   //
   // %charset: connection charset
   // %cs_type: collation for char/varchar type
-  // %ncs_type: collation for nchar/nvarcahr type
-  //
-  // In MySQL mode, %charset is the charset of %cs_type and %ncs_type is not used.
+  // In MySQL mode, %charset is the charset of %cs_type.
   // Some callers may still pass a destination collation whose charset differs from %charset.
   int parse_param_value(ObIAllocator& allocator,
                         const uint32_t type,
                         const ObCharsetType charset,
-                        const ObCharsetType ncharset,
                         const ObCollationType cs_type,
                         const char *&data,
                         const common::ObTimeZoneInfo *tz_info,

@@ -22,7 +22,6 @@
 #include "lib/hash/ob_hashmap.h"
 #include "lib/string/ob_sql_string.h"
 #include "common/ob_tablet_id.h"
-#include "share/ob_ls_id.h"
 #include "share/schema/ob_table_schema.h"
 #include "share/tablet/ob_tablet_info.h"
 #include "share/ob_column_checksum_error_operator.h"
@@ -112,18 +111,15 @@ public:
   bool is_valid() const;
   bool is_same_tablet(const ObTabletReplicaChecksumItem &other) const;
   int verify_column_checksum(const ObTabletReplicaChecksumItem &other) const;
-  int verify_column_checksum_between_diffrent_replica(const ObTabletReplicaChecksumItem &other) const;
   int assign(const ObTabletReplicaChecksumItem &other);
   int set_ckm_mem_attr();
-  int check_data_checksum_type(bool &is_cs_replica) const;
-  void set_data_checksum_type(const bool is_cs_replica);
+  void set_data_checksum_type();
   common::ObTabletID get_tablet_id() const { return tablet_id_; }
 
-  TO_STRING_KV(K_(ls_id), K_(tablet_id), K_(server), K_(row_count),
-      K_(compaction_scn), K_(data_checksum), K_(column_meta), K_(data_checksum_type), K_(co_base_snapshot_version));
+  TO_STRING_KV(K_(tablet_id), K_(server), K_(row_count),
+      K_(compaction_scn), K_(data_checksum), K_(column_meta), K_(data_checksum_type));
 
 public:
-  share::ObLSID ls_id_;
   common::ObTabletID tablet_id_;
   common::ObAddr server_;
   int64_t row_count_;
@@ -131,7 +127,6 @@ public:
   int64_t data_checksum_;
   ObTabletReplicaReportColumnMeta column_meta_;
   ObDataChecksumType data_checksum_type_;
-  SCN co_base_snapshot_version_;
 };
 typedef ObArrayWithMap<share::ObTabletReplicaChecksumItem> ObReplicaCkmArray;
 
@@ -146,7 +141,7 @@ public:
   // Default: checksum_items' compaction_scn = @compaction_scn
   // If include_larger_than = true: checksum_items' compaction_scn >= @compaction_scn
   static int batch_get(
-      const common::ObIArray<ObTabletLSPair> &pairs,
+      const common::ObIArray<common::ObTabletID> &tablet_ids,
       const SCN &compaction_scn,
       common::ObISQLClient &sql_proxy,
       ObReplicaCkmArray &items,
@@ -159,13 +154,13 @@ public:
   // Remove checksum items within a SQLite transaction
   static int batch_remove_with_trans(
       share::ObSQLiteConnection *conn,
-      const common::ObIArray<ObTabletReplica> &tablet_replicas);
+      const common::ObIArray<ObTabletReplica> &tablet_meta_rows);
   static int remove_residual_checksum(
       common::ObISQLClient &sql_client,
       const ObAddr &server,
       const int64_t limit,
       int64_t &affected_rows);
-  static int get_tablets_replica_checksum(const ObIArray<compaction::ObTabletCheckInfo> &pairs,
+  static int get_tablets_replica_checksum(const ObIArray<compaction::ObTabletCheckInfo> &tablet_check_infos,
       ObReplicaCkmArray &tablet_replica_checksum_items);
   static int get_visible_column_meta(
       const ObTabletReplicaReportColumnMeta &column_meta,
@@ -190,10 +185,8 @@ public:
   static int get_min_compaction_scn(SCN &min_compaction_scn);
 
 private:
-  // ObSimpleCkmInfo and ObTabletSimpleCkmInfoMap removed - only used in OB_BUILD_SHARED_STORAGE
   // range_get_ removed - no longer used
   // inner_batch_insert_or_update_by_sql_ removed - no longer used
-  // OB_BUILD_SHARED_STORAGE related functions removed
   // inner_batch_get_by_sql_ removed - no longer used, replaced by SQLite storage
   // construct_batch_get_sql_str_ removed - no longer used, replaced by SQLite storage
 
@@ -216,7 +209,7 @@ public:
   // KV of @column_ckm_map is: <column_id, column_checksum>
   static int get_tablet_replica_checksum_items(common::ObMySQLProxy &mysql_proxy,
       const SCN &compaction_scn,
-      const common::ObIArray<ObTabletLSPair> &tablet_pairs,
+      const common::ObIArray<common::ObTabletID> &tablet_ids,
       ObReplicaCkmArray &items);
   static int construct_tablet_id_list(const ObIArray<ObTabletID> &tablet_ids, ObSqlString &sql);
 private:
@@ -237,10 +230,9 @@ public:
   void reset();
   int set_data_checksum(const ObTabletReplicaChecksumItem& curr_item);
   int check_data_checksum(const ObTabletReplicaChecksumItem& curr_item);
-  TO_STRING_KV(KPC_(normal_ckm_item), K_(cs_replica_ckm_items));
+  TO_STRING_KV(KPC_(normal_ckm_item));
 private:
   const ObTabletReplicaChecksumItem *normal_ckm_item_;
-  ObSEArray<const ObTabletReplicaChecksumItem *, 3> cs_replica_ckm_items_; // at most support 3 cs replicas now
 };
 
 } // share

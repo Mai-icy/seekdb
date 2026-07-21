@@ -354,8 +354,7 @@ int ObJoinOrder::prune_paths_due_to_parallel(ObIArray<AccessPath *> &access_path
       } else {
         AccessPath *target_path = NULL;
         for (int64_t j = 0; NULL == target_path && j < access_paths.count(); ++j) {
-          if (i != j && NULL != access_paths.at(j) && path->index_id_ == access_paths.at(j)->index_id_
-              && path->use_column_store_ == access_paths.at(j)->use_column_store_) {
+          if (i != j && NULL != access_paths.at(j) && path->index_id_ == access_paths.at(j)->index_id_) {
             target_path = access_paths.at(j);
           }
         }
@@ -489,8 +488,7 @@ int ObJoinOrder::compute_sharding_info_with_part_info(ObTableLocationType locati
     bool can_reselect_replica = (phy_tbl_info.is_duplicate_table_not_in_dml() &&
         (1 == phy_tbl_info.get_phy_part_loc_info_list().count())
         && !session_info->get_is_in_retry_for_dup_tbl()
-        && !is_modified
-        && !session_info->is_dup_ls_modified());
+        && !is_modified);
     sharding_info = new(sharding_info) ObShardingInfo();
     sharding_info->set_location_type(location_type);
     if (OB_FAIL(sharding_info->init_partition_info(
@@ -1741,7 +1739,6 @@ int ObJoinOrder::create_one_access_path(const uint64_t table_id,
                                         PathHelper &helper,
                                         AccessPath *&access_path,
                                         bool use_das,
-                                        bool use_column_store,
                                         OptSkipScanState use_skip_scan)
 {
   int ret = OB_SUCCESS;
@@ -1805,8 +1802,6 @@ int ObJoinOrder::create_one_access_path(const uint64_t table_id,
     ap->for_update_ = table_item->for_update_;
     ap->use_skip_scan_ = use_skip_scan;
     ap->index_prefix_ = index_info_entry->get_range_info().get_index_prefix();
-    ap->use_column_store_ = use_column_store;
-    ap->est_cost_info_.use_column_store_ = use_column_store;
     ap->force_direction_ = index_info_entry->is_force_direction();
 
     ap->contain_das_op_ = ap->use_das_;
@@ -1901,8 +1896,6 @@ int ObJoinOrder::create_one_access_path(const uint64_t table_id,
         LOG_WARN("failed to assign expr constraints", K(ret));
       } else if (OB_FAIL(append(ap->expr_constraints_, helper.expr_constraints_))) {
         LOG_WARN("append expr constraints failed", K(ret));
-      } else if (OB_FAIL(init_column_store_est_info(table_id, ref_id, ap->est_cost_info_))) {
-        LOG_WARN("failed to init column store est cost info", K(ret));
       } else if (OB_FAIL(ap->compute_access_path_batch_rescan())) {
         LOG_WARN("failed to compute access path batch rescan", K(ret));
       } else {
@@ -1975,234 +1968,6 @@ int ObJoinOrder::init_filter_selectivity(ObCostTableScanInfo &est_cost_info)
                                                              est_cost_info.table_filter_sel_,
                                                              plan->get_predicate_selectivities()))) {
     LOG_WARN("failed to calculate selectivity", K(ret));
-  }
-  return ret;
-}
-
-int ObJoinOrder::init_column_store_est_info(const uint64_t table_id,
-                                            const uint64_t ref_id,
-                                            ObCostTableScanInfo &est_cost_info)
-{
-  int ret = OB_SUCCESS;
-  bool index_back_will_use_row_store = false;
-  bool index_back_will_use_column_store = false;
-  if (OB_ISNULL(get_plan())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpect null plan", K(ret));
-  } else if (OB_FAIL(get_plan()->will_use_column_store(OB_INVALID_ID,
-                                                       ref_id,
-                                                       ref_id,
-                                                       index_back_will_use_column_store,
-                                                       index_back_will_use_row_store))) {
-    LOG_WARN("failed to check will use column store", K(ret));
-  } else if (est_cost_info.use_column_store_ || !index_back_will_use_row_store) {
-    FilterCompare filter_compare(get_plan()->get_predicate_selectivities());
-    lib::ob_sort(est_cost_info.table_filters_.begin(), est_cost_info.table_filters_.end(), filter_compare);
-    ObSqlBitSet<> used_column_ids;
-    est_cost_info.index_back_with_column_store_ = !index_back_will_use_row_store;
-    const OptTableMetas& table_opt_meta = get_plan()->get_basic_table_metas();
-    ObIArray<ObCostColumnGroupInfo> &index_scan_column_group_infos = est_cost_info.index_scan_column_group_infos_;
-    ObIArray<ObCostColumnGroupInfo> &index_back_column_group_infos = est_cost_info.index_meta_info_.is_index_back_ ?
-                                                          est_cost_info.index_back_column_group_infos_
-                                                          : est_cost_info.index_scan_column_group_infos_;
-    //add column group with prefix filters
-    if (OB_FAIL(init_column_store_est_info_with_filter(table_id,
-                                                        est_cost_info,
-                                                        table_opt_meta,
-                                                        est_cost_info.prefix_filters_,
-                                                        index_scan_column_group_infos,
-                                                        used_column_ids,
-                                                        filter_compare,
-                                                        false))) {
-      LOG_WARN("failed to init column store est info with filter", K(ret));
-    }
-    else if (OB_FAIL(init_column_store_est_info_with_filter(table_id,
-                                                            est_cost_info,
-                                                            table_opt_meta,
-                                                            est_cost_info.pushdown_prefix_filters_,
-                                                            index_scan_column_group_infos,
-                                                            used_column_ids,
-                                                            filter_compare,
-                                                            false))) {
-      LOG_WARN("failed to init column store est info with filter", K(ret));
-    }
-    //add column group with postfix filters
-    else if (OB_FAIL(init_column_store_est_info_with_filter(table_id,
-                                                            est_cost_info,
-                                                            table_opt_meta,
-                                                            est_cost_info.postfix_filters_,
-                                                            index_scan_column_group_infos,
-                                                            used_column_ids,
-                                                            filter_compare,
-                                                            true))) {
-      LOG_WARN("failed to init column store est info with filter", K(ret));
-    }
-    //add column group with index back filters
-    else if (OB_FAIL(init_column_store_est_info_with_filter(table_id,
-                                                            est_cost_info,
-                                                            table_opt_meta,
-                                                            est_cost_info.table_filters_,
-                                                            index_back_column_group_infos,
-                                                            used_column_ids,
-                                                            filter_compare,
-                                                            true))) {
-      LOG_WARN("failed to init column store est info with filter", K(ret));
-    }
-    //add other column group
-    else if (OB_FAIL(init_column_store_est_info_with_other_column(table_id,
-                                                                  est_cost_info,
-                                                                  table_opt_meta,
-                                                                  used_column_ids))) {
-      LOG_WARN("failed to init column store est info with other column", K(ret));
-    } else if (index_scan_column_group_infos.empty()) {
-      //add dummy column group cost info for nil access exprs
-      ObCostColumnGroupInfo cg_info;
-      if (OB_FAIL(index_scan_column_group_infos.push_back(cg_info))) {
-        LOG_WARN("failed to push back column group info", K(ret));
-      }
-    }
-  }
-  return ret;
-}
-
-int ObJoinOrder::init_column_store_est_info_with_filter(const uint64_t table_id,
-                                                        ObCostTableScanInfo &est_cost_info,
-                                                        const OptTableMetas& table_opt_meta,
-                                                        ObIArray<ObRawExpr*> &filters,
-                                                        ObIArray<ObCostColumnGroupInfo> &column_group_infos,
-                                                        ObSqlBitSet<> &used_column_ids,
-                                                        FilterCompare &filter_compare,
-                                                        const bool use_filter_sel)
-{
-  int ret = OB_SUCCESS;
-  ObSEArray<ObRawExpr*, 4> filter_columns;
-  if (OB_ISNULL(get_plan())
-      || OB_ISNULL(get_plan()->get_stmt())
-      || OB_ISNULL(OPT_CTX.get_query_ctx())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("NULL pointer error", K(get_plan()), K(OPT_CTX.get_query_ctx()), K(ret));
-  }
-  for (int i = 0; OB_SUCC(ret) && i < filters.count(); ++i) {
-    ObRawExpr *filter = filters.at(i);
-    filter_columns.reuse();
-    if (OB_FAIL(ObRawExprUtils::extract_column_exprs(filter,
-                                                    filter_columns))) {
-      LOG_WARN("failed to extract column exprs", K(ret));
-    }
-    //init column group info
-    for (int j = 0; OB_SUCC(ret) && j < filter_columns.count(); ++j) {
-      ObRawExpr *expr = filter_columns.at(j);
-      if (OB_ISNULL(expr)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpect null expr", K(ret));
-      } else if (expr->is_column_ref_expr()) {
-        ObColumnRefRawExpr* col_expr = static_cast<ObColumnRefRawExpr*>(expr);
-        ObDMLStmt *stmt = const_cast<ObDMLStmt*>(get_plan()->get_stmt());
-        ColumnItem *col_item = stmt->get_column_item(table_id, col_expr->get_column_id());
-        const OptColumnMeta* col_opt_meta = table_opt_meta.get_column_meta_by_table_id(
-                                    table_id,
-                                    col_expr->get_column_id());
-        if (used_column_ids.has_member(col_expr->get_column_id())) {
-          //do nothing
-        } else if (OB_FAIL(used_column_ids.add_member(col_expr->get_column_id()))) {
-          LOG_WARN("failed to add memeber", K(ret));
-        } else if (OB_ISNULL(col_opt_meta) || OB_ISNULL(col_item)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("unexpect null column meta", K(ret));
-        } else {
-          ObCostColumnGroupInfo cg_info;
-          cg_info.micro_block_count_ = col_opt_meta->get_cg_micro_blk_cnt();
-          cg_info.column_id_ = col_expr->get_column_id();
-          cg_info.skip_rate_ = col_opt_meta->get_cg_skip_rate();
-          cg_info.skip_filter_sel_ = 1 - ((1-filter_compare.get_selectivity(filter)) * cg_info.skip_rate_);
-          if (OB_FAIL(cg_info.access_column_items_.push_back(*col_item))) {
-            LOG_WARN("failed to push back filter", K(ret));
-          } else if (OB_FAIL(column_group_infos.push_back(cg_info))) {
-            LOG_WARN("failed to push back column group info", K(ret));
-          }
-          LOG_TRACE("COST:init_column_store_est_info_with_other_column",K(cg_info.skip_rate_),K(col_opt_meta->get_cg_skip_rate()), K(filter_compare.get_selectivity(filter)));
-        }
-
-      }
-    }
-    //distribute filter
-    int max_pos = -1;
-    for (int j = 0; OB_SUCC(ret) && j < filter_columns.count(); ++j) {
-      ObRawExpr *expr = filter_columns.at(j);
-      if (OB_ISNULL(expr)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpect null expr", K(ret));
-      } else if (expr->is_column_ref_expr()) {
-        ObColumnRefRawExpr* col_expr = static_cast<ObColumnRefRawExpr*>(expr);
-        int find_pos = -1;
-        for (int k = 0; OB_SUCC(ret) && find_pos < 0 && k < column_group_infos.count(); ++k) {
-          ObCostColumnGroupInfo &cg_info = column_group_infos.at(k);
-          if (cg_info.column_id_ == col_expr->get_column_id()) {
-            find_pos = k;
-          }
-        }
-        if (OB_FAIL(ret)) {
-        } else if (find_pos < 0) {
-          //ignore index column group
-        } else if (find_pos > max_pos) {
-          max_pos = find_pos;
-        }
-      }
-    }
-    if (OB_FAIL(ret) || filter_columns.empty()) {
-    } else if (max_pos < 0 || max_pos >= column_group_infos.count()) {
-      //table filter with index column group
-    } else if (OB_FAIL(column_group_infos.at(max_pos).filters_.push_back(filter))) {
-      LOG_WARN("failed to push back filter", K(ret));
-    } else if (use_filter_sel) {
-      column_group_infos.at(max_pos).filter_sel_ *= filter_compare.get_selectivity(filter);
-    }
-  }
-  return ret;
-}
-
-int ObJoinOrder::init_column_store_est_info_with_other_column(const uint64_t table_id,
-                                                              ObCostTableScanInfo &est_cost_info,
-                                                              const OptTableMetas& table_opt_meta,
-                                                              ObSqlBitSet<> &used_column_ids)
-{
-  int ret = OB_SUCCESS;
-  ObIArray<ObCostColumnGroupInfo> &column_group_infos = est_cost_info.index_meta_info_.is_index_back_ ?
-                                          est_cost_info.index_back_column_group_infos_
-                                          : est_cost_info.index_scan_column_group_infos_;
-  if (OB_ISNULL(OPT_CTX.get_query_ctx())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("NULL pointer error", K(OPT_CTX.get_query_ctx()), K(ret));
-  }
-  for (int i = 0; OB_SUCC(ret) && i < est_cost_info.access_column_items_.count(); ++i) {
-    uint64_t column_id = est_cost_info.access_column_items_.at(i).column_id_;
-    const OptColumnMeta* col_opt_meta = table_opt_meta.get_column_meta_by_table_id(
-                                    table_id,
-                                    column_id);
-    ObRawExpr *expr = est_cost_info.access_column_items_.at(i).expr_;
-    if (OB_ISNULL(expr)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpect null expr", K(ret));
-    } else if (used_column_ids.has_member(column_id)) {
-      //do nothing
-    } else if (!expr->is_explicited_reference()) {
-      //do nothing
-    } else if (OB_ISNULL(col_opt_meta)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpect null column meta", K(ret));
-    } else {
-      ObCostColumnGroupInfo cg_info;
-      cg_info.micro_block_count_ = col_opt_meta->get_cg_micro_blk_cnt();
-      cg_info.skip_rate_ = col_opt_meta->get_cg_skip_rate();
-      cg_info.skip_filter_sel_ =  cg_info.skip_rate_;
-      cg_info.skip_filter_sel_ = 1;
-      cg_info.column_id_ = column_id;
-      if (OB_FAIL(cg_info.access_column_items_.push_back(est_cost_info.access_column_items_.at(i)))) {
-        LOG_WARN("failed to push back filter", K(ret));
-      } else if (OB_FAIL(column_group_infos.push_back(cg_info))) {
-        LOG_WARN("failed to push back column group info", K(ret));
-      }
-    }
   }
   return ret;
 }
@@ -3101,12 +2866,8 @@ int ObJoinOrder::create_access_paths(const uint64_t table_id,
     for (int64_t i = 0; OB_SUCC(ret) && i < valid_index_ids.count(); ++i) {
       bool is_create_basic_path = false;
       bool is_create_das_path = false;
-      bool use_column_store = false;
-      bool use_row_store = false;
       AccessPath *das_row_store_access_path = NULL;
       AccessPath *basic_row_store_access_path = NULL; // the path does not use DAS, maybe optimal sometime.
-      AccessPath *das_column_store_access_path = NULL;
-      AccessPath *basic_column_store_access_path = NULL;
       OptSkipScanState use_skip_scan = OptSkipScanState::SS_UNSET;
       if (OB_FAIL(will_use_das(table_id,
                                valid_index_ids.at(i),
@@ -3123,14 +2884,7 @@ int ObJoinOrder::create_access_paths(const uint64_t table_id,
                                             session_info,
                                             use_skip_scan))) {
         LOG_WARN("failed to check will use skip scan", K(ret));
-      } else if (OB_FAIL(get_plan()->will_use_column_store(table_id,
-                                                          valid_index_ids.at(i),
-                                                          ref_table_id,
-                                                          use_column_store,
-                                                          use_row_store))) {
-        LOG_WARN("failed to check will use column store", K(ret));
       } else if (is_create_das_path &&
-                 use_row_store &&
                  OB_FAIL(create_one_access_path(table_id,
                                                 ref_table_id,
                                                 valid_index_ids.at(i),
@@ -3138,29 +2892,12 @@ int ObJoinOrder::create_access_paths(const uint64_t table_id,
                                                 helper,
                                                 das_row_store_access_path,
                                                 true,
-                                                false,
                                                 use_skip_scan))) {
         LOG_WARN("failed to make index path", "index_table_id", valid_index_ids.at(i), K(ret));
       } else if (OB_NOT_NULL(das_row_store_access_path) &&
                  OB_FAIL(access_paths.push_back(das_row_store_access_path))) {
         LOG_WARN("failed to push back access path", K(ret));
-      } else if (is_create_das_path &&
-                 use_column_store &&
-                 OB_FAIL(create_one_access_path(table_id,
-                                                ref_table_id,
-                                                valid_index_ids.at(i),
-                                                index_info_cache,
-                                                helper,
-                                                das_column_store_access_path,
-                                                true,
-                                                true,
-                                                use_skip_scan))) {
-        LOG_WARN("failed to make index path", "index_table_id", valid_index_ids.at(i), K(ret));
-      } else if (OB_NOT_NULL(das_column_store_access_path) &&
-                 OB_FAIL(access_paths.push_back(das_column_store_access_path))) {
-        LOG_WARN("failed to push back access path", K(ret));
       } else if (is_create_basic_path &&
-                 use_row_store &&
                  OB_FAIL(create_one_access_path(table_id,
                                                 ref_table_id,
                                                 valid_index_ids.at(i),
@@ -3168,26 +2905,10 @@ int ObJoinOrder::create_access_paths(const uint64_t table_id,
                                                 helper,
                                                 basic_row_store_access_path,
                                                 false,
-                                                false,
                                                 use_skip_scan))) {
         LOG_WARN("failed to make index path", "index_table_id", valid_index_ids.at(i), K(ret));
       } else if(OB_NOT_NULL(basic_row_store_access_path) &&
                 OB_FAIL(access_paths.push_back(basic_row_store_access_path))) {
-        LOG_WARN("failed to push back access path", K(ret));
-      } else if (is_create_basic_path &&
-                 use_column_store &&
-                 OB_FAIL(create_one_access_path(table_id,
-                                                ref_table_id,
-                                                valid_index_ids.at(i),
-                                                index_info_cache,
-                                                helper,
-                                                basic_column_store_access_path,
-                                                false,
-                                                true,
-                                                use_skip_scan))) {
-        LOG_WARN("failed to make index path", "index_table_id", valid_index_ids.at(i), K(ret));
-      } else if(OB_NOT_NULL(basic_column_store_access_path) &&
-                OB_FAIL(access_paths.push_back(basic_column_store_access_path))) {
         LOG_WARN("failed to push back access path", K(ret));
       }
     }
@@ -3931,8 +3652,6 @@ int ObJoinOrder::build_access_path_for_scan_node(const uint64_t table_id,
   } else {
     PathHelper tmp_helper = helper;
     IndexInfoEntry *index_info_entry = NULL;
-    bool use_row_store = false;
-    bool use_column_store = false;
     index_info_cache.set_table_id(table_id);
     index_info_cache.set_base_table_id(ref_table_id);
     tmp_helper.is_index_merge_ = true;
@@ -3954,12 +3673,6 @@ int ObJoinOrder::build_access_path_for_scan_node(const uint64_t table_id,
     } else if (OB_FALSE_IT(index_info_entry->set_is_index_back(false))) {
     } else if (OB_FAIL(index_info_cache.add_index_info_entry(index_info_entry))) {
       LOG_WARN("failed to add index info entry", K(ret));
-    } else if (OB_FAIL(get_plan()->will_use_column_store(table_id,
-                                                         node->index_tid_,
-                                                         ref_table_id,
-                                                         use_column_store,
-                                                         use_row_store))) {
-      LOG_WARN("failed to check will use column store", K(ret));
     } else if (OB_FAIL(create_one_access_path(table_id,
                                               ref_table_id,
                                               node->index_tid_,
@@ -3967,7 +3680,6 @@ int ObJoinOrder::build_access_path_for_scan_node(const uint64_t table_id,
                                               tmp_helper,
                                               node->ap_,
                                               true,  /* use_das */
-                                              use_row_store ? false : true, /* use_column_store */
                                               OptSkipScanState::SS_UNSET /* use_skip_scan */ ))) {
       LOG_WARN("failed to create one access path", K(table_id), K(ref_table_id), K(node->index_tid_));
     } else if (OB_FAIL(append(range_expr_constraint,
@@ -4037,7 +3749,6 @@ int ObJoinOrder::create_one_index_merge_path(const uint64_t table_id,
     index_merge_path->table_opt_info_ = helper.table_opt_info_;
     index_merge_path->is_inner_path_ = helper.is_inner_path_;
     index_merge_path->for_update_ = table_item->for_update_;
-    index_merge_path->use_column_store_ = false;
     index_merge_path->contain_das_op_ = index_merge_path->use_das_;
     index_merge_path->is_ordered_by_pk_ = true;
     index_merge_path->can_batch_rescan_ = false;
@@ -4048,7 +3759,6 @@ int ObJoinOrder::create_one_index_merge_path(const uint64_t table_id,
     index_merge_path->est_cost_info_.sel_ctx_ = &get_plan()->get_selectivity_ctx();
     index_merge_path->est_cost_info_.rescan_server_list_ = &index_merge_path->server_list_;
     index_merge_path->est_cost_info_.is_rescan_ = helper.is_inner_path_ || get_plan()->get_is_rescan_subplan();
-    index_merge_path->est_cost_info_.use_column_store_ = index_merge_path->use_column_store_;
     index_merge_path->domain_idx_info_.set_domain_idx_type(DomainIndexType::FTS_INDEX);
     if (NULL == table_partition_info_) {
       // generate table location for main table
@@ -4542,7 +4252,6 @@ int ObJoinOrder::get_valid_index_ids(const uint64_t table_id,
   } else if (OB_FAIL(schema_guard->get_can_read_index_array(ref_table_id,
                                                             tids,
                                                             index_count,
-                                                            false,
                                                             can_use_global_index,
                                                             false /*domain index*/,
                                                             false /*spatial index*/,
@@ -4571,55 +4280,6 @@ int ObJoinOrder::get_valid_index_ids(const uint64_t table_id,
       }
     }
 
-    //check table access policy
-    const ObTableSchema *schema = NULL;
-    bool is_link = false;
-    bool has_row_store = false;
-    bool has_column_store = false;
-    ObSEArray<uint64_t, 4> new_valid_index_ids;
-    if (ObTableAccessPolicy::ROW_STORE == OPT_CTX.get_table_acces_policy()) {
-      for (int64_t i = 0; OB_SUCC(ret) && i < valid_index_ids.count(); ++i) {
-        if (OB_FAIL(schema_guard->get_table_schema(valid_index_ids.at(i), schema, is_link))) {
-          LOG_WARN("failed to get table schema", K(ret));
-        } else if (OB_ISNULL(schema)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("unexpect null table schema", K(ret));
-        } else if (OB_FAIL(schema->has_all_column_group(has_row_store))) {
-          LOG_WARN("failed to check has row store", K(ret));
-        } else if (!has_row_store) {
-          //ignore index
-        } else if (OB_FAIL(new_valid_index_ids.push_back(valid_index_ids.at(i)))) {
-          LOG_WARN("failed to push back index id", K(ret));
-        }
-      }
-      if (OB_FAIL(ret)) {
-      } else if (new_valid_index_ids.empty()) {
-        //ignore table access policy
-      } else if (OB_FAIL(valid_index_ids.assign(new_valid_index_ids))) {
-        LOG_WARN("failed to assign index ids", K(ret));
-      }
-    } else if (ObTableAccessPolicy::COLUMN_STORE == OPT_CTX.get_table_acces_policy()) {
-      for (int64_t i = 0; OB_SUCC(ret) && i < valid_index_ids.count(); ++i) {
-        if (OB_FAIL(schema_guard->get_table_schema(valid_index_ids.at(i), schema, is_link))) {
-          LOG_WARN("failed to get table schema", K(ret));
-        } else if (OB_ISNULL(schema)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("unexpect null table schema", K(ret));
-        } else if (OB_FAIL(schema->get_is_column_store(has_column_store))) {
-          LOG_WARN("failed to get is column store", K(ret));
-        } else if (!has_column_store) {
-          //ignore index
-        } else if (OB_FAIL(new_valid_index_ids.push_back(valid_index_ids.at(i)))) {
-          LOG_WARN("failed to push back index id", K(ret));
-        }
-      }
-      if (OB_FAIL(ret)) {
-      } else if (new_valid_index_ids.empty()) {
-        //ignore table access policy
-      } else if (OB_FAIL(valid_index_ids.assign(new_valid_index_ids))) {
-        LOG_WARN("failed to assign index ids", K(ret));
-      }
-    }
   }
 
   if (OB_SUCC(ret)) {
@@ -4855,7 +4515,6 @@ int ObJoinOrder::fill_opt_info_index_name(const uint64_t table_id,
   } else if (OB_FAIL(schema_guard->get_can_read_index_array(base_table_id,
                                                             index_ids,
                                                             index_count,
-                                                            false,
                                                             true /*global index*/,
                                                             true /*domain index*/))) {
     LOG_WARN("failed to get can read index", K(base_table_id), K(ret));
@@ -6363,8 +6022,7 @@ int ObJoinOrder::generate_const_predicates_from_view(const ObDMLStmt *stmt,
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("get unexpected expr", K(ret), K(idx), K(sel_expr));
     } else if (!sel_expr->is_const_expr() || sel_expr->get_result_type().is_lob()
-                || ob_is_geometry(sel_expr->get_result_type().get_type())
-                || ob_is_roaringbitmap(sel_expr->get_result_type().get_type())) {
+                || ob_is_geometry(sel_expr->get_result_type().get_type())) {
       //do nothing
     } else if (OB_FAIL(ObTransformUtils::is_expr_not_null(not_null_ctx,
                                                           sel_expr,
@@ -7410,7 +7068,6 @@ int AccessPath::assign(const AccessPath &other, common::ObIAllocator *allocator)
   table_opt_info_ = other.table_opt_info_;
   for_update_ = other.for_update_;
   use_skip_scan_ = other.use_skip_scan_;
-  use_column_store_ = other.use_column_store_;
   is_valid_inner_path_ = other.is_valid_inner_path_;
   pre_range_graph_ = NULL;
   can_batch_rescan_ = other.can_batch_rescan_;
@@ -7529,17 +7186,13 @@ int AccessPath::check_and_prepare_estimate_parallel_params(const int64_t cur_min
   server_cnt = 0;
   cur_parallel_degree_limit = ObGlobalHint::UNSET_PARALLEL;
   ObOptimizerContext *opt_ctx = NULL;
-  ObSQLSessionInfo *session_info = NULL;
   ObSEArray<ObAddr, 8> server_list;
   int64_t dop_limit = ObGlobalHint::UNSET_PARALLEL;
   if (OB_ISNULL(table_partition_info_) ||
       OB_ISNULL(parent_) || OB_ISNULL(parent_->get_plan()) ||
-      OB_ISNULL(opt_ctx = &parent_->get_plan()->get_optimizer_context()) ||
-      OB_ISNULL(session_info = opt_ctx->get_session_info())) {
+      OB_ISNULL(opt_ctx = &parent_->get_plan()->get_optimizer_context())) {
     ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("get unexpected params", K(ret), K(table_partition_info_), K(parent_), K(session_info));
-  } else if (OB_FAIL(session_info->get_sys_variable(share::SYS_VAR__PX_MIN_GRANULES_PER_SLAVE, px_part_gi_min_part_per_dop))) {
-    LOG_WARN("failed to get sys variable px min granule per slave", K(ret));
+    LOG_WARN("get unexpected params", K(ret), K(table_partition_info_), K(parent_));
   } else if (OB_FAIL(table_partition_info_->get_all_servers(server_list))) {
     LOG_WARN("failed to get all servers", K(ret));
   } else if (OB_FAIL(get_candidate_server_cnt(*opt_ctx, server_list, server_cnt))) {
@@ -7547,7 +7200,7 @@ int AccessPath::check_and_prepare_estimate_parallel_params(const int64_t cur_min
   } else if (OB_FAIL(get_dop_limit_by_pushdown_limit(dop_limit))) {
     LOG_WARN("failed to get dop limit by pushdown limit", K(ret));
   } else {
-    px_part_gi_min_part_per_dop = std::max(static_cast<int64_t>(1), px_part_gi_min_part_per_dop);
+    px_part_gi_min_part_per_dop = 13;
     cost_threshold_us = 1000.0 * std::max(static_cast<int64_t>(10), opt_ctx->get_parallel_min_scan_time_threshold());
     cur_parallel_degree_limit = opt_ctx->get_parallel_degree_limit(server_cnt);
     const int64_t row_parallel_limit = std::floor(get_phy_query_range_row_count() / ROW_COUNT_THRESHOLD_PER_DOP);
@@ -13473,21 +13126,7 @@ int ObJoinOrder::find_possible_join_filter_tables(const ObLogPlanHint &log_plan_
       info.force_part_filter_ = force_part_hint;
       info.in_current_dfo_ = is_current_dfo;
       if ((info.can_use_join_filter_ || info.need_partition_join_filter_)) {
-        bool will_use_column_store = false;
-        bool will_use_row_store = false;
-        if (access.use_column_store_) {
-          info.use_column_store_ = true;
-        } else if (OB_FAIL(get_plan()->will_use_column_store(info.table_id_,
-                                                            info.index_id_,
-                                                            info.ref_table_id_,
-                                                            will_use_column_store,
-                                                            will_use_row_store))) {
-          LOG_WARN("failed to check will use column store", K(ret));
-        } else if (will_use_column_store) {
-          info.use_column_store_ = true;
-        }
-        if (OB_FAIL(ret)) {
-        } else if (OB_FAIL(get_join_filter_exprs(left_join_conditions,
+        if (OB_FAIL(get_join_filter_exprs(left_join_conditions,
                                           right_join_conditions,
                                           info))) {
           LOG_WARN("failed to get join filter exprs", K(ret));
@@ -14207,20 +13846,10 @@ int ObJoinOrder::extract_hashjoin_conditions(const ObIArray<ObRawExpr*> &join_qu
 {
   int ret = OB_SUCCESS;
   ObRawExpr *cur_expr = NULL;
-  ObSQLSessionInfo *session = NULL;
-  bool naaj_enabled = false;
   if ((LEFT_ANTI_JOIN == join_type || RIGHT_ANTI_JOIN == join_type)) {
-    if (OB_ISNULL(get_plan())
-      || OB_ISNULL(session = get_plan()->get_optimizer_context().get_session_info())) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("failed to get session info", K(ret), K(get_plan()));
-    } else if (OB_FAIL(session->get_enable_optimizer_null_aware_antijoin(naaj_enabled))) {
-      LOG_WARN("failed to get sys var naaj enabled", K(ret));
-    } else if (naaj_enabled) {
-      if (OB_FAIL(extract_naaj_join_conditions(join_quals, left_tables, right_tables,
-                                               equal_join_conditions, naaj_info))) {
-        LOG_WARN("failed to extract naaj join conditions", K(ret));
-      }
+    if (OB_FAIL(extract_naaj_join_conditions(join_quals, left_tables, right_tables,
+                                             equal_join_conditions, naaj_info))) {
+      LOG_WARN("failed to extract naaj join conditions", K(ret));
     }
   }
   for (int64_t i = 0 ; !naaj_info.is_naaj_ && OB_SUCC(ret) && i < join_quals.count(); ++i) {
@@ -17101,7 +16730,6 @@ int ObJoinOrder::compute_fd_item_set_for_table_scan(const uint64_t table_id,
   } else if (OB_FAIL(schema_guard->get_can_read_index_array(table_ref_id,
                                                             index_tids,
                                                             index_count,
-                                                            false,
                                                             true  /*global index*/,
                                                             false /*domain index*/))) {
     LOG_WARN("failed to get can read index", K(ret), K(table_ref_id));

@@ -39,7 +39,7 @@ ObColumnRedefinitionTask::~ObColumnRedefinitionTask()
 }
 
 int ObColumnRedefinitionTask::init(const int64_t task_id, const share::ObDDLType &ddl_type,
-    const int64_t data_table_id, const int64_t dest_table_id, const int64_t schema_version, const int64_t parallelism, const int64_t consumer_group_id,
+    const int64_t data_table_id, const int64_t dest_table_id, const int64_t schema_version, const int64_t parallelism,
     const int32_t sub_task_trace_id, const obcall::ObAlterTableArg &alter_table_arg, 
     const uint64_t tenant_data_version, const int64_t task_status, const int64_t snapshot_version)
 {
@@ -71,7 +71,6 @@ int ObColumnRedefinitionTask::init(const int64_t task_id, const share::ObDDLType
     task_id_ = task_id;
     parallelism_ = parallelism;
     sub_task_trace_id_ = sub_task_trace_id;
-    consumer_group_id_ = consumer_group_id;
     execution_id_ = 1L;
     start_time_ = ObTimeUtility::current_time();
     if (OB_FAIL(init_ddl_task_monitor_info(target_object_id_))) {
@@ -86,7 +85,6 @@ int ObColumnRedefinitionTask::init(const int64_t task_id, const share::ObDDLType
       
       data_format_version_ = tenant_data_version;
       is_inited_ = true;
-      ddl_tracing_.open();
     }
   }
   return ret;
@@ -142,9 +140,6 @@ int ObColumnRedefinitionTask::init(const ObDDLTaskRecord &task_record)
       LOG_WARN("init ddl task monitor info failed", K(ret));
     } else {
       is_inited_ = true;
-
-      // set up span during recover task
-      ddl_tracing_.open_for_recovery();
     }
   }
   return ret;
@@ -204,8 +199,8 @@ int ObColumnRedefinitionTask::copy_table_indexes()
     if (has_rebuild_index_) {
     } else if (OB_ISNULL(GCTX.sql_proxy_) ) {
       ret = OB_INVALID_ARGUMENT;
-    } else if (OB_FAIL(ObDDLTaskRecordOperator::get_create_index_or_mlog_task_cnt(*GCTX.sql_proxy_, target_object_id_, active_task_cnt))) {
-      LOG_WARN("failed to check index or mlog task cnt", K(ret));
+    } else if (OB_FAIL(ObDDLTaskRecordOperator::get_create_index_task_cnt(*GCTX.sql_proxy_, target_object_id_, active_task_cnt))) {
+      LOG_WARN("failed to check index task cnt", K(ret));
     } else if (active_task_cnt >= MAX_ACTIVE_TASK_CNT) {
       ret = OB_EAGAIN;
     } else {
@@ -235,7 +230,7 @@ int ObColumnRedefinitionTask::copy_table_indexes()
         } else {
           int64_t rpc_timeout = 0;
           int64_t all_tablet_count = 0;
-          if (OB_FAIL(generate_rebuild_index_arg_list(object_id_, schema_guard, alter_table_arg_))) { // for pre split index
+          if (OB_FAIL(generate_rebuild_index_arg_list(object_id_, schema_guard, alter_table_arg_))) {
             LOG_WARN("fail to generate rebuild index arg list", K(ret), K(object_id_));
           } else if (OB_FAIL(get_orig_all_index_tablet_count(schema_guard, all_tablet_count))) {
             LOG_WARN("get all tablet count failed", K(ret));
@@ -300,7 +295,6 @@ int ObColumnRedefinitionTask::copy_table_indexes()
                                            0/*object_id*/,
                                            index_schema->get_schema_version(),
                                            parallelism_,
-                                           consumer_group_id_,
                                            &allocator_,
                                            &create_index_arg,
                                            task_id_);
@@ -635,7 +629,6 @@ int ObColumnRedefinitionTask::process()
   } else if (OB_FAIL(check_health())) {
     LOG_WARN("check health failed", K(ret));
   } else {
-    ddl_tracing_.restore_span_hierarchy();
     switch(task_status_) {
       case ObDDLTaskStatus::PREPARE:
         if (OB_FAIL(prepare(ObDDLTaskStatus::WAIT_TRANS_END))) {
@@ -682,7 +675,6 @@ int ObColumnRedefinitionTask::process()
         LOG_WARN("unexpected table redefinition task state", K(task_status_));
         break;
     }
-    ddl_tracing_.release_span_hierarchy();
   }
   return ret;
 }
@@ -746,7 +738,7 @@ int ObColumnRedefinitionTask::collect_longops_stat(ObLongopsValue &value)
                                     MAX_LONG_OPS_MESSAGE_LENGTH,
                                     pos,
                                     "STATUS: REPLICA BUILD, PARALLELISM: %ld, INITIALIZING",
-                                    ObDDLUtil::get_real_parallelism(parallelism_, false/*is mv refresh*/)))) {
+                                    ObDDLUtil::get_real_parallelism(parallelism_)))) {
           LOG_WARN("failed to print", K(ret));
         }
       } else if (OB_FAIL(replica_builder_.get_progress(row_inserted, physical_row_count_, percent))) {
@@ -755,7 +747,7 @@ int ObColumnRedefinitionTask::collect_longops_stat(ObLongopsValue &value)
                                   MAX_LONG_OPS_MESSAGE_LENGTH,
                                   pos,
                                   "STATUS: REPLICA BUILD, PARALLELISM: %ld, ESTIMATED_TOTAL_ROWS: %ld, ROW_PROCESSED: %ld, PROGRESS: %0.2lf%%",
-                                  ObDDLUtil::get_real_parallelism(parallelism_, false/*is mv refresh*/),
+                                  ObDDLUtil::get_real_parallelism(parallelism_),
                                   physical_row_count_,
                                   row_inserted,
                                   percent))) {

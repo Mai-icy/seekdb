@@ -35,7 +35,6 @@ public:
       const int64_t task_id,
       const uint64_t object_id,
       const int64_t schema_version,
-      const int64_t consumer_group_id,
       const int32_t sub_task_trace_id,
       const share::ObDDLType &type,
       const obcall::ObDDLArg *ddl_arg,
@@ -58,7 +57,6 @@ private:
   int fail();
   virtual int cleanup_impl() override;
   int deep_copy_ddl_arg(common::ObIAllocator &allocator, const share::ObDDLType &ddl_type, const obcall::ObDDLArg *source_arg);
-  int init_compat_mode(const share::ObDDLType &ddl_type, const obcall::ObDDLArg *source_arg);
   int get_forward_user_message(const rpc::frame::ObResultCode &rcode);
   int check_schema_change_done();
   virtual bool is_error_need_retry(const int ret_code) override

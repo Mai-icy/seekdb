@@ -342,23 +342,6 @@ int ObDMLStmtPrinter::print_table(const TableItem *table_item,
           DATA_PRINTF(" %.*s", LEN_AND_PTR(table_item->alias_name_));
           break;
         }
-        case MulModeTableType::OB_RB_ITERATE_TABLE_TYPE : {
-          if (table_item->json_table_def_->doc_exprs_.count() > 1 ) {
-            ret = OB_NOT_SUPPORTED;
-            LOG_USER_ERROR(OB_NOT_SUPPORTED, "print rb_iterate table with more than 1 params");
-          } else {
-            DATA_PRINTF("RB_ITERATE(");
-            if (OB_FAIL(expr_printer_.do_print(table_item->json_table_def_->doc_exprs_.at(0), T_FROM_SCOPE))) {
-              LOG_WARN("failed to print expr", K(ret));
-            }
-            DATA_PRINTF(")");
-            DATA_PRINTF(" %.*s", LEN_AND_PTR(table_item->alias_name_));
-            DATA_PRINTF("(");
-            DATA_PRINTF("%.*s", LEN_AND_PTR(table_item->json_table_def_->all_cols_.at(1)->col_name_));
-            DATA_PRINTF(")");
-          }
-          break;
-        }
         case MulModeTableType::OB_UNNEST_TABLE_TYPE : {
           DATA_PRINTF("UNNEST(");
           for (int64_t i = 0; OB_SUCC(ret) && i < table_item->json_table_def_->doc_exprs_.count(); ++i) {
@@ -459,163 +442,10 @@ int ObDMLStmtPrinter::print_values_table(const TableItem &table_item, bool no_pr
 int ObDMLStmtPrinter::print_json_return_type(int64_t value, ObDataType data_type)
 {
   int ret = OB_SUCCESS;
-  if (true) {
+  {
     if (OB_FAIL(print_mysql_json_return_type(value, data_type))) {
       LOG_WARN("fail to print json table column in mysql mode", K(ret));
     }
-  } else {
-    ParseNode parse_node;
-    parse_node.value_ = value;
-
-    int16_t cast_type = parse_node.int16_values_[OB_NODE_CAST_TYPE_IDX];
-    const ObLengthSemantics length_semantics = data_type.get_length_semantics();
-    const ObScale scale = data_type.get_scale();
-    
-    switch (cast_type) {
-      case T_CHAR: {
-        int16_t collation = parse_node.int16_values_[OB_NODE_CAST_COLL_IDX];
-        int32_t len = parse_node.int32_values_[OB_NODE_CAST_C_LEN_IDX];
-        DATA_PRINTF("char(%d %s)", len, get_length_semantics_str(length_semantics));
-        break;
-      }
-      case T_VARCHAR: {
-        int16_t collation = parse_node.int16_values_[OB_NODE_CAST_COLL_IDX];
-        int32_t len = parse_node.int32_values_[OB_NODE_CAST_C_LEN_IDX];
-        const int32_t DEFAULT_VARCHAR_LEN = 4000;
-        if (BINARY_COLLATION == collation) {
-          DATA_PRINTF("varbinary(%d)", len);
-        } else {
-          // CHARACTER
-          if (len == DEFAULT_VARCHAR_LEN) {
-            break;
-          } else if (length_semantics == LS_BYTE && len == -1) { 
-            DATA_PRINTF(" VARCHAR2");
-            break;
-          } else {
-            DATA_PRINTF("varchar2(%d %s)", len, get_length_semantics_str(length_semantics));
-          }
-        }
-        break;
-      }
-      case T_NVARCHAR2: {
-        DATA_PRINTF("nvarchar2(%d)", parse_node.int32_values_[OB_NODE_CAST_C_LEN_IDX]);
-        break;
-      }
-      case T_NCHAR: {
-        DATA_PRINTF("nchar(%d)", parse_node.int32_values_[OB_NODE_CAST_C_LEN_IDX]);
-        break;
-      }
-      case T_DATETIME: {
-        // Print datetime casts with the DATE keyword in this syntax.
-        DATA_PRINTF("date");
-        break;
-      }
-      case T_DATE: {
-        DATA_PRINTF("date");
-        break;
-      }
-      case T_TIME: {
-        int16_t scale = parse_node.int16_values_[OB_NODE_CAST_N_SCALE_IDX];
-        if (scale >= 0) {
-          DATA_PRINTF("time(%d)", scale);
-        } else {
-          DATA_PRINTF("time");
-        }
-        break;
-      }
-      case T_NUMBER: {
-        int16_t precision = parse_node.int16_values_[OB_NODE_CAST_N_PREC_IDX];
-        int16_t scale = parse_node.int16_values_[OB_NODE_CAST_N_SCALE_IDX];
-        DATA_PRINTF("number(%d,%d)", precision, scale);
-        break;
-      }
-      case T_NUMBER_FLOAT: {
-        int16_t precision = parse_node.int16_values_[OB_NODE_CAST_N_PREC_IDX];
-        DATA_PRINTF("float(%d)", precision);
-        break;
-      }
-      case T_TINYINT:
-      case T_SMALLINT:
-      case T_MEDIUMINT:
-      case T_INT32:
-      case T_INT: {
-        DATA_PRINTF("signed");
-        break;
-      }
-      case T_UTINYINT:
-      case T_USMALLINT:
-      case T_UMEDIUMINT:
-      case T_UINT32:
-      case T_UINT64: {
-        DATA_PRINTF("unsigned");
-        break;
-      }
-      case T_TIMESTAMP_TZ: {
-        int16_t scale = parse_node.int16_values_[OB_NODE_CAST_N_SCALE_IDX];
-        if (scale >= 0) {
-          DATA_PRINTF("timestamp(%d) with time zone", scale);
-        } else {
-          DATA_PRINTF("timestamp with time zone");
-        }
-        break;
-      }
-      case T_TIMESTAMP_LTZ: {
-        int16_t scale = parse_node.int16_values_[OB_NODE_CAST_N_SCALE_IDX];
-        if (scale >= 0) {
-          DATA_PRINTF("timestamp(%d) with local time zone", scale);
-        } else {
-          DATA_PRINTF("timestamp with local time zone");
-        }
-        break;
-      }
-      case T_TIMESTAMP_NANO: {
-        int16_t scale = parse_node.int16_values_[OB_NODE_CAST_N_SCALE_IDX];
-        if (scale >= 0) {
-          DATA_PRINTF("timestamp(%d)", scale);
-        } else {
-          DATA_PRINTF("timestamp");
-        }
-        break;
-      }
-      case T_RAW: {
-        int32_t len = parse_node.int32_values_[OB_NODE_CAST_C_LEN_IDX];
-        DATA_PRINTF("raw(%d)", len);
-        break;
-      }
-      case T_FLOAT: {
-        const char *type_str = "float";
-        DATA_PRINTF("%s", type_str);
-        break;
-      }
-      case T_DOUBLE: {
-        const char *type_str = "double";
-        DATA_PRINTF("%s", type_str);
-        break;
-      }
-      case T_JSON: {
-        DATA_PRINTF("json");
-        break;
-      }
-      case T_LONGTEXT: {
-        int16_t collation = parse_node.int16_values_[OB_NODE_CAST_COLL_IDX];
-        if (BINARY_COLLATION == collation) {
-          DATA_PRINTF("blob");
-        } else {
-          DATA_PRINTF("clob");
-        }
-        break;
-      }
-      case T_EXTEND: {
-        ret = OB_ERR_INVALID_CAST_UDT;
-        LOG_WARN("invalid CAST to a type that is not a nested table or VARRAY", K(ret));
-        break;
-      }
-      default: {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unknown cast type", K(ret), K(cast_type));
-        break;
-      }
-    } // end switch
   } // end switch
   return ret;
 }
@@ -1002,10 +832,6 @@ int ObDMLStmtPrinter::print_mysql_json_return_type(int64_t value, ObDataType dat
       }
       break;
     }
-    case T_ROARINGBITMAP: {
-      DATA_PRINTF("roaringbitmap ");
-      break;
-    }
     default: {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("unknown cast type", K(ret), K(cast_type));
@@ -1301,8 +1127,6 @@ int ObDMLStmtPrinter::print_json_table_nested_column(const TableItem *table_item
         } else if (col_info.on_mismatch_type_ == 2) {
           DATA_PRINTF(" (type error)");
         }
-      } else if (col_info.col_type_ == static_cast<int32_t>(COL_TYPE_RB_ITERATE)) {
-        DATA_PRINTF(" RB_ITERATE");
       }
     }    
   }
@@ -1444,7 +1268,7 @@ int ObDMLStmtPrinter::print_base_table(const TableItem *table_item)
         }
       }
 
-      // flashback query
+      // snapshot query
       if (OB_SUCC(ret)) {
         bool explain_non_extend = false;
         if (OB_NOT_NULL(stmt_->get_query_ctx()) &&
@@ -1453,20 +1277,15 @@ int ObDMLStmtPrinter::print_base_table(const TableItem *table_item)
           explain_non_extend = !static_cast<const ObExplainStmt *>
                                 (stmt_->get_query_ctx()->root_stmt_)->is_explain_extended();
         }
-        if (OB_NOT_NULL(table_item->flashback_query_expr_)) {
-          if (table_item->flashback_query_type_ == TableItem::USING_TIMESTAMP) {
-            DATA_PRINTF(" as of timestamp "); 
-            if (OB_FAIL(expr_printer_.do_print(table_item->flashback_query_expr_, T_NONE_SCOPE))) {
-              LOG_WARN("fail to print where expr", K(ret));
-            }
-          } else if (table_item->flashback_query_type_ == TableItem::USING_SCN) {
+        if (OB_NOT_NULL(table_item->snapshot_query_expr_)) {
+          if (table_item->snapshot_query_type_ == TableItem::USING_SCN) {
             DATA_PRINTF(" as of snapshot "); 
-            if (OB_FAIL(expr_printer_.do_print(table_item->flashback_query_expr_, T_NONE_SCOPE))) {
+            if (OB_FAIL(expr_printer_.do_print(table_item->snapshot_query_expr_, T_NONE_SCOPE))) {
               LOG_WARN("fail to print where expr", K(ret));
             }
           } else {
             ret = OB_ERR_UNEXPECTED;
-            LOG_WARN("get unexpected type", K(ret), K(table_item->flashback_query_type_));
+            LOG_WARN("get unexpected type", K(ret), K(table_item->snapshot_query_type_));
           }
         }
       }
@@ -2020,5 +1839,3 @@ bool ObDMLStmtPrinter::need_print_catalog_name(const ObString& catalog_name)
 
 } //end of namespace sql
 } //end of namespace oceanbase
-
-

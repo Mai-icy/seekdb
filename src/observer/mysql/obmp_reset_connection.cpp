@@ -57,9 +57,7 @@ int ObMPResetConnection::process()
     session->update_last_active_time();
     session->set_query_start_time(ObTimeUtility::current_time());
     LOG_TRACE("begin reset connection. ", K(session->get_server_sid()));
-    if (OB_FAIL(process_extra_info(*session, pkt, need_response_error))) {
-      LOG_WARN("fail get process extra info", K(ret));
-    } else if (OB_FAIL(gctx_.schema_service_->get_tenant_schema_guard(schema_guard))) {
+    if (OB_FAIL(gctx_.schema_service_->get_tenant_schema_guard(schema_guard))) {
       OB_LOG(WARN,"fail get schema guard", K(ret));
     } else if (OB_FAIL(schema_guard.get_sys_variable_schema( sys_variable_schema))) {
       LOG_WARN("get sys variable schema failed", K(ret));
@@ -70,8 +68,6 @@ int ObMPResetConnection::process()
       LOG_WARN("load system variables failed", K(ret));
     } else if (OB_FAIL(session->update_database_variables(&schema_guard))) {
       OB_LOG(WARN, "failed to update database variables", K(ret));
-    } else if (OB_FAIL(update_proxy_and_client_sys_vars(*session))) {
-      LOG_WARN("update_proxy_and_client_sys_vars failed", K(ret));
     } else if (OB_FAIL(update_charset_sys_vars(*conn, *session))) {
       LOG_WARN("fail to update charset sys vars", K(ret));
     } else if (OB_FAIL(session->get_query_timeout(query_timeout))) {
@@ -123,7 +119,6 @@ int ObMPResetConnection::process()
       if (OB_UNLIKELY(OB_FAIL(session->drop_temp_tables(false, false, true)))) {
         LOG_WARN("fail to drop temp tables", K(ret));
       }
-      session->refresh_temp_tables_sess_active_time();
     }
 
     // 4. Reinitializes session system variables to the values of the corresponding global system variables
@@ -192,9 +187,9 @@ int ObMPResetConnection::process()
     // 9. Releases locks acquired with GET_LOCK().
     if (OB_SUCC(ret)) {
       ObTableLockOwnerID owner_id;
-      if (OB_FAIL(owner_id.convert_from_client_sessid(session->get_sid(),
-                                                      session->get_client_create_time()))) {
-        LOG_WARN("failed to convert from client sessid", K(ret));
+      if (OB_FAIL(owner_id.convert_from_session_id(session->get_server_sid(),
+                                                   session->get_sess_create_time()))) {
+        LOG_WARN("failed to convert from session id", K(ret));
       } else if (OB_FAIL(ObTableLockDetector::remove_lock_by_owner_id(owner_id))) {
         LOG_WARN("failed to remove lock by owner id", K(ret));
       }
@@ -231,9 +226,7 @@ int ObMPResetConnection::process()
   //send packet to client
   if (OB_SUCC(ret)) {
     ObOKPParam ok_param;
-    //update_last_pkt_pos();
     ok_param.affected_rows_ = 0;
-    ok_param.is_partition_hit_ = session->partition_hit().get_bool();
     ok_param.has_more_result_ = false;
     if (OB_FAIL(send_ok_packet(*session, ok_param))) {
       OB_LOG(WARN, "response ok packet fail", K(ret));

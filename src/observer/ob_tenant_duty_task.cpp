@@ -39,9 +39,9 @@ void ObTenantDutyTask::runTimerTask()
   update_all_tenants();
 }
 
-int ObTenantDutyTask::schedule(int tg_id)
+int ObTenantDutyTask::schedule(common::ObTimer &timer)
 {
-  return TG_SCHEDULE(tg_id, *this, SCHEDULE_PERIOD, true);
+  return timer.schedule(*this, SCHEDULE_PERIOD, true);
 }
 
 void ObTenantDutyTask::update_all_tenants()
@@ -54,56 +54,11 @@ void ObTenantDutyTask::update_all_tenants()
       // shouldn't relay on it.
       ret = OB_SUCCESS;
     }
-    if (OB_FAIL(update_tenant_sql_throttle())) {
-      LOG_WARN("update tenant sql throttle fail", K(ret));
-        // Ignore this error code since successive operations
-      // shouldn't relay on it.
-      ret = OB_SUCCESS;
-    }
     if (OB_FAIL(update_tenant_ctx_memory_throttle())) {
       LOG_WARN("update tenant ctx throttle fail", K(ret));
       ret = OB_SUCCESS;
     }
   }
-}
-
-int ObTenantDutyTask::update_tenant_sql_throttle()
-{
-  int ret = OB_SUCCESS;
-  omt::ObSqlThrottleMetrics metrics;
-  if (OB_SUCC(read_int64(
-                  SYS_VAR_SQL_THROTTLE_PRIORITY, metrics.priority_)) &&
-      OB_SUCC(read_double(
-                  SYS_VAR_SQL_THROTTLE_RT, metrics.rt_)) &&
-      OB_SUCC(read_double(
-                  SYS_VAR_SQL_THROTTLE_CPU, metrics.cpu_)) &&
-      OB_SUCC(read_int64(
-                  SYS_VAR_SQL_THROTTLE_IO, metrics.io_)) &&
-      OB_SUCC(read_int64(
-                  SYS_VAR_SQL_THROTTLE_LOGICAL_READS, metrics.logical_reads_)) &&
-      OB_SUCC(read_double(
-                  SYS_VAR_SQL_THROTTLE_NETWORK, metrics.queue_time_))) {
-    GCTX.omt_->update_tenant([&metrics] (omt::ObTenant &tenant) {
-      tenant.update_sql_throttle_metrics(metrics);
-      if (metrics.priority_ > 0) {
-        LOG_INFO("SQL throttle start", K(metrics));
-      }
-      return OB_SUCCESS;
-    });
-  } else {
-    LOG_WARN("get tenant sql throttle metrics fail", K(ret));
-  }
-  if (OB_SUCC(ret)) {
-    int64_t throughput = -1;
-    if (OB_LIKELY(true)) {
-      throughput = GCONF._ob_query_rate_limit;
-    }
-    GCTX.omt_->update_tenant([&throughput] (omt::ObTenant &tenant) {
-      tenant.update_sql_throughput(throughput);
-      return OB_SUCCESS;
-    });
-  }
-  return ret;
 }
 
 int ObTenantDutyTask::update_tenant_ctx_memory_throttle()
@@ -167,9 +122,9 @@ int ObTenantDutyTask::read_tenant_wa_percentage(int64_t &pctg)
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-int ObTenantSqlMemoryTimerTask::schedule(int tg_id)
+int ObTenantSqlMemoryTimerTask::schedule(common::ObTimer &timer)
 {
-  return TG_SCHEDULE(tg_id, *this, SCHEDULE_PERIOD, true);
+  return timer.schedule(*this, SCHEDULE_PERIOD, true);
 }
 
 void ObTenantSqlMemoryTimerTask::runTimerTask()

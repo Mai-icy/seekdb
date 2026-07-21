@@ -111,7 +111,6 @@ int ObDASLocalLookupIter::init_scan_param(ObTableScanParam &param, const ObDASSc
     LOG_WARN("unexpected nullptr ctdef or rtdef", K(ctdef), K(rtdef));
   } else {
     param.tablet_id_ = lookup_tablet_id_;
-    param.ls_id_ = lookup_ls_id_;
     param.scan_allocator_ = &get_arena_allocator();
     param.allocator_ = &rtdef->stmt_allocator_;
     param.tx_lock_timeout_ = rtdef->tx_lock_timeout_;
@@ -136,7 +135,6 @@ int ObDASLocalLookupIter::init_scan_param(ObTableScanParam &param, const ObDASSc
     param.need_scn_ = rtdef->need_scn_;
     param.pd_storage_flag_ = ctdef->pd_expr_spec_.pd_storage_flag_.pd_flag_;
     param.fb_snapshot_ = rtdef->fb_snapshot_;
-    param.fb_read_tx_uncommitted_ = rtdef->fb_read_tx_uncommitted_;
     if (rtdef->is_for_foreign_check_) {
       param.trans_desc_ = trans_desc_;
     }
@@ -261,11 +259,10 @@ int ObDASLocalLookupIter::do_index_lookup()
     }
   } else {
     // reuse -> real rescan
-    // reuse: store next tablet_id, ls_id and reuse storage iter;
-    // rescan: bind tablet_id, ls_id to scan_param and rescan;
+    // reuse: store the next tablet id and reuse the storage iterator;
+    // rescan: bind the tablet id to scan_param and rescan;
     if (DAS_ITER_FUNC_DATA != data_table_iter_->get_type()) {
       lookup_param_.tablet_id_ = lookup_tablet_id_;
-      lookup_param_.ls_id_ = lookup_ls_id_;
     }
     if (OB_FAIL(data_table_iter_->rescan())) {
       LOG_WARN("failed to rescan data table", K(ret));
@@ -325,7 +322,7 @@ int ObDASLocalLookupIter::check_index_lookup()
             "main table id", lookup_ctdef_->ref_table_id_,
             "main tablet id", lookup_tablet_id_,
             KPC_(trans_desc), KPC_(snapshot));
-        concurrency_control::ObDataValidationService::set_delay_resource_recycle(lookup_ls_id_);
+        concurrency_control::ObDataValidationService::set_delay_resource_recycle();
         const ObTableScanParam &scan_param = scan_iter->get_scan_param();
         if (trans_info_array_.count() == scan_param.key_ranges_.count()) {
           for (int64_t i = 0; i < trans_info_array_.count(); i++) {

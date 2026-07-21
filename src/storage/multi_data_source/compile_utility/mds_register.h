@@ -29,7 +29,6 @@
 // ################################### Use multi-source data compatibility placeholder notes ##################################
 // # Placeholder code needs to be written within the macro definition block [GENERATE_MDS_UNIT], further:
 // # 1. If you want to add tablet level metadata, then add the placeholder information to [GENERATE_NORMAL_MDS_TABLE]
-// # 2. If you want to add log stream level metadata, then add the placeholder information to [GENERATE_LS_INNER_MDS_TABLE]
 // # Placeholder method: Through [definition] placeholder, placeholder requires information: Key type name/Value type name/Multi-version semantic support
 // #
 // # Note:
@@ -57,27 +56,17 @@
   #include "src/storage/ddl/ob_ddl_change_tablet_to_table_helper.h"
   #include "src/storage/multi_data_source/compile_utility/mds_dummy_key.h"
   #include "src/storage/multi_data_source/mds_ctx.h"
-  #include "src/storage/multi_data_source/test/example_user_data_define.h"
-  #include "src/storage/multi_data_source/test/example_user_helper_define.h"
   #include "src/storage/tablet/ob_tablet_create_delete_mds_user_data.h"
   #include "src/storage/tablet/ob_tablet_create_mds_helper.h"
   #include "src/storage/tablet/ob_tablet_delete_mds_helper.h"
   #include "src/storage/tablet/ob_tablet_binding_helper.h"
   #include "src/storage/tablet/ob_tablet_binding_mds_user_data.h"
-  #include "src/storage/tablet/ob_tablet_split_mds_helper.h"
-  #include "src/storage/tablet/ob_tablet_split_mds_user_data.h"
   #include "src/storage/tablet/ob_tablet_fork_mds_helper.h"
   #include "src/share/ob_tablet_autoincrement_param.h"
   #include "src/storage/compaction/ob_medium_compaction_info.h"
-  #include "src/storage/tablet/ob_tablet_transfer_tx_ctx.h"
   #include "src/storage/multi_data_source/ob_tablet_create_mds_ctx.h"
-  #include "src/share/ob_standby_upgrade.h"
-  #include "src/storage/multi_data_source/ob_tablet_create_mds_ctx.h"
-  #include "src/share/ob_standby_upgrade.h"
-  #include "src/storage/mview/ob_major_mv_merge_info.h"
   #include "src/storage/truncate_info/ob_truncate_info.h"
   #include "src/storage/truncate_info/ob_truncate_info_mds_helper.h"
-  #include "src/storage/mview/ob_mview_mds.h"
   #include "src/storage/tablet/ob_tablet_ddl_complete_mds_helper.h"
   #include "src/storage/tablet/ob_tablet_ddl_complete_mds_data.h"
 #endif
@@ -86,7 +75,7 @@
 /**********************generate mds frame code with multi source transaction***********************/
 // GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(HELPER_CLASS, BUFFER_CTX_TYPE, ID, ENUM_NAME) is an
 // interface MACRO to transfer necessary information to MDS FRAME to generate codes in transaction
-// layer, mostly in ob_multi_data_source.cpp and ob_trans_part_ctx.cpp.
+// layer, mostly in ob_multi_data_source.cpp and ob_tx_ctx.cpp.
 //
 // @param HELPER_CLASS the class must has two static method signatures(or COMPILE ERROR):
 //                     1. static int on_register(const char* buf,
@@ -104,18 +93,6 @@
 #define GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(HELPER_CLASS, BUFFER_CTX_TYPE, ID, ENUM_NAME) \
 _GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION_(HELPER_CLASS, BUFFER_CTX_TYPE, ID, ENUM_NAME)
 #ifdef NEED_GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::unittest::ExampleUserHelperFunction1,\
-                                          ::oceanbase::storage::mds::MdsCtx,\
-                                          14,\
-                                          TEST1)
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::unittest::ExampleUserHelperFunction2,\
-                                          ::oceanbase::storage::mds::MdsCtx,\
-                                          15,\
-                                          TEST2)
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::unittest::ExampleUserHelperFunction3,\
-                                          ::oceanbase::unittest::ExampleUserHelperCtx,\
-                                          16,\
-                                          TEST3)
   GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObTabletCreateMdsHelper,\
                                           ::oceanbase::storage::mds::ObTabletCreateMdsCtx,\
                                           3,\
@@ -136,42 +113,14 @@ _GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION_(HELPER_CLASS, BUFFER_CTX_TYPE, ID, ENU
                                           ::oceanbase::storage::mds::MdsCtx,\
                                           30,\
                                           CHANGE_TABLET_TO_TABLE_MDS)
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObTabletSplitMdsHelper,\
-                                           ::oceanbase::storage::mds::MdsCtx,\
-                                           31,\
-                                           TABLET_SPLIT)
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::share::ObUpgradeDataVersionMDSHelper, \
-                                          ::oceanbase::storage::mds::MdsCtx, \
-                                          33,\
-                                          STANDBY_UPGRADE_DATA_VERSION)
   GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObTabletBindingMdsHelper,\
                                           ::oceanbase::storage::mds::MdsCtx,\
                                           34,\
                                           TABLET_BINDING)
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObMVPublishSCNHelper,\
-                                          ::oceanbase::storage::ObUnUseCtx, \
-                                          35,\
-                                          MV_PUBLISH_SCN)
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObMVNoticeSafeHelper,\
-                                          ::oceanbase::storage::ObUnUseCtx, \
-                                          36,\
-                                          MV_NOTICE_SAFE)
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObMVUpdateSCNHelper,\
-                                          ::oceanbase::storage::ObUnUseCtx, \
-                                          37,\
-                                          MV_UPDATE_SCN)
   GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObTruncateInfoMdsHelper,\
                                           ::oceanbase::storage::mds::MdsCtx, \
                                           38,\
                                           SYNC_TRUNCATE_INFO)
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObMVMergeSCNHelper,\
-                                          ::oceanbase::storage::ObUnUseCtx, \
-                                          39,\
-                                          MV_MERGE_SCN)
-  GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObMViewMdsOpHelper,\
-                                          ::oceanbase::storage::ObMViewMdsOpCtx, \
-                                          40,\
-                                          MVIEW_MDS_OP)
   GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION(::oceanbase::storage::ObTabletDDLCompleteMdsHelper,\
                                           ::oceanbase::storage::mds::MdsCtx,\
                                           41,\
@@ -198,9 +147,7 @@ _GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION_(HELPER_CLASS, BUFFER_CTX_TYPE, ID, ENU
 // interface MACRO to transfer necessary information to MDS FRAME to generate codes on MdsTable.
 // 1. There are some requirements about class type KEY_TYPE and VALUE_TYPE, if your type is not
 //    satisfied with below requirments, COMPILE ERROR will occured.
-// 2. If you want store your data on normal tablet, write register macro in
-//    GENERATE_NORMAL_MDS_TABLE block, if you want store your data on LS INNER tablet, write
-//    register macro in GENERATE_LS_INNER_MDS_TABLE block.
+// 2. Register tablet metadata in the GENERATE_NORMAL_MDS_TABLE block.
 //
 // @param KEY_TYPE if you do not need multi row specfied by key, use DummyKey, otherwise, your Key
 //                 type must support:
@@ -227,22 +174,6 @@ _GENERATE_MDS_FRAME_CODE_FOR_TRANSACTION_(HELPER_CLASS, BUFFER_CTX_TYPE, ID, ENU
 //                           or just remain uncommitted and the last committed data.
 #define GENERATE_MDS_UNIT(KEY_TYPE, VALUE_TYPE, NEED_MULTI_VERSION) \
 _GENERATE_MDS_UNIT_(KEY_TYPE, VALUE_TYPE, NEED_MULTI_VERSION)
-#ifdef GENERATE_TEST_MDS_TABLE
-  GENERATE_MDS_UNIT(::oceanbase::storage::mds::DummyKey,\
-                    ::oceanbase::unittest::ExampleUserData1,\
-                    true) // no need multi row, need multi version
-                          // (complicated data with rvalue optimized)
-  GENERATE_MDS_UNIT(::oceanbase::storage::mds::DummyKey,\
-                    ::oceanbase::unittest::ExampleUserData2,\
-                    true) // no need multi row, need multi version(simple data)
-  GENERATE_MDS_UNIT(::oceanbase::unittest::ExampleUserKey,\
-                    ::oceanbase::unittest::ExampleUserData1,\
-                    false)// need multi row, no need multi version
-  GENERATE_MDS_UNIT(::oceanbase::unittest::ExampleUserKey,\
-                    ::oceanbase::unittest::ExampleUserData2,\
-                    true)// need multi row & need multi version
-#endif
-
 #ifdef GENERATE_NORMAL_MDS_TABLE
   GENERATE_MDS_UNIT(::oceanbase::storage::mds::DummyKey,\
                     ::oceanbase::storage::ObTabletCreateDeleteMdsUserData,\
@@ -256,9 +187,6 @@ _GENERATE_MDS_UNIT_(KEY_TYPE, VALUE_TYPE, NEED_MULTI_VERSION)
   GENERATE_MDS_UNIT(::oceanbase::compaction::ObMediumCompactionInfoKey,\
                     ::oceanbase::compaction::ObMediumCompactionInfo,\
                     false)
-  GENERATE_MDS_UNIT(::oceanbase::storage::mds::DummyKey,\
-                    ::oceanbase::storage::ObTabletSplitMdsUserData,\
-                    false)
   GENERATE_MDS_UNIT(::oceanbase::storage::ObTruncateInfoKey,\
                     ::oceanbase::storage::ObTruncateInfo,\
                     false)
@@ -268,10 +196,4 @@ _GENERATE_MDS_UNIT_(KEY_TYPE, VALUE_TYPE, NEED_MULTI_VERSION)
   // # reserved position (this line is for placeholder)
 #endif
 
-#ifdef GENERATE_LS_INNER_MDS_TABLE
-  GENERATE_MDS_UNIT(::oceanbase::storage::mds::DummyKey,\
-                    ::oceanbase::unittest::ExampleUserData1,\
-                    true) // replace this line if you are the first user to register LS INNER TABLET
-  // # reserved position (this line is for placeholder)
-#endif
 /**************************************************************************************************/

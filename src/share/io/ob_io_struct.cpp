@@ -18,7 +18,6 @@
 
 #include "ob_io_struct.h"
 #include "share/ob_server_struct.h"  // GCTX, previously hidden behind a transitive include(free within share)
-#include "share/ob_thread_mgr.h"  // TG framework, previously hidden behind a transitive include(free within share)
 #include "share/rc/ob_tenant_base.h"  // MTL_ID, previously hidden behind a transitive include(free within share)
 #include "share/ob_io_device_helper.h"
 #include "lib/restore/ob_fd_simulator.h"
@@ -336,68 +335,6 @@ void ObIOStatDiff::diff(const ObIOStat &io_stat, double &avg_iops, double &avg_b
   }
   last_stat_ = new_stat;
   last_ts_ = new_ts;
-}
-
-
-/******************        Function Group Usage      **********************/
-ObIOFuncUsages::ObIOFuncUsages()
-{
-}
-
-int ObIOFuncUsages::init()
-{
-  int ret = OB_SUCCESS;
-  int FUNC_NUM = static_cast<uint8_t>(share::ObFunctionType::MAX_FUNCTION_NUM);
-  int GROUP_MODE_NUM = static_cast<uint8_t>(ObIOGroupMode::MODECNT);
-  func_usages_.set_attr(ObMemAttr("IOFuncUsages"));
-  for (int i = 0; i < FUNC_NUM && OB_SUCC(ret); ++i) {
-    ObIOFuncUsage func_usage;
-    if (OB_FAIL(func_usage.reserve(GROUP_MODE_NUM))) {
-      LOG_WARN("reserve func usage failed", K(ret), K(i));
-    } else {
-      for (int j = 0; j < GROUP_MODE_NUM && OB_SUCC(ret); ++j) {
-        if (OB_FAIL(func_usage.push_back(ObIOFuncUsageByMode()))) {
-          LOG_WARN("func usage push failed", K(ret), K(j));
-        }
-      }
-      if (OB_FAIL(ret)) {
-      } else if (OB_FAIL(func_usages_.push_back(func_usage))) {
-        LOG_WARN("push func usage failed", K(ret), K(i));
-      }
-    }
-  }
-  return ret;
-}
-int ObIOFuncUsages::accumulate(ObIORequest &req) {
-  int ret = OB_SUCCESS;
-  int64_t io_size = 0;
-  int64_t prepare_delay = 0;
-  int64_t schedule_delay = 0;
-  int64_t submit_delay = 0;
-  int64_t device_delay = 0;
-  int64_t total_delay = 0;
-  uint64_t idx = 0;
-  ObIOGroupMode mode = ObIOGroupMode::MODECNT;
-  if (OB_ISNULL(req.io_result_)){
-    ret = OB_INVALID_ARGUMENT;
-    LOG_ERROR("invalid io result", K(req));
-  } else if (OB_FAIL(req.io_result_->cal_delay_us(
-                 prepare_delay, schedule_delay, submit_delay, device_delay, total_delay))) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_INFO("failed to cal delay", K(ret));
-  } else {
-    io_size = req.get_align_size();
-    idx = static_cast<uint8_t>(req.get_flag().get_func_type());
-    mode = req.get_group_mode();
-    if (idx < 0 || idx >= func_usages_.count()) {
-      LOG_ERROR("invalid io usage index", K(idx), K(func_usages_.count()));
-    } else if (mode == ObIOGroupMode::MODECNT) {
-      LOG_ERROR("invalid io usage mode", K(idx), K(mode), K(func_usages_.count()));
-    } else {
-      func_usages_.at(idx).at(static_cast<uint8_t>(mode)).inc(io_size, prepare_delay, schedule_delay, submit_delay, device_delay, total_delay);
-    }
-  }
-  return ret;
 }
 
 
@@ -725,7 +662,7 @@ int ObIOMemStats::dec(const ObIORequest &req)
 
 /******************             IOTuner              **********************/
 ObIOTuner::ObIOTuner()
-  : is_inited_(false), cpu_usage_()
+  : lib::Threads(1), is_inited_(false), cpu_usage_()
 {
 
 }
@@ -741,7 +678,9 @@ int ObIOTuner::init()
   if (OB_UNLIKELY(is_inited_)) {
     ret = OB_INIT_TWICE;
     LOG_WARN("init twice", K(ret));
-  } else if (OB_FAIL(TG_SET_RUNNABLE_AND_START(lib::TGDefIDs::IO_TUNING, *this))) {
+  } else if (OB_FAIL(lib::Threads::init())) {
+    LOG_WARN("init io tuner thread failed", K(ret));
+  } else if (OB_FAIL(lib::Threads::start())) {
     LOG_WARN("start io scheduler failed", K(ret));
   } else {
     is_inited_ = true;
@@ -756,19 +695,26 @@ int ObIOTuner::init()
 
 void ObIOTuner::stop()
 {
-  TG_STOP(lib::TGDefIDs::IO_TUNING);
+  if (is_inited_) {
+    lib::Threads::stop();
+  }
 }
 
 void ObIOTuner::wait()
 {
-  TG_WAIT(lib::TGDefIDs::IO_TUNING);
+  if (is_inited_) {
+    lib::Threads::wait();
+  }
 }
 
 void ObIOTuner::destroy()
 {
-  stop();
-  wait();
-  is_inited_ = false;
+  if (is_inited_) {
+    stop();
+    wait();
+    lib::Threads::destroy();
+    is_inited_ = false;
+  }
 }
 
 void ObIOTuner::run1()
@@ -846,8 +792,10 @@ int ObIOChannel::base_init(ObDeviceChannel *device_channel)
 
 /******************             AsyncIOChannel              **********************/
 ObAsyncIOChannel::ObAsyncIOChannel()
-  : is_inited_(false),
-    tg_id_(-1),
+  : ObIOChannel(),
+    lib::Threads(1),
+    is_inited_(false),
+    thread_inited_(false),
     io_context_(nullptr),
     io_events_(nullptr),
     polling_timeout_({0, 0}),
@@ -933,15 +881,15 @@ int ObAsyncIOChannel::start()
 
 void ObAsyncIOChannel::stop()
 {
-  if (tg_id_ >= 0) {
-    TG_STOP(tg_id_);
+  if (thread_inited_) {
+    lib::Threads::stop();
   }
 }
 
 void ObAsyncIOChannel::wait()
 {
-  if (tg_id_ >= 0) {
-    TG_WAIT(tg_id_);
+  if (thread_inited_) {
+    lib::Threads::wait();
   }
 }
 
@@ -985,11 +933,11 @@ void ObAsyncIOChannel::run1()
     ObDIActionGuard program("IOManager", nullptr, nullptr);
     ObDIActionGuard module(ObDIActionGuard::NS_MODULE, "AsyncIO_Device:%s", device_name);
     set_thread_name("IO_GETEVENT", thread_id);
-    LOG_INFO("io get_events thread started", K(thread_id), K(tg_id_));
+    LOG_INFO("io get_events thread started", K(thread_id));
     while (!has_set_stop()) {
       get_events();
     }
-    LOG_INFO("io get_events thread stopped", K(thread_id), K(tg_id_));
+    LOG_INFO("io get_events thread stopped", K(thread_id));
   }
 }
 
@@ -1153,21 +1101,26 @@ void ObAsyncIOChannel::get_events()
 int ObAsyncIOChannel::start_thread()
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL(TG_CREATE(lib::TGDefIDs::IO_CHANNEL, tg_id_))) {
-    LOG_WARN("create thread group id failed", K(ret));
-  } else if (OB_FAIL(TG_SET_RUNNABLE_AND_START(tg_id_, *this))) {
-    LOG_WARN("start channel thread failed", K(ret), K(tg_id_));
+  if (thread_inited_) {
+    destroy_thread();
+  }
+  if (OB_FAIL(lib::Threads::init())) {
+    LOG_WARN("init channel thread failed", K(ret));
+  } else if (OB_FAIL(lib::Threads::start())) {
+    LOG_WARN("start channel thread failed", K(ret));
+  } else {
+    thread_inited_ = true;
   }
   return ret;
 }
 
 void ObAsyncIOChannel::destroy_thread()
 {
-  if (tg_id_ >= 0) {
-    TG_STOP(tg_id_);
-    TG_WAIT(tg_id_);
-    TG_DESTROY(tg_id_);
-    tg_id_ = -1;
+  if (thread_inited_) {
+    lib::Threads::stop();
+    lib::Threads::wait();
+    lib::Threads::destroy();
+    thread_inited_ = false;
   }
 }
 
@@ -1979,7 +1932,8 @@ const char *oceanbase::common::device_health_status_to_str(const ObDeviceHealthS
 /******************             IOFaultDetector              **********************/
 
 ObIOFaultDetector::ObIOFaultDetector(const ObIOConfig &io_config)
-  : is_inited_(false),
+  : common::ObSimpleThreadPool(),
+    is_inited_(false),
     lock_(ObLatchIds::IO_FAULT_DETECTOR_LOCK),
     io_config_(io_config),
     is_device_warning_(false),
@@ -1996,13 +1950,22 @@ ObIOFaultDetector::~ObIOFaultDetector()
 int ObIOFaultDetector::init()
 {
   int ret = OB_SUCCESS;
+  bool thread_pool_inited = false;
   if (OB_UNLIKELY(is_inited_)) {
     ret = OB_INIT_TWICE;
     LOG_WARN("io fault detector init twice", K(ret), K(!is_inited_));
+  } else if (OB_FAIL(common::ObSimpleThreadPool::init(1, IO_HEALTH_QUEUE_DEPTH, "IO_HEALTH"))) {
+    LOG_WARN("init io health thread pool failed", K(ret));
+  } else if (FALSE_IT(thread_pool_inited = true)) {
+  } else if (OB_FAIL(common::ObSimpleThreadPool::set_adaptive_thread(1, 1))) {
+    LOG_WARN("set io health thread pool failed", K(ret));
   } else {
     is_inited_ = true;
   }
   if (OB_UNLIKELY(!is_inited_)) {
+    if (thread_pool_inited) {
+      common::ObSimpleThreadPool::destroy();
+    }
     destroy();
   }
   return ret;
@@ -2010,11 +1973,14 @@ int ObIOFaultDetector::init()
 
 void ObIOFaultDetector::destroy()
 {
-  TG_STOP(TGDefIDs::IO_HEALTH);
-  TG_WAIT(TGDefIDs::IO_HEALTH);
-  is_device_warning_ = false;
-  last_device_warning_ts_ = 0;
-  is_inited_ = false;
+  if (is_inited_) {
+    common::ObSimpleThreadPool::stop();
+    common::ObSimpleThreadPool::wait();
+    common::ObSimpleThreadPool::destroy();
+    is_device_warning_ = false;
+    last_device_warning_ts_ = 0;
+    is_inited_ = false;
+  }
 }
 
 int ObIOFaultDetector::start()
@@ -2023,7 +1989,9 @@ int ObIOFaultDetector::start()
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     LOG_WARN("io fault detector not init", K(ret), KP(is_inited_));
-  } else if (OB_FAIL(TG_SET_HANDLER_AND_START(TGDefIDs::IO_HEALTH, *this))) {
+  } else if (common::ObSimpleThreadPool::get_thread_count() <= 0
+      && !common::ObSimpleThreadPool::try_expand_one(1)) {
+    ret = OB_ERR_UNEXPECTED;
     LOG_WARN("start thread pool failed", K(ret));
   }
   return ret;
@@ -2156,7 +2124,7 @@ int ObIOFaultDetector::record_timing_task(const int64_t first_id, const int64_t 
     retry_task->io_info_.offset_ = 0;
     retry_task->io_info_.callback_ = nullptr;
     retry_task->timeout_ms_ = io_config_.data_storage_warning_tolerance_time_; // default 5s
-    if (OB_FAIL(TG_PUSH_TASK(TGDefIDs::IO_HEALTH, retry_task))) {
+    if (OB_FAIL(common::ObSimpleThreadPool::push(retry_task))) {
       LOG_WARN("io fault detector push task failed", K(ret), KP(retry_task));
     }
     if (OB_FAIL(ret)) {
@@ -2210,7 +2178,7 @@ void ObIOFaultDetector::record_io_timeout(const ObIOResult &result, const ObIORe
       LOG_WARN("fail to set detect task fd", KR(ret), K(result), K(req));
     } else {
       retry_task->timeout_ms_ = io_config_.data_storage_warning_tolerance_time_; // default 5s
-      if (OB_FAIL(TG_PUSH_TASK(TGDefIDs::IO_HEALTH, retry_task))) {
+      if (OB_FAIL(common::ObSimpleThreadPool::push(retry_task))) {
         LOG_WARN("io fault detector push task failed", K(ret), KPC(retry_task));
       }
       if (OB_FAIL(ret)) {
@@ -2261,7 +2229,7 @@ int ObIOFaultDetector::record_read_failure_(const ObIOResult &result, const ObIO
     LOG_WARN("fail to set detect task fd", KR(ret), K(result), K(req));
   } else {
     retry_task->timeout_ms_ = 5000L; // 5s
-    if (OB_FAIL(TG_PUSH_TASK(TGDefIDs::IO_HEALTH, retry_task))) {
+    if (OB_FAIL(common::ObSimpleThreadPool::push(retry_task))) {
       LOG_WARN("io fault detector push task failed", K(ret), KPC(retry_task));
     } else {
       LOG_INFO("io fault detector push task", KPC(retry_task));

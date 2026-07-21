@@ -30,7 +30,6 @@
 #include "sql/engine/aggregate/ob_adaptive_bypass_ctrl.h"
 #include "sql/optimizer/ob_dynamic_sampling.h"
 #include "share/config/ob_config_helper.h"
-#include "sql/optimizer/ob_direct_load_optimizer_ctx.h"
 
 
 namespace oceanbase
@@ -50,13 +49,6 @@ enum class ObEstCorrelationType
   INDEPENDENT,
   PARTIAL,
   FULL,
-  MAX
-};
-
-enum class ObTableAccessPolicy {
-  ROW_STORE,
-  COLUMN_STORE,
-  AUTO,
   MAX
 };
 
@@ -297,9 +289,7 @@ ObOptimizerContext(ObSQLSessionInfo *session_info,
     is_skip_scan_enabled_(false),
     enable_better_inlist_costing_(false),
     correlation_type_(ObEstCorrelationType::MAX),
-    use_column_store_replica_(false),
     push_join_pred_into_view_enabled_(true),
-    table_access_policy_(ObTableAccessPolicy::AUTO),
     partition_wise_plan_enabled_(true),
     enable_px_ordered_coord_(false),
     enable_opt_row_goal_(ObEnableOptRowGoal::MAX),
@@ -368,8 +358,6 @@ ObOptimizerContext(ObSQLSessionInfo *session_info,
   {
     return params_;
   }
-  inline const ObDirectLoadOptimizerCtx &get_direct_load_optimizer_ctx() const { return direct_load_optimizer_ctx_; }
-  inline ObDirectLoadOptimizerCtx &get_direct_load_optimizer_ctx() { return direct_load_optimizer_ctx_; }
   inline const ObGlobalHint &get_global_hint() const { return global_hint_; }
   inline ObRawExprFactory &get_expr_factory() { return expr_factory_; }
   inline ObLogPlanFactory &get_log_plan_factory() { return log_plan_factory_; }
@@ -483,7 +471,6 @@ ObOptimizerContext(ObSQLSessionInfo *session_info,
   // 2. corresponding batch rescan configuration must be enabled
   void init_batch_rescan_flags(const bool enable_batch_nlj,
                                const bool enable_batch_spf,
-                               const uint64_t opt_version,
                                const int64_t batch_rescan_flag)
   {
     enable_nlj_batch_rescan_ = enable_batch_nlj;
@@ -772,15 +759,11 @@ ObOptimizerContext(ObSQLSessionInfo *session_info,
   inline void set_is_skip_scan_enabled(bool v) { is_skip_scan_enabled_ = v; }
   inline bool get_enable_better_inlist_costing() const { return enable_better_inlist_costing_; }
   inline void set_enable_better_inlist_costing(bool v) { enable_better_inlist_costing_ = v; }
-  inline bool use_column_store_replica() const { return use_column_store_replica_; }
-  inline void set_use_column_store_replica(bool use) { use_column_store_replica_ = use; }
 
   inline void set_correlation_type(ObEstCorrelationType type) { correlation_type_ = type; }
   inline ObEstCorrelationType get_correlation_type() const { return correlation_type_; }
   inline bool is_push_join_pred_into_view_enabled() const { return push_join_pred_into_view_enabled_; }
   inline void set_push_join_pred_into_view_enabled(bool enabled) { push_join_pred_into_view_enabled_ = enabled; }
-  inline void set_table_access_policy(ObTableAccessPolicy policy) { table_access_policy_ = policy; }
-  inline ObTableAccessPolicy get_table_acces_policy() const { return table_access_policy_; }
   inline void set_enable_opt_row_goal(int64_t type) { enable_opt_row_goal_ = static_cast<ObEnableOptRowGoal>(type); }
   inline ObEnableOptRowGoal get_enable_opt_row_goal() const { return enable_opt_row_goal_; }
   inline ObPxNodePolicy get_px_node_policy() const { return px_node_policy_; }
@@ -804,7 +787,6 @@ private:
   common::ObSEArray<ObTablePartitionInfo *, 1, common::ModulePageAllocator, true> table_partition_infos_;
   common::ObAddr server_;
   const ParamStore *params_;
-  ObDirectLoadOptimizerCtx direct_load_optimizer_ctx_; // for direct load
   const ObGlobalHint &global_hint_;
   ObRawExprFactory &expr_factory_;
   ObLogPlanFactory log_plan_factory_;
@@ -905,9 +887,7 @@ private:
   bool is_skip_scan_enabled_;
   bool enable_better_inlist_costing_;
   ObEstCorrelationType correlation_type_;
-  bool use_column_store_replica_;
   bool push_join_pred_into_view_enabled_;
-  ObTableAccessPolicy table_access_policy_;
   bool partition_wise_plan_enabled_;
   bool enable_px_ordered_coord_;
   ObEnableOptRowGoal enable_opt_row_goal_;

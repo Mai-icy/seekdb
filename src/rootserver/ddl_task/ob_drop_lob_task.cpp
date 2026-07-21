@@ -46,7 +46,6 @@ int ObDropLobTask::init(
     const uint64_t data_table_id,
     const int64_t schema_version,
     const int64_t parent_task_id,
-    const int64_t consumer_group_id,
     const obcall::ObDDLArg &ddl_arg)
 {
   int ret = OB_SUCCESS;
@@ -68,12 +67,10 @@ int ObDropLobTask::init(
     schema_version_ = schema_version;
     task_id_ = task_id;
     parent_task_id_ = parent_task_id;
-    consumer_group_id_ = consumer_group_id;
     task_version_ = OB_DROP_LOB_TASK_VERSION;
     
     dst_schema_version_ = schema_version_;
     is_inited_ = true;
-    ddl_tracing_.open();
   }
   return ret;
 }
@@ -109,8 +106,6 @@ int ObDropLobTask::init(
     if (OB_FAIL(ret)) {
     } else {
       is_inited_ = true;
-      // set up span during recover task
-      ddl_tracing_.open_for_recovery();
     }
   }
   return ret;
@@ -238,7 +233,6 @@ int ObDropLobTask::process()
   } else if (OB_FAIL(check_switch_succ_())) {
     LOG_WARN("check need retry failed", KR(ret));
   } else {
-    ddl_tracing_.restore_span_hierarchy();
     const ObDDLTaskStatus status = static_cast<ObDDLTaskStatus>(task_status_);
     switch (status) {
       case ObDDLTaskStatus::PREPARE:
@@ -270,7 +264,6 @@ int ObDropLobTask::process()
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("error unexpected, task status is not valid", KR(ret), K(task_status_));
     }
-    ddl_tracing_.release_span_hierarchy();
   }
   return ret;
 }

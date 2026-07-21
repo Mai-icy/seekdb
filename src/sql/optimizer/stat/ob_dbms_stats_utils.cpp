@@ -230,7 +230,6 @@ int ObDbmsStatsUtils::check_is_stat_table(share::schema::ObSchemaGetterGuard &sc
     //do nothing
   } else {//check user table
     is_valid = table_schema->is_user_table()
-               || table_schema->is_mlog_table()
                || (need_index_table && table_schema->is_index_table());
   }
   return ret;
@@ -302,7 +301,8 @@ bool ObDbmsStatsUtils::is_no_stat_virtual_table(const int64_t table_id)
 
 bool ObDbmsStatsUtils::is_virtual_index_table(const int64_t table_id)
 {
-  return table_id == share::OB_ALL_VIRTUAL_SQL_PLAN_MONITOR_ALL_VIRTUAL_SQL_PLAN_MONITOR_I1_TID;
+  UNUSED(table_id);
+  return false;
 }
 
 int ObDbmsStatsUtils::parse_granularity(const ObString &granularity, ObGranularityType &granu_type)
@@ -1120,10 +1120,8 @@ int ObDbmsStatsUtils::remove_stat_gather_param_partition_info(int64_t reserved_p
 int ObDbmsStatsUtils::prepare_gather_stat_param(const ObTableStatParam &param,
                                                 StatLevel stat_level,
                                                 const PartitionIdBlockMap *partition_id_block_map,
-                                                const PartitionIdSkipRateMap *partition_id_skip_rate_map,
                                                 bool is_split_gather,
                                                 int64_t gather_vectorize,
-                                                bool use_column_store,
                                                 ObOptStatGatherParam &gather_param)
 {
   int ret = OB_SUCCESS;
@@ -1149,7 +1147,6 @@ int ObDbmsStatsUtils::prepare_gather_stat_param(const ObTableStatParam &param,
   gather_param.max_duration_time_ = param.duration_time_;
   gather_param.allocator_ = param.allocator_;
   gather_param.partition_id_block_map_ = partition_id_block_map;
-  gather_param.partition_id_skip_rate_map_ = partition_id_skip_rate_map;
   gather_param.gather_start_time_ = ObTimeUtility::current_time();
   gather_param.stattype_ = param.stattype_;
   gather_param.is_split_gather_ = is_split_gather;
@@ -1157,7 +1154,6 @@ int ObDbmsStatsUtils::prepare_gather_stat_param(const ObTableStatParam &param,
   gather_param.data_table_name_ = param.data_table_name_;
   gather_param.global_part_id_ = param.global_part_id_;
   gather_param.gather_vectorize_ = gather_vectorize;
-  gather_param.use_column_store_ = use_column_store;
   gather_param.is_async_gather_ = param.is_async_gather_;
   gather_param.async_full_table_size_ = param.async_full_table_size_;
   gather_param.hist_sample_info_.is_sample_ = param.hist_sample_info_.is_sample_;
@@ -1170,7 +1166,6 @@ int ObDbmsStatsUtils::prepare_gather_stat_param(const ObTableStatParam &param,
   gather_param.is_global_index_ = param.is_global_index_;
   gather_param.data_table_id_ = param.data_table_id_;
   gather_param.part_level_ = param.part_level_;
-  gather_param.consumer_group_id_ = param.consumer_group_id_;
   ret = gather_param.column_group_params_.assign(param.column_group_params_);
   if (OB_SUCC(ret)) {
     ret = gather_param.all_column_params_.assign(param.column_params_);
@@ -1358,12 +1353,9 @@ int ObDbmsStatsUtils::check_all_cols_range_skew(const ObIArray<ObColumnStatParam
 int ObDbmsStatsUtils::implicit_commit_before_gather_stats(sql::ObExecContext &ctx)
 {
   int ret = OB_SUCCESS;
-  uint64_t optimizer_features_enable_version = 0;
   if (OB_ISNULL(ctx.get_my_session())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(ret), K(ctx.get_my_session()));
-  } else if (OB_FAIL(ctx.get_my_session()->get_optimizer_features_enable_version(optimizer_features_enable_version))) {
-    LOG_WARN("failed to get_optimizer_features_enable_version", K(ret));
   } else if (OB_FAIL(ObResultSet::implicit_commit_before_cmd_execute(*ctx.get_my_session(), ctx, stmt::T_ANALYZE))) {
     LOG_WARN("failed to implicit commit before cmd execute", K(ret));
   } else {/*do nothing*/}
@@ -1481,7 +1473,7 @@ int ObDbmsStatsUtils::check_can_async_gather_stats(sql::ObExecContext &ctx)
     
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(ctx.get_sql_proxy());
+      auto &sql_client_retry_weak = *ctx.get_sql_proxy();
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -1745,7 +1737,7 @@ int ObDbmsStatsUtils::fetch_need_cancel_async_gather_stats_task(ObIAllocator &al
     
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(ctx.get_sql_proxy());
+      auto &sql_client_retry_weak = *ctx.get_sql_proxy();
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -2003,7 +1995,6 @@ int ObDbmsStatsUtils::get_table_index_infos(share::schema::ObSchemaGetterGuard *
   } else if (OB_FAIL(schema_guard->get_can_read_index_array(table_id,
                                                             index_tid_arr,
                                                             index_count,
-                                                            false, /*with_mv*/
                                                             true, /*with_global_index*/
                                                             false /*domain index*/))) {
     LOG_WARN("failed to get can read index", K(ret));

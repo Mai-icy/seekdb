@@ -35,14 +35,9 @@
 #include "share/rc/ob_context.h"
 #include "observer/omt/ob_th_worker.h"
 #include "ob_retry_queue.h"
-#include "lib/utility/ob_query_rate_limiter.h"
-#include "share/resource_manager/ob_cgroup_ctrl.h"
 #include "observer/omt/ob_tenant_meta.h"
 #include "lib/thread/ob_adaptive_worker_pool.h"
 #include "lib/lock/ob_tc_rwlock.h"      // TCRWLock
-
-struct lua_State;
-int select_dump_tenant_info(lua_State*);
 
 namespace oceanbase
 {
@@ -165,36 +160,6 @@ private:
   common::hash::ObHashMap<int64_t, ObPxPool *> pool_map_;
 };
 
-struct ObSqlThrottleMetrics
-{
-  int64_t priority_;
-  double rt_;
-  double cpu_;
-  int64_t io_;
-  double network_;
-  int64_t logical_reads_;
-  double queue_time_;
-
-  ObSqlThrottleMetrics()
-      : priority_(-1),
-        rt_(-1),
-        cpu_(-1),
-        io_(-1),
-        network_(-1),
-        logical_reads_(-1),
-        queue_time_(-1)
-  {}
-
-  TO_STRING_KV(
-    K_(priority),
-    K_(rt),
-    K_(cpu),
-    K_(io),
-    K_(network),
-    K_(logical_reads),
-    K_(queue_time));
-};
-
 // Forward declarations
 class ObThWorker;
 
@@ -209,7 +174,6 @@ class ObTenant : public share::ObTenantBase,
                  public lib::ObAdaptiveWorkerPool<ObTenant>
 {
   friend class observer::ObAllVirtualDumpTenantInfo;
-  friend int ::select_dump_tenant_info(lua_State*);
   friend int create_worker(ObThWorker* &worker, ObTenant *tenant);
   friend int destroy_worker(ObThWorker *worker);
   friend class ObThWorker;
@@ -220,8 +184,7 @@ public:
   static constexpr int64_t KEEP_ALIVE_TIMEOUT = 10 * 1000 * 1000L;  // 10s
 
   ObTenant(const int64_t epoch,
-           const int64_t times_of_workers,
-           share::ObCgroupCtrl &cgroup_ctrl);
+           const int64_t times_of_workers);
   virtual ~ObTenant();
 
   ObTenant(const ObTenant &) = delete;
@@ -259,7 +222,6 @@ public:
   void inc_ddl_thread_count() { ATOMIC_INC(&total_ddl_thread_cnt_); };
   void dec_ddl_thread_count() { ATOMIC_DEC(&total_ddl_thread_cnt_); };
   bool check_ddl_thread_is_limit(const int64_t cpu_quota_concurrency) { return ATOMIC_LOAD(&total_ddl_thread_cnt_) >= static_cast<int64_t>(unit_min_cpu() * cpu_quota_concurrency); }
-  lib::Worker::CompatMode get_compat_mode() const;
   OB_INLINE share::ObTenantSpace &ctx() { return *ctx_; }
   int rdlock();
   int wrlock();
@@ -270,7 +232,7 @@ public:
 
   // get request from request queue, waiting at most TIMEOUT us.
   // if IN_HIGH_PRIORITY is set, get request from hp queue.
-  int get_new_request(ObThWorker &w, int64_t timeout, rpc::ObRequest *&req);
+  int get_new_request(int64_t timeout, rpc::ObRequest *&req);
 
   // receive request from network
   int recv_request(rpc::ObRequest &req);
@@ -279,9 +241,6 @@ public:
   void set_queue_limit(int64_t limit) { req_queue_.set_limit(limit); }
 
   int timeup();
-  int get_default_group_throttled_time(int64_t &default_group_throttled_time);
-  void print_throttled_time();
-  void regist_threads_to_cgroup();
 
   TO_STRING_KV("id", id(),
                K_(tenant_meta),
@@ -310,30 +269,9 @@ public:
   OB_INLINE double get_token_usage() const { return 0; }
   OB_INLINE int64_t get_worker_time() const { return 0; }
   int64_t get_cpu_time() const;
-  // sql throttle
-  void update_sql_throttle_metrics(const ObSqlThrottleMetrics &metrics)
-  { st_metrics_ = metrics; }
-  const ObSqlThrottleMetrics &get_sql_throttle_metrics() const
-  { return st_metrics_; }
-
-  void update_sql_throughput(const int64_t throughput)
-  {
-    if (throughput < 0) {
-      sql_limiter_.set_rate(-1);
-    } else {
-      sql_limiter_.set_rate(throughput);
-    }
-  }
-  lib::ObRateLimiter &get_sql_rate_limiter()
-  { return sql_limiter_; }
-
   // Node balance thread would periodically check tenant status by
   // calling this function.
   void periodically_check();
-  int64_t lq_retry_queue_size()
-  {
-    return 0;
-  }
   ReqQueue& get_req_queue() { return req_queue_; }
   int acquire_more_worker(int64_t num, int64_t &succ_num, bool force = false);
   bool do_add_worker();
@@ -381,10 +319,8 @@ protected:
   volatile uint64_t recv_mysql_cnt_;
   volatile uint64_t recv_task_cnt_;
   volatile uint64_t recv_sql_task_cnt_;
-  volatile uint64_t recv_large_req_cnt_;
   volatile uint64_t recv_retry_on_lock_rpc_cnt_;
   volatile uint64_t recv_retry_on_lock_mysql_cnt_;
-  volatile uint64_t tt_large_quries_;
 
 public:
   common::ObLatch lock_;
@@ -395,8 +331,6 @@ public:
 
   lib::ObMutex workers_lock_;
 
-  share::ObCgroupCtrl &cgroup_ctrl_;
-
   bool disable_user_sched_;
 
   int64_t token_change_ts_ CACHE_ALIGNED;
@@ -404,8 +338,6 @@ public:
 
   share::ObTenantSpace *ctx_;
 
-  ObSqlThrottleMetrics st_metrics_;
-  lib::ObQueryRateLimiter sql_limiter_;
   int64_t default_group_throttled_time_us_;
 }; // end of class ObTenant
 

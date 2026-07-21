@@ -23,16 +23,10 @@ namespace oceanbase
 {
 namespace pl
 {
-/*INFLUENCE_PL sys var:
- *div_precision_increment only mysql mode
- *ob_compatibility_version
- *_enable_old_charset_aggregation
-*/
-static constexpr int64_t PL_CACHE_SYS_VAR_COUNT = 3;
+/* INFLUENCE_PL system variables that still affect current MySQL behavior. */
+static constexpr int64_t PL_CACHE_SYS_VAR_COUNT = 1;
 static constexpr share::ObSysVarClassType InfluencePLMap[PL_CACHE_SYS_VAR_COUNT + 1] = {
   share::SYS_VAR_DIV_PRECISION_INCREMENT,
-  share::SYS_VAR_OB_COMPATIBILITY_VERSION,
-  share::SYS_VAR__ENABLE_OLD_CHARSET_AGGREGATION,
   share::SYS_VAR_INVALID
 };
 
@@ -96,11 +90,8 @@ int ObPLCacheMgr::get_sys_var_in_pl_cache_str(ObBasicSessionInfo &session,
 int ObPLCacheMgr::get_pl_object(ObPlanCache *lib_cache, ObILibCacheCtx &ctx, ObCacheObjGuard& guard)
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(pc_get_pl_object);
   ObArenaAllocator tmp_alloc(GET_PL_MOD_STRING(PL_MOD_IDX::OB_PL_ARENA), OB_MALLOC_NORMAL_BLOCK_SIZE);
   ObPLCacheCtx &pc_ctx = static_cast<ObPLCacheCtx&>(ctx);
-  FLT_SET_TAG(pl_cache_key_id, pc_ctx.key_.key_id_);
-  FLT_SET_TAG(pl_cache_key_name, pc_ctx.key_.name_);
   //guard.get_cache_obj() = NULL;
   ObGlobalReqTimeService::check_req_timeinfo();
   if (OB_ISNULL(lib_cache) || OB_ISNULL(pc_ctx.session_info_)) {
@@ -148,7 +139,6 @@ int ObPLCacheMgr::get_pl_object(ObPlanCache *lib_cache, ObILibCacheCtx &ctx, ObC
     }
     pc_ctx.key_.sys_vars_str_.reset();
   }
-  FLT_SET_TAG(pl_hit_pl_cache, (OB_NOT_NULL(guard.get_cache_obj()) && OB_SUCC(ret)));
   return ret;
 }
 
@@ -220,9 +210,6 @@ int ObPLCacheMgr::add_pl_object(ObPlanCache *lib_cache,
 int ObPLCacheMgr::add_pl_cache(ObPlanCache *lib_cache, ObILibCacheObject *pl_object, ObPLCacheCtx &pc_ctx)
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(pc_add_pl_object);
-  FLT_SET_TAG(pl_cache_key_id, pc_ctx.key_.key_id_);
-  FLT_SET_TAG(pl_cache_key_name, pc_ctx.key_.name_);
   ObGlobalReqTimeService::check_req_timeinfo();
   if (OB_ISNULL(lib_cache)) {
     ret = OB_ERR_UNEXPECTED;
@@ -270,10 +257,8 @@ int ObPLCacheMgr::add_pl_cache(ObPlanCache *lib_cache, ObILibCacheObject *pl_obj
       }
     } else {
       (void)lib_cache->inc_mem_used(pl_object->get_mem_size());
-      FLT_SET_TAG(pl_add_cache_object_size, pl_object->get_mem_size());
     }
   }
-  FLT_SET_TAG(pl_add_cache_plan, OB_SUCCESS == ret);
   return ret;
 }
 

@@ -17,7 +17,6 @@
 #define USING_LOG_PREFIX SHARE_SCHEMA
 #include "share/schema/ob_col_desc.h"  // ObColDesc complete type(previously hidden behind the ddl_common include chain)
 #include "ob_table_schema.h"
-#include "storage/column_store/ob_column_store_const.h"  // OB_CS_*_CG_IDX constants (pure header conf L2), previously hidden behind a removed include chain
 #include "share/table/ob_ttl_util.h"  // ObKVAttr, previously hidden behind a removed sql include chain, make the dependency explicit(free within share)
 #include "share/schema/ob_part_mgr_util.h"
 #include "share/schema/ob_part_mgr_util.h"
@@ -64,16 +63,6 @@ ObColumnSchemaHashWrapper ObGetColumnKey<ObColumnSchemaHashWrapper, ObColumnSche
   return ObColumnSchemaHashWrapper(column_schema->get_column_name_str());
 }
 
-ObColumnGroupIdKey ObGetColumnKey<ObColumnGroupIdKey, ObColumnGroupSchema *>::operator()(const ObColumnGroupSchema *column_group_schema) const
-{
-  return ObColumnGroupIdKey(column_group_schema->get_column_group_id());
-}
-
-ObColumnGroupSchemaHashWrapper ObGetColumnKey<ObColumnGroupSchemaHashWrapper, ObColumnGroupSchema *>::operator()(const ObColumnGroupSchema *column_group_schema) const
-{
-  return ObColumnGroupSchemaHashWrapper(column_group_schema->get_column_group_name());
-}
-
 int ObTableMode::assign(const ObTableMode &other)
 {
   int ret = OB_SUCCESS;
@@ -104,31 +93,6 @@ bool ObTableMode::is_valid() const
 }
 
 OB_SERIALIZE_MEMBER_SIMPLE(ObTableMode,
-                           mode_);
-
-bool ObMvMode::is_valid() const
-{
-  bool bret = true;
-  // reserve for new flags
-  return bret;
-}
-
-int ObMvMode::assign(const ObMvMode &other)
-{
-  int ret = OB_SUCCESS;
-  mode_ = other.mode_;
-  return ret;
-}
-
-ObMvMode & ObMvMode::operator=(const ObMvMode &other)
-{
-  if (this != &other) {
-    mode_ = other.mode_;
-  }
-  return *this;
-}
-
-OB_SERIALIZE_MEMBER_SIMPLE(ObMvMode,
                            mode_);
 
 OB_SERIALIZE_MEMBER_SIMPLE(ObSemiStructEncodingType,
@@ -190,7 +154,6 @@ int ObSimpleTableSchemaV2::assign(const ObSimpleTableSchemaV2 &other)
       is_force_view_ = other.is_force_view_;
       truncate_version_ = other.truncate_version_;
       storage_cache_policy_type_ = other.storage_cache_policy_type_;
-      with_dynamic_partition_policy_ = other.with_dynamic_partition_policy_;
       if (OB_FAIL(table_mode_.assign(other.table_mode_))) {
         LOG_WARN("Fail to assign table mode", K(ret), K(other.table_mode_));
       } else if (OB_FAIL(deep_copy_str(other.table_name_, table_name_))) {
@@ -255,7 +218,6 @@ void ObSimpleTableSchemaV2::reset()
   duplicate_read_consistency_ = ObDuplicateReadConsistency::STRONG;
   simple_constraint_info_array_.reset();
   truncate_version_ = OB_INVALID_VERSION;
-  with_dynamic_partition_policy_ = false;
   ObPartitionSchema::reset();
   storage_cache_policy_type_ = storage::ObStorageCachePolicyType::MAX_POLICY;
 }
@@ -397,8 +359,7 @@ bool ObSimpleTableSchemaV2::is_valid() const
       LOG_WARN("invalid argument", K(table_id_), K(schema_version_), K(database_id_), K(table_name_));
     } else if (is_index_table()
         || is_aux_vp_table()
-        || is_aux_lob_table()
-        || is_mlog_table()) {
+        || is_aux_lob_table()) {
       if (OB_INVALID_ID == data_table_id_) {
         ret = false;
         LOG_WARN("invalid data table_id", K(ret), K(data_table_id_));
@@ -667,8 +628,7 @@ int64_t ObSimpleTableSchemaV2::to_string(char *buf, const int64_t buf_len) const
     K_(is_force_view),
     K_(truncate_version),
     K_(duplicate_read_consistency),
-    K_(storage_cache_policy_type),
-    K_(with_dynamic_partition_policy)
+    K_(storage_cache_policy_type)
 );
   J_OBJ_END();
 
@@ -1309,8 +1269,7 @@ int ObSimpleTableSchemaV2::check_if_tablet_exists(const ObTabletID &tablet_id, b
 
 ObTableSchema::ObTableSchema()
     : ObSimpleTableSchemaV2(),
-      parser_properties_(),
-      local_session_vars_(get_allocator())
+      parser_properties_()
 {
   reset();
 }
@@ -1319,7 +1278,6 @@ ObTableSchema::ObTableSchema(ObIAllocator *allocator)
   : ObSimpleTableSchemaV2(allocator),
     parser_properties_(),
     view_schema_(allocator),
-    base_table_ids_(SCHEMA_SMALL_MALLOC_BLOCK_SIZE, ModulePageAllocator(*allocator)),
     depend_table_ids_(SCHEMA_SMALL_MALLOC_BLOCK_SIZE, ModulePageAllocator(*allocator)),
     simple_index_infos_(SCHEMA_MID_MALLOC_BLOCK_SIZE, ModulePageAllocator(*allocator)),
     aux_vp_tid_array_(SCHEMA_SMALL_MALLOC_BLOCK_SIZE, ModulePageAllocator(*allocator)),
@@ -1336,12 +1294,10 @@ ObTableSchema::ObTableSchema(ObIAllocator *allocator)
     micro_block_format_version_(storage::ObMicroBlockFormatVersionHelper::DEFAULT_VERSION),
     micro_index_clustered_(false),
     enable_macro_block_bloom_filter_(false),
-    local_session_vars_(allocator),
     index_params_(),
     exec_env_(),
     storage_cache_policy_(),
-    semistruct_encoding_type_(),
-    dynamic_partition_policy_()
+    semistruct_encoding_type_()
 {
   reset();
 }
@@ -1383,7 +1339,6 @@ int ObTableSchema::assign(const ObTableSchema &src_schema)
       int64_t column_cnt = 0;
       int64_t cst_cnt = 0;
       max_used_column_id_ = src_schema.max_used_column_id_;
-      sess_active_time_ = src_schema.sess_active_time_;
       rowkey_column_num_ = src_schema.rowkey_column_num_;
       index_column_num_ = src_schema.index_column_num_;
       rowkey_split_pos_ = src_schema.rowkey_split_pos_;
@@ -1417,15 +1372,11 @@ int ObTableSchema::assign(const ObTableSchema &src_schema)
       name_generated_type_ = src_schema.name_generated_type_;
       lob_inrow_threshold_ = src_schema.lob_inrow_threshold_;
       auto_increment_cache_size_ = src_schema.auto_increment_cache_size_;
-      is_column_store_supported_ = src_schema.is_column_store_supported_;
-      max_used_column_group_id_ = src_schema.max_used_column_group_id_;
       micro_index_clustered_ = src_schema.micro_index_clustered_;
       enable_macro_block_bloom_filter_ = src_schema.enable_macro_block_bloom_filter_;
-      mlog_tid_ = src_schema.mlog_tid_;
       catalog_id_ = src_schema.catalog_id_;
       merge_engine_type_ = src_schema.merge_engine_type_;
       external_location_id_ = src_schema.external_location_id_;
-      tmp_mlog_tid_ = src_schema.tmp_mlog_tid_;
       if (OB_FAIL(deep_copy_str(src_schema.tablegroup_name_, tablegroup_name_))) {
         LOG_WARN("Fail to deep copy tablegroup_name", K(ret));
       } else if (OB_FAIL(deep_copy_str(src_schema.comment_, comment_))) {
@@ -1458,16 +1409,10 @@ int ObTableSchema::assign(const ObTableSchema &src_schema)
         view_schema_ = src_schema.view_schema_;
         if (OB_FAIL(view_schema_.get_err_ret())) {
           LOG_WARN("fail to assign view schema", K(ret), K_(view_schema), K(src_schema.view_schema_));
-        } else if (OB_FAIL(local_session_vars_.deep_copy(src_schema.local_session_vars_))) {
-          LOG_WARN("fail to deep copy sys var info", K(ret));
         }
       }
 
       if (FAILEDx(aux_vp_tid_array_.assign(src_schema.aux_vp_tid_array_))) {
-        LOG_WARN("fail to assign array", K(ret));
-      }
-
-      if (FAILEDx(base_table_ids_.assign(src_schema.base_table_ids_))) {
         LOG_WARN("fail to assign array", K(ret));
       }
 
@@ -1477,10 +1422,6 @@ int ObTableSchema::assign(const ObTableSchema &src_schema)
 
       if (FAILEDx(depend_mock_fk_parent_table_ids_.assign(src_schema.depend_mock_fk_parent_table_ids_))) {
         LOG_WARN("fail to assign depend_mock_fk_parent_table_ids_ array", K(ret));
-      }
-
-      if (FAILEDx(mv_mode_.assign(src_schema.mv_mode_))) {
-        LOG_WARN("fail to assign mv_mode", K(ret));
       }
 
       //copy columns
@@ -1553,11 +1494,6 @@ int ObTableSchema::assign(const ObTableSchema &src_schema)
       }
 
       if (OB_SUCC(ret)) {
-        if (OB_FAIL(assign_column_group(src_schema))) {
-          LOG_WARN("fail to assign column_group", KR(ret), K(src_schema));
-        }
-      }
-      if (OB_SUCC(ret)) {
         if (OB_FAIL(assign_constraint(src_schema))) {
           LOG_WARN("failed to assign constraint", K(ret), K(src_schema), K(*this));
         }
@@ -1598,10 +1534,6 @@ int ObTableSchema::assign(const ObTableSchema &src_schema)
   }
   if (OB_SUCC(ret)) {
     semistruct_encoding_type_ = src_schema.semistruct_encoding_type_;
-  }
-
-  if (OB_SUCC(ret) && OB_FAIL(deep_copy_str(src_schema.dynamic_partition_policy_, dynamic_partition_policy_))) {
-    LOG_WARN("fail to deep copy dynamic partition policy string", KR(ret));
   }
 
   if (OB_FAIL(ret)) {
@@ -1669,117 +1601,6 @@ int ObTableSchema::assign_constraint(const ObTableSchema &src_schema)
   return ret;
 }
 
-int ObTableSchema::assign_column_group(const ObTableSchema &other)
-{
-  int ret = OB_SUCCESS;
-  int64_t column_group_cnt = other.column_group_cnt_;
-  if (column_group_cnt > 0) {
-    ObColumnGroupSchema *column_group = NULL;
-    char *buf = NULL;
-    int64_t cg_id_hash_arr_size = get_hash_array_mem_size<CgIdHashArray>(column_group_cnt);
-    if (NULL == (buf = static_cast<char*>(alloc(cg_id_hash_arr_size)))) {
-      ret = OB_ALLOCATE_MEMORY_FAILED;
-      LOG_ERROR("fail to allocate memory for cg_id_hash_array", KR(ret), K(cg_id_hash_arr_size));
-    } else if (NULL == (cg_id_hash_arr_ = new (buf) CgIdHashArray(cg_id_hash_arr_size))){
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("fail to new CgIdHashArray", KR(ret), K(cg_id_hash_arr_size));
-    }
-
-    if (OB_SUCC(ret)) {
-      int64_t cg_name_hash_arr_size = get_hash_array_mem_size<CgNameHashArray>(column_group_cnt);
-      if (OB_ISNULL(buf = static_cast<char*>(alloc(cg_name_hash_arr_size)))) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_ERROR("fail to allocate memory for cg_name_hash_array", KR(ret), K(cg_name_hash_arr_size));
-      } else if (OB_ISNULL(cg_name_hash_arr_ = new (buf) CgNameHashArray(cg_name_hash_arr_size))) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("fail to new CgNameHashArray", KR(ret), K(cg_name_hash_arr_size));
-      }
-    }
-
-    if (OB_SUCC(ret)) {
-      column_group_arr_ = static_cast<ObColumnGroupSchema**>(alloc(sizeof(ObColumnGroupSchema*) * column_group_cnt));
-      if (OB_ISNULL(column_group_arr_)) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_ERROR("fail to allocate memory for column_group_array", KR(ret), K(column_group_cnt));
-      } else {
-        MEMSET(column_group_arr_, 0, sizeof(ObColumnGroupSchema*) * column_group_cnt);
-        column_group_arr_capacity_ = column_group_cnt;
-      }
-    }
-
-    for(int64_t i = 0; OB_SUCC(ret) && (i < column_group_cnt); ++i) {
-      column_group = other.column_group_arr_[i];
-      if (OB_ISNULL(column_group)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("the column group is null", KR(ret), K(i), K(column_group_cnt));
-      } else if (OB_FAIL(do_add_column_group(*column_group))) {
-        LOG_WARN("fail to do add column group", KR(ret), KPC(column_group));
-      }
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::assign_partition_schema_without_auto_part_attr(const ObTableSchema &src_schema)
-{
-  int ret = OB_SUCCESS;
-  if (this != &src_schema) {
-    bool auto_part = part_option_.get_auto_part();
-    int64_t auto_part_size = part_option_.get_auto_part_size();
-
-    if (OB_FAIL(assign_partition_schema(src_schema))) {
-      LOG_WARN("fail to assign partition schema", KR(ret), K(src_schema), KPC(this));
-    } else {
-      part_option_.set_auto_part(auto_part);
-      part_option_.set_auto_part_size(auto_part_size);
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::enable_auto_partition(const int64_t auto_part_size, const ObPartitionFuncType &part_func_type)
-{
-  int ret = OB_SUCCESS;
-  if (is_partitioned_table()) {
-    if (OB_FAIL(part_option_.enable_auto_partition(auto_part_size))) {
-      LOG_WARN("fail to enable auto partition", KR(ret), K(auto_part_size));
-    }
-  } else {
-    ObPartitionFuncType part_type = part_func_type;
-    if (OB_FAIL(detect_auto_part_func_type(part_type))) {
-      LOG_WARN("fail to check part func type", K(ret));
-    } else if (OB_FAIL(part_option_.enable_auto_partition(auto_part_size, part_type))) {
-      LOG_WARN("fail to enable auto partition", KR(ret), K(auto_part_size));
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::detect_auto_part_func_type(ObPartitionFuncType &part_func_type)
-{
-  int ret = OB_SUCCESS;
-  const ObString &part_expr = part_option_.get_part_func_expr_str();
-  if (part_expr.empty()) {
-    bool is_range_column_type = false;
-    if (OB_FAIL(is_range_col_part_type(is_range_column_type))) {
-      LOG_WARN("failed to check if first part key is range column type", K(ret), K(part_expr));
-    } else if (is_range_column_type) {
-      /*in case of create table t1(a timestamp, b VARCHAR(150), c int, d VARCHAR(4000), primary key(a)) partition by range ()*/
-      part_func_type = PARTITION_FUNC_TYPE_RANGE_COLUMNS;
-    } else {
-      part_func_type = PARTITION_FUNC_TYPE_RANGE;
-    }
-  }
-  return ret;
-}
-//this function can only be used for auto split table check
-// is_range_col_part_type moved definition to sql/resolver/ddl/ob_ddl_resolver.cpp(ObResolverUtils real user)
-
-void ObTableSchema::forbid_auto_partition()
-{
-  part_option_.forbid_auto_partition(is_partitioned_table());
-}
-
 int ObTableSchema::check_valid(const bool count_varchar_size_by_byte) const
 {
   int ret = OB_SUCCESS;
@@ -1791,7 +1612,6 @@ int ObTableSchema::check_valid(const bool count_varchar_size_by_byte) const
 
   if (OB_FAIL(ret) || is_view_table()) {
     // no need checking other options for view
-    // XIYU: TODO for materialized view
   } else {
     if (is_virtual_table(table_id_) && 0 > rowkey_column_num_) {
       ret = OB_INVALID_ERROR;
@@ -1889,7 +1709,7 @@ int ObTableSchema::check_valid(const bool count_varchar_size_by_byte) const
                 }
               }
             } else if (ob_is_text_tc(column->get_data_type()) || ob_is_json_tc(column->get_data_type())
-                       || ob_is_geometry_tc(column->get_data_type()) || ob_is_roaringbitmap_tc(column->get_data_type())) {
+                       || ob_is_geometry_tc(column->get_data_type())) {
               ObLength max_length = 0;
               max_length = ObAccuracy::MAX_ACCURACY[column->get_data_type()].get_length();
               if (max_length < column->get_data_length()) {
@@ -1902,23 +1722,6 @@ int ObTableSchema::check_valid(const bool count_varchar_size_by_byte) const
                 varchar_col_total_length += min(column->get_data_length(), get_lob_inrow_threshold());
               }
             }
-          }
-        }
-      }
-
-      if (OB_SUCC(ret)) {
-        ObColumnGroupSchema *column_group = NULL;
-        for (int64_t i = 0; OB_SUCC(ret) && (i < column_group_cnt_); ++i) {
-          if (OB_ISNULL(column_group = column_group_arr_[i])) {
-            ret = OB_INVALID_ERROR;
-            LOG_WARN_RET(OB_ERR_UNEXPECTED, "column_group should not be null", K(i), K_(column_group_cnt));
-          } else if (!column_group->is_valid()) {
-            ret = OB_INVALID_ERROR;
-            LOG_WARN_RET(OB_ERR_UNEXPECTED, "column_group is invalid", K(i), KPC(column_group));
-          } else if (column_group->get_column_group_id() > max_used_column_group_id_) {
-            ret = OB_INVALID_ERROR;
-            LOG_WARN_RET(OB_ERR_UNEXPECTED, "column_group id should not be greater than max_used_column_group_id",
-              "cg_id", column_group->get_column_group_id(), K_(max_used_column_group_id));
           }
         }
       }
@@ -2254,45 +2057,13 @@ int ObTableSchema::alter_column(ObColumnSchemaV2 &column_schema, ObColumnCheckMo
     if (src_schema->is_autoincrement() && !column_schema.is_autoincrement()) {
       autoinc_column_id_ = 0;
     }
-    if (src_schema->get_column_name_str() != dst_name && is_column_store_supported()) {
-      char cg_name[OB_MAX_COLUMN_GROUP_NAME_LENGTH] = {'\0'};
-      ObString cg_name_str(OB_MAX_COLUMN_GROUP_NAME_LENGTH, 0, cg_name);
-
-      if (OB_FAIL(src_schema->get_each_column_group_name(cg_name_str))) {
-        LOG_WARN("fail to get each column group name", K(ret));
-      } else if (OB_FAIL(remove_col_from_name_hash_array(src_schema))) {
-        LOG_WARN("Failed to remove old column name from name_hash_array", K(ret));
+    if (src_schema->get_column_name_str() != dst_name) {
+      if (OB_FAIL(remove_col_from_name_hash_array(src_schema))) {
+        LOG_WARN("failed to remove old column name from name hash array", K(ret));
       } else if (OB_FAIL(src_schema->set_column_name(dst_name))) {
         LOG_WARN("failed to change column name", K(ret));
       } else if (OB_FAIL(add_col_to_name_hash_array(src_schema))) {
-        LOG_WARN("Failed to add new column name to name_hash_array", K(ret));
-      }
-
-      /*alter relavent column group name*/
-      ObColumnGroupSchema *column_group = nullptr;
-      if (OB_FAIL(ret)){
-      } else if (OB_FAIL(get_column_group_by_name(cg_name_str, column_group))) {
-        if (OB_HASH_NOT_EXIST == ret) {
-          ret = OB_SUCCESS;
-        } else {
-          LOG_WARN("fail to check column group exist", K(ret), K(cg_name_str));
-        }
-      } else if(OB_ISNULL(column_group)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("column group should no be null", K(ret));
-      } else if (OB_FAIL(cg_name_hash_arr_->erase_refactored(ObColumnGroupSchemaHashWrapper(
-                                                             column_group->get_column_group_name())))) {
-        LOG_WARN("fail to remove from cg name arr", K(ret));
-      } else {
-        cg_name_str.set_length(0);
-        if (OB_FAIL(src_schema->get_each_column_group_name(cg_name_str))) { /* src_schema column name has been changed*/
-          LOG_WARN("fail to get column group name", K(ret));
-        } else if (OB_FAIL(column_group->set_column_group_name(cg_name_str))) {
-          LOG_WARN("fail to set column group name", K(ret));
-        } else if (OB_FAIL((add_column_group_to_hash_array<ObColumnGroupSchemaHashWrapper, CgNameHashArray>(
-          column_group, ObColumnGroupSchemaHashWrapper(column_group->get_column_group_name()), cg_name_hash_arr_)))) {
-          LOG_WARN("fail to set cg_name _hash_arr", K(ret));
-        }
+        LOG_WARN("failed to add new column name to name hash array", K(ret));
       }
     }
     if (OB_FAIL(ret)) {
@@ -2634,10 +2405,10 @@ bool ObTableSchema::is_sys_generated_name(bool check_unknown) const
   return bret;
 }
 
-// description: Legacy generated-name convention for flashback of an indexed table.
+// description: Legacy generated-name convention for restoring an indexed table from recyclebin.
 //  for the index on the table
-//              Generation rules: idx_name_flashback_auto = RECYCLE_OBIDX_timestamp
-int ObTableSchema::create_new_idx_name_after_flashback(
+//              Generation rules: idx_name_restore_auto = RECYCLE_OBIDX_timestamp
+int ObTableSchema::create_new_idx_name_after_recyclebin_restore(
     ObTableSchema &new_table_schema,
     common::ObString &new_idx_name,
     common::ObIAllocator &allocator,
@@ -2888,16 +2659,6 @@ const ObColumnSchemaV2 *ObTableSchema::get_column_schema(const uint64_t column_i
   return column;
 }
 
-const ObColumnSchemaV2 *ObTableSchema::get_column_schema(uint64_t table_id, uint64_t column_id) const
-{
-  uint64_t col_id = column_id;
-  if (has_depend_table(table_id)) {
-    col_id = gen_materialized_view_column_id(column_id);
-  }
-  const ObColumnSchemaV2 *column = get_column_schema_by_id_internal(ObColumnIdKey(col_id));
-  return column;
-}
-
 ObColumnSchemaV2 *ObTableSchema::get_column_schema(const uint64_t column_id)
 {
   ObColumnSchemaV2 *column = get_column_schema_by_id_internal(ObColumnIdKey(column_id));
@@ -2997,35 +2758,6 @@ const ObColumnSchemaV2 *ObTableSchema::get_column_schema_by_prev_next_id(
 }
 
 
-uint64_t ObTableSchema::gen_materialized_view_column_id(uint64_t column_id)
-{
-  uint64_t mv_col_id = column_id + OB_MIN_MV_COLUMN_ID;
-  return mv_col_id;
-}
-
-
-uint64_t ObTableSchema::gen_mlog_col_id_from_ref_col_id(const uint64_t column_id)
-{
-  uint64_t mlog_col_id = column_id;
-  if (OB_HIDDEN_PK_INCREMENT_COLUMN_ID == column_id) {
-    mlog_col_id = OB_MLOG_ROWID_COLUMN_ID;
-  }
-  return mlog_col_id;
-}
-
-uint64_t ObTableSchema::gen_ref_col_id_from_mlog_col_id(const uint64_t column_id)
-{
-  uint64_t ref_col_id = column_id;
-  if (OB_MLOG_ROWID_COLUMN_ID == column_id) {
-    ref_col_id = OB_HIDDEN_PK_INCREMENT_COLUMN_ID;
-  }
-  return ref_col_id;
-}
-
-//
-//  for mv, check it contains tabile_id in it's view define
-//
-
 bool ObTableSchema::is_drop_index() const {
   return 0 != (index_attributes_set_ & ((uint64_t)(1) << INDEX_DROP_INDEX));
 }
@@ -3042,38 +2774,6 @@ bool ObTableSchema::is_invisible_before() const {
 void ObTableSchema::set_invisible_before(const uint64_t invisible_before) {
   index_attributes_set_ &= ~((uint64_t)(1) << INDEX_VISIBILITY_SET_BEFORE);
   index_attributes_set_ |= invisible_before << INDEX_VISIBILITY_SET_BEFORE;
-}
-
-bool ObTableSchema::has_depend_table(uint64_t table_id) const
-{
-  bool has = false;
-  for (int64_t i = 0; i < depend_table_ids_.count() && !has; i++) {
-    if (table_id == depend_table_ids_.at(i)) {
-      has = true;
-    }
-  }
-  return has;
-}
-
-// for baihua:
-// Convert columns to dependent table columns
-// For a given column,
-// - If the table does not have mv, the returned table_id is the table_id of the table, and col_id is the incoming col_id,
-// - If the table has mv, but the given column is a non-dependent table column, the returned table_id is the table_id of this table,
-//  and the col_id is the passed col_id
-// - If the table has mv, and the given column is a dependent column, the returned table_id is the column of the dependent table,
-//  and col_id is the original column of the dependent table mapping
-
-bool ObTableSchema::is_depend_column(uint64_t column_id) const
-{
-  bool is_depend = false;
-  if (is_materialized_view() &&
-      column_id > OB_MIN_MV_COLUMN_ID &&
-      column_id < OB_MIN_SHADOW_COLUMN_ID &&
-      get_column_schema_by_id_internal(column_id)) {
-    is_depend = true;
-  }
-  return is_depend;
 }
 
 const ObColumnSchemaV2 *ObTableSchema::get_fulltext_column(const ColumnReferenceSet &column_set) const
@@ -3126,7 +2826,6 @@ int64_t ObTableSchema::get_convert_size() const
   convert_size += parser_properties_.length() + 1;
   convert_size += view_schema_.get_convert_size() - sizeof(view_schema_);
   convert_size += aux_vp_tid_array_.get_data_size();
-  convert_size += base_table_ids_.get_data_size();
   convert_size += depend_table_ids_.get_data_size();
   convert_size += depend_mock_fk_parent_table_ids_.get_data_size();
   convert_size += rowkey_info_.get_convert_size() - sizeof(rowkey_info_);
@@ -3166,17 +2865,9 @@ int64_t ObTableSchema::get_convert_size() const
   convert_size += ttl_definition_.length() + 1;
   convert_size += index_params_.length() + 1;
 
-  convert_size += get_hash_array_mem_size<CgIdHashArray>(column_group_cnt_);
-  convert_size += get_hash_array_mem_size<CgNameHashArray>(column_group_cnt_);
-  convert_size += column_group_cnt_ * sizeof(ObColumnGroupSchema*);
-  for (int64_t i = 0; (i < column_group_cnt_) && OB_NOT_NULL(column_group_arr_[i]); ++i) {
-    convert_size += column_group_arr_[i]->get_convert_size();
-  }
-  convert_size += local_session_vars_.get_deep_copy_size();
   convert_size += external_properties_.length() + 1;
   convert_size += storage_cache_policy_.length() + 1;
   convert_size += semistruct_encoding_type_.get_deep_copy_size();
-  convert_size += dynamic_partition_policy_.length() + 1;
   convert_size += external_sub_path_.length() + 1;
   return convert_size;
 }
@@ -3184,7 +2875,6 @@ int64_t ObTableSchema::get_convert_size() const
 void ObTableSchema::reset()
 {
   max_used_column_id_ = 0;
-  sess_active_time_ = 0;
   rowkey_column_num_ = 0;
   index_column_num_ = 0;
   rowkey_split_pos_ = 0;
@@ -3225,7 +2915,6 @@ void ObTableSchema::reset()
 
   aux_vp_tid_array_.reset();
 
-  base_table_ids_.reset();
   depend_table_ids_.reset();
   depend_mock_fk_parent_table_ids_.reset();
 
@@ -3268,20 +2957,8 @@ void ObTableSchema::reset()
   lob_inrow_threshold_ = OB_DEFAULT_LOB_INROW_THRESHOLD;
   auto_increment_cache_size_ = 0;
 
-  is_column_store_supported_ = false;
-  max_used_column_group_id_ = COLUMN_GROUP_START_ID;
-  column_group_cnt_ = 0;
-  column_group_arr_capacity_ = 0;
-  column_group_arr_ = NULL;
-  cg_id_hash_arr_ = NULL;
-  cg_name_hash_arr_ = NULL;
-  mlog_tid_ = OB_INVALID_ID;
-  tmp_mlog_tid_ = OB_INVALID_ID;
-  local_session_vars_.reset();
-  mv_mode_.reset();
   storage_cache_policy_.reset();
   semistruct_encoding_type_.reset();
-  dynamic_partition_policy_.reset();
   external_location_id_ = OB_INVALID_ID;
   external_sub_path_.reset();
   ObSimpleTableSchemaV2::reset();
@@ -4816,7 +4493,7 @@ int ObTableSchema::check_row_length(
         // The full text column in the index only counts the length of one word segment
         length = OB_MAX_OBJECT_NAME_LENGTH;
       } else if (ob_is_string_type(col->get_data_type()) || ob_is_json(col->get_data_type())
-                 || ob_is_geometry(col->get_data_type()) || ob_is_roaringbitmap(col->get_data_type())) {
+                 || ob_is_geometry(col->get_data_type())) {
         // TODO (wenye): bug here! lob should use lob_inrow_threshold.
         if (OB_FAIL(col->get_byte_length(length, true))) {
           SQL_RESV_LOG(WARN, "fail to get byte length of column", K(ret));
@@ -4934,16 +4611,6 @@ void ObTableSchema::reset_column_info()
   name_hash_array_ = NULL;
 }
 
-void ObTableSchema::reset_column_group_info()
-{
-  max_used_column_group_id_ = COLUMN_GROUP_START_ID;
-  column_group_cnt_ = 0;
-  column_group_arr_capacity_ = 0;
-  column_group_arr_ = NULL;
-  cg_id_hash_arr_ = NULL;
-  cg_name_hash_arr_ = NULL;
-}
-
 int ObTableSchema::get_column_ids(ObIArray<uint64_t> &column_ids) const
 {
   int ret = OB_SUCCESS;
@@ -5021,8 +4688,7 @@ int ObTableSchema::has_lob_column(bool &has_lob, const bool check_large /*= fals
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("Column schema is NULL", K(ret));
     } else if (ob_is_json_tc(column_schema->get_data_type())
-               || ob_is_geometry_tc(column_schema->get_data_type())
-               || ob_is_roaringbitmap_tc(column_schema->get_data_type())) {
+               || ob_is_geometry_tc(column_schema->get_data_type())) {
       has_lob = true; // cannot know whether a json is lob or not from schema
     } else if (check_large) {
       if (ob_is_large_text(column_schema->get_data_type())) {
@@ -5982,18 +5648,6 @@ int ObSimpleTableSchemaV2::generate_origin_index_name()
   return ret;
 }
 
-int ObSimpleTableSchemaV2::get_mlog_name(ObString &mlog_name) const
-{
-  int ret = OB_SUCCESS;
-  if (!is_mlog_table()) {
-    ret = OB_SCHEMA_ERROR;
-    LOG_WARN("table is not materialized view log", KR(ret));
-  } else {
-    mlog_name = table_name_;
-  }
-  return ret;
-}
-
 int ObTableSchema::get_generated_column_by_define(const ObString &col_def,
                                                   const bool only_hidden_column,
                                                   ObColumnSchemaV2 *&gen_col)
@@ -6029,7 +5683,6 @@ int64_t ObTableSchema::to_string(char *buf, const int64_t buf_len) const
   pos += ObSimpleTableSchemaV2::to_string(buf + pos, buf_len - pos);
   J_COMMA();
   J_KV(K_(max_used_column_id),
-      K_(sess_active_time),
       K_(rowkey_column_num),
       K_(index_column_num),
       K_(rowkey_split_pos),
@@ -6060,7 +5713,6 @@ int64_t ObTableSchema::to_string(char *buf, const int64_t buf_len) const
     K_(auto_increment),
     K_(read_only),
     K_(simple_index_infos),
-    K_(base_table_ids),
     //K_(depend_table_ids),
     //K_(join_types),
     //K_(join_conds),
@@ -6077,19 +5729,12 @@ int64_t ObTableSchema::to_string(char *buf, const int64_t buf_len) const
     K_(aux_lob_piece_tid),
     K_(name_generated_type),
     K_(lob_inrow_threshold),
-    K_(is_column_store_supported),
-    K_(max_used_column_group_id),
-    K_(column_group_cnt),
-    "column_group_array", ObArrayWrap<ObColumnGroupSchema* >(column_group_arr_, column_group_cnt_),
-    K_(mlog_tid),
     K_(auto_increment_cache_size),
-    K_(local_session_vars),
     K_(index_params),
     K_(exec_env),
     K_(storage_cache_policy),
     K_(merge_engine_type),
-    K_(semistruct_encoding_type),
-    K_(dynamic_partition_policy));
+    K_(semistruct_encoding_type));
   J_OBJ_END();
 
   return pos;
@@ -6138,7 +5783,6 @@ bool ObTableSchema::same_subpartitions(const ObTableSchema &other) const
 OB_DEF_SERIALIZE(ObTableSchema)
 {
   int ret = OB_SUCCESS;
-  ObSArray<int64_t> mv_table_ids;
   int64_t aux_vp_tid_array_count = aux_vp_tid_array_.count();
 
   // !!! begin static check
@@ -6192,14 +5836,12 @@ OB_DEF_SERIALIZE(ObTableSchema)
   OB_UNIS_ENCODE(index_attributes_set_);
   OB_UNIS_ENCODE(parser_name_);
   OB_UNIS_ENCODE(depend_table_ids_);
-  OB_UNIS_ENCODE(mv_table_ids); // mv_cnt_ is removed, encode 0 for compatibility
   OB_UNIS_ENCODE(tablet_size_);
   OB_UNIS_ENCODE(pctfree_);
   OB_UNIS_ENCODE(foreign_key_infos_);
   OB_UNIS_ENCODE(partition_status_);
   OB_UNIS_ENCODE(partition_schema_version_);
   OB_UNIS_ENCODE(session_id_);
-  OB_UNIS_ENCODE(sess_active_time_);
   OB_UNIS_ENCODE_ARRAY_POINTER(cst_array_, cst_cnt_);
   OB_UNIS_ENCODE(pk_comment_);
   OB_UNIS_ENCODE(create_host_);
@@ -6233,28 +5875,20 @@ OB_DEF_SERIALIZE(ObTableSchema)
   OB_UNIS_ENCODE(ttl_definition_);
   OB_UNIS_ENCODE(name_generated_type_);
   OB_UNIS_ENCODE(lob_inrow_threshold_);
-  OB_UNIS_ENCODE_ARRAY_POINTER(column_group_arr_, column_group_cnt_);
-  OB_UNIS_ENCODE(is_column_store_supported_);
-  OB_UNIS_ENCODE(max_used_column_group_id_);
-  OB_UNIS_ENCODE(mlog_tid_);
   OB_UNIS_ENCODE(auto_increment_cache_size_);
   OB_UNIS_ENCODE(external_properties_);
-  OB_UNIS_ENCODE(local_session_vars_);
   OB_UNIS_ENCODE(duplicate_read_consistency_);
   OB_UNIS_ENCODE(index_params_);
   OB_UNIS_ENCODE(micro_index_clustered_);
-  OB_UNIS_ENCODE(mv_mode_);
   OB_UNIS_ENCODE(enable_macro_block_bloom_filter_);
   OB_UNIS_ENCODE(parser_properties_);
   OB_UNIS_ENCODE(storage_cache_policy_type_);
   OB_UNIS_ENCODE(storage_cache_policy_);
   OB_UNIS_ENCODE(merge_engine_type_);
   OB_UNIS_ENCODE(semistruct_encoding_type_);
-  OB_UNIS_ENCODE(dynamic_partition_policy_);
   OB_UNIS_ENCODE(external_location_id_);
   OB_UNIS_ENCODE(external_sub_path_);
   OB_UNIS_ENCODE(micro_block_format_version_);
-  OB_UNIS_ENCODE(tmp_mlog_tid_);
   // !!! end static check
   /*
    * Add deserialized members before this end static check comment
@@ -6354,7 +5988,6 @@ OB_DEF_DESERIALIZE(ObTableSchema)
   int ret = OB_SUCCESS;
   reset();
 
-  ObSArray<int64_t> mv_table_ids;
   int64_t aux_vp_tid_array_count = 0;
   // !!! begin static check
   OB_UNIS_DECODE(database_id_);
@@ -6407,14 +6040,12 @@ OB_DEF_DESERIALIZE(ObTableSchema)
   OB_UNIS_DECODE(index_attributes_set_);
   OB_UNIS_DECODE_AND_FUNC(parser_name_, deep_copy_str);
   OB_UNIS_DECODE(depend_table_ids_);
-  OB_UNIS_DECODE(mv_table_ids);
   OB_UNIS_DECODE(tablet_size_);
   OB_UNIS_DECODE(pctfree_);
   OB_UNIS_DECODE(foreign_key_infos_);
   OB_UNIS_DECODE(partition_status_);
   OB_UNIS_DECODE(partition_schema_version_);
   OB_UNIS_DECODE(session_id_);
-  OB_UNIS_DECODE(sess_active_time_);
   OB_UNIS_DECODE_ARRAY_POINTER(cst_array_, cst_cnt_, add_constraint);
   OB_UNIS_DECODE_AND_FUNC(pk_comment_, deep_copy_str);
   OB_UNIS_DECODE_AND_FUNC(create_host_, deep_copy_str);
@@ -6474,28 +6105,20 @@ OB_DEF_DESERIALIZE(ObTableSchema)
   OB_UNIS_DECODE_AND_FUNC(ttl_definition_, deep_copy_str);
   OB_UNIS_DECODE(name_generated_type_);
   OB_UNIS_DECODE(lob_inrow_threshold_);
-  OB_UNIS_DECODE_ARRAY_POINTER(column_group_arr_, column_group_cnt_, do_add_column_group);
-  OB_UNIS_DECODE(is_column_store_supported_);
-  OB_UNIS_DECODE(max_used_column_group_id_);
-  OB_UNIS_DECODE(mlog_tid_);
   OB_UNIS_DECODE(auto_increment_cache_size_);
   OB_UNIS_DECODE_AND_FUNC(external_properties_, deep_copy_str);
-  OB_UNIS_DECODE(local_session_vars_);
   OB_UNIS_DECODE(duplicate_read_consistency_);
   OB_UNIS_DECODE_AND_FUNC(index_params_, deep_copy_str);
   OB_UNIS_DECODE(micro_index_clustered_);
-  OB_UNIS_DECODE(mv_mode_);
   OB_UNIS_DECODE(enable_macro_block_bloom_filter_);
   OB_UNIS_DECODE_AND_FUNC(parser_properties_, deep_copy_str);
   OB_UNIS_DECODE(storage_cache_policy_type_);
   OB_UNIS_DECODE_AND_FUNC(storage_cache_policy_, deep_copy_str);
   OB_UNIS_DECODE(merge_engine_type_);
   OB_UNIS_DECODE(semistruct_encoding_type_);
-  OB_UNIS_DECODE_AND_FUNC(dynamic_partition_policy_, deep_copy_str);
   OB_UNIS_DECODE(external_location_id_);
   OB_UNIS_DECODE_AND_FUNC(external_sub_path_, deep_copy_str);
   OB_UNIS_DECODE(micro_block_format_version_);
-  OB_UNIS_DECODE(tmp_mlog_tid_);
   // !!! end static check
   /*
    * Add deserialized members before this end static check comment
@@ -6526,7 +6149,6 @@ OB_DEF_DESERIALIZE(ObTableSchema)
 OB_DEF_SERIALIZE_SIZE(ObTableSchema)
 {
   int64_t len = 0;
-  ObSArray<int64_t> mv_table_ids;
   int64_t aux_vp_tid_array_count = aux_vp_tid_array_.count();
 
   // !!! begin static check
@@ -6574,14 +6196,12 @@ OB_DEF_SERIALIZE_SIZE(ObTableSchema)
   OB_UNIS_ADD_LEN(index_attributes_set_);
   OB_UNIS_ADD_LEN(parser_name_);
   OB_UNIS_ADD_LEN(depend_table_ids_);
-  OB_UNIS_ADD_LEN(mv_table_ids); //mv_tid compatiable
   OB_UNIS_ADD_LEN(tablet_size_);
   OB_UNIS_ADD_LEN(pctfree_);
   OB_UNIS_ADD_LEN(foreign_key_infos_);
   OB_UNIS_ADD_LEN(partition_status_);
   OB_UNIS_ADD_LEN(partition_schema_version_);
   OB_UNIS_ADD_LEN(session_id_);
-  OB_UNIS_ADD_LEN(sess_active_time_);
   OB_UNIS_ADD_LEN_ARRAY_POINTER(cst_array_, cst_cnt_);
   OB_UNIS_ADD_LEN(pk_comment_);
   OB_UNIS_ADD_LEN(create_host_);
@@ -6615,28 +6235,20 @@ OB_DEF_SERIALIZE_SIZE(ObTableSchema)
   OB_UNIS_ADD_LEN(ttl_definition_);
   OB_UNIS_ADD_LEN(name_generated_type_);
   OB_UNIS_ADD_LEN(lob_inrow_threshold_);
-  OB_UNIS_ADD_LEN_ARRAY_POINTER(column_group_arr_, column_group_cnt_);
-  OB_UNIS_ADD_LEN(is_column_store_supported_);
-  OB_UNIS_ADD_LEN(max_used_column_group_id_);
-  OB_UNIS_ADD_LEN(mlog_tid_);
   OB_UNIS_ADD_LEN(auto_increment_cache_size_);
   OB_UNIS_ADD_LEN(external_properties_);
-  OB_UNIS_ADD_LEN(local_session_vars_);
   OB_UNIS_ADD_LEN(duplicate_read_consistency_);
   OB_UNIS_ADD_LEN(index_params_);
   OB_UNIS_ADD_LEN(micro_index_clustered_);
-  OB_UNIS_ADD_LEN(mv_mode_);
   OB_UNIS_ADD_LEN(enable_macro_block_bloom_filter_);
   OB_UNIS_ADD_LEN(parser_properties_);
   OB_UNIS_ADD_LEN(storage_cache_policy_type_);
   OB_UNIS_ADD_LEN(storage_cache_policy_);
   OB_UNIS_ADD_LEN(merge_engine_type_);
   OB_UNIS_ADD_LEN(semistruct_encoding_type_);
-  OB_UNIS_ADD_LEN(dynamic_partition_policy_);
   OB_UNIS_ADD_LEN(external_location_id_);
   OB_UNIS_ADD_LEN(external_sub_path_);
   OB_UNIS_ADD_LEN(micro_block_format_version_);
-  OB_UNIS_ADD_LEN(tmp_mlog_tid_);
   // !!! end static check
   /*
    * Add deserialized members before this end static check comment
@@ -6660,373 +6272,6 @@ OB_DEF_SERIALIZE_SIZE(ObTableSchema)
    * Detailed documentation: 
    */
   return len;
-}
-
-// the part_level of an auto-partitioned table might be changed after auto partitioning is triggered:
-//    if the table is a no primary key table,
-//        target_part_level = PARTITION_LEVEL_MAX
-//    if the table is non-partitioned table and presetting partition key matches rowkey prefix,
-//        target_part_level = PARTITION_LEVEL_ONE
-//    if the table is non-partitioned table and presetting partition key doesn't match rowkey prefix,
-//        target_part_level = PARTITION_LEVEL_TWO (TODO)
-//    if the table is partitioned table and partition key matches rowkey prefix,
-//        target_part_level = PARTITION_LEVEL_ONE
-//    if the table is partitioned table and partition key doesn't match rowkey prefix,
-//        target_part_level = PARTITION_LEVEL_TWO (TODO)
-//    if the table is subpartitioned table and partition key, subpartition key match rowkey prefix,
-//        target_part_level = PARTITION_LEVEL_TWO (TODO)
-//    if the table is subpartitioned table and partition key, subpartition key don't match rowkey prefix,
-//        target_part_level = PARTITION_LEVEL_MAX
-// Attention:
-// PARTITION_LEVEL_MAX is invalid partition level which means the function run failed or
-// the table can not auto split partition (such as no-primary-key table).
-// caller should check whether can continue if get target_part_level of PARTITION_LEVEL_MAX.
-int ObTableSchema::get_target_part_level_for_auto_partitioned_table(ObPartitionLevel &target_part_level) const
-{
-  int ret = OB_SUCCESS;
-  target_part_level = PARTITION_LEVEL_MAX;
-  if (is_auto_partitioned_table()) {
-    bool match_rowkey_prefix = false;
-    if (is_table_without_pk()) {
-      // not allow to auto partitioning no primary key table
-      // target_part_level = PARTITION_LEVEL_MAX
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("get target part level from a no primary key table", KR(ret), KPC(this));
-    } else if (part_level_ == PARTITION_LEVEL_ZERO) {
-      if (OB_FAIL(is_presetting_partition_key_match_rowkey_prefix(match_rowkey_prefix))) {
-        // target_part_level = PARTITION_LEVEL_MAX;
-        if (OB_ERR_BAD_FIELD_ERROR == ret) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("not support to split partition of non-partitioned table with mismatching between presetting partition key and rowkey prefix", KR(ret), KPC(this));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "mismatching between presetting partition key and rowkey prefix is");
-        } else {
-          LOG_WARN("fail to check whether presetting partition key matches rowkey prefix", KR(ret), KPC(this));
-        }
-      } else if (match_rowkey_prefix) {
-        // when trigger auto partitioning, the non-partitioned table will be set as partitioned table
-        target_part_level = PARTITION_LEVEL_ONE;
-      } else {
-        ret = OB_NOT_SUPPORTED;
-        LOG_WARN("not support to split partition of non-partitioned table with mismatching between presetting partition key and rowkey prefix", KR(ret), KPC(this));
-        LOG_USER_ERROR(OB_NOT_SUPPORTED, "mismatching between presetting partition key and rowkey prefix is");
-      }
-    } else if (OB_FAIL(is_partition_key_match_rowkey_prefix(match_rowkey_prefix))) {
-      // target_part_level = PARTITION_LEVEL_MAX;
-      LOG_WARN("fail to check primary key match partition column", KR(ret), KPC(this));
-    } else if (part_level_ == PARTITION_LEVEL_ONE) {
-      if (match_rowkey_prefix) {
-        // when trigger auto partitioning, the partition will be split into two partitions
-        target_part_level = PARTITION_LEVEL_ONE;
-      } else {
-        ret = OB_NOT_SUPPORTED;
-        LOG_WARN("not support to split partition of non-partitioned table with mismatching between presetting partition key and rowkey prefix", KR(ret), KPC(this));
-        LOG_USER_ERROR(OB_NOT_SUPPORTED, "mismatching between presetting partition key and rowkey prefix is");
-      }
-    } else if (part_level_ == PARTITION_LEVEL_TWO) {
-      if (match_rowkey_prefix) {
-        // when trigger auto partitioning, the subpartition will be split into two subpartitions
-        target_part_level = PARTITION_LEVEL_TWO;
-      } else {
-        // not allow to split
-        // target_part_level = PARTITION_LEVEL_MAX;
-        ret = OB_NOT_SUPPORTED;
-        LOG_WARN("get target part level from a subpartitioned table"
-                 "with mismatching between partition key, subpartition key and primary key prefix",
-                 KR(ret), KPC(this));
-      }
-    } else {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("get invalid part level", KR(ret), K(part_level_));
-    }
-  } else {
-    // target_part_level = PARTITION_LEVEL_MAX
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("get target part level from a non-auto-partitioned table", KR(ret), KPC(this));
-  }
-  return ret;
-}
-
-int ObTableSchema::check_validity_for_auto_partition() const
-{
-  int ret = OB_SUCCESS;
-  if (is_auto_partitioned_table()) {
-    if (OB_FAIL(check_enable_split_partition(true /*is_auto_partitioning*/))) {
-      LOG_WARN("fail to check enable split partition", KR(ret));
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::check_can_do_manual_split_partition() const
-{
-  int ret = OB_SUCCESS;
-
-  if (OB_FAIL(check_enable_split_partition(false /*is_auto_partitioning*/))) {
-    LOG_WARN("fail to check enable split partition", KR(ret));
-  }
-
-  return ret;
-}
-
-// 1. not support data version which is lower than 4.4
-// 2. not support to split partition of sys_table/local_index/domain_index/spatial_index/lob
-// 3. not support to split partition of no primary key table
-// 4. not support to split partition of a table including spatial index or domain index
-// 5. not support to split hash/list/interval partition
-// 6. not support to split subpartition
-// 7. not support mismatching between partition key and primary key prefix
-// 8. not support column store table to split partition
-// 9. only support automatic partitioning global index tables in non user tables
-int ObTableSchema::check_enable_split_partition(bool is_auto_partitioning) const
-{
-  int ret = OB_SUCCESS;
-  bool is_table_column_store = false;
-  if (is_in_recyclebin()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not support to split table in recyclebin", KR(ret), KPC(this));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "recyclebin table is");
-  } else if (is_table_without_pk()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not support to split a partition of no primary key table", KR(ret), KPC(this));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "reorganizing table without primary key(s) is");
-  } else if (OB_FAIL(get_is_column_store(is_table_column_store))) {
-    LOG_WARN("failed to get is column store", K(ret));
-  } else if (is_table_column_store) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not support to split a partition of column store table", KR(ret), KPC(this));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "column store table is");
-  } else if (is_user_table()) {
-    // check indexes of auto-partitioned data table
-    ObArray<ObAuxTableMetaInfo> simple_index_infos;
-
-    if (OB_FAIL(get_simple_index_infos(simple_index_infos))) {
-      LOG_WARN("get_simple_index_infos failed", KR(ret));
-    } else {
-      for (int64_t i = 0; OB_SUCC(ret) && i < simple_index_infos.count(); ++i) {
-        if (is_spatial_index(simple_index_infos[i].index_type_)) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("not support spatial index", KR(ret), K(simple_index_infos[i].index_type_));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "split partition of a table with spatial index is");
-        } else if (share::schema::is_fts_index(simple_index_infos[i].index_type_)) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("not support fulltext index", KR(ret), K(simple_index_infos[i].index_type_));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "split partition of a table with fulltext index is");
-        } else if (share::schema::is_multivalue_index(simple_index_infos[i].index_type_)) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("not support multivalue index", KR(ret), K(simple_index_infos[i].index_type_));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "split partition of a table with multivalue index is");
-        } else if (share::schema::is_vec_index(simple_index_infos[i].index_type_)) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("not support vec index", KR(ret), K(simple_index_infos[i].index_type_));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "split partition of a table with vec index is");
-        } else if (INDEX_TYPE_DOMAIN_CTXCAT_DEPRECATED == simple_index_infos[i].index_type_) {
-          ret = OB_NOT_SUPPORTED;
-          LOG_WARN("not support domain index", KR(ret));
-          LOG_USER_ERROR(OB_NOT_SUPPORTED, "split partition of a table with domain index is");
-        }
-      } // end for
-    }
-  } else { // !is_user_table()
-    // 1. manual partition split is only supported for user-table
-    // 2. auto partition split is supported for user-table and global index
-    if (is_materialized_view() || is_mlog_table()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not support to split a partition of materialized view or materialized view log table", KR(ret), KPC(this));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "materialized view or materialized view log table is");
-    } else if (is_index_table() && is_fts_index()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not support to split a partition of fulltext index table", KR(ret), KPC(this));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "fulltext index table is");
-    } else if (is_index_table() && is_multivalue_index()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not support to split a partition of multivalue index table", KR(ret), KPC(this));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "multivalue index table is");
-    } else if (is_index_table() && is_spatial_index()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not support to split a partition of spatial index", KR(ret), KPC(this));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "spatial index is");
-    } else if (is_index_table() && share::schema::is_vec_index(index_type_)) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not support to split a partition of vec index", KR(ret), KPC(this));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "spatial index is");
-    } else if (is_tmp_table()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not support to split a partition of temporary table", KR(ret), KPC(this));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "temporary table is");
-    } else if (is_external_table()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not support to split a partition of external table", KR(ret), KPC(this));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "external table is");
-    } else if (is_aux_lob_table()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not support to split a partition of auxiliary table", KR(ret), KPC(this));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "auxiliary table is");
-    } else if (is_aux_vp_table()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not support to split a partition of auxiliary vertical partition table", KR(ret), KPC(this));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "vertical partition table is");
-    } else if (is_auto_partitioning && is_global_index_table()) {
-    } else {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("invalid table type", KR(ret), KPC(this));
-    }
-  }
-
-  ObPartitionLevel target_part_level = PARTITION_LEVEL_MAX;
-  if (OB_FAIL(ret)) {
-  } else if (is_auto_partitioning && OB_FAIL(get_target_part_level_for_auto_partitioned_table(target_part_level))) {
-    LOG_WARN("fail to get target part level for auto partitioned table", KR(ret), KPC(this));
-  } else if (!is_auto_partitioning) {
-    target_part_level = get_part_level();
-  }
-
-  if (OB_FAIL(ret)) {
-  } else if (!is_valid_split_part_type()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("only support to split range or range columns partition", KR(ret), K(part_option_));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "hash/list/interval partition is");
-  } else if (target_part_level != ObPartitionLevel::PARTITION_LEVEL_ONE) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not support to split subpartition", KR(ret), KPC(this));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "split subpartition is");
-  } else if (!is_auto_partitioning) {
-    bool is_match_rowkey_prefix = false;
-    if (OB_FAIL(is_partition_key_match_rowkey_prefix(is_match_rowkey_prefix))) {
-      LOG_WARN("fail to check whether primary key prefix match partition columns", KR(ret));
-    } else if (!is_match_rowkey_prefix) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("split partition should keep primary key prefix equal to partition key", KR(ret));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "mismatching between primary key prefix and partition key is");
-    }
-  }
-
-  return ret;
-}
-
-// for auto-partitioned non-partitioned table,
-// the empty part_func_expr means when the table/global_index triggers auto partitioning,
-// the primary_keys/index_columns will be choosen as partition key.
-// thus, if using_auto_partitioned_mode==true, we will generate the "possible" partition key
-// for auto-partitioned non-partitioned table with empty part_func_expr
-int ObTableSchema::get_part_func_expr_str(ObString &part_func_expr, common::ObIAllocator &allocator,
-                                          const bool using_auto_partitioned_mode) const
-{
-  int ret = OB_SUCCESS;
-  part_func_expr.reset();
-  if (!part_option_.get_part_func_expr_str().empty()) {
-    if (OB_FAIL(ob_write_string(allocator, part_option_.get_part_func_expr_str(),
-                                part_func_expr, true /*c_style*/))) {
-      LOG_WARN("fail to write string", KR(ret), KPC(this));
-    }
-  } else if (is_auto_partitioned_table() && !is_partitioned_table() &&
-             (is_user_table() || is_global_index_table()) &&
-             using_auto_partitioned_mode) {
-    ObSqlString presetting_partition_key_str;
-    const ObRowkeyInfo &presetting_partition_keys = is_global_index_table() ?
-                                                    get_index_info() : get_rowkey_info();
-    for (int64_t i = 0; OB_SUCC(ret) && i < presetting_partition_keys.get_size(); ++i) {
-      const ObRowkeyColumn *partition_column = presetting_partition_keys.get_column(i);
-      const ObColumnSchemaV2 *column = nullptr;
-      if (OB_ISNULL(partition_column)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("the partition key is NULL, ", KR(ret), K(i), K(presetting_partition_keys), KPC(this));
-      } else if (is_shadow_column(partition_column->column_id_)) {
-      } else if (OB_ISNULL(column = get_column_schema(partition_column->column_id_))) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("the column schema is NULL, ", KR(ret), KPC(partition_column), KPC(this));
-      } else if (OB_FAIL(presetting_partition_key_str.append(column->get_column_name()))) {
-        LOG_WARN("fail to append str", KR(ret), KPC(column), KPC(this));
-      } else if (i != presetting_partition_keys.get_size() - 1 &&
-                 OB_FAIL(presetting_partition_key_str.append(", "))) {
-        LOG_WARN("fail to append str", KR(ret), KPC(column), KPC(this));
-      }
-    }
-
-    if (OB_SUCC(ret)) {
-      if (OB_UNLIKELY(presetting_partition_key_str.empty())) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("fail to acquire presetting partition keys", KR(ret), KPC(this));
-      } else if (OB_FAIL(ob_write_string(allocator, presetting_partition_key_str.string(),
-                                         part_func_expr, true /*c_style*/))) {
-        LOG_WARN("fail to write string", KR(ret), KPC(this));
-      }
-    }
-  }
-
-  return ret;
-}
-
-// if an auto-partitioned table is non-partitioned table,
-// the "part_func_expr" of it records its presetting partition key.
-// the presetting partition key will be set as partition key
-// when the auto-partitioned table triggers partition splitting.
-// if the part_func_expr is not empty, the columns of it are equal to presetting partition key;
-// if the part_func_expr is empty, it means:
-//    1. for user_table, the presetting partition key will always equal to "current" primary key,
-//    2. for global_index, the presetting partition key will always equal to its index columns.
-// Attention:
-//    due to we only allow user-table to set presetting key by using auto-partition clause,
-//    the presetting partition key of global index must be index columns (part_func_expr is empty).
-int ObTableSchema::get_presetting_partition_keys(common::ObIArray<uint64_t> &partition_key_ids) const
-{
-  int ret = OB_SUCCESS;
-  static const char DELIMITER = ',';
-  ObArenaAllocator alloc;
-  ObString part_func_str;
-  const ObString &ori_part_func_str = part_option_.get_part_func_expr_str();
-  partition_key_ids.reset();
-
-  if (!is_auto_partitioned_table() || is_partitioned_table()) {
-    // only a auto-partitioned non-partitioned table has presetting partition key
-    ret = OB_OP_NOT_ALLOW;
-    LOG_WARN("attempt to get presetting partition key from invalid table",
-              KR(ret), K(is_auto_partitioned_table()), K(is_partitioned_table()), KPC(this));
-  } else if (!is_user_table() && !is_global_index_table()) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("invalid table type", KR(ret), KPC(this));
-  } else if (ori_part_func_str.empty()) {
-    const ObRowkeyInfo &partition_keys = is_global_index_table() ? get_index_info() : get_rowkey_info();
-    for (int64_t i = 0; OB_SUCC(ret) && i < partition_keys.get_size(); ++i) {
-      const ObRowkeyColumn *partition_column = partition_keys.get_column(i);
-      if (OB_ISNULL(partition_column)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("the partition key is NULL, ", KR(ret), K(i), K(partition_keys), KPC(this));
-      } else if (!is_shadow_column(partition_column->column_id_) &&
-          OB_FAIL(partition_key_ids.push_back(partition_column->column_id_))) {
-        LOG_WARN("failed to push back rowkey column id", KR(ret), KPC(this));
-      }
-    }
-  } else if (!is_user_table()) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("only user-table could set presetting partition key specially", KR(ret), KPC(this));
-  } else if (OB_FAIL(ob_write_string(alloc, ori_part_func_str, part_func_str, true /*c_style*/))) {
-    LOG_WARN("fail to write string", KR(ret), KPC(this));
-  } else if (OB_FAIL(get_partition_keys_by_part_func_expr(part_func_str, partition_key_ids))) {
-    LOG_WARN("fail to get partition key", K(ret), K(part_func_str), K(ori_part_func_str));
-  }
-  return ret;
-}
-
-// ObTableSchema::get_partition_keys_by_part_func_expr moved definition to the upper-layer owner cpp(real upper-layer symbol user, declaration remains in this class header, transitional state)
-
-int ObTableSchema::is_presetting_partition_key(const uint64_t partition_key_id,
-                                               bool &is_presetting_partition_key) const
-{
-  int ret = OB_SUCCESS;
-  ObArray<uint64_t> partition_key_ids;
-  is_presetting_partition_key = false;
-
-  if (OB_FAIL(get_presetting_partition_keys(partition_key_ids))) {
-    LOG_WARN("fail to get presetting partition key", KR(ret), KPC(this));
-  } else {
-    for (int64_t i = 0; !is_presetting_partition_key && i < partition_key_ids.count(); i++) {
-      if (partition_key_id == partition_key_ids.at(i)) {
-        is_presetting_partition_key = true;
-      }
-    }
-  }
-
-  return ret;
 }
 
 int ObTableSchema::check_primary_key_cover_partition_column()
@@ -7126,14 +6371,8 @@ int ObTableSchema::check_index_table_cover_partition_keys(
 
 // check_skip_index_valid moved definition to storage/blocksstable/index_block/ob_index_block_util.cpp(storage blacklist validation)
 
-// Distinguish the following three scenarios:
-// 1. For a non-auto-partitioned non-partitioned table, return 0 directly;
-// 2. For a auto-partitioned non-partitioned table
-//    2.1: if its "part_func_expr" is not empty, calculate the number of presetting partition key
-//    2.2: if its "part_func_expr" is empty, return index_column_num if it is global index, return
-//         rowkey_column_num if it is user-table
-// 3. For a partitioned table, and the first-level partition mode is key(), take the number of primary key columns;
-//  otherwise, calculate the number of expression vectors
+// A non-partitioned table has no partition expression. For a partitioned table,
+// key() uses the primary-key column count; other modes use the expression count.
 int ObTableSchema::calc_part_func_expr_num(int64_t &part_func_expr_num) const
 {
   int ret = OB_SUCCESS;
@@ -7141,29 +6380,13 @@ int ObTableSchema::calc_part_func_expr_num(int64_t &part_func_expr_num) const
   if (PARTITION_LEVEL_MAX == part_level_) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("invalid part level", K(ret), K_(part_level));
-  } else if (PARTITION_LEVEL_ZERO == part_level_ && !is_auto_partitioned_table()) {
+  } else if (PARTITION_LEVEL_ZERO == part_level_) {
     part_func_expr_num = 0;
   } else {
     ObArray<ObString> sub_columns;
     ObString table_func_expr_str = get_part_option().get_part_func_expr_str();
     if (table_func_expr_str.empty()) {
-      if (is_auto_partitioned_table()) {
-        // current auto-partitioned table only support range partition
-        if (is_partitioned_table()) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("partitioned table without part_func_expr", KR(ret), KPC(this));
-        } else if (!is_valid_split_part_type()) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("invalid part type", KR(ret), KPC(this));
-        } else if (is_global_index_table()) {
-          part_func_expr_num = get_index_column_num();
-        } else if (is_user_table()) {
-          part_func_expr_num = get_rowkey_column_num();
-        } else {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("invalid auto-partitioned table", KR(ret), KPC(this));
-        }
-      } else if (is_key_part()) {
+      if (is_key_part()) {
         part_func_expr_num = get_rowkey_column_num();
       } else {
         ret = OB_ERR_UNEXPECTED;
@@ -7506,8 +6729,7 @@ int ObTableSchema::delete_constraint(const ObString &constraint_name)
   return ret;
 }
 
-int ObTableSchema::is_tbl_partition_key(const uint64_t column_id, bool &result,
-                                        const bool ignore_presetting_key) const
+int ObTableSchema::is_tbl_partition_key(const uint64_t column_id, bool &result) const
 {
   int ret = OB_SUCCESS;
   result = false;
@@ -7519,57 +6741,41 @@ int ObTableSchema::is_tbl_partition_key(const uint64_t column_id, bool &result,
         LOG_WARN("check is subpartition key failed", KR(ret), K(column_id));
       }
     }
-  } else if (is_auto_partitioned_table() && !ignore_presetting_key &&
-             OB_FAIL(is_presetting_partition_key(column_id, result))) {
-    LOG_WARN("fail to check presetting partition key", KR(ret), K(column_id));
   }
   return ret;
 }
 
 int ObTableSchema::is_tbl_partition_key(const share::schema::ObColumnSchemaV2 &orig_column_schema,
-                                        bool& result,
-                                        const bool ignore_presetting_key) const
+                                        bool& result) const
 {
   int ret = OB_SUCCESS;
   result = false;
 
   if (is_partitioned_table()) {
     result = orig_column_schema.is_tbl_part_key_column();
-  } else if (is_auto_partitioned_table() && !ignore_presetting_key &&
-             OB_FAIL(is_presetting_partition_key(orig_column_schema.get_column_id(),
-                                                 result))) {
-    LOG_WARN("fail to check presetting partition key", KR(ret), K(orig_column_schema));
   }
 
   return ret;
 }
 
 int ObTableSchema::is_partition_key(const share::schema::ObColumnSchemaV2 &orig_column_schema,
-                                    bool& result,
-                                    const bool ignore_presetting_key) const
+                                    bool& result) const
 {
   int ret = OB_SUCCESS;
   result = false;
 
   if (is_partitioned_table()) {
     result = orig_column_schema.is_part_key_column();
-  } else if (is_auto_partitioned_table() && !ignore_presetting_key &&
-             OB_FAIL(is_presetting_partition_key(orig_column_schema.get_column_id(),
-                                                 result))) {
-    LOG_WARN("fail to check presetting partition key", KR(ret), K(orig_column_schema));
   }
 
   return ret;
 }
 
 int ObTableSchema::is_subpartition_key(const share::schema::ObColumnSchemaV2 &orig_column_schema,
-                                       bool& result,
-                                       const bool ignore_presetting_key) const
+                                       bool& result) const
 {
   int ret = OB_SUCCESS;
   result = false;
-  UNUSED(ignore_presetting_key);
-
   if (PARTITION_LEVEL_TWO == get_part_level()) {
     result = orig_column_schema.is_subpart_key_column();
   }
@@ -7931,136 +7137,6 @@ int ObTableSchema::get_column_encodings(common::ObIArray<int64_t> &col_encodings
   return ret;
 }
 
-int ObTableSchema::is_presetting_partition_key_match_rowkey_prefix(bool &is_prefix) const
-{
-  int ret = OB_SUCCESS;
-  is_prefix = false;
-
-  if (is_auto_partitioned_table() && !is_partitioned_table()) {
-    ObArray<uint64_t> presetting_partition_key_column_ids;
-
-    if (part_option_.get_part_func_expr_str().empty()) {
-      // if user doesn't set presetting partition key,
-      // we will choose primary key as presetting partition key for data table and
-      // choose index columns as presetting partition key for global index
-      is_prefix = true;
-    } else if (OB_FAIL(get_presetting_partition_keys(presetting_partition_key_column_ids))) {
-      LOG_WARN("fail to get presetting partition keys", KR(ret), KPC(this));
-    } else if (presetting_partition_key_column_ids.empty()) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("invalid presetting partition key", KR(ret), KPC(this));
-    } else {
-      ObArray<uint64_t> rowkey_column_ids;
-      const ObRowkeyInfo &rowkey_info = get_rowkey_info();
-      const ObRowkeyColumn *rowkey_column = NULL;
-      for (int64_t i = 0; OB_SUCC(ret) && i < rowkey_info.get_size(); ++i) {
-        if (NULL == (rowkey_column = rowkey_info.get_column(i))) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("The rowkey column is NULL, ", K(i));
-        } else if (OB_FAIL(rowkey_column_ids.push_back(rowkey_column->column_id_))) {
-          LOG_WARN("failed to push back rowkey column id", KR(ret));
-        }
-      }
-      if (OB_FAIL(ret)) {
-      } else if (rowkey_column_ids.count() < presetting_partition_key_column_ids.count()) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("invalid column ids", KR(ret), K(rowkey_column_ids), K(presetting_partition_key_column_ids));
-      } else {
-        is_prefix = true;
-        for (int64_t i = 0; is_prefix && OB_SUCC(ret) && i < presetting_partition_key_column_ids.count(); i++) {
-          uint64_t rowkey_column_id = rowkey_column_ids.at(i);
-          uint64_t presetting_partition_key_column_id = presetting_partition_key_column_ids.at(i);
-          if (rowkey_column_id != presetting_partition_key_column_id) {
-            is_prefix = false;
-          }
-        } // end for
-      }
-    }
-  } else {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("only auto-partitioned non-partitioned table could call this function", KR(ret), KPC(this));
-  }
-
-  return ret;
-}
-
-int ObTableSchema::is_partition_key_match_rowkey_prefix(bool &is_prefix) const
-{
-  int ret = OB_SUCCESS;
-  is_prefix = false;
-  if (is_partitioned_table()) {
-    is_prefix = true;
-    int64_t i = 0;
-    int64_t j = 0;
-    uint64_t rowkey_column_id = OB_INVALID_ID;
-    uint64_t partkey_column_id = OB_INVALID_ID;
-    ObArenaAllocator alloc;
-    ObArray<uint64_t> partition_key_ids;
-    const ObString &ori_part_func_str = part_option_.get_part_func_expr_str();
-    if (ori_part_func_str.empty()) {
-      is_prefix = false;
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("part_func_str is empty", KR(ret), KPC(this));
-    }else if (OB_FAIL(get_partition_keys_by_part_func_expr(ori_part_func_str, partition_key_ids))) {
-      is_prefix = false;
-      if (OB_ERR_BAD_FIELD_ERROR == ret) {
-        ret = OB_SUCCESS;
-      } else {
-        LOG_WARN("failed to get part keys", K(ret), K(ori_part_func_str));
-      }
-    }
-    while (OB_SUCC(ret) && is_prefix &&
-           i < rowkey_info_.get_size() && j < partition_key_ids.size()) {
-      if (OB_FAIL(rowkey_info_.get_column_id(i, rowkey_column_id))) {
-        LOG_WARN("failed to get rowkey column id", K(ret), K(i));
-      } else if (FALSE_IT(partkey_column_id = partition_key_ids.at(j))) {
-      } else if (rowkey_column_id == partkey_column_id) {
-        ++i;
-        ++j;
-      } else {
-        is_prefix = false;
-      }
-    }
-    if (OB_SUCC(ret)) {
-      if (PARTITION_LEVEL_TWO == get_part_level()) {
-        j = 0;
-        uint64_t sub_partkey_column_id = OB_INVALID_ID;
-        ObArray<uint64_t> sub_partition_key_ids;
-        const ObString &ori_sub_part_func_str = sub_part_option_.get_part_func_expr_str();
-        if (ori_sub_part_func_str.empty()) {
-          is_prefix = false;
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("sub_part_func_str is empty", KR(ret), KPC(this));
-        } else if (OB_FAIL(get_partition_keys_by_part_func_expr(ori_sub_part_func_str, sub_partition_key_ids))) {
-          is_prefix = false;
-          if (OB_ERR_BAD_FIELD_ERROR == ret) {
-            ret = OB_SUCCESS;
-          } else {
-            LOG_WARN("failed to get part keys", K(ret), K(ori_sub_part_func_str));
-          }
-        }
-        while (OB_SUCC(ret) && is_prefix &&
-               i < rowkey_info_.get_size() && j < sub_partition_key_ids.size()) {
-          if (OB_FAIL(rowkey_info_.get_column_id(i, rowkey_column_id))) {
-            LOG_WARN("failed to get rowkey column id", K(ret), K(i));
-          } else if (FALSE_IT(sub_partkey_column_id = sub_partition_key_ids.at(j))) {
-          } else if (rowkey_column_id == sub_partkey_column_id) {
-            ++i;
-            ++j;
-          } else {
-            is_prefix = false;
-          }
-        }
-      } else {
-        // do nothing
-      }
-    }
-  }
-  return ret;
-}
-
-// init_column_meta_array moved definition to storage/ob_i_store.cpp(accesses blocksstable typed members)
-
 int ObTableSchema::get_spatial_geo_column_id(uint64_t &geo_column_id) const
 {
   int ret = OB_SUCCESS;
@@ -8343,38 +7419,6 @@ DEFINE_CHECK_HAS_INDEX_FUNC(multivalue_index_aux);
 
 #undef DEFINE_CHECK_HAS_INDEX_FUNC
 
-int ObTableSchema::get_part_key_column_type(const int64_t index, ObObjType &type) const
-{
-  int ret = OB_SUCCESS;
-  uint64_t col_id = OB_INVALID_ID;
-  const ObColumnSchemaV2 *column_schema = NULL;
-  if (OB_FAIL(partition_key_info_.get_column_id(index, col_id))) {
-    LOG_WARN("fail to get column id", KR(ret), K(index));
-  } else if (OB_ISNULL(column_schema = get_column_schema(col_id))) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("column schema is null", KR(ret), K(col_id));
-  } else {
-    type = column_schema->get_data_type();
-  }
-  return ret;
-}
-
-int ObTableSchema::get_part_key_column_name(const int64_t index, ObString &name) const
-{
-  int ret = OB_SUCCESS;
-  uint64_t col_id = OB_INVALID_ID;
-  const ObColumnSchemaV2 *column_schema = NULL;
-  if (OB_FAIL(partition_key_info_.get_column_id(index, col_id))) {
-    LOG_WARN("fail to get column id", KR(ret), K(index));
-  } else if (OB_ISNULL(column_schema = get_column_schema(col_id))) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("column schema is null", KR(ret), K(col_id));
-  } else {
-    name = column_schema->get_column_name_str();
-  }
-  return ret;
-}
-
 int ObTableSchema::get_spatial_index_column_ids(common::ObIArray<uint64_t> &column_ids) const
 {
   // spatial index is a kind of domain index
@@ -8402,462 +7446,6 @@ int ObTableSchema::delete_all_view_columns()
     }
   }
   CK (0 == column_cnt_);
-  return ret;
-}
-
-
-int ObTableSchema::get_store_column_group_count(
-    int64_t &column_group_cnt,
-    const bool filter_empty_cg) const
-{
-  int ret = OB_SUCCESS;
-  int64_t tmp_cnt = 0;
-  if (column_group_cnt_ > 0) {
-    if (OB_ISNULL(column_group_arr_)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("column_group_array should not be null", KR(ret), K_(column_group_cnt));
-    } else {
-      for (int64_t i = 0; OB_SUCC(ret) && (i < column_group_cnt_); ++i) {
-        if (OB_ISNULL(column_group_arr_[i])) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("column_group should not be null", KR(ret), K(i), K_(column_group_cnt));
-        } else if (filter_empty_cg && (0 == column_group_arr_[i]->get_column_id_count())) {
-          // skip column_group with empty column_ids
-        } else {
-          ++tmp_cnt;
-        }
-      }
-    }
-  }
-  column_group_cnt = tmp_cnt;
-  return ret;
-}
-
-int ObTableSchema::get_store_column_groups(
-    ObIArray<const ObColumnGroupSchema *> &column_groups,
-    const bool filter_empty_cg) const
-{
-  int ret = OB_SUCCESS;
-  column_groups.reset();
-  if (column_group_cnt_ > 0) {
-    if (OB_ISNULL(column_group_arr_)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("column_group_array should not be null", KR(ret), K_(column_group_cnt));
-    } else {
-      if (OB_FAIL(column_groups.reserve(column_group_cnt_))) {
-        LOG_WARN("fail to reserve", KR(ret), K_(column_group_cnt));
-      }
-      for (int64_t i = 0; OB_SUCC(ret) && (i < column_group_cnt_); ++i) {
-        if (OB_ISNULL(column_group_arr_[i])) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("column_group should not be null", KR(ret), K(i), K_(column_group_cnt));
-        } else if (filter_empty_cg && (0 == column_group_arr_[i]->get_column_id_count())) {
-          // skip column_group with empty column_ids
-        } else if (OB_FAIL(column_groups.push_back(column_group_arr_[i]))) {
-          LOG_WARN("fail to push back", KR(ret), K(i), K_(column_group_cnt));
-        }
-      }
-    }
-  }
-  if (OB_FAIL(ret)) {
-    column_groups.reset();
-  }
-  return ret;
-}
-
-int ObTableSchema::has_all_column_group(bool &has_all_column_group) const
-{
-  int ret = OB_SUCCESS;
-  int64_t column_group_cnt = 0;
-  has_all_column_group = false;
-  ObSEArray<const ObColumnGroupSchema *, 8> column_group_metas;
-  if (OB_FAIL(get_store_column_group_count(column_group_cnt))) {
-    LOG_WARN("Failed to get column group count", K(ret), KPC(this));
-  } else if (column_group_cnt <= 1) {
-    has_all_column_group = true;
-  } else if (OB_FAIL(get_store_column_groups(column_group_metas))) {
-    LOG_WARN("Failed to get column group metas", K(ret), KPC(this));
-  } else {
-    const ObColumnGroupSchema *cg_schema = nullptr;
-    for (int64_t idx = 0; OB_SUCC(ret) && idx < column_group_metas.count(); ++idx) {
-      if (OB_ISNULL(cg_schema = column_group_metas.at(idx))) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("Unexpected null cg_schema", K(ret));
-      } else if (cg_schema->get_column_group_type() == ALL_COLUMN_GROUP) {
-        has_all_column_group = true;
-        break;
-      }
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::adjust_column_group_array()
-{
-  // after v435, all cg and rowkey cg should exist in the front of column group array
-  // this interface is only used in create table / create index / offline ddl with new table / delayed column transform
-  int ret = OB_SUCCESS;
-  bool is_rowkey_cg_exist = false;
-  bool is_all_cg_exist = false;
-  ObColumnGroupSchema *cg_schema = nullptr;
-  if (!is_column_store_supported()) {
-    // do nothing
-  } else {
-    if (OB_FAIL(is_column_group_exist(OB_ROWKEY_COLUMN_GROUP_NAME, is_rowkey_cg_exist))) {
-      LOG_WARN("fail to check is each column group exist", K(ret));
-    } else if (OB_FAIL(is_column_group_exist(OB_ALL_COLUMN_GROUP_NAME, is_all_cg_exist))) {
-      LOG_WARN("fail to check is all column group exist", K(ret));
-    } else if (is_rowkey_cg_exist && OB_FAIL(get_column_group_by_name(OB_ROWKEY_COLUMN_GROUP_NAME, cg_schema))) {
-      LOG_WARN("fail to get rowkey column group", K(ret), KPC(this));
-    } else if (is_all_cg_exist && OB_FAIL(get_column_group_by_name(OB_ALL_COLUMN_GROUP_NAME, cg_schema))) {
-      LOG_WARN("fail to get all column group", K(ret), KPC(this));
-    } else if (OB_NOT_NULL(cg_schema)) {
-      int64_t new_loc = column_group_cnt_ - 1;
-      for (int64_t i = column_group_cnt_ - 1; OB_SUCC(ret) && i >= 0; --i) {
-        if (OB_ISNULL(column_group_arr_[i])) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("column_group should not be null", K(ret), K(i), K_(column_group_cnt));
-        } else if (column_group_arr_[i] != cg_schema) {
-          column_group_arr_[new_loc] = column_group_arr_[i];
-          new_loc -= 1;
-        } else {
-          // skip all cg or rowkey cg
-        }
-      }
-      if (OB_SUCC(ret)) {
-        column_group_arr_[0] = cg_schema;
-      }
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::get_column_group_by_id(
-    const uint64_t column_group_id,
-    ObColumnGroupSchema *&column_group) const
-{
-  int ret = OB_SUCCESS;
-  column_group = NULL;
-  const CgIdHashArray *cg_id_arr = get_cg_id_hash_array();
-  if (OB_NOT_NULL(cg_id_arr)) {
-    if (OB_FAIL(cg_id_arr->get_refactored(ObColumnGroupIdKey(column_group_id), column_group))) {
-      column_group = NULL;
-      LOG_WARN("fail to get column_group from hash array", KR(ret), K(column_group_id));
-    } else if (OB_ISNULL(column_group)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("column_group should not be null", KR(ret), K(column_group_id));
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::get_column_group_by_name(const ObString &cg_name, ObColumnGroupSchema *&column_group) const
-{
-  int ret = OB_SUCCESS;
-  column_group = nullptr;
-  if (cg_name.empty()) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret), K(cg_name));
-  } else if (OB_NOT_NULL(cg_name_hash_arr_)) {
-    if (OB_FAIL(cg_name_hash_arr_->get_refactored(ObColumnGroupSchemaHashWrapper(cg_name), column_group))) {
-      column_group = nullptr;
-      if (OB_HASH_NOT_EXIST == ret) {
-        /* skip, hash not exist normal situation no warn*/
-      } else {
-        LOG_WARN("fail to get column_group from hash array", K(ret), K(cg_name));
-      }
-    }
-  }
-  return ret;
-}
-
-
-// used to add default type column_group for sys_schema or mock default column_group
-int ObTableSchema::add_default_column_group()
-{
-  int ret = OB_SUCCESS;
-  if (column_group_cnt_ != 0) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("can only use this function to add default cg for sys schema", KR(ret));
-  } else {
-    ObColumnGroupSchema column_group;
-    column_group.set_column_group_id(DEFAULT_TYPE_COLUMN_GROUP_ID);
-    column_group.set_column_group_type(ObColumnGroupType::DEFAULT_COLUMN_GROUP);
-    column_group.set_block_size(block_size_);
-    column_group.set_row_store_type(row_store_type_);
-    column_group.set_compressor_type(compressor_type_);
-    if (OB_FAIL(column_group.set_column_group_name(OB_DEFAULT_COLUMN_GROUP_NAME))) {
-      LOG_WARN("fail to set default type column_group name", KR(ret));
-    } else {
-      for (int64_t i = 0; OB_SUCC(ret) && (i < column_cnt_); ++i) {
-        if (OB_NOT_NULL(column_array_[i]) && !column_array_[i]->is_virtual_generated_column()) {
-          const uint64_t column_id = column_array_[i]->get_column_id();
-          if (OB_FAIL(column_group.add_column_id(column_id))) {
-            LOG_WARN("fail to add column_id into column_group", KR(ret), K(i), K(column_id));
-          }
-        }
-      }
-
-      if (FAILEDx(do_add_column_group(column_group))) {
-        LOG_WARN("fail to do add column group", KR(ret), K(column_group));
-      }
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::add_column_group(const ObColumnGroupSchema &other)
-{
-  int ret = OB_SUCCESS;
-  if (!other.is_valid()) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", KR(ret), K(other));
-  } else if (other.get_column_group_type() != ObColumnGroupType::DEFAULT_COLUMN_GROUP
-             && !ObSchemaUtils::can_add_column_group(*this)) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("only default column group is allowded to add to not user/tmp table", K(ret), K(other), KPC(this));
-  } else if (OB_FAIL(do_add_column_group(other))) {
-    LOG_WARN("fail to do add column group", KR(ret), K(other));
-  }
-  return ret;
-}
-
-int ObTableSchema::do_add_column_group(
-    const ObColumnGroupSchema &other)
-{
-  int ret = OB_SUCCESS;
-  ObColumnGroupSchema *column_group = NULL;
-  if (OB_ISNULL(column_group = OB_NEWx(ObColumnGroupSchema, allocator_, allocator_))) {
-    ret = OB_ALLOCATE_MEMORY_FAILED;
-    LOG_WARN("fail to allocate memory", KR(ret));
-  }
-  if (OB_SUCC(ret)) {
-    if (OB_FAIL(column_group->assign(other))) {
-      LOG_WARN("fail to assign column_group", KR(ret), K(other));
-    } else if (OB_FAIL((add_column_group_to_hash_array<ObColumnGroupIdKey, CgIdHashArray>(column_group,
-      ObColumnGroupIdKey(column_group->get_column_group_id()), cg_id_hash_arr_)))) {
-      LOG_WARN("fail to add column_group to cg_id_hash_array", KR(ret), KPC(column_group));
-    } else if (OB_FAIL((add_column_group_to_hash_array<ObColumnGroupSchemaHashWrapper, CgNameHashArray>(
-      column_group, ObColumnGroupSchemaHashWrapper(column_group->get_column_group_name()), cg_name_hash_arr_)))) {
-      LOG_WARN("fail to add column_group to cg_name_hash_array", KR(ret), KPC(column_group));
-    } else if (OB_FAIL(add_column_group_to_array(column_group))) {
-      LOG_WARN("fail to add column_group to cg_array", KR(ret), KPC(column_group));
-    } else {
-      max_used_column_group_id_ = (other.get_column_group_id() > max_used_column_group_id_)
-                                  ? other.get_column_group_id()
-                                  : max_used_column_group_id_;
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::add_column_group_to_array(ObColumnGroupSchema *column_group)
-{
-  int ret = OB_SUCCESS;
-  if (OB_ISNULL(column_group)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", KR(ret));
-  } else {
-    if (0 == column_group_arr_capacity_) {
-      if (OB_ISNULL(column_group_arr_ = static_cast<ObColumnGroupSchema**>(
-          alloc(sizeof(ObColumnGroupSchema *) * DEFAULT_COLUMN_GROUP_ARRAY_CAPACITY)))) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_ERROR("fail to allocate memory for column_group_arr", KR(ret));
-      } else {
-        column_group_arr_capacity_ = DEFAULT_COLUMN_GROUP_ARRAY_CAPACITY;
-        MEMSET(column_group_arr_, 0, sizeof(ObColumnGroupSchema*) * DEFAULT_COLUMN_GROUP_ARRAY_CAPACITY);
-      }
-    } else if (column_group_cnt_ >= column_group_arr_capacity_) {
-      int64_t tmp_size = 2 * column_group_arr_capacity_;
-      ObColumnGroupSchema **tmp = NULL;
-      if (OB_ISNULL(tmp = static_cast<ObColumnGroupSchema**>(
-          alloc(sizeof(ObColumnGroupSchema*) * tmp_size)))) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_ERROR("fail to allocate memory for column_group_array", KR(ret), K(tmp_size));
-      } else {
-        MEMCPY(tmp, column_group_arr_, sizeof(ObColumnGroupSchema*) * column_group_arr_capacity_);
-        // free old column_group_array_
-        free(column_group_arr_);
-        column_group_arr_ = tmp;
-        column_group_arr_capacity_ = tmp_size;
-      }
-    }
-
-    if (OB_SUCC(ret)) {
-      column_group_arr_[column_group_cnt_++] = column_group;
-    }
-  }
-
-  return ret;
-}
-
-int ObTableSchema::remove_column_group(const common::ObString &column_group_name)
-{
-  int ret = OB_SUCCESS;
-  bool is_cg_exist = false;
-  ObColumnGroupSchema *column_group = nullptr;
-  if (OB_FAIL(get_column_group_by_name(column_group_name, column_group))) {
-    LOG_WARN("fail to get column group by id", K(ret), K(column_group_name));
-  } else if (OB_ISNULL(column_group)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("column group should be null", K(ret));
-  } else if (OB_ISNULL(cg_id_hash_arr_) || OB_ISNULL(cg_name_hash_arr_) ||
-             OB_ISNULL(column_group_arr_) || column_cnt_ <= 0) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("column array and cnt should not be none or zero", K(ret), KP(column_group_arr_),
-             KP(cg_id_hash_arr_), KP(cg_name_hash_arr_), K(column_cnt_));
-  } else if (OB_FAIL(cg_id_hash_arr_->erase_refactored(ObColumnGroupIdKey(column_group->get_column_group_id())))) {
-    LOG_WARN("faile to erase column group id from table schema", K(ret));
-  } else if (OB_FAIL(cg_name_hash_arr_->erase_refactored(ObColumnGroupSchemaHashWrapper(
-                                                             column_group->get_column_group_name())))){
-    LOG_WARN("faile to erase column group name from table scheam", K(ret));
-  } else {
-    int new_loc = 0;
-    for (int64_t i = 0; i < column_group_arr_capacity_ && i < column_group_cnt_; i++) {
-      if (column_group_arr_[i] != column_group) {
-        column_group_arr_[new_loc] = column_group_arr_[i];
-        new_loc += 1;
-      } else {
-        /* skip column group need to be delete*/
-      }
-    }
-    column_group_cnt_--;
-  }
-  return ret;
-}
-
-
-int ObTableSchema::is_column_group_exist(const ObString &cg_name, bool &exist) const
-{
-  int ret = OB_SUCCESS;
-  exist = false;
-  if (cg_name.empty()) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", KR(ret), K(cg_name));
-  } else if (column_group_cnt_ > 0) {
-    if (OB_ISNULL(cg_name_hash_arr_)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("cg_name_hash_array should not be null", KR(ret));
-    } else if (cg_name == OB_EACH_COLUMN_GROUP_NAME) {
-      ObTableSchema::const_column_group_iterator iter_begin = column_group_begin();
-      ObTableSchema::const_column_group_iterator iter_end = column_group_end();
-      for (; OB_SUCC(ret) && iter_begin != iter_end; iter_begin++) {
-        const ObColumnGroupSchema *cg = *iter_begin;
-        if (ObColumnGroupType::SINGLE_COLUMN_GROUP == cg->get_column_group_type()) {
-          exist = true;
-          break;
-        }
-      }
-    } else {
-      ObColumnGroupSchema *column_group = NULL;
-      if (OB_FAIL(cg_name_hash_arr_->get_refactored(ObColumnGroupSchemaHashWrapper(cg_name), column_group))) {
-        exist = false;
-        if (OB_HASH_NOT_EXIST == ret) {
-          /* hash no exist is sucess situation */
-          ret = OB_SUCCESS;
-        } else {
-          LOG_WARN("fail to get refactored from cg_name_hash_arr ", K(ret));
-        }
-      } else{
-        exist = true;
-      }
-    }
-  }
-  return ret;
-}
-
-// get_column_group_index moved definition to storage/ob_i_store.cpp(K(param) printing needs ObColumnParam complete type, its owner is storage/access/ob_table_param.h)
-
-int ObTableSchema::calc_column_group_index_(const uint64_t column_id, int32_t &cg_idx) const
-{
-  int ret = OB_SUCCESS;
-  cg_idx = -1;
-  int64_t virtual_column_cnt = 0;
-  int64_t nullptr_column_cnt = 0;
-  // for cs replica, constructed cg schemas start with rowkey cg so the cg idx of row key cg is ALWAYS 0
-  // and cg idx of normal cg is shifted by offset 1.
-  for (int64_t i = 0; i < column_cnt_; i++) {
-    ObColumnSchemaV2 *column = column_array_[i];
-    if (OB_ISNULL(column)) {
-      nullptr_column_cnt++;
-    } else if (column->is_virtual_generated_column()) {
-      virtual_column_cnt++;
-    } else if (column->get_column_id() == column_id) {
-      cg_idx = i + 1 - virtual_column_cnt - nullptr_column_cnt;
-      break;
-    }
-  }
-
-  if (OB_UNLIKELY(-1 == cg_idx)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("Unexpected cg idx", K(ret));
-  }
-
-  return ret;
-}
-
-int ObTableSchema::get_base_rowkey_column_group_index(int32_t &cg_idx) const
-{
-  int ret = OB_SUCCESS;
-  cg_idx = -1;
-  if (OB_UNLIKELY(1 >= column_group_cnt_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("No column group exist", K(ret), K_(is_column_store_supported), K_(column_group_cnt));
-  } else {
-    bool found = false;
-    int32_t iter_cg_idx = 0;
-    for (int32_t i = 0; OB_SUCC(ret) && !found && i < column_group_cnt_; i++) {
-      if (OB_ISNULL(column_group_arr_[i])) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("column_group should not be null", K(ret), K(i), K_(column_group_cnt));
-      } else if (0 == column_group_arr_[i]->get_column_id_count()) {
-        if (column_group_arr_[i]->get_column_group_type() != DEFAULT_COLUMN_GROUP) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("Unexpected column group type", K(ret), KPC(column_group_arr_[i]));
-        }
-      } else if (ALL_COLUMN_GROUP == column_group_arr_[i]->get_column_group_type() ||
-                 ROWKEY_COLUMN_GROUP == column_group_arr_[i]->get_column_group_type()) {
-        cg_idx = iter_cg_idx;
-        found = true;
-      } else {
-        iter_cg_idx++;
-      }
-    }
-    if (OB_SUCC(ret) && !found) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("Unexpected not found base/rowkey column group", K(ret));
-    }
-  }
-  return ret;
-}
-
-int ObTableSchema::check_is_normal_cgs_at_the_end(bool &is_normal_cgs_at_the_end) const
-{
-  int ret = OB_SUCCESS;
-  is_normal_cgs_at_the_end = false;
-  if (0 < column_group_cnt_) {
-    bool found_normal_cg = false;
-    for (int64_t i = 0; OB_SUCC(ret) && i < column_group_cnt_; i++) {
-      if (OB_ISNULL(column_group_arr_[i])) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("column_group should not be null", K(ret), K(i), K_(column_group_cnt));
-      } else if (0 == column_group_arr_[i]->get_column_id_count()) {
-        if (column_group_arr_[i]->get_column_group_type() != DEFAULT_COLUMN_GROUP) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("Unexpected column group type", K(ret), KPC(column_group_arr_[i]));
-        }
-        // skip default column group
-      } else if (SINGLE_COLUMN_GROUP == column_group_arr_[i]->get_column_group_type() ||
-                 NORMAL_COLUMN_GROUP == column_group_arr_[i]->get_column_group_type()) {
-        found_normal_cg = true;
-      } else {
-        if (!found_normal_cg) {
-          is_normal_cgs_at_the_end = true;
-        }
-        break;
-      }
-    }
-  }
   return ret;
 }
 
@@ -8980,29 +7568,6 @@ int ObTableSchema::convert_geo_generated_col_ids(const ObHashMap<uint64_t, uint6
   return ret;
 }
 
-int ObTableSchema::get_is_row_store(bool &is_row_store) const
-{
-  int ret = OB_SUCCESS;
-  int64_t not_empty_cg_cnt = 0;
-  if (OB_FAIL(get_store_column_group_count(not_empty_cg_cnt))) {
-    LOG_WARN("fail to get column group count", K(ret));
-  } else {
-    is_row_store = not_empty_cg_cnt <= 1;
-  }
-  return ret;
-}
-
-
-int ObTableSchema::get_is_column_store(bool &is_column_store) const
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(get_is_row_store(is_column_store))) {
-    LOG_WARN("fail to get is row store");
-  } else {
-    is_column_store = !is_column_store;
-  }
-  return ret;
-}
 
 int ObTableSchema::check_is_stored_generated_column_base_column(uint64_t column_id, bool &is_stored_base_col) const
 {
@@ -9101,7 +7666,6 @@ int64_t ObPrintableTableSchema::to_string(char *buf, const int64_t buf_len) cons
   );
   J_COMMA();
   J_KV(K_(max_used_column_id),
-      K_(sess_active_time),
       K_(rowkey_column_num),
       K_(index_column_num),
       K_(rowkey_info),
@@ -9145,12 +7709,8 @@ int64_t ObPrintableTableSchema::to_string(char *buf, const int64_t buf_len) cons
     K_(auto_increment),
     K_(read_only),
     "aux_vp_tid_array", aux_vp_tid_array_,
-    K_(base_table_ids),
     K_(aux_lob_meta_tid),
     K_(aux_lob_piece_tid),
-    K_(is_column_store_supported),
-    K_(max_used_column_group_id),
-    K_(mlog_tid),
     K_(duplicate_read_consistency)
   );
   J_OBJ_END();

@@ -32,9 +32,8 @@ ObAsyncCmdDriver::ObAsyncCmdDriver(const ObGlobalContext &gctx,
                                  const ObSqlCtx &ctx,
                                  sql::ObSQLSessionInfo &session,
                                  ObQueryRetryCtrl &retry_ctrl,
-                                 ObIMPPacketSender &sender,
-                                 bool is_prexecute)
-    : ObQueryDriver(gctx, ctx, session, retry_ctrl, sender, is_prexecute)
+                                 ObIMPPacketSender &sender)
+    : ObQueryDriver(gctx, ctx, session, retry_ctrl, sender)
 {
 }
 
@@ -56,9 +55,6 @@ int ObAsyncCmdDriver::response_result(ObMySQLResultSet &result)
   if (OB_ISNULL(cur_trace_id = ObCurTraceId::get_trace_id())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_ERROR("current trace id is NULL", K(ret));
-  } else if (is_prexecute_ 
-    && OB_FAIL(response_query_header(result, false, false, true))) {
-    LOG_WARN("flush buffer fail before send async ok packet.", K(ret));
   } else if (OB_FAIL(sql_end_cb.set_packet_param(pkt_param.fill(result, session_, *cur_trace_id)))) {
     LOG_ERROR("fail to set packet param", K(ret));
   } else if (OB_FAIL(result.open())) {
@@ -70,7 +66,7 @@ int ObAsyncCmdDriver::response_result(ObMySQLResultSet &result)
       LOG_WARN("close result set fail", K(close_ret));
     }
     if (!result.is_async_end_trans_submitted()) {
-      retry_ctrl_.test_and_save_retry_state(gctx_, ctx_, result, ret, cli_ret, is_prexecute_);
+      retry_ctrl_.test_and_save_retry_state(gctx_, ctx_, result, ret, cli_ret);
       LOG_WARN("result set open failed, check if need retry",
                K(ret), K(cli_ret), K(retry_ctrl_.need_retry()));
       ret = cli_ret;
@@ -80,8 +76,7 @@ int ObAsyncCmdDriver::response_result(ObMySQLResultSet &result)
     //send error packet in sql thread
     if (!OB_SUCC(ret) && !retry_ctrl_.need_retry() && (!result.is_async_end_trans_submitted())) {
       int sret = OB_SUCCESS;
-      bool is_partition_hit = session_.partition_hit().get_bool();
-      if (OB_SUCCESS != (sret = sender_.send_error_packet(ret, NULL, is_partition_hit))) {
+      if (OB_SUCCESS != (sret = sender_.send_error_packet(ret, NULL))) {
         LOG_WARN("send error packet fail", K(sret), K(ret));
       }
     }
@@ -95,7 +90,6 @@ int ObAsyncCmdDriver::response_result(ObMySQLResultSet &result)
       ObOKPParam ok_param;
       ok_param.affected_rows_ = 0;
       session_.set_affected_rows(ok_param.affected_rows_);
-      ok_param.is_partition_hit_ = session_.partition_hit().get_bool();
       ok_param.has_more_result_ = result.has_more_result();
       if (OB_FAIL(sender_.send_ok_packet(session_, ok_param))) {
         LOG_WARN("fail to send ok packt", K(ok_param), K(ret));

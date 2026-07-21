@@ -462,7 +462,6 @@ int ObIncrementalStatEstimator::derive_global_col_stat(ObExecContext &ctx,
         ObGlobalNotNullEval not_null_eval;
         ObGlobalNdvEval ndv_eval;
         ObGlobalAvglenEval avglen_eval;
-        ObGlobalColumnStat tmp_stat;
         ObSEArray<ObHistogram, 4> all_part_histograms;
         int64_t sample_size = 0;
         int64_t total_row_cnt = 0;
@@ -504,9 +503,6 @@ int ObIncrementalStatEstimator::derive_global_col_stat(ObExecContext &ctx,
             if (opt_col_stat->get_avg_len() != 0) {
               avglen_eval.add(opt_col_stat->get_avg_len());
             }
-            tmp_stat.add_cg_blk_cnt(opt_col_stat->get_cg_macro_blk_cnt(),
-                                    opt_col_stat->get_cg_micro_blk_cnt());
-            tmp_stat.add_cg_skip_rate(opt_col_stat->get_cg_skip_rate(), opt_col_stat->get_cg_micro_blk_cnt());
           }
         }
         if (OB_SUCC(ret)) {
@@ -523,12 +519,6 @@ int ObIncrementalStatEstimator::derive_global_col_stat(ObExecContext &ctx,
           ndv_eval.get_llc_bitmap(col_stat->get_llc_bitmap(), col_stat->get_llc_bitmap_size());
           col_stat->set_llc_bitmap_size(ObOptColumnStat::NUM_LLC_BUCKET);
           col_stat->set_collation_type(param.column_params_.at(i).cs_type_);
-          col_stat->set_cg_micro_blk_cnt(tmp_stat.cg_micro_blk_cnt_);
-          col_stat->set_cg_macro_blk_cnt(tmp_stat.cg_macro_blk_cnt_);
-          if (tmp_stat.cg_micro_blk_cnt_ != 0 &&
-              tmp_stat.cg_skip_rate_ != 0) {
-            col_stat->set_cg_skip_rate(tmp_stat.cg_skip_rate_/((double)tmp_stat.cg_micro_blk_cnt_));
-          }
           ObObj new_min_obj, new_max_obj;
           //maybe the stat is from KVCACHE, need deep copy min/max obj.
           if (OB_FAIL(ob_write_obj(alloc, min_eval.get(), new_min_obj)) ||
@@ -584,9 +574,9 @@ int ObIncrementalStatEstimator::derive_global_col_stat(ObExecContext &ctx,
       int64_t start_time = 0;
       int64_t topk_cost = 0;
       int64_t hybrid_cost = 0;
-      if (OB_FAIL(ObDbmsStatsUtils::prepare_gather_stat_param(param, approx_level, NULL, NULL, false,
+      if (OB_FAIL(ObDbmsStatsUtils::prepare_gather_stat_param(param, approx_level, NULL, false,
                                                               DEFAULT_STAT_GATHER_VECTOR_BATCH_SIZE,
-                                                              false, gather_param))) {
+                                                              gather_param))) {
         LOG_WARN("failed to assign", K(ret));
       } else if (OB_FAIL(gather_param.column_params_.assign(param.column_params_))) {
         LOG_WARN("failed to assign", K(ret));
@@ -782,68 +772,6 @@ int ObIncrementalStatEstimator::get_no_regather_subpart_stats(
                                                        subpart_opt_stats))) {
       LOG_WARN("failed to get no regather partition stats", K(ret));
     } else {/*do nothing*/}
-  }
-  return ret;
-}
-
-int ObIncrementalStatEstimator::gen_opt_stat_param_by_direct_load(ObExecContext &ctx,
-                                                                  ObIAllocator &alloc,
-                                                                  const uint64_t table_id,
-                                                                  ObTableStatParam &param)
-{
-  int ret = OB_SUCCESS;
-  const share::schema::ObTableSchema *table_schema = NULL;
-  share::schema::ObSchemaGetterGuard *schema_guard = ctx.get_virtual_table_ctx().schema_guard_;
-  param.table_id_ = table_id;
-  ObSEArray<int64_t, 4> part_ids;
-  ObSEArray<int64_t, 4> subpart_ids;
-  if (OB_ISNULL(schema_guard = ctx.get_virtual_table_ctx().schema_guard_) ||
-       OB_ISNULL(ctx.get_my_session())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("get unexpected null", K(ret), K(schema_guard), K(ctx.get_my_session()));
-  } else if (OB_FAIL(schema_guard->get_table_schema(
-                                                    table_id,
-                                                    table_schema))) {
-    LOG_WARN("failed to get table schema", K(ret));
-  } else if (OB_ISNULL(table_schema)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("get unexpected error", K(ret));
-  } else if (OB_FAIL(ObDbmsStatsUtils::get_part_infos(*table_schema,
-                                                      alloc,
-                                                      param.part_infos_,
-                                                      param.subpart_infos_,
-                                                      part_ids,
-                                                      subpart_ids))) {
-    LOG_WARN("failed to get partition infos", K(ret));
-  } else if (OB_FAIL(param.all_part_infos_.assign(param.part_infos_)) ||
-             OB_FAIL(param.all_subpart_infos_.assign(param.subpart_infos_))) {
-    LOG_WARN("failed to assign", K(ret));
-  } else if (OB_FAIL(pl::ObDbmsStats::init_column_stat_params(alloc,
-                                                              *schema_guard,
-                                                              *table_schema,
-                                                              param.column_params_))) {
-    LOG_WARN("failed to init column stat params", K(ret));
-  } else {
-    for (int64_t i = 0; i < param.column_params_.count(); ++i) {
-      if (param.column_params_.at(i).is_valid_opt_col()) {
-        param.column_params_.at(i).set_need_basic_stat();
-      }
-    }
-    
-    param.part_level_ = table_schema->get_part_level();
-    param.global_stat_param_.set_gather_stat(true);
-    param.part_stat_param_.set_gather_stat(table_schema->get_part_level() == share::schema::ObPartitionLevel::PARTITION_LEVEL_TWO);
-    param.subpart_stat_param_.set_gather_stat();
-    if (OB_FAIL(pl::ObDbmsStats::set_param_global_part_id(ctx, param))) {
-      LOG_WARN("failed to set param globa part id", K(ret));
-    } else if (table_schema->get_part_level() == share::schema::ObPartitionLevel::PARTITION_LEVEL_TWO) {
-      if (OB_FAIL(param.approx_part_infos_.assign(param.part_infos_))) {
-        LOG_WARN("failed to assign", K(ret));
-      } else {
-        param.part_infos_.reset();
-      }
-    }
-    LOG_TRACE("succeed to gen opt stat param by direct load", K(param));
   }
   return ret;
 }

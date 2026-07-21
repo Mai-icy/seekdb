@@ -38,11 +38,6 @@ class ObITabletScan;
 class ObMysqlRandom;
 } // end of namespace common
 
-namespace obcall
-{
-class ObStorageRpcProxy;
-} // end of namespace rpc
-
 namespace rootserver
 {
 class ObRootService;
@@ -105,15 +100,11 @@ class ObPluginMgr;
 
 namespace share
 {
-class ObResourcePlanManager;
 class ObTabletTableOperator;
 class ObSQLiteConnectionPool;
 class ObRsMgr;
-class ObLocationService;
 class ObSchemaStatusProxy;
 class ObKVStorage;
-
-class ObCgroupCtrl;
 
 namespace schema
 {
@@ -131,7 +122,6 @@ struct ObGlobalContext
   common::ObConfigManager *config_mgr_;
   share::ObTabletTableOperator *tablet_operator_;
   share::ObSQLiteConnectionPool *meta_db_pool_;
-  obcall::ObStorageRpcProxy *storage_rpc_proxy_;
   sql::ObExecutorRpcImpl *executor_rpc_;
   common::ObMySQLProxy *sql_proxy_;
   common::ObMySQLProxy *ddl_sql_proxy_;
@@ -143,7 +133,6 @@ struct ObGlobalContext
   pl::ObPL *pl_engine_;
   omt::ObMultiTenant *omt_;
   observer::ObVTIterCreator *vt_iter_creator_;
-  share::ObLocationService *location_service_;
   int64_t start_time_;
   int64_t *warm_up_start_time_;
   ObServiceStatus status_;
@@ -152,7 +141,6 @@ struct ObGlobalContext
   int64_t start_service_time_;
   obmysql::ObDiag *diag_;
   common::ObMysqlRandom *scramble_rand_;
-  share::ObCgroupCtrl *cgroup_ctrl_;
   observer::ObSrvNetworkFrame *net_frame_;
 
   observer::ObIDiskReport *disk_reporter_;
@@ -160,7 +148,6 @@ struct ObGlobalContext
 
   bool inited_;
   share::ObSchemaStatusProxy *schema_status_proxy_;
-  int64_t flashback_scn_;
   int64_t ssl_key_expired_time_;
   sql::ObConnectResourceMgr* conn_res_mgr_;
 
@@ -178,6 +165,8 @@ struct ObGlobalContext
   static ObGlobalContext& get_instance();
   void init();
   bool is_inited() const { return inited_; }
+  bool is_embedded_mode() const { return embedded_; }
+  void set_embedded_mode(const bool embedded) { embedded_ = embedded; }
   bool is_standby_cluster() const { return common::STANDBY_CLUSTER == server_role_; }
   // Refer to the high availability zone design document
   // 
@@ -218,6 +207,7 @@ private:
 
   obcall::ObUpgradeStage upgrade_stage_;
   uint64_t server_id_;
+  bool embedded_;
 };
 
 } // end of namespace share

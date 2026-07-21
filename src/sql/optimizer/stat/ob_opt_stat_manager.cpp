@@ -826,13 +826,6 @@ int ObOptStatManager::update_all_eval_to_stats(
       if (scale_ratio < 1.0) {
         opt_stats.ndv_val_ = ObOptSelectivity::scale_distinct(row_cnt, row_cnt / scale_ratio, opt_stats.ndv_val_);
       }
-      opt_stats.add_cg_blk_cnt(col_all_evals->cg_blk_eval_.get_cg_macro_blk_cnt() * scale_ratio,
-                               col_all_evals->cg_blk_eval_.get_cg_micro_blk_cnt() * scale_ratio);
-      if ((col_all_evals->cg_skip_rate_eval_.cg_micro_blk_cnt_ != 0) &&
-          (col_all_evals->cg_skip_rate_eval_.cg_skip_rate_ != 0)) {
-        opt_stats.cg_skip_rate_ = col_all_evals->cg_skip_rate_eval_.cg_skip_rate_ /
-                                    col_all_evals->cg_skip_rate_eval_.cg_micro_blk_cnt_;
-      }
       if (col_all_evals->min_eval_.is_valid() &&
           OB_FAIL(ob_write_obj(*alloc, col_all_evals->min_eval_.get(), opt_stats.min_val_))) {
         LOG_WARN("failed to deep copy min obj", K(ret));
@@ -881,10 +874,9 @@ int ObOptStatManager::flush_evals(ObIAllocator *alloc,
 
 int ObOptStatManager::get_table_rowcnt(const uint64_t table_id,
                                        const ObIArray<ObTabletID> &all_tablet_ids,
-                                       const ObIArray<ObLSID> &all_ls_ids,
                                        int64_t &table_rowcnt)
 {
-  return stat_service_.get_table_rowcnt(table_id, all_tablet_ids, all_ls_ids, table_rowcnt);
+  return stat_service_.get_table_rowcnt(table_id, all_tablet_ids, table_rowcnt);
 }
 
 //we need check the stat tables are valid, now we only check the stat table are exist. in some situation,

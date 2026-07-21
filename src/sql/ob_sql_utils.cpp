@@ -30,7 +30,6 @@
 #include "sql/printer/ob_schema_printer.h"
 #include "sql/engine/expr/ob_expr_lob_utils.h"
 #include <openssl/md5.h>
-#include "share/resource_manager/ob_resource_manager.h"
 #include "observer/omt/ob_tenant_srs.h"
 #include "sql/resolver/ddl/ob_create_view_resolver.h"
 extern "C" {
@@ -669,9 +668,6 @@ int ObSQLUtils::se_calc_const_expr(ObSQLSessionInfo *session,
                   LOG_WARN("failed to deep copy pl extend obj", K(ret), K(tmp_result));
                 }
               } else if (OB_NOT_NULL(out_ctx)) {
-                // fix bug:
-                // create table xml_test(id varchar2(200) primary key not null,mm xmltype constraint xmltype not null ,ls clob ,tag varchar2(2200),tt clob);
-                // insert into xml_test(id,mm) select 1,xmltype('<c>123</c>') from dual;
                 if (OB_FAIL(pl::ObUserDefinedType::deep_copy_obj(out_ctx->get_allocator(), tmp_result, result))) {
                   LOG_WARN("failed to deep copy pl extend obj", K(ret), K(tmp_result));
                 } else if (OB_ISNULL(out_ctx->get_pl_ctx())) {
@@ -1098,8 +1094,6 @@ bool ObSQLUtils::cause_implicit_commit(ParseResult &result)
         || T_DROP_INDEX == type
         || T_CREATE_DATABASE == type
         || T_CREATE_INDEX == type
-        || T_CREATE_MLOG == type
-        || T_DROP_MLOG == type
         /* pl item type*/
         || T_SP_CREATE_TYPE == type
         || T_SP_DROP_TYPE == type
@@ -2453,38 +2447,10 @@ int ObSQLUtils::choose_best_replica_for_estimation(
 {
   int ret = OB_SUCCESS;
   best_partition.reset();
-  const ObIArray<ObRoutePolicy::CandidateReplica> &replica_loc_array =
-              phy_part_loc_info.get_partition_location().get_replica_locations();
-  bool found = false;
-  // 2. check whether best partition can find in local
-  for (int64_t i = -1; !found && i < addrs_list.count(); ++i) {
-    const ObAddr &addr = (i == -1? local_addr : addrs_list.at(i));
-    for (int64_t j = 0; !found && j < replica_loc_array.count(); ++j) {
-      if (addr == replica_loc_array.at(j).get_server() &&
-          0 != replica_loc_array.at(j).get_property().get_memstore_percent()) {
-        found = true;
-        best_partition.set(addr,
-                            phy_part_loc_info.get_partition_location().get_tablet_id(),
-                            phy_part_loc_info.get_partition_location().get_ls_id());
-      }
-    }
-  }
-  if (!found && !no_use_remote) {
-    // best partition not find in local
-    ObAddr remote_addr;
-    if (OB_FAIL(choose_best_partition_replica_addr(local_addr,
-                                                   phy_part_loc_info,
-                                                   false,
-                                                   remote_addr))) {
-      LOG_WARN("failed to get best partition replica addr", K(ret));
-      // choose partition replica failed doesn't affect execution, we will decide whether use
-      // storage estimation interface by (!use_local && remote_addr.is_valid()).
-      ret = OB_SUCCESS;
-    }
-    best_partition.set(remote_addr,
-                       phy_part_loc_info.get_partition_location().get_tablet_id(),
-                       phy_part_loc_info.get_partition_location().get_ls_id());
-  }
+  UNUSED(addrs_list);
+  UNUSED(no_use_remote);
+  best_partition.set(local_addr,
+                     phy_part_loc_info.get_partition_location().get_tablet_id());
   return ret;
 }
 
@@ -2698,26 +2664,6 @@ int ObSQLUtils::merge_solidified_var_into_max_allowed_packet(const ObLocalSessio
   return ret;
 }
 
-int ObSQLUtils::merge_solidified_var_into_compat_version(const ObLocalSessionVar *local_vars,
-                                                         uint64_t &compat_version)
-{
-  int ret = OB_SUCCESS;
-  ObSessionSysVar *local_var = NULL;
-  if (NULL == local_vars) {
-    //do nothing
-  } else if (OB_FAIL(local_vars->get_local_var(SYS_VAR_OB_COMPATIBILITY_VERSION, local_var))) {
-    LOG_WARN("get local session var failed", K(ret));
-  } else if (NULL != local_var) {
-    if (ObUInt64Type == local_var->val_.get_type()) {
-      compat_version = local_var->val_.get_uint64();
-    } else {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("invalid compat version val type", K(ret), K(local_var->val_));
-    }
-  }
-  return ret;
-}
-
 void ObSQLUtils::init_type_ctx(const ObSQLSessionInfo *session, ObExprTypeCtx &type_ctx)
 {
   if (NULL != session) {
@@ -2743,7 +2689,6 @@ void ObSQLUtils::init_type_ctx(const ObSQLSessionInfo *session, ObExprTypeCtx &t
     if (OB_SUCCESS == (OTTZ_MGR.get_tenant_tz(tz_map_wrap))) {
       type_ctx.set_tz_info_map(tz_map_wrap.get_tz_map());;
     }
-    CHECK_COMPATIBILITY_MODE(session);
     bool enable_mysql_compatible_dates = false;
     if (OB_SUCCESS == check_enable_mysql_compatible_dates(session, false, /*is_ddl*/
                                                           enable_mysql_compatible_dates)) {
@@ -2863,9 +2808,8 @@ int ObSQLUtils::update_session_last_schema_version(ObMultiVersionSchemaService &
   
   if (OB_FAIL(schema_service.get_tenant_received_broadcast_version(received_schema_version))) {
     LOG_WARN("fail to get tenant received broadcast version", K(ret));
-  } else if (OB_FAIL(session_info.update_sys_variable(SYS_VAR_OB_LAST_SCHEMA_VERSION,
-                                                      received_schema_version))) {
-    LOG_WARN("fail to set session variable for last_schema_version", K(ret));
+  } else {
+    session_info.set_last_ddl_schema_version(received_schema_version);
   }
   return ret;
 }
@@ -4090,148 +4034,6 @@ int ObSQLUtils::transform_pl_ext_type(
 void ObSQLUtils::adjust_time_by_ntp_offset(int64_t &dst_timeout_ts)
 {
   dst_timeout_ts += THIS_WORKER.get_ntp_offset();
-}
-
-int ObSQLUtils::check_sql_map_expected_resource_group(const ObSqlCtx &context,
-                                                      const ObResultSet &result,
-                                                      const ObResolverParams *resolve_ctx, 
-                                                      const ObStmt *stmt, 
-                                                      ObPCResourceMapRule &resource_map_rule) 
-{
-  return OB_SUCCESS;
-}
-
-
-int ObSQLUtils::recursive_check_equal_condition(const ObResolverParams *resolve_ctx,
-                                                const ObStmt *stmt,
-                                                const ObRawExpr &expr,
-                                                ObPCResourceMapRule &resource_map_rule,
-                                                uint64_t &group_id)
-{
-  int ret = OB_SUCCESS;
-
-  if (T_OP_EQ == expr.get_expr_type()) {
-    const ObRawExpr *left = NULL;
-    const ObRawExpr *right = NULL;
-    if (OB_UNLIKELY(2 != expr.get_param_count()) || OB_ISNULL(left = expr.get_param_expr(0))
-        || OB_ISNULL(right = expr.get_param_expr(1))) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("expr is null", K(ret));
-    } else {
-      const ObColumnRefRawExpr *col_expr = NULL;
-      const ObConstRawExpr *const_expr = NULL;
-      if (T_REF_COLUMN == left->get_expr_type()) {
-        col_expr = static_cast<const ObColumnRefRawExpr *>(left);
-      } else if (T_FUN_SYS_CAST == left->get_expr_type()
-                 && T_REF_COLUMN == left->get_param_expr(0)->get_expr_type()) {
-        col_expr = static_cast<const ObColumnRefRawExpr *>(left->get_param_expr(0));
-      } else if (left->has_flag(IS_CONST)) {
-        const_expr = static_cast<const ObConstRawExpr *>(left);
-      } else if (T_FUN_SYS_CAST == left->get_expr_type()
-                 && left->get_param_expr(0)->has_flag(IS_CONST)) {
-        const_expr = static_cast<const ObConstRawExpr *>(left->get_param_expr(0));
-      }
-      if (NULL != col_expr) {
-        if (right->has_flag(IS_CONST)) {
-          const_expr = static_cast<const ObConstRawExpr *>(right);
-        } else if (T_FUN_SYS_CAST == right->get_expr_type()
-                   && right->get_param_expr(0)->has_flag(IS_CONST)) {
-          const_expr = static_cast<const ObConstRawExpr *>(right->get_param_expr(0));
-        }
-      } else if (NULL != const_expr) {
-        if (T_REF_COLUMN == right->get_expr_type()) {
-          col_expr = static_cast<const ObColumnRefRawExpr *>(right);
-        } else if (T_FUN_SYS_CAST == right->get_expr_type()
-                   && T_REF_COLUMN == right->get_param_expr(0)->get_expr_type()) {
-          col_expr = static_cast<const ObColumnRefRawExpr *>(right->get_param_expr(0));
-        }
-      }
-      if (NULL != col_expr && NULL != const_expr
-          && OB_FAIL(check_column_with_res_mapping_rule(resolve_ctx, stmt, col_expr, const_expr, resource_map_rule, group_id))) {
-        LOG_WARN("check column with resource mapping rule failed", K(ret), KPC(col_expr),
-                 KPC(const_expr));
-      }
-    }
-  }
-  if (OB_SUCC(ret)) {
-    for (int64_t i = 0;
-         i < expr.get_param_count() && OB_SUCC(ret) && OB_INVALID_ID == resource_map_rule.get_res_map_rule_id();
-         i++) {
-      const ObRawExpr *child = expr.get_param_expr(i);
-      if (OB_ISNULL(child)) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("expr is null", K(ret));
-      } else if (child->has_flag(CNT_CONST) && child->has_flag(CNT_COLUMN)
-                 && OB_FAIL(SMART_CALL(recursive_check_equal_condition(resolve_ctx, stmt, *child, resource_map_rule, group_id)))) {
-        LOG_WARN("recursive check equal condition failed", K(ret));
-      }
-    }
-  }
-  return ret;
-}
-
-int ObSQLUtils::check_column_with_res_mapping_rule(const ObResolverParams *resolve_ctx,
-                                                   const ObStmt *stmt,
-                                                   const ObColumnRefRawExpr *col_expr,
-                                                   const ObConstRawExpr *const_expr,
-                                                   ObPCResourceMapRule &resource_map_rule,
-                                                   uint64_t &group_id)
-{
-  int ret = OB_SUCCESS;
-  group_id = OB_INVALID_ID;
-  const ObSQLSessionInfo *session_info = resolve_ctx->session_info_;
-  const ObSchemaChecker *schema_checker = resolve_ctx->schema_checker_;
-  const ParamStore *param_store = resolve_ctx->param_list_;
-  
-  uint64_t db_id = session_info->get_database_id();
-  
-  const ObObj &value = const_expr->get_value();
-  ObNameCaseMode case_mode = OB_NAME_CASE_INVALID;
-  const TableItem *table_item = NULL;
-  LOG_TRACE("check_column_with_res_mapping_rule", K(value), KPC(col_expr));
-  if (!value.is_unknown()) {
-    // do nothing.
-  } else if (!col_expr->get_database_name().empty() && OB_FAIL(schema_checker->get_database_id(
-        col_expr->get_database_name(), db_id))) {
-    LOG_WARN("get database id failed", K(ret));
-  } else if (OB_FAIL(session_info->get_name_case_mode(case_mode))) {
-    LOG_WARN("get name case mode faield", K(ret));
-  } else if (FALSE_IT(table_item = static_cast<const ObDMLStmt*>(stmt)->get_table_item_by_id(col_expr->get_table_id()))) {
-  } else if (OB_NOT_NULL(table_item)) {
-    uint64_t rule_id = 0;
-    LOG_TRACE("get_column_mapping_rule_id", K(rule_id));
-    if (OB_INVALID_ID == resource_map_rule.get_res_map_rule_id() && OB_INVALID_ID != rule_id) {
-      if (OB_NOT_NULL(param_store) && OB_LIKELY(value.get_unknown() < param_store->count())) {
-        const ObObjParam &param = param_store->at(value.get_unknown());
-        const ObString raw_sql = session_info->get_current_query_string();
-        ObString param_text;
-        ObCollationType cs_type = CS_TYPE_INVALID;
-        if (OB_ISNULL(resolve_ctx->allocator_)) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("allocator is null", K(ret));
-        } else if (OB_FAIL(session_info->get_collation_connection(cs_type))) {
-          LOG_WARN("get collation connection failed", K(ret));
-        } else if (OB_FAIL(ObObjCaster::get_obj_param_text(param, raw_sql, *(resolve_ctx->allocator_),
-                                                           cs_type, param_text))) {
-          LOG_WARN("get obj param text failed", K(ret));
-        } else if (!param_text.empty()) {
-          // Resource manager works only if param is string or numeric type.
-          // For example, there is a mapping rule on t.c1.
-          // When execute select * from t where c1 = date '2020-01-01', rule_id in the plan is INVALID.
-
-          // Set rule_id and param_idx only if get non-empty param text.
-          // get_param_text return non-empty text when param is string or numeric type.
-          // This logic works because c1 = '2020-01-01', and c1 = date '2020-01-01' match different plans.
-          resource_map_rule.set_column_map_rule(rule_id, value.get_unknown());
-          group_id = 0;
-          LOG_TRACE("choose use column resource map:", K(group_id), K(THIS_WORKER.get_group_id()), K(rule_id));
-        }
-      }
-    }
-  } else {
-    LOG_TRACE("table item is null", KPC(stmt));
-  }
-  return ret;
 }
 
 int ObSQLUtils::async_recompile_view(const share::schema::ObTableSchema &old_view_schema,

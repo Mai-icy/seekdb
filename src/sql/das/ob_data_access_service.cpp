@@ -38,7 +38,7 @@ namespace sql
 
 ObDataAccessService::ObDataAccessService()
   : ctrl_addr_(),
-    id_cache_(),
+    next_das_id_(1),
     task_result_mgr_(),
     das_concurrency_limit_(INT32_MAX)
 {
@@ -47,14 +47,8 @@ ObDataAccessService::ObDataAccessService()
 
 int ObDataAccessService::mtl_init(ObDataAccessService *&das)
 {
-  int ret = OB_SUCCESS;
   const ObAddr &self = GCTX.self_addr();
-  if (OB_FAIL(das->id_cache_.init(self))) {
-    LOG_ERROR("init das id service failed", K(ret));
-  } else if (OB_FAIL(das->init(self))) {
-    LOG_ERROR("init data access service failed", K(ret));
-  }
-  return ret;
+  return das->init(self);
 }
 
 void ObDataAccessService::mtl_destroy(ObDataAccessService *&das)
@@ -82,7 +76,6 @@ int ObDataAccessService::execute_das_task(
   int ret = OB_SUCCESS;
   if (OB_LIKELY(das_ref.is_execute_directly())) {
     common::ObSEArray<ObIDASTaskOp *, 2> task_wrapper;
-    FLTSpanGuard(do_local_das_task);
     while (OB_SUCC(ret) && OB_SUCC(task_ops.get_aggregated_tasks(task_wrapper)) &&
         task_wrapper.count() != 0) {
       for (int i = 0; OB_SUCC(ret) && i < task_wrapper.count(); i++) {
@@ -109,35 +102,9 @@ int ObDataAccessService::execute_das_task(
 
 int ObDataAccessService::get_das_task_id(int64_t &das_id)
 {
-  int ret = OB_SUCCESS;
-  FLTSpanGuard(get_das_id);
-  const int MAX_RETRY_TIMES = 50;
-  int64_t tmp_das_id = 0;
-  bool force_renew = false;
-  int64_t total_sleep_time = 0;
-  int64_t cur_sleep_time = 1000; // 1ms
-  int64_t max_sleep_time = ObDASIDCache::OB_DAS_ID_RPC_TIMEOUT_MIN * 2; // 200ms
-  do {
-    if (OB_SUCC(id_cache_.get_das_id(tmp_das_id, force_renew))) {
-    } else if (OB_EAGAIN == ret) {
-      if (total_sleep_time >= max_sleep_time) {
-        // TODO chenxuan change error code
-        ret = OB_GTI_NOT_READY;
-        LOG_WARN("get das id not ready", K(ret), K(total_sleep_time), K(max_sleep_time));
-      } else {
-        force_renew = true;
-        ob_usleep(cur_sleep_time);
-        total_sleep_time += cur_sleep_time;
-        cur_sleep_time = cur_sleep_time * 2;
-      }
-    } else {
-      LOG_WARN("get das id failed", K(ret));
-    }
-  } while (OB_EAGAIN == ret);
-  if (OB_SUCC(ret)) {
-    das_id = tmp_das_id;
-  }
-  return ret;
+;
+  das_id = ATOMIC_FAA(&next_das_id_, 1);
+  return OB_SUCCESS;
 }
 
 
@@ -189,7 +156,6 @@ int ObDataAccessService::refresh_task_location_info(ObDASRef &das_ref, ObIDASTas
                                                                             *tablet_loc))) {
     LOG_WARN("get tablet location failed", K(ret), KPC(tablet_loc));
   } else {
-    task_op.set_ls_id(tablet_loc->ls_id_);
     if (!task_op.is_local_task()) {
       int64_t task_id;
       if (OB_FAIL(share::g_mp->data_access_service()->get_das_task_id(task_id))) {
@@ -311,7 +277,6 @@ int ObDataAccessService::end_das_task(ObDASRef &das_ref, ObIDASTaskOp &task_op)
 int ObDataAccessService::rescan_das_task(ObDASRef &das_ref, ObDASScanOp &scan_op)
 {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(rescan_das_task);
 
   ObArenaAllocator tmp_alloc;
   ObDasAggregatedTask das_task_wrapper(tmp_alloc);
@@ -337,7 +302,6 @@ int ObDataAccessService::rescan_das_task(ObDASRef &das_ref, ObDASScanOp &scan_op
 
 int ObDataAccessService::do_local_das_task(ObIArray<ObIDASTaskOp*> &task_list) {
   int ret = OB_SUCCESS;
-  FLTSpanGuard(do_local_das_task);
 
   LOG_DEBUG("begin to do local das task", K(task_list));
   for (int64_t i = 0; OB_SUCC(ret) && i < task_list.count(); i++) {
@@ -510,7 +474,7 @@ int ObDataAccessService::parallel_submit_das_task(ObDASRef &das_ref, ObDasAggreg
   int ret = OB_SUCCESS;
   ObSQLSessionInfo *session = das_ref.get_exec_ctx().get_my_session();
   int64_t timeout_ts = session->get_query_timeout_ts();
-  int32_t group_id = THIS_WORKER.get_group_id();
+  int32_t group_id = 0;
   int32_t das_group_id = group_id | das::OB_DAS_PARALLEL_POOL_MARK;
   LOG_TRACE("print group_id", K(group_id), K(das::OB_DAS_PARALLEL_POOL_MARK), K(das_group_id));
   if (agg_task.server_ == ctrl_addr_) {

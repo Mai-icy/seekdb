@@ -56,7 +56,6 @@ int ObDropFTSIndexTask::init(
     const ObFTSDDLChildTaskInfo &fts_doc_word,
     const ObString &ddl_stmt_str,
     const int64_t schema_version,
-    const int64_t consumer_group_id,
     const int64_t target_object_id)
 {
   int ret = OB_SUCCESS;
@@ -91,7 +90,6 @@ int ObDropFTSIndexTask::init(
     schema_version_ = schema_version;
     task_id_ = task_id;
     parent_task_id_ = 0; // no parent task
-    consumer_group_id_ = consumer_group_id;
     task_version_ = OB_DROP_FTS_INDEX_TASK_VERSION;
     
     dst_schema_version_ = schema_version;
@@ -131,8 +129,6 @@ int ObDropFTSIndexTask::init(const ObDDLTaskRecord &task_record)
       LOG_WARN("deserialize params from message failed", K(ret));
     } else {
       is_inited_ = true;
-      // set up span during recover task
-      ddl_tracing_.open_for_recovery();
     }
   }
   return ret;
@@ -149,7 +145,6 @@ int ObDropFTSIndexTask::process()
   } else if (OB_FAIL(check_switch_succ())) {
     LOG_WARN("check need retry failed", K(ret));
   } else {
-    ddl_tracing_.restore_span_hierarchy();
     const ObDDLTaskStatus status = static_cast<ObDDLTaskStatus>(task_status_);
     switch (status) {
       case ObDDLTaskStatus::PREPARE:
@@ -176,7 +171,6 @@ int ObDropFTSIndexTask::process()
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("error unexpected, task status is not valid", K(ret), K(task_status_));
     }
-    ddl_tracing_.release_span_hierarchy();
   }
   return ret;
 }

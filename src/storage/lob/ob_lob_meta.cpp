@@ -54,7 +54,7 @@ int ObLobMetaScanIter::open_remote(ObLobAccessParam &param)
   cur_pos_ = 0;
   cur_byte_pos_ = 0;
   is_remote_ = true;
-  if (OB_FAIL(ObLobRemoteUtil::query(param, ObLobQueryArg::QueryType::READ, param.addr_, remote_ctx_))) {
+  if (OB_FAIL(ObLobRemoteUtil::query(param, obcall::ObLobQueryArg::QueryType::READ, param.addr_, remote_ctx_))) {
     LOG_WARN("fail to init remote query ctx", K(ret));
   }
   return ret;
@@ -1016,7 +1016,7 @@ int ObLobMetaWriteIter::update_disk_lob_locator(ObLobMetaWriteResult &result)
 
     if (OB_FAIL(ret)) {
     } else if (lob_outrow_ctx->seq_no_st_ == 0) {
-      LOG_DEBUG("non incremental_direct_load does not have seq_no, so skip", KPC(lob_common_), KPC(lob_outrow_ctx), KPC(lob_data), K(result));
+      LOG_DEBUG("lob locator does not have seq_no, so skip", KPC(lob_common_), KPC(lob_outrow_ctx), KPC(lob_data), K(result));
     } else {
       transaction::ObTxSEQ cur_seq = transaction::ObTxSEQ::cast_from_int(lob_outrow_ctx->seq_no_st_) + lob_outrow_ctx->seq_no_cnt_;
       result.seq_no_ = cur_seq.cast_to_int();

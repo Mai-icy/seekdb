@@ -24,6 +24,7 @@
 #include "lib/lock/ob_thread_cond.h"
 #include "lib/lock/ob_mutex.h"
 #include "lib/profile/ob_trace_id.h"
+#include "lib/thread/threads.h"
 #include "share/rc/ob_tenant_base.h"
 #include "observer/scheduler/ob_dag_scheduler_config.h"
 #include "observer/scheduler/ob_diagnose_config.h"
@@ -174,167 +175,110 @@ public:
     TASK_TYPE_COMPACT_TO_LASTEST = 14,
     TASK_TYPE_SSTABLE_MERGE_PREPARE = 15,
     TASK_TYPE_SSTABLE_MERGE_FINISH = 16,
-    TASK_TYPE_SPLIT_PREPARE_TASK = 17,
-    TASK_TYPE_SPLIT_TASK = 18,
-    TASK_TYPE_SPLIT_FINISH_TASK = 19,
-    TASK_TYPE_UNIQUE_CHECKING_PREPARE = 20,
-    TASK_TYPE_SIMPLE_UNIQUE_CHECKING = 21,
-    TASK_TYPE_MIGRATE_PREPARE = 22,
-    TASK_TYPE_MIGRATE_COPY_LOGIC = 23,
-    TASK_TYPE_MIGRATE_FINISH_LOGIC = 24,
-    TASK_TYPE_MIGRATE_COPY_PHYSICAL = 25,
-    TASK_TYPE_MIGRATE_FINISH_PHYSICAL = 26,
-    TASK_TYPE_MIGRATE_FINISH = 27,
-    TASK_TYPE_FAKE = 28,
-    TASK_TYPE_MIGRATE_ENABLE_REPLAY = 29,
-    TASK_TYPE_MAJOR_MERGE_FINISH = 30,
-    TASK_TYPE_GROUP_MIGRATE = 31,
-    TASK_TYPE_SQL_BUILD_INDEX = 32, // build index by sql plan.
-    TASK_TYPE_SERVER_PREPROCESS = 33,
-    TASK_TYPE_FAST_RECOVERY = 34,
-    TASK_TYPE_MIGRATE_POST_PREPARE = 35,
-    TASK_TYPE_FAST_MIGRATE_ASYNC_TASK = 36,
-    TASK_TYPE_VALIDATE_BACKUP = 37,
-    TASK_TYPE_VALIDATE_FINISH = 38,
-    TASK_TYPE_BUILD_CHANGE_REPLICA = 39,
-    TASK_TYPE_RESTORE_TAILORED_PREPARE = 40,
-    TASK_TYPE_RESTORE_TAILORED_PROCESS = 41,
-    TASK_TYPE_RESTORE_TAILORED_FINISH = 42,
-    TASK_TYPE_BACKUP_BACKUPSET = 43,
-    TASK_TYPE_BACKUP_ARCHIVELOG = 44,
-    TASK_TYPE_COMPLEMENT_PREPARE = 45,
-    TASK_TYPE_COMPLEMENT_WRITE = 46,
-    TASK_TYPE_COMPLEMENT_MERGE = 47,
-    TASK_TYPE_BACKUP_CLEAN = 48,
-    TASK_TYPE_DDL_KV_DUMP = 49,
-    TASK_TYPE_DDL_KV_MERGE = 50,
-    TASK_TYPE_TRANSFER_BACKFILL_TX = 51,
-    TASK_TYPE_TRANSFER_REPLACE_TABLE = 52,
-    TASK_TYPE_MDS_MINI_MERGE = 53,
-    TASK_TYPE_TTL_DELETE = 54,
-    TASK_TYPE_TENANT_SNAPSHOT_CREATE = 55,
-    TASK_TYPE_TENANT_SNAPSHOT_GC = 56,
-    TASK_TYPE_BATCH_FREEZE_TABLETS = 57,
-    TASK_TYPE_LOB_BUILD_MAP = 58,
-    TASK_TYPE_LOB_MERGE_MAP = 59,
-    TASK_TYPE_LOB_WRITE_DATA = 60,
-    TASK_TYPE_DDL_SPLIT_PREPARE = 61,
-    TASK_TYPE_DDL_SPLIT_WRITE = 62,
-    TASK_TYPE_DDL_SPLIT_MERGE = 63,
-    TASK_TYPE_TABLE_FINISH_BACKFILL = 64,
-    TASK_TYPE_BACKUP_INITIAL_FUSE = 65,
-    TASK_TYPE_BACKUP_START_FUSE = 66,
-    TASK_TYPE_BACKUP_FINISH_FUSE = 67,
-    TASK_TYPE_BACKUP_TABLET_FUSE = 68,
-    TASK_TYPE_INITIAL_REBUILD_TABLET_TASK = 69,
-    TASK_TYPE_START_REBUILD_TABLET_TASK = 70,
-    TASK_TYPE_TABLET_REBUILD_TASK = 71,
-    TASK_TYPE_FINISH_REBUILD_TABLET_TASK = 72,
-    TASK_TYPE_REFRESH_SSTABLES = 73,
-    TASK_TYPE_VERIFY_CKM = 74,
-    TASK_TYPE_WRITE_META_LIST = 75,
-    TASK_TYPE_MIGRATION_WARMUP = 76,
-    TASK_TYPE_UPDATE_SKIP_MAJOR_TABLET = 77,
-    TASK_TYPE_WRITE_SHARED_MAJOR_META_LIST = 78,
-    TASK_TYPE_CHECK_CONVERT_TABLET = 79,
-    TASK_TYPE_VECTOR_INDEX_MEMDATA_SYNC = 80,
-    TASK_TYPE_DELETE_LOB_META_ROW = 81,
-    TASK_TYPE_TRANSFER_BUILD_TABLET_INFO = 82,
-    TASK_TYPE_BACKUP_LS_LOG_GROUP = 83,
-    TASK_TYPE_BACKUP_LS_LOG = 84,
-    TASK_TYPE_BACKUP_LS_LOG_FILE = 85,
-    TASK_TYPE_BACKUP_LS_LOG_FINISH = 86,
-    TASK_TYPE_BACKUP_LS_LOG_GROUP_FINISH = 87,
-    TASK_TYPE_COMPLEMENT_CALC_RANGE = 88,
-    TASK_TYPE_COMPLEMENT_RESCAN_WRITE = 89,
-    TASK_TYPE_UNIQUE_CHECKING_MERGE = 90,
-    TASK_TYPE_DDL_SPLIT_DOWNLOAD_SSTABLE = 91,
-    TASK_TYPE_DDL_SPLIT_FINISH = 92,
-    TASK_TYPE_UPLOAD_MINI_SSTABLE = 93,
-    TASK_TYPE_ATTACH_SHARED_SSTABLE = 94,
-    TASK_TYPE_SS_PHYSICAL_CREATE_TABLETS_PRODUCER = 95,
-    TASK_TYPE_SS_PHYSICAL_CREATE_TABLETS_FINISH = 96,
-    TASK_TYPE_SS_MIGRATE_INIT = 97,
-    TASK_TYPE_SS_MIGRATE_START = 98,
-    TASK_TYPE_SS_MIGRATE_START_FINISH = 99,
-    TASK_TYPE_SS_MIGRATE_FINISH = 100,
-    TASK_TYPE_SS_TRANSFER_BACKFILL = 101,
-    TASK_TYPE_SS_TRANSFER_BACKFILL_SCHEDULE = 102,
-    TASK_TYPE_SS_TRANSFER_BACKFILL_UPLOAD = 103,
-    TASK_TYPE_SS_TRANSFER_BACKFILL_TX = 104,
-    TASK_TYPE_SS_TRANSFER_REPLACE_TABLE = 105,
-    TASK_TYPE_SS_TRANSFER_REFRESH_TABLE = 106,
-    TASK_TYPE_SS_TRANSFER_UPDATE_INFO = 107,
-    TASK_TYPE_MIGRATE_START_PHYSICAL = 108,
-    TASK_TYPE_SS_PHYSICAL_CREATE_TABLETS_CONSUMER = 109,
-    TASK_TYPE_CO_MERGE_PERSIST = 110,
-    TASK_TYPE_CO_MERGE_REPLAY = 111,
-    TASK_TYPE_CO_MERGE_FINISH = 112,
-    TASK_TYPE_DDL_PREPARE_SCAN = 113,
-    TASK_TYPE_DDL_WRITE_CG_MACRO_BLOCK = 114,
-    TASK_TYPE_DDL_BUILD_MAJOR_SSTABLE = 115,
-    TASK_TYPE_DIRECT_LOAD_WRITE_CHUNK_PIPELINE = 116, // unused
-    TASK_TYPE_DIRECT_LOAD_WRITE_CHANNEL_FLUSH = 117,
-    TASK_TYPE_DIRECT_LOAD_WRITE_CHANNEL_FINISH = 118,
-    TASK_TYPE_DIRECT_LOAD_WRITE_CLOSE = 119, // unused
-    TASK_TYPE_DDL_WRITE_PIPELINE = 120,
-    TASK_TYPE_DDL_WRITE_USING_TMP_FILE_PIPELINE = 121,
-    TASK_TYPE_DDL_VECTOR_INDEX_APPEND_PIPELINE = 122,
-    TASK_TYPE_DDL_VECTOR_INDEX_BUILD_AND_WRITE_PIPELINE = 123,
-    TASK_TYPE_DIRECT_LOAD_START_MERGE = 124,
-    TASK_TYPE_DDL_MERGE_PREPARE = 125,
-    TASK_TYPE_DDL_MERGE_CG_SLICE = 126,
-    TASK_TYPE_DDL_MERGE_ASSEMBLE = 127,
-    TASK_TYPE_DDL_MERGE_GUARD = 128,
-    TASK_TYPE_DIRECT_LOAD_WRITE_MACRO_BLOCK_PIPELINE = 129,
-    TASK_TYPE_DDL_GROUP_WRITE_TASK= 130,
-    TASK_TYPE_DDL_CG_GROUP_WRITE_TASK= 131,
-    TASK_TYPE_DIRECT_LOAD_FINISH_OP = 132,
-    TASK_TYPE_DIRECT_LOAD_TABLE_OP_OPEN_OP = 133,
-    TASK_TYPE_DIRECT_LOAD_TABLE_OP_CLOSE_OP = 134,
-    TASK_TYPE_DIRECT_LOAD_TABLE_OP_CLOSE_OP_FINISH = 135, // unused
-    TASK_TYPE_DIRECT_LOAD_DIRECT_WRITE_OP = 136,
-    TASK_TYPE_DIRECT_LOAD_DIRECT_WRITE_OP_FINISH = 137,
-    TASK_TYPE_DIRECT_LOAD_STORE_WRITE_OP = 138,
-    TASK_TYPE_DIRECT_LOAD_STORE_WRITE_OP_FINISH = 139,
-    TASK_TYPE_DIRECT_LOAD_PRE_SORT_WRITE_OP = 140,
-    TASK_TYPE_DIRECT_LOAD_PRE_SORT_WRITE_OP_FINISH = 141,
-    TASK_TYPE_DIRECT_LOAD_MEM_SORT_OP = 142,
-    TASK_TYPE_DIRECT_LOAD_MEM_SORT_OP_FINISH = 143,
-    TASK_TYPE_DIRECT_LOAD_COMPACT_TABLE_OP = 144,
-    TASK_TYPE_DIRECT_LOAD_COMPACT_TABLE_OP_FINISH = 145,
-    TASK_TYPE_DIRECT_LOAD_INSERT_SSTABLE_OP = 146,
-    TASK_TYPE_DIRECT_LOAD_INSERT_SSTABLE_OP_FINISH = 147,
-    TASK_TYPE_DIRECT_LOAD_INSERT_SSTABLE = 148,
-    TASK_TYPE_DIRECT_LOAD_INSERT_SSTABLE_FINISH = 149,
-    TASK_TYPE_DIRECT_LOAD_PRE_SORT_WRITE = 150,
-    TASK_TYPE_DIRECT_LOAD_PRE_SORT_WRITE_SORT = 151,
-    TASK_TYPE_DIRECT_LOAD_PRE_SORT_WRITE_FLUSH = 152, // unused
-    TASK_TYPE_DIRECT_LOAD_MEM_COMPACT_SAMPLE = 153,
-    TASK_TYPE_DIRECT_LOAD_MEM_COMPACT_DUMP = 154,
-    TASK_TYPE_DIRECT_LOAD_MEM_COMPACT_COMPACT = 155,
-    TASK_TYPE_DIRECT_LOAD_PK_MEM_SORT = 156,
-    TASK_TYPE_DIRECT_LOAD_PK_MEM_SORT_LOAD = 157,
-    TASK_TYPE_DIRECT_LOAD_HEAP_MEM_SORT = 158,
-    TASK_TYPE_DIRECT_LOAD_COMPACT_SSTABLE = 159,
-    TASK_TYPE_DIRECT_LOAD_COMPACT_SSTABLE_SPLIT_RANGE = 160,
-    TASK_TYPE_DIRECT_LOAD_COMPACT_SSTABLE_MERGE_RANGE = 161,
-    TASK_TYPE_DIRECT_LOAD_COMPACT_SSTABLE_COMPACT = 162,
-    TASK_TYPE_DIRECT_LOAD_COMPACT_HEAP_TABLE = 163,
-    TASK_TYPE_DIRECT_LOAD_COMPACT_HEAP_TABLE_COMPACT = 164,
-    TASK_TABLE_LOAD_MACRO_BLOCK_WRITE_TASK = 165,
-    TASK_TYPE_DDL_SCHEDULE_ANOTHER_MERGE = 166,
-    TASK_TYPE_DIRECT_LOAD_INSERT_SSTABLE_CLEAR = 167,
-    TASK_TYPE_DIRECT_LOAD_COMPACT_SSTABLE_CLEAR = 168,
-    TASK_TYPE_DIRECT_LOAD_UPDATE_SS_INC_MAJOR = 169,
-    TASK_TYPE_SS_INC_MAJOR_TRANSFER_BACKFILL_TX = 170,
-    TASK_TYPE_DDL_FORK_PREPARE = 171,
-    TASK_TYPE_DDL_FORK_REUSE = 172,
-    TASK_TYPE_DDL_FORK_REWRITE = 173,
-    TASK_TYPE_DDL_FORK_MERGE = 174,
-    TASK_TYPE_RESTORE_COMPLETE_INITIAL = 175,
-    TASK_TYPE_RESTORE_COMPLETE_WAIT_DATA_READY = 176,
-    TASK_TYPE_RESTORE_COMPLETE_FINISH = 177,
+    TASK_TYPE_UNIQUE_CHECKING_PREPARE = 17,
+    TASK_TYPE_SIMPLE_UNIQUE_CHECKING = 18,
+    TASK_TYPE_MIGRATE_PREPARE = 19,
+    TASK_TYPE_MIGRATE_COPY_LOGIC = 20,
+    TASK_TYPE_MIGRATE_FINISH_LOGIC = 21,
+    TASK_TYPE_MIGRATE_COPY_PHYSICAL = 22,
+    TASK_TYPE_MIGRATE_FINISH_PHYSICAL = 23,
+    TASK_TYPE_MIGRATE_FINISH = 24,
+    TASK_TYPE_FAKE = 25,
+    TASK_TYPE_MIGRATE_ENABLE_REPLAY = 26,
+    TASK_TYPE_MAJOR_MERGE_FINISH = 27,
+    TASK_TYPE_GROUP_MIGRATE = 28,
+    TASK_TYPE_SQL_BUILD_INDEX = 29, // build index by sql plan.
+    TASK_TYPE_SERVER_PREPROCESS = 30,
+    TASK_TYPE_FAST_RECOVERY = 31,
+    TASK_TYPE_MIGRATE_POST_PREPARE = 32,
+    TASK_TYPE_FAST_MIGRATE_ASYNC_TASK = 33,
+    TASK_TYPE_VALIDATE_BACKUP = 34,
+    TASK_TYPE_VALIDATE_FINISH = 35,
+    TASK_TYPE_RESERVED_36 = 36,
+    TASK_TYPE_RESTORE_TAILORED_PREPARE = 37,
+    TASK_TYPE_RESTORE_TAILORED_PROCESS = 38,
+    TASK_TYPE_RESTORE_TAILORED_FINISH = 39,
+    TASK_TYPE_BACKUP_BACKUPSET = 40,
+    TASK_TYPE_BACKUP_ARCHIVELOG = 41,
+    TASK_TYPE_COMPLEMENT_PREPARE = 42,
+    TASK_TYPE_COMPLEMENT_WRITE = 43,
+    TASK_TYPE_COMPLEMENT_MERGE = 44,
+    TASK_TYPE_BACKUP_CLEAN = 45,
+    TASK_TYPE_DDL_KV_DUMP = 46,
+    TASK_TYPE_DDL_KV_MERGE = 47,
+    TASK_TYPE_RESERVED_48 = 48,
+    TASK_TYPE_RESERVED_49 = 49,
+    TASK_TYPE_MDS_MINI_MERGE = 50,
+    TASK_TYPE_TTL_DELETE = 51,
+    TASK_TYPE_TENANT_SNAPSHOT_CREATE = 52,
+    TASK_TYPE_TENANT_SNAPSHOT_GC = 53,
+    TASK_TYPE_BATCH_FREEZE_TABLETS = 54,
+    TASK_TYPE_LOB_BUILD_MAP = 55,
+    TASK_TYPE_LOB_MERGE_MAP = 56,
+    TASK_TYPE_LOB_WRITE_DATA = 57,
+    TASK_TYPE_TABLE_FINISH_BACKFILL = 58,
+    TASK_TYPE_BACKUP_INITIAL_FUSE = 59,
+    TASK_TYPE_BACKUP_START_FUSE = 60,
+    TASK_TYPE_BACKUP_FINISH_FUSE = 61,
+    TASK_TYPE_BACKUP_TABLET_FUSE = 62,
+    TASK_TYPE_INITIAL_REBUILD_TABLET_TASK = 63,
+    TASK_TYPE_START_REBUILD_TABLET_TASK = 64,
+    TASK_TYPE_TABLET_REBUILD_TASK = 65,
+    TASK_TYPE_FINISH_REBUILD_TABLET_TASK = 66,
+    TASK_TYPE_REFRESH_SSTABLES = 67,
+    TASK_TYPE_VERIFY_CKM = 68,
+    TASK_TYPE_WRITE_META_LIST = 69,
+    TASK_TYPE_MIGRATION_WARMUP = 70,
+    TASK_TYPE_UPDATE_SKIP_MAJOR_TABLET = 71,
+    TASK_TYPE_WRITE_SHARED_MAJOR_META_LIST = 72,
+    TASK_TYPE_CHECK_CONVERT_TABLET = 73,
+    TASK_TYPE_VECTOR_INDEX_MEMDATA_SYNC = 74,
+    TASK_TYPE_DELETE_LOB_META_ROW = 75,
+    TASK_TYPE_RESERVED_76 = 76,
+    TASK_TYPE_BACKUP_LS_LOG_GROUP = 77,
+    TASK_TYPE_BACKUP_LS_LOG = 78,
+    TASK_TYPE_BACKUP_LS_LOG_FILE = 79,
+    TASK_TYPE_BACKUP_LS_LOG_FINISH = 80,
+    TASK_TYPE_BACKUP_LS_LOG_GROUP_FINISH = 81,
+    TASK_TYPE_COMPLEMENT_CALC_RANGE = 82,
+    TASK_TYPE_COMPLEMENT_RESCAN_WRITE = 83,
+    TASK_TYPE_UNIQUE_CHECKING_MERGE = 84,
+    TASK_TYPE_UPLOAD_MINI_SSTABLE = 85,
+    TASK_TYPE_ATTACH_SHARED_SSTABLE = 86,
+    TASK_TYPE_SS_PHYSICAL_CREATE_TABLETS_PRODUCER = 87,
+    TASK_TYPE_SS_PHYSICAL_CREATE_TABLETS_FINISH = 88,
+    TASK_TYPE_SS_MIGRATE_INIT = 89,
+    TASK_TYPE_SS_MIGRATE_START = 90,
+    TASK_TYPE_SS_MIGRATE_START_FINISH = 91,
+    TASK_TYPE_SS_MIGRATE_FINISH = 92,
+    TASK_TYPE_RESERVED_93 = 93,
+    TASK_TYPE_RESERVED_94 = 94,
+    TASK_TYPE_RESERVED_95 = 95,
+    TASK_TYPE_RESERVED_96 = 96,
+    TASK_TYPE_RESERVED_97 = 97,
+    TASK_TYPE_RESERVED_98 = 98,
+    TASK_TYPE_RESERVED_99 = 99,
+    TASK_TYPE_MIGRATE_START_PHYSICAL = 100,
+    TASK_TYPE_SS_PHYSICAL_CREATE_TABLETS_CONSUMER = 101,
+    TASK_TYPE_DDL_PREPARE_SCAN = 105,
+    TASK_TYPE_DDL_BUILD_MAJOR_SSTABLE = 107,
+    TASK_TYPE_DDL_WRITE_PIPELINE = 112,
+    TASK_TYPE_DDL_WRITE_USING_TMP_FILE_PIPELINE = 113,
+    TASK_TYPE_DDL_VECTOR_INDEX_APPEND_PIPELINE = 114,
+    TASK_TYPE_DDL_VECTOR_INDEX_BUILD_AND_WRITE_PIPELINE = 115,
+    TASK_TYPE_DDL_MERGE_PREPARE = 117,
+    TASK_TYPE_DDL_MERGE_SLICE = 118,
+    TASK_TYPE_DDL_MERGE_ASSEMBLE = 119,
+    TASK_TYPE_DDL_MERGE_GUARD = 120,
+    TASK_TYPE_DDL_SCHEDULE_ANOTHER_MERGE = 158,
+    TASK_TYPE_RESERVED_162 = 162,
+    TASK_TYPE_DDL_FORK_PREPARE = 163,
+    TASK_TYPE_DDL_FORK_REUSE = 164,
+    TASK_TYPE_DDL_FORK_REWRITE = 165,
+    TASK_TYPE_DDL_FORK_MERGE = 166,
+    TASK_TYPE_RESTORE_COMPLETE_INITIAL = 167,
+    TASK_TYPE_RESTORE_COMPLETE_WAIT_DATA_READY = 168,
+    TASK_TYPE_RESTORE_COMPLETE_FINISH = 169,
     TASK_TYPE_MAX,
   };
 
@@ -494,7 +438,7 @@ public:
 
   static const int64_t MergeDagPrioCnt = 3;
   static const ObDagPrio::ObDagPrioEnum MergeDagPrio[];
-  static const int64_t MergeDagTypeCnt = 7;
+  static const int64_t MergeDagTypeCnt = 4;
   static const ObDagType::ObDagTypeEnum MergeDagType[];
 
   explicit ObIDag(const ObDagType::ObDagTypeEnum type);
@@ -540,8 +484,7 @@ public:
       diagnose_type = ObDiagnoseTabletType::TYPE_MINOR_MERGE;
     } else if (ObDagType::ObDagTypeEnum::DAG_TYPE_REFRESH_SSTABLES == type) {
       diagnose_type = ObDiagnoseTabletType::TYPE_S2_REFRESH;
-    } else if (ObDagType::ObDagTypeEnum::DAG_TYPE_MAJOR_MERGE <= type
-            && ObDagType::ObDagTypeEnum::DAG_TYPE_CO_MERGE_FINISH >= type) {
+    } else if (ObDagType::ObDagTypeEnum::DAG_TYPE_MAJOR_MERGE == type) {
       diagnose_type = ObDiagnoseTabletType::TYPE_MEDIUM_MERGE;
     } else if (ObDagType::ObDagTypeEnum::DAG_TYPE_TX_TABLE_MERGE == type) {
       diagnose_type = ObDiagnoseTabletType::TYPE_TX_TABLE_MERGE;
@@ -679,8 +622,6 @@ public:
   virtual int create_first_task() { return common::OB_SUCCESS; }
   virtual int64_t get_data_size() const { return 0; }
   virtual int fill_dag_key(char *buf, const int64_t buf_len) const = 0;
-  virtual lib::Worker::CompatMode get_compat_mode() const = 0;
-  virtual uint64_t get_consumer_group_id() const = 0;
   int remove_task(ObITask &task);
 protected:
   void inc_running_task_cnt() { ++running_task_cnt_; }
@@ -703,7 +644,6 @@ protected:
   int dag_ret_;
   int64_t add_time_;
   int64_t start_time_;
-  uint64_t consumer_group_id_;
   share::ObDiagnoseLocation error_location_;
 
 protected:
@@ -824,7 +764,6 @@ public:
   {
     return OB_SUCCESS;
   }
-  OB_INLINE bool is_co_dag_net() const { return ObDagNetType::DAG_NET_TYPE_CO_MAJOR == type_; }
   virtual bool is_ha_dag_net() const { return false; }
   void diagnose_dag(common::ObIArray<compaction::ObDiagnoseTabletCompProgress> &progress_list);
 public:
@@ -906,7 +845,7 @@ public:
   int64_t value_;
 };
 
-class ObTenantDagWorker : public lib::TGRunnable, public common::ObDLinkBase<ObTenantDagWorker>
+class ObTenantDagWorker : public lib::ThreadPool, public common::ObDLinkBase<ObTenantDagWorker>
 {
 public:
   typedef common::ObDLinkNode<ObTenantDagWorker *> Node;
@@ -932,7 +871,6 @@ public:
   void run1() override;
   int yield();
   void set_task(ObITask *task);
-  void set_function_type(const ObFunctionType function_type) { function_type_ = function_type; }
   bool need_wake_up() const;
   ObITask *get_task() const { return task_; }
   DagWorkerStatus get_status() { return status_; }
@@ -957,8 +895,6 @@ private:
   DagWorkerStatus status_;
   int64_t check_period_;
   int64_t last_check_time_;
-  ObFunctionType function_type_;
-  int tg_id_;
   bool hold_by_compaction_dag_;
   bool is_inited_;
 };
@@ -1020,8 +956,8 @@ public:
     const ObDagId &dag_id, bool &exist);
   int cancel_dag_net(const ObDagId &dag_id);
   int get_first_dag_net(ObIDagNet *&dag_net);
-  int check_ls_compaction_dag_exist_with_cancel(const ObLSID &ls_id, bool &exist);
-  int get_min_end_scn_from_major_dag(const ObLSID &ls_id, SCN &min_end_scn);
+  int check_compaction_dag_exist_with_cancel(bool &exist);
+  int get_min_end_scn_from_major_dag(SCN &min_end_scn);
 private:
   bool is_dag_map_full_();
   typedef common::ObDList<ObIDagNet> DagNetList;
@@ -1139,8 +1075,8 @@ public:
 
   // 1. check ls compaction exist
   // 2. cancel ls compaction waiting dag
-  int check_ls_compaction_dag_exist_with_cancel(const ObLSID &ls_id, bool &exist);
-  int get_min_end_scn_from_major_dag(const ObLSID &ls_id, SCN &min_end_scn);
+  int check_compaction_dag_exist_with_cancel(bool &exist);
+  int get_min_end_scn_from_major_dag(SCN &min_end_scn);
   int get_compaction_dag_count(int64_t dag_count);
   int get_max_major_finish_time(const int64_t version, int64_t &estimated_finish_time);
   int diagnose_dag(
@@ -1157,9 +1093,7 @@ public:
     int ret = OB_SUCCESS;
     lib::ObMutexGuard guard(prio_lock_);
     ObIDag *stored_dag = nullptr;
-    if (OB_UNLIKELY(dag.get_type() != ObDagType::DAG_TYPE_DDL
-        && dag.get_type() != ObDagType::DAG_TYPE_TABLET_SPLIT
-        && dag.get_type() != ObDagType::DAG_TYPE_LOB_SPLIT)) {
+    if (OB_UNLIKELY(dag.get_type() != ObDagType::DAG_TYPE_DDL)) {
       ret = OB_INVALID_ARGUMENT;
       COMMON_LOG(WARN, "invalid arugment", K(ret), K(dag));
     } else if (OB_FAIL(dag_map_.get_refactored(&dag, stored_dag))) {
@@ -1205,8 +1139,7 @@ private:
   OB_INLINE bool is_rank_dag_type(ObDagType::ObDagTypeEnum dag_type) const
   {
     return is_mini_compaction_dag(dag_type) ||
-           is_minor_compaction_dag(dag_type) ||
-           ObDagType::DAG_TYPE_CO_MERGE_PREPARE == dag_type; // add co prepare dag to rank list first
+           is_minor_compaction_dag(dag_type);
   }
   OB_INLINE bool is_compaction_dag_prio() const
   {
@@ -1291,7 +1224,7 @@ private:
   void sub_##name() { ATOMIC_DEC(&var); } \
   void clear_##name() { ATOMIC_SET(&var, 0); } \
 
-class ObTenantDagScheduler : public lib::TGRunnable
+class ObTenantDagScheduler : public lib::ThreadPool
 {
 public:
   static int mtl_init(ObTenantDagScheduler* &scheduler);
@@ -1397,8 +1330,8 @@ public:
 
   // 1. check ls compaction exist
   // 2. cancel ls compaction waiting dag
-  int check_ls_compaction_dag_exist_with_cancel(const ObLSID &ls_id, bool &exist);
-  int get_min_end_scn_from_major_dag(const ObLSID &ls_id, SCN &min_end_scn);
+  int check_compaction_dag_exist_with_cancel(bool &exist);
+  int get_min_end_scn_from_major_dag(SCN &min_end_scn);
   int check_dag_net_exist(
       const ObDagId &dag_id, bool &exist);
   int cancel_dag_net(const ObDagId &dag_id);
@@ -1415,10 +1348,7 @@ public:
     if (IS_NOT_INIT) {
       ret = OB_NOT_INIT;
       COMMON_LOG(WARN, "ObDagScheduler is not inited", K(ret));
-    } else if (OB_ISNULL(dag) || 
-        (ObDagType::DAG_TYPE_DDL != dag->get_type() 
-        && ObDagType::DAG_TYPE_TABLET_SPLIT != dag->get_type()
-        && ObDagType::DAG_TYPE_LOB_SPLIT != dag->get_type())) {
+    } else if (OB_ISNULL(dag) || ObDagType::DAG_TYPE_DDL != dag->get_type()) {
       ret = OB_INVALID_ARGUMENT;
       COMMON_LOG(WARN, "invalid arugment", K(ret), KPC(dag));
     } else if (OB_FAIL(prio_sche_[dag->get_priority()].get_dag_progress(*dag, row_inserted, physical_row_count))) {
@@ -1471,7 +1401,6 @@ private:
 private:
   bool is_inited_;
   bool fast_schedule_dag_net_;
-  int tg_id_;
   int64_t dag_cnt_;              // atomic value
   int64_t dag_limit_;            // only set in init/destroy
   int64_t compaction_dag_limit_;

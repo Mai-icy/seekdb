@@ -17,7 +17,7 @@
 #ifndef OCEANBASE_ROOTSERVER_FREEZE_OB_FREEZE_INFO_DETECTOR_
 #define OCEANBASE_ROOTSERVER_FREEZE_OB_FREEZE_INFO_DETECTOR_
 
-#include "lib/thread/thread_mgr_interface.h"
+#include "lib/task/ob_timer.h"
 #include "common/ob_role.h"
 
 namespace oceanbase
@@ -68,9 +68,6 @@ private:
   // adjust global_merge_info in memory to avoid useless major freezes on restore major_freeze_service
   int try_adjust_global_merge_info();
   int check_global_merge_info(bool &is_initial) const;
-  int obtain_proposal_id_from_ls(const bool is_primary_service,
-                                 int64_t &proposal_id,
-                                 common::ObRole &role);
   void update_last_run_timestamp_();
   // For backup-restore tenant that switchover to primary tenant, FreezeInfoDetector is not able to
   // has write access immediately when it starts. Thus, FreezeInfoDetector can not renew
@@ -94,6 +91,7 @@ private:
   ObThreadIdling *major_scheduler_idling_;
   int64_t last_schedule_ts_;
   bool need_immediate_run_;
+  common::ObTimer timer_;
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObMajorMergeInfoDetector);

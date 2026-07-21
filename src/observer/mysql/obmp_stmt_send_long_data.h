@@ -54,17 +54,14 @@ protected:
   virtual int process();
   virtual int send_error_packet(int err,
                                 const char* errmsg,
-                                bool is_partition_hit = true,
                                 void *extra_err_info = NULL)
-  { return ObMPBase::send_error_packet(err, errmsg, is_partition_hit, extra_err_info); }
+  { return ObMPBase::send_error_packet(err, errmsg, extra_err_info); }
   virtual int send_ok_packet(sql::ObSQLSessionInfo &session, ObOKPParam &ok_param)
   { return ObMPBase::send_ok_packet(session, ok_param); }
   virtual int send_eof_packet(const sql::ObSQLSessionInfo &session, const ObMySQLResultSet &result)
   { return ObMPBase::send_eof_packet(session, result); }
   virtual int response_packet(obmysql::ObMySQLPacket &pkt, sql::ObSQLSessionInfo* session)
   { return ObMPBase::response_packet(pkt, session); }
-  virtual bool need_send_extra_ok_packet()
-  { return OB_NOT_NULL(get_conn()) && get_conn()->need_send_extra_ok_packet(); }
 private:
   int do_process(sql::ObSQLSessionInfo &session);
   int response_result(sql::ObSQLSessionInfo &session);

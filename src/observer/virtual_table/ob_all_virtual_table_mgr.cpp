@@ -26,7 +26,6 @@ using namespace observer;
 
 ObAllVirtualTableMgr::ObAllVirtualTableMgr()
     : ObVirtualTableScannerIterator(),
-      addr_(),
       tablet_iter_(nullptr),
       tablet_allocator_("VTTable"),
       tablet_handle_(),
@@ -49,7 +48,6 @@ void ObAllVirtualTableMgr::reset()
     tablet_iter_ = nullptr;
   }
   tablet_allocator_.reset();
-  addr_.reset();
 
   if (OB_NOT_NULL(iter_buf_)) {
     allocator_->free(iter_buf_);
@@ -124,7 +122,7 @@ int ObAllVirtualTableMgr::get_next_table(ObITable *&table)
         } else if (OB_UNLIKELY(!tablet_handle_.is_valid())) {
           ret = OB_ERR_UNEXPECTED;
           SERVER_LOG(WARN, "unexpected invalid tablet", K(ret), K_(tablet_handle));
-        } else if (OB_FAIL(tablet_handle_.get_obj()->get_all_tables(table_store_iter_, true/*unpack_cg_table*/))) {
+        } else if (OB_FAIL(tablet_handle_.get_obj()->get_all_tables(table_store_iter_))) {
           SERVER_LOG(WARN, "fail to get all tables", K(ret), K_(tablet_handle), K_(table_store_iter));
         } else if (0 != table_store_iter_.count()) {
           break;
@@ -254,15 +252,10 @@ int ObAllVirtualTableMgr::inner_get_next_row(common::ObNewRow *&row)
         case NESTED_SIZE:
           cur_row_.cells_[i].set_int(nested_size);
           break;
-        case CG_IDX:
-          cur_row_.cells_[i].set_int(table_key.get_column_group_id());
-          break;
         case DATA_CHECKSUM: {
           int64_t data_checksum = 0;
           if (table->is_memtable()) {
             // memtable has no data checksum, do nothing
-          } else if (table->is_co_sstable() && !static_cast<const ObCOSSTableV2 *>(table)->is_cgs_empty_co_table()) {
-            data_checksum = static_cast<storage::ObCOSSTableV2 *>(table)->get_cs_meta().data_checksum_;
           } else if (table->is_sstable()) {
             data_checksum = static_cast<blocksstable::ObSSTable *>(table)->get_data_checksum();
           }
@@ -294,4 +287,3 @@ int ObAllVirtualTableMgr::inner_get_next_row(common::ObNewRow *&row)
   }
   return ret;
 }
-

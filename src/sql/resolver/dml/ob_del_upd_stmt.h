@@ -192,7 +192,6 @@ public:
   ObInsertTableInfo() :
       ObDmlTableInfo(ObDmlTableType::INSERT_TABLE),
       is_replace_(false),
-      is_overwrite_(false),
       values_desc_(),
       values_vector_(),
       column_conv_exprs_(),
@@ -203,7 +202,6 @@ public:
   ObInsertTableInfo(ObDmlTableType dml_type) :
       ObDmlTableInfo(dml_type),
       is_replace_(false),
-      is_overwrite_(false),
       values_desc_(),
       values_vector_(),
       column_conv_exprs_(),
@@ -231,7 +229,6 @@ public:
                K_(check_constraint_exprs),
                K_(view_check_exprs),
                K_(is_replace),
-               K_(is_overwrite),
                K_(values_desc),
                K_(values_vector),
                K_(column_conv_exprs),
@@ -239,7 +236,6 @@ public:
                K_(assignments),
                K_(column_in_values_vector));
   bool is_replace_;  // replace semantic for mysql
-  bool is_overwrite_;
   // The following two variables together describe the VALUES structure of INSERT
   // For example: INSERT INTO T1 (i, j, k) VALUES (1,2,3),(4,5,6)
   //  - values_desc_ size is 3, inside it saves the column reference expr of columns i, j, k
@@ -442,7 +438,6 @@ public:
   int check_dml_source_from_join();
   bool is_pdml_disabled() const { return pdml_disabled_; }
   void set_pdml_disabled() { pdml_disabled_ = true; }
-  int get_modified_materialized_view_id(uint64_t &mview_id) const;
 protected:
   common::ObSEArray<ObRawExpr*, common::OB_PREALLOCATED_NUM, common::ModulePageAllocator, true> returning_exprs_;
   common::ObSEArray<ObRawExpr*, common::OB_PREALLOCATED_NUM, common::ModulePageAllocator, true> returning_into_exprs_;

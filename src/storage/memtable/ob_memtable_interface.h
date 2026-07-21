@@ -68,10 +68,10 @@ public:
   virtual int replay_to_commit(const bool is_resume) = 0;
   //method called when leader revoke
   virtual int commit_to_replay() = 0;
-  virtual void set_trans_ctx(transaction::ObPartTransCtx *ctx) = 0;
+  virtual void set_trans_ctx(transaction::ObTxCtx *ctx) = 0;
   virtual void inc_truncate_cnt() = 0;
   
-  virtual int get_conflict_trans_ids(common::ObIArray<transaction::ObTransIDAndAddr> &array) = 0;
+  virtual int get_conflict_trans_ids(common::ObIArray<transaction::ObTransID> &array) = 0;
   VIRTUAL_TO_STRING_KV("", "");
 public:
   // return OB_AGAIN/OB_SUCCESS
@@ -87,7 +87,6 @@ struct CreateMemtableArg {
   share::SCN clog_checkpoint_scn_;
   share::SCN new_clog_checkpoint_scn_;
   bool for_replay_;
-  bool for_inc_direct_load_;
   bool is_delete_insert_;
 
   CreateMemtableArg() { reset(); }
@@ -97,7 +96,6 @@ struct CreateMemtableArg {
     clog_checkpoint_scn_.set_min();
     new_clog_checkpoint_scn_.set_min();
     for_replay_ = false;
-    for_inc_direct_load_ = false;
     is_delete_insert_ = false;
   }
 
@@ -105,25 +103,20 @@ struct CreateMemtableArg {
                K(clog_checkpoint_scn_),
                K(new_clog_checkpoint_scn_),
                K(for_replay_),
-               K(for_inc_direct_load_),
                K(is_delete_insert_));
 };
 
 class ObIMemtable : public storage::ObITable {
 public:
   ObIMemtable()
-    : ls_id_(),
-      snapshot_version_(share::SCN::max_scn())
+    : snapshot_version_(share::SCN::max_scn())
   {}
   virtual ~ObIMemtable() {}
   void reset()
   {
     ObITable::reset();
-    ls_id_.reset();
     snapshot_version_.set_max();
   }
-  int get_ls_id(share::ObLSID &ls_id);
-  share::ObLSID get_ls_id() const;
   virtual ObTabletID get_tablet_id() const = 0;
   virtual int get(const storage::ObTableIterParam &param,
                   storage::ObTableAccessContext &context,
@@ -191,7 +184,6 @@ public:
 
   virtual int64_t dec_ref() { return ObITable::dec_ref(); }
 protected:
-  share::ObLSID ls_id_;
   share::SCN snapshot_version_;
 };
 }  // namespace storage

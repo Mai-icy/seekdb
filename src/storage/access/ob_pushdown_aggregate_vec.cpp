@@ -18,6 +18,7 @@
 
 #include "ob_pushdown_aggregate_vec.h"
 #include "sql/engine/expr/ob_datum_cast.h"
+#include "storage/lob/ob_lob_manager.h"
 
 namespace oceanbase
 {
@@ -40,14 +41,8 @@ int init_approx_count_distinct_synopsis_aggregate(RuntimeContext &agg_ctx, const
 // TODO@fengshang, need to support sum_opnsize vec 2.0
 int init_sum_opnsize_aggregate(RuntimeContext &agg_ctx, const int64_t agg_col_id,
                                ObIAllocator &allocator, IAggregate *&agg);
-int init_rb_build_aggregate(RuntimeContext &agg_ctx, const int64_t agg_col_id, 
-                            ObIAllocator &allocator, IAggregate *&agg);
 int init_string_prefix_max_aggregate(RuntimeContext &agg_ctx, const int64_t agg_col_id,
                                      ObIAllocator &allocator, IAggregate *&agg);
-int init_rb_or_aggregate(RuntimeContext &agg_ctx, const int64_t agg_col_id, 
-                         ObIAllocator &allocator, IAggregate *&agg);
-int init_rb_and_aggregate(RuntimeContext &agg_ctx, const int64_t agg_col_id, 
-                          ObIAllocator &allocator, IAggregate *&agg);
 }
 }
 }
@@ -61,7 +56,7 @@ ObAggCellVec::ObAggCellVec(const int64_t agg_idx, const ObAggCellVecBasicInfo &b
     aggregate_(nullptr),
     padding_allocator_("ObStorageAgg", OB_MALLOC_NORMAL_BLOCK_SIZE),
     default_datum_(),
-    agg_row_id_(OB_INVALID_CS_ROW_ID)
+    agg_row_id_(INVALID_AGG_ROW_ID)
 {
   result_datum_.set_null();
   default_datum_.set_nop();
@@ -117,27 +112,9 @@ int ObAggCellVec::init()
         }
         break;
       }
-      case PD_RB_BUILD: {
-        if (OB_FAIL(helper::init_rb_build_aggregate(basic_info_.agg_ctx_, agg_idx_, allocator_, aggregate_))) {
-          LOG_WARN("Failed to init rb build aggregate", K(ret), K_(agg_idx));
-        }
-        break;
-      }
       case PD_STR_PREFIX_MAX: {
         if (OB_FAIL(helper::init_string_prefix_max_aggregate(basic_info_.agg_ctx_, agg_idx_, allocator_, aggregate_))) {
           LOG_WARN("Failed to init str prefix max aggregate", K(ret), K_(agg_idx));
-        }
-        break;
-      }
-      case PD_RB_AND: {
-        if (OB_FAIL(helper::init_rb_and_aggregate(basic_info_.agg_ctx_, agg_idx_, allocator_, aggregate_))) {
-          LOG_WARN("Failed to init rb and aggregate", K(ret), K_(agg_idx));
-        }
-        break;
-      }
-      case PD_RB_OR: {
-        if (OB_FAIL(helper::init_rb_or_aggregate(basic_info_.agg_ctx_, agg_idx_, allocator_, aggregate_))) {
-          LOG_WARN("Failed to init rb or aggregate", K(ret), K_(agg_idx));
         }
         break;
       }
@@ -174,7 +151,7 @@ void ObAggCellVec::reuse()
 {
   ObAggCellBase::reuse();
   padding_allocator_.reuse();
-  agg_row_id_ = OB_INVALID_CS_ROW_ID;
+  agg_row_id_ = INVALID_AGG_ROW_ID;
 }
 
 int ObAggCellVec::eval(
@@ -261,7 +238,6 @@ int ObAggCellVec::agg_pushdown_decoder(
 
 int ObAggCellVec::eval_index_info(
     const blocksstable::ObMicroIndexInfo &index_info,
-    const bool is_cg,
     const int64_t agg_row_idx/*0*/)
 {
   int ret = OB_SUCCESS;
@@ -273,7 +249,7 @@ int ObAggCellVec::eval_index_info(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("Invalid null compact row", K(ret), K(row));
   } else {
-    if (!is_cg && (!index_info.can_blockscan() || index_info.is_left_border() || index_info.is_right_border())) {
+    if (!index_info.can_blockscan() || index_info.is_left_border() || index_info.is_right_border()) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("Unexpected, the micro index info must can blockscan and not border", K(ret), K(is_lob_col()), K(index_info));
     } else if (OB_UNLIKELY(!is_skip_index_valid())) {
@@ -283,7 +259,7 @@ int ObAggCellVec::eval_index_info(
       LOG_WARN("Failed to eval skip index datum", K(ret), K_(skip_index_datum));
     }
   }
-  LOG_DEBUG("[PD_AGGREGATE] aggregate index info", K(ret), K_(skip_index_datum), K(is_cg), K(agg_row_idx), KPC(this));
+  LOG_DEBUG("[PD_AGGREGATE] aggregate index info", K(ret), K_(skip_index_datum), K(agg_row_idx), KPC(this));
   return ret;
 }
 
@@ -640,20 +616,6 @@ int ObCountAggCellVec::eval_batch(
   return ret;
 }
 
-OB_DECLARE_DEFAULT_AND_AVX2_CODE(
-inline static void copy_row_ids(int32_t *row_ids, const int64_t cap, const int32_t diff)
-{
-  const int32_t* __restrict base_ids = default_cs_batch_row_ids_;
-  int32_t* __restrict id_pos = row_ids;
-  const int32_t* __restrict id_end = row_ids + cap;
-  while (id_pos < id_end) {
-    *id_pos = *base_ids + diff;
-    ++id_pos;
-    ++base_ids;
-  }
-}
-)
-
 int ObCountAggCellVec::agg_pushdown_decoder(
     blocksstable::ObIMicroBlockReader *reader,
     const int32_t col_offset,
@@ -680,20 +642,8 @@ int ObCountAggCellVec::agg_pushdown_decoder(
         int64_t base_idx = 0;
         while (OB_SUCC(ret) && base_idx < row_count) {
           int64_t batch_row_count = MIN(AGGREGATE_STORE_BATCH_SIZE, row_count - base_idx);
-          if (batch_row_count <= DEFAULT_CS_BATCH_ROW_COUNT) {
-          #if OB_USE_MULTITARGET_CODE
-            if (common::is_arch_supported(ObTargetArch::AVX2)) {
-              specific::avx2::copy_row_ids(row_id_buffer_, batch_row_count, pd_row_id_ctx.get_row_id(base_idx));
-            } else {
-          #endif
-            specific::normal::copy_row_ids(row_id_buffer_, batch_row_count, pd_row_id_ctx.get_row_id(base_idx));
-          #if OB_USE_MULTITARGET_CODE
-            }
-          #endif
-          } else {
-            for (int64_t i = 0; i < batch_row_count; ++i) {
-              row_id_buffer_[i] = pd_row_id_ctx.get_row_id(base_idx + i);
-            }
+          for (int64_t i = 0; i < batch_row_count; ++i) {
+            row_id_buffer_[i] = pd_row_id_ctx.get_row_id(base_idx + i);
           }
           if (OB_FAIL(reader->get_row_count(col_offset, row_id_buffer_, batch_row_count, false, basic_info_.col_param_, valid_row_count))) {
             LOG_WARN("Failed to get row count from micro block decoder", K(ret), K(pd_row_id_ctx), KPC(this));
@@ -715,7 +665,6 @@ int ObCountAggCellVec::agg_pushdown_decoder(
 
 int ObCountAggCellVec::eval_index_info(
     const blocksstable::ObMicroIndexInfo &index_info,
-    const bool is_cg,
     const int64_t agg_row_idx/*0*/)
 {
   int ret = OB_SUCCESS;
@@ -723,11 +672,11 @@ int ObCountAggCellVec::eval_index_info(
   if (IS_NOT_INIT) {
     ret = OB_NOT_INIT;
     LOG_WARN("ObCountAggCellVec not inited", K(ret));
-  } else if (OB_ISNULL(row) || OB_UNLIKELY(!is_cg && (!index_info.can_blockscan() || 
-                                                      index_info.is_left_border() || index_info.is_right_border()))) {
+  } else if (OB_ISNULL(row) || OB_UNLIKELY(!index_info.can_blockscan() ||
+                                           index_info.is_left_border() || index_info.is_right_border())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("Unexpected, row must not be null or the micro index info must can blockscan and not border", 
-                K(ret), K(row), K(is_cg), K(index_info));
+                K(ret), K(row), K(index_info));
   } else {
     char *agg_cell = basic_info_.agg_ctx_.row_meta().locate_cell_payload(agg_idx_, row);
     int64_t &data = *reinterpret_cast<int64_t *>(agg_cell);
@@ -739,7 +688,7 @@ int ObCountAggCellVec::eval_index_info(
     } else {
       data += index_info.get_row_count() - skip_index_datum_.get_int();
     }
-    LOG_DEBUG("[PD_COUNT_AGGREGATE] aggregate index info", K(ret), K(data), K(is_cg), K(agg_row_idx), 
+    LOG_DEBUG("[PD_COUNT_AGGREGATE] aggregate index info", K(ret), K(data), K(agg_row_idx),
                 K(index_info.get_row_count()), K(skip_index_datum_.get_int()), KPC(this));
   }
   return ret;
@@ -913,7 +862,6 @@ int ObSumAggCellVec::eval(
 
 int ObSumAggCellVec::eval_index_info(
     const blocksstable::ObMicroIndexInfo &index_info,
-    const bool is_cg,
     const int64_t agg_row_idx/*0*/)
 {
   int ret = OB_SUCCESS;
@@ -925,7 +873,7 @@ int ObSumAggCellVec::eval_index_info(
   } else if (OB_ISNULL(row)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("Invalid null compact row", K(ret));
-  } else if (!is_cg && (!index_info.can_blockscan() || index_info.is_left_border() || index_info.is_right_border())) {
+  } else if (!index_info.can_blockscan() || index_info.is_left_border() || index_info.is_right_border()) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("Unexpected, the micro index info must can blockscan and not border", K(ret), K(is_lob_col()), K(index_info));
   } else {
@@ -968,7 +916,7 @@ int ObSumAggCellVec::eval_index_info(
       LOG_WARN("Failed to eval skip index datum", K(ret), K_(skip_index_datum));
     }
   }
-  LOG_DEBUG("[PD_AGGREGATE] aggregate index info", K(ret), KPC(eval_datum), K(is_cg), K(agg_row_idx), KPC(this));
+  LOG_DEBUG("[PD_AGGREGATE] aggregate index info", K(ret), KPC(eval_datum), K(agg_row_idx), KPC(this));
   return ret;
 }
 
@@ -1114,7 +1062,6 @@ int ObSumOpNSizeAggCellVec::eval_batch(
 
 int ObSumOpNSizeAggCellVec::eval_index_info(
     const blocksstable::ObMicroIndexInfo &index_info,
-    const bool is_cg,
     const int64_t agg_row_idx/*0*/)
 {
   int ret = OB_SUCCESS;
@@ -1122,11 +1069,11 @@ int ObSumOpNSizeAggCellVec::eval_index_info(
   if (IS_NOT_INIT) {
     ret = OB_NOT_INIT;
     LOG_WARN("ObCountAggCellVec not inited", K(ret));
-  } else if (OB_ISNULL(row) || OB_UNLIKELY(!is_cg && (!index_info.can_blockscan() ||
-                                                      index_info.is_left_border() || index_info.is_right_border()))) {
+  } else if (OB_ISNULL(row) || OB_UNLIKELY(!index_info.can_blockscan() ||
+                                           index_info.is_left_border() || index_info.is_right_border())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("Unexpected, row must not be null or the micro index info must can blockscan and not border", 
-             K(ret), K(row), K(is_cg), K(index_info));
+             K(ret), K(row), K(index_info));
   } else {
     char *agg_cell = basic_info_.agg_ctx_.row_meta().locate_cell_payload(agg_idx_, row);
     int64_t &data = *reinterpret_cast<int64_t *>(agg_cell);
@@ -1139,7 +1086,7 @@ int ObSumOpNSizeAggCellVec::eval_index_info(
       const int64_t null_count = skip_index_datum_.get_int(); 
       data += (index_info.get_row_count() - null_count) * op_nsize_ + null_count * sizeof(ObDatum);
     }
-    LOG_DEBUG("[PD_SUMOPNSIZE_AGGREGATE] aggregate index info", K(ret), K(data), K(is_cg), K(agg_row_idx), 
+    LOG_DEBUG("[PD_SUMOPNSIZE_AGGREGATE] aggregate index info", K(ret), K(data), K(agg_row_idx),
                 K(index_info.get_row_count()), K(skip_index_datum_.get_int()), KPC(this));
   }
   return ret;
@@ -1168,16 +1115,6 @@ int ObSumOpNSizeAggCellVec::can_use_index_info(
     }
   }
   return ret;
-}
-
-ObRbAggCellVec::ObRbAggCellVec(
-    const int64_t agg_idx,
-    const ObAggCellVecBasicInfo &basic_info,
-    common::ObIAllocator &allocator,
-    ObPDAggType agg_type)
-      : ObAggCellVec(agg_idx, basic_info, allocator)
-{
-  agg_type_ = agg_type;
 }
 
 ObStrPrefixMinAggCellVec::ObStrPrefixMinAggCellVec(
@@ -1300,20 +1237,6 @@ int ObPDAggVecFactory::alloc_cell(
           OB_ISNULL(agg_cell = new (buf) ObSumOpNSizeAggCellVec(agg_idx, basic_info, allocator_, exclude_null))) {
         ret = OB_ALLOCATE_MEMORY_FAILED;
         LOG_WARN("Failed to alloc memory for SumOpNSize agg cell", K(ret));
-      }
-      break;
-    }
-    case T_FUN_SYS_RB_BUILD_AGG:
-    case T_FUN_SYS_RB_AND_AGG:
-    case T_FUN_SYS_RB_OR_AGG: {
-      ObPDAggType pd_type = to_pd_agg_type(type);
-      if (pd_type == PD_MAX_TYPE) {
-        ret = OB_INVALID_ARGUMENT;
-        LOG_WARN("invalid ObPDAggType", K(ret), K(type));
-      } else if (OB_ISNULL(buf = allocator_.alloc(sizeof(ObRbAggCellVec))) ||
-                 OB_ISNULL(agg_cell = new (buf) ObRbAggCellVec(agg_idx, basic_info, allocator_, pd_type))) {
-        ret = OB_ALLOCATE_MEMORY_FAILED;
-        LOG_WARN("Failed to alloc memory for rb agg cell", K(ret), K(pd_type));
       }
       break;
     }

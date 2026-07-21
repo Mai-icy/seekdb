@@ -16,7 +16,7 @@
 
 #include "ob_trans_submit_log_cb.h"
 #include "share/rc/ob_module_provider.h"
-#include "ob_trans_part_ctx.h"
+#include "ob_tx_ctx.h"
 #include "storage/allocator/ob_shared_memory_allocator_mgr.h"
 
 namespace oceanbase
@@ -125,11 +125,6 @@ void ObTxLogCb::reset()
   cb_arg_array_.reset();
   mds_range_.reset();
 
-  if (OB_NOT_NULL(extra_cb_) && need_free_extra_cb_) {
-    mtl_free(extra_cb_);
-  }
-  need_free_extra_cb_ = false;
-
   // is_callbacking_ = false;
   first_part_scn_.invalid_scn();
   reset_tx_op_array();
@@ -145,11 +140,6 @@ void ObTxLogCb::reuse()
   is_busy_ = false;
   cb_arg_array_.reset();
   mds_range_.reset();
-
-  if (OB_NOT_NULL(extra_cb_) && need_free_extra_cb_) {
-    mtl_free(extra_cb_);
-  }
-  need_free_extra_cb_ = false;
 
   first_part_scn_.invalid_scn();
   reset_tx_op_array();
@@ -182,16 +172,15 @@ int ObTxLogCb::on_success()
     const int64_t bk_log_size = log_size_;
     const bool bk_is_reserved = group_ptr_->is_reserved();
     ObTxLogCbGroup *bk_group_ptr = group_ptr_;
-    ObPartTransCtx *part_ctx = group_ptr_->get_tx_ctx();
+    ObTxCtx *part_ctx = group_ptr_->get_tx_ctx();
     const ObTransID tx_id = part_ctx->get_trans_id();  
-    const ObLSID ls_id = part_ctx->get_ls_id();
     const share::SCN log_ts = log_ts_;  
     if (NULL == part_ctx) {
       ret = OB_ERR_UNEXPECTED;
       TRANS_LOG(ERROR, "ctx is null", K(ret), KPC(part_ctx));
     } else {
       if (OB_FAIL(part_ctx->on_success(this))) {
-        TRANS_LOG(WARN, "sync log success callback error", K(ret), K(tx_id), K(ls_id), K(log_ts));
+        TRANS_LOG(WARN, "sync log success callback error", K(ret), K(tx_id), K(log_ts));
       }
     }
   }
@@ -210,19 +199,18 @@ int ObTxLogCb::on_failure()
     const int64_t bk_log_size = log_size_;
     const bool bk_is_reserved = group_ptr_->is_reserved();
     ObTxLogCbGroup *bk_group_ptr = group_ptr_;
-    ObPartTransCtx *part_ctx = group_ptr_->get_tx_ctx();
+    ObTxCtx *part_ctx = group_ptr_->get_tx_ctx();
     const ObTransID tx_id = part_ctx->get_trans_id();  
-    const ObLSID ls_id = part_ctx->get_ls_id();
     const share::SCN log_ts = log_ts_;  
     if (NULL == part_ctx) {
       ret = OB_ERR_UNEXPECTED;
       TRANS_LOG(ERROR, "ctx is null", KR(ret), K(*this));
     } else {
       if (OB_FAIL(part_ctx->on_failure(this))) {
-        TRANS_LOG(WARN, "sync log success callback error", KR(ret), K(tx_id), K(ls_id), K(log_ts));
+        TRANS_LOG(WARN, "sync log success callback error", KR(ret), K(tx_id), K(log_ts));
       }
     }
-    TRANS_LOG(INFO, "ObTxLogCb::on_failure end", KR(ret), K(tx_id), K(ls_id), K(log_ts));
+    TRANS_LOG(INFO, "ObTxLogCb::on_failure end", KR(ret), K(tx_id), K(log_ts));
   }
   return ret;
 }

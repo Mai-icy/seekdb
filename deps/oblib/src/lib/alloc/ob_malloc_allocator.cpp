@@ -72,10 +72,6 @@ void *ObMallocAllocator::alloc(const int64_t size, const oceanbase::lib::ObMemAt
 void *ObMallocAllocator::realloc(
   const void *ptr, const int64_t size, const oceanbase::lib::ObMemAttr &attr)
 {
-#if defined(OB_USE_ASAN)
-  UNUSED(attr);
-  return ::realloc(const_cast<void *>(ptr), size);
-#else
   SANITY_DISABLE_CHECK_RANGE(); // prevent sanity_check_range
   // Won't create tenant allocator!!
   void *nptr = NULL;
@@ -89,18 +85,13 @@ void *ObMallocAllocator::realloc(
     // do nothing
   }
   return nptr;
-#endif
 }
 
 void ObMallocAllocator::free(void *ptr)
 {
-#if defined(OB_USE_ASAN)
-  ::free(ptr);
-#else
   SANITY_DISABLE_CHECK_RANGE(); // prevent sanity_check_range
   // directly free object instead of using tenant allocator.
   ObTenantCtxAllocator::common_free(ptr);
-#endif
 }
 
 ObTenantCtxAllocatorGuard ObMallocAllocator::get_tenant_ctx_allocator(uint64_t ctx_id) const
@@ -172,7 +163,6 @@ int ObMallocAllocator::with_resource_handle_invoke(InvokeFunc func)
 
 int ObMallocAllocator::set_tenant_hard_limit(int64_t bytes)
 {
-  if (false) return OB_SUCCESS;
   return with_resource_handle_invoke([bytes](ObTenantMemoryMgr *mgr) {
       mgr->set_hard_limit(bytes);
       return OB_SUCCESS;
@@ -191,7 +181,6 @@ int64_t ObMallocAllocator::get_tenant_hard_limit()
 
 int ObMallocAllocator::set_tenant_limit(int64_t bytes)
 {
-  if (false) return OB_SUCCESS;
   return with_resource_handle_invoke([bytes](ObTenantMemoryMgr *mgr) {
       mgr->set_limit(bytes);
       return OB_SUCCESS;
@@ -334,7 +323,6 @@ int ObMallocAllocator::set_tenant_ctx_idle(const uint64_t ctx_id,
                                            const int64_t size,
                                            const bool reserve /*=false*/)
 {
-  if (false) return OB_SUCCESS;
   int ret = OB_SUCCESS;
   auto allocator = get_tenant_ctx_allocator(ctx_id);
   if (NULL == allocator) {

@@ -36,17 +36,14 @@ struct ObCompactionProgress
       original_size_(0),
       compressed_size_(0),
       start_time_(0),
-      estimated_finish_time_(0),
-      start_cg_idx_(0),
-      end_cg_idx_(0)
+      estimated_finish_time_(0)
   {
   }
   bool is_valid() const;
   void reset();
 
   TO_STRING_KV("merge_type", merge_type_to_str(merge_type_), K_(merge_version), K_(status), K_(data_size), K_(unfinished_data_size),
-      K_(original_size), K_(compressed_size), K_(start_time), K_(estimated_finish_time), 
-      K_(start_cg_idx), K_(end_cg_idx));
+      K_(original_size), K_(compressed_size), K_(start_time), K_(estimated_finish_time));
 
   constexpr static double MERGE_SPEED = 1;  // almost 2 sec per macro_block
   constexpr static double EXTRA_TIME = 15 * 1000 * 1000; // 15 sec
@@ -61,8 +58,6 @@ struct ObCompactionProgress
   int64_t compressed_size_;
   int64_t start_time_;
   int64_t estimated_finish_time_;
-  int64_t start_cg_idx_;
-  int64_t end_cg_idx_;
 };
 
 struct ObTenantCompactionProgress : public ObCompactionProgress
@@ -111,8 +106,7 @@ public:
       const int64_t scanned_data_size_delta,
       const int64_t estimate_finish_time,
       const bool finish_flag,
-      const ObCompactionTimeGuard *time_guard = nullptr,
-      const bool co_merge = false);
+      const ObCompactionTimeGuard *time_guard = nullptr);
   int update_unfinish_tablet(
       const int64_t major_snapshot_version,
       const int64_t reduce_tablet_cnt = 1,
@@ -160,17 +154,15 @@ struct ObTabletCompactionProgress : public ObCompactionProgress
 {
   ObTabletCompactionProgress()
     : ObCompactionProgress(),
-      ls_id_(0),
       tablet_id_(0),
       dag_id_(),
       progressive_merge_round_(0),
       create_time_(0)
   {
   }
-  INHERIT_TO_STRING_KV("ObCompactionProgress", ObCompactionProgress, K_(ls_id),
-      K_(tablet_id), K_(dag_id), K_(progressive_merge_round), K_(create_time));
+  INHERIT_TO_STRING_KV("ObCompactionProgress", ObCompactionProgress, K_(tablet_id),
+      K_(dag_id), K_(progressive_merge_round), K_(create_time));
 
-  int64_t ls_id_;
   int64_t tablet_id_;
   share::ObDagId dag_id_;
   int64_t progressive_merge_round_;

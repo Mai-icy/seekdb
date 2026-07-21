@@ -34,40 +34,34 @@ struct ObTabletReplicaChecksumEntry
 {
   int64_t tablet_id_;
   common::ObAddr svr_addr_;
-  int64_t ls_id_;
   uint64_t compaction_scn_;
   int64_t row_count_;
   int64_t data_checksum_;
   common::ObString column_checksums_;  // Serialized column checksums (TEXT)
   common::ObString b_column_checksums_;  // Binary column checksums (BLOB)
   int64_t data_checksum_type_;
-  uint64_t co_base_snapshot_version_;
 
   ObTabletReplicaChecksumEntry()
     : tablet_id_(0),
       svr_addr_(),
-      ls_id_(0),
       compaction_scn_(0),
       row_count_(0),
       data_checksum_(0),
       column_checksums_(),
       b_column_checksums_(),
-      data_checksum_type_(0),
-      co_base_snapshot_version_(OB_MAX_SCN_TS_NS)
+      data_checksum_type_(0)
   {}
 
   void reset()
   {
     tablet_id_ = 0;
     svr_addr_.reset();
-    ls_id_ = 0;
     compaction_scn_ = 0;
     row_count_ = 0;
     data_checksum_ = 0;
     column_checksums_.reset();
     b_column_checksums_.reset();
     data_checksum_type_ = 0;
-    co_base_snapshot_version_ = OB_MAX_SCN_TS_NS;
   }
 };
 
@@ -94,9 +88,9 @@ public:
       const int64_t limit,
       int64_t &affected_rows);
 
-  // Get checksum items for tablet-ls pairs
+  // Get checksum items for tablets
   int batch_get(
-      const ObIArray<ObTabletLSPair> &pairs,
+      const ObIArray<common::ObTabletID> &tablet_ids,
       const SCN &compaction_scn,
       ObReplicaCkmArray &items,
       const bool include_larger_than = false);
@@ -112,7 +106,6 @@ public:
 
   // Get max row_count for a tablet-ls pair
   int get_max_row_count(const common::ObTabletID &tablet_id,
-      const ObLSID &ls_id,
       int64_t &max_row_count);
 
   // Batch check tablet checksum for multiple tablets
@@ -132,4 +125,3 @@ private:
 } // namespace oceanbase
 
 #endif // OCEANBASE_SHARE_STORAGE_OB_TABLET_REPLICA_CHECKSUM_TABLE_STORAGE_H_
-

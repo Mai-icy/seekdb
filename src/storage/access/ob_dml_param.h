@@ -174,7 +174,6 @@ public:
       : common::ObVTableScanParam(),
         trans_desc_(NULL),
         snapshot_(),
-        fb_read_tx_uncommitted_(false),
         tx_id_(),
         tx_lock_timeout_(-1),
         table_param_(NULL),
@@ -196,7 +195,6 @@ public:
 public:
   transaction::ObTxDesc *trans_desc_;      // transaction handle
   transaction::ObTxReadSnapshot snapshot_;
-  bool fb_read_tx_uncommitted_;
   transaction::ObTransID tx_id_;           // used when read-latest
   int64_t tx_lock_timeout_;
   const share::schema::ObTableParam *table_param_;
@@ -210,9 +208,6 @@ public:
   }
   OB_INLINE bool use_index_skip_scan() const {
     return (1 == ss_key_ranges_.count()) && (!ss_key_ranges_.at(0).is_whole_range());
-  }
-  OB_INLINE bool is_mview_query() const {
-    return nullptr != op_filters_ && scan_flag_.is_mr_mview_query();
   }
   void destroy() override
   {
@@ -255,12 +250,10 @@ struct ObDMLBaseParam
         spec_seq_no_(),
         snapshot_(),
         branch_id_(0),
-        direct_insert_task_id_(0),
         write_flag_(),
         check_schema_version_(true),
         ddl_task_id_(0),
         lob_allocator_(ObModIds::OB_LOB_ACCESS_BUFFER, OB_MALLOC_NORMAL_BLOCK_SIZE),
-        data_row_for_lob_(nullptr),
         is_main_table_in_fts_ddl_(false),
         has_async_index_(false)
   {
@@ -289,16 +282,14 @@ struct ObDMLBaseParam
   transaction::ObTxReadSnapshot snapshot_;
   // parallel dml write branch id
   int16_t branch_id_;
-  int64_t direct_insert_task_id_; // 0 means no direct insert
   // write flag for inner write processing
   concurrent_control::ObWriteFlag write_flag_;
   bool check_schema_version_;
   int64_t ddl_task_id_;
   mutable ObArenaAllocator lob_allocator_;
-  const blocksstable::ObDatumRow *data_row_for_lob_; // for tablet split
   bool is_main_table_in_fts_ddl_; // whether the main table is in fts ddl when dml is executed
   // Set by DAS layer when the table has async-mode indexes (e.g. sync_mode=async HNSW).
-  // Propagated to ObPartTransCtx::has_async_index_redo_ -> ObTxLogBlockHeader::HAS_ASYNC_INDEX
+  // Propagated to ObTxCtx::has_async_index_redo_ -> ObTxLogBlockHeader::HAS_ASYNC_INDEX
   // for Change Stream fast filtering in the Fetcher.
   bool has_async_index_;
   bool is_valid() const { return (timeout_ > 0 && schema_version_ >= 0) && nullptr != store_ctx_guard_; }

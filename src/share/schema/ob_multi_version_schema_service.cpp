@@ -15,7 +15,6 @@
  */
 
 #define USING_LOG_PREFIX SHARE_SCHEMA
-// for materialized view
 #include "ob_multi_version_schema_service.h"
 #include "share/rc/ob_tenant_base.h"
 #include "share/rc/ob_context.h"  // CREATE_WITH_TEMP_ENTITY_P/RESOURCE_OWNER(previously hidden behind a transitive include)
@@ -535,8 +534,6 @@ int ObMultiVersionSchemaService::get_schema(const ObSchemaMgr *mgr,
               LOG_WARN("get aux lob meta table schemas failed", K(ret), KPC(table_schema));
             } else if (OB_FAIL(add_aux_schema_from_mgr(*mgr, *table_schema, AUX_LOB_PIECE))) {
               LOG_WARN("get aux lob data table schemas failed", K(ret), KPC(table_schema));
-            } else if (OB_FAIL(add_aux_schema_from_mgr(*mgr, *table_schema, MATERIALIZED_VIEW_LOG))) {
-              LOG_WARN("get materialized view log schemas failed", K(ret), KPC(table_schema));
             }
           }
         }
@@ -657,10 +654,6 @@ int ObMultiVersionSchemaService::add_aux_schema_from_mgr(
           table_schema.set_aux_lob_meta_tid(simple_aux_table->get_table_id());
         } else if (simple_aux_table->is_aux_lob_piece_table()) {
           table_schema.set_aux_lob_piece_tid(simple_aux_table->get_table_id());
-        } else if (simple_aux_table->is_tmp_mlog_table()) {
-          table_schema.set_tmp_mlog_tid(simple_aux_table->get_table_id());
-        } else if (simple_aux_table->is_mlog_table()) {
-          table_schema.set_mlog_tid(simple_aux_table->get_table_id());
         } else {
           ret = OB_ERR_UNEXPECTED;
           LOG_ERROR("unexpected", K(ret));
@@ -2604,7 +2597,13 @@ int ObMultiVersionSchemaService::try_gc_another_allocator(
           LOG_WARN("ptrs is null", K(ret), K(i));
         } else if (FALSE_IT(eli_schema_mgr = static_cast<ObSchemaMgr *>(another_ptrs.at(i)))) {
         } else if (OB_FAIL(schema_mgr_cache->try_eliminate_schema_mgr(eli_schema_mgr))) {
-          LOG_WARN("fail to eliminate schema_mgr", K(ret), K(eli_schema_mgr));
+          if (OB_ENTRY_NOT_EXIST == ret) {
+            ret = OB_SCHEMA_EAGAIN;
+            LOG_INFO("schema mgr is not in cache, try reset another allocator next round",
+                     KR(ret), "schema_mgr", another_ptrs.at(i));
+          } else {
+            LOG_WARN("fail to eliminate schema_mgr", K(ret), K(eli_schema_mgr));
+          }
         } else if (OB_FAIL(mem_mgr->free_schema_mgr(eli_schema_mgr))) {
           LOG_ERROR("free eli schema mgr falied", KR(ret));
         }
@@ -2681,8 +2680,8 @@ int ObMultiVersionSchemaService::try_gc_current_allocator(
                      K(refreshed_schema_version), K(latest_schema_version),
                      K(eli_timestamp), K(recycle_interval));
             if (OB_FAIL(schema_mgr_cache->try_eliminate_schema_mgr(eli_schema_mgr))) {
-              if (OB_EAGAIN == ret) {
-                // schema mgr in use, just ignore
+              if (OB_EAGAIN == ret || OB_ENTRY_NOT_EXIST == ret) {
+                // schema mgr in use or not in cache, just ignore
                 ret = OB_SUCCESS;
               } else {
                 LOG_WARN("fail to eliminate schema_mgr", KR(ret),
@@ -2800,8 +2799,8 @@ int ObMultiVersionSchemaService::try_gc_allocator_when_add_schema_(
                    K(eli_schema_version), K(local_version), K(refreshed_schema_version),
                    K(latest_schema_version), K(reserve_version));
           if (OB_FAIL(schema_mgr_cache->try_eliminate_schema_mgr(eli_schema_mgr))) {
-            if (OB_EAGAIN == ret) {
-              // schema mgr in use, just ignore
+            if (OB_EAGAIN == ret || OB_ENTRY_NOT_EXIST == ret) {
+              // schema mgr in use or not in cache, just ignore
               ret = OB_SUCCESS;
             } else {
               LOG_WARN("fail to eliminate schema_mgr", KR(ret), K(eli_schema_version));

@@ -65,8 +65,6 @@ select array_union(map(1,11), [1,2]);
 ERROR 22000: Invalid data type for the operation
 select element_at(map(1,11), 1);
 ERROR 22000: Invalid data type for the operation
-select rb_build(map(1,11));
-ERROR 22000: Invalid data type for the operation
 select WEIGHT_STRING(map(1,11));
 ERROR 22000: Invalid data type for the operation
 select ASCII(map(1,11));
@@ -550,10 +548,6 @@ select max(m) from t1;
 ERROR HY000: Invalid argument
 select min(m) from t1;
 ERROR HY000: Invalid argument
-drop materialized view if exists mv1, mv2;
-create materialized view mv1 parallel 2 refresh complete on demand  as select * from t1;
-create materialized view mv2 parallel 2 refresh complete on demand  as select * from t2;
-drop materialized view mv1, mv2;
 drop table t1, t2, t3, t4;
 select map(1,1) =  1;
 ERROR 22000: Invalid data type for the operation
@@ -903,42 +897,11 @@ drop table t1;
 create table t1 (id int primary key, c1 array(int), c2 map(int,int), c3 float, c4 json);
 insert into t1 values (1, [1,2], '{1:11,2:22}', 1.1, '{"1":11,"2":22}');
 insert into t1 values (2, '[]', '{}', 0, '{}');
-create materialized view mv1 refresh complete on demand  as select id,c1,c2,c3,c4 from t1 ;
-CREATE INDEX idx ON mv1 (c3);
-CREATE INDEX idx ON mv1 (c2);
-ERROR 0A000: create index on vector or array column is not supported
-CREATE VECTOR INDEX idx ON mv1 (c2);
-ERROR 0A000: Not supported feature or function
-desc mv1;
-Field	Type	Null	Key	Default	Extra
-id	int(11)	YES		NULL	
-c1	ARRAY(INT)	YES		NULL	
-c2	MAP(INT,INT)	YES		NULL	
-c3	float	YES	MUL	NULL	
-c4	json	YES		NULL	
-select * from mv1;
-id	c1	c2	c3	c4
-1	[1,2]	{1:11,2:22}	1.1	{"1": 11, "2": 22}
-2	[]	{}	0	{}
 drop table t1;
-drop  materialized view mv1;
 create table t1 (id int primary key, c1 array(int), c2 map(int,int), c3 float, c4 json);
 insert into t1 values (1, [1,2], '{1:11,2:22}', 1.1, '{"1":11,"2":22}');
 insert into t1 values (2, '[]', '{}', 0, '{}');
-create materialized view mv1(primary key(c2)) refresh complete on demand  as select c1,c2 from t1 ;
-ERROR 42000: The used storage engine can't index column 'c2'
-create materialized view mv1(primary key(id)) refresh complete on demand  as select id,c1,c2 from t1 ;
-desc mv1;
-Field	Type	Null	Key	Default	Extra
-id	int(11)	NO	PRI	NULL	
-c1	ARRAY(INT)	YES		NULL	
-c2	MAP(INT,INT)	YES		NULL	
-select * from mv1;
-id	c1	c2
-1	[1,2]	{1:11,2:22}
-2	[]	{}
 drop table t1;
-drop  materialized view mv1;
 create table t1 (id int primary key, c1 array(int), c2 map(int,int), c3 float, c4 json);
 create view v1 as select * from t1;
 insert into v1 values (1, [1,2], '{1:11,2:22}', 1.1, '{"1":11,"2":22}');
@@ -980,7 +943,7 @@ id	m1	m2	m3
 4	{1:13,2:25}	{"a3":["hi4","hello"],"b4":["ocean3","base"]}	{1.14:[[14],[2]],2.24:[[1,2]]}
 5	{1:14,2:26}	{"a4":["hi5","hello"],"b5":["ocean5","base"]}	{1.15:[[15],[2]],2.25:[[1,2]]}
 CREATE TABLE t2(id int, m1 map(TINYINT, TINYINT), m2 map(varchar(10),array(varchar(10))), m3 map(double, array(array(SMALLINT))));
-INSERT /*+ direct(true,100) enable_parallel_dml parallel(2) append*/ INTO t2  SELECT * from t1;
+INSERT /*+ enable_parallel_dml parallel(2) */ INTO t2  SELECT * from t1;
 SELECT * from t2;
 id	m1	m2	m3
 1	{1:11,2:22}	{"a1":["hi1","hello"],"b1":["ocean1","base"]}	{1.1100000143051147:[[11],[2]],2.2100000381469727:[[1,2]]}

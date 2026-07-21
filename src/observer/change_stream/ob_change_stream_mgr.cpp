@@ -19,8 +19,6 @@
 #include "share/rc/ob_module_provider.h"
 #include "observer/change_stream/ob_change_stream_mgr.h"
 #include "share/rc/ob_tenant_base.h"
-#include "lib/thread/thread_define.h"
-#include "share/ob_thread_define.h"
 #include "storage/tx/ob_ts_mgr.h"
 #include <unistd.h>
 
@@ -140,8 +138,8 @@ int ObChangeStreamMgr::wait_refresh_scn(
   const int64_t SLEEP_INTERVAL_US = 100 * 1000; // 100ms
   const int64_t abs_timeout_us = ObTimeUtility::current_time() + timeout_us;
 
-  if (OB_FAIL(OB_TS_MGR.get_ts_sync(abs_timeout_us - ObTimeUtility::current_time(),
-                                     safe_visible_scn))) {
+  if (OB_FAIL(OB_TS_MGR.get_gts_sync(abs_timeout_us - ObTimeUtility::current_time(),
+                                    safe_visible_scn))) {
     LOG_WARN("get gts for safe visible scn failed", KR(ret));
   } else {
     ObChangeStreamMgr *mgr = share::g_mp->change_stream_mgr();

@@ -101,7 +101,6 @@ public:
   virtual int get_next_chunk(ObChunk *&chunk) override;
   virtual int finish_chunk(ObChunk *chunk) override;
   virtual void postprocess(int &ret_code) override;
-  virtual int set_remain_block() { return common::OB_SUCCESS; }
   virtual ObITaskPriority get_priority() override;
 
 protected:
@@ -120,7 +119,6 @@ public:
     destroy_ivf_build_helper();
   }
   int init(
-      const ObLSID &ls_id,
       const ObTabletID &tablet_id,
       const ObIndexType &index_type,
       const int64_t snapshot_version,
@@ -128,7 +126,7 @@ public:
 
   int build_extra_column_idxs(const int32_t chunk_col_idx, common::ObSEArray<int32_t, 4> &extra_column_idxs) const;
 
-TO_STRING_KV(K_(ls_id), K_(tablet_id), K_(snapshot_version), K_(index_type));
+TO_STRING_KV(K_(tablet_id), K_(snapshot_version), K_(index_type));
 
 private:
   int init_hnsw_index(const ObDDLTableSchema &ddl_table_schema);
@@ -143,8 +141,6 @@ private:
 public:
   int64_t row_cnt_;
   int64_t vec_dim_;
-  
-  share::ObLSID ls_id_;
   ObTabletID tablet_id_;
   common::ObString vec_idx_param_;
   share::ObVecIdxSnapshotDataWriteCtx ctx_;
@@ -199,7 +195,7 @@ class ObHNSWIndexRowIterator : public ObVectorIndexRowIterator
 public:
   ObHNSWIndexRowIterator()
     : rowkey_cnt_(0), column_cnt_(0), snapshot_version_(0), index_type_(),
-      row_cnt_(0), ls_id_(),vec_idx_param_(),
+      row_cnt_(0), vec_idx_param_(),
       vector_vid_col_idx_(-1), vector_col_idx_(-1), vector_key_col_idx_(-1), vector_data_col_idx_(-1),
       ctx_(nullptr), extra_column_idx_types_()
   {}
@@ -217,7 +213,6 @@ private:
   int64_t snapshot_version_;
   ObVectorIndexAlgorithmType index_type_;
   int64_t row_cnt_;
-  share::ObLSID ls_id_;
   common::ObString vec_idx_param_;
   int32_t vector_vid_col_idx_;
   int32_t vector_col_idx_;
@@ -351,7 +346,7 @@ private:
       const int64_t row_pos,
       const common::ObIArray<common::ObIVector *> &vectors,
       ObDDLTabletContext *tablet_context);
-  int append_row_file(ObCGRowFile *cg_row_file, ObDDLTabletContext *tablet_context);
+  int append_row_file(ObDDLRowFile *row_file, ObDDLTabletContext *tablet_context);
 private:
   int64_t vec_dim_;
   common::ObString vec_idx_param_;
@@ -560,7 +555,7 @@ protected:
     UNUSED(output_chunk);
     return OB_SUCCESS;
   }
-  int append_row_file(ObCGRowFile *row_file);
+  int append_row_file(ObDDLRowFile *row_file);
   INHERIT_TO_STRING_KV("ObIVFIndexBaseOperator", ObIVFIndexBaseOperator, K_(vector_col_idx));
 protected:
   int32_t vector_col_idx_;
@@ -739,11 +734,11 @@ public:
 private:
   int get_ready_results(ObChunk &output_chunk, ResultState &result_state);
   int process_input_chunk(const ObChunk &input_chunk);
-  int get_next_row_from_tmp_files(common::ObArray<ObCGRowFile *> *cg_row_file_arr,
+  int get_next_row_from_tmp_files(common::ObArray<ObDDLRowFile *> *row_file_arr,
                                   blocksstable::ObStorageDatum &text,
                                   common::ObArray<blocksstable::ObStorageDatum> &extras,
                                   bool &has_row);
-  int get_next_batch_from_tmp_files(ObCGRowFile *&row_file);
+  int get_next_batch_from_tmp_files(ObDDLRowFile *&row_file);
   int parse_row(const blocksstable::ObDatumRow &current_row,
                 blocksstable::ObStorageDatum &text,
                 common::ObArray<blocksstable::ObStorageDatum> &extras);
@@ -766,7 +761,7 @@ private:
   int64_t batch_size_;
   ObTaskBatchInfo *current_batch_;  // Current batching
 
-  // resumable scan state for CG_ROW_TMP_FILES
+  // resumable scan state for DDL_ROW_TMP_FILES
   int64_t cur_file_idx_;
   blocksstable::ObBatchDatumRows *cur_datum_rows_;
   int64_t cur_row_in_batch_;
@@ -864,15 +859,6 @@ public:
     return ret;
   }
   
-  virtual int set_remain_block() override { 
-    if (OB_ISNULL(ddl_slice_)) {
-      return OB_NOT_INIT;
-    } else {
-      ddl_slice_->set_block_flushed(0);
-      return OB_SUCCESS;
-    }
-  }
-
 private:
   ObHNSWEmbeddingOperator embedding_buffer_op_;
   ObHNSWEmbeddingWriteMacroOperator embedding_write_op_;

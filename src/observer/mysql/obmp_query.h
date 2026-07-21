@@ -28,8 +28,6 @@ namespace oceanbase
 {
 namespace sql
 {
-class ObMonitorInfoManager;
-class ObPhyPlanMonitorInfo;
 class ObMPParseStat;
 }
 namespace share
@@ -38,7 +36,6 @@ namespace schema
 {
 class ObTableSchema;
 }
-class ObPartitionLocation;
 }
 namespace observer
 {

@@ -26,7 +26,7 @@ namespace oceanbase
 {
 namespace logservice
 {
-// ObReplayBarrierType is the barrier type for follower log replay, divided into the following three categories
+// ObReplayBarrierType defines ordering barriers for local disk replay.
 // 1. STRICT_BARRIER:
 //    The prerequisite condition for replaying this log is that all logs with a log ts smaller than this log have already been replayed,
 //    And before the replay of this log is complete, logs with a log ts greater than this log will not be replayed.
@@ -55,7 +55,6 @@ public:
 public:
   void reset();
   bool is_valid() const;
-  void set_compressed();
   bool is_compressed() const;
   bool need_pre_replay_barrier() const;
   bool need_post_replay_barrier() const;

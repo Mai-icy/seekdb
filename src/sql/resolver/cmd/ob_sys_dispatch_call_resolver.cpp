@@ -91,10 +91,6 @@ int ObSysDispatchCallResolver::resolve(const ParseNode &parse_tree)
   if (OB_UNLIKELY(OB_ISNULL(schema_checker_) || OB_ISNULL(session_info_))) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("argument is nullptr", K(schema_checker_), K(session_info_));
-  } else if (false) {
-    // check tenant privilege for dispatch call, should be sys tenant
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("SYS_DISPATCH_CALL is only supported in sys tenant");
   } else if (OB_UNLIKELY(T_SP_SYS_DISPATCH_CALL != parse_tree.type_)
              || OB_UNLIKELY(3 != parse_tree.num_child_)) {
     ret = OB_ERR_UNEXPECTED;
@@ -120,10 +116,9 @@ int ObSysDispatchCallResolver::resolve(const ParseNode &parse_tree)
   } else if (OB_ISNULL(tenant_schema)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("tenant schema is nullptr");
-    // fill designated tenant name and compatibility mode into stmt afterward
+    // fill designated tenant name into stmt afterward
   } else if (FALSE_IT((void)0)) {
   } else if (FALSE_IT(stmt->set_designated_tenant_name(tenant_name))) {
-  } else if (FALSE_IT(stmt->set_tenant_compat_mode(ObCompatibilityMode::MYSQL_MODE))) {
   }
 
   return ret;

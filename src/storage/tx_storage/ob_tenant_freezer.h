@@ -21,15 +21,13 @@
 #include "lib/list/ob_list.h"
 #include "lib/literals/ob_literals.h"
 #include "lib/lock/ob_tc_rwlock.h"
-#include "lib/thread/thread_mgr.h"
-#include "lib/thread/thread_mgr_interface.h"
+#include "lib/task/ob_timer.h"
 #include "share/ob_occam_timer.h"
 #include "share/ob_tenant_mgr.h"
 #include "storage/tx_storage/ob_tenant_freezer_rpc.h"
 #include "storage/multi_data_source/runtime_utility/mds_factory.h"
 #include "storage/compaction/ob_compaction_util.h"
 #include "storage/ls/ob_freezer_define.h"
-#include "share/ob_ls_id.h"
 
 namespace oceanbase
 {
@@ -147,14 +145,8 @@ public:
   // freeze all the checkpoint unit of this tenant.
   int tenant_freeze(const ObFreezeSourceFlag source);
 
-  // freeze a ls, if the ls is freezing, do nothing and return OB_ENTRY_EXIST.
-  // if there is some process hold the ls lock or a OB_EAGAIN occur, we will retry
-  // until timeout.
-  int ls_freeze_all_unit(const share::ObLSID &ls_id,
-                         const ObFreezeSourceFlag source);
   // freeze a tablet
-  int tablet_freeze(share::ObLSID ls_id,
-                    const common::ObTabletID &tablet_id,
+  int tablet_freeze(const common::ObTabletID &tablet_id,
                     const bool is_sync,
                     const int64_t max_retry_time,
                     const bool need_rewrite_tablet_meta,
@@ -166,8 +158,7 @@ public:
   int do_freeze_diagnose();
 
   // record freeze source history
-  void record_freezer_source_event(const share::ObLSID &ls_id,
-                                   const ObFreezeSourceFlag source);
+  void record_freezer_source_event(const ObFreezeSourceFlag source);
 
   // report freeze source history
   void report_freezer_source_events();
@@ -278,7 +269,7 @@ private:
     ObLS *ls,
     const int64_t abs_timeout_ts = INT64_MAX,
     const ObFreezeSourceFlag source = ObFreezeSourceFlag::INVALID_SOURCE);
-  // freeze all the ls of this tenant.
+  // Freeze the tenant's log stream.
   // return the first failed code.
   int tenant_freeze_data_();
   // we can only deal with freeze one by one.
@@ -337,7 +328,7 @@ private:
 ObAddr self_;
   ObRetryMajorInfo retry_major_info_;
 
-  int freeze_trigger_tg_id_;
+  common::ObTimer freeze_trigger_timer_;
   TimerTask freeze_trigger_timer_task_;
   common::ObOccamThreadPool freeze_thread_pool_;
   ObSpinLock freeze_thread_pool_lock_;
@@ -387,8 +378,6 @@ private:
   bool can_freeze_;
   ObTenantFreezer *tenant_freezer_;
 };
-
-// Validates ls_id and allocates a tenant-wide monotonic checkpoint batch trace id (via MTL).
 
 }  // namespace storage
 }  // namespace oceanbase

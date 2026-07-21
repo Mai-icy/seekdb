@@ -50,14 +50,12 @@ public:
                 const sql::ObSqlCtx &ctx,
                 sql::ObSQLSessionInfo &session,
                 ObQueryRetryCtrl &retry_ctrl,
-                ObIMPPacketSender &sender,
-                bool is_prexecute = false)
+                ObIMPPacketSender &sender)
     : gctx_(gctx),
       ctx_(ctx),
       session_(session),
       retry_ctrl_(retry_ctrl),
-      sender_(sender),
-      is_prexecute_(is_prexecute)
+      sender_(sender)
   {
   }
   virtual ~ObQueryDriver()
@@ -80,16 +78,13 @@ public:
                                     bool need_set_ps_out = false,
                                     bool ps_cursor_execute = false,
                                     sql::ObResultSet *result = NULL);
-  int convert_string_value_charset(common::ObObj& value, sql::ObResultSet &result, ObCharsetType charset_type, ObCharsetType nchar);
-  int convert_text_value_charset(common::ObObj& value, sql::ObResultSet &result, ObCharsetType charset_type, ObCharsetType nchar);
+  int convert_string_value_charset(common::ObObj& value, sql::ObResultSet &result,
+                                   ObCharsetType charset_type);
+  int convert_text_value_charset(common::ObObj& value, sql::ObResultSet &result,
+                                 ObCharsetType charset_type);
 
   int process_lob_locator_results(common::ObObj& value, sql::ObResultSet &result);
-  static int convert_lob_locator_to_longtext(common::ObObj& value, 
-                                             bool is_use_lob_locator, 
-                                             common::ObIAllocator *allocator);
   static int process_lob_locator_results(common::ObObj& value, 
-                                         bool is_use_lob_locator,
-                                         bool is_support_outrow_locator_v2,
                                          common::ObIAllocator *allocator,
                                          const sql::ObSQLSessionInfo *session_info,
                                          sql::ObExecContext *exec_ctx = nullptr);
@@ -123,7 +118,6 @@ protected:
   sql::ObSQLSessionInfo &session_;
   ObQueryRetryCtrl &retry_ctrl_;
   ObIMPPacketSender &sender_;
-  bool is_prexecute_;
   /* const */
   /* disallow copy & assign */
   DISALLOW_COPY_AND_ASSIGN(ObQueryDriver);

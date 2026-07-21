@@ -34,7 +34,7 @@ int ObGetSampleIterHelper::check_scan_range_count(bool &res, ObIArray<ObDatumRan
     if (!get_table_param_.tablet_iter_.table_iter()->is_valid() &&
         OB_FAIL(get_table_param_.tablet_iter_.refresh_read_tables_from_tablet(
             main_table_ctx_.store_ctx_->mvcc_acc_ctx_.get_snapshot_version().get_val_for_tx(),
-            false/*allow_not_ready*/, false/*major_sstable_only*/, true/*need_split_src_table*/, false/*need_split_dst_table*/))) {
+            false/*allow_not_ready*/, false/*major_sstable_only*/))) {
       STORAGE_LOG(WARN, "Fail to read tables", K(ret));
     } else if (OB_FAIL(can_retire_to_memtable_row_sample_(retire_to_memtable_row_sample, sample_ranges))) {
       STORAGE_LOG(WARN, "Fail to try to retire to row sample", K(ret));
@@ -91,9 +91,6 @@ int ObGetSampleIterHelper::can_retire_to_memtable_row_sample_(bool &retire, ObIA
         } else {
           memtable_row_count += memtable->get_physical_row_cnt();
         }
-      } else if (table->is_direct_load_memtable()) {
-        ObDDLKV *ddl_kv = static_cast<ObDDLKV *>(table);
-        sstable_row_count += ddl_kv->get_row_count();
       } else if (table->is_sstable()) {
         sstable_row_count += static_cast<ObSSTable *>(table)->get_row_count();
       }

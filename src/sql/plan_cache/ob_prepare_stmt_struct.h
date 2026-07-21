@@ -34,25 +34,14 @@ struct ObPsSqlKey
 {
 public:
   ObPsSqlKey()
-    : flag_(0),
-      db_id_(OB_INVALID_ID),
+    : db_id_(OB_INVALID_ID),
       inc_id_(OB_INVALID_ID),
       ps_sql_()
   {}
   ObPsSqlKey(uint64_t db_id,
              const common::ObString &ps_sql)
-    : flag_(0),
-      db_id_(db_id),
+    : db_id_(db_id),
       inc_id_(OB_INVALID_ID),
-      ps_sql_(ps_sql)
-  {}
-  ObPsSqlKey(uint32_t flag,
-             uint64_t db_id,
-             uint64_t inc_id,
-             const common::ObString &ps_sql)
-    : flag_(flag),
-      db_id_(db_id),
-      inc_id_(inc_id),
       ps_sql_(ps_sql)
   {}
   int deep_copy(const ObPsSqlKey &other, common::ObIAllocator &allocator);
@@ -60,40 +49,15 @@ public:
   int hash(uint64_t &hash_val) const { hash_val = hash(); return OB_SUCCESS; }
   ObPsSqlKey &operator=(const ObPsSqlKey &other);
   bool operator==(const ObPsSqlKey &other) const;
-  void set_is_client_return_rowid()
-  {
-    is_client_return_hidden_rowid_ = true;
-  }
-  bool get_is_client_return_rowid()
-  {
-    return is_client_return_hidden_rowid_;
-  }
-  void set_flag(uint32_t flag)
-  {
-    flag_ = flag;
-  }
-  uint32_t get_flag() const
-  {
-    return flag_;
-  }
   void reset()
   {
-    flag_ = 0;
     db_id_ = OB_INVALID_ID;
     inc_id_ = OB_INVALID_ID;
     ps_sql_.reset();
   }
-  TO_STRING_KV(K_(flag), K_(db_id), K_(inc_id), K_(ps_sql));
+  TO_STRING_KV(K_(db_id), K_(inc_id), K_(ps_sql));
 
 public:
-  union
-  {
-    uint32_t flag_;
-    struct {
-      uint32_t is_client_return_hidden_rowid_ : 1;
-      uint32_t reserved_ : 31;
-    };
-  };
   uint64_t db_id_;
   // MySQL allows session-level temporary tables with the same name to have different schema definitions. 
   // In order to distinguish this scenario, an incremental id is used to generate different prepared
@@ -196,9 +160,6 @@ public:
   inline bool can_direct_use_param() const { return can_direct_use_param_; }
   inline void set_can_direct_use_param(bool v) { can_direct_use_param_ = v; }
 
-  inline bool get_is_prexecute() const { return is_prexecute_; }
-  inline void set_is_prexecute(bool v) { is_prexecute_ = v; }
-
   inline void set_ps_stmt_checksum(uint64_t ps_checksum) { ps_stmt_checksum_ = ps_checksum; }
   inline uint64_t get_ps_stmt_checksum() const { return ps_stmt_checksum_; }
 
@@ -272,7 +233,6 @@ private:
 
   // for call procedure
   bool can_direct_use_param_;
-  bool is_prexecute_;
   int64_t item_and_info_size_; // mem_used_;
   int64_t last_closed_timestamp_; // Time when the reference count was last reduced to 1;
   ObSchemaObjVersion *dep_objs_;

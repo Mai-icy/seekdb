@@ -140,7 +140,7 @@ int ObActiveDDLKVIterator::get_next_ddl_kv_mgr(ObDDLKvMgrHandle &handle)
               LOG_WARN("push back to delete tablet id failed", K(ret));
             }
           } else {
-            LOG_WARN("failed to get tablet", K(ret), K(ls_->get_ls_id()), K(tablet_id));
+            LOG_WARN("failed to get tablet", K(ret), K(tablet_id));
           }
         } else if (tablet_handle.get_obj()->get_tablet_meta().ddl_commit_scn_.is_valid_and_not_min() &&
           tablet_handle.get_obj()->get_tablet_meta().ddl_checkpoint_scn_ >= tablet_handle.get_obj()->get_tablet_meta().ddl_commit_scn_) {
@@ -301,18 +301,6 @@ int ObLSDDLLogHandler::replay(const void *buffer,
         ret = replay_ddl_start_log_(log_buf, buf_size, tmp_pos, log_scn);
         break;
       }
-      case ObDDLClogType::DDL_TABLET_SPLIT_START_LOG: {
-        ret = replay_tablet_split_start_log_(log_buf, buf_size, tmp_pos, log_scn);
-        break;
-      }
-      case ObDDLClogType::DDL_TABLET_SPLIT_FINISH_LOG: {
-        ret = replay_tablet_split_finish_log_(log_buf, buf_size, tmp_pos, log_scn);
-        break;
-      }
-      case ObDDLClogType::DDL_TABLET_FREEZE_LOG: {
-        ret = replay_tablet_freeze_log_(log_buf, buf_size, tmp_pos, log_scn);
-        break;
-      }
       case ObDDLClogType::DDL_TABLE_FORK_FREEZE_LOG: {
         ret = replay_table_fork_freeze_log_(log_buf, buf_size, tmp_pos, log_scn);
         break;
@@ -346,30 +334,12 @@ int ObLSDDLLogHandler::replay(const void *buffer,
   return ret;
 }
 
-void ObLSDDLLogHandler::switch_to_follower_forcedly()
+void ObLSDDLLogHandler::deactivate()
 {
   // TODO
 }
 
-int ObLSDDLLogHandler::switch_to_leader()
-{
-  int ret = OB_SUCCESS;
-
-  //TODO
-
-  return ret;
-}
-
-int ObLSDDLLogHandler::switch_to_follower_gracefully()
-{
-  int ret = OB_SUCCESS;
-
-  //TODO
-
-  return ret;
-}
-
-int ObLSDDLLogHandler::resume_leader()
+int ObLSDDLLogHandler::activate()
 {
   int ret = OB_SUCCESS;
 
@@ -423,7 +393,6 @@ int ObLSDDLLogHandler::flush(SCN &rec_scn)
           ObTabletDirectLoadMgrHandle direct_load_mgr_hdl;
           // TODO @zhuoran.zzr wait to remove it
           if (OB_TMP_FAIL(tenant_direct_load_mgr->get_tablet_mgr_and_check_major(
-                ls_->get_ls_id(),
                 ddl_kv_mgr_handle.get_obj()->get_tablet_id(),
                 true/* is_full_direct_load */,
                 direct_load_mgr_hdl,
@@ -435,7 +404,6 @@ int ObLSDDLLogHandler::flush(SCN &rec_scn)
             }
           } else {
             DEBUG_SYNC(BEFORE_DDL_CHECKPOINT);
-            param.ls_id_               = ls_->get_ls_id();
             param.tablet_id_           = ddl_kv_mgr_handle.get_obj()->get_tablet_id();
             param.start_scn_           = direct_load_mgr_hdl.get_full_obj()->get_start_scn();
             param.rec_scn_             = rec_scn;
@@ -457,11 +425,11 @@ int ObLSDDLLogHandler::flush(SCN &rec_scn)
           if (OB_FAIL(ls_->get_tablet(ddl_kv_mgr_handle.get_obj()->get_tablet_id(),
                                            tablet_handle, ObTabletCommon::DEFAULT_GET_TABLET_DURATION_US,
                                            ObMDSGetTabletMode::READ_WITHOUT_CHECK))) {
-            LOG_WARN("failed to get tablet handle", K(ret), K(ls_->get_ls_id()), K(ddl_kv_mgr_handle.get_obj()->get_tablet_id()));
+            LOG_WARN("failed to get tablet handle", K(ret), K(ddl_kv_mgr_handle.get_obj()->get_tablet_id()));
           } else if (OB_FAIL(tablet_handle.get_obj()->get_ddl_complete(share::SCN::max_scn(), arena, ddl_complete))) {
             if (OB_EMPTY_RESULT == ret) {
               ret = OB_SUCCESS;
-              LOG_INFO("no ddl complete", K(ret), K(ls_->get_ls_id()), K(ddl_kv_mgr_handle.get_obj()->get_tablet_id()));
+              LOG_INFO("no ddl complete", K(ret), K(ddl_kv_mgr_handle.get_obj()->get_tablet_id()));
             } else {
               LOG_WARN("failed to get ddl complete", K(ret));
             }
@@ -476,7 +444,7 @@ int ObLSDDLLogHandler::flush(SCN &rec_scn)
           } else if (OB_TMP_FAIL(compaction::ObScheduleDagFunc::schedule_ddl_table_merge_dag(param))) {
             LOG_WARN("try schedule ddl merge dag failed when ddl kv is full ", K(tmp_ret), K(param));
           } 
-          FLOG_INFO("schedule ddl dump merge task", K(ret), K(ls_->get_ls_id()), K(tablet_handle.get_obj()->get_tablet_id()));
+          FLOG_INFO("schedule ddl dump merge task", K(ret), K(tablet_handle.get_obj()->get_tablet_id()));
         }
       }
     }
@@ -528,7 +496,6 @@ SCN ObLSDDLLogHandler::get_rec_scn()
   }
 
   LOG_INFO("[CHECKPOINT] ObLSDDLLogHandler::get_rec_scn", K(ret),
-      "ls_id", OB_ISNULL(ls_) ? ObLSID() : ls_->get_ls_id(),
       K(barrier_tablet_id), K(rec_scn), K_(last_rec_scn));
   return rec_scn;
 }
@@ -582,7 +549,7 @@ int ObLSDDLLogHandler::replay_ddl_tablet_schema_version_change_log_(const char *
     LOG_WARN("fail to deserialize source barrier log", K(ret));
   } else if (OB_FAIL(replay_executor.init(log, log_scn))) {
     LOG_WARN("failed to init tablet schema version change log replay executor", K(ret));
-  } else if (OB_FAIL(replay_executor.execute(log_scn, ls_->get_ls_id(), log.get_tablet_id()))) {
+  } else if (OB_FAIL(replay_executor.execute(log_scn, log.get_tablet_id()))) {
     if (OB_NO_NEED_UPDATE == ret) {
       LOG_WARN("no need replay tablet schema version change log", K(ret), K(log), K(log_scn));
       ret = OB_SUCCESS;
@@ -612,24 +579,6 @@ int ObLSDDLLogHandler::replay_ddl_start_log_(const char *log_buf,
   return ret;
 }
 
-int ObLSDDLLogHandler::replay_tablet_split_start_log_(const char *log_buf,
-                                                      const int64_t buf_size,
-                                                      int64_t pos,
-                                                      const SCN &log_scn)
-{
-  int ret = OB_SUCCESS;
-  ObTabletSplitStartLog log;
-  if (OB_FAIL(log.deserialize(log_buf, buf_size, pos))) {
-    LOG_WARN("deserialize tablet split start log failed", K(ret));
-  } else if (OB_FAIL(ddl_log_replayer_.replay_split_start(log, log_scn))) {
-    if (OB_TABLET_NOT_EXIST != ret && OB_EAGAIN != ret) {
-      LOG_WARN("replay tablet split start log failed", K(ret), K(log));
-      ret = OB_EAGAIN;
-    }
-  }
-  return ret;
-}
-
 void ObLSDDLLogHandler::add_ddl_event(const int ret, const ObString &ddl_event_stmt)
 {
   SERVER_EVENT_ADD("ddl", ddl_event_stmt.ptr(),
@@ -647,47 +596,11 @@ int ObLSDDLLogHandler::add_tablet(const ObTabletID &tablet_id)
   return ret;
 }
 
-int ObLSDDLLogHandler::replay_tablet_split_finish_log_(const char *log_buf,
-                                                      const int64_t buf_size,
-                                                      int64_t pos,
-                                                      const SCN &log_scn)
-{
-  int ret = OB_SUCCESS;
-  ObTabletSplitFinishLog log;
-  if (OB_FAIL(log.deserialize(log_buf, buf_size, pos))) {
-    LOG_WARN("deserialize tablet split start log failed", K(ret));
-  } else if (OB_FAIL(ddl_log_replayer_.replay_split_finish(log, log_scn))) {
-    if (OB_TABLET_NOT_EXIST != ret && OB_EAGAIN != ret) {
-      LOG_WARN("replay tablet split finish log failed", K(ret), K(log));
-      ret = OB_EAGAIN;
-    }
-  }
-  return ret;
-}
-
 int ObLSDDLLogHandler::del_tablets(const common::ObIArray<ObTabletID> &tablet_ids)
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(active_ddl_kv_mgr_.del_tablets(tablet_ids))) {
     LOG_WARN("del tablets failed", K(ret));
-  }
-  return ret;
-}
-
-int ObLSDDLLogHandler::replay_tablet_freeze_log_(const char *log_buf,
-                                                 const int64_t buf_size,
-                                                 int64_t pos,
-                                                 const SCN &log_scn)
-{
-  int ret = OB_SUCCESS;
-  ObTabletFreezeLog log;
-  if (OB_FAIL(log.deserialize(log_buf, buf_size, pos))) {
-    LOG_WARN("deserialize tablet freeze log failed", K(ret));
-  } else if (OB_FAIL(ddl_log_replayer_.replay_tablet_freeze(log, log_scn))) {
-    if (OB_TABLET_NOT_EXIST != ret && OB_EAGAIN != ret) {
-      LOG_WARN("replay tablet freeze log failed", K(ret), K(log));
-      ret = OB_EAGAIN;
-    }
   }
   return ret;
 }

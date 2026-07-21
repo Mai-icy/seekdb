@@ -58,7 +58,6 @@ DEF_TO_STRING(ObGlobalContext)
        KP_(config),
        KP_(config_mgr),
        KP_(tablet_operator),
-       KP_(storage_rpc_proxy),
        KP_(executor_rpc),
        KP_(sql_proxy),
        KP_(bandwidth_throttle),
@@ -78,7 +77,8 @@ DEF_TO_STRING(ObGlobalContext)
        KP_(schema_status_proxy),
        K_(ssl_key_expired_time),
        K_(inited),
-       K_(in_bootstrap));
+       K_(in_bootstrap),
+       K_(embedded));
   J_OBJ_END();
   return pos;
 }

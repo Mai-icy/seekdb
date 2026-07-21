@@ -281,7 +281,7 @@ int ObColumnNamespaceChecker::check_column_exists(const TableItem &table_item, c
     LOG_WARN("params_.session_info_ is null", K(ret));
   } else if (table_item.is_basic_table()) {
     //check column name in schema checker
-    if (0 == col_name.case_compare("ORA_ROWSCN") || 0 == col_name.case_compare(OB_MLOG_OLD_NEW_COLUMN_NAME)) {
+    if (0 == col_name.case_compare("ORA_ROWSCN")) {
       //only basic table has ora_rowscn
       is_exist = true;
     } else if (OB_FAIL(params_.schema_checker_->check_column_exists(table_id,
@@ -299,7 +299,7 @@ int ObColumnNamespaceChecker::check_column_exists(const TableItem &table_item, c
       int64_t unduplicable_count = 0;
       for (int64_t i = 0; OB_SUCC(ret) && i < ref_stmt->get_select_item_size(); ++i) {
         SelectItem& tmp_select_item = ref_stmt->get_select_item(i);
-        if (ObCharset::case_compat_mode_equal(col_name, tmp_select_item.alias_name_)) {
+        if (ObCharset::case_insensitive_equal(col_name, tmp_select_item.alias_name_)) {
           unduplicable_count += (tmp_select_item.expr_->is_column_ref_expr() 
                   && !(static_cast<ObColumnRefRawExpr *>(tmp_select_item.expr_)->is_joined_dup_column())) ? 1 : 0;
           // Const expr does not raise ambiguous error. More than one aggregate
@@ -360,7 +360,7 @@ int ObColumnNamespaceChecker::check_column_exists(const TableItem &table_item, c
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("get unexpected null", K(ret), K(values_desc.at(i)));
         } else {
-          is_exist = ObCharset::case_compat_mode_equal(values_desc.at(i)->get_column_name(), col_name);
+          is_exist = ObCharset::case_insensitive_equal(values_desc.at(i)->get_column_name(), col_name);
         }
       }
     }

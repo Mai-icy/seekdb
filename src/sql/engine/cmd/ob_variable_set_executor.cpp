@@ -176,9 +176,7 @@ int ObVariableSetExecutor::execute(ObExecContext &ctx, ObVariableSetStmt &stmt)
                 ret = OB_SUCCESS;
                 
                 
-                ObSQLClientRetryWeak sql_client_retry_weak(sql_proxy,
-                                                           false,
-                                                           OB_ALL_SYS_VARIABLE_TID);
+                auto &sql_client_retry_weak = *sql_proxy;
                 ObObj tmp_val;
                 ObSqlString sql;
                 SMART_VAR(ObMySQLProxy::MySQLResult, res) {
@@ -236,11 +234,6 @@ int ObVariableSetExecutor::execute(ObExecContext &ctx, ObVariableSetStmt &stmt)
                                                         value_obj))) {
                   LOG_WARN("fail to process auto increment hook", K(ret));
                 } else {}
-              } else if (ObSetVar::SET_SCOPE_GLOBAL == node.set_scope_
-                        && node.variable_name_ == OB_SV_RESOURCE_MANAGER_PLAN) {
-                if (OB_FAIL(update_resource_mapping_rule_version(*sql_proxy))) {
-                  LOG_WARN("fail to update resource mapping rule version", K(ret));
-                }
               } else if (node.variable_name_ == OB_SV_VALIDATE_PASSWORD_LENGTH
                          || node.variable_name_ == OB_SV_VALIDATE_PASSWORD_MIXED_CASE_COUNT
                          || node.variable_name_ == OB_SV_VALIDATE_PASSWORD_NUMBER_COUNT
@@ -283,30 +276,6 @@ int ObVariableSetExecutor::execute(ObExecContext &ctx, ObVariableSetStmt &stmt)
                            "you have active locked tables or an active transaction", K(ret));
                 } else {}
               } else {}
-
-              if (OB_FAIL(ret)) {
-              } else if (set_var.var_name_ == OB_SV_COMPATIBILITY_MODE) {
-                if (!GCONF.in_upgrade_mode()) {
-                  ret = OB_OP_NOT_ALLOW;
-                  LOG_WARN("Compatibility mode can be changed only under upgrade mode and system tenant",
-                           K(ret));
-                  LOG_USER_ERROR(OB_OP_NOT_ALLOW,
-                          "Compatibility mode be changed not under upgrade mode and system tenant");
-                } else if (ObSetVar::SET_SCOPE_SESSION != set_var.set_scope_) {
-                  ret = OB_OP_NOT_ALLOW;
-                  LOG_WARN("Compatibility mode can be changed only under session scope",
-                           K(ret));
-                  LOG_USER_ERROR(OB_OP_NOT_ALLOW,
-                          "Compatibility mode be changed not in session scope");
-                }
-              } else {}
-
-              if (OB_SUCC(ret) && 0 == set_var.var_name_.case_compare(OB_SV_ENABLE_SHOW_TRACE)) {
-                // if set enable show trace, resend control info
-                if (OB_NOT_NULL(ctx.get_my_session())) {
-                  ctx.get_my_session()->set_send_control_info(false);
-                }
-              }
 
               if (OB_SUCC(ret) && 0 == set_var.var_name_.case_compare(OB_SV_SECURE_FILE_PRIV)) {
                 ObAddr addr = OBSERVER.get_self();
@@ -469,12 +438,7 @@ int ObVariableSetExecutor::execute_subquery_expr(ObExecContext &ctx,
     ObObj tmp_value;
     SMART_VAR(ObISQLClient::ReadResult, res) {
       common::sqlclient::ObMySQLResult *result = NULL;
-      bool need_check = false;
-      if (OB_FAIL(session_info->check_feature_enable(ObCompatFeatureType::MYSQL_SET_VAR_PRIV_ENHANCE, need_check))) {
-        LOG_WARN("failed to check feature enable", K(ret));
-      } else if (need_check) {
-        conn->set_check_priv(true);
-      }
+      conn->set_check_priv(true);
       if (OB_FAIL(ret)) {
       } else if (OB_FAIL(conn->execute_read(subquery_expr.ptr(), res))) {
         LOG_WARN("failed to execute sql", K(ret), K(subquery_expr));
@@ -672,14 +636,6 @@ int ObVariableSetExecutor::update_global_variables(ObExecContext &ctx,
         ret = OB_INVALID_ARGUMENT;
         LOG_USER_ERROR(OB_INVALID_ARGUMENT,
                        "max_read_stale_time is smaller than weak_read_version_refresh_interval");
-      }
-    } else if (set_var.var_name_ ==  OB_SV_OPTIMIZER_FEATURES_ENABLE) {
-      if (OB_FAIL(ObBasicSessionInfo::check_optimizer_features_enable_valid(val))) {
-        LOG_WARN("fail check optimizer_features_enable valid", K(val), K(ret));
-      }
-    } else if (set_var.var_name_ ==  OB_SV_PRIVILEGE_FEATURES_ENABLE) {
-      if (OB_FAIL(ObBasicSessionInfo::check_optimizer_features_enable_valid(val))) {
-        LOG_WARN("fail check privilege_features_enable valid", K(val), K(ret));
       }
     }
 
@@ -927,27 +883,14 @@ int ObVariableSetExecutor::process_session_autocommit_hook(ObExecContext &exec_c
       // in xa trans
       if (in_trans && my_session->associated_xa()) {
         const transaction::ObXATransID xid = my_session->get_xid();
-        transaction::ObTxDesc *tx_desc = my_session->get_tx_desc();
-        const transaction::ObGlobalTxType global_tx_type = tx_desc->get_global_tx_type(xid);
         // not allow to set autocommit to on
         if (false == orig_ac && 1 == autocommit) {
           ret = OB_TRANS_XA_ERR_COMMIT;
           LOG_WARN("not allow to set autocommit on in xa trans", K(ret), K(xid));
         } else if (true == orig_ac && 1 == autocommit) {
-          if (transaction::ObGlobalTxType::XA_TRANS == global_tx_type) {
-            // do nothing
-          } else {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_ERROR("unexpected global trans type", K(ret), K(xid), K(global_tx_type));
-          }
+          // do nothing
         } else {
-          // in xa trans
-          if (transaction::ObGlobalTxType::XA_TRANS == global_tx_type) {
-            LOG_INFO("set autocommit off in xa trans", K(ret), K(xid));
-          } else {
-            ret = OB_ERR_UNEXPECTED;
-            LOG_ERROR("unexpected global trans type", K(ret), K(xid), K(global_tx_type));
-          }
+          LOG_INFO("set autocommit off in xa trans", K(ret), K(xid));
         }
       } else if (false == orig_ac &&  true == in_trans && 1 == autocommit) {
         // set autocommit = 1 won't clear next scope transaction settings:
@@ -1043,45 +986,6 @@ int ObVariableSetExecutor::process_last_insert_id_hook(ObPhysicalPlanCtx *plan_c
       plan_ctx->set_last_insert_id_session(unsigned_value);
     } else {
       plan_ctx->set_last_insert_id_session(static_cast<uint64_t>(value));
-    }
-  }
-  return ret;
-}
-
-int ObVariableSetExecutor::update_resource_mapping_rule_version(ObMySQLProxy &sql_proxy)
-{
-  int ret = OB_SUCCESS;
-  ObSqlString sql;
-  const char *tname = OB_ALL_SYS_STAT_TNAME;
-  if (OB_FAIL(sql.assign_fmt("REPLACE INTO %s (", tname))) {
-    STORAGE_LOG(WARN, "append table name failed, ", K(ret));
-  } else {
-    ObSqlString values;
-    SQL_COL_APPEND_CSTR_VALUE(sql, values, "ob_current_resource_mapping_version", "name");
-    SQL_COL_APPEND_VALUE(sql, values, 5, "data_type", "%d");
-    // need use microsecond in case insert multiple rules in one second concurrently.
-    // It means mapping rule is updated but version keeps the same.
-    SQL_COL_APPEND_VALUE(sql, values, "cast(unix_timestamp(now(6)) * 1000000 as signed)", "value", "%s");
-    SQL_COL_APPEND_CSTR_VALUE(sql, values, "version of resource mapping rule", "info");
-    if (OB_SUCC(ret)) {
-      int64_t affected_rows = 0;
-      if (OB_FAIL(sql.append_fmt(") VALUES (%.*s)",
-                                  static_cast<int32_t>(values.length()),
-                                  values.ptr()))) {
-        LOG_WARN("append sql failed, ", K(ret));
-      } else if (OB_FAIL(sql_proxy.write(
-                                      sql.ptr(),
-                                      affected_rows))) {
-        LOG_WARN("fail to execute sql", K(sql), K(ret));
-      } else {
-        if (is_single_row(affected_rows) || is_double_row(affected_rows)) {
-          // insert or replace
-          LOG_TRACE("update resource mapping version successfully", K(sql.string()));
-        } else {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("unexpected value. expect 1 or 2 row affected", K(affected_rows), K(sql), K(ret));
-        }
-      }
     }
   }
   return ret;

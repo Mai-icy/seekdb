@@ -18,7 +18,9 @@
 #define OB_BLOOM_FILTER_LOAD_MAP_H_
 
 #include "lib/hash/ob_hashmap.h"
+#include "lib/lock/ob_thread_cond.h"
 #include "lib/queue/ob_link_queue.h"
+#include "lib/thread/thread_pool.h"
 #include "storage/blocksstable/ob_block_sstable_struct.h"
 #include "storage/ob_i_table.h"
 
@@ -42,12 +44,11 @@ class ObDataMacroBlockMeta;
 struct ObBloomFilterLoadKey
 {
 public:
-  ObBloomFilterLoadKey() : ls_id_(share::ObLSID::INVALID_LS_ID), table_key_()
+  ObBloomFilterLoadKey() : table_key_()
   {
   }
-  ObBloomFilterLoadKey(const share::ObLSID &ls_id,
-                       const storage::ObITable::TableKey &table_key)
-      : ls_id_(ls_id), table_key_(table_key)
+  explicit ObBloomFilterLoadKey(const storage::ObITable::TableKey &table_key)
+      : table_key_(table_key)
   {
   }
   ~ObBloomFilterLoadKey() {}
@@ -55,11 +56,9 @@ public:
   int hash(uint64_t &hash_val) const;
   bool operator == (const ObBloomFilterLoadKey &other) const;
   bool is_valid() const;
-  TO_STRING_KV(K(ls_id_), K(table_key_));
+  TO_STRING_KV(K(table_key_));
 
 public:
-  share::ObLSID ls_id_;
-  
   storage::ObITable::TableKey table_key_;
 };
 
@@ -126,7 +125,6 @@ public:
   int init();
   void reset();
   int push_task(const storage::ObITable::TableKey &sstable_key,
-                const share::ObLSID &ls_id,
                 const MacroBlockId &macro_id,
                 const ObDatumRowkey &rowkey);
   int pop_task(ObBloomFilterLoadKey &key, ObArray<ValuePair> *&array);
@@ -146,11 +144,11 @@ private:
   bool is_inited_;
 };
 
-class ObMacroBlockBloomFilterLoadTG : public lib::TGRunnable
+class ObMacroBlockBloomFilterLoadThread : public lib::ThreadPool
 {
 public:
-  ObMacroBlockBloomFilterLoadTG();
-  ~ObMacroBlockBloomFilterLoadTG();
+  ObMacroBlockBloomFilterLoadThread();
+  ~ObMacroBlockBloomFilterLoadThread();
   int init();
   int start();
   void stop();
@@ -158,7 +156,6 @@ public:
   void destroy();
   void run1() override;
   int add_load_task(const storage::ObITable::TableKey &sstable_key,
-                    const share::ObLSID &ls_id,
                     const MacroBlockId &macro_id,
                     const ObDatumRowkey &rowkey);
 
@@ -170,10 +167,9 @@ private:
   int do_multi_load(const ObBloomFilterLoadKey &key, ObArray<ValuePair> &array);
   int do_multi_get(const ObBloomFilterLoadKey &key, ObArray<ValuePair> &array);
   int load_macro_block_bloom_filter(const ObDataMacroBlockMeta &macro_meta);
-  DISALLOW_COPY_AND_ASSIGN(ObMacroBlockBloomFilterLoadTG);
+  DISALLOW_COPY_AND_ASSIGN(ObMacroBlockBloomFilterLoadThread);
 
 private:
-  int tg_id_;
   ObThreadCond idle_cond_;
   ObBloomFilterLoadTaskQueue load_task_queue_;
   common::ObFIFOAllocator allocator_;

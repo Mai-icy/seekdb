@@ -24,7 +24,7 @@
 #include "sql/resolver/ddl/ob_use_database_stmt.h"
 #include "sql/resolver/ddl/ob_alter_database_stmt.h"
 #include "sql/resolver/ddl/ob_drop_database_stmt.h"
-#include "sql/resolver/ddl/ob_flashback_stmt.h"
+#include "sql/resolver/ddl/ob_recyclebin_restore_stmt.h"
 #include "sql/resolver/ddl/ob_purge_stmt.h"
 #include "sql/resolver/ddl/ob_fork_database_stmt.h"
 #include "observer/ob_server_event_history_table_operator.h"
@@ -53,7 +53,6 @@ int ObCreateDatabaseExecutor::execute(ObExecContext &ctx, ObCreateDatabaseStmt &
      SQL_ENG_LOG(WARN, "fail to get first stmt" , K(ret));
   } else {
     tmp_arg.ddl_stmt_str_ = first_stmt;
-    tmp_arg.consumer_group_id_ = THIS_WORKER.get_group_id();
   }
   if (OB_FAIL(ret)) {
   } else if (OB_ISNULL(ctx.get_physical_plan_ctx())) {
@@ -141,7 +140,6 @@ int ObAlterDatabaseExecutor::execute(ObExecContext &ctx, ObAlterDatabaseStmt &st
      SQL_ENG_LOG(WARN, "fail to get first stmt" , K(ret));
   } else {
     tmp_arg.ddl_stmt_str_ = first_stmt;
-    tmp_arg.consumer_group_id_ = THIS_WORKER.get_group_id();
   }
   if (OB_FAIL(ret)) {
   } else if (OB_ISNULL(task_exec_ctx = GET_TASK_EXECUTOR_CTX(ctx))) {
@@ -191,7 +189,6 @@ int ObDropDatabaseExecutor::execute(ObExecContext &ctx, ObDropDatabaseStmt &stmt
      SQL_ENG_LOG(WARN, "fail to get first stmt" , K(ret));
   } else {
     tmp_arg.ddl_stmt_str_ = first_stmt;
-    tmp_arg.consumer_group_id_ = THIS_WORKER.get_group_id();
   }
   if (OB_FAIL(ret)) {
   } else if (OB_ISNULL(task_exec_ctx = GET_TASK_EXECUTOR_CTX(ctx))) {
@@ -203,7 +200,6 @@ int ObDropDatabaseExecutor::execute(ObExecContext &ctx, ObDropDatabaseStmt &stmt
   } else {
     obcall::UInt64 affected_row(0);
     obcall::ObDropDatabaseRes drop_database_res;
-    const_cast<obcall::ObDropDatabaseArg&>(drop_database_arg).compat_mode_ = lib::Worker::CompatMode::MYSQL;
     if (OB_FAIL(rootserver::serial_call([&]{ return GCTX.root_service_->drop_database(drop_database_arg, drop_database_res); }))) {
       SQL_ENG_LOG(WARN, "rpc proxy drop table failed",
                   "timeout", THIS_WORKER.get_timeout_remain(), K(ret));
@@ -242,34 +238,33 @@ int ObDropDatabaseExecutor::execute(ObExecContext &ctx, ObDropDatabaseStmt &stmt
   return ret;
 }
 
-int ObFlashBackDatabaseExecutor::execute(ObExecContext &ctx, ObFlashBackDatabaseStmt &stmt)
+int ObRecyclebinRestoreDatabaseExecutor::execute(ObExecContext &ctx, ObRecyclebinRestoreDatabaseStmt &stmt)
 {
   int ret = OB_SUCCESS;
-  const obcall::ObFlashBackDatabaseArg &flashback_database_arg = stmt.get_flashback_database_arg();
-  obcall::ObFlashBackDatabaseArg &tmp_arg = const_cast<obcall::ObFlashBackDatabaseArg&>(flashback_database_arg);
+  const obcall::ObRecyclebinRestoreDatabaseArg &restore_database_arg = stmt.get_restore_database_arg();
+  obcall::ObRecyclebinRestoreDatabaseArg &tmp_arg = const_cast<obcall::ObRecyclebinRestoreDatabaseArg&>(restore_database_arg);
   ObTaskExecutorCtx *task_exec_ctx = NULL;
   ObString first_stmt;
   if (OB_FAIL(stmt.get_first_stmt(first_stmt))) {
      SQL_ENG_LOG(WARN, "fail to get first stmt" , K(ret));
   } else {
     tmp_arg.ddl_stmt_str_ = first_stmt;
-    tmp_arg.consumer_group_id_ = THIS_WORKER.get_group_id();
   }
   if (OB_FAIL(ret)) {
   } else if (OB_ISNULL(task_exec_ctx = GET_TASK_EXECUTOR_CTX(ctx))) {
     ret = OB_NOT_INIT;
     SQL_ENG_LOG(WARN, "get task executor context failed");
-  } else if (OB_FAIL(rootserver::serial_call([&]{ return GCTX.root_service_->flashback_database(flashback_database_arg); }))) {
-    SQL_ENG_LOG(WARN, "rpc proxy flashback database failed", K(ret));
+  } else if (OB_FAIL(rootserver::serial_call([&]{ return GCTX.root_service_->restore_database(restore_database_arg); }))) {
+    SQL_ENG_LOG(WARN, "rpc proxy restore database failed", K(ret));
   }
 
-  SERVER_EVENT_ADD("ddl", "flashback database execute finish",
+  SERVER_EVENT_ADD("ddl", "restore database execute finish",
       "ret", ret,
       "trace_id", *ObCurTraceId::get_trace_id(),
       "rpc_dst", GCTX.self_addr(),
-      "origin_db_name", flashback_database_arg.origin_db_name_,
-      "new_db_name", flashback_database_arg.new_db_name_);
-  SQL_ENG_LOG(INFO, "finish execute flashback database.", K(ret), "ddl_event_info", ObDDLEventInfo());
+      "origin_db_name", restore_database_arg.origin_db_name_,
+      "new_db_name", restore_database_arg.new_db_name_);
+  SQL_ENG_LOG(INFO, "finish execute restore database.", K(ret), "ddl_event_info", ObDDLEventInfo());
   return ret;
 }
 
@@ -284,7 +279,6 @@ int ObPurgeDatabaseExecutor::execute(ObExecContext &ctx, ObPurgeDatabaseStmt &st
      SQL_ENG_LOG(WARN, "fail to get first stmt" , K(ret));
   } else {
     tmp_arg.ddl_stmt_str_ = first_stmt;
-    tmp_arg.consumer_group_id_ = THIS_WORKER.get_group_id();
   }
   if (OB_FAIL(ret)) {
   } else if (OB_ISNULL(task_exec_ctx = GET_TASK_EXECUTOR_CTX(ctx))) {
@@ -320,7 +314,6 @@ int ObForkDatabaseExecutor::execute(ObExecContext &ctx, ObForkDatabaseStmt &stmt
   } else {
     // Fillin ddl params.
     tmp_arg.ddl_stmt_str_ = first_stmt;
-    tmp_arg.consumer_group_id_ = THIS_WORKER.get_group_id();
     tmp_arg.session_id_ = my_session->get_sessid_for_table();
 
     ObTaskExecutorCtx *task_exec_ctx = NULL;

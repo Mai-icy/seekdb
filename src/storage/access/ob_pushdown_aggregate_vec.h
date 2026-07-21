@@ -86,7 +86,6 @@ public:
                          const int64_t row_offset = 0,
                          const int64_t agg_row_idx = 0);
   virtual int eval_index_info(const blocksstable::ObMicroIndexInfo &index_info,
-                              const bool is_cg,
                               const int64_t agg_row_idx = 0);
   virtual int eval_batch_in_group_by(common::ObDatum *datums,
                                      const int64_t count,
@@ -135,8 +134,8 @@ public:
   }
   OB_INLINE bool is_agg_finish(const ObPushdownRowIdCtx &pd_row_id_ctx)
   {
-    return OB_INVALID_CS_ROW_ID != agg_row_id_
-        && OB_INVALID_CS_ROW_ID != pd_row_id_ctx.bound_row_id_
+    return INVALID_AGG_ROW_ID != agg_row_id_
+        && INVALID_AGG_ROW_ID != pd_row_id_ctx.bound_row_id_
         && ((!pd_row_id_ctx.is_reverse_ && agg_row_id_ >= pd_row_id_ctx.bound_row_id_ ) 
             || (pd_row_id_ctx.is_reverse_ && agg_row_id_ <= pd_row_id_ctx.bound_row_id_));
   }
@@ -191,7 +190,6 @@ public:
                  const int64_t row_offset = 0,
                  const int64_t agg_row_idx = 0) override;
   int eval_index_info(const blocksstable::ObMicroIndexInfo &index_info,
-                      const bool is_cg,
                       const int64_t agg_row_idx = 0) override;
   int eval_batch_in_group_by(common::ObDatum *datums,
                              const int64_t count,
@@ -248,7 +246,6 @@ public:
            const int64_t row_count = 1,
            const int64_t agg_row_idx = 0) override;
   int eval_index_info(const blocksstable::ObMicroIndexInfo &index_info,
-                      const bool is_cg,
                       const int64_t agg_row_idx = 0) override;
   bool can_pushdown_decoder(blocksstable::ObIMicroBlockReader *reader,
                             const int32_t col_offset,
@@ -294,7 +291,6 @@ public:
                  const int64_t row_offset = 0,
                  const int64_t agg_row_idx = 0) override;
   int eval_index_info(const blocksstable::ObMicroIndexInfo &index_info,
-                      const bool is_cg,
                       const int64_t agg_row_idx = 0) override;
   int can_use_index_info(const blocksstable::ObMicroIndexInfo &index_info,
                          const int32_t col_index, bool &can_agg) override;
@@ -320,17 +316,6 @@ protected:
 private:
   int64_t op_nsize_;
   bool exclude_null_;
-};
-
-class ObRbAggCellVec final : public ObAggCellVec
-{
-public:
-  ObRbAggCellVec(const int64_t agg_idx,
-                  const ObAggCellVecBasicInfo &basic_info,
-                  common::ObIAllocator &allocator,
-                  ObPDAggType agg_type);
-protected:
-  OB_INLINE bool can_use_index_info() const override { return false; }
 };
 
 class ObStrPrefixMinAggCellVec final : public ObAggCellVec
@@ -371,18 +356,6 @@ public:
       const int64_t agg_idx,
       const bool exclude_null);
   void release(common::ObIArray<ObAggCellVec *> &agg_cells);
-  OB_INLINE ObPDAggType to_pd_agg_type(const sql::ObExprOperatorType expr_type)
-  {
-    ObPDAggType pd_type = PD_MAX_TYPE;
-    if (expr_type == T_FUN_SYS_RB_BUILD_AGG) {
-      pd_type = PD_RB_BUILD;
-    } else if (expr_type == T_FUN_SYS_RB_AND_AGG) {
-      pd_type = PD_RB_AND;
-    } else if (expr_type == T_FUN_SYS_RB_OR_AGG) {
-      pd_type = PD_RB_OR;
-    }
-    return pd_type;
-  }
 private:
   common::ObIAllocator &allocator_;
   DISALLOW_COPY_AND_ASSIGN(ObPDAggVecFactory);

@@ -19,9 +19,7 @@
 #include "observer/omt/ob_tenant_mtl_helper.h"  // get_mtl_ptr real user(dual MTL framework definitions, header already legalized as conf L2)
 #include "share/rc/ob_module_provider.h"
 #include "share/roaringbitmap/ob_rb_memory_mgr.h"
-#include "share/resource_manager/ob_cgroup_ctrl.h"
 #include "share/schema/ob_schema_struct.h"
-#include "lib/resource/ob_affinity_ctrl.h"
 #include "share/ob_server_struct.h"
 
 namespace oceanbase
@@ -52,20 +50,13 @@ ObRbMemMgr *__attribute__((used)) get_rb_mem_mgr()
 void __attribute__((used)) lib_mtl_switch(std::function<void(int)> fn)
 {
   int ret = OB_SUCCESS;
-  MAKE_TENANT_SWITCH_SCOPE_GUARD(guard);
-  
   fn(ret);
 }
 
 void __attribute__((used)) lib_mtl_switch(lib::IRunWrapper *run_wrapper, std::function<void()> fn)
 {
-  int ret = OB_SUCCESS;
-  MAKE_TENANT_SWITCH_SCOPE_GUARD(guard);
-  if (OB_FAIL(guard.switch_to(static_cast<share::ObTenantBase *>(run_wrapper)))) {
-    LOG_WARN("failed to switch to tenant", K(ret), KP(run_wrapper));
-  } else {
-    fn();
-  }
+  UNUSED(run_wrapper);
+  fn();
 }
 
 int64_t __attribute__((used)) lib_mtl_cpu_count()
@@ -80,7 +71,7 @@ namespace share
 using namespace oceanbase::common;
 
 
-ObTenantBase::ObTenantBase(const int64_t epoch, bool enable_tenant_ctx_check)
+ObTenantBase::ObTenantBase(const int64_t epoch)
     : epoch_(epoch),
     inited_(false),
     created_(false),
@@ -90,9 +81,6 @@ ObTenantBase::ObTenantBase(const int64_t epoch, bool enable_tenant_ctx_check)
     unit_min_cpu_(0),
     unit_memory_size_(0),
     switchover_epoch_(0),
-    cgroups_(nullptr),
-    enable_tenant_ctx_check_(enable_tenant_ctx_check),
-    thread_count_(0),
     marked_prepare_gc_ts_(0)
 {
 }
@@ -122,24 +110,14 @@ public:
   }
 };
 // TODO parameters to be adjusted
-int ObTenantBase::init(ObCgroupCtrl *cgroup)
+int ObTenantBase::init()
 {
   int ret = OB_SUCCESS;
 
-  ObMemAttr attr("DynamicFactor");
   if (inited_) {
     ret = OB_INIT_TWICE;
     LOG_WARN("init twice error", K(ret));
-  } else if (OB_FAIL(tg_set_.create(1024))) {
-    LOG_WARN("fail to create tg set", K(ret));
-  } else if (OB_FAIL(thread_dynamic_factor_map_.create(1024, attr))) {
-    LOG_WARN("fail to create thread dynamic_factor_map", K(ret));
   } else {
-    if (cgroup == nullptr) {
-      LOG_WARN("ObTenantBase init cgroup is null");
-    } else {
-      cgroups_ = cgroup;
-    }
     inited_ = true;
   }
 
@@ -149,106 +127,17 @@ int ObTenantBase::init(ObCgroupCtrl *cgroup)
 
 void ObTenantBase::destroy()
 {
-  if (tg_set_.size() > 0) {
-    TGSetDumpFunc tg_set_dump_func;
-    tg_set_.foreach_refactored(tg_set_dump_func);
-    _OB_LOG_RET(ERROR, OB_ERR_UNEXPECTED,
-                "tg thread not execute tg_destory make tg_id leak, tg_size=%ld, tg_set=[%s]",
-                tg_set_.size(), tg_set_dump_func.buf_);
-  }
-  tg_set_.destroy();
-  thread_dynamic_factor_map_.destroy();
-  OB_ASSERT(thread_list_.get_size() == 0);
   inited_ = false;
-}
-
-
-
-ObCgroupCtrl *ObTenantBase::get_cgroup()
-{
-  ObCgroupCtrl *cgroup_ctrl = nullptr;
-  cgroup_ctrl = cgroups_;
-  return cgroup_ctrl;
 }
 
 int ObTenantBase::pre_run()
 {
-  int ret = OB_SUCCESS;
-  ObTenantEnv::set_tenant(this);
-  {
-    ThreadListNode *node = lib::Thread::current().get_thread_list_node();
-    lib::ObMutexGuard guard(thread_list_lock_);
-    if (!thread_list_.add_last(node)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_ERROR("add to thread list fail", K(ret));
-    }
-  }
-  ATOMIC_INC(&thread_count_);
-  if (GCONF._enable_numa_aware && OB_NUMA_SHARED_INDEX == AFFINITY_CTRL.get_tls_node()) {
-    AFFINITY_CTRL.thread_bind_to_node(thread_count_);
-  }
-  // register in tenant cgroup without modifying group_id
-  ObCgroupCtrl *cgroup_ctrl = get_cgroup();
-  if (OB_NOT_NULL(cgroup_ctrl) && cgroup_ctrl->is_valid()) {
-    // add thread to tenant OBCG_DEFAULT cgroup
-    ret = cgroup_ctrl->add_self_to_cgroup_();
-  }
-
-  LOG_INFO("tenant thread pre_run", K(ret), K(thread_count_), K(GET_GROUP_ID()));
-  return ret;
+  return OB_SUCCESS;
 }
 
 int ObTenantBase::end_run()
 {
-  int ret = OB_SUCCESS;
-  {
-    ThreadListNode *node = lib::Thread::current().get_thread_list_node();
-    lib::ObMutexGuard guard(thread_list_lock_);
-    thread_list_.remove(node);
-  }
-  ATOMIC_DEC(&thread_count_);
-  LOG_INFO("tenant thread end_run", K(ret), K(thread_count_), K(GET_GROUP_ID()));
-  return ret;
-}
-
-void ObTenantBase::tg_create_cb(int tg_id)
-{
-  tg_set_.set_refactored(tg_id);
-}
-
-void ObTenantBase::tg_destroy_cb(int tg_id)
-{
-  tg_set_.erase_refactored(tg_id);
-}
-
-int ObTenantBase::register_module_thread_dynamic(double dynamic_factor, int tg_id)
-{
-  int ret = OB_SUCCESS;
-  if (dynamic_factor <= 0) {
-    ret = OB_INVALID_ARGUMENT;
-  } else {
-    ThreadDynamicNode node(tg_id);
-    ret = thread_dynamic_factor_map_.set_refactored(node, dynamic_factor);
-  }
-  return ret;
-}
-
-int ObTenantBase::unregister_module_thread_dynamic(int tg_id)
-{
-  ThreadDynamicNode node(tg_id);
-  return thread_dynamic_factor_map_.erase_refactored(node);
-}
-
-int ObTenantBase::register_module_thread_dynamic(double dynamic_factor, lib::Threads *th)
-{
-  int ret = OB_SUCCESS;
-  if (dynamic_factor <= 0 || th == nullptr) {
-    ret = OB_INVALID_ARGUMENT;
-  } else {
-    ThreadDynamicNode node(th);
-    ret = thread_dynamic_factor_map_.set_refactored(node, dynamic_factor);
-  }
-  return ret;
+  return OB_SUCCESS;
 }
 
 
@@ -264,38 +153,6 @@ int64_t ObTenantBase::get_max_session_num(const int64_t rl_max_session_num)
     max_session_num = max(100, (unit_memory_size_ * 5 / 100) / (100<<10));
   }
   return max_session_num;
-}
-
-int ObTenantBase::update_thread_cnt(double tenant_unit_cpu)
-{
-  int64_t old_thread_count = ATOMIC_LOAD(&thread_count_);
-  int ret = OB_SUCCESS;
-  if (tenant_unit_cpu <= 0) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("update_thread_cnt", K(tenant_unit_cpu), K(id()), K(ret));
-  }
-  if (OB_SUCC(ret)) {
-    for (ThreadDynamicFactorMap::iterator it = thread_dynamic_factor_map_.begin(); it != thread_dynamic_factor_map_.end(); it++) {
-      int cnt = it->second * tenant_unit_cpu;
-      if (cnt < 1) {
-        cnt = 1;
-      }
-      int tmp_ret = OB_SUCCESS;
-      if (it->first.get_type() == ThreadDynamicNode::TG) {
-        tmp_ret = TG_SET_THREAD_CNT(it->first.get_tg_id(), cnt);
-      } else if (it->first.get_type() == ThreadDynamicNode::USER_THREAD) {
-        tmp_ret = it->first.get_user_thread()->do_set_thread_count(cnt);
-      } else if (it->first.get_type() == ThreadDynamicNode::DYNAMIC_IMPL) {
-        tmp_ret = it->first.get_dynamic_impl()->set_thread_cnt(cnt);
-      }
-      if (tmp_ret != OB_SUCCESS) {
-        LOG_WARN("update_thread_cnt", K(it->first), K(cnt), K(tmp_ret), K(it->second));
-      }
-    }
-  }
-  int64_t new_thread_count = ATOMIC_LOAD(&thread_count_);
-  LOG_INFO("update_thread_cnt", K(tenant_unit_cpu), K(old_thread_count), K(new_thread_count));
-  return ret;
 }
 
 void ObTenantEnv::set_tenant(ObTenantBase *ctx)

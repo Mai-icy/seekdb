@@ -20,6 +20,7 @@
 #include "lib/net/ob_addr.h"
 #include "lib/hash/ob_hashmap.h"
 #include "lib/alloc/alloc_func.h"
+#include "lib/task/ob_timer.h"
 #include "sql/plan_cache/ob_plan_cache_util.h"
 #include "sql/plan_cache/ob_id_manager_allocator.h"
 #include "sql/plan_cache/ob_sql_parameterization.h"
@@ -448,8 +449,7 @@ private:
   int construct_plan_cache_key(ObPlanCacheCtx &plan_ctx, ObLibCacheNameSpace ns);
   static int construct_plan_cache_key(ObSQLSessionInfo &session,
                                       ObLibCacheNameSpace ns,
-                                      ObPlanCacheKey &pc_key,
-                                      bool is_weak);
+                                      ObPlanCacheKey &pc_key);
   int add_stat_for_cache_obj(ObILibCacheCtx &ctx, ObILibCacheObject *cache_obj);
   int create_node_and_add_cache_obj(ObILibCacheKey *key,
                                     ObILibCacheCtx &ctx,
@@ -480,7 +480,7 @@ private:
   ObLCNodeFactory cn_factory_;
   CacheKeyNodeMap cache_key_node_map_;
   ObPlanCacheEliminationTask evict_task_;
-  int tg_id_;
+  common::ObTimer evict_timer_;
   int64_t idle_scan_cursor_;
   bool idle_evict_done_round_;
   static const int64_t IDLE_SCAN_MAX_NODES = 1000;

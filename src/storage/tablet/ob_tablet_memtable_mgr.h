@@ -59,14 +59,11 @@ public:
   int unset_logging_blocked_for_active_memtable(ObITabletMemtable *memtable);
   int resolve_left_boundary_for_active_memtable(ObITabletMemtable *memtable,
                                                 const share::SCN start_scn);
-  int freeze_direct_load_memtable(ObITabletMemtable *tablet_memtable);
-  int get_direct_load_memtables_for_write(ObTableHdlArray &handles);
 
   int try_get_active_memtable(ObTableHandleV2 &handle, const int64_t timeout);
 
 public: // derived from ObIMemtableMgr
   virtual int init(const common::ObTabletID &tablet_id,
-                   const share::ObLSID &ls_id,
                    ObFreezer *freezer,
                    ObTenantMetaMemMgr *t3m) override;
 
@@ -80,10 +77,8 @@ public: // derived from ObIMemtableMgr
   virtual int get_last_frozen_memtable(ObTableHandleV2 &handle) override;
   virtual int set_is_tablet_freeze_for_active_memtable(ObTableHandleV2 &handle);
   virtual int init_storage_recorder(const ObTabletID &tablet_id,
-                                    const share::ObLSID &ls_id,
                                     const int64_t max_saved_schema_version,
                                     const int64_t max_saved_medium_scn,
-                                    const lib::Worker::CompatMode compat_mode,
                                     logservice::ObLogHandler *log_handler) override;
   virtual int set_frozen_for_all_memtables() override;
 
@@ -111,11 +106,7 @@ private:
   int resolve_data_memtable_boundary_(ObITabletMemtable *frozen_tablet_memtable,
                                       ObITabletMemtable *active_tablet_memtable,
                                       const CreateMemtableArg &arg);
-  int resolve_direct_load_memtable_boundary_(ObITabletMemtable *frozen_tablet_memtable,
-                                             ObITabletMemtable *active_tablet_memtable,
-                                             const CreateMemtableArg &arg);
   int create_memtable_(const CreateMemtableArg &arg, const uint32_t logstream_freeze_clock, ObTimeGuard &tg);
-  int acquire_tablet_memtable_(const bool for_inc_direct_load, ObTableHandleV2 &handle);
   ObITabletMemtable *get_active_memtable_();
   ObITabletMemtable *get_memtable_(const int64_t pos) const;
 

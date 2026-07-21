@@ -602,7 +602,7 @@ int ObTabletPointerMap::get_meta_obj_with_external_memory(
             }
           } else if (CLICK_FAIL(t->deserialize_post_work(allocator))) {
             STORAGE_LOG(WARN, "fail to deserialize post work", K(ret), KP(t));
-          } else if (CLICK_FAIL(t3m->inc_external_tablet_cnt(t->get_tablet_id().id(), t->get_transfer_seq()))) {
+          } else if (CLICK_FAIL(t3m->inc_external_tablet_cnt(t->get_tablet_id().id()))) {
             // TODO FEIDU t->pointer_hdl_.reset(); (external tablet should not hold tablet_pointer)
             // !CAUTION: t3m->inc_external_tablet_cnt must be the last step which can modify ret; or, we have to dec_external_tablet_cnt in the failure process
             STORAGE_LOG(WARN, "fail to inc external tablet cnt", K(ret), KP(t), KPC(t));

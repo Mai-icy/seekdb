@@ -30,7 +30,7 @@ class ObTenantDutyTask
 {
   static constexpr int64_t SCHEDULE_PERIOD = 10 * 1000L * 1000L;
 public:
-  int schedule(int tg_id);
+  int schedule(common::ObTimer &timer);
   ObTenantDutyTask();
 private:
   void runTimerTask() override;
@@ -47,9 +47,6 @@ private:
 
   // Update tenant work area settings.
   int update_tenant_wa_percentage();
-  // Read tenant sql throttle settings from tenant system variables
-  // and set to corresponding tenant.
-  int update_tenant_sql_throttle();
   // Read tenant ctx memory limit settings from tenant system variables
   // and set to corresponding tenant.
   int update_tenant_ctx_memory_throttle();
@@ -63,7 +60,7 @@ private:
 class ObTenantSqlMemoryTimerTask : private common::ObTimerTask
 {
 public:
-  int schedule(int tg_id);
+  int schedule(common::ObTimer &timer);
 private:
   void runTimerTask() override;
 private:

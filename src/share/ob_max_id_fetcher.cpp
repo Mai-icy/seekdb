@@ -40,8 +40,7 @@ const char *ObMaxIdFetcher::max_id_name_info_[OB_MAX_ID_TYPE][2] = {
   { "ob_max_used_unit_group_id", "max used unit group id"},
   { "ob_max_used_non_primary_key_table_tablet_id", "ob max used non primary key table tablet id"},
   { "ob_max_used_primary_key_table_tablet_id", "ob max used primary key table tablet id"},
-  { "ob_max_used_logstrema_id", "max used log stream id"},
-  { "ob_max_used_logstrema_group_id", "max used log stream group id"},
+  { "ob_reserved_max_used_id_10", "reserved max used id slot"},
   { "ob_max_used_sys_pl_object_id", "max used sys pl object id"},
   { "ob_max_used_object_id", "max used object id"},
   { "ob_max_used_lock_owner_id", "max used lock owner id"},
@@ -123,8 +122,6 @@ int ObMaxIdFetcher::convert_id_type(
     case OB_MAX_USED_UNIT_GROUP_ID_TYPE:
     case OB_MAX_USED_NORMAL_ROWID_TABLE_TABLET_ID_TYPE:
     case OB_MAX_USED_EXTENDED_ROWID_TABLE_TABLET_ID_TYPE:
-    case OB_MAX_USED_LS_ID_TYPE:
-    case OB_MAX_USED_LS_GROUP_ID_TYPE:
     case OB_MAX_USED_SYS_PL_OBJECT_ID_TYPE:
     case OB_MAX_USED_OBJECT_ID_TYPE:
     case OB_MAX_USED_LOCK_OWNER_ID_TYPE:
@@ -418,9 +415,7 @@ int ObMaxIdFetcher::fetch_max_id(ObISQLClient &sql_client,
       "FOR UPDATE", OB_ALL_SYS_STAT_TNAME, id_name))) {
     LOG_WARN("sql append format string failed", K(ret));
   } else {
-    ObSQLClientRetryWeak sql_client_retry_weak(&sql_client,
-                                               false /*did_use_retry*/,
-                                               OB_ALL_SYS_STAT_TID);
+    auto &sql_client_retry_weak = sql_client;
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       ObMySQLResult *result = NULL;
       ObString id_str;
@@ -562,8 +557,6 @@ int ObMaxIdFetcher::check_id_valid(const ObMaxIdType &max_id_type, const uint64_
       case OB_MAX_USED_STORAGE_OP_ID_TYPE:
       case OB_MAX_USED_UNIT_GROUP_ID_TYPE:
       case OB_MAX_USED_LOCK_OWNER_ID_TYPE:
-      case OB_MAX_USED_LS_ID_TYPE:
-      case OB_MAX_USED_LS_GROUP_ID_TYPE:
       case OB_MAX_USED_REWRITE_RULE_VERSION_TYPE:
       case OB_MAX_USED_SERVICE_NAME_ID_TYPE:
       case OB_MAX_USED_AI_MODEL_ID_TYPE:

@@ -167,15 +167,8 @@ int ObRootBlockInfo::init_root_block_info(
   } else {
     orig_block_buf_ = orig_buf;
     block_data_.type_ = ObMicroBlockData::INDEX_BLOCK;
-    if (ObStoreFormat::is_row_store_type_with_cs_encoding(row_store_type)) {
-      if (OB_FAIL(transform_cs_encoding_data_buf_(&allocator, orig_block_buf_, size, block_data_.buf_, block_data_.size_))) {
-        LOG_WARN("fail to transform_cs_encoding_data_buf_", K(ret), K(block_data));
-      }
-    } else {
-      block_data_.buf_ = orig_block_buf_;
-      block_data_.size_ = size;
-      block_data_.type_ = ObMicroBlockData::INDEX_BLOCK;
-    }
+    block_data_.buf_ = orig_block_buf_;
+    block_data_.size_ = size;
   }
   if (OB_FAIL(ret)) {
     if (OB_NOT_NULL(orig_buf)) {
@@ -207,16 +200,7 @@ int ObRootBlockInfo::load_root_block_data(
     } else {
       ObMacroBlockReader reader;
       bool is_compressed = false;
-      const char *decomp_buf = nullptr;
-      int64_t decomp_size = 0;
-      if (ObStoreFormat::is_row_store_type_with_cs_encoding(des_meta.row_store_type_)) {
-        if (OB_FAIL(reader.decrypt_and_decompress_data(
-            des_meta, orig_buf, addr_.size(), decomp_buf, decomp_size, is_compressed))) {
-          LOG_WARN("fail to decrypt and decomp block", K(ret), K(des_meta), K_(addr));
-        } else if (OB_FAIL(transform_cs_encoding_data_buf_(&allocator, decomp_buf, decomp_size, dst_buf, dst_buf_size))) {
-          LOG_WARN("fail to transform_cs_encoding_data_buf_", K(ret), K(des_meta));
-        }
-      } else if (OB_FAIL(reader.decrypt_and_decompress_data(des_meta, orig_buf,  // not cs encoding
+      if (OB_FAIL(reader.decrypt_and_decompress_data(des_meta, orig_buf,
           addr_.size(), dst_buf, dst_buf_size, is_compressed, true, &allocator))) {
         LOG_WARN("fail to decrypt and decomp block", K(ret), K(des_meta), K_(addr));
       }
@@ -369,17 +353,8 @@ int ObRootBlockInfo::deserialize_(
       LOG_WARN("fail to read block data", K(ret), K(addr_));
     } else {
       ObMacroBlockReader reader;
-      const char *decomp_buf = nullptr;
-      int64_t decomp_size = 0;
       bool is_compressed = false;
-      if (ObStoreFormat::is_row_store_type_with_cs_encoding(des_meta.row_store_type_)) {
-        if (OB_FAIL(reader.decrypt_and_decompress_data(
-            des_meta, orig_buf, addr_.size(), decomp_buf, decomp_size, is_compressed))) {
-          LOG_WARN("fail to decrypt and decomp block", K(ret), K(des_meta), K_(addr));
-        } else if (OB_FAIL(transform_cs_encoding_data_buf_(&allocator, decomp_buf, decomp_size, dst_buf, dst_buf_size))) {
-          LOG_WARN("fail to transform_cs_encoding_data_buf_", K(ret), K(des_meta));
-        }
-      } else if (OB_FAIL(reader.decrypt_and_decompress_data(des_meta, orig_buf,    // not cs encoding
+      if (OB_FAIL(reader.decrypt_and_decompress_data(des_meta, orig_buf,
           addr_.size(), dst_buf, dst_buf_size, is_compressed, true, &allocator))) {
         LOG_WARN("fail to decrypt and decomp block", K(ret), K(des_meta), K_(addr));
       }
@@ -399,17 +374,9 @@ int ObRootBlockInfo::deserialize_(
       LOG_WARN("failed to deep copy micro buf", K(ret), KP(buf), K(pos), KP(orig_buf), K_(addr));
     } else {
       orig_block_buf_ = orig_buf;
-      if (ObStoreFormat::is_row_store_type_with_cs_encoding(des_meta.row_store_type_)) {
-        if (OB_FAIL(transform_cs_encoding_data_buf_(&allocator, orig_block_buf_, addr_.size(), dst_buf, dst_buf_size))) {
-          LOG_WARN("fail to transform_cs_encoding_data_buf_", K(ret), K(addr_), K(pos));
-        } else {
-          pos += addr_.size();
-        }
-      } else {
-        dst_buf = orig_block_buf_;
-        dst_buf_size = addr_.size();
-        pos += addr_.size();
-      }
+      dst_buf = orig_block_buf_;
+      dst_buf_size = addr_.size();
+      pos += addr_.size();
     }
 
     if (OB_FAIL(ret)) {
@@ -429,31 +396,6 @@ int ObRootBlockInfo::deserialize_(
   return ret;
 }
 
-int ObRootBlockInfo::transform_cs_encoding_data_buf_(
-    common::ObIAllocator *allocator,
-    const char *buf,
-    const int64_t buf_size,
-    const char *&dst_buf,
-    int64_t &dst_buf_size)
-{
-  int ret = OB_SUCCESS;
-  int64_t pos = 0;
-  ObMicroBlockHeader header;
-  if (OB_FAIL(header.deserialize(buf, buf_size, pos))) {
-    LOG_WARN("Fail to deserialize header", K(ret));
-  } else if (OB_UNLIKELY(!ObStoreFormat::is_row_store_type_with_cs_encoding(static_cast<ObRowStoreType>(header.row_store_type_)))) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("row_store_type mismatch", K(ret), K(header));
-  } else {
-    const char *payload_buf = buf + header.header_size_;
-    const int64_t payload_size = buf_size - header.header_size_;
-    if (OB_FAIL(ObCSMicroBlockTransformer::full_transform_block_data(
-        header, payload_buf, payload_size, dst_buf, dst_buf_size, allocator))) {
-      LOG_WARN("fail to full_transform_block_data", K(ret), K(header), KP(payload_buf), K(payload_size));
-    }
-  }
-  return ret;
-}
 
 int ObRootBlockInfo::deep_copy(
     char *buf,
@@ -814,7 +756,6 @@ int ObSSTableMacroInfo::serialize_(char *buf, const int64_t buf_len, int64_t &po
 
 int ObSSTableMacroInfo::persist_block_ids(
     const ObTabletID &tablet_id,
-    const int64_t tablet_transfer_seq,
     const int64_t snapshot_version,
     common::ObArenaAllocator &allocator,
     storage::ObSSTableLinkBlockWriteInfo * const link_write_info,
@@ -822,7 +763,7 @@ int ObSSTableMacroInfo::persist_block_ids(
 {
   int ret = OB_SUCCESS;
   ObLinkedMacroBlockItemWriter block_writer;
-  if (OB_FAIL(write_block_ids(tablet_id, tablet_transfer_seq, snapshot_version, block_writer, entry_id_, link_write_info))) {
+  if (OB_FAIL(write_block_ids(tablet_id, snapshot_version, block_writer, entry_id_, link_write_info))) {
     LOG_WARN("fail to write other block ids", K(ret), KPC(link_write_info));
   } else if (OB_FAIL(save_linked_block_list(block_writer.get_meta_block_list(), allocator))) {
     LOG_WARN("fail to save linked block ids", K(ret));
@@ -1120,7 +1061,6 @@ DEF_TO_STRING(ObSSTableMacroInfo)
 
 int ObSSTableMacroInfo::write_block_ids(
     const ObTabletID &tablet_id,
-    const int64_t tablet_transfer_seq,
     const int64_t snapshot_version,
     storage::ObLinkedMacroBlockItemWriter &writer,
     MacroBlockId &entry_id,
@@ -1135,7 +1075,7 @@ int ObSSTableMacroInfo::write_block_ids(
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("data_block_count_ and other_block_count_ shouldn't be both 0", K(ret), K(data_block_count_),
         K(other_block_count_));
-  } else if (OB_FAIL(writer.init_for_object(tablet_id.id(), tablet_transfer_seq, snapshot_version, link_write_info->start_macro_seq_, link_write_info->get_ddl_redo_callback()))) {
+  } else if (OB_FAIL(writer.init_for_object(tablet_id.id(), snapshot_version, link_write_info->start_macro_seq_, link_write_info->get_ddl_redo_callback()))) {
     LOG_WARN("fail to initialize item writer", K(ret), KPC(link_write_info));
   } else if (OB_FAIL(flush_ids(data_block_ids_, data_block_count_, writer))) {
     LOG_WARN("fail to flush data block ids", K(ret), K(data_block_count_));

@@ -50,11 +50,9 @@ private:
   enum
   {
     SESSION_ID = common::OB_APP_MIN_COLUMN_ID,
-    TX_ID,
-    STATE,
-    CLUSTER_ID,
-    COORDINATOR,
-    PARTICIPANTS,
+	    TX_ID,
+	    STATE,
+	    WRITE_STATE,
     ISOLATION_LEVEL,
     SNAPSHOT_VERSION,
     ACCESS_MODE,

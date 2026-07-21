@@ -87,16 +87,15 @@ int ObTabletReplicaChecksumTableStorage::batch_insert_or_update(const ObIArray<O
       "INSERT INTO __all_tablet_replica_checksum "
       "(tablet_id, compaction_scn, "
       " row_count, data_checksum, column_checksums, b_column_checksums, "
-      " data_checksum_type, co_base_snapshot_version) "
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+      " data_checksum_type) "
+      "VALUES (?, ?, ?, ?, ?, ?, ?) "
       "ON CONFLICT(tablet_id) DO UPDATE SET "
       "compaction_scn = excluded.compaction_scn, "
       "row_count = excluded.row_count, "
       "data_checksum = excluded.data_checksum, "
       "column_checksums = excluded.column_checksums, "
       "b_column_checksums = excluded.b_column_checksums, "
-      "data_checksum_type = excluded.data_checksum_type, "
-      "co_base_snapshot_version = excluded.co_base_snapshot_version;";
+      "data_checksum_type = excluded.data_checksum_type;";
 
     ObSQLiteConnectionGuard guard(pool_);
     if (!guard) {
@@ -147,7 +146,6 @@ int ObTabletReplicaChecksumTableStorage::batch_insert_or_update(const ObIArray<O
                   b.bind_blob(b_column_checksums_str.ptr(), b_column_checksums_str.length());
                 }
                 b.bind_int64(static_cast<int64_t>(item.data_checksum_type_));
-                b.bind_int64(item.co_base_snapshot_version_.get_val_for_inner_table_field());
                 return OB_SUCCESS;
               };
 
@@ -271,7 +269,7 @@ int ObTabletReplicaChecksumTableStorage::remove_residual(const common::ObAddr &s
 }
 
 int ObTabletReplicaChecksumTableStorage::batch_get(
-    const ObIArray<ObTabletLSPair> &pairs,
+    const ObIArray<ObTabletID> &tablet_ids,
     const SCN &compaction_scn,
     ObReplicaCkmArray &items,
     const bool include_larger_than)
@@ -281,7 +279,7 @@ int ObTabletReplicaChecksumTableStorage::batch_get(
   if (!is_inited()) {
     ret = OB_NOT_INIT;
     LOG_WARN("not init", K(ret));
-  } else if (pairs.empty()) {
+  } else if (tablet_ids.empty()) {
     // do nothing
   } else {
     // Build SQL with IN clause
@@ -289,17 +287,17 @@ int ObTabletReplicaChecksumTableStorage::batch_get(
     if (OB_FAIL(sql.append_fmt(
         "SELECT tablet_id, compaction_scn, "
         "       row_count, data_checksum, column_checksums, b_column_checksums, "
-        "       data_checksum_type, co_base_snapshot_version "
+        "       data_checksum_type "
         "FROM __all_tablet_replica_checksum "
         "WHERE tablet_id IN ("))) {
       LOG_WARN("failed to append sql", K(ret));
     } else {
-      for (int64_t i = 0; OB_SUCC(ret) && i < pairs.count(); ++i) {
-        const ObTabletLSPair &pair = pairs.at(i);
+      for (int64_t i = 0; OB_SUCC(ret) && i < tablet_ids.count(); ++i) {
+        const ObTabletID &tablet_id = tablet_ids.at(i);
         if (OB_FAIL(sql.append_fmt(
             "%s %ld",
             i == 0 ? "" : ",",
-            pair.get_tablet_id().id()))) {
+            tablet_id.id()))) {
           LOG_WARN("failed to append sql", K(ret));
         }
       }
@@ -327,17 +325,14 @@ int ObTabletReplicaChecksumTableStorage::batch_get(
         const char *column_checksums_str = reader.get_text(&column_checksums_len);
         const void *b_column_checksums_blob = reader.get_blob(&b_column_checksums_len);
         int64_t data_checksum_type = reader.get_int64();
-        uint64_t co_base_snapshot_version_val = reader.get_int64();
 
         UNUSED(column_checksums_str);
         item.tablet_id_ = ObTabletID(tablet_id_val);
-        item.ls_id_ = ObLSID::SYS_LS_ID;
         item.server_ = GCTX.self_addr();
         item.compaction_scn_.convert_for_inner_table_field(compaction_scn_val);
         item.row_count_ = row_count;
         item.data_checksum_ = data_checksum;
         item.data_checksum_type_ = static_cast<ObDataChecksumType>(data_checksum_type);
-        item.co_base_snapshot_version_.convert_for_inner_table_field(co_base_snapshot_version_val);
 
         // Parse b_column_checksums blob (binary column checksums)
         // Note: column_checksums is only for display, b_column_checksums is the actual data source
@@ -346,7 +341,7 @@ int ObTabletReplicaChecksumTableStorage::batch_get(
           int tmp_ret = item.column_meta_.set_with_str(item.data_checksum_type_, b_column_checksums_obstr);
           if (OB_SUCCESS != tmp_ret) {
             LOG_WARN("failed to set column meta with b_column_checksums blob, skip invalid data", 
-                     K(tmp_ret), K(b_column_checksums_obstr), K(item.tablet_id_), K(item.ls_id_));
+                     K(tmp_ret), K(b_column_checksums_obstr), K(item.tablet_id_));
             item.column_meta_.reset();
           }
         }
@@ -393,7 +388,7 @@ int ObTabletReplicaChecksumTableStorage::range_get(const common::ObTabletID &sta
     const char *select_sql =
       "SELECT tablet_id, compaction_scn, "
       "       row_count, data_checksum, column_checksums, b_column_checksums, "
-      "       data_checksum_type, co_base_snapshot_version "
+      "       data_checksum_type "
       "FROM __all_tablet_replica_checksum "
       "WHERE tablet_id > ? "
       "ORDER BY tablet_id "
@@ -418,17 +413,14 @@ int ObTabletReplicaChecksumTableStorage::range_get(const common::ObTabletID &sta
       const char *column_checksums_str = reader.get_text(&column_checksums_len);
       const void *b_column_checksums_blob = reader.get_blob(&b_column_checksums_len);
       int64_t data_checksum_type = reader.get_int64();
-      uint64_t co_base_snapshot_version_val = reader.get_int64();
 
       UNUSED(column_checksums_str);
       item.tablet_id_ = ObTabletID(tablet_id_val);
-      item.ls_id_ = ObLSID::SYS_LS_ID;
       item.server_ = GCTX.self_addr();
       item.compaction_scn_.convert_for_inner_table_field(compaction_scn_val);
       item.row_count_ = row_count;
       item.data_checksum_ = data_checksum;
       item.data_checksum_type_ = static_cast<ObDataChecksumType>(data_checksum_type);
-      item.co_base_snapshot_version_.convert_for_inner_table_field(co_base_snapshot_version_val);
 
       // Parse b_column_checksums blob (binary column checksums)
       // Note: column_checksums is only for display, b_column_checksums is the actual data source
@@ -437,7 +429,7 @@ int ObTabletReplicaChecksumTableStorage::range_get(const common::ObTabletID &sta
         int tmp_ret = item.column_meta_.set_with_str(item.data_checksum_type_, b_column_checksums_obstr);
         if (OB_SUCCESS != tmp_ret) {
           LOG_WARN("failed to set column meta with b_column_checksums blob, skip invalid data", 
-                   K(tmp_ret), K(b_column_checksums_obstr), K(item.tablet_id_), K(item.ls_id_));
+                   K(tmp_ret), K(b_column_checksums_obstr), K(item.tablet_id_));
           item.column_meta_.reset();
         }
       }
@@ -512,7 +504,6 @@ int ObTabletReplicaChecksumTableStorage::get_min_compaction_scn(uint64_t &min_co
 }
 
 int ObTabletReplicaChecksumTableStorage::get_max_row_count(const common::ObTabletID &tablet_id,
-    const ObLSID &ls_id,
     int64_t &max_row_count)
 {
   int ret = OB_SUCCESS;
@@ -618,4 +609,3 @@ int ObTabletReplicaChecksumTableStorage::batch_check_checksum(const ObIArray<com
 
 } // namespace share
 } // namespace oceanbase
-

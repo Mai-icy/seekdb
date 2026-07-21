@@ -60,7 +60,6 @@ int ObDropVecIVFIndexTask::init(
     const ObVecIndexDDLChildTaskInfo &pq_centroid,
     const ObVecIndexDDLChildTaskInfo &pq_code,
     const int64_t schema_version,
-    const int64_t consumer_group_id,
     const uint64_t tenant_data_version,
     const obcall::ObDropIndexArg &drop_index_arg)
 {
@@ -118,7 +117,6 @@ int ObDropVecIVFIndexTask::init(
       schema_version_ = schema_version;
       task_id_ = task_id;
       parent_task_id_ = 0; // no parent task
-      consumer_group_id_ = consumer_group_id;
       task_version_ = OB_DROP_VEC_IVF_INDEX_TASK_VERSION;
       
       dst_schema_version_ = schema_version;
@@ -163,8 +161,6 @@ int ObDropVecIVFIndexTask::init(const ObDDLTaskRecord &task_record)
       LOG_WARN("deserialize params from message failed", K(ret));
     } else {
       is_inited_ = true;
-      // set up span during recover task
-      ddl_tracing_.open_for_recovery();
     }
   }
   return ret;
@@ -181,7 +177,6 @@ int ObDropVecIVFIndexTask::process()
   } else if (OB_FAIL(check_switch_succ())) {
     LOG_WARN("check need retry failed", K(ret));
   } else {
-    ddl_tracing_.restore_span_hierarchy();
     const ObDDLTaskStatus status = static_cast<ObDDLTaskStatus>(task_status_);
     switch (status) {
       case ObDDLTaskStatus::PREPARE:
@@ -213,7 +208,6 @@ int ObDropVecIVFIndexTask::process()
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("error unexpected, task status is not valid", K(ret), K(task_status_));
     }
-    ddl_tracing_.release_span_hierarchy();
   }
   return ret;
 }

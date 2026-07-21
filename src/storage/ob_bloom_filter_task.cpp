@@ -129,10 +129,6 @@ int ObBloomFilterBuildTask::build_bloom_filter()
     ObMacroBlockRowBareIterator *macro_bare_iter = nullptr;
     ObSSTableMacroBlockHeader macro_header;
     const ObDatumRow *row = nullptr;
-    lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
-    {
-      THIS_WORKER.set_compatibility_mode(compat_mode);
-    }
     if (OB_FAIL(ret)) {
     } else if (OB_FAIL(OB_STORE_CACHE.get_bf_cache().check_need_build(ObBloomFilterCacheKey(
         macro_id_, prefix_len_), need_build))) {
@@ -170,7 +166,7 @@ int ObBloomFilterBuildTask::build_bloom_filter()
         LOG_WARN("Fail to open bare macro block iterator", K(ret), K(macro_handle));
       } else if (OB_FAIL(macro_bare_iter->get_macro_block_header(macro_header))) {
         LOG_WARN("Fail to get macro block header", K(ret));
-      } else if (OB_UNLIKELY(!macro_header.is_valid() || macro_header.is_normal_cg_)) {
+      } else if (OB_UNLIKELY(!macro_header.is_valid())) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("Invalid macro block header", K(ret), K(macro_header));
       } else if (OB_FAIL(bfcache_value.init(prefix_len_, macro_header.fixed_header_.row_count_))) {
@@ -213,4 +209,3 @@ int ObBloomFilterBuildTask::build_bloom_filter()
 
 } // namespace storage
 } // namespace oceanbase
-

@@ -209,7 +209,6 @@ public:
       need_scn_(false),
       force_refresh_lc_(false),
       need_check_output_datum_(false),
-      fb_read_tx_uncommitted_(false),
       frozen_version_(-1),
       fb_snapshot_(),
       timeout_ts_(-1),
@@ -245,7 +244,6 @@ public:
                        K_(force_refresh_lc),
                        K_(frozen_version),
                        K_(fb_snapshot),
-                       K_(fb_read_tx_uncommitted),
                        K_(timeout_ts),
                        K_(tx_lock_timeout),
                        K_(sql_mode),
@@ -267,7 +265,6 @@ public:
   bool need_scn_;
   bool force_refresh_lc_;
   bool need_check_output_datum_;
-  bool fb_read_tx_uncommitted_;
   int64_t frozen_version_;
   share::SCN fb_snapshot_;
   int64_t timeout_ts_;
@@ -492,7 +489,6 @@ public:
       rowkey_iter_(nullptr),
       lookup_iter_(),
       tablet_id_(),
-      ls_id_(),
       scan_param_(),
       lookup_memctx_(),
       status_(0),
@@ -525,7 +521,6 @@ public:
   bool is_group_scan() const { return is_group_scan_; }
   void set_tablet_id(const common::ObTabletID &tablet_id) { tablet_id_ = tablet_id; }
   void set_index_tablet_id(const common::ObTabletID &tablet_id) { index_tablet_id_ = tablet_id; }
-  void set_ls_id(const share::ObLSID &ls_id) { ls_id_ = ls_id; }
   void set_rowkey_iter(common::ObNewRowIterator *rowkey_iter) {rowkey_iter_ = rowkey_iter;}
   common::ObNewRowIterator *get_rowkey_iter() { return rowkey_iter_; }
   int reuse_iter();
@@ -535,7 +530,6 @@ public:
                        KPC_(tx_desc),
                        KPC_(snapshot),
                        K_(tablet_id),
-                       K_(ls_id),
                        K_(state),
                        K_(index_end));
   common::ObITabletScan &get_tsc_service();
@@ -555,7 +549,6 @@ protected:
   common::ObNewRowIterator *rowkey_iter_;
   common::ObNewRowIterator *lookup_iter_;
   common::ObTabletID tablet_id_;
-  share::ObLSID ls_id_;
   storage::ObTableScanParam scan_param_;
 
   ObSEArray<ObDatum *, 4> trans_info_array_;
@@ -592,4 +585,3 @@ private:
 }  // namespace sql
 }  // namespace oceanbase
 #endif /* OBDEV_SRC_SQL_DAS_OB_DAS_SCAN_OP_H_ */
-

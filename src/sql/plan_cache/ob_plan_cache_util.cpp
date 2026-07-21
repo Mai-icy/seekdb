@@ -18,7 +18,6 @@
 
 #include "ob_plan_cache_util.h"
 #include "sql/optimizer/ob_log_plan.h"
-#include "sql/optimizer/ob_direct_load_optimizer_ctx.h"
 #include "share/config/ob_config_helper.h"  // relocated-definition owner
 using namespace oceanbase::share;
 using namespace oceanbase::share::schema;
@@ -112,7 +111,6 @@ int ObPhyLocationGetter::reselect_duplicate_table_best_replica(const ObIArray<Ob
   ObAddr normal_table_addr;
   ObAddr duplicate_table_addr;
   ObSEArray<ObAddr, 4> candi_addrs;
-  ObSEArray<int64_t, 8> new_replic_idxs;
   int64_t proj_cnt = phy_locations.count();
   ObLSReplicaLocation replica_location;
   for (int64_t i = 0; OB_SUCC(ret) && is_same && i < proj_cnt; ++i) {
@@ -137,12 +135,8 @@ int ObPhyLocationGetter::reselect_duplicate_table_best_replica(const ObIArray<Ob
       } else {
         // handle duplicate table
         if (!has_duplicate_tbl) {
-          const ObIArray<ObRoutePolicy::CandidateReplica> &replicas =
-              part_info.get_partition_location().get_replica_locations();
-          for (int64_t j = 0; OB_SUCC(ret) && j < replicas.count(); ++j) {
-            if (OB_FAIL(candi_addrs.push_back(replicas.at(j).get_server()))) {
-              LOG_WARN("failed to push back servers", K(ret));
-            }
+          if (OB_FAIL(candi_addrs.push_back(replica_location.get_server()))) {
+            LOG_WARN("failed to store local server", K(ret));
           }
           duplicate_table_addr = replica_location.get_server();
           has_duplicate_tbl = true;
@@ -180,9 +174,6 @@ int ObPhyLocationGetter::reselect_duplicate_table_best_replica(const ObIArray<Ob
   // If there is no replication table or the non-replication table cannot guarantee to be on the same server, it is a distributed plan, so there is no need to change the replica idx of the replication table here
   if (OB_SUCC(ret) && !candi_addrs.empty()) {
     is_same = false;
-    if (OB_FAIL(new_replic_idxs.prepare_allocate(proj_cnt))) {
-      SQL_PC_LOG(WARN, "failed to pre-alloc array space", K(ret), K(proj_cnt));
-    }
     for (int64_t i = 0; OB_SUCC(ret) && !is_same && i < candi_addrs.count(); ++i) {
       bool is_valid = true;
       const ObAddr &addr = candi_addrs.at(i);
@@ -190,18 +181,7 @@ int ObPhyLocationGetter::reselect_duplicate_table_best_replica(const ObIArray<Ob
       for (int64_t j = 0; OB_SUCC(ret) && is_valid && j < proj_cnt; ++j) {
         const ObCandiTableLoc &ptli = phy_locations.at(j);
         if (ptli.is_duplicate_table_not_in_dml()) {
-          is_valid = ptli.get_phy_part_loc_info_list().at(0).is_server_in_replica(
-                       addr, new_replic_idxs.at(j));
-        }
-      }
-      //b, all copy tables have a copy at addr, change them together
-      for (int64_t j = 0; OB_SUCC(ret) && is_valid && j < proj_cnt; ++j) {
-        ObCandiTableLoc &ptli = const_cast<ObCandiTableLoc&>(phy_locations.at(j));
-        if (!ptli.is_duplicate_table_not_in_dml()) {
-          // do nothing
-        } else if (OB_FAIL(ptli.get_phy_part_loc_info_list_for_update().at(0).
-                           set_selected_replica_idx(new_replic_idxs.at(j)))) {
-          SQL_PC_LOG(WARN, "failed to set selected replica idx", K(ret));
+          is_valid = ptli.get_phy_part_loc_info_list().at(0).is_local_server(addr);
         }
       }
       if (OB_SUCC(ret) && is_valid) {
@@ -243,8 +223,6 @@ int ObPhyLocationGetter::get_phy_locations(const ObIArray<ObTableLocation> &tabl
         const ObTableLocation &table_location = table_locations.at(i);
         ObCandiTableLoc &candi_table_loc = candi_table_locs.at(i);
         NG_TRACE(calc_partition_location_begin);
-        // Here it is assumed that the materialized view's replica table has a copy on each server,
-        // Therefore here we do not check if materialized view can be generated, it is guaranteed to be generated
         if (OB_FAIL(table_location.calculate_candi_tablet_locations(exec_ctx,
                                                                     params,
                                                                     candi_table_loc.get_phy_part_loc_info_list_for_update(),
@@ -277,17 +255,13 @@ int ObPhyLocationGetter::get_phy_locations(const ObIArray<ObTableLocation> &tabl
     }
 
     //Only check the on_same_server when has table location in the phy_plan.
-    bool is_dup_ls_modified = false;
-    if (OB_NOT_NULL(pc_ctx.sql_ctx_.session_info_)) {
-      is_dup_ls_modified = pc_ctx.sql_ctx_.session_info_->is_dup_ls_modified();
-    }
     if (OB_SUCC(ret) && N!=0 ) {
       if (OB_FAIL(ObLogPlan::select_replicas(exec_ctx, table_location_ptrs,
                                              exec_ctx.get_addr(),
                                              phy_location_info_ptrs))) {
         LOG_WARN("failed to select replicas", K(ret), K(table_locations),
                  K(exec_ctx.get_addr()), K(phy_location_info_ptrs));
-      } else if (is_dup_ls_modified || is_retrying) {
+      } else if (is_retrying) {
         // do nothing
       } else if (OB_FAIL(reselect_duplicate_table_best_replica(candi_table_locs,
                                                                on_same_server))) {
@@ -420,8 +394,6 @@ int ObConfigInfoInPC::load_influence_plan_config()
   enable_das_keep_order_ = GCONF._enable_das_keep_order;
   enable_index_merge_ = GCONF._enable_index_merge;
   enable_parallel_das_dml_ = GCONF._enable_parallel_das_dml;
-  direct_load_allow_fallback_ = GCONF.direct_load_allow_fallback;
-  default_load_mode_ = ObDefaultLoadMode::get_type_value(GCONF.default_load_mode.get_value_string());
   hash_rollup_policy_ = GCONF._use_hash_rollup.case_compare("auto") == 0 ?
                           0 :
                           (GCONF._use_hash_rollup.case_compare("forced") == 0 ? 1 : 2);
@@ -492,12 +464,6 @@ int ObConfigInfoInPC::serialize_configs(char *buf, int buf_len, int64_t &pos)
   } else if (OB_FAIL(databuff_printf(buf, buf_len, pos,
                                "%d,", enable_parallel_das_dml_))) {
     SQL_PC_LOG(WARN, "failed to databuff_printf", K(ret), K(enable_parallel_das_dml_));
-  } else if (OB_FAIL(databuff_printf(buf, buf_len, pos,
-                               "%d,", direct_load_allow_fallback_))) {
-    SQL_PC_LOG(WARN, "failed to databuff_printf", K(ret), K(direct_load_allow_fallback_));
-  } else if (OB_FAIL(databuff_printf(buf, buf_len, pos,
-                               "%d,", default_load_mode_))) {
-    SQL_PC_LOG(WARN, "failed to databuff_printf", K(ret), K(default_load_mode_));
   } else if (OB_FAIL(databuff_printf(buf, buf_len, pos, "%d,", hash_rollup_policy_))) {
     SQL_PC_LOG(WARN, "failed to databuff_printf", K(ret), K(hash_rollup_policy_));
   } else if (OB_FAIL(databuff_printf(buf, buf_len, pos,

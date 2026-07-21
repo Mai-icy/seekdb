@@ -352,17 +352,17 @@ int ObTableLockOwnerID::convert_from_value(const ObLockOwnerType owner_type,
   return ret;
 }
 
-int ObTableLockOwnerID::convert_from_client_sessid(const uint32_t client_sessid,
-                                                   const uint64_t client_sess_create_ts)
+int ObTableLockOwnerID::convert_from_session_id(const uint32_t sessid,
+                                                const uint64_t sess_create_ts)
 {
   int ret = OB_SUCCESS;
-  if (INVALID_SESSID == client_sessid) {
+  if (INVALID_SESSID == sessid) {
     ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("client session id is default value", K(ret), K(client_sessid), K(client_sess_create_ts));
+    LOG_WARN("session id is default value", K(ret), K(sessid), K(sess_create_ts));
   } else {
     type_ = static_cast<unsigned char>(ObLockOwnerType::SESS_ID_OWNER_TYPE);
-    int64_t client_unique_id = client_sess_create_ts & CLIENT_SESS_CREATE_TS_MASK;
-    id_ = (static_cast<int64_t>(client_sessid)) | (client_unique_id << CLIENT_SESS_ID_BIT);
+    int64_t session_unique_id = sess_create_ts & SESS_CREATE_TS_MASK;
+    id_ = (static_cast<int64_t>(sessid)) | (session_unique_id << SESS_ID_BIT);
     hash_value_ = inner_hash();
   }
   return ret;
@@ -375,7 +375,7 @@ int ObTableLockOwnerID::convert_to_sessid(uint32_t &sessid) const
     ret = OB_NOT_SUPPORTED;
     LOG_WARN("this lock owner id cannot be converted to session id", K(ret), K_(type));
   } else {
-    sessid = static_cast<uint32_t>(id_ & CLIENT_SESS_ID_MASK);
+    sessid = static_cast<uint32_t>(id_ & SESS_ID_MASK);
   }
   return ret;
 }
@@ -503,9 +503,7 @@ void ObTableLockOp::set(
 bool ObTableLockOp::is_valid() const
 {
   bool is_valid = false;
-  if (TABLET_SPLIT == op_type_) {
-    is_valid = commit_scn_.is_valid() && !commit_scn_.is_min() && lock_id_.is_valid();
-  } else if (is_out_trans_lock_op() && owner_id_.id() == 0) {
+  if (is_out_trans_lock_op() && owner_id_.id() == 0) {
     is_valid = false;
     LOG_ERROR_RET(OB_INVALID_ARGUMENT, "owner_id should not be 0 in out_trans lock", K_(owner_id));
   } else {

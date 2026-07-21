@@ -35,7 +35,7 @@ namespace common {
 #define FETCH_COL_STATS_HISTROY "SELECT table_id, partition_id, column_id, object_type stat_level,\
                                  distinct_cnt num_distinct, null_cnt num_null, b_max_value,\
                                  b_min_value, avg_len, distinct_cnt_synopsis, distinct_cnt_synopsis_size,\
-                                 histogram_type, sample_size, bucket_cnt, density, last_analyzed, spare1 as compress_type %s%s\
+                                 histogram_type, sample_size, bucket_cnt, density, last_analyzed, spare1 as compress_type \
                                  FROM %s T WHERE table_id = %ld \
                                  and partition_id in %s and savtime in (SELECT min(savtime) From \
                                  %s TF where TF.table_id = T.table_id and TF.partition_id = T.partition_id \
@@ -119,7 +119,7 @@ namespace common {
                                                    density,                   \
                                                    bucket_cnt,                \
                                                    histogram_type,            \
-                                                   spare1%s%s) %s"
+                                                   spare1) %s"
 
 #define SELECT_COLUMN_STAT               "SELECT   table_id,                  \
                                                    partition_id,              \
@@ -141,12 +141,12 @@ namespace common {
                                                    density,                   \
                                                    bucket_cnt,                \
                                                    histogram_type,            \
-                                                   spare1%s%s                   \
+                                                   spare1                       \
                                              FROM %s                          \
                                              WHERE %s"
 
 #define COLUMN_STAT_MOCK_VALUE_PATTERN "(%lu, %ld, %lu, usec_to_time(%ld), 0, 0, usec_to_time(%ld), 0, 0, \
-                                         %s, '%.*s', %s, '%.*s', 0, '', 0, -1, 0.000000, 0, 0, NULL%s%s)"
+                                         %s, '%.*s', %s, '%.*s', 0, '', 0, -1, 0.000000, 0, 0, NULL)"
 
 #define INSERT_HISTOGRAM_STAT_HISTORY "INSERT INTO %s(table_id,                 \
                                                       partition_id,             \
@@ -261,7 +261,7 @@ int ObDbmsStatsHistoryManager::calssify_table_stat_part_ids(ObExecContext &ctx,
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy);
+      auto &sql_client_retry_weak = *mysql_proxy;
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -496,7 +496,7 @@ int ObDbmsStatsHistoryManager::generate_having_stat_part_col_map(ObExecContext &
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy);
+      auto &sql_client_retry_weak = *mysql_proxy;
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -655,15 +655,11 @@ int ObDbmsStatsHistoryManager::backup_having_column_stats(ObMySQLTransaction &tr
       int64_t affected_rows = 0;
       if (OB_FAIL(select_sql.append_fmt(SELECT_COLUMN_STAT,
                                         saving_time,
-                                        ",cg_macro_blk_cnt, cg_micro_blk_cnt",
-                                        ", cg_skip_rate",
                                         share::OB_ALL_COLUMN_STAT_TNAME,
                                         where_str.ptr()))) {
         LOG_WARN("failed to append fmt", K(ret));
       } else if (OB_FAIL(raw_sql.append_fmt(INSERT_COLUMN_STAT_HISTORY,
                                             share::OB_ALL_COLUMN_STAT_HISTORY_TNAME,
-                                            ",cg_macro_blk_cnt, cg_micro_blk_cnt",
-                                           ", cg_skip_rate",
                                             select_sql.ptr()))) {
         LOG_WARN("failed to append fmt", K(ret));
       } else if (OB_FAIL(trans.write(raw_sql.ptr(), affected_rows))) {
@@ -722,9 +718,7 @@ int ObDbmsStatsHistoryManager::backup_no_column_stats(ObMySQLTransaction &trans,
                                            b_null_str.ptr(),
                                            null_sql_str.ptr(),
                                            b_null_str.length(),
-                                           b_null_str.ptr(),
-                                           ", 0, 0",
-                                           ", 0"))) {
+                                           b_null_str.ptr()))) {
                 LOG_WARN("failed to append fmt", K(ret));
               } else if (OB_FAIL(values_list.append_fmt("%s%s",
                                                         cur_cnt == 0 ? "VALUES " : ", ",
@@ -738,8 +732,6 @@ int ObDbmsStatsHistoryManager::backup_no_column_stats(ObMySQLTransaction &trans,
                     int64_t affected_rows = 0;
                     if (OB_FAIL(raw_sql.append_fmt(INSERT_COLUMN_STAT_HISTORY,
                                                    share::OB_ALL_COLUMN_STAT_HISTORY_TNAME,
-                                                   ",cg_macro_blk_cnt, cg_micro_blk_cnt",
-                                                   ", cg_skip_rate",
                                                    values_list.ptr()))) {
                       LOG_WARN("failed to append fmt", K(ret));
                     } else if (OB_FAIL(trans.write(raw_sql.ptr(), affected_rows))) {
@@ -764,8 +756,6 @@ int ObDbmsStatsHistoryManager::backup_no_column_stats(ObMySQLTransaction &trans,
           int64_t affected_rows = 0;
           if (OB_FAIL(raw_sql.append_fmt(INSERT_COLUMN_STAT_HISTORY,
                                          share::OB_ALL_COLUMN_STAT_HISTORY_TNAME,
-                                         ",cg_macro_blk_cnt, cg_micro_blk_cnt",
-                                         ", cg_skip_rate",
                                          values_list.ptr()))) {
             LOG_WARN("failed to append fmt", K(ret));
           } else if (OB_FAIL(trans.write(raw_sql.ptr(), affected_rows))) {
@@ -1013,7 +1003,7 @@ int ObDbmsStatsHistoryManager::get_stats_history_retention_and_availability(ObEx
     
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy);
+      auto &sql_client_retry_weak = *mysql_proxy;
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -1119,7 +1109,7 @@ int ObDbmsStatsHistoryManager::fetch_table_stat_histrory(ObExecContext &ctx,
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy);
+      auto &sql_client_retry_weak = *mysql_proxy;
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -1212,8 +1202,6 @@ int ObDbmsStatsHistoryManager::fetch_column_stat_history(ObExecContext &ctx,
   } else if (OB_FAIL(gen_partition_list(param, partition_list))) {
     LOG_WARN("failed to gen partition list", K(ret));
   } else if (OB_FAIL(raw_sql.append_fmt(FETCH_COL_STATS_HISTROY,
-                                        ",cg_macro_blk_cnt, cg_micro_blk_cnt",
-                                        ", cg_skip_rate",
                                         share::OB_ALL_COLUMN_STAT_HISTORY_TNAME,
                                         share::schema::ObSchemaUtils::get_extract_schema_id(param.table_id_),
                                         partition_list.ptr(),
@@ -1223,7 +1211,7 @@ int ObDbmsStatsHistoryManager::fetch_column_stat_history(ObExecContext &ctx,
   } else {
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
-      ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy);
+      auto &sql_client_retry_weak = *mysql_proxy;
       if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
         LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
       } else if (OB_ISNULL(client_result = proxy_result.get_result())) {
@@ -1380,11 +1368,6 @@ int ObDbmsStatsHistoryManager::fill_column_stat_history(const ObTableStatParam &
         }
       }
     }
-    if (OB_SUCC(ret)) {
-      EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, cg_macro_blk_cnt, *col_stat, int64_t, true, true, 0);
-      EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, cg_micro_blk_cnt, *col_stat, int64_t, true, true, 0);
-      EXTRACT_DOUBLE_FIELD_TO_CLASS_MYSQL(result, cg_skip_rate, *col_stat, double);
-    }
   }
   return ret;
 }
@@ -1415,8 +1398,7 @@ int ObDbmsStatsHistoryManager::fetch_histogram_stat_histroy(ObExecContext &ctx,
     } else {
       SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
         sqlclient::ObMySQLResult *client_result = NULL;
-        const bool did_retry_weak = false;
-        ObSQLClientRetryWeak sql_client_retry_weak(mysql_proxy, did_retry_weak);
+        auto &sql_client_retry_weak = *mysql_proxy;
         if (OB_FAIL(sql_client_retry_weak.read(proxy_result, raw_sql.ptr()))) {
           LOG_WARN("failed to execute sql", K(ret), K(raw_sql));
         } else if (OB_ISNULL(client_result = proxy_result.get_result())) {

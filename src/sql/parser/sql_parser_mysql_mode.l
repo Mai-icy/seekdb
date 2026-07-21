@@ -100,10 +100,7 @@ mysql_compatible_comment_with_version \/\*\![0-9]{5}
 mysql_compatible_comment_without_version \/\*\!
 mysql_compatible_comment_end \*\/
 
-ColumnStorePattern  (WITH{whitespace}COLUMN{whitespace}GROUP)
-
 %%
-{ColumnStorePattern}                { REPUT_TOKEN_NEG_SIGN(WITH_COLUMN_GROUP); }
 INTERVAL {
 
   ParseResult *p = (ParseResult *)yyextra;
@@ -1012,11 +1009,8 @@ Timestamp{whitespace}?\"[^\"]*\" {
 <hint>MANUAL { return MANUAL; }
 <hint>NO_PARALLEL { return NO_PARALLEL; }
 <hint>DML_PARALLEL { return DML_PARALLEL; }
-<hint>MONITOR  { return MONITOR; }
 <hint>AUTO { return AUTO; }
 <hint>FORCE { return FORCE; }
-<hint>USE_COLUMN_TABLE { return USE_COLUMN_STORE_HINT; }
-<hint>NO_USE_COLUMN_TABLE { return NO_USE_COLUMN_STORE_HINT; }
 <hint>[(),.@]  {
   ParseResult *p = (ParseResult *)yyextra;
   if (!p->is_ignore_token_) {
@@ -1036,8 +1030,6 @@ Timestamp{whitespace}?\"[^\"]*\" {
 <hint>LEADING  { return LEADING_HINT; }
 <hint>ORDERED  { return ORDERED; }
 <hint>NO_REWRITE { return NO_REWRITE; }
-<hint>MV_REWRITE { return MV_REWRITE; }
-<hint>NO_MV_REWRITE { return NO_MV_REWRITE; }
 <hint>FULL  { return FULL_HINT; }
 <hint>USE_MERGE  { return USE_MERGE; }
 <hint>NO_USE_MERGE  { return NO_USE_MERGE; }
@@ -1057,9 +1049,6 @@ Timestamp{whitespace}?\"[^\"]*\" {
 <hint>NO_PUSH_SUBQ  { return NO_PUSH_SUBQ; }
 <hint>TRACE_LOG { return TRACE_LOG; }
 <hint>LOAD_BATCH_SIZE { return LOAD_BATCH_SIZE; }
-<hint>NO_DIRECT { return NO_DIRECT; }
-<hint>DIRECT { return DIRECT; }
-<hint>APPEND { return APPEND; }
 <hint>TRACING { return TRACING; }
 <hint>DOP { return DOP; }
 <hint>FORCE_REFRESH_LOCATION_CACHE { return FORCE_REFRESH_LOCATION_CACHE; }
@@ -1071,10 +1060,8 @@ Timestamp{whitespace}?\"[^\"]*\" {
 <hint>QB_NAME { return QB_NAME; }
 <hint>BEGIN_OUTLINE_DATA { return BEGIN_OUTLINE_DATA; }
 <hint>END_OUTLINE_DATA { return END_OUTLINE_DATA; }
-<hint>OPTIMIZER_FEATURES_ENABLE { return OPTIMIZER_FEATURES_ENABLE; }
 <hint>NO_QUERY_TRANSFORMATION { return NO_QUERY_TRANSFORMATION; }
 <hint>NO_COST_BASED_QUERY_TRANSFORMATION { return NO_COST_BASED_QUERY_TRANSFORMATION; }
-<hint>FLASHBACK_READ_TX_UNCOMMITTED { return FLASHBACK_READ_TX_UNCOMMITTED; }
 <hint>TRANS_PARAM { return TRANS_PARAM; }
 <hint>PQ_DISTRIBUTE { return PQ_DISTRIBUTE; }
 <hint>PQ_DISTRIBUTE_WINDOW { return PQ_DISTRIBUTE_WINDOW; }
@@ -1180,7 +1167,6 @@ Timestamp{whitespace}?\"[^\"]*\" {
 <hint>PUSHDOWN { return PUSHDOWN; }
 <hint>DECORRELATE { return DECORRELATE; }
 <hint>NO_DECORRELATE { return NO_DECORRELATE; }
-<hint>RESOURCE_GROUP { return RESOURCE_GROUP; }
 <hint>PQ_GBY { return PQ_GBY; }
 <hint>PQ_DISTINCT { return PQ_DISTINCT; }
 <hint>PX_NODE_POLICY {return PX_NODE_POLICY; }

@@ -131,8 +131,7 @@ int ObRawEncoder::traverse(const bool force_var_store, bool &suitable)
       case ObStringSC:
       case ObTextSC:
       case ObJsonSC:
-      case ObGeometrySC:
-      case ObRoaringBitmapSC: {
+      case ObGeometrySC: {
           if (force_var_store || fix_data_size_ < 0) {
             desc_.is_var_data_ = true;
           } else {
@@ -219,8 +218,7 @@ int ObRawEncoder::get_var_length(const int64_t row_id, int64_t &length)
         case ObStringSC:
         case ObTextSC:
         case ObJsonSC:
-        case ObGeometrySC:
-        case ObRoaringBitmapSC: {
+        case ObGeometrySC: {
           length = datum.len_;
           break;
         }
@@ -285,8 +283,8 @@ int ObRawEncoder::store_fix_data(ObBufferWriter &buf_writer)
     column_header_.length_ = static_cast<uint32_t>(desc_.bit_packing_length_ > 0
         ? desc_.bit_packing_length_
         : desc_.fix_data_length_);
-    if (OB_FAIL(fill_column_store(buf_writer, *ctx_->col_datums_, getter, DatumDataSetter()))) {
-      LOG_WARN("fill datum column store failed", K(ret));
+    if (OB_FAIL(fill_fixed_data(buf_writer, *ctx_->col_datums_, getter, DatumDataSetter()))) {
+      LOG_WARN("fill fixed data failed", K(ret));
     }
   }
   return ret;

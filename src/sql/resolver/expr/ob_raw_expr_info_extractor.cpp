@@ -155,16 +155,12 @@ int ObRawExprInfoExtractor::clear_info(ObRawExpr &expr)
   ObExprInfo &expr_info = expr.get_expr_info();
   bool is_implicit_cast = expr_info.has_member(IS_OP_OPERAND_IMPLICIT_CAST);
   bool is_self_param = expr_info.has_member(IS_UDT_UDF_SELF_PARAM);
-  bool is_auto_part_expr = expr_info.has_member(IS_AUTO_PART_EXPR);
   expr_info.reset();
   if (is_implicit_cast) {
     OZ(expr_info.add_member(IS_OP_OPERAND_IMPLICIT_CAST));
   }
   if (is_self_param) {
     OZ(expr_info.add_member(IS_UDT_UDF_SELF_PARAM));
-  }
-  if (is_auto_part_expr) {
-    OZ(expr_info.add_member(IS_AUTO_PART_EXPR));
   }
   return ret;
 }
@@ -495,7 +491,6 @@ int ObRawExprInfoExtractor::visit(ObSysFunRawExpr &expr)
         || (T_FUN_SYS_SYSDATE == expr.get_expr_type())
         || T_FUN_NORMAL_UDF == expr.get_expr_type()
         || T_FUN_SYS_GENERATOR == expr.get_expr_type()
-        || T_FUN_SYS_LAST_REFRESH_SCN == expr.get_expr_type()
         || (T_FUN_UDF == expr.get_expr_type()
             && !static_cast<ObUDFRawExpr&>(expr).is_deterministic())
         || T_FUN_SYS_GET_LOCK == expr.get_expr_type()

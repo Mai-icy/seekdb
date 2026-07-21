@@ -37,11 +37,10 @@ public:
   ObBatchExecParam(const ObBatchExecParamType type);
   ObBatchExecParam(
       const ObBatchExecParamType type,
-      const share::ObLSID &ls_id,
       const int64_t merge_version,
       const int64_t batch_size = DEFAULT_BATCH_SIZE);
   virtual ~ObBatchExecParam() { tablet_info_array_.reset(); }
-  bool is_valid() const override { return ls_id_.is_valid() && compaction_scn_ > 0 && tablet_info_array_.count() > 0; }
+  bool is_valid() const override { return compaction_scn_ > 0 && tablet_info_array_.count() > 0; }
   int assign(const ObBatchExecParam &other);
   int64_t get_hash() const;
   int64_t get_task_cnt() const
@@ -56,12 +55,11 @@ public:
   {
     tablet_info_array_.reset();
   }
-  VIRTUAL_TO_STRING_KV(K_(param_type), K_(ls_id), K_(compaction_scn), "tablet_id_cnt", tablet_info_array_.count(), K_(tablet_info_array));
+  VIRTUAL_TO_STRING_KV(K_(param_type), K_(compaction_scn), "tablet_id_cnt", tablet_info_array_.count(), K_(tablet_info_array));
 public:
   static constexpr int64_t DEFAULT_BATCH_SIZE = 128;
   static constexpr int64_t DEFAULT_ARRAY_SIZE = 64;
   ObBatchExecParamType param_type_;
-  share::ObLSID ls_id_;
   int64_t compaction_scn_;
   int64_t batch_size_;
   common::ObSEArray<ITEM, DEFAULT_ARRAY_SIZE> tablet_info_array_;
@@ -120,8 +118,6 @@ public:
       compaction::ObIBasicInfoParam *&out_param,
       ObIAllocator &allocator) const override;
   virtual int fill_dag_key(char *buf, const int64_t buf_len) const override;
-  virtual lib::Worker::CompatMode get_compat_mode() const override { return lib::Worker::CompatMode::MYSQL; }
-  virtual uint64_t get_consumer_group_id() const override { return consumer_group_id_; }
   const PARAM &get_param() const { return param_; }
   void add_collect_cnt(const ObBatchExecInfo &cnt) { collector_.add(cnt, *this); }
   int init_merge_history();
@@ -173,7 +169,6 @@ private:
 template<typename ITEM>
 ObBatchExecParam<ITEM>::ObBatchExecParam(const ObBatchExecParamType type)
   : param_type_(type),
-    ls_id_(),
     compaction_scn_(0),
     batch_size_(DEFAULT_BATCH_SIZE),
     tablet_info_array_()
@@ -184,11 +179,9 @@ ObBatchExecParam<ITEM>::ObBatchExecParam(const ObBatchExecParamType type)
 template<typename ITEM>
 ObBatchExecParam<ITEM>::ObBatchExecParam(
     const ObBatchExecParamType type,
-    const share::ObLSID &ls_id,
     const int64_t merge_version,
     const int64_t batch_size)
   : param_type_(type),
-    ls_id_(ls_id),
     compaction_scn_(merge_version),
     batch_size_(batch_size),
     tablet_info_array_()
@@ -206,7 +199,6 @@ int ObBatchExecParam<ITEM>::assign(
   } else if (OB_FAIL(tablet_info_array_.assign(other.tablet_info_array_))) {
     STORAGE_LOG(WARN, "failed to copy tablet ids", KR(ret));
   } else {
-    ls_id_ = other.ls_id_;
     compaction_scn_ = other.compaction_scn_;
     batch_size_ = other.batch_size_;
   }
@@ -218,7 +210,7 @@ int64_t ObBatchExecParam<ITEM>::get_hash() const
 {
   int64_t hash_val = 0;
   hash_val = common::murmurhash(&param_type_, sizeof(param_type_), hash_val);
-  hash_val = common::murmurhash(&ls_id_, sizeof(ls_id_), hash_val);
+  hash_val = common::murmurhash(&compaction_scn_, sizeof(compaction_scn_), hash_val);
   return hash_val;
 }
 
@@ -284,8 +276,7 @@ bool ObBatchExecDag<TASK, PARAM>::operator == (const ObIDag &other) const
     // same
   } else if (get_type() != other.get_type()) {
     is_same = false;
-  } else if ((param_.ls_id_ != static_cast<const ObBatchExecDag &>(other).param_.ls_id_)
-    || (param_.compaction_scn_ != static_cast<const ObBatchExecDag &>(other).param_.compaction_scn_)) {
+  } else if (param_.compaction_scn_ != static_cast<const ObBatchExecDag &>(other).param_.compaction_scn_) {
     is_same = false;
   }
   return is_same;
@@ -303,7 +294,6 @@ int ObBatchExecDag<TASK, PARAM>::fill_info_param(
   } else if (OB_FAIL(ADD_DAG_WARN_INFO_PARAM(out_param,
                                              allocator,
                                              get_type(),
-                                             param_.ls_id_.id(),
                                              param_.tablet_info_array_.count()))) {
     STORAGE_LOG(WARN, "failed to fill info param", KR(ret), K(param_));
   }
@@ -314,8 +304,8 @@ template<typename TASK, typename PARAM>
 int ObBatchExecDag<TASK, PARAM>::fill_dag_key(char *buf, const int64_t buf_len) const
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL(databuff_printf(buf, buf_len, "ls_id=%ld tablet_cnt=%ld",
-      param_.ls_id_.id(), param_.tablet_info_array_.count()))) {
+  if (OB_FAIL(databuff_printf(buf, buf_len, "tablet_cnt=%ld",
+      param_.tablet_info_array_.count()))) {
     STORAGE_LOG(WARN, "failed to fill dag key", K(param_));
   }
   return ret;
@@ -326,7 +316,6 @@ int ObBatchExecDag<TASK, PARAM>::init_merge_history()
 {
   int ret = OB_SUCCESS;
   ObMergeStaticInfo &static_history = collector_.merge_history_.static_info_;
-  static_history.ls_id_ = param_.ls_id_;
   static_history.tablet_id_ = ObTabletID(ObTabletID::INVALID_TABLET_ID); // mock a special tablet id
   static_history.compaction_scn_ = param_.compaction_scn_;
   static_history.merge_type_ = BATCH_EXEC;

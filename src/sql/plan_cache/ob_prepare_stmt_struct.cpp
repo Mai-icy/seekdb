@@ -27,7 +27,6 @@ namespace sql
 int ObPsSqlKey::deep_copy(const ObPsSqlKey &other, common::ObIAllocator &allocator)
 {
   int ret = OB_SUCCESS;
-  flag_ = other.flag_;
   db_id_ = other.db_id_;
   inc_id_ = other.inc_id_;
   if (OB_FAIL(ObPsSqlUtils::deep_copy_str(allocator, other.ps_sql_, ps_sql_))) {
@@ -39,7 +38,6 @@ int ObPsSqlKey::deep_copy(const ObPsSqlKey &other, common::ObIAllocator &allocat
 ObPsSqlKey &ObPsSqlKey::operator=(const ObPsSqlKey &other)
 {
   if (this != &other) {
-    flag_ = other.flag_;
     db_id_ = other.db_id_;
     inc_id_ = other.inc_id_;
     ps_sql_ = other.ps_sql_;
@@ -49,8 +47,7 @@ ObPsSqlKey &ObPsSqlKey::operator=(const ObPsSqlKey &other)
 
 bool ObPsSqlKey::operator==(const ObPsSqlKey &other) const
 {
-  return flag_ == other.flag_ &&
-         db_id_ == other.db_id_ &&
+  return db_id_ == other.db_id_ &&
          inc_id_ == other.inc_id_ &&
          ps_sql_.compare(other.ps_sql_) == 0;
 }
@@ -58,7 +55,6 @@ bool ObPsSqlKey::operator==(const ObPsSqlKey &other) const
 int64_t ObPsSqlKey::hash() const
 {
   uint64_t hash_val = 0;
-  hash_val = murmurhash(&flag_, sizeof(uint32_t), hash_val);
   hash_val = murmurhash(&db_id_, sizeof(uint64_t), hash_val);
   hash_val = murmurhash(&inc_id_, sizeof(uint64_t), hash_val);
   ps_sql_.hash(hash_val, hash_val);
@@ -252,7 +248,6 @@ ObPsStmtInfo::ObPsStmtInfo(ObIAllocator *inner_allocator)
     ref_count_(1),
     question_mark_count_(0),
     can_direct_use_param_(false),
-    is_prexecute_(false),
     item_and_info_size_(0),
     last_closed_timestamp_(0),
     dep_objs_(NULL),
@@ -282,7 +277,6 @@ ObPsStmtInfo::ObPsStmtInfo(ObIAllocator *inner_allocator,
     ref_count_(1),
     question_mark_count_(0),
     can_direct_use_param_(false),
-    is_prexecute_(false),
     item_and_info_size_(0),
     last_closed_timestamp_(0),
     dep_objs_(NULL),
@@ -439,7 +433,6 @@ int ObPsStmtInfo::deep_copy(const ObPsStmtInfo &other)
     num_of_returning_into_ = other.num_of_returning_into_;
     is_sensitive_sql_ = other.is_sensitive_sql_;
     can_direct_use_param_ = other.can_direct_use_param();
-    is_prexecute_ = other.get_is_prexecute();
     item_and_info_size_ = other.item_and_info_size_;
     ps_item_ = other.ps_item_;
     tenant_version_ = other.tenant_version_;

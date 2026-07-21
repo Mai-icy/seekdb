@@ -16,7 +16,6 @@
 
 #include "ob_compaction_suggestion.h"
 #include "share/rc/ob_module_provider.h"
-#include "src/storage/tx_storage/ob_ls_map.h"
 
 namespace oceanbase
 {
@@ -216,10 +215,6 @@ int64_t ObCompactionDagStatus::to_string(char *buf, const int64_t buf_len) const
     J_TMP_STRING(ObDagType::DAG_TYPE_MERGE_EXECUTE);
     // major
     J_TMP_STRING(ObDagType::DAG_TYPE_MAJOR_MERGE);
-    J_TMP_STRING(ObDagType::DAG_TYPE_CO_MERGE_PREPARE);
-    J_TMP_STRING(ObDagType::DAG_TYPE_CO_MERGE_SCHEDULE);
-    J_TMP_STRING(ObDagType::DAG_TYPE_CO_MERGE_BATCH_EXECUTE);
-    J_TMP_STRING(ObDagType::DAG_TYPE_CO_MERGE_FINISH);
     J_OBJ_END();
   }
   #undef J_TMP_STRING
@@ -404,10 +399,6 @@ int ObCompactionSuggestionMgr::analyze_for_suggestion(
     ADD_COMPACTION_DAG_INFO_PARAM(ObDagType::ObDagTypeEnum::DAG_TYPE_MERGE_EXECUTE);
   } else if (share::ObDagPrio::DAG_PRIO_COMPACTION_LOW == priority) {
     ADD_COMPACTION_DAG_INFO_PARAM(ObDagType::ObDagTypeEnum::DAG_TYPE_MAJOR_MERGE);
-    ADD_COMPACTION_DAG_INFO_PARAM(ObDagType::ObDagTypeEnum::DAG_TYPE_CO_MERGE_PREPARE);
-    ADD_COMPACTION_DAG_INFO_PARAM(ObDagType::ObDagTypeEnum::DAG_TYPE_CO_MERGE_SCHEDULE);
-    ADD_COMPACTION_DAG_INFO_PARAM(ObDagType::ObDagTypeEnum::DAG_TYPE_CO_MERGE_BATCH_EXECUTE);
-    ADD_COMPACTION_DAG_INFO_PARAM(ObDagType::ObDagTypeEnum::DAG_TYPE_CO_MERGE_FINISH);
   }
   if (strlen(buf) > 0) {
     suggestion.merge_type_ =  INVALID_MERGE_TYPE;
@@ -419,7 +410,6 @@ int ObCompactionSuggestionMgr::analyze_for_suggestion(
       suggestion.merge_type_ = MEDIUM_MERGE;
     }
     
-    suggestion.ls_id_ = UNKNOW_LS_ID.id();
     suggestion.tablet_id_ = UNKNOW_TABLET_ID.id();
     suggestion.merge_start_time_ = common::ObTimeUtility::fast_current_time();
     suggestion.merge_finish_time_ = suggestion.merge_start_time_;
@@ -563,7 +553,6 @@ int ObCompactionSuggestionMgr::analyze_merge_info(
 
     if (strlen(buf) > 0) {
       suggestion.merge_type_ = static_info.merge_type_;
-      suggestion.ls_id_ = static_info.ls_id_.id();
       suggestion.tablet_id_ = static_info.tablet_id_.id();
       suggestion.merge_start_time_ = running_info.merge_start_time_;
       suggestion.merge_finish_time_ = running_info.merge_finish_time_;

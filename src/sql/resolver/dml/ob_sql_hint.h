@@ -77,7 +77,8 @@ struct ObQueryHint {
 
   int set_outline_data_hints(const ObGlobalHint &global_hint,
                              const int64_t stmt_id,
-                             const ObIArray<ObHint*> &hints);
+                             const ObIArray<ObHint*> &hints,
+                             const bool is_user_defined);
   static int get_qb_name_source_hash_value(const ObString &src_qb_name,
                                            const ObIArray<uint32_t> &src_hash_val,
                                            uint32_t &hash_val);
@@ -291,14 +292,12 @@ struct LogTableHint
   LogTableHint() :  table_(NULL),
                     parallel_hint_(NULL),
                     use_das_hint_(NULL),
-                    use_column_store_hint_(NULL),
                     union_merge_hint_(NULL),
                     dynamic_sampling_hint_(NULL),
                     is_ds_hint_conflict_(false) {}
   LogTableHint(const TableItem *table) :  table_(table),
                                           parallel_hint_(NULL),
                                           use_das_hint_(NULL),
-                                          use_column_store_hint_(NULL),
                                           union_merge_hint_(NULL),
                                           dynamic_sampling_hint_(NULL),
                                           is_ds_hint_conflict_(false) {}
@@ -309,7 +308,6 @@ struct LogTableHint
   bool is_valid() const { return !index_list_.empty() || NULL != parallel_hint_
                                 || NULL != use_das_hint_ || !join_filter_hints_.empty()
                                 || dynamic_sampling_hint_ != NULL
-                                || NULL != use_column_store_hint_
                                 || NULL != union_merge_hint_; }
   int get_join_filter_hint(const ObRelIds &left_tables,
                            bool part_join_filter,
@@ -332,7 +330,6 @@ struct LogTableHint
   common::ObSEArray<const ObIndexHint*, 4, common::ModulePageAllocator, true> index_hints_;
   const ObTableParallelHint *parallel_hint_;
   const ObIndexHint *use_das_hint_;
-  const ObIndexHint *use_column_store_hint_;
   const ObUnionMergeHint *union_merge_hint_;
   common::ObSEArray<uint64_t, 2, common::ModulePageAllocator, true> union_merge_list_;
   ObSEArray<const ObJoinFilterHint*, 1, common::ModulePageAllocator, true> join_filter_hints_;
@@ -389,7 +386,6 @@ struct LogLeadingHint
                                    ObIArray<LeadingInfo> &leading_infos,
                                    TableItem *table,
                                    ObRelIds &table_set);
-  int try_init_leading_info_for_major_refresh_real_time_mview(const ObDMLStmt &stmt);
 
   TO_STRING_KV(K_(leading_tables),
                K_(leading_infos),
@@ -452,7 +448,6 @@ struct ObLogPlanHint
                                      bool config_disable,
                                      JoinFilterPushdownHintInfo& info) const;
   int check_use_das(uint64_t table_id, bool &force_das, bool &force_no_das) const;
-  int check_use_column_store(uint64_t table_id, bool &force_column_store, bool &force_no_column_store) const;
   int check_use_skip_scan(uint64_t table_id,  uint64_t index_id,
                           bool &force_skip_scan,
                           bool &force_no_skip_scan) const;
@@ -510,14 +505,13 @@ struct ObLogPlanHint
 
   TO_STRING_KV(K_(is_outline_data), K_(join_order),
                K_(table_hints), K_(join_hints),
-               K_(normal_hints), K_(optimizer_features_enable_version));
+               K_(normal_hints));
 
   bool is_outline_data_;
   LogLeadingHint join_order_;
   common::ObSEArray<LogTableHint, 4, common::ModulePageAllocator, true> table_hints_;
   common::ObSEArray<LogJoinHint, 8, common::ModulePageAllocator, true> join_hints_;
   common::ObSEArray<const ObHint*, 8, common::ModulePageAllocator, true> normal_hints_;
-  uint64_t optimizer_features_enable_version_;
 };
 
 }

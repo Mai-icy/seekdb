@@ -26,10 +26,9 @@
 #include "lib/lock/ob_thread_cond.h"
 #include "lib/profile/ob_trace_id.h"
 #include "lib/restore/ob_storage.h"
-#include "lib/thread/thread_mgr_interface.h"
+#include "lib/thread/ob_link_task.h"
 #include "lib/worker.h"
 #include "share/ob_define.h"
-#include "share/resource_manager/ob_resource_plan_info.h"
 
 namespace oceanbase
 {
@@ -80,7 +79,6 @@ enum ObIOModule {
   SLOG_IO = SYS_MODULE_START_ID,
   CALIBRATION_IO,
   DETECT_IO,
-  DIRECT_LOAD_IO,
   SHARED_BLOCK_RW_IO,
   SSTABLE_WHOLE_SCANNER_IO,
   INSPECT_BAD_BLOCK_IO,
@@ -115,7 +113,6 @@ public:
   ObIOFlag &operator=(const ObIOFlag &other)
   {
     this->flag_ = other.flag_;
-    this->group_id_ = other.group_id_;
     this->sys_module_id_ = other.sys_module_id_;
     return *this;
   }
@@ -124,11 +121,9 @@ public:
   void set_mode(ObIOMode mode);
   ObIOMode get_mode() const;
   void set_wait_event(int64_t wait_event_id);
-  uint64_t get_resource_group_id() const;
   void set_sys_module_id(const uint64_t sys_module_id);
   uint64_t get_sys_module_id() const;
   bool is_sys_module() const;
-  uint8_t get_func_type() const;
   int64_t get_wait_event() const;
   void set_read();
   bool is_read() const;
@@ -154,16 +149,13 @@ public:
   bool is_dirty() const;
   void set_need_close_dev_and_fd();
   bool is_need_close_dev_and_fd() const;
-  TO_STRING_KV("mode", common::get_io_mode_string(static_cast<ObIOMode>(mode_)), K(group_id_), K(func_type_),
+  TO_STRING_KV("mode", common::get_io_mode_string(static_cast<ObIOMode>(mode_)),
       K(wait_event_id_), K(is_sync_), K(is_unlimited_), K(is_detect_), K(is_write_through_), K(is_sealed_),
       K(is_time_detect_), K(need_close_dev_and_fd_), K(reserved_));
 
 private:
   friend struct ObIOResult;
-  void set_func_type(const uint8_t func_type);
-  void set_resource_group_id(const uint64_t group_id);
   static constexpr int64_t IO_MODE_BIT = 4; // read, write, append
-  static constexpr int64_t IO_FUNC_TYPE_BIT = 8;
   static constexpr int64_t IO_WAIT_EVENT_BIT = 32; // for performance monitor
   static constexpr int64_t IO_SYNC_FLAG_BIT = 1; // indicate if the caller is waiting io finished
   static constexpr int64_t IO_DETECT_FLAG_BIT = 1; // notify a retry task
@@ -181,7 +173,6 @@ private:
   // needs to close device and fd.
   static constexpr int64_t IO_CLOSE_DEV_AND_FD_BIT = 1;
   static constexpr int64_t IO_RESERVED_BIT = 64 - IO_MODE_BIT
-                                                - IO_FUNC_TYPE_BIT
                                                 - IO_WAIT_EVENT_BIT
                                                 - IO_SYNC_FLAG_BIT
                                                 - IO_DETECT_FLAG_BIT
@@ -195,7 +186,6 @@ private:
     int64_t flag_;
     struct {
       int64_t mode_ : IO_MODE_BIT;
-      int64_t func_type_ : IO_FUNC_TYPE_BIT;
       int64_t wait_event_id_ : IO_WAIT_EVENT_BIT;
       int64_t is_sync_ : IO_SYNC_FLAG_BIT;
       int64_t is_unlimited_ : IO_UNLIMITED_FLAG_BIT;
@@ -207,7 +197,6 @@ private:
       int64_t reserved_ : IO_RESERVED_BIT;
     };
   };
-  uint64_t group_id_;
   uint64_t sys_module_id_;
 };
 
@@ -258,7 +247,6 @@ protected:
 
 private:
   friend class ObIOResult;
-  lib::Worker::CompatMode compat_mode_;
 };
 
 template <typename T>
@@ -541,7 +529,6 @@ public:
   int64_t get_data_size() const;
   ObIOGroupKey get_group_key() const;
   bool is_sys_module() const;
-  oceanbase::share::ObFunctionType get_func_type() const;
   bool is_object_device_req() const;
   char *calc_io_buf();  // calc the aligned io_buf of raw_buf_, which interact with the operating system
   const ObIOFlag &get_flag() const;
@@ -729,10 +716,7 @@ public:
   static const ObTenantIOConfig &default_instance();
   bool is_valid() const;
   int deep_copy(const ObTenantIOConfig &other_config);
-  int parse_group_config(const char *config_str);
-  int add_single_group_config(const ObIOGroupKey &key, const char *group_name,
-      int64_t min_percent, int64_t max_percent, int64_t weight_percent);
-  int get_group_config(const uint64_t index, int64_t &min, int64_t &max, int64_t &weight) const;
+  int calc_group_config(const uint64_t index, int64_t &min, int64_t &max, int64_t &weight) const;
   int64_t get_callback_thread_count() const;
   int64_t to_string(char *buf, const int64_t buf_len) const;
 

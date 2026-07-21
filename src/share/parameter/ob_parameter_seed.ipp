@@ -78,7 +78,7 @@ DEF_PARAM(devname, STR, OB_CLUSTER_PARAMETER, "lo", "name of network adapter",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::READONLY));
 DEF_PARAM(zone, STR, OB_CLUSTER_PARAMETER, "z1", "specifies the zone name",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(ob_startup_mode, STR, OB_CLUSTER_PARAMETER, "NORMAL", "specifies the observer startup mode. Values: normal, physical_flashback, physical_flashback_verify",
+DEF_PARAM(ob_startup_mode, STR, OB_CLUSTER_PARAMETER, "NORMAL", "specifies the observer startup mode. Values: normal",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::READONLY));
 DEF_PARAM(internal_sql_execute_timeout, TIME, OB_CLUSTER_PARAMETER, "30s", "[1000us, 1h]",
          "the number of microseconds an internal DML request is permitted to "
@@ -167,17 +167,12 @@ DEF_PARAM(default_row_format, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "dynamic",
                      ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE),
                      "REDUNDANT, COMPACT, DYNAMIC, COMPRESSED, CONDENSED");
 
-DEF_PARAM(default_table_store_format, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "row", common::ObConfigTableStoreFormatChecker,
-                     "Specify the default storage format of creating table: row, column, compound format of row and column"
-                     "values: row, column, compound",
-                     ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE),
-                     "row, column, compound");
 DEF_PARAM(_no_logging, BOOL, OB_CLUSTER_PARAMETER, "False",
          "set true to skip writing ddl clog when all server using the same oss in shared storage mode",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
 DEF_PARAM(storage_rowsets_size, INT, OB_CLUSTER_PARAMETER, "8192", "(0,1048576]",
-        "the row number processed by vectorized storage engine within one batch in column storage. Range: (0,1048576]",
+        "the row number processed by vectorized storage engine within one batch. Range: (0,1048576]",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
 DEF_PARAM(weak_read_version_refresh_interval, TIME, OB_CLUSTER_PARAMETER, "1000ms", "[50ms,)",
@@ -191,7 +186,6 @@ DEF_PARAM(rootservice_list, STR_LIST, OB_CLUSTER_PARAMETER, "",
              ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(cluster, STR, OB_CLUSTER_PARAMETER, "obcluster", "Name of the cluster",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-// During DRC replication, ob_org_cluster_id uses the range [0xffff0000,0xffffffff],
 // while the cluster_id written by user SQL into clog must not fall within [0xffff0000,0xffffffff],
 // because the cluster_id written by user SQL into clog is determined by the cluster_id system config,
 // so the cluster_id system config range is [1, 0xffff0000 - 1], namely [1,4294901759].
@@ -350,14 +344,6 @@ DEF_PARAM(workers_per_cpu_quota, INT, OB_CLUSTER_PARAMETER, "10", "[2,20]",
         "the ratio(integer) between the number of system allocated workers vs "
         "the maximum number of threads that can be scheduled concurrently. Range: [2, 20]",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(large_query_worker_percentage, DBL, OB_CLUSTER_PARAMETER, "30", "[0,100]",
-        "the percentage of the workers reserved to serve large query request. "
-        "Range: [0, 100] in percentage",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE))
-DEF_PARAM(large_query_threshold, TIME, OB_CLUSTER_PARAMETER, "5s", "[0ms,)",
-         "threshold for execution time beyond "
-         "which a request may be paused and rescheduled as a \\'large request\\', 0ms means disable \\'large request\\'. Range: [0ms, +∞)",
-         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_ob_max_thread_num, INT, OB_CLUSTER_PARAMETER, "0", "[0,10000)",
          "ob max thread number "
          "upper limit of observer thread count. Range: [0, 10000), 0 means no limit.",
@@ -771,7 +757,6 @@ DEF_PARAM(resource_hard_limit, INT, OB_CLUSTER_PARAMETER, "100", "[100, 10000]",
         "system utilization should not be large than resource_hard_limit",
         ObParameterAttr(Section::LOAD_BALANCE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 // abandoned in 4.x
-//DEF_PARAM(__balance_controller, OB_CLUSTER_PARAMETER, "",
 //        "specifies whether the balance events are turned on or turned off.",
 //        ObParameterAttr(Section::LOAD_BALANCE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(__min_full_resource_pool_memory, INT, OB_CLUSTER_PARAMETER, "1073741824", "[1073741824,)",
@@ -829,9 +814,9 @@ DEF_PARAM(merger_check_interval, TIME, OB_CLUSTER_PARAMETER, "10m", "[10s, 60m]"
          "that checks on the progress of MERGE for each zone. Range: [10s, 60m]",
          ObParameterAttr(Section::DAILY_MERGE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 //// transaction config
-DEF_PARAM(trx_2pc_retry_interval, TIME, OB_CLUSTER_PARAMETER, "100ms", "[1ms, 5000ms]",
+DEF_PARAM(trx_commit_retry_interval, TIME, OB_CLUSTER_PARAMETER, "100ms", "[1ms, 5000ms]",
          "the time interval between the retries in case of failure "
-         "during a transaction\\'s two-phase commit phase. Range: [1ms,5000ms]",
+         "during a transaction commit. Range: [1ms,5000ms]",
          ObParameterAttr(Section::TRANS, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(clog_sync_time_warn_threshold, TIME, OB_CLUSTER_PARAMETER, "100ms", "[1ms, 10000ms]",
          "the time given to the commit log synchronization between a leader and its followers "
@@ -852,9 +837,6 @@ DEF_PARAM(_rpc_checksum, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "Force", common
                      ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE),
                      "Force, Optional, Disable");
 
-DEF_PARAM(_ob_trans_rpc_timeout, TIME, OB_CLUSTER_PARAMETER, "3s", "[0s, 3600s]",
-         "transaction rpc timeout(s). Range: [0s, 3600s]",
-         ObParameterAttr(Section::TRANS, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(enable_early_lock_release, BOOL, OB_CLUSTER_PARAMETER, "True",
          "enable early lock release",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -898,12 +880,6 @@ DEF_PARAM(rpc_memory_limit_percentage, INT, OB_CLUSTER_PARAMETER, "0", "[0,100]"
 DEF_PARAM(_max_rpc_packet_size, CAP, OB_CLUSTER_PARAMETER, "2047MB", "[2M,2047M]",
         "the max rpc packet size when sending RPC or responding RPC results",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(standby_fetch_log_bandwidth_limit, CAP, OB_CLUSTER_PARAMETER, "0MB", "[0M,10000G]",
-        "the max bandwidth in bytes per second that can be occupied by the sum of the synchronizing log from primary cluster of all servers in the standby cluster",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_server_standby_fetch_log_bandwidth_limit, CAP, OB_CLUSTER_PARAMETER, "0MB", "[0M,1000G]",
-        "the max bandwidth in bytes per second that can be occupied by the synchronizing log from primary cluster of a server in standby cluster",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
 //// location cache config
 DEF_PARAM(virtual_table_location_cache_expire_time, TIME, OB_CLUSTER_PARAMETER, "8s", "[1s,)",
@@ -939,8 +915,6 @@ DEF_PARAM(_auto_broadcast_tablet_location_rate_limit, INT, OB_CLUSTER_PARAMETER,
         ObParameterAttr(Section::LOCATION_CACHE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
 //// cache config
-DEF_PARAM(tablet_ls_cache_priority, INT, OB_CLUSTER_PARAMETER, "1000", "[1,)", "tablet ls cache priority. Range:[1, )",
-        ObParameterAttr(Section::CACHE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(opt_tab_stat_cache_priority, INT, OB_CLUSTER_PARAMETER, "1", "[1,)", "tab stat cache priority. Range:[1, )",
         ObParameterAttr(Section::CACHE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(index_block_cache_priority, INT, OB_CLUSTER_PARAMETER, "10", "[1,)", "index cache priority. Range:[1, )",
@@ -1128,12 +1102,6 @@ DEF_PARAM(_cache_wash_interval, TIME, OB_CLUSTER_PARAMETER, "200ms", "[1ms, 3s]"
         "specify interval of cache background wash",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
-DEF_PARAM(_max_ls_cnt_per_server, INT, OB_CLUSTER_PARAMETER, "0", "[0, 1024]",
-        "specify max ls count of one tenant on one observer."
-        "WARNING: Modifying this can potentially destabilize the cluster. It is strongly advised to avoid making such changes as they are unlikely to be necessary."
-        "0: the cluster will adapt the max ls number according to the memory size of tenant itself",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
 DEF_PARAM(_io_read_batch_size, CAP, OB_CLUSTER_PARAMETER, "0K", "[0K,16M]", "Maximum batch size in one read io request. Range:[0K,16M]",
         ObParameterAttr(Section::SSTABLE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_io_read_redundant_limit_percentage, INT, OB_CLUSTER_PARAMETER, "0", "[0, 99]",
@@ -1149,12 +1117,6 @@ DEF_PARAM(px_task_size, CAP, OB_CLUSTER_PARAMETER, "2M", "[1K,)", "to be removed
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_max_elr_dependent_trx_count, INT, OB_CLUSTER_PARAMETER, "0", "[0,)", "max elr dependent transaction count",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
-#ifdef TRANS_MODULE_TEST
-DEF_PARAM(module_test_trx_memory_errsim_percentage, INT, OB_CLUSTER_PARAMETER, "0", "[0, 100]",
-        "the percentage of memory errsim. Rang:[0,100]",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-#endif
 
 DEF_PARAM(sql_work_area, CAP, OB_CLUSTER_PARAMETER, "1G", "[10M,)",
         "Work area memory limitation for tenant",
@@ -1256,11 +1218,6 @@ DEF_PARAM(plsql_debug, BOOL, OB_CLUSTER_PARAMETER, "False",
 DEF_PARAM(plsql_v2_compatibility, BOOL, OB_CLUSTER_PARAMETER, "False",
          "allows to control store routine compile action at DDL stage",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(sts_credential, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "", common::ObConfigSTScredentialChecker,
-        "STS credential for object storage, "
-        "values: sts_url=xxx&sts_ak=xxx&sts_sk=xxx",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
 // for storage cache policy of hot retention
 DEF_PARAM(default_storage_cache_policy, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "AUTO", common::ObConfigStorageCachePolicyChecker,
     "default storage cache policy for tenant, "
@@ -1307,9 +1264,6 @@ DEF_PARAM(_max_schema_slot_num, INT, OB_CLUSTER_PARAMETER, "128", "[2,256]",
 DEF_PARAM(_enable_add_fulltext_index_to_existing_table, BOOL, OB_CLUSTER_PARAMETER, "False",
          "enable create fulltext index after table is created",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_ob_query_rate_limit, INT_WITH_CHECKER, OB_CLUSTER_PARAMETER, "-1", common::ObConfigQueryRateLimitChecker,
-        "the maximun throughput allowed for a tenant per observer instance",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_xa_gc_timeout, TIME, OB_CLUSTER_PARAMETER, "24h", "[1s,)",
         "specifies the threshold value for a xa record to be considered as obsolete",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -1395,9 +1349,6 @@ DEF_PARAM(connection_control_max_connection_delay, INT, OB_CLUSTER_PARAMETER, "2
         "The maximum delay in milliseconds for server response to failed connection attempts, "
         "if connection_control_failed_connections_threshold is greater than zero",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(ob_proxy_readonly_transaction_routing_policy, BOOL, OB_CLUSTER_PARAMETER, "false",
-         "Proxy route policy for readonly sql: whether regard begining read only stmts as in transaction",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(job_queue_processes, INT, OB_CLUSTER_PARAMETER, "1000", "[0,16384]",
         "specifies the maximum number of job slaves per instance that can be created "
         "for the execution of DBMS_JOB and DBMS_SCHEDULER jobs.",
@@ -1479,9 +1430,6 @@ DEF_PARAM(_ob_immediate_row_conflict_check, BOOL, OB_CLUSTER_PARAMETER, "False",
          "When the switch is turned off, "
          "it will only check whether the final state of a batch of data after the update satisfies the unique constraint.",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_enable_insertup_replace_gts_opt, BOOL, OB_CLUSTER_PARAMETER, "True",
-         "By default, insert/replace ... values statement can use gts optimization",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 // Add a config to enable use das if the sql statement has variable assignment
 DEF_PARAM(_enable_var_assign_use_das, BOOL, OB_CLUSTER_PARAMETER, "False",
          "enable use das if the sql statement has variable assignment",
@@ -1505,14 +1453,9 @@ DEF_PARAM(arbitration_timeout, TIME, OB_CLUSTER_PARAMETER, "5s", "[3s,]",
 DEF_PARAM(_ignore_system_memory_over_limit_error, BOOL, OB_CLUSTER_PARAMETER, "False",
          "When the hold of observer tenant is over the system_memory, print ERROR with False, or WARN with True",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-#ifdef OB_USE_ASAN
-DEF_PARAM(enable_asan_for_memory_context, BOOL, OB_CLUSTER_PARAMETER, "False",
-        "when use ob_asan, user can specifies whether to allow ObAsanAllocator(default is ObAllocator as allocator of MemoryContext",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-#endif
 DEF_PARAM(sql_login_thread_count, INT, OB_CLUSTER_PARAMETER, "0", "[0,32]",
-        "the number of threads for sql login request. Range: [0, 32] in integer, 0 stands for use default thread count defined in TG."
-        "the default thread count for login request in TG is normal:6 mini-mode:2",
+        "the number of threads for sql login request. Range: [0, 32] in integer, 0 stands for the built-in default."
+        "the built-in default thread count for login request is normal:6 mini-mode:2",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(tenant_sql_login_thread_count, INT, OB_CLUSTER_PARAMETER, "0", "[0,32]",
         "the number of threads for sql login request of each tenant. Range: [0, 32] in integer, 0 stands for unit_min_cpu",
@@ -1544,76 +1487,17 @@ DEF_PARAM(_display_non_session_cursor, BOOL, OB_CLUSTER_PARAMETER, "True",
          "whether the content of non session cursors is displayed.",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
-//transfer
-DEF_PARAM(_transfer_start_rpc_timeout, TIME, OB_CLUSTER_PARAMETER, "10s", "[1ms,600s]",
-        "transfer start status rpc check some status ready timeout, Range [1ms,600s]. "
-        "The default value is 10s",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
-DEF_PARAM(_transfer_finish_trans_timeout, TIME, OB_CLUSTER_PARAMETER, "10s", "[1s,600s]",
-        "transfer finish transaction timeout, Range [1s,600s]. "
-        "The default value is 10s",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
-DEF_PARAM(_transfer_start_trans_timeout, TIME, OB_CLUSTER_PARAMETER, "1s", "[1ms,600s]",
-        "transfer start transaction timeout, Range [1ms,600s]. "
-        "The default value is 1s",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
-DEF_PARAM(_transfer_start_retry_count, INT, OB_CLUSTER_PARAMETER, "3", "[0,64]",
-        "the number of transfer start retry. Range: [0, 64] in integer",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::STATIC_EFFECTIVE));
-
-
-DEF_PARAM(_transfer_service_wakeup_interval, TIME, OB_CLUSTER_PARAMETER, "5m", "[1s,5m]",
-        "transfer service wakeup interval in errsim mode. "
-        "Range: [1s, 5m]",
-        ObParameterAttr(Section::ROOT_SERVICE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
-DEF_PARAM(_transfer_process_lock_tx_timeout, TIME, OB_CLUSTER_PARAMETER, "100s", "[30s,)",
-        "transaction timeout for locking and unlocking transfer task. "
-        "Range: [30s, +∞)",
-        ObParameterAttr(Section::ROOT_SERVICE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
-DEF_PARAM(_transfer_task_tablet_count_threshold, INT, OB_CLUSTER_PARAMETER, "100", "(0,)",
-        "Threshold for the count of tablets that can be processed by a transfer task. "
-        "Range: (0, +∞)",
-        ObParameterAttr(Section::ROOT_SERVICE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_enable_active_txn_transfer, BOOL, OB_CLUSTER_PARAMETER, "True",
-        "Specifies whether support transfer active tx",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
-DEF_PARAM(_transfer_task_retry_interval, TIME, OB_CLUSTER_PARAMETER, "1m", "[0s,)",
-        "Retry interval after transfer task failure. "
-        "Range: [0s, +∞). Default: 1m",
-        ObParameterAttr(Section::ROOT_SERVICE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
-// end of transfer
-
 DEF_PARAM(dump_data_dictionary_to_log_interval, TIME, OB_CLUSTER_PARAMETER, "24h", "(0s,]",
-         "data dictionary dump to log(SYS LS) interval"
+         "data dictionary dump to log interval"
         "Range: (0s,+∞)",
          ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
-DEF_PARAM(enable_cgroup, BOOL, OB_CLUSTER_PARAMETER, "True",
-         "when set to false, cgroup will not init; when set to true but cgroup root dir is not ready, print ERROR",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(enable_global_background_resource_isolation, BOOL, OB_CLUSTER_PARAMETER, "False",
-         "When set to false, foreground and background tasks are isolated within the tenant; When set to true, isolate background tasks individually upon tenant-level",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::STATIC_EFFECTIVE));
-DEF_PARAM(global_background_cpu_quota, DBL, OB_CLUSTER_PARAMETER, "-1", "[-1,)",
-         "When enable_global_background_resource_isolation is True, specify the number of vCPUs allocated to the background tasks"
-         "-1 for the CPU is not limited by the cgroup",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(enable_user_defined_rewrite_rules, BOOL, OB_CLUSTER_PARAMETER, "False",
          "specify whether the user defined rewrite rules are enabled. "
          "Value: True: enable  False: disable",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_ob_plan_cache_auto_flush_interval, TIME, OB_CLUSTER_PARAMETER, "0s", "[0s,)",
          "time interval for auto periodic flush plan cache. Range: [0s, +∞)",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_ob_enable_direct_load, BOOL, OB_CLUSTER_PARAMETER, "True",
-         "Enable or disable direct path load",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_display_mysql_version, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "5.7.25", common::ObMySQLVersionLengthChecker,
         "dynamic mysql version of mysql mode observer",
@@ -1680,9 +1564,6 @@ DEF_PARAM(_enable_backtrace_function, BOOL, OB_CLUSTER_PARAMETER, "True",
 DEF_PARAM(_with_subquery, INT, OB_CLUSTER_PARAMETER, "0", "[0,2]",
         "WITH subquery transformation,0: optimizer,1: materialize,2: inline",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_xsolapi_generate_with_clause, BOOL, OB_CLUSTER_PARAMETER, "True",
-        "OLAP API generates WITH clause",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
 DEF_PARAM(_optimizer_group_by_placement, BOOL, OB_CLUSTER_PARAMETER, "True",
         "enable group by placement transform rule",
@@ -1714,17 +1595,6 @@ DEF_PARAM(_schema_memory_recycle_interval, TIME, OB_CLUSTER_PARAMETER, "15m", "[
         "and other schema memory recycle task's interval will be 15mins. "
         "Range [0s,)",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-#ifdef ENABLE_500_MEMORY_LIMIT
-DEF_PARAM(_enable_system_tenant_memory_limit, BOOL, OB_CLUSTER_PARAMETER, "True",
-         "specifies whether allowed to limit the memory of tenant 500",
-         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_system_tenant_limit_mode, INT, OB_CLUSTER_PARAMETER, "1", "[0,2]",
-        "specifies the limit mode for the memory hold of system tenant, "
-        "0: not limit the memory hold of system tenant, "
-        "1: only limit the DEFAULT_CTX_ID memory of system tenant, "
-        "2: besides limit the DEFAULT_CTX_ID memory, the total hold of system tenant is also limited.",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-#endif
 DEF_PARAM(_force_malloc_for_absent_tenant, BOOL, OB_CLUSTER_PARAMETER, "False",
          "force malloc even if tenant does not exist in observer",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -1741,10 +1611,6 @@ DEF_PARAM(_ls_migration_wait_completing_timeout, TIME, OB_CLUSTER_PARAMETER, "30
         "the wait timeout in ls complete migration phase",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
-// column store section
-DEF_PARAM(_enable_column_store, BOOL, OB_CLUSTER_PARAMETER, "True",
-        "enable the column store format in storage engine",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_enable_skip_index, BOOL, OB_CLUSTER_PARAMETER, "True",
         "enable the skip index in storage engine",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -1776,32 +1642,6 @@ DEF_PARAM(_enable_inner_session_mgr, BOOL, OB_CLUSTER_PARAMETER, "True", "enable
 DEF_PARAM(_enable_trace_tablet_leak, BOOL, OB_CLUSTER_PARAMETER, "False", 
         "enable t3m tablet leak checker. The default value is False",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::STATIC_EFFECTIVE));
-DEF_PARAM(enable_auto_split, BOOL_WITH_CHECKER, OB_CLUSTER_PARAMETER, "False",
-         common::ObConfigEnableAutoSplitChecker,
-         "if the auto-partition clause is not used"
-         "this config judge whether to enable auto-partition for creating table.",
-         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(auto_split_tablet_size, CAP_WITH_CHECKER, OB_CLUSTER_PARAMETER, "2GB", common::ObConfigAutoSplitTabletSizeChecker, "[128M,)",
-        "when create an auto-partitioned table in \"create table\" syntax or "
-        "modify a table as an auto-partitioned table in \"alter table\" syntax,"
-        "if the splitting threshold of tablet size is not setted,"
-        "this config will be setted as the threshold of the table."
-        "Note that the modification of this config will not affect the created auto-partitioned table."
-        "Range: [128M, +∞)",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-#ifdef OB_BUILD_CLOSE_MODULES
-DEF_PARAM(global_index_auto_split_policy, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "DISTRIBUTED",
-#else
-DEF_PARAM(global_index_auto_split_policy, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "ALL",
-#endif
-         common::ObConfigGlobalIndexAutoSplitPolicyChecker,
-         "if the auto-partition clause is not used"
-         "this config judge whether to enable auto-partition for creating global index."\
-         "DISTRIBUTED: enable auto-partition for creating global index if tenant has multiple nodes, e.g., multiple primary zones or multiple units;"\
-         "ALL: enable auto-partition for creating all global index;"\
-         "OFF: disable auto-partition for creating all global index.",
-         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE),
-         "DISTRIBUTED, ALL, OFF");
 DEF_PARAM(_inlist_rewrite_threshold, INT, OB_CLUSTER_PARAMETER, "1000", "[1, 2147483647]"
         "specifies transform how much const params in IN list to values table",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -1853,12 +1693,6 @@ DEF_PARAM(sql_protocol_min_tls_version, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, 
 DEF_PARAM(shared_log_retention, TIME, OB_CLUSTER_PARAMETER, "1d", "[0s,7d]",
         "Retention time of log files on shared storage",
         ObParameterAttr(Section::TRANS, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_standby_max_replay_gap_time, TIME, OB_CLUSTER_PARAMETER, "900s", "[10s,)",
-        "The difference in replayable_scn between log streams on standby tenants is not greater than "
-        "_standby_max_replay_gap_time, and the gap between sync_scn and replayable_scn of each log stream "
-        "is kept reasonably small. Range: [10s, )",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-
 DEF_PARAM(_enable_optimizer_qualify_filter, BOOL, OB_CLUSTER_PARAMETER, "True",
         "Enable extracting qualify filters for window function",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -1909,15 +1743,6 @@ DEF_PARAM(json_document_max_depth, INT, OB_CLUSTER_PARAMETER, "100", "[100,1024]
 DEF_PARAM(_multimodel_memory_trace_level, INT, OB_CLUSTER_PARAMETER, "0", "[0,100)", 
         "Multi-mode memory tracking mechanism",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-// automatically faststack
-DEF_PARAM(_faststack_req_queue_size_threshold, INT, OB_CLUSTER_PARAMETER, "0", "[0,)",
-        "When the size of the req_queue reaches this threshold, the obstack will be "
-        "collected automatically. Default: 0, means set off. Range: [0, +∞)",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_faststack_min_interval, TIME, OB_CLUSTER_PARAMETER, "30m", "[1s,)",
-        "Minimum interval for OBServer to automatically collect the obstack. "
-        "Default: 30min. Range: [1s,+∞)",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_query_record_size_limit, INT, OB_CLUSTER_PARAMETER, "65536", "[0, 67108864] in integer",
         "set sql_audit and plan stat query sql size. Range: [0,67108864] in integer in integer.",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -1997,17 +1822,6 @@ DEF_PARAM(_enable_compatible_monotonic, BOOL, OB_CLUSTER_PARAMETER, "True",
 DEF_PARAM(enable_lock_priority, BOOL, OB_CLUSTER_PARAMETER, "False",
          "specifies whether to enable lock priority, which, when activated, gives certain DDL operations the highest table lock precedence.",
          ObParameterAttr(Section::TRANS, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(default_load_mode, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "DISABLED", common::ObDefaultLoadModeChecker,
-                     "Specifies default load data path."
-                     "\"DISABLED\" represent load data not in direct load path (default value)."
-                     "\"FULL_DIRECT_WRITE\" represent load data in full direct load path with insert semantics."
-                     "\"INC_DIRECT_WRITE\" represent load data in inc direct load path with insert semantics."
-                     "\"INC_REPLACE_DIRECT_WRITE\" represent load data in inc direct load path with replace semantics.",
-                     ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE),
-                     "DISABLED, FULL_DIRECT_WRITE, INC_DIRECT_WRITE, INC_REPLACE_DIRECT_WRITE");
-DEF_PARAM(direct_load_allow_fallback, BOOL, OB_CLUSTER_PARAMETER, "True",
-        "Control whether an error is reported when direct load of the derivative operation scenario is not supported.",
-        ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 // regexp engine
 DEF_PARAM(_regex_engine, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "ICU", common::ObConfigRegexpEngineChecker,
         "specifies the regexp engine. Values: ICU(International Components for Unicode)",
@@ -2044,12 +1858,6 @@ DEF_BOOL(vector_index_memory_saving_mode, OB_CLUSTER_PARAMETER, "True",
         "Specifies whether to enable the vector index memory saving mode. This can reduce the memory used by the partition table vector index rebuild.",
         ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 
-DEF_PARAM(ob_storage_s3_url_encode_type, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "default", common::ObConfigS3URLEncodeTypeChecker,
-                     "Determines the URL encoding method for S3 requests."
-                     "\"default\": Uses the S3 standard URL encoding method."
-                     "\"compliantRfc3986Encoding\": Uses URL encoding that adheres to the RFC 3986 standard.",
-                     ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE),
-                     "default, compliantRfc3986Encoding");
 DEF_PARAM(_enable_drop_and_add_index, BOOL, OB_CLUSTER_PARAMETER, "False",
          "it specifies that whether we can drop and add index in single statement",
          ObParameterAttr(Section::TENANT, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
@@ -2116,9 +1924,6 @@ DEF_PARAM(_ob_java_odps_data_transfer_mode, STR_WITH_CHECKER, OB_CLUSTER_PARAMET
 DEF_PARAM(_use_odps_jni_connector, BOOL, OB_CLUSTER_PARAMETER, "False",
          "Enable or disable jni connector for external odps table",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_parquet_row_group_prebuffer_size, CAP, OB_CLUSTER_PARAMETER, "0M", "[0M,)",
-        "the parquet prefetch maximum row group size. Range: [0, +∞)",
-        ObParameterAttr(Section::SSTABLE, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(px_node_policy, STR_WITH_CHECKER, OB_CLUSTER_PARAMETER, "DATA", common::ObConfigPxNodePolicyChecker,
                      "Determining the candidate pool for PX calculation nodes."
                      "\"DATA\": All data nodes involved in the current SQL."
@@ -2263,14 +2068,6 @@ DEF_PARAM(_orc_filter_pushdown_level, INT, OB_CLUSTER_PARAMETER, "4", "[0, 4]",
         "where 0 disables filter pushdown, 1 pushes filters down to the file level, "
         "2 pushes filters down to the stripe level, 3 pushes filters down to the row index level "
         "and 4 pushes filters down to the encoding level. The default value is 4.",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE))
-
-DEF_PARAM(_parquet_filter_pushdown_level, INT, OB_CLUSTER_PARAMETER, "4", "[0, 4]",
-        "This parameter is used to control the predicate push level of the PARQUET external table. "
-        "The optional value is 0, which means disabling filter condition pushdown, "
-        "1, which means pushdown to file level, 2, which means pushdown to RowGroup level, "
-        "3, which means pushdown to Page level and 4, which means pushdown to Encoding level. "
-        "The default value is 4.",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE))
 
 DEF_PARAM(_advance_checkpoint_interval, TIME, OB_CLUSTER_PARAMETER, "10m", "[0m,12h]",

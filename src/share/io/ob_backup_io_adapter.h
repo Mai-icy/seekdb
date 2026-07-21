@@ -22,7 +22,6 @@
 #include "lib/container/ob_array.h"
 #include "share/io/ob_backup_storage_info.h"
 #include "share/io/ob_io_define.h"
-#include "share/ob_ls_id.h"
 
 namespace oceanbase
 {
@@ -80,8 +79,8 @@ public:
    * Due to the absence of a batch tagging interface, if delete mode 'tagging' is set 
    * when initiating the utility, it will switch to a looped tagging operation.
    *
-   * As NFS does not offer a batch deleting interface, and GCS's batch delete interface
-   * is not compatible with the S3 protocol, GCS and NFS will revert to looped delete operations.
+   * As NFS does not offer a batch deleting interface, GCS and NFS will revert to
+   * looped delete operations.
    *
    * If it switches to looped operations, upon the failure of any deletion request,
    * the function attempts to record that object along with all remaining unprocessed objects
@@ -315,27 +314,6 @@ private:
   common::ObIArray<ObIODirentEntry> &d_entrys_;
 private:
   DISALLOW_COPY_AND_ASSIGN(ObDirPrefixEntryNameFilter);
-};
-
-class ObDirPrefixLSIDFilter final : public ObBaseDirEntryOperator
-{
-  public:
-  ObDirPrefixLSIDFilter(common::ObIArray<share::ObLSID> &d_entrys)
-      : is_inited_(false),
-        d_entrys_(d_entrys)
-  {
-    filter_str_[0] = '\0';
-    format_buffer_[0] = '\0';
-  }
-  virtual ~ObDirPrefixLSIDFilter() = default;
-  int init(const char *filter_str, const int32_t filter_str_len);
-  virtual int func(const dirent *entry) override;
-private:
-  bool is_inited_;
-  char filter_str_[common::MAX_PATH_SIZE];
-  char format_buffer_[share::OB_BACKUP_LS_DIR_NAME_LENGTH];
-  common::ObIArray<share::ObLSID> &d_entrys_;
-  DISALLOW_COPY_AND_ASSIGN(ObDirPrefixLSIDFilter);
 };
 
 }

@@ -65,77 +65,6 @@ typedef common::ObSEArray<int64_t, 4, common::ModulePageAllocator, true> ObPwjCo
 typedef common::ObFixedArray<int64_t, common::ObIAllocator> ObPlanPwjConstraint;
 class ObShardingInfo;
 
-struct ObPCResourceMapRule
-{
-public:
-  ObPCResourceMapRule() :
-    resource_group_(),
-    res_map_rule_id_(common::OB_INVALID_ID),
-    res_map_rule_param_idx_(common::OB_INVALID_INDEX)
-  {}
-
-  void reset()
-  {
-    resource_group_.reset();
-    res_map_rule_id_ = common::OB_INVALID_ID;
-    res_map_rule_param_idx_ = common::OB_INVALID_INDEX;
-  }
-
-  void shadow_copy(const ObPCResourceMapRule &resource_map_rule)
-  {
-    resource_group_ = resource_map_rule.resource_group_;
-    res_map_rule_id_ = resource_map_rule.res_map_rule_id_;
-    res_map_rule_param_idx_ = resource_map_rule.res_map_rule_param_idx_;
-  }
-  int deep_copy(const ObPCResourceMapRule &resource_map_rule, ObIAllocator &allocator)
-  {
-    int ret = OB_SUCCESS;
-    common::ob_write_string(allocator, resource_map_rule.get_resource_group(), resource_group_);
-    res_map_rule_id_ = resource_map_rule.res_map_rule_id_;
-    res_map_rule_param_idx_ = resource_map_rule.res_map_rule_param_idx_;
-    return ret;
-  }
-
-  void set_resource_group(const common::ObString &resource_group)
-  {
-    resource_group_ = resource_group;
-  }
-
-  void set_column_map_rule(uint64_t res_map_rule_id, int64_t res_map_rule_param_idx)
-  {
-    res_map_rule_id_ = res_map_rule_id;
-    res_map_rule_param_idx_ = res_map_rule_param_idx;
-  }
-
-  inline bool use_hint_control_resource()
-  {
-    return !resource_group_.empty();
-  }
-
-  inline const ObString &get_resource_group() const
-  {
-    return resource_group_;
-  }
-  inline uint64_t get_res_map_rule_id() const
-  {
-    return res_map_rule_id_;
-  }
-  inline int64_t get_res_map_rule_param_idx() const
-  {
-    return res_map_rule_param_idx_;
-  }
-
-  TO_STRING_KV(K_(resource_group), K_(res_map_rule_id), K_(res_map_rule_param_idx));
-
-private:
-  DISALLOW_COPY_AND_ASSIGN(ObPCResourceMapRule);
-  // currently only PlanSet in plan cache module will have a deep copy version string to classify
-  // plan
-  common::ObString resource_group_;
-  uint64_t res_map_rule_id_;
-  int64_t res_map_rule_param_idx_;
-};
-
 struct LocationConstraint
 {
   enum InclusionType {
@@ -498,12 +427,10 @@ public:
   int get_can_read_index_array(uint64_t table_id,
                                uint64_t *index_tid_array,
                                int64_t &size,
-                               bool with_mv,
                                bool with_global_index = true,
                                bool with_domain_index = true,
                                bool with_spatial_index = true,
                                bool with_vector_index = true);
-  int get_table_mlog_schema(const uint64_t table_id, const ObTableSchema *&mlog_schema);
   uint64_t get_next_mocked_schema_id() { return ++mocked_schema_id_counter_; }
   int get_mocked_table_schema(uint64_t ref_table_id, const share::schema::ObTableSchema *&table_schema) const;
   int add_mocked_table_schema(const share::schema::ObTableSchema &table_schema);
@@ -640,7 +567,7 @@ public:
   char format_sql_id_[common::OB_MAX_SQL_ID_LENGTH + 1];
   ExecType exec_type_;
   bool is_prepare_protocol_;
-  bool is_pre_execute_;
+  bool is_mock_prepare_;
   bool is_prepare_stage_;
   bool is_dynamic_sql_;
   bool is_dbms_sql_;
@@ -686,13 +613,10 @@ public:
   const ObPhysicalPlan *cur_plan_;
 
   bool is_sensitive_;    // whether it contains sensitive information, if so, do not record in sql_audit
-  bool is_protocol_weak_read_; // record whether proxy set weak read for this request in protocol flag
   common::ObFixedArray<int64_t, common::ObIAllocator> multi_stmt_rowkey_pos_;
-  ObRawExpr *flashback_query_expr_;
+  ObRawExpr *snapshot_query_expr_;
   ObBaselineKey bl_key_;
   bool is_execute_call_stmt_;
-  bool enable_sql_resource_manage_;
-  ObPCResourceMapRule resource_map_rule_;
   bool is_text_ps_mode_;
   uint64_t first_plan_hash_;
   common::ObString first_outline_data_;
@@ -753,7 +677,6 @@ public:
       has_nested_sql_(false),
       tz_info_(NULL),
       root_stmt_(NULL),
-      optimizer_features_enable_version_(0),
       udf_flag_(0),
       injected_random_status_(false),
       ori_question_marks_count_(0),
@@ -798,7 +721,6 @@ public:
     tz_info_ = NULL;
     root_stmt_ = NULL;
     udf_flag_ = 0;
-    optimizer_features_enable_version_ = 0;
     ori_question_marks_count_ = 0;
     filter_ds_stat_cache_.reuse();
     type_demotion_flag_ = 0;
@@ -835,13 +757,6 @@ public:
   bool get_injected_random_status() const { return injected_random_status_; }
   void set_injected_random_status(bool injected_random_status) { injected_random_status_ = injected_random_status; }
   void set_random_plan_seed(uint64_t seed) {rand_gen_.seed(seed);}
-  // check whether optimizer_features_enable_version_ in [v1, v2) or [v3, v4) or ... or [vn, +inf)
-  template<typename... Args>
-  bool check_opt_compat_version(uint64_t v1, uint64_t v2, Args... args) const;
-  bool check_opt_compat_version(uint64_t v1) const { return optimizer_features_enable_version_ >= v1; }
-  bool check_opt_compat_version(uint64_t v1, uint64_t v2) const {
-    return optimizer_features_enable_version_ >= v1 && optimizer_features_enable_version_ < v2;
-  }
   void set_questionmark_count(int64_t count) {
     ori_question_marks_count_ = count;
     question_marks_count_ = count;
@@ -896,7 +811,6 @@ public:
   bool has_nested_sql_;
   const common::ObTimeZoneInfo *tz_info_;
   ObDMLStmt *root_stmt_;
-  uint64_t optimizer_features_enable_version_;
   union {
     int8_t udf_flag_;
     struct {
@@ -922,12 +836,6 @@ public:
   };
   bool has_hybrid_search_;
 };
-
-template<typename... Args>
-bool ObQueryCtx::check_opt_compat_version(uint64_t v1, uint64_t v2, Args... args) const
-{
-  return check_opt_compat_version(v1, v2) || check_opt_compat_version(args...);
-}
 
 } /* ns sql*/
 } /* ns oceanbase */

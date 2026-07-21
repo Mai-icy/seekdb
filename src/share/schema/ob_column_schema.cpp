@@ -450,7 +450,7 @@ int ObColumnSchemaV2::get_byte_length(
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("collation type is invalid", K(ret));
   } else if (ob_is_text_tc(meta_type_.get_type()) || ob_is_json(meta_type_.get_type())
-             || ob_is_geometry(meta_type_.get_type()) || ob_is_roaringbitmap(meta_type_.get_type())) {
+             || ob_is_geometry(meta_type_.get_type())) {
     if (for_check_length) {
       // when check row length, a lob will occupy at most 512B
       length = min(get_data_length(), OB_MAX_LOB_HANDLE_LENGTH);
@@ -685,31 +685,6 @@ int ObColumnSchemaV2::set_geo_type(const int32_t type_val)
 
   return ret;
 }
-int ObColumnSchemaV2::get_each_column_group_name(ObString &cg_name) const {
-  int ret = OB_SUCCESS;
-  /* to avoid column_name_str not end with \0, write cg_name using ObString::write*/
-  char tmp_cg_name[OB_MAX_COLUMN_GROUP_NAME_LENGTH] = {'\0'};
-  int32_t write_len = snprintf(tmp_cg_name, OB_MAX_COLUMN_GROUP_NAME_LENGTH, "%.*s_%.*s", 
-                               static_cast<int>(sizeof(OB_COLUMN_GROUP_NAME_PREFIX)),
-                               OB_COLUMN_GROUP_NAME_PREFIX, column_name_.length(), column_name_.ptr());
-  if (write_len < 0) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("fail to format column group_name", K(ret), K(write_len));
-  } else if (write_len > OB_MAX_COLUMN_GROUP_NAME_LENGTH) {
-    ret = OB_ERR_TOO_LONG_IDENT;
-    LOG_WARN("too long column name to format column group name", K(ret), KPC(this), K(write_len));
-    LOG_USER_ERROR(OB_ERR_TOO_LONG_IDENT, column_name_.length(), column_name_.ptr());
-  }
-
-  if (OB_SUCC(ret)) {
-    if (cg_name.write(tmp_cg_name, write_len) != write_len) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("fail to write column group name to str", K(ret), K(cg_name), K(write_len));
-    }
-  } 
-  return ret;
-}
-
 int ObColumnSchemaV2::is_same_collection_column(const ObColumnSchemaV2 &other, bool &is_same) const
 {
   int ret = OB_SUCCESS;

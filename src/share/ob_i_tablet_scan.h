@@ -26,13 +26,11 @@
 #include "lib/container/ob_se_array.h"
 #include "share/geo/ob_s2adapter.h"
 #include "share/ob_i_sql_expression.h"
-#include "share/ob_ls_id.h"
 #include "share/schema/ob_schema_getter_guard.h"
 namespace oceanbase
 {
 namespace share
 {
-class ObLSID;
 class ObExternalObjectCtx;
 }
 namespace sql
@@ -395,11 +393,7 @@ ObVTableScanParam() :
       row2exprs_projector_(NULL),
       table_scan_opt_(),
       external_object_ctx_(NULL),
-      schema_guard_(NULL),
-      auto_split_filter_type_(OB_INVALID_ID),
-      auto_split_filter_(NULL),
-      auto_split_params_(NULL),
-      is_tablet_spliting_(false)
+      schema_guard_(NULL)
   { }
 
   virtual ~ObVTableScanParam()
@@ -423,8 +417,6 @@ ObVTableScanParam() :
   
   // data tablet id
   ObTabletID tablet_id_;
-  // log stream id
-  share::ObLSID ls_id_;
   // columns to output
   ObColumnIdArray column_ids_; // output column(s)
   //ObColDescArray column_descs_;
@@ -486,7 +478,6 @@ ObVTableScanParam() :
 
   bool is_estimate_valid() const {
     return (tablet_id_.is_valid()
-            && ls_id_.is_valid()
             && OB_INVALID_ID != index_id_
             && schema_version_ >= 0);
   }
@@ -514,11 +505,6 @@ private:
   share::schema::ObSchemaGetterGuard *schema_guard_;
   char schema_guard_buf_[sizeof(share::schema::ObSchemaGetterGuard)];
 
-public:
-  uint64_t auto_split_filter_type_;
-  const sql::ObExpr *auto_split_filter_;
-  sql::ExprFixedArray *auto_split_params_;
-  bool is_tablet_spliting_;
 };
 
 class ObITabletScan
@@ -573,18 +559,16 @@ public:
   }
 
   virtual int get_multi_ranges_cost(
-      const share::ObLSID &ls_id,
       const common::ObTabletID &tablet_id,
       const int64_t timeout_us,
       const common::ObIArray<ObStoreRange> &ranges,
       int64_t &total_size)
   {
-    UNUSEDx(ls_id, tablet_id, timeout_us, ranges, total_size);
+    UNUSEDx(tablet_id, timeout_us, ranges, total_size);
     return OB_SUCCESS;
   }
 
   virtual int split_multi_ranges(
-      const share::ObLSID &ls_id,
       const common::ObTabletID &tablet_id,
       const int64_t timeout_us,
       const common::ObIArray<ObStoreRange> &ranges,
@@ -592,7 +576,7 @@ public:
       ObIAllocator &allocator,
       ObArrayArray<ObStoreRange> &multi_range_split_array)
   {
-    UNUSEDx(ls_id, tablet_id, timeout_us, ranges, expected_task_count, allocator, multi_range_split_array);
+    UNUSEDx(tablet_id, timeout_us, ranges, expected_task_count, allocator, multi_range_split_array);
     return OB_SUCCESS;
   }
 };

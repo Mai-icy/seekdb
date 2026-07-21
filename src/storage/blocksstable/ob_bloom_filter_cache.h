@@ -191,11 +191,10 @@ public:
    */
   int inc_empty_read(
       const uint64_t table_id,
-      const share::ObLSID &ls_id,
       const storage::ObITable::TableKey &sstable_key,
       const MacroBlockId &macro_id,
       const int64_t empty_read_prefix,
-      const ObSSTableReadHandle * read_handle = nullptr,
+      const storage::ObSSTableReadHandle *read_handle = nullptr,
       const int64_t empty_read_cnt = 1);
   inline int set_bf_cache_miss_count_threshold(const int64_t threshold);
   inline void auto_bf_cache_miss_count_threshold(const int64_t qsize)

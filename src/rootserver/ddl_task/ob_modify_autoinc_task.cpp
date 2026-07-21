@@ -169,7 +169,6 @@ ObModifyAutoincTask::ObModifyAutoincTask()
 int ObModifyAutoincTask::init(const int64_t task_id,
                               const int64_t table_id,
                               const int64_t schema_version,
-                              const int64_t consumer_group_id,
                               const int32_t sub_task_trace_id,
                               const obcall::ObAlterTableArg &alter_table_arg,
                               const int64_t task_status,
@@ -193,7 +192,6 @@ int ObModifyAutoincTask::init(const int64_t task_id,
     object_id_ = table_id;
     target_object_id_ = table_id;
     schema_version_ = schema_version;
-    consumer_group_id_ = consumer_group_id;
     sub_task_trace_id_ = sub_task_trace_id;
     task_status_ = static_cast<ObDDLTaskStatus>(task_status);
     snapshot_version_ = snapshot_version;
@@ -203,7 +201,6 @@ int ObModifyAutoincTask::init(const int64_t task_id,
     
     dst_schema_version_ = schema_version;
     is_inited_ = true;
-    ddl_tracing_.open();
   }
   return ret;
 }
@@ -238,9 +235,6 @@ int ObModifyAutoincTask::init(const ObDDLTaskRecord &task_record)
     
     dst_schema_version_ = schema_version_;
     is_inited_ = true;
-
-    // set up span during recover task
-    ddl_tracing_.open_for_recovery();
   }
   return ret;
 }
@@ -254,7 +248,6 @@ int ObModifyAutoincTask::process()
   } else if (OB_FAIL(check_health())) {
     LOG_WARN("check health failed", K(ret));
   } else {
-    ddl_tracing_.restore_span_hierarchy();
     switch(task_status_) {
       case ObDDLTaskStatus::WAIT_TRANS_END: {
         if (OB_FAIL(wait_trans_end())) {
@@ -286,7 +279,6 @@ int ObModifyAutoincTask::process()
         break;
       }
     }
-    ddl_tracing_.release_span_hierarchy();
     if (OB_FAIL(ret)) {
       add_event_info("modify autoinc task process fail");
       LOG_INFO("modify autoinc task process fail", "ddl_event_info", ObDDLEventInfo());

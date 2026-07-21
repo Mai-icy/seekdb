@@ -51,6 +51,7 @@ void ObConnectResAlloc::free_node(ObConnectResHashNode* node)
 
 ObConnectResourceMgr::ObConnectResourceMgr()
 : inited_(false), user_res_map_(), tenant_res_inited_(false), schema_service_(nullptr),
+  timer_(nullptr),
   cleanup_task_(*this)
 {
 }
@@ -58,7 +59,7 @@ ObConnectResourceMgr::ObConnectResourceMgr()
 ObConnectResourceMgr::~ObConnectResourceMgr()
 {}
 
-int ObConnectResourceMgr::init(ObMultiVersionSchemaService &schema_service)
+int ObConnectResourceMgr::init(ObMultiVersionSchemaService &schema_service, common::ObTimer &timer)
 {
   int ret = OB_SUCCESS;
   if (OB_UNLIKELY(inited_)) {
@@ -68,10 +69,11 @@ int ObConnectResourceMgr::init(ObMultiVersionSchemaService &schema_service)
     LOG_WARN("fail to init user resource map", K(ret));
   } else {
     schema_service_ = &schema_service;
+    timer_ = &timer;
     inited_ = true;
     const int64_t delay = ConnResourceCleanUpTask::SLEEP_USECONDS;
     const bool repeat = false;
-    if (OB_FAIL(TG_SCHEDULE(lib::TGDefIDs::ServerGTimer, cleanup_task_, delay, repeat))) {
+    if (OB_FAIL(timer_->schedule(cleanup_task_, delay, repeat))) {
       LOG_WARN("schedual connect resource mgr failed", K(ret));
     }
   }
@@ -222,10 +224,9 @@ int ObConnectResourceMgr::on_user_connect(
       ObSQLSessionInfo& session)
 {
   int ret = OB_SUCCESS;
-  lib::Worker::CompatMode compat_mode = lib::Worker::CompatMode::MYSQL;
   if (!session.is_user_session()) {
     // do not limit connection count for inner sesion.
-  } else if (compat_mode == lib::Worker::CompatMode::MYSQL) {
+  } else {
     if (!session.has_got_tenant_conn_res()) {
       if (OB_FAIL(apply_for_tenant_conn_resource( priv, max_tenant_connections))) {
         LOG_WARN("reach teannt max connections", K(ret));
@@ -257,14 +258,6 @@ int ObConnectResourceMgr::on_user_connect(
       if (OB_NOT_NULL(user_res)) {
         user_res_map_.revert(user_res);
         user_res = NULL;
-      }
-    }
-  } else {
-    if (!session.has_got_tenant_conn_res()) {
-      if (OB_FAIL(apply_for_tenant_conn_resource( priv, UINT64_MAX))) {
-        LOG_WARN("reach teannt max connections", K(ret));
-      } else {
-        session.set_got_tenant_conn_res(true);
       }
     }
   }
@@ -383,7 +376,10 @@ void ObConnectResourceMgr::ConnResourceCleanUpTask::runTimerTask()
   }
   const int64_t delay = SLEEP_USECONDS;
   const bool repeat = false;
-  if (OB_SUCC(ret) && OB_FAIL(TG_SCHEDULE(lib::TGDefIDs::ServerGTimer, *this, delay, repeat))) {
+  if (OB_SUCC(ret) && OB_ISNULL(conn_res_mgr_.timer_)) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_ERROR("connect resource cleanup timer is null", K(ret));
+  } else if (OB_SUCC(ret) && OB_FAIL(conn_res_mgr_.timer_->schedule(*this, delay, repeat))) {
     LOG_ERROR("schedule connect resource cleanup task failed", K(ret));
   }
 }

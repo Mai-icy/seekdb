@@ -506,7 +506,6 @@ int ObConstraintTask::init(
     const ObDDLType type,
     const int64_t schema_version,
     const ObAlterTableArg &alter_table_arg,
-    const int64_t consumer_group_id,
     const int32_t sub_task_trace_id,
     const int64_t parent_task_id,
     const int64_t status,
@@ -541,14 +540,12 @@ int ObConstraintTask::init(
     root_service_ = root_service;
     task_id_ = task_id;
     parent_task_id_ = parent_task_id;
-    consumer_group_id_ = consumer_group_id;
     sub_task_trace_id_ = sub_task_trace_id;
     task_version_ = OB_CONSTRAINT_TASK_VERSION;
     is_table_hidden_ = table_schema->is_user_hidden_table();
     
     dst_schema_version_ = schema_version_;
     is_inited_ = true;
-    ddl_tracing_.open();
   }
   return ret;
 }
@@ -597,9 +594,6 @@ int ObConstraintTask::init(const ObDDLTaskRecord &task_record)
     
     dst_schema_version_ = schema_version_;
     is_inited_ = true;
-
-    // set up span during recover task
-    ddl_tracing_.open_for_recovery();
   }
   return ret;
 }
@@ -1859,7 +1853,6 @@ int ObConstraintTask::process()
   } else if (OB_FAIL(check_health())) {
     LOG_WARN("check health failed", K(ret));
   } else {
-    ddl_tracing_.restore_span_hierarchy();
     switch (task_status_) {
       case ObDDLTaskStatus::WAIT_TRANS_END:
         if (OB_FAIL(wait_trans_end())) {
@@ -1890,7 +1883,6 @@ int ObConstraintTask::process()
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("error unexpected, task status is not valid", K(ret), K(ret), K(task_status_));
     }
-    ddl_tracing_.release_span_hierarchy();
   }
   if (OB_FAIL(ret)) {
     add_event_info("constraint task process fail");

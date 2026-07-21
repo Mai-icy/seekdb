@@ -52,9 +52,8 @@ class ObMdsRangeQueryIteratorHelper
 public:
   static int get_mds_table(const ObTabletHandle &tablet_handle, mds::MdsTableHandle &mds_table);
   static int check_mds_data_complete(const ObTabletHandle &tablet_handle, bool &is_data_complete);
-  static int get_tablet_ls_id_and_tablet_id(
+  static int get_tablet_id(
       const ObTabletHandle &tablet_handle,
-      ObLSID &ls_id,
       ObTabletID &tablet_id);
 };
 
@@ -305,7 +304,7 @@ int ObSingleTabletMdsRangeQueryIterator<K, T>::convert_user_node_to_dump_kv(
     mds::MdsDumpKV &kv)
 {
   int ret = common::OB_SUCCESS;
-  constexpr uint8_t mds_table_id = mds::MdsTableTypeTuple::get_element_index<mds::NormalMdsTable>();
+  constexpr uint8_t mds_table_id = mds::GET_MDS_TABLE_ID<mds::NormalMdsTable>::value;
   constexpr uint8_t mds_unit_id = mds::TupleTypeIdx<mds::NormalMdsTable, mds::MdsUnit<K, T>>::value;
   mds::MdsDumpKey &key = kv.k_;
   mds::MdsDumpNode &node = kv.v_;

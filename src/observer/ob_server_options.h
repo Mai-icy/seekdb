@@ -42,7 +42,6 @@ public:
   int8_t  log_level_   = 0;
   bool    nodaemon_    = false;
   bool    use_ipv6_    = false;
-  bool    embed_mode_  = false;
   bool    embedded_    = false;
   bool    initialize_  = false; // TODO wangyunlai.wyl remove me before 2025-12-01
 
@@ -53,8 +52,8 @@ public:
   KeyValueArray       variables_;
   const char *        devname_ = nullptr;
   
-  // Primary-Standby configuration
-  common::ObSqlString role_;      // PRIMARY or STANDBY
+  // Server role configuration
+  common::ObSqlString role_;      // PRIMARY only
 
 #ifdef _WIN32
   bool    install_service_ = false;

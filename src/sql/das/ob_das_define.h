@@ -17,7 +17,7 @@
 #ifndef OBDEV_SRC_SQL_DAS_OB_DAS_DEFINE_H_
 #define OBDEV_SRC_SQL_DAS_OB_DAS_DEFINE_H_
 #include "share/ob_define.h"
-#include "share/ob_ls_id.h"
+#include "lib/list/ob_list.h"
 #include "share/location_cache/ob_location_struct.h"
 #include "common/ob_tablet_id.h"
 #include "sql/ob_phy_table_location.h"
@@ -114,8 +114,7 @@ public:
     : table_loc_id_(common::OB_INVALID_ID),
       ref_table_id_(common::OB_INVALID_ID),
       related_table_ids_(alloc),
-      flags_(0),
-      route_policy_(0)
+      flags_(0)
   { }
   ~ObDASTableLocMeta() = default;
   int assign(const ObDASTableLocMeta &other);
@@ -136,8 +135,7 @@ public:
                K_(is_dup_table),
                K_(is_weak_read),
                K_(unuse_related_pruning),
-               K_(is_external_table),
-               K_(route_policy));
+               K_(is_external_table));
 
   uint64_t table_loc_id_; //location object id
   uint64_t ref_table_id_; //table object id
@@ -156,8 +154,6 @@ public:
       uint64_t reserved_                        : 56;
     };
   };
-  int64_t route_policy_;
-
 private:
   void light_assign(const ObDASTableLocMeta &other); //without array
 };
@@ -178,7 +174,6 @@ struct ObDASTabletLoc
 public:
   ObDASTabletLoc()
     : tablet_id_(),
-      ls_id_(),
       server_(),
       loc_meta_(nullptr),
       next_(this),
@@ -189,7 +184,6 @@ public:
   ~ObDASTabletLoc() = default;
 
   TO_STRING_KV(K_(tablet_id),
-               K_(ls_id),
                K_(server),
                K_(loc_meta),
                K_(in_retry),
@@ -203,9 +197,6 @@ public:
    * because ObDASTabletLoc will not be released
    */
   common::ObTabletID tablet_id_; //the data_object_id corresponding to partition_id
-  //To reduce the conversion between tablet_id to ls_id,
-  //DAS caches ls_id_, SQL should not actually touch ls_id_
-  share::ObLSID ls_id_;
   common::ObAddr server_;
   const ObDASTableLocMeta *loc_meta_; //reference the table location meta, not serialize it
   ObDASTabletLoc *next_; //to bind all data table and local index tablet location

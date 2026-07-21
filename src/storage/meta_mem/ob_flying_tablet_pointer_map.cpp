@@ -40,9 +40,6 @@ int ObFlyingTabletPointerMap::init()
   if (is_inited_) {
     ret = OB_INIT_TWICE;
     LOG_WARN("init twice", K(ret));
-  } else if (false) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret));
   } else if (OB_FAIL(map_.create(bucket_num, "FlyTabletPtrMap", "FlyTabletPtrMap"))) {
     LOG_WARN("fail to initialize external tablet cnt map");
   } else if (OB_FAIL(bucket_lock_.init(bucket_num, ObLatchIds::DEFAULT_BUCKET_LOCK, ObMemAttr("FlyTabletMapLk")))) {
@@ -56,14 +53,13 @@ int ObFlyingTabletPointerMap::init()
 int ObFlyingTabletPointerMap::set(const ObDieingTabletMapKey &key, ObTabletPointerHandle &handle)
 {
   int ret = OB_SUCCESS;
-  int64_t ls_id = handle.get_resource_ptr()->get_ls()->get_ls_id().id();
   if (OB_UNLIKELY(!is_inited_)) {
     ret = common::OB_NOT_INIT;
     LOG_WARN("ObResourceMap has not been inited", K(ret));
   } else if (OB_FAIL(map_.set_refactored(key, handle))) {
     LOG_WARN("fail to set into ResourceMap", K(ret), K(key));
   } else {
-    FLOG_INFO("success to push tablet_pointer to flying_map", K(ret), K(ls_id), K(key), KP(handle.get_resource_ptr()), KPC(handle.get_resource_ptr()), K(count()));
+    FLOG_INFO("success to push tablet_pointer to flying_map", K(ret), K(key), KP(handle.get_resource_ptr()), KPC(handle.get_resource_ptr()), K(count()));
   }
   return ret;
 }

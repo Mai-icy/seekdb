@@ -217,7 +217,7 @@ int ObTableColumns::inner_get_next_row(ObNewRow *&row)
       if (OB_FAIL(ret)) {
       } else {
         bool throw_error = true;
-        if (table_schema->is_view_table() && !table_schema->is_materialized_view()) {
+        if (table_schema->is_view_table()) {
           ObString view_definition;
           ObSelectStmt *select_stmt = NULL;
           ObSelectStmt *real_stmt = NULL;
@@ -547,13 +547,6 @@ int ObTableColumns::fill_row_cells(const ObTableSchema &table_schema,
         } else if (ob_is_enum_or_set_type(def_obj.get_type())) {
           if (OB_FAIL(def_obj.print_plain_str_literal(column_schema.get_extended_type_info(), buf, buf_len, pos))) {
             LOG_WARN("fail to print plain str literal",  K(column_schema), K(buf), K(buf_len), K(pos), K(ret));
-          } else {
-            cur_row_.cells_[cell_idx].set_varchar(ObString(static_cast<int32_t>(pos), buf));
-            cur_row_.cells_[cell_idx].set_collation_type(ObCharset::get_system_collation());
-          }
-        } else if (ob_is_roaringbitmap(def_obj.get_type())) {
-          if (OB_FAIL(def_obj.print_varchar_literal(buf, buf_len, pos, TZ_INFO(session_)))) {
-            LOG_WARN("fail to print varchar literal", K(ret), K(def_obj), K(buf_len), K(pos), K(buf));
           } else {
             cur_row_.cells_[cell_idx].set_varchar(ObString(static_cast<int32_t>(pos), buf));
             cur_row_.cells_[cell_idx].set_collation_type(ObCharset::get_system_collation());

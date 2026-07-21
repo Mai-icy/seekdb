@@ -81,10 +81,18 @@ void TestDagWarningHistory::calc_info_cnt_per_page(ObIDag &dag, int64_t &info_me
   if (OB_FAIL(dag.gene_warning_info(tmp_info, allocator))) {
     COMMON_LOG(WARN, "failed to gene dag warning info", K(ret));
   }
-  // every time will contain a header(16B)
   info_mem_size = tmp_info.get_deep_copy_size();
-  info_cnt_per_page = (INFO_PAGE_SIZE - sizeof(ObFIFOAllocator::NormalPageHeader))
-    / (info_mem_size + sizeof(ObFIFOAllocator::AllocHeader));
+  info_cnt_per_page = 0;
+  int64_t offset = sizeof(ObFIFOAllocator::NormalPageHeader);
+  const int64_t align = alignof(ObFIFOAllocator::AllocHeader);
+  while (true) {
+    offset = upper_align(offset + sizeof(ObFIFOAllocator::AllocHeader), align);
+    if (offset + info_mem_size > INFO_PAGE_SIZE) {
+      break;
+    }
+    offset += info_mem_size;
+    ++info_cnt_per_page;
+  }
   STORAGE_LOG(INFO, "size", K(info_mem_size), K(info_cnt_per_page));
 }
 
@@ -113,16 +121,12 @@ public:
     int ret = OB_SUCCESS;
     if (!is_inited_) {
       ret = OB_NOT_INIT;
-    } else if (OB_FAIL(ADD_DAG_WARN_INFO_PARAM(out_param, allocator, get_type(), 1, 2, "table_id", 10))) {
+    } else if (OB_FAIL(ADD_DAG_WARN_INFO_PARAM(out_param, allocator, get_type(), 2, "table_id", 10))) {
       COMMON_LOG(WARN, "fail to add dag warning info param", K(ret));
     }
     return ret;
   }
   virtual int fill_dag_key(char *buf,const int64_t size) const override { UNUSEDx(buf, size); return OB_SUCCESS; }
-  virtual lib::Worker::CompatMode get_compat_mode() const override
-  { return lib::Worker::CompatMode::MYSQL; }
-  virtual uint64_t get_consumer_group_id() const override 
-  { return consumer_group_id_; }
   virtual bool is_ha_dag() const override { return false; }
   INHERIT_TO_STRING_KV("ObIDag", ObIDag, K_(is_inited), K_(type), K(task_list_.get_size()), K_(dag_ret));
 

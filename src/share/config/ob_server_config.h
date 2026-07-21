@@ -19,6 +19,7 @@
 
 #include "share/config/ob_common_config.h"
 #include "share/config/ob_system_config.h"
+#include "lib/lock/ob_drw_lock.h"
 
 namespace oceanbase
 {
@@ -64,9 +65,7 @@ const char* const WEAK_READ_VERSION_REFRESH_INTERVAL = "weak_read_version_refres
 const char* const LOG_DISK_UTILIZATION_LIMIT_THRESHOLD = "log_disk_utilization_limit_threshold";
 const char* const LOG_DISK_THROTTLING_PERCENTAGE = "log_disk_throttling_percentage";
 const char* const OB_VECTOR_MEMORY_LIMIT_PERCENTAGE = "ob_vector_memory_limit_percentage";
-const char* const _TRANSFER_TASK_TABLET_COUNT_THRESHOLD = "_transfer_task_tablet_count_threshold";
 const char* const DEFAULT_TABLE_ORGANIZATION = "default_table_organization";
-const char* const DEFAULT_TABLE_STORE_FORMAT = "default_table_store_format";
 
 class ObServerMemoryConfig;
 

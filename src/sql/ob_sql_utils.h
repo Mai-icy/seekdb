@@ -22,9 +22,7 @@
 #include "common/object/ob_object.h"
 #include "lib/container/ob_vector.h"
 #include "lib/container/ob_2d_array.h"
-#include "common/mysqlclient/ob_mysql_connection.h"
 #include "share/geo/ob_s2adapter.h"
-#include "share/partition_table/ob_partition_location.h"
 #include "share/ob_i_sql_expression.h"          // ObISqlExpression,ObExprCtx
 #include "storage/access/ob_table_param.h"        // ObColDesc
 #include "share/schema/ob_multi_version_schema_service.h"     // ObMultiVersionSchemaService
@@ -36,8 +34,6 @@
 #include "sql/optimizer/ob_phy_table_location_info.h"
 #include "sql/engine/expr/ob_expr_frame_info.h"
 #include "sql/session/ob_local_session_var.h"
-#include "sql/monitor/flt/ob_flt_span_mgr.h"
-#include "share/ob_compatibility_control.h"
 #include "sql/engine/cmd/ob_load_data_parser.h"
 
 namespace oceanbase
@@ -65,13 +61,13 @@ class ObRawExprResType;
 class ObStmtHint;
 struct ObTransformerCtx;
 struct ObPreCalcExprFrameInfo;
+struct ObSqlCtx;
 typedef common::ObSEArray<common::ObNewRange *, 1> ObQueryRangeArray;
 struct ObExprConstraint;
 typedef common::ObSEArray<common::ObSpatialMBR, 1> ObMbrFilterArray;
 class ObSelectStmt;
 class ObConstRawExpr;
 class ObColumnRefRawExpr;
-struct ObPCResourceMapRule;
 class ObResolverParams;
 class ObGlobalHint;
 class ObSqlSchemaGuard;
@@ -80,30 +76,26 @@ struct ObPlanCacheCtx;
 struct EstimatedPartition {
   common::ObAddr addr_;
   common::ObTabletID tablet_id_;
-  share::ObLSID ls_id_;
 
-  EstimatedPartition() : addr_(), tablet_id_(), ls_id_()
+  EstimatedPartition() : addr_(), tablet_id_()
   {}
 
   bool is_valid() const {
-    return addr_.is_valid() && tablet_id_.is_valid() && ls_id_.is_valid();
+    return addr_.is_valid() && tablet_id_.is_valid();
   }
 
   void reset() {
     addr_.reset();
     tablet_id_.reset();
-    ls_id_.reset();
   }
 
   void set(const common::ObAddr &addr,
-           const common::ObTabletID &tablet_id,
-           const share::ObLSID &ls_id) {
+           const common::ObTabletID &tablet_id) {
     addr_ = addr;
     tablet_id_ = tablet_id;
-    ls_id_ = ls_id;
   }
 
-  TO_STRING_KV(K_(addr), K_(tablet_id), K_(ls_id));
+  TO_STRING_KV(K_(addr), K_(tablet_id));
 };
 
 struct ObHiddenColumnItem
@@ -501,8 +493,6 @@ public:
                                                   ObCollationType &cs_type);
   static int merge_solidified_var_into_max_allowed_packet(const ObLocalSessionVar *local_vars,
                                                           int64_t &max_allowed_packet);
-  static int merge_solidified_var_into_compat_version(const ObLocalSessionVar *local_vars,
-                                                      uint64_t &compat_version);
 
   static int make_whole_range(ObIAllocator &allocator,
                               const uint64_t ref_table_id,
@@ -624,26 +614,6 @@ public:
   *  That is the time correctly set by the processor of the RPC
   ------------------------*/
   static void adjust_time_by_ntp_offset(int64_t &dst_timeout_ts);
-
-  static int check_sql_map_expected_resource_group(const ObSqlCtx &context,
-                                            const ObResultSet &result,
-                                            const ObResolverParams *resolve_ctx, 
-                                            const ObStmt *stmt, 
-                                            ObPCResourceMapRule &resource_map_rule);
-
-
-  static int recursive_check_equal_condition(const ObResolverParams *resolve_ctx,
-                                      const ObStmt *stmt,
-                                      const ObRawExpr &expr,
-                                      ObPCResourceMapRule &resource_map_rule,
-                                      uint64_t &group_id);
-
-  static int check_column_with_res_mapping_rule(const ObResolverParams *resolve_ctx,
-                                                const ObStmt *stmt,
-                                                const ObColumnRefRawExpr *col_expr,
-                                                const ObConstRawExpr *const_expr,
-                                                ObPCResourceMapRule &resource_map_rule,
-                                                uint64_t &group_id);
 
   static int async_recompile_view(const share::schema::ObTableSchema &old_view_schema,
                                   ObSelectStmt *select_stmt,
@@ -1041,13 +1011,6 @@ enum ObThreeStageAggrStage {
   FIRST_STAGE,
   SECOND_STAGE,
   THIRD_STAGE,
-};
-
-enum ObRollupStatus {
-  NONE_ROLLUP,          // no rollup
-  ROLLUP_NORMAL,        // normal rollup
-  ROLLUP_DISTRIBUTOR,   // rollup distributor
-  ROLLUP_COLLECTOR,     // rollup collector
 };
 
 class ObVirtualTableResultConverter

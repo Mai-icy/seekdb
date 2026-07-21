@@ -45,7 +45,6 @@ namespace storage
 {
 
 class ObLS;
-class ObCOSSTableV2;
 class ObDDLTableMergeTask;
 
 class ObDDLTableMergeDag : public share::ObIDag
@@ -65,10 +64,6 @@ public:
 
   virtual int fill_dag_key(char *buf, const int64_t buf_len) const override;
   virtual bool ignore_warning() override;
-  virtual lib::Worker::CompatMode get_compat_mode() const override
-  { return lib::Worker::CompatMode::MYSQL; } // TODO@wenqu: confirm it
-  virtual uint64_t get_consumer_group_id() const override 
-  { return consumer_group_id_; }
   virtual bool is_ha_dag() const override { return false; }
 private:
   int check_allow_major_merge();
@@ -76,7 +71,6 @@ private:
   int init_tablet_ctx();
   int prepare_ddl_kvs(ObTablet &tablet, ObIArray<ObDDLKVHandle> &ddl_kvs_handle);
   int prepare_full_direct_load_ddl_kvs(ObTablet &tablet, ObIArray<ObDDLKVHandle> &ddl_kvs_handle);
-  int prepare_incremental_direct_load_ddl_kvs(ObTablet &tablet, ObIArray<ObDDLKVHandle> &ddl_kvs_handle);
 private:
   bool is_inited_;
   ObArenaAllocator arena_;
@@ -98,9 +92,9 @@ public:
   virtual int process() override;
   TO_STRING_KV(K_(is_inited), K_(merge_param));
 private:
-  int merge_ddl_kvs(ObLSHandle &ls_handle, ObTablet &tablet);
-  int merge_full_direct_load_ddl_kvs(ObLSHandle &ls_handle, ObTablet &tablet);
-  int merge_full_direct_load_ddl_kvs_for_sn(ObLSHandle &ls_handle, ObTablet &tablet);
+  int merge_ddl_kvs(ObLS *ls, ObTablet &tablet);
+  int merge_full_direct_load_ddl_kvs(ObLS *ls, ObTablet &tablet);
+  int merge_full_direct_load_ddl_kvs_for_sn(ObLS *ls, ObTablet &tablet);
   int check_macro_intergrate_for_sn(const ObTabletDDLParam &ddl_param,
                                     ObTablet &tablet,
                                     SCN &compact_start_scn,
@@ -109,7 +103,6 @@ private:
                                          ObTablet &tablet,
                                          SCN &compact_start_scn,
                                          SCN &compact_end_scn);
-  int merge_incremental_direct_load_ddl_kvs(ObLSHandle &ls_handle, ObTablet &tablet);
 private:
   bool is_inited_;
   ObDDLTableMergeDagParam merge_param_;
@@ -124,7 +117,7 @@ public:
   ~ObDDLMacroBlockIterator();
   int open(blocksstable::ObSSTable *sstable, const blocksstable::ObDatumRange &query_range, const ObITableReadInfo &read_info, ObIAllocator &allocator);
 
-  int get_next(blocksstable::ObDataMacroBlockMeta &data_macro_meta, int64_t &end_row_offset);
+  int get_next(blocksstable::ObDataMacroBlockMeta &data_macro_meta);
 private:
   bool is_inited_;
   blocksstable::ObSSTable *sstable_;
@@ -156,13 +149,6 @@ public:
       const ObStorageSchema *storage_schema,
       common::ObArenaAllocator &allocator,
       ObArray<ObDDLBlockMeta> &sorted_metas);
-  static int create_ddl_empty_co_sstable(
-      const ObTabletID &tablet_id,
-      const share::SCN &ddl_start_scn,
-      const int64_t snapshot_version,
-      const ObStorageSchema *storage_schema,
-      common::ObArenaAllocator &allocator,
-      ObTableHandleV2 &table_handle);
   static int create_ddl_sstable(
       ObTablet &tablet,
       const ObTabletDDLParam &ddl_param,
@@ -179,9 +165,7 @@ public:
       ObTablet &tablet,
       const ObTabletDDLParam &ddl_param,
       const ObStorageSchema *storage_schema,
-      common::ObArenaAllocator &allocator,
-      blocksstable::ObSSTable *sstable,
-      const ObTablesHandleArray &slice_sstables);
+      blocksstable::ObSSTable *sstable);
 
   static int compact_ddl_kv(
       ObLS &ls,
@@ -192,15 +176,8 @@ public:
       common::ObArenaAllocator &allocator,
       ObTableHandleV2 &compacted_sstable_handle);
 
-  static int update_storage_schema(
-      ObTablet &tablet,
-      const ObTabletDDLParam &ddl_param,
-      common::ObArenaAllocator &allocator,
-      ObStorageSchema *&storage_schema,
-      const ObIArray<ObDDLKVHandle> &frozen_ddl_kvs);
 
-  static int report_ddl_checksum(const share::ObLSID &ls_id,
-                                 const ObTabletID &tablet_id,
+  static int report_ddl_checksum(const ObTabletID &tablet_id,
                                  const uint64_t table_id,
                                  const int64_t execution_id,
                                  const int64_t ddl_task_id,
@@ -209,7 +186,6 @@ public:
                                  const uint64_t data_format_version);
 
   static int check_and_get_major_sstable(
-      const share::ObLSID &ls_id,
       const ObTabletID &tablet_id,
       const blocksstable::ObSSTable *&first_major_sstable,
       ObTabletMemberWrapper<ObTabletTableStore> &table_store_wrapper);
@@ -228,9 +204,6 @@ public:
       bool &is_data_continue,
       share::SCN &compact_start_scn,
       share::SCN &compact_end_scn);
-
-  static int check_need_replay_column_store(const ObStorageSchema &storage_schema,
-                                            bool &need_replay_column_store);
 
 private:
 

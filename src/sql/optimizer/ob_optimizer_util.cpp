@@ -5388,7 +5388,7 @@ bool ObOptimizerUtil::is_lossless_type_conv(const ObRawExprResType &child_type, 
        }
     } else if (ObYearTC == child_tc) {
       if (ObNumberTC == dst_tc) {
-        ObAccuracy lossless_acc = ObAccuracy::DDL_DEFAULT_ACCURACY2[ObCompatibilityMode::MYSQL_MODE][child_type.get_type()];
+        ObAccuracy lossless_acc = ObAccuracy::DDL_DEFAULT_ACCURACY2[0][child_type.get_type()];
         if (dst_acc.get_precision() - dst_acc.get_scale() >= lossless_acc.get_precision() - lossless_acc.get_scale()) {
           is_lossless = true;
          }
@@ -5460,7 +5460,7 @@ int ObOptimizerUtil::is_lossless_column_cast(const ObRawExpr *expr,
       // mysql mode allows lossless type conversion, which can be referred to
       if (ObIntTC == child_tc || ObUIntTC == child_tc) {
         if (ObNumberTC == dst_tc || ObDecimalIntTC == dst_tc) {
-          // ObAccuracy lossless_acc = ObAccuracy::DDL_DEFAULT_ACCURACY2[ObCompatibilityMode::MYSQL_MODE][child_type.get_type()];
+          // ObAccuracy lossless_acc = ObAccuracy::DDL_DEFAULT_ACCURACY2[0][child_type.get_type()];
           ObAccuracy lossless_acc = child_type.get_accuracy();
           if ((dst_acc.get_scale() >= 0 &&
                dst_acc.get_precision() - dst_acc.get_scale() >= lossless_acc.get_precision()) ||
@@ -5845,12 +5845,6 @@ int ObOptimizerUtil::check_set_child_res_types(const ObRawExprResType &left_type
         LOG_WARN("expression must have same datatype as corresponding expression", K(ret),
                  K(left_type), K(right_type));
       }
-    }
-  } else {
-    if (OB_SUCC(ret) &&
-        is_distinct && (left_type.is_roaringbitmap() || right_type.is_roaringbitmap())) {
-      ret = OB_ERR_INVALID_TYPE_FOR_OP;
-      LOG_WARN("column type incompatible", K(ret), K(left_type), K(right_type));
     }
   }
   return ret;
@@ -7351,12 +7345,9 @@ int ObOptimizerUtil::get_duplicate_table_replica(const ObCandiTableLoc &phy_tabl
     LOG_WARN("get unexpected partition count", K(ret), K(phy_table_loc.get_partition_cnt()));
   } else {
     const ObCandiTabletLoc &phy_part_loc = phy_table_loc.get_phy_part_loc_info_list().at(0);
-    const ObIArray<ObRoutePolicy::CandidateReplica> &replicas =
-        phy_part_loc.get_partition_location().get_replica_locations();
-    for (int64_t i = 0; OB_SUCC(ret) && i < replicas.count(); ++i) {
-      if (OB_FAIL(valid_addrs.push_back(replicas.at(i).get_server()))) {
-        LOG_WARN("failed to push back replica address", K(ret));
-      } else { /*do nothing*/ }
+    if (OB_FAIL(valid_addrs.push_back(
+            phy_part_loc.get_partition_location().get_local_replica().get_server()))) {
+      LOG_WARN("failed to push back local address", K(ret));
     }
   }
   return ret;
@@ -7371,7 +7362,6 @@ int ObOptimizerUtil::compute_duplicate_table_sharding(const ObAddr &local_addr,
 {
   int ret = OB_SUCCESS;
   ObCandiTableLoc *phy_table_loc = NULL;
-  int64_t replica_index = OB_INVALID_INDEX;
   target_sharding = NULL;
   if (OB_ISNULL(target_sharding = reinterpret_cast<ObShardingInfo*>(
                                   allocator.alloc(sizeof(ObShardingInfo))))) {
@@ -7397,14 +7387,12 @@ int ObOptimizerUtil::compute_duplicate_table_sharding(const ObAddr &local_addr,
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected partition count", K(ret));
   } else {
-    int64_t dup_table_pos = OB_INVALID_INDEX;
     ObCandiTabletLoc &phy_part_loc =
           phy_table_loc->get_phy_part_loc_info_list_for_update().at(0);
-    if (!phy_part_loc.is_server_in_replica(selected_addr, dup_table_pos)) {
+    if (!phy_part_loc.is_local_server(selected_addr)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("no server in replica", K(selected_addr), K(ret));
     } else {
-      phy_part_loc.set_selected_replica_idx(dup_table_pos);
       if (local_addr == selected_addr) {
         target_sharding->set_local();
       } else {
@@ -7436,19 +7424,12 @@ int ObOptimizerUtil::generate_duplicate_table_replicas(ObIAllocator &allocator,
     // do nothing
   } else if (OB_FAIL(target_table_loc->assign(*source_table_loc))) {
     LOG_WARN("failed to assign table location", K(ret));
-  } else {
-    ObCandiTabletLoc &phy_part_loc =
-          target_table_loc->get_phy_part_loc_info_list_for_update().at(0);
-    ObOptTabletLoc &opt_tablet_loc = phy_part_loc.get_partition_location();
-    ObIArray<ObRoutePolicy::CandidateReplica> &replica_loc_list = opt_tablet_loc.get_replica_locations();
-    for (int64_t i = replica_loc_list.count() - 1; OB_SUCC(ret) && i >= 0; --i) {
-      if (ObOptimizerUtil::find_item(valid_addrs,
-                                     replica_loc_list.at(i).get_server())) {
-        // do nothing
-      } else if (OB_FAIL(replica_loc_list.remove(i))) {
-        LOG_WARN("failed to remove relica loc list", K(ret));
-      }
-    }
+  } else if (!ObOptimizerUtil::find_item(
+                 valid_addrs,
+                 target_table_loc->get_phy_part_loc_info_list().at(0)
+                     .get_partition_location().get_local_replica().get_server())) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("local replica is not valid for duplicate table", K(ret), K(valid_addrs));
   }
   return ret;
 }
@@ -7627,18 +7608,13 @@ int ObOptimizerUtil::generate_pullup_aggr_expr(ObRawExprFactory &expr_factory,
              T_FUN_SYS_BIT_AND == aggr_type ||
              T_FUN_SYS_BIT_OR == aggr_type ||
              T_FUN_SYS_BIT_XOR == aggr_type ||
-             T_FUN_SUM_OPNSIZE == aggr_type ||
-             T_FUN_SYS_RB_OR_AGG == aggr_type ||
-             T_FUN_SYS_RB_AND_AGG == aggr_type ||
-             T_FUN_SYS_RB_BUILD_AGG == aggr_type) {
+             T_FUN_SUM_OPNSIZE == aggr_type) {
     /* MAX(a) -> MAX(MAX(a)), MIN(a) -> MIN(MIN(a)) SUM(a) -> SUM(SUM(a)) */
     ObItemType pullup_aggr_type = aggr_type;
     if (T_FUN_COUNT == pullup_aggr_type || T_FUN_SUM_OPNSIZE == pullup_aggr_type) {
       pullup_aggr_type = T_FUN_COUNT_SUM;
     } else if (T_FUN_APPROX_COUNT_DISTINCT_SYNOPSIS == pullup_aggr_type) {
       pullup_aggr_type = T_FUN_APPROX_COUNT_DISTINCT_SYNOPSIS_MERGE;
-    } else if (T_FUN_SYS_RB_BUILD_AGG == pullup_aggr_type) {
-      pullup_aggr_type = T_FUN_SYS_RB_OR_AGG;
     }
 
     if (OB_FAIL(ObRawExprUtils::build_common_aggr_expr(expr_factory,

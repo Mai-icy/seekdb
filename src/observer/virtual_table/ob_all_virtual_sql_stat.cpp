@@ -134,7 +134,7 @@ bool ObAllVirtualSqlStatIter::operator()(sql::ObSQLSessionMgr::Key key, ObSQLSes
     // do nothing
   } else if (ObSQLSessionState::QUERY_ACTIVE != sess_info->get_session_state()) {
     // do nothing
-  } else if (true) {
+  } else {
     // WARNNIGN!!!
     // Access to things like cur_sql_ctx_ and cur_plan is forbidden, 
     // these pointers are not guaranteed to be thread-safe and risk CORE!
@@ -158,8 +158,7 @@ bool ObAllVirtualSqlStatIter::operator()(sql::ObSQLSessionMgr::Key key, ObSQLSes
         ObString sql = ObString::make_empty_string();
         if (obmysql::COM_QUERY == sess_info->get_mysql_cmd() ||
             obmysql::COM_STMT_EXECUTE == sess_info->get_mysql_cmd() ||
-            obmysql::COM_STMT_PREPARE == sess_info->get_mysql_cmd() ||
-            obmysql::COM_STMT_PREXECUTE == sess_info->get_mysql_cmd()) {
+            obmysql::COM_STMT_PREPARE == sess_info->get_mysql_cmd()) {
           sql = sess_info->get_current_query_string();
         }
 
@@ -582,14 +581,6 @@ int ObAllVirtualSqlStat::fill_row(
         } else {
           cells[cell_idx].set_int(port_);
         }
-        break;
-      }
-      case ROUTE_MISS_TOTAL: {
-        cells[cell_idx].set_int(sql_stat_record->get_route_miss_total());
-        break;
-      }
-      case ROUTE_MISS_DELTA: {
-        cells[cell_idx].set_int(sql_stat_record->get_route_miss_delta());
         break;
       }
       case FIRST_LOAD_TIME: {

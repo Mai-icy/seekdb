@@ -18,11 +18,9 @@ ob_set_subtarget(ob_rootserver common
   ob_dependency_ddl_helper.cpp
   ob_ddl_sql_generator.cpp
   ob_index_builder.cpp
-  ob_mlog_builder.cpp
   ob_partition_creator.cpp
   ob_root_minor_freeze.cpp
   ob_root_utils.cpp
-  ob_dynamic_partition_manager.cpp
   ob_root_inspection.cpp
   ob_rs_event_history_table_operator.cpp
   ob_tenant_event_history_table_operator.cpp
@@ -40,7 +38,6 @@ ob_set_subtarget(ob_rootserver common
   ob_schema_history_recycler.cpp
   ob_lob_piece_builder.cpp
   ob_lob_meta_builder.cpp
-  ob_split_partition_helper.cpp
   ob_partition_exchange.cpp
   ob_catalog_ddl_operator.cpp
   ob_catalog_ddl_service.cpp
@@ -71,11 +68,9 @@ ob_set_subtarget(ob_rootserver ddl_task
   ddl_task/ob_drop_vec_index_task.cpp
   ddl_task/ob_drop_primary_key_task.cpp
   ddl_task/ob_index_build_task.cpp
-  ddl_task/ob_build_mview_task.cpp
   ddl_task/ob_fts_index_build_task.cpp
   ddl_task/ob_modify_autoinc_task.cpp
   ddl_task/ob_table_redefinition_task.cpp
-  ddl_task/ob_partition_split_task.cpp
   ddl_task/ob_ddl_tablet_scheduler.cpp
   ddl_task/ob_drop_vec_ivf_index_task.cpp
   ddl_task/ob_rebuild_index_task.cpp
@@ -90,7 +85,6 @@ ob_set_subtarget(ob_rootserver parallel_ddl
   parallel_ddl/ob_ddl_helper.cpp
   parallel_ddl/ob_create_table_helper.cpp
   parallel_ddl/ob_create_view_helper.cpp
-  parallel_ddl/ob_create_materialized_view_helper.cpp
   parallel_ddl/ob_index_name_checker.cpp
   parallel_ddl/ob_set_comment_helper.cpp
   parallel_ddl/ob_create_index_helper.cpp
@@ -124,26 +118,6 @@ ob_set_subtarget(ob_rootserver virtual_table
   virtual_table/ob_virtual_core_inner_table.cpp
 )
 
-ob_set_subtarget(ob_rootserver mview
-  mview/ob_mview_maintenance_service.cpp
-  mview/ob_mlog_maintenance_task.cpp
-  mview/ob_mview_maintenance_task.cpp
-  mview/ob_mview_refresh_stats_maintenance_task.cpp
-  mview/ob_mview_timer_task.cpp
-  mview/ob_mview_dependency_service.cpp
-  mview/ob_mview_push_refresh_scn_task.cpp
-  mview/ob_mview_push_snapshot_task.cpp
-  mview/ob_replica_safe_check_task.cpp
-  mview/ob_mview_clean_snapshot_task.cpp
-  mview/ob_mview_update_cache_task.cpp
-  mview/ob_mview_mds_op_task.cpp
-  mview/ob_mview_alter_service.cpp
-  mview/ob_mview_update_deps_task.cpp
-)
-
-ob_set_subtarget(ob_rootserver direct_load
-  direct_load/ob_direct_load_partition_exchange.cpp
-)
 
 ob_set_subtarget(ob_rootserver fork_table
   fork_table/ob_fork_table_info_builder.cpp

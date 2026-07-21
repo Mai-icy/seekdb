@@ -38,7 +38,8 @@ ObMajorMergeInfoDetector::ObMajorMergeInfoDetector()
   : is_inited_(false), is_paused_(false), is_primary_service_(true),
     is_global_merge_info_adjusted_(false), is_gc_scn_inited_(false), sql_proxy_(nullptr), last_gc_timestamp_(0), last_run_timestamp_(0),
     major_merge_info_mgr_(nullptr), major_scheduler_idling_(nullptr),
-    last_schedule_ts_(0), need_immediate_run_(true)
+    last_schedule_ts_(0), need_immediate_run_(true),
+    timer_()
 {}
 
 ObMajorMergeInfoDetector::~ObMajorMergeInfoDetector()
@@ -63,8 +64,12 @@ int ObMajorMergeInfoDetector::init(
     sql_proxy_ = &sql_proxy;
     major_merge_info_mgr_ = &major_merge_info_mgr;
     major_scheduler_idling_ = &major_scheduler_idling;
-    is_inited_ = true;
-    LOG_INFO("freeze info detector init succ");
+    if (OB_FAIL(timer_.init("FrzInfoDetTimer", ObMemAttr("FrzInfoDet")))) {
+      LOG_WARN("init freeze info detector timer failed", KR(ret));
+    } else {
+      is_inited_ = true;
+      LOG_INFO("freeze info detector init succ");
+    }
   }
   return ret;
 }
@@ -75,9 +80,9 @@ int ObMajorMergeInfoDetector::start()
   if (IS_NOT_INIT) {
     ret = OB_NOT_INIT;
     LOG_WARN("ObMajorMergeInfoDetector not init", K(ret));
-  } else if (OB_FAIL(TG_START(lib::TGDefIDs::FrzInfoDetTimer))) {
+  } else if (OB_FAIL(timer_.start())) {
     LOG_WARN("start freeze info detector timer failed", KR(ret));
-  } else if (OB_FAIL(TG_SCHEDULE(lib::TGDefIDs::FrzInfoDetTimer, *this, 1 * 1000 * 1000L, true/*is_repeat*/))) {
+  } else if (OB_FAIL(timer_.schedule(*this, 1 * 1000 * 1000L, true/*is_repeat*/))) {
     LOG_WARN("schedule freeze info detector timer failed", KR(ret));
   } else {
     LOG_INFO("ObMajorMergeInfoDetector start succ");
@@ -111,15 +116,8 @@ void ObMajorMergeInfoDetector::runTimerTask()
 
       bool can_work = false;
       bool skip_refresh_zone_info = false;
-      int64_t proposal_id = 0;
-      ObRole role = ObRole::INVALID_ROLE;
 
-      if (OB_FAIL(obtain_proposal_id_from_ls(is_primary_service_, proposal_id, role))) {
-        LOG_WARN("fail to obtain proposal_id from ls", KR(ret));
-      } else if (ObRole::LEADER != role) {
-        LOG_INFO("follower should not run freeze_info_detector", K(role),
-                 K_(is_primary_service));
-      } else if (OB_FAIL(can_start_work(can_work))) {
+      if (OB_FAIL(can_start_work(can_work))) {
         LOG_WARN("fail to judge can start work", KR(ret));
       } else if (can_work) {
           if (is_primary_service()) {
@@ -304,14 +302,14 @@ int ObMajorMergeInfoDetector::signal()
 void ObMajorMergeInfoDetector::stop()
 {
   if (is_inited_) {
-    TG_STOP(lib::TGDefIDs::FrzInfoDetTimer);
+    timer_.stop();
   }
 }
 
 void ObMajorMergeInfoDetector::wait()
 {
   if (is_inited_) {
-    TG_WAIT(lib::TGDefIDs::FrzInfoDetTimer);
+    timer_.wait();
   }
 }
 
@@ -321,7 +319,7 @@ int ObMajorMergeInfoDetector::destroy()
   stop();
   wait();
   if (is_inited_) {
-    TG_DESTROY(lib::TGDefIDs::FrzInfoDetTimer);
+    timer_.destroy();
   }
   is_paused_ = false;
   is_inited_ = false;
@@ -417,29 +415,6 @@ bool ObMajorMergeInfoDetector::need_check_snapshot_gc_scn(const int64_t start_ti
 {
   const int64_t START_CHECK_INTERVAL_US = 10 * 60 * 1000 * 1000; // 10 min
   return (ObTimeUtility::current_time() - start_time_us) > START_CHECK_INTERVAL_US;
-}
-
-int ObMajorMergeInfoDetector::obtain_proposal_id_from_ls(
-    const bool is_primary_service,
-    int64_t &proposal_id,
-    ObRole &role)
-{
-  int ret = OB_SUCCESS;
-  storage::ObLSHandle ls_handle;
-  logservice::ObLogHandler *handler = nullptr;
-  if (OB_ISNULL(share::g_mp->ls_service())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("ls service is null", KR(ret));
-  } else if (OB_FAIL(share::g_mp->ls_service()->get_ls(SYS_LS, ls_handle, ObLSGetMod::RS_MOD))) {
-    LOG_WARN("fail to get ls", KR(ret));
-  } else if (OB_ISNULL(ls_handle.get_ls())
-      || OB_ISNULL(handler = ls_handle.get_ls()->get_log_handler())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("should not null", KR(ret), K(is_primary_service));
-  } else if (OB_FAIL(handler->get_role(role, proposal_id))) {
-    LOG_WARN("fail to get role", KR(ret), K(is_primary_service));
-  }
-  return ret;
 }
 
 void ObMajorMergeInfoDetector::update_last_run_timestamp_()

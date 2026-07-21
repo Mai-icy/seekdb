@@ -31,8 +31,6 @@
 #include "rootserver/ddl_task/ob_fts_index_build_task.h"
 #include "rootserver/ddl_task/ob_drop_fts_index_task.h"
 
-const bool OB_DDL_TASK_ENABLE_TRACING = false;
-
 namespace oceanbase
 {
 using namespace common;
@@ -150,24 +148,20 @@ OB_SERIALIZE_MEMBER(ObDDLSliceInfo, part_ranges_, autoinc_range_interval_);
 ObDDLTaskSerializeField::ObDDLTaskSerializeField(const int64_t task_version,
                                                  const int64_t parallelism,
                                                  const uint64_t data_format_version,
-                                                 const int64_t consumer_group_id,
                                                  const bool is_abort,
                                                  const int32_t sub_task_trace_id,
                                                  const bool is_unique_index,
                                                  const bool is_global_index,
-                                                 const bool is_pre_split,
                                                  const bool is_no_logging)
 {
   task_version_ = task_version;
   parallelism_ = parallelism;
   data_format_version_ = data_format_version;
-  consumer_group_id_ = consumer_group_id;
   is_abort_ = is_abort;
   sub_task_trace_id_ = sub_task_trace_id;
   is_no_logging_ = is_no_logging;
   is_unique_index_ = is_unique_index;
   is_global_index_ = is_global_index;
-  is_pre_split_ = is_pre_split;
 }
 
 void ObDDLTaskSerializeField::reset()
@@ -175,12 +169,10 @@ void ObDDLTaskSerializeField::reset()
   task_version_ = 0;
   parallelism_ = 0;
   data_format_version_ = 0;
-  consumer_group_id_ = 0;
   is_abort_ = false;
   sub_task_trace_id_ = 0;
   is_unique_index_ = false;
   is_global_index_ = false;
-  is_pre_split_ = false;
   is_no_logging_ = false;
 }
 
@@ -188,22 +180,20 @@ OB_SERIALIZE_MEMBER(ObDDLTaskSerializeField,
                     task_version_,
                     parallelism_,
                     data_format_version_,
-                    consumer_group_id_,
                     is_abort_,
                     sub_task_trace_id_,
                     is_unique_index_,
                     is_global_index_,
-                    is_pre_split_,
                     is_no_logging_);
 
 ObCreateDDLTaskParam::ObCreateDDLTaskParam()
-  : sub_task_trace_id_(0), object_id_(OB_INVALID_ID), schema_version_(0), parallelism_(0), 
-    consumer_group_id_(0), parent_task_id_(0), task_id_(0), type_(DDL_INVALID), src_table_schema_(nullptr), 
+  : sub_task_trace_id_(0), object_id_(OB_INVALID_ID), schema_version_(0), parallelism_(0),
+    parent_task_id_(0), task_id_(0), type_(DDL_INVALID), src_table_schema_(nullptr),
     dest_table_schema_(nullptr), ddl_arg_(nullptr), allocator_(nullptr),
     aux_rowkey_doc_schema_(nullptr), aux_doc_rowkey_schema_(nullptr), fts_index_aux_schema_(nullptr), aux_doc_word_schema_(nullptr),
     vec_rowkey_vid_schema_(nullptr), vec_vid_rowkey_schema_(nullptr), vec_domain_index_schema_(nullptr), vec_index_id_schema_(nullptr), vec_snapshot_data_schema_(nullptr),
-    vec_centroid_schema_(nullptr), vec_cid_vector_schema_(nullptr), vec_rowkey_cid_schema_(nullptr), vec_sq_meta_schema_(nullptr), vec_pq_centroid_schema_(nullptr), vec_pq_code_schema_(nullptr), 
-    hybrid_vec_embedded_schema_(nullptr), tenant_data_version_(0), ddl_need_retry_at_executor_(false), is_pre_split_(false)
+    vec_centroid_schema_(nullptr), vec_cid_vector_schema_(nullptr), vec_rowkey_cid_schema_(nullptr), vec_sq_meta_schema_(nullptr), vec_pq_centroid_schema_(nullptr), vec_pq_code_schema_(nullptr),
+    hybrid_vec_embedded_schema_(nullptr), tenant_data_version_(0), ddl_need_retry_at_executor_(false)
 {
 }
 
@@ -213,502 +203,21 @@ ObCreateDDLTaskParam::ObCreateDDLTaskParam(const share::ObDDLType &type,
                                            const int64_t object_id,
                                            const int64_t schema_version,
                                            const int64_t parallelism,
-                                           const int64_t consumer_group_id,
                                            ObIAllocator *allocator,
                                            const obcall::ObDDLArg *ddl_arg,
                                            const int64_t parent_task_id,
                                            const int64_t task_id,
                                            const bool ddl_need_retry_at_executor)
-  : sub_task_trace_id_(0), object_id_(object_id), schema_version_(schema_version), parallelism_(parallelism), consumer_group_id_(consumer_group_id),
+  : sub_task_trace_id_(0), object_id_(object_id), schema_version_(schema_version), parallelism_(parallelism),
     parent_task_id_(parent_task_id), task_id_(task_id), type_(type), src_table_schema_(src_table_schema), dest_table_schema_(dest_table_schema),
     ddl_arg_(ddl_arg), allocator_(allocator), aux_rowkey_doc_schema_(nullptr), aux_doc_rowkey_schema_(nullptr),
     fts_index_aux_schema_(nullptr), aux_doc_word_schema_(nullptr), 
     vec_rowkey_vid_schema_(nullptr), vec_vid_rowkey_schema_(nullptr), vec_domain_index_schema_(nullptr), vec_index_id_schema_(nullptr), vec_snapshot_data_schema_(nullptr), 
     vec_centroid_schema_(nullptr), vec_cid_vector_schema_(nullptr), vec_rowkey_cid_schema_(nullptr), vec_sq_meta_schema_(nullptr), vec_pq_centroid_schema_(nullptr), vec_pq_code_schema_(nullptr), 
     hybrid_vec_embedded_schema_(nullptr), tenant_data_version_(0),
-    ddl_need_retry_at_executor_(ddl_need_retry_at_executor), is_pre_split_(false), new_snapshot_version_(0)
+    ddl_need_retry_at_executor_(ddl_need_retry_at_executor), new_snapshot_version_(0)
 {
 }
-
-void ObDDLTracing::open()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  init_task_span();
-  init_status_span();
-  }
-}
-
-void ObDDLTracing::open_for_recovery()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  restore_span_hierarchy();
-  record_status_span(status_span_);
-  release_span_hierarchy();
-  }
-}
-
-// flush last status span & task span
-void ObDDLTracing::close()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  int ret = OB_SUCCESS;
-  // TODO jiahua.cjh fix MTL_SWITCH
-  MOD_SCOPE {
-    end_status_span();
-    // flush task span
-    end_task_span();
-  }
-  }
-}
-
-void ObDDLTracing::init_span_id(trace::ObSpanCtx *span)
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  if (OB_NOT_NULL(span) && span->span_id_.high_ == 0) {
-    span->span_id_.low_ = trace::UUID::gen_rand();
-    span->span_id_.high_ = span->start_ts_;
-  }
-  }
-}
-
-trace::ObSpanCtx* ObDDLTracing::restore_parent_task_span()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  trace::ObSpanCtx *span = nullptr;
-  if (!OBTRACE->get_trace_id().is_inited()) {
-    LOG_WARN_RET(OB_NOT_INIT, "trace id not inited!!!", K(OBTRACE->get_trace_id()), K(OBTRACE->get_level()));
-  } else {
-    // no need to specify start_ts, this is dummy parent, only span id is used by its child
-    span = FLT_RESTORE_DDL_SPAN(ddl_table_redefinition, parent_task_span_id_, 0 /*start_ts*/);
-  }
-  if (OB_ISNULL(span)) {
-    LOG_WARN_RET(OB_ERR_UNEXPECTED, "restore parent task span return nullptr");
-  }
-  return span;
-  } else {
-    return nullptr;
-  }
-}
-
-void ObDDLTracing::init_task_span()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  trace::ObSpanCtx *span = begin_task_span();
-  record_trace_ctx();
-  record_parent_task_span(span);
-  record_task_span(span);
-  FLT_RELEASE_DDL_SPAN(span);
-  }
-}
-
-trace::ObSpanCtx* ObDDLTracing::begin_task_span()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  const share::ObDDLType task_type = task_->get_task_type();
-  trace::ObSpanCtx *span = nullptr;
-  if (!OBTRACE->get_trace_id().is_inited()) {
-    LOG_WARN_RET(OB_NOT_INIT, "trace id not inited!!!", K(OBTRACE->get_trace_id()), K(OBTRACE->get_level()));
-  } else {
-    switch (task_type) {
-      case DDL_CREATE_INDEX:
-      case DDL_CREATE_PARTITIONED_LOCAL_INDEX:
-        span = FLT_BEGIN_SPAN(ddl_build_index);
-        break;
-      case DDL_DROP_INDEX:
-        span = FLT_BEGIN_SPAN(ddl_drop_index);
-        break;
-      case DDL_MODIFY_COLUMN:
-      case DDL_ADD_PRIMARY_KEY:
-      case DDL_ALTER_PRIMARY_KEY:
-      case DDL_ALTER_PARTITION_BY:
-      case DDL_CONVERT_TO_CHARACTER:
-      case DDL_TABLE_REDEFINITION:
-      case DDL_ALTER_COLUMN_GROUP:
-      case DDL_PARTITION_SPLIT_RECOVERY_TABLE_REDEFINITION:
-        span = FLT_BEGIN_SPAN(ddl_table_redefinition);
-        break;
-      case DDL_DROP_PRIMARY_KEY:
-        span = FLT_BEGIN_SPAN(ddl_drop_primary_key);
-        break;
-      case DDL_CHECK_CONSTRAINT:
-      case DDL_FOREIGN_KEY_CONSTRAINT:
-      case DDL_ADD_NOT_NULL_COLUMN:
-        span = FLT_BEGIN_SPAN(ddl_constraint);
-        break;
-      case DDL_DROP_COLUMN:
-      case DDL_ADD_COLUMN_OFFLINE:
-      case DDL_COLUMN_REDEFINITION:
-        span = FLT_BEGIN_SPAN(ddl_column_redefinition);
-        break;
-      case DDL_MODIFY_AUTO_INCREMENT:
-        span = FLT_BEGIN_SPAN(ddl_modify_autoinc);
-        break;
-      case DDL_DROP_DATABASE:
-      case DDL_DROP_TABLE:
-      case DDL_TRUNCATE_TABLE:
-      case DDL_DROP_PARTITION:
-      case DDL_DROP_SUB_PARTITION:
-      case DDL_RENAME_PARTITION:
-      case DDL_RENAME_SUB_PARTITION:
-      case DDL_TRUNCATE_PARTITION:
-      case DDL_TRUNCATE_SUB_PARTITION:
-        span = FLT_BEGIN_SPAN(ddl_retry_task);
-        break;
-      default:
-        span = nullptr;
-        LOG_WARN_RET(OB_ERR_UNEXPECTED, "begin task span return nullptr", K(task_type));
-        break;
-    }
-  }
-  if (OB_NOT_NULL(span)) {
-    init_span_id(span);
-    is_task_span_flushed_ = false;
-  }
-  return span;
-  } else {
-    return nullptr;
-  }
-}
-
-void ObDDLTracing::end_task_span()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  if (!is_task_span_flushed_) {
-    int ret = OB_SUCCESS;
-    FLT_RESTORE_DDL_TRACE_CTX(trace_ctx_);
-    FLT_SET_AUTO_FLUSH(true);
-    // task_->flt_set_task_span_tag();
-    // TODO jiahua.cjh fix MTL_SWITCH
-    MOD_SCOPE {
-      FLT_END_SPAN(task_span_);
-    }
-    is_task_span_flushed_ = true;
-  }
-  }
-}
-trace::ObSpanCtx* ObDDLTracing::restore_task_span()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  const share::ObDDLType task_type = task_->get_task_type();
-  trace::ObSpanCtx *span = nullptr;
-  if (!OBTRACE->get_trace_id().is_inited()) {
-    LOG_WARN_RET(OB_NOT_INIT, "trace id not inited!!!", K(OBTRACE->get_trace_id()), K(OBTRACE->get_level()));
-  } else {
-    switch (task_type) {
-      case DDL_CREATE_INDEX:
-      case DDL_CREATE_PARTITIONED_LOCAL_INDEX:
-        span = FLT_RESTORE_DDL_SPAN(ddl_build_index, task_span_id_, task_start_ts_);
-        break;
-      case DDL_DROP_INDEX:
-        span = FLT_RESTORE_DDL_SPAN(ddl_drop_index, task_span_id_, task_start_ts_);
-        break;
-      case DDL_MODIFY_COLUMN:
-      case DDL_ADD_PRIMARY_KEY:
-      case DDL_ALTER_PRIMARY_KEY:
-      case DDL_ALTER_PARTITION_BY:
-      case DDL_CONVERT_TO_CHARACTER:
-      case DDL_TABLE_REDEFINITION:
-      case DDL_ALTER_COLUMN_GROUP:
-      case DDL_PARTITION_SPLIT_RECOVERY_TABLE_REDEFINITION:
-        span = FLT_RESTORE_DDL_SPAN(ddl_table_redefinition, task_span_id_, task_start_ts_);
-        break;
-      case DDL_DROP_PRIMARY_KEY:
-        span = FLT_RESTORE_DDL_SPAN(ddl_drop_primary_key, task_span_id_, task_start_ts_);
-        break;
-      case DDL_CHECK_CONSTRAINT:
-      case DDL_FOREIGN_KEY_CONSTRAINT:
-      case DDL_ADD_NOT_NULL_COLUMN:
-        span = FLT_RESTORE_DDL_SPAN(ddl_constraint, task_span_id_, task_start_ts_);
-        break;
-      case DDL_DROP_COLUMN:
-      case DDL_ADD_COLUMN_OFFLINE:
-      case DDL_COLUMN_REDEFINITION:
-        span = FLT_RESTORE_DDL_SPAN(ddl_column_redefinition, task_span_id_, task_start_ts_);
-        break;
-      case DDL_MODIFY_AUTO_INCREMENT:
-        span = FLT_RESTORE_DDL_SPAN(ddl_modify_autoinc, task_span_id_, task_start_ts_);
-        break;
-      case DDL_DROP_DATABASE:
-      case DDL_DROP_TABLE:
-      case DDL_TRUNCATE_TABLE:
-      case DDL_DROP_PARTITION:
-      case DDL_DROP_SUB_PARTITION:
-      case DDL_RENAME_PARTITION:
-      case DDL_RENAME_SUB_PARTITION:
-      case DDL_TRUNCATE_PARTITION:
-      case DDL_TRUNCATE_SUB_PARTITION:
-        span = FLT_RESTORE_DDL_SPAN(ddl_retry_task, task_span_id_, task_start_ts_);
-        break;
-      default:
-        span = nullptr;
-        LOG_WARN_RET(OB_ERR_UNEXPECTED, "restore task span return nullptr");
-        break;
-    }
-  }
-  return span;
-  } else {
-    return nullptr;
-  }
-}
-
-void ObDDLTracing::init_status_span()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  const share::ObDDLTaskStatus status = static_cast<share::ObDDLTaskStatus>(task_->get_task_status());
-  trace::ObSpanCtx *span = begin_status_span(status);
-  record_status_span(span);
-  FLT_RELEASE_DDL_SPAN(span);
-  }
-}
-
-trace::ObSpanCtx* ObDDLTracing::begin_status_span(const share::ObDDLTaskStatus status)
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  trace::ObSpanCtx* span = nullptr;
-  if (!OBTRACE->get_trace_id().is_inited()) {
-    LOG_WARN_RET(OB_NOT_INIT, "trace id not inited!!! check if init_task_span() is invoked!", K(OBTRACE->get_trace_id()), K(OBTRACE->get_level()));
-  } else {
-    switch (status) {
-      case ObDDLTaskStatus::PREPARE:
-        span = FLT_BEGIN_SPAN(ddl_prepare);
-        break;
-      case ObDDLTaskStatus::OBTAIN_SNAPSHOT:
-        span = FLT_BEGIN_SPAN(ddl_lock_table);
-        break;
-      case ObDDLTaskStatus::WAIT_TRANS_END:
-      case ObDDLTaskStatus::WAIT_TRANS_END_FOR_WRITE_ONLY:
-      case ObDDLTaskStatus::WAIT_TRANS_END_FOR_UNUSABLE:
-        span = FLT_BEGIN_SPAN(ddl_wait_trans_end);
-        break;
-      case ObDDLTaskStatus::REDEFINITION:
-        span = FLT_BEGIN_SPAN(ddl_redefinition);
-        break;
-      case ObDDLTaskStatus::VALIDATE_CHECKSUM:
-        span = FLT_BEGIN_SPAN(ddl_validate_checksum);
-        break;
-      case ObDDLTaskStatus::COPY_TABLE_DEPENDENT_OBJECTS:
-        span = FLT_BEGIN_SPAN(ddl_copy_table_dependent_objects);
-        break;
-      case ObDDLTaskStatus::TAKE_EFFECT:
-        span = FLT_BEGIN_SPAN(ddl_take_effect);
-        break;
-      case ObDDLTaskStatus::CHECK_CONSTRAINT_VALID:
-        span = FLT_BEGIN_SPAN(ddl_check_constraint_valid);
-        break;
-      case ObDDLTaskStatus::SET_CONSTRAINT_VALIDATE:
-        span = FLT_BEGIN_SPAN(ddl_set_constraint_valid);
-        break;
-      case ObDDLTaskStatus::MODIFY_AUTOINC:
-        span = FLT_BEGIN_SPAN(ddl_modify_autoinc);
-        break;
-      case ObDDLTaskStatus::SET_WRITE_ONLY:
-        span = FLT_BEGIN_SPAN(ddl_set_write_only);
-        break;
-      case ObDDLTaskStatus::SET_UNUSABLE:
-        span = FLT_BEGIN_SPAN(ddl_set_unusable);
-        break;
-      case ObDDLTaskStatus::DROP_SCHEMA:
-        span = FLT_BEGIN_SPAN(ddl_drop_schema);
-        break;
-      case ObDDLTaskStatus::CHECK_TABLE_EMPTY:
-        span = FLT_BEGIN_SPAN(ddl_check_table_empty);
-        break;
-      case ObDDLTaskStatus::FAIL:
-        span = FLT_BEGIN_SPAN(ddl_failure_cleanup);
-        break;
-      case ObDDLTaskStatus::SUCCESS:
-        span = FLT_BEGIN_SPAN(ddl_success);
-        break;
-      default:
-        span = nullptr;
-        LOG_WARN_RET(OB_ERR_UNEXPECTED, "begin status span return nullptr", K(status));
-        break;
-    }
-    if (OB_NOT_NULL(span)) {
-      init_span_id(span);
-      is_status_span_begin_ = true;
-      is_status_span_end_ = false;
-    }
-  }
-  return span;
-  } else {
-    return nullptr;
-  }
-}
-
-void ObDDLTracing::end_status_span()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  if (!is_status_span_end_) {
-    int ret = OB_SUCCESS;
-    FLT_RESTORE_DDL_TRACE_CTX(trace_ctx_);
-    FLT_SET_AUTO_FLUSH(true);
-    //task_->flt_set_status_span_tag();
-    // TODO jiahua.cjh fix MTL_SWITCH
-    MOD_SCOPE {
-      FLT_END_SPAN(status_span_);
-    }
-    is_status_span_end_ = true;
-    is_status_span_begin_ = false;
-  }
-  }
-}
-
-trace::ObSpanCtx* ObDDLTracing::restore_status_span()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  const int64_t task_status = task_->get_task_status();
-  trace::ObSpanCtx* span = nullptr;
-  if (!OBTRACE->get_trace_id().is_inited()) {
-    LOG_WARN_RET(OB_NOT_INIT, "trace id not inited!!! check if init_task_span() is invoked!", K(OBTRACE->get_trace_id()), K(OBTRACE->get_level()));
-  } else {
-    switch (task_status) {
-      case ObDDLTaskStatus::PREPARE:
-        span = FLT_RESTORE_DDL_SPAN(ddl_prepare, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::OBTAIN_SNAPSHOT:
-        span = FLT_RESTORE_DDL_SPAN(ddl_lock_table, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::WAIT_TRANS_END:
-      case ObDDLTaskStatus::WAIT_TRANS_END_FOR_WRITE_ONLY:
-      case ObDDLTaskStatus::WAIT_TRANS_END_FOR_UNUSABLE:
-        span = FLT_RESTORE_DDL_SPAN(ddl_wait_trans_end, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::REDEFINITION:
-        span = FLT_RESTORE_DDL_SPAN(ddl_redefinition, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::VALIDATE_CHECKSUM:
-        span = FLT_RESTORE_DDL_SPAN(ddl_validate_checksum, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::COPY_TABLE_DEPENDENT_OBJECTS:
-        span = FLT_RESTORE_DDL_SPAN(ddl_copy_table_dependent_objects, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::TAKE_EFFECT:
-        span = FLT_RESTORE_DDL_SPAN(ddl_take_effect, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::CHECK_CONSTRAINT_VALID:
-        span = FLT_RESTORE_DDL_SPAN(ddl_check_constraint_valid, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::SET_CONSTRAINT_VALIDATE:
-        span = FLT_RESTORE_DDL_SPAN(ddl_set_constraint_valid, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::MODIFY_AUTOINC:
-        span = FLT_RESTORE_DDL_SPAN(ddl_modify_autoinc, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::SET_WRITE_ONLY:
-        span = FLT_RESTORE_DDL_SPAN(ddl_set_write_only, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::SET_UNUSABLE:
-        span = FLT_RESTORE_DDL_SPAN(ddl_set_unusable, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::DROP_SCHEMA:
-        span = FLT_RESTORE_DDL_SPAN(ddl_drop_schema, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::CHECK_TABLE_EMPTY:
-        span = FLT_RESTORE_DDL_SPAN(ddl_check_table_empty, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::FAIL:
-        span = FLT_RESTORE_DDL_SPAN(ddl_failure_cleanup, status_span_id_, status_start_ts_);
-        break;
-      case ObDDLTaskStatus::SUCCESS:
-        span = FLT_RESTORE_DDL_SPAN(ddl_success, status_span_id_, status_start_ts_);
-        break;
-      default:
-        span = nullptr;
-        LOG_WARN_RET(OB_ERR_UNEXPECTED, "restore status span return nullptr");
-        break;
-    }
-  }
-  return span;
-  } else {
-    return nullptr;
-  }
-}
-
-void ObDDLTracing::restore_span_hierarchy()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  FLT_RESTORE_DDL_TRACE_CTX(trace_ctx_);
-  parent_task_span_ = restore_parent_task_span();
-  task_span_ = restore_task_span();
-  if (is_status_span_begin_) {
-    status_span_ = restore_status_span();
-  } else {
-    const int64_t task_status = task_->get_task_status();
-    status_span_ = begin_status_span((ObDDLTaskStatus)task_status);
-    record_status_span(status_span_);
-  }
-  }
-}
-
-void ObDDLTracing::release_span_hierarchy()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  if (!is_status_span_end_) {
-    FLT_RELEASE_DDL_SPAN(status_span_);
-  }
-  if (!is_task_span_flushed_) {
-    FLT_RELEASE_DDL_SPAN(task_span_);
-  }
-  FLT_RELEASE_DDL_SPAN(parent_task_span_);
-  }
-}
-
-void ObDDLTracing::record_trace_ctx()
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  trace_ctx_.trace_id_ = OBTRACE->get_trace_id();
-  trace_ctx_.span_id_ = OBTRACE->get_root_span_id();
-  trace_ctx_.policy_ = OBTRACE->get_policy();
-  }
-}
-
-void ObDDLTracing::record_parent_task_span(trace::ObSpanCtx *span)
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  if (OB_ISNULL(span)) {
-    // do nothing
-  } else if (OB_ISNULL(span->source_span_)) {
-    parent_task_span_id_ = OBTRACE->get_root_span_id();
-  } else {
-    trace::ObSpanCtx* parent_task_span = span->source_span_;
-    init_span_id(parent_task_span);
-    parent_task_span_id_ = parent_task_span->span_id_;
-  }
-  }
-}
-
-void ObDDLTracing::record_task_span(trace::ObSpanCtx *span)
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  if (OB_ISNULL(span)) {
-    // do nothing
-  } else {
-    task_span_id_ = span->span_id_;
-    task_start_ts_ = span->start_ts_;
-  }
-  }
-}
-
-void ObDDLTracing::record_status_span(trace::ObSpanCtx *span)
-{
-  if (OB_DDL_TASK_ENABLE_TRACING) {
-  if (OB_ISNULL(span)) {
-    // do nothing
-  } else {
-    status_span_id_ = span->span_id_;
-    status_start_ts_ = span->start_ts_;
-  }
-  }
-}
-
-OB_SERIALIZE_MEMBER(ObDDLTracing,
-                    trace_ctx_,
-                    task_span_id_,
-                    status_span_id_,
-                    task_start_ts_,
-                    status_start_ts_,
-                    parent_task_span_id_);
 
 int ObFTSDDLChildTaskInfo::deep_copy_from_other(
     const ObFTSDDLChildTaskInfo &other,
@@ -752,9 +261,7 @@ int ObDDLTask::cleanup()
 {
   int ret = cleanup_impl();
   if (OB_SUCC(ret)) {
-    // flush span
     need_retry_ = false;
-    ddl_tracing_.close();
   }
   return ret;
 }
@@ -828,12 +335,6 @@ int ObDDLTask::get_ddl_type_str(const int64_t ddl_type, const char *&ddl_type_st
     case DDL_TABLE_REDEFINITION:
       ddl_type_str = "table redefinition";
       break;
-    case DDL_DIRECT_LOAD:
-      ddl_type_str = "direct load";
-      break;
-    case DDL_DIRECT_LOAD_INSERT:
-      ddl_type_str = "direct load insert";
-      break;
     case DDL_MODIFY_AUTO_INCREMENT:
       ddl_type_str = "modify auto increment";
       break;
@@ -882,41 +383,8 @@ int ObDDLTask::get_ddl_type_str(const int64_t ddl_type, const char *&ddl_type_st
     case DDL_DROP_VEC_IVFPQ_INDEX:
       ddl_type_str = "drop vec index";
       break;
-    case DDL_ALTER_COLUMN_GROUP:
-      ddl_type_str = "alter column group";
-      break;
-    case DDL_MVIEW_COMPLETE_REFRESH:
-      ddl_type_str = "mview complete refresh";
-      break;
-    case DDL_CREATE_MVIEW:
-      ddl_type_str = "create mview";
-      break;
-    case DDL_CREATE_MLOG:
-      ddl_type_str = "create materialized view log";
-      break;
-    case DDL_DROP_MLOG:
-      ddl_type_str = "drop materialized view log";
-      break;
-    case DDL_AUTO_SPLIT_BY_RANGE:
-      ddl_type_str = "auto split by range";
-      break;
-    case DDL_AUTO_SPLIT_NON_RANGE:
-      ddl_type_str = "auto split non range";
-      break;
-    case DDL_MANUAL_SPLIT_BY_RANGE:
-      ddl_type_str = "manual split by range";
-      break;
-    case DDL_MANUAL_SPLIT_NON_RANGE:
-      ddl_type_str = "manual split non range";
-      break;
     case DDL_MODIFY_AUTO_INCREMENT_WITH_REDEFINITION:
       ddl_type_str = "modify auto increment column with redefinition";
-      break;
-    case DDL_PARTITION_SPLIT_RECOVERY_TABLE_REDEFINITION:
-      ddl_type_str = "partition split recovery table redefinition";
-      break;
-    case DDL_REPLACE_MLOG:
-      ddl_type_str = "replace materialized view log";
       break;
     default:
       ret = OB_ERR_UNEXPECTED;
@@ -1023,8 +491,8 @@ int ObDDLTask::set_ddl_stmt_str(const ObString &ddl_stmt_str)
 int ObDDLTask::serialize_params_to_message(char *buf, const int64_t buf_size, int64_t &pos) const
 {
   int ret = OB_SUCCESS;
-  ObDDLTaskSerializeField serialize_field(task_version_, parallelism_, data_format_version_, consumer_group_id_, is_abort_,
-                                          sub_task_trace_id_, is_unique_index_, is_global_index_, is_pre_split_, is_no_logging_);
+  ObDDLTaskSerializeField serialize_field(task_version_, parallelism_, data_format_version_, is_abort_,
+                                          sub_task_trace_id_, is_unique_index_, is_global_index_, is_no_logging_);
   
   if (OB_UNLIKELY(nullptr == buf || buf_size <= 0)) {
     ret = OB_INVALID_ARGUMENT;
@@ -1050,12 +518,10 @@ int ObDDLTask::deserialize_params_from_message(const char *buf, const int64_t bu
     task_version_ = serialize_field.task_version_;
     parallelism_ = serialize_field.parallelism_;
     data_format_version_ = serialize_field.data_format_version_;
-    consumer_group_id_ = serialize_field.consumer_group_id_;
     is_abort_ = serialize_field.is_abort_;
     sub_task_trace_id_ = serialize_field.sub_task_trace_id_;
     is_unique_index_ = serialize_field.is_unique_index_;
     is_global_index_ = serialize_field.is_global_index_;
-    is_pre_split_ = serialize_field.is_pre_split_;
     is_no_logging_ = serialize_field.is_no_logging_;
   }
   return ret;
@@ -1063,8 +529,8 @@ int ObDDLTask::deserialize_params_from_message(const char *buf, const int64_t bu
 
 int64_t ObDDLTask::get_serialize_param_size() const
 {
-  ObDDLTaskSerializeField serialize_field(task_version_, parallelism_, data_format_version_, consumer_group_id_, is_abort_,
-                                          sub_task_trace_id_, is_unique_index_, is_global_index_, is_pre_split_, is_no_logging_);
+  ObDDLTaskSerializeField serialize_field(task_version_, parallelism_, data_format_version_, is_abort_,
+                                          sub_task_trace_id_, is_unique_index_, is_global_index_, is_no_logging_);
   return serialize_field.get_serialize_size(); 
 }
 
@@ -1158,6 +624,7 @@ int ObDDLTask::update_task_record_status_and_msg(common::ObISQLClient &proxy, co
 int ObDDLTask::switch_status(const ObDDLTaskStatus new_status, const bool enable_flt, const int ret_code)
 {
   int ret = OB_SUCCESS;
+  UNUSED(enable_flt);
   int tmp_ret = OB_SUCCESS;
   bool is_cancel = false;
   bool is_standby_tenant = false;
@@ -1166,7 +633,7 @@ int ObDDLTask::switch_status(const ObDDLTaskStatus new_status, const bool enable
   ObDDLTaskStatus real_new_status = new_status;
   const ObDDLTaskStatus old_status = task_status_;
   const bool error_need_retry = OB_SUCCESS != ret_code && is_error_need_retry(ret_code);
-  if (!is_partition_split_recovery_table_redefinition(task_type_) && OB_TMP_FAIL(check_ddl_task_is_cancel(trace_id_, is_cancel))) {
+  if (OB_TMP_FAIL(check_ddl_task_is_cancel(trace_id_, is_cancel))) {
     LOG_WARN("check ddl task is cancel failed", K(tmp_ret), K(task_id_), K(parent_task_id_), K_(trace_id));
   }
   if (is_cancel) {
@@ -1180,11 +647,7 @@ int ObDDLTask::switch_status(const ObDDLTaskStatus new_status, const bool enable
     real_ret_code = OB_SUCCESS;
   }
   ret_code_ = OB_SUCCESS == ret_code_ ? real_ret_code : ret_code_;
-  if (is_tablet_split(task_type_)) {
-    real_new_status = OB_SUCCESS != real_ret_code ? WAIT_PARTITION_SPLIT_RECOVERY_TASK_FINISH : real_new_status;
-  } else {
-    real_new_status = OB_SUCCESS != real_ret_code ? FAIL : real_new_status;
-  }
+  real_new_status = OB_SUCCESS != real_ret_code ? FAIL : real_new_status;
   ObMySQLTransaction trans;
   if (OB_ISNULL(GCTX.sql_proxy_)) {
     ret = OB_INVALID_ARGUMENT;
@@ -1217,12 +680,7 @@ int ObDDLTask::switch_status(const ObDDLTaskStatus new_status, const bool enable
     } else if (old_status == real_new_status) {
       // do nothing
     } else {
-      if (OB_DDL_TASK_ENABLE_TRACING && enable_flt) {
-        ddl_tracing_.end_status_span();
-        if (OB_SUCC(ret)) {
-          ret = update_task_record_status_and_msg(trans, real_new_status);
-        }
-      } else if (OB_FAIL(ObDDLTaskRecordOperator::update_task_status(
+      if (OB_FAIL(ObDDLTaskRecordOperator::update_task_status(
               trans, task_id_, static_cast<int64_t>(real_new_status)))) {
         LOG_WARN("update task status failed", K(ret), K(task_id_), K(real_new_status));
       }
@@ -1552,10 +1010,10 @@ int64_t ObDDLTask::get_execution_id() const
 // calculate task execution id or tablet execution id
 // @param execution_id: task execution id or tablet execution id
 // @param next_execution_id: next task execution id or next tablet execution id
-int ObDDLTask::calc_next_execution_id(int64_t execution_id, const ObDDLType ddl_type, const bool ddl_can_retry, int64_t &next_execution_id)
+int ObDDLTask::calc_next_execution_id(int64_t execution_id, const bool ddl_can_retry, int64_t &next_execution_id)
 {
   int ret = OB_SUCCESS;
-  if (ObDDLUtil::use_idempotent_mode() || ObDDLUtil::is_mview_not_retryable(ddl_type)) {
+  if (ObDDLUtil::use_idempotent_mode()) {
     if (1 == execution_id && !ddl_can_retry) {
       ret = OB_TASK_EXPIRED;
     } else {
@@ -1591,7 +1049,7 @@ int ObDDLTask::push_task_execution_id(const int64_t task_id, const ObDDLType ddl
     if (OB_FAIL(ObDDLTaskRecordOperator::select_for_update(trans, task_id, task_status, task_execution_id, ret_code, unused_snapshot_ver))) {
       LOG_WARN("select for update failed", K(ret), K(task_id));
     } else {
-      if (OB_FAIL(calc_next_execution_id(task_execution_id, ddl_type, ddl_can_retry, new_task_execution_id))) {
+      if (OB_FAIL(calc_next_execution_id(task_execution_id, ddl_can_retry, new_task_execution_id))) {
         LOG_WARN("calc next execution id failed", K(ret), K(task_execution_id), K(ddl_type), K(ddl_can_retry), K(new_task_execution_id));
       } else if (OB_FAIL(ObDDLTaskRecordOperator::update_execution_id(trans, task_id, new_task_execution_id))) {
         LOG_WARN("update execution id failed", K(ret));
@@ -1695,11 +1153,6 @@ void ObDDLTask::check_ddl_task_execute_too_long()
       LOG_DBA_ERROR(OB_DDL_TASK_EXECUTE_TOO_MUCH_TIME, "msg","ddl task executes too much time", K(ret), K(task_id_), K(execute_time));
     }
   }
-}
-
-bool ObDDLTask::check_is_load_data(ObDDLType ddl_type)
-{
-  return (ddl_type == ObDDLType::DDL_DIRECT_LOAD || ddl_type == ObDDLType::DDL_DIRECT_LOAD_INSERT);
 }
 
 #ifdef ERRSIM
@@ -1821,40 +1274,24 @@ void ObDDLWaitTransEndCtx::reset()
 struct SendItem final
 {
 public:
-  bool operator < (const SendItem &other) const { return leader_addr_ <  other.leader_addr_; }
-  TO_STRING_KV(K_(leader_addr), K_(ls_id), K_(tablet_id), KP_(other_info));
+  TO_STRING_KV(K_(tablet_id), KP_(other_info));
 public:
-  ObAddr leader_addr_;
-  ObLSID ls_id_;
   ObTabletID tablet_id_;
   void *other_info_;
 };
 
-int group_tablets_leader_addr(const ObIArray<ObTabletID> &tablet_ids, ObLocationService *location_service, ObArray<SendItem> &group_items)
+int build_send_items(const ObIArray<ObTabletID> &tablet_ids, ObArray<SendItem> &send_items)
 {
   int ret = OB_SUCCESS;
-  group_items.reuse();
-  if (OB_UNLIKELY(nullptr == location_service)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret), K(tablet_ids.count()));
-  } else {
-    int64_t rpc_timeout = ObDDLUtil::get_default_ddl_rpc_timeout();
-    if (OB_FAIL(group_items.reserve(tablet_ids.count()))) {
-      LOG_WARN("reserve send array failed", K(ret), K(tablet_ids.count()));
-    }
-    for (int64_t i = 0; OB_SUCC(ret) && i < tablet_ids.count(); ++i) {
-      const ObTabletID &tablet_id = tablet_ids.at(i);
-      SendItem item;
-      if (OB_FAIL(ObDDLUtil::get_tablet_leader_addr(location_service,
-                                                    tablet_id,
-                                                    rpc_timeout,
-                                                    item.ls_id_,
-                                                    item.leader_addr_))) {
-        LOG_WARN("get tablet leader addr failed", K(ret));
-      } else if (FALSE_IT(item.tablet_id_ = tablet_id)) {
-      } else if (OB_FAIL(group_items.push_back(item))) {
-        LOG_WARN("push back send item failed", K(ret), K(item));
-      }
+  send_items.reuse();
+  if (OB_FAIL(send_items.reserve(tablet_ids.count()))) {
+    LOG_WARN("reserve send array failed", K(ret), K(tablet_ids.count()));
+  }
+  for (int64_t i = 0; OB_SUCC(ret) && i < tablet_ids.count(); ++i) {
+    SendItem item;
+    item.tablet_id_ = tablet_ids.at(i);
+    if (OB_FAIL(send_items.push_back(item))) {
+      LOG_WARN("push back send item failed", K(ret), K(item));
     }
   }
   return ret;
@@ -1871,7 +1308,7 @@ int check_trans_end(const ObArray<SendItem> &send_array,
   int ret = OB_SUCCESS;
   ret_array.reuse();
   snapshot_array.reuse();
-  hash::ObHashMap<obcall::ObLSTabletPair, obcall::ObCheckTransElapsedResult> result_map;
+  hash::ObHashMap<obcall::ObTabletPair, obcall::ObCheckTransElapsedResult> result_map;
   pending_tx_id.reset();
   if (OB_UNLIKELY(send_array.empty())) {
     ret = OB_INVALID_ARGUMENT;
@@ -1883,10 +1320,9 @@ int check_trans_end(const ObArray<SendItem> &send_array,
     arg.tablets_.reuse();
     for (int64_t i = 0; OB_SUCC(ret) && i < send_array.count(); ++i) {
       const SendItem &send_item = send_array.at(i);
-      ObLSTabletPair ls_tablet_pair;
-      ls_tablet_pair.ls_id_ = send_item.ls_id_;
-      ls_tablet_pair.tablet_id_ = send_item.tablet_id_;
-      if (OB_FAIL(arg.tablets_.push_back(ls_tablet_pair))) {
+      ObTabletPair tablet_pair;
+      tablet_pair.tablet_id_ = send_item.tablet_id_;
+      if (OB_FAIL(arg.tablets_.push_back(tablet_pair))) {
         LOG_WARN("push back send item failed", K(ret), K(i), K(send_item));
       }
     }
@@ -1899,7 +1335,7 @@ int check_trans_end(const ObArray<SendItem> &send_array,
           LOG_WARN("result count mismatch", K(ret), K(arg.tablets_.count()), K(result.results_.count()));
         } else {
           for (int64_t j = 0; OB_SUCC(ret) && j < result.results_.count(); ++j) {
-            const ObLSTabletPair &send_item = arg.tablets_.at(j);
+            const ObTabletPair &send_item = arg.tablets_.at(j);
             const ObCheckTransElapsedResult &result_item = result.results_.at(j);
             if (OB_FAIL(result_map.set_refactored(send_item, result_item))) {
               LOG_WARN("insert into result map failed", K(ret));
@@ -1922,12 +1358,11 @@ int check_trans_end(const ObArray<SendItem> &send_array,
         LOG_WARN("reserve snapshot array failed", K(ret));
       }
       for (int64_t i = 0; OB_SUCC(ret) && i < send_array.count(); ++i) {
-        const SendItem &send_item = send_array.at(i);
-        ObLSTabletPair ls_tablet_pair;
-        ls_tablet_pair.ls_id_ = send_item.ls_id_;
-        ls_tablet_pair.tablet_id_ = send_item.tablet_id_;
-        ObCheckTransElapsedResult result_item;
-        if (OB_FAIL(result_map.get_refactored(ls_tablet_pair, result_item))) {
+      const SendItem &send_item = send_array.at(i);
+      ObTabletPair tablet_pair;
+      tablet_pair.tablet_id_ = send_item.tablet_id_;
+      ObCheckTransElapsedResult result_item;
+      if (OB_FAIL(result_map.get_refactored(tablet_pair, result_item))) {
           LOG_WARN("get result failed", K(ret), K(send_item));
         } else if (OB_FAIL(ret_array.push_back(result_item.ret_code_))) {
           LOG_WARN("push back return code failed", K(ret), K(send_item), K(result_item));
@@ -1947,7 +1382,6 @@ int ObDDLWaitTransEndCtx::check_schema_trans_end(
     const common::ObIArray<common::ObTabletID> &tablet_ids,
     common::ObIArray<int> &ret_array,
     common::ObIArray<int64_t> &snapshot_array,
-    ObLocationService *location_service,
     const bool need_wait_trans_end,
     const bool need_write_defensive)
 {
@@ -1955,11 +1389,11 @@ int ObDDLWaitTransEndCtx::check_schema_trans_end(
   ret_array.reset();
   snapshot_array.reset();
   ObArray<SendItem> send_array;
-  if (OB_UNLIKELY(schema_version <= 0 || tablet_ids.count() <= 0 || nullptr == location_service)) {
+  if (OB_UNLIKELY(schema_version <= 0 || tablet_ids.count() <= 0)) {
     ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret), K(schema_version), K(tablet_ids.count()), KP(location_service));
-  } else if (OB_FAIL(group_tablets_leader_addr(tablet_ids, location_service, send_array))) {
-    LOG_WARN("group tablet by leader addr failed", K(ret), K(tablet_ids.count()));
+    LOG_WARN("invalid argument", K(ret), K(schema_version), K(tablet_ids.count()));
+  } else if (OB_FAIL(build_send_items(tablet_ids, send_array))) {
+    LOG_WARN("build tablet send items failed", K(ret), K(tablet_ids.count()));
   } else if (need_write_defensive && !is_write_defensive_done_) {
     if (OB_FAIL(do_write_defensive(ddl_task_id_, ddl_task_status_, tablet_ids, schema_version))) {
       LOG_WARN("failed to do write defense", K(ret), K(ddl_task_id_), K(ddl_task_status_), K(tablet_ids.count()));
@@ -2032,7 +1466,6 @@ int ObDDLWaitTransEndCtx::do_write_defensive(const int64_t ddl_task_id,
 
 int ObDDLWaitTransEndCtx::check_sstable_trans_end(const int64_t sstable_exist_ts,
     const common::ObIArray<common::ObTabletID> &tablet_ids,
-    ObLocationService *location_service,
     common::ObIArray<int> &ret_array,
     common::ObIArray<int64_t> &snapshot_array)
 {
@@ -2040,13 +1473,11 @@ int ObDDLWaitTransEndCtx::check_sstable_trans_end(const int64_t sstable_exist_ts
   ret_array.reset();
   snapshot_array.reset();
   ObArray<SendItem> send_array;
-  if (OB_UNLIKELY(sstable_exist_ts <= 0 || tablet_ids.count() <= 0
-      || nullptr == location_service)) {
+  if (OB_UNLIKELY(sstable_exist_ts <= 0 || tablet_ids.count() <= 0)) {
     ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret), K(sstable_exist_ts), K(tablet_ids.count()),
-        KP(location_service));
-  } else if (OB_FAIL(group_tablets_leader_addr(tablet_ids, location_service, send_array))) {
-    LOG_WARN("group tablet by leader addr failed", K(ret), K(tablet_ids.count()));
+    LOG_WARN("invalid argument", K(ret), K(sstable_exist_ts), K(tablet_ids.count()));
+  } else if (OB_FAIL(build_send_items(tablet_ids, send_array))) {
+    LOG_WARN("build tablet send items failed", K(ret), K(tablet_ids.count()));
   } else {
     obcall::ObCheckModifyTimeElapsedArg arg;
     
@@ -2096,7 +1527,7 @@ int ObDDLWaitTransEndCtx::try_wait(bool &is_trans_end, int64_t &snapshot_version
         case WaitTransType::WAIT_SCHEMA_TRANS: {
           if (OB_FAIL(check_schema_trans_end(
               wait_version_, need_check_tablets, ret_codes, tmp_snapshots,
-              GCTX.location_service_, need_wait_trans_end, true/*need_write_defensive*/))) {
+              need_wait_trans_end, true/*need_write_defensive*/))) {
             LOG_WARN("check schema transactions elapsed failed", K(ret), K(wait_type_), K(wait_version_));
           }
           break;
@@ -2104,14 +1535,14 @@ int ObDDLWaitTransEndCtx::try_wait(bool &is_trans_end, int64_t &snapshot_version
         case WaitTransType::WAIT_SCHEMA_TRANS_WITHOUT_WRITE_DEFENSIVE: {
           if (OB_FAIL(check_schema_trans_end(
               wait_version_, need_check_tablets, ret_codes, tmp_snapshots,
-              GCTX.location_service_, need_wait_trans_end, false/*need_write_defensive*/))) {
+              need_wait_trans_end, false/*need_write_defensive*/))) {
             LOG_WARN("check schema transactions elapsed failed", K(ret), K(wait_type_), K(wait_version_));
           }
           break;
         }
         case WaitTransType::WAIT_SSTABLE_TRANS: {
           if (OB_FAIL(check_sstable_trans_end(wait_version_, need_check_tablets,
-              GCTX.location_service_, ret_codes, tmp_snapshots))) {
+              ret_codes, tmp_snapshots))) {
             LOG_WARN("check sstable transactions elapsed failed", K(ret), K(wait_type_), K(wait_version_));
           }
           break;
@@ -2180,7 +1611,6 @@ int ObDDLWaitTransEndCtx::get_snapshot(int64_t &snapshot_version)
 {
   int ret = OB_SUCCESS;
   snapshot_version = 0;
-  bool is_external_consistent = false;
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     LOG_WARN("not init", K(ret), K(is_inited_));
@@ -2475,32 +1905,26 @@ int ObDDLWaitColumnChecksumCtx::refresh_zombie_task()
   return ret;
 }
 
-int send_batch_calc_rpc(const ObAddr &leader_addr,
-                        const ObCalcColumnChecksumRequestArg &arg,
+int send_batch_calc_rpc(const ObCalcColumnChecksumRequestArg &arg,
                         ObCalcColumnChecksumRequestRes &res,
                         ObIArray<SendItem> &send_array,
-                        const int64_t group_start_idx,
-                        const int64_t group_end_idx,
                         common::SpinRWLock &item_lock,
                         int64_t &send_succ_count)
 {
   int ret = OB_SUCCESS;
-  int64_t rpc_timeout = 0;
   const int64_t tablet_count = arg.calc_items_.count();
-  if (OB_FAIL(ObDDLUtil::get_ddl_rpc_timeout(tablet_count, rpc_timeout))) {
-    LOG_WARN("get ddl rpc timeout failed", K(ret));
-  } else if (OB_FAIL(GCTX.ob_service_->calc_column_checksum_request(arg, res))) {
-    LOG_WARN("send rpc failed", K(ret), K(arg), K(leader_addr));
-  } else if (res.ret_codes_.count() != arg.calc_items_.count() || res.ret_codes_.count() != (group_end_idx - group_start_idx)) {
+  if (OB_FAIL(GCTX.ob_service_->calc_column_checksum_request(arg, res))) {
+    LOG_WARN("calculate column checksum request failed", K(ret), K(arg));
+  } else if (res.ret_codes_.count() != tablet_count || send_array.count() != tablet_count) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("return codes count not match the argument", K(ret), K(arg.calc_items_.count()),
-        K(res.ret_codes_.count()), "group_count", group_end_idx - group_start_idx);
+        K(res.ret_codes_.count()), K(send_array.count()));
   } else {
     LOG_INFO("send checksum validation task", K(arg));
     SpinWLockGuard guard(item_lock);
-    for (int64_t j = group_start_idx, k = 0; j < group_end_idx; ++j, ++k) { // ignore ret
-      PartitionColChecksumStat *item = reinterpret_cast<PartitionColChecksumStat *>(send_array.at(j).other_info_);
-      int ret_code = res.ret_codes_.at(k);
+    for (int64_t i = 0; i < tablet_count; ++i) { // ignore ret
+      PartitionColChecksumStat *item = reinterpret_cast<PartitionColChecksumStat *>(send_array.at(i).other_info_);
+      int ret_code = res.ret_codes_.at(i);
       if (OB_SUCCESS == ret_code) {
         item->snapshot_ = arg.snapshot_version_;
         item->col_checksum_stat_ = CCS_INVALID;
@@ -2520,88 +1944,43 @@ int ObDDLWaitColumnChecksumCtx::send_calc_rpc(int64_t &send_succ_count)
 {
   int ret = OB_SUCCESS;
   send_succ_count = 0;
-  share::ObLocationService *location_service = nullptr;
   if (OB_UNLIKELY(!is_inited_)) {
     ret = OB_NOT_INIT;
     LOG_WARN("not init", K(ret), K(is_inited_));
-  } else if (OB_ISNULL(location_service = GCTX.location_service_)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret), KP(location_service));
   } else {
-    ObLSID ls_id;
-    int64_t rpc_timeout = ObDDLUtil::get_default_ddl_rpc_timeout();
     ObArray<SendItem> send_array;
+    ObCalcColumnChecksumRequestArg arg;
+    ObCalcColumnChecksumRequestRes res;
+    arg.task_id_ = task_id_;
+    arg.source_table_id_ = source_table_id_;
+    arg.target_table_id_ = target_table_id_;
+    arg.schema_version_ = schema_version_;
+    arg.execution_id_ = execution_id_;
+    arg.snapshot_version_ = snapshot_version_;
+    arg.user_parallelism_ = parallelism_;
     for (int64_t i = 0; OB_SUCC(ret) && i < stat_array_.count(); ++i) {
       PartitionColChecksumStat &item = stat_array_.at(i);
-      ObAddr leader_addr;
       if (!item.is_valid()) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("pkey invalid", K(ret), K(item));
       } else if (item.snapshot_ <= 0 || CCS_NOT_MASTER == item.col_checksum_stat_) {
-        // only send rpc for the request not send or not master
-        if (OB_FAIL(ObDDLUtil::get_tablet_leader_addr(location_service, item.tablet_id_, rpc_timeout, ls_id, leader_addr))) {
-          LOG_WARN("get tablet leader addr failed", K(ret));
-        } else {
-          SendItem send_item;
-          send_item.leader_addr_ = leader_addr;
-          send_item.ls_id_ = ls_id;
-          send_item.tablet_id_ = item.tablet_id_;
-          send_item.other_info_ = reinterpret_cast<void *>(&item);
-          if (OB_FAIL(send_array.push_back(send_item))) {
-            LOG_WARN("push send array failed", K(ret));
-          }
+        SendItem send_item;
+        send_item.tablet_id_ = item.tablet_id_;
+        send_item.other_info_ = reinterpret_cast<void *>(&item);
+        ObCalcColumnChecksumRequestArg::SingleItem calc_item;
+        calc_item.tablet_id_ = item.tablet_id_;
+        calc_item.calc_table_id_ = item.table_id_;
+        if (OB_FAIL(send_array.push_back(send_item))) {
+          LOG_WARN("push send array failed", K(ret));
+        } else if (OB_FAIL(arg.calc_items_.push_back(calc_item))) {
+          LOG_WARN("push checksum item failed", K(ret), K(calc_item));
         }
       }
     }
 
-    if (OB_SUCC(ret)) {
-      // group by leader addr and send batch rpc
-      lib::ob_sort(send_array.begin(), send_array.end());
-
-      ObAddr last_addr;
-      int64_t group_start_idx = 0;
-      ObCalcColumnChecksumRequestArg arg;
-      ObCalcColumnChecksumRequestRes res;
-      
-      arg.task_id_ = task_id_;
-      arg.source_table_id_ = source_table_id_;
-      arg.target_table_id_ = target_table_id_;
-      arg.schema_version_ = schema_version_;
-      arg.execution_id_ = execution_id_;
-      arg.snapshot_version_ = snapshot_version_;
-      arg.user_parallelism_ = parallelism_;
-      for (int64_t i = 0; OB_SUCC(ret) && i < send_array.count(); ++i) {
-        const SendItem &send_item = send_array.at(i);
-        if (send_item.leader_addr_ != last_addr) {
-          if (arg.calc_items_.count() > 0) {
-            if (OB_FAIL(send_batch_calc_rpc(last_addr,
-                    arg, res, send_array, group_start_idx, i, lock_, send_succ_count))) {
-              LOG_WARN("send batch calc rpc failed", K(ret));
-            }
-          }
-          if (OB_SUCC(ret)) {
-            arg.calc_items_.reuse();
-            res.ret_codes_.reuse();
-            last_addr = send_item.leader_addr_;
-            group_start_idx = i;
-          }
-        }
-        if (OB_SUCC(ret)) {
-          ObCalcColumnChecksumRequestArg::SingleItem calc_item;
-          calc_item.ls_id_ = send_item.ls_id_;
-          calc_item.tablet_id_ = send_item.tablet_id_;
-          calc_item.calc_table_id_ = reinterpret_cast<PartitionColChecksumStat *>(send_item.other_info_)->table_id_;
-          if (OB_FAIL(arg.calc_items_.push_back(calc_item))) {
-            LOG_WARN("push back send item failed", K(ret), K(i), K(send_item));
-          }
-        }
-      }
-      if (OB_SUCC(ret) && arg.calc_items_.count() > 0) {
-        if (OB_FAIL(send_batch_calc_rpc(last_addr,
-                arg, res, send_array, group_start_idx, send_array.count(), lock_, send_succ_count))) {
-          LOG_WARN("send batch calc rpc failed", K(ret));
-        }
-      }
+    if (OB_SUCC(ret) && !arg.calc_items_.empty() &&
+        OB_FAIL(send_batch_calc_rpc(arg, res, send_array, lock_, send_succ_count))) {
+      LOG_WARN("calculate column checksum batch failed", K(ret));
     }
   }
   return ret;
@@ -3670,8 +3049,7 @@ int ObDDLTaskRecordOperator::check_has_conflict_ddl(
           } else if (task_record.task_id_ != task_id) {
             switch (ddl_type) {
               case ObDDLType::DDL_DROP_TABLE: {
-                if ((task_record.ddl_type_ == ObDDLType::DDL_DROP_INDEX
-                    || task_record.ddl_type_ == ObDDLType::DDL_DROP_MLOG)
+                if (task_record.ddl_type_ == ObDDLType::DDL_DROP_INDEX
                     && task_record.target_object_id_ != task_record.object_id_) {
                   LOG_WARN("conflict with ddl", K(task_record));
                   has_conflict_ddl = true;
@@ -3689,11 +3067,6 @@ int ObDDLTaskRecordOperator::check_has_conflict_ddl(
               case ObDDLType::DDL_ADD_COLUMN_OFFLINE:
               case ObDDLType::DDL_COLUMN_REDEFINITION:
               case ObDDLType::DDL_TABLE_REDEFINITION:
-              case ObDDLType::DDL_DIRECT_LOAD:
-              case ObDDLType::DDL_DIRECT_LOAD_INSERT:
-              case ObDDLType::DDL_ALTER_COLUMN_GROUP:
-              case ObDDLType::DDL_MVIEW_COMPLETE_REFRESH:
-              case ObDDLType::DDL_PARTITION_SPLIT_RECOVERY_TABLE_REDEFINITION:
                 has_conflict_ddl = true;
                 break;
               default:
@@ -3724,8 +3097,8 @@ int ObDDLTaskRecordOperator::check_rebuild_index_task_exist(const uint64_t data_
                   OB_INVALID_ID == index_table_id)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arg", K(ret), K(index_table_id), K(data_table_id));
-  } else if (OB_FAIL(sql_string.assign_fmt(" SELECT object_id, target_object_id, UNHEX(message) as message_unhex FROM %s WHERE ddl_type in (%d, %d)", 
-                                             OB_ALL_DDL_TASK_STATUS_TNAME, ObDDLType::DDL_REBUILD_INDEX, ObDDLType::DDL_REPLACE_MLOG))) {
+  } else if (OB_FAIL(sql_string.assign_fmt(" SELECT object_id, target_object_id, UNHEX(message) as message_unhex FROM %s WHERE ddl_type = %d",
+                                             OB_ALL_DDL_TASK_STATUS_TNAME, ObDDLType::DDL_REBUILD_INDEX))) {
     LOG_WARN("assign sql string failed", K(ret));
   } else {
     LOG_DEBUG("check_rebuild_index_task_exist target id", K(data_table_id), K(index_table_id));
@@ -3775,7 +3148,7 @@ int ObDDLTaskRecordOperator::check_rebuild_index_task_exist(const uint64_t data_
   return ret;
 }
 
-int ObDDLTaskRecordOperator::check_has_index_or_mlog_task(
+int ObDDLTaskRecordOperator::check_has_index_task(
     common::ObISQLClient &proxy,
     const ObTableSchema &index_schema,
     const uint64_t data_table_id,
@@ -3789,7 +3162,7 @@ int ObDDLTaskRecordOperator::check_has_index_or_mlog_task(
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arg", K(ret), K(data_table_id));
   } else {
-    if (ObVecIndexBuildTask::is_rebuild_dense_vec_index_task(index_schema) || index_schema.is_mlog_table()) {
+    if (ObVecIndexBuildTask::is_rebuild_dense_vec_index_task(index_schema)) {
       ObArenaAllocator allocator(ObModIds::OB_SCHEMA);
       if (OB_FAIL(check_rebuild_index_task_exist(data_table_id, index_table_id, proxy, allocator, has_index_task))) {
         LOG_WARN("fail to check rebuild vec index task", K(ret), K(data_table_id), K(index_table_id));
@@ -3800,9 +3173,9 @@ int ObDDLTaskRecordOperator::check_has_index_or_mlog_task(
       ObSqlString sql_string;
       SMART_VAR(ObMySQLProxy::MySQLResult, res) {
         sqlclient::ObMySQLResult *result = NULL;
-        if (OB_FAIL(sql_string.assign_fmt("SELECT EXISTS(SELECT 1 FROM %s WHERE object_id = %lu AND target_object_id = %lu AND ddl_type IN (%d, %d, %d, %d, %d)) as has",
-            OB_ALL_DDL_TASK_STATUS_TNAME, data_table_id, index_table_id, ObDDLType::DDL_CREATE_INDEX, ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX, ObDDLType::DDL_DROP_INDEX,
-            ObDDLType::DDL_CREATE_MLOG, ObDDLType::DDL_DROP_MLOG))) {
+        if (OB_FAIL(sql_string.assign_fmt("SELECT EXISTS(SELECT 1 FROM %s WHERE object_id = %lu AND target_object_id = %lu AND ddl_type IN (%d, %d, %d)) as has",
+            OB_ALL_DDL_TASK_STATUS_TNAME, data_table_id, index_table_id, ObDDLType::DDL_CREATE_INDEX,
+            ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX, ObDDLType::DDL_DROP_INDEX))) {
           LOG_WARN("assign sql string failed", K(ret));
         } else if (OB_FAIL(proxy.read(res, sql_string.ptr()))) {
           LOG_WARN("query ddl task record failed", K(ret), K(sql_string));
@@ -3820,7 +3193,7 @@ int ObDDLTaskRecordOperator::check_has_index_or_mlog_task(
   return ret;
 }
 
-int ObDDLTaskRecordOperator::get_create_index_or_mlog_task_cnt(
+int ObDDLTaskRecordOperator::get_create_index_task_cnt(
     common::ObISQLClient &proxy,
     const uint64_t data_table_id,
     int64_t &task_cnt)
@@ -3833,9 +3206,9 @@ int ObDDLTaskRecordOperator::get_create_index_or_mlog_task_cnt(
     ObSqlString sql_string;
     SMART_VAR(ObMySQLProxy::MySQLResult, res) {
       sqlclient::ObMySQLResult *result = NULL;
-      if (OB_FAIL(sql_string.assign_fmt("SELECT COUNT(*) as cnt FROM %s WHERE object_id = %lu AND ddl_type IN (%d, %d, %d, %d, %d, %d)",
-          OB_ALL_DDL_TASK_STATUS_TNAME, data_table_id, 
-            ObDDLType::DDL_CREATE_INDEX, ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX, ObDDLType::DDL_CREATE_MLOG,
+      if (OB_FAIL(sql_string.assign_fmt("SELECT COUNT(*) as cnt FROM %s WHERE object_id = %lu AND ddl_type IN (%d, %d, %d, %d, %d)",
+          OB_ALL_DDL_TASK_STATUS_TNAME, data_table_id,
+            ObDDLType::DDL_CREATE_INDEX, ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX,
             ObDDLType::DDL_CREATE_VEC_INDEX, ObDDLType::DDL_CREATE_MULTIVALUE_INDEX, ObDDLType::DDL_CREATE_FTS_INDEX))) {
         LOG_WARN("assign sql string failed", K(ret));
       } else if (OB_FAIL(proxy.read(res, sql_string.ptr()))) {
@@ -4273,58 +3646,6 @@ int ObDDLTaskRecordOperator::kill_inner_sql(
   } else if (OB_UNLIKELY(affected_rows < 0)) {  // kill session affected_rows is 0
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("unexpected affected_rows", K(ret), K(affected_rows));
-  }
-  return ret;
-}
-
-int ObDDLTaskRecordOperator::get_partition_split_task_ids(
-    common::ObISQLClient &proxy,
-    const ObIArray<uint64_t> &table_ids,
-    ObIArray<int64_t> &task_ids)
-{
-  int ret = OB_SUCCESS;
-  ObSqlString sql_table_ids;
-  ObSqlString sql_string;
-  task_ids.reset();
-  if (OB_UNLIKELY(table_ids.count() < 1)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid argument", K(ret), K(table_ids.count()));
-  } else {
-    SMART_VAR(ObMySQLProxy::MySQLResult, res) {
-      sqlclient::ObMySQLResult *result = NULL;
-      for (int64_t i = 0; OB_SUCC(ret) && i < table_ids.count(); i++) {
-        if (OB_FAIL(sql_table_ids.append_fmt("%s %lu", 0 == i ? "" : ", ", table_ids.at(i)))) {
-          LOG_WARN("append sql failed", K(ret));
-        }
-      }
-      if (OB_SUCC(ret)) {
-        if (OB_FAIL(sql_string.assign_fmt("SELECT task_id FROM %s WHERE object_id in (%.*s) AND ddl_type >= %u AND ddl_type <= %u",
-                    OB_ALL_DDL_TASK_STATUS_TNAME, static_cast<int>(sql_table_ids.length()), sql_table_ids.ptr(), ObDDLType::DDL_AUTO_SPLIT_BY_RANGE, ObDDLType::DDL_MANUAL_SPLIT_NON_RANGE))) {
-          LOG_WARN("assign sql string failed", K(ret));
-        } else if (OB_FAIL(proxy.read(res, sql_string.ptr()))) {
-          LOG_WARN("query task_ids task failed", K(ret), K(sql_string));
-        } else if (OB_UNLIKELY(NULL == (result = res.get_result()))) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("fail to get sql result", K(ret));
-        } else {
-          while (OB_SUCC(ret) && OB_SUCC(result->next())) {
-            int64_t task_id = OB_INVALID_ID;
-            EXTRACT_INT_FIELD_MYSQL(*result, "task_id", task_id, int64_t);
-            if (OB_FAIL(ret)) {
-            } else if (OB_FAIL(task_ids.push_back(task_id))) {
-              LOG_WARN("failed to push bakc into task_ids", K(ret), K(task_ids));
-            }
-          }
-
-          if (OB_ITER_END == ret) {
-            //overwrite ret
-            ret = OB_SUCCESS;
-          } else {
-            LOG_WARN("fail to iter result", K(ret));
-          }
-        }
-      }
-    }
   }
   return ret;
 }

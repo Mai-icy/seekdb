@@ -33,10 +33,7 @@ public:
   ObExpandAggregateUtils(ObRawExprFactory &expr_factory,
                          ObSQLSessionInfo *session_info): 
     expr_factory_(expr_factory),
-    session_info_(session_info),
-    expand_for_mv_(false) {}
-
-  void set_expand_for_mv() { expand_for_mv_ = true; }
+    session_info_(session_info) {}
 
   int expand_aggr_expr(ObDMLStmt *stmt, bool &trans_happened);
 
@@ -151,9 +148,7 @@ private:
     return aggr_type == T_FUN_AVG || aggr_type == T_FUN_STDDEV ||
            aggr_type == T_FUN_VARIANCE || aggr_type == T_FUN_STDDEV_POP ||
            aggr_type == T_FUN_STDDEV_SAMP ||
-           aggr_type == T_FUN_APPROX_COUNT_DISTINCT || 
-           aggr_type == T_FUN_SYS_RB_AND_CARDINALITY_AGG ||
-           aggr_type == T_FUN_SYS_RB_OR_CARDINALITY_AGG;
+           aggr_type == T_FUN_APPROX_COUNT_DISTINCT;
   }
 
   int expand_avg_expr(ObAggFunRawExpr *aggr_expr,
@@ -180,9 +175,6 @@ private:
                                         ObRawExpr *&replace_expr,
                                         ObIArray<ObAggFunRawExpr *> &new_aggr_items);
 
-  int expand_rb_cardinality_expr(ObAggFunRawExpr *aggr_expr,
-                                 ObRawExpr *&replace_expr,
-                                 ObIArray<ObAggFunRawExpr*> &new_aggr_items);
   int add_cast_expr(ObRawExpr *expr,
                     const ObRawExprResType &dst_type,
                     ObRawExpr *&new_expr);
@@ -193,7 +185,6 @@ private:
 
   ObRawExprFactory &expr_factory_;
   ObSQLSessionInfo *session_info_;
-  bool expand_for_mv_;
 };
 
 } // namespace sql

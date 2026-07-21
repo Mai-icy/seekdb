@@ -86,7 +86,7 @@ public:
       uint64_t is_batch_stmt_                   : 1;
       uint64_t is_insert_up_                    : 1;
       uint64_t reserved_compat_flag_0_          : 1;
-      uint64_t is_access_mlog_as_master_table_  : 1;
+      uint64_t is_access_main_table_            : 1;
       uint64_t is_access_vidx_as_master_table_  : 1; // FARM COMPAT WHITELIST for 4_2_1_release compatibility
       uint64_t is_update_partition_key_         : 1; // FARM COMPAT WHITELIST for 4_2_1_release compatibility
       uint64_t is_update_uk_                    : 1;
@@ -186,7 +186,6 @@ public:
     : ObDASDMLBaseRtDef(DAS_OP_TABLE_INSERT),
       need_fetch_conflict_(false),
       is_duplicated_(false),
-      direct_insert_task_id_(0),
       use_put_(false),
       ddl_task_id_(0)
   { }
@@ -194,7 +193,6 @@ public:
   INHERIT_TO_STRING_KV("ObDASBaseRtDef", ObDASDMLBaseRtDef,
                        K_(need_fetch_conflict),
                        K_(is_duplicated),
-                       K_(direct_insert_task_id),
                        K_(use_put),
                        K_(ddl_task_id));
 
@@ -203,8 +201,6 @@ public:
   // used to check whether duplicate_key error occurred, will be set in das_insert_op
   // not need to serialize
   bool is_duplicated_;
-  // used in direct-insert mode
-  int64_t direct_insert_task_id_;
   // use put semantics for overlay writing.
   bool use_put_;
   int64_t ddl_task_id_;
@@ -519,39 +515,6 @@ private:
   int64_t batch_size_;
 };
 
-class ObDASMLogDMLIterator : public blocksstable::ObDatumRowIterator
-{
-public:
-  // support get next datum row
-  ObDASMLogDMLIterator(
-      const share::ObLSID &ls_id,
-      const ObTabletID &tablet_id,
-      const storage::ObDMLBaseParam &dml_param,
-      ObDatumRowIterator *iter,
-      ObDASOpType op_type)
-    : ls_id_(ls_id),
-      tablet_id_(tablet_id),
-      dml_param_(dml_param),
-      row_iter_(iter),
-      op_type_(op_type),
-      is_old_row_(false)
-  {
-    if ((DAS_OP_TABLE_UPDATE == op_type_)
-        || (DAS_OP_TABLE_INSERT == op_type_)) {
-      is_old_row_ = true;
-    }
-  }
-  virtual ~ObDASMLogDMLIterator() {}
-  virtual int get_next_row(blocksstable::ObDatumRow *&datum_row) override;
-
-private:
-  const share::ObLSID &ls_id_;
-  const ObTabletID &tablet_id_;
-  const storage::ObDMLBaseParam &dml_param_;
-  ObDatumRowIterator *row_iter_;
-  ObDASOpType op_type_;
-  bool is_old_row_;
-};
 }  // namespace sql
 }  // namespace oceanbase
 #endif /* DEV_SRC_SQL_DAS_OB_DAS_DML_CTX_DEFINE_H_ */

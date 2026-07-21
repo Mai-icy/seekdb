@@ -756,10 +756,6 @@ int ObServerSchemaService::get_increment_tablegroup_keys(
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("failed to add new tablegroup id", K(hash_ret), KR(ret));
       } else if (OB_DDL_ALTER_TABLEGROUP_PARTITION == schema_operation.op_type_
-                 || OB_DDL_SPLIT_TABLEGROUP_PARTITION == schema_operation.op_type_
-                 || OB_DDL_PARTITIONED_TABLEGROUP_TABLE == schema_operation.op_type_
-                 || OB_DDL_FINISH_SPLIT_TABLEGROUP == schema_operation.op_type_
-                 || OB_DDL_FINISH_LOGICAL_SPLIT_TABLEGROUP == schema_operation.op_type_
                  || OB_DDL_DELAY_DELETE_TABLEGROUP_PARTITION == schema_operation.op_type_) {
         // alter tablegroup partition is a batch operation, which needs to trigger the schema refresh of
         // the table under the same tablegroup
@@ -822,11 +818,7 @@ int ObServerSchemaService::get_increment_tablegroup_keys_reversely(
       if (OB_FAIL(REPLAY_OP(schema_key, schema_keys.del_tablegroup_keys_,
           schema_keys.new_tablegroup_keys_, is_delete, is_exist))) {
         LOG_WARN("replay operation failed", KR(ret));
-      } else if (OB_DDL_ALTER_TABLEGROUP_PARTITION == schema_operation.op_type_
-                 || OB_DDL_SPLIT_TABLEGROUP_PARTITION == schema_operation.op_type_
-                 || OB_DDL_PARTITIONED_TABLEGROUP_TABLE == schema_operation.op_type_
-                 || OB_DDL_FINISH_SPLIT_TABLEGROUP == schema_operation.op_type_
-                 || OB_DDL_FINISH_LOGICAL_SPLIT_TABLEGROUP == schema_operation.op_type_) {
+      } else if (OB_DDL_ALTER_TABLEGROUP_PARTITION == schema_operation.op_type_) {
         // alter tablegroup partition is a batch operation, which needs to trigger the schema refresh of
         // the table under the same tablegroup
         ObArray<const ObSimpleTableSchemaV2 *> table_schemas;
@@ -3695,11 +3687,9 @@ bool ObServerSchemaService::need_construct_aux_infos_(
 {
   bool bret = true;
   if (table_schema.is_index_table()
-      || (table_schema.is_view_table()
-           && !table_schema.is_materialized_view())
-       || table_schema.is_aux_vp_table()
-       || table_schema.is_aux_lob_table()
-       || table_schema.is_mlog_table()) {
+      || table_schema.is_view_table()
+      || table_schema.is_aux_vp_table()
+      || table_schema.is_aux_lob_table()) {
     bret = false;
   }
   return bret;
@@ -3738,12 +3728,6 @@ int ObServerSchemaService::construct_aux_infos_(
       } else if (AUX_VERTIAL_PARTITION_TABLE == aux_table_meta.table_type_) {
         if (OB_FAIL(table_schema.add_aux_vp_tid(aux_table_meta.table_id_))) {
           LOG_WARN("add aux vp table id failed", KR(ret), K(aux_table_meta));
-        }
-      } else if (MATERIALIZED_VIEW_LOG == aux_table_meta.table_type_) {
-        if (aux_table_meta.is_tmp_mlog_) {
-          table_schema.set_tmp_mlog_tid(aux_table_meta.table_id_);
-        } else {
-          table_schema.set_mlog_tid(aux_table_meta.table_id_);
         }
       }
     } // end FOREACH_CNT_X
@@ -4057,7 +4041,7 @@ int ObServerSchemaService::refresh_full_schema(
       // And the latter table was deleted again, at this time refresh will not delete this table in the cache
       if (OB_SUCC(ret)) {
         // after sys tenant refresh full schema, all optimizations of bootstrap should be completed.
-        if (true) {
+        {
           GCTX.in_bootstrap_ = false;
         }
         break;
@@ -4626,7 +4610,7 @@ int ObServerSchemaService::refresh_tenant_full_normal_schema(
     // 1. Add the full tenant schema of the system tenant to schema_cache
     // 2. Initialize the schema memory management structure of ordinary tenants
     // 3. Add the simple tenant schema of all tenants
-    if (true) {
+    {
       ObArray<ObSimpleTenantSchema> simple_tenants;
       if (OB_FAIL(schema_service_->get_all_tenants(sql_client,
                                                    schema_version,
@@ -4672,9 +4656,6 @@ int ObServerSchemaService::refresh_tenant_full_normal_schema(
           }
         }
       }
-    } else {
-      // Ordinary tenant schema refreshing relies on the system tenant to refresh the tenant and
-      // initialize the related memory structure
     }
 
     if (OB_SUCC(ret)) {

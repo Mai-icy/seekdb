@@ -195,7 +195,7 @@ public: // derived from ObFreezeCheckpoint
 
 public: // derived from ObITabletMemtable
   virtual int init(const ObITable::TableKey &table_key,
-                   ObLSHandle &ls_handle,
+                   ObLS *tenant_ls,
                    storage::ObFreezer *freezer,
                    storage::ObTabletMemtableMgr *memtable_mgr,
                    const int64_t schema_version,
@@ -320,8 +320,6 @@ public:
   int row_compact(ObMvccRow *value,
                   const share::SCN snapshot_version,
                   const int64_t flag);
-  int64_t get_hash_item_count() const;
-  int64_t get_hash_alloc_memory() const;
   int64_t get_btree_item_count() const;
   int64_t get_btree_alloc_memory() const;
 
@@ -351,11 +349,10 @@ public:
   const ObMvccEngine &get_mvcc_engine() const { return mvcc_engine_; }
   void pre_batch_destroy_keybtree();
   static int batch_remove_unused_callback_for_uncommited_txn(
-    const share::ObLSID ls_id,
     const memtable::ObMemtableSet *memtable_set);
 
   /* freeze */
-  virtual int flush(share::ObLSID ls_id) override;
+  virtual int flush() override;
 
   bool is_empty() const override
   {
@@ -371,12 +368,12 @@ public:
   // recommend scn should belong to the tables before the memtable and the
   // memtable. And under exception case, user need guarantee all new data is
   // bigger than the recommend_scn.
-  inline void set_transfer_freeze(const share::SCN recommend_scn)
+  inline void set_recommend_snapshot_freeze(const share::SCN recommend_scn)
   {
     recommend_snapshot_version_.atomic_set(recommend_scn);
-    ATOMIC_STORE(&transfer_freeze_flag_, true);
+    ATOMIC_STORE(&recommend_snapshot_freeze_flag_, true);
   }
-  inline bool is_transfer_freeze() const { return ATOMIC_LOAD(&transfer_freeze_flag_); }
+  inline bool has_recommend_snapshot_freeze() const { return ATOMIC_LOAD(&recommend_snapshot_freeze_flag_); }
   virtual void set_delete_insert_flag(const bool rhs) override { is_delete_insert_table_ = rhs; }
   inline bool is_delete_insert_table() const { return is_delete_insert_table_; }
   virtual uint32_t get_freeze_flag() override;
@@ -404,8 +401,7 @@ public:
                        K_(contain_hotspot_row),
                        K_(snapshot_version),
                        K_(contain_hotspot_row),
-                       K_(ls_id),
-                       K_(transfer_freeze_flag),
+                       K_(recommend_snapshot_freeze_flag),
                        K_(recommend_snapshot_version),
                        K_(is_delete_insert_table));
 private:
@@ -503,11 +499,11 @@ private:
 private:
   DISALLOW_COPY_AND_ASSIGN(ObMemtable);
   bool is_inited_;
-  bool transfer_freeze_flag_;
+  bool recommend_snapshot_freeze_flag_;
   bool contain_hotspot_row_;
   bool is_delete_insert_table_;
 
-  storage::ObLSHandle ls_handle_;
+  storage::ObLS *ls_;
   ObSingleMemstoreAllocator local_allocator_;
   ObMTKVBuilder kv_builder_;
   ObQueryEngine query_engine_;
@@ -520,7 +516,6 @@ private:
   share::SCN recommend_snapshot_version_;
 
   int64_t state_;
-  lib::Worker::CompatMode mode_;
   int64_t minor_merged_time_;
   int64_t max_column_cnt_; // record max column count of row
 };

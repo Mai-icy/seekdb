@@ -27,11 +27,12 @@
 #include "rootserver/fork_table/ob_fork_table_util.h"
 #include "observer/vector_index/ob_vector_index_util.h"
 #include "share/schema/ob_schema_utils.h"
-#include "share/tablet/ob_tablet_to_ls_operator.h"
+#include "share/tablet/ob_tablet_mapping_operator.h"
 #include "storage/tablet/ob_tablet_fork_mds_helper.h"
 #include "storage/truncate_info/ob_truncate_info.h"
 #include "storage/truncate_info/ob_truncate_info_array.h"
 #include "storage/tx/ob_ts_mgr.h"
+#include "storage/ls/ob_ls.h"
 #include "storage/tx_storage/ob_ls_service.h"
 
 namespace oceanbase {
@@ -43,8 +44,7 @@ static int check_table_index_features(const ObTableSchema &table_schema,
                                       bool &has_ivf_index,
                                       bool &has_spatial_index,
                                       bool &has_global_index,
-                                      bool &has_async_vec_index,
-                                      bool &has_column_store_index)
+                                      bool &has_async_vec_index)
 {
   int ret = OB_SUCCESS;
   ObSEArray<ObAuxTableMetaInfo, 16> simple_index_infos;
@@ -53,7 +53,6 @@ static int check_table_index_features(const ObTableSchema &table_schema,
   has_spatial_index = false;
   has_global_index = false;
   has_async_vec_index = false;
-  has_column_store_index = false;
   if (OB_FAIL(table_schema.get_simple_index_infos(simple_index_infos))) {
     LOG_WARN("fail to get simple index infos", K(ret));
   } else {
@@ -62,7 +61,7 @@ static int check_table_index_features(const ObTableSchema &table_schema,
     for (int64_t i = 0; OB_SUCC(ret) && i < simple_index_infos.count() &&
                         (!has_semantic_index || !has_ivf_index ||
                          !has_spatial_index || !has_global_index ||
-                         !has_async_vec_index || !has_column_store_index);
+                         !has_async_vec_index);
          ++i) {
       const ObTableSchema *index_schema = nullptr;
       const uint64_t index_table_id = simple_index_infos.at(i).table_id_;
@@ -93,15 +92,6 @@ static int check_table_index_features(const ObTableSchema &table_schema,
         if (index_schema->is_global_index_table()) {
           has_global_index = true;
         }
-        if (!has_column_store_index) {
-          int64_t index_cg_cnt = 0;
-          if (OB_FAIL(index_schema->get_store_column_group_count(index_cg_cnt))) {
-            LOG_WARN("failed to get store column group count for index", KR(ret),
-                     K(index_table_id));
-          } else if (index_cg_cnt > 1) {
-            has_column_store_index = true;
-          }
-        }
       }
     }
   }
@@ -117,13 +107,11 @@ int check_has_async_vector_index(const ObTableSchema &src_table_schema,
   bool has_ivf_index = false;
   bool has_spatial_index = false;
   bool has_global_index = false;
-  bool has_column_store_index = false;
   has_async_vec_index = false;
   if (OB_FAIL(check_table_index_features(src_table_schema, schema_guard,
                                          has_semantic_index, has_ivf_index,
                                          has_spatial_index, has_global_index,
-                                         has_async_vec_index,
-                                         has_column_store_index))) {
+                                         has_async_vec_index))) {
     LOG_WARN("fail to check table index features", K(ret));
   }
   return ret;
@@ -139,8 +127,6 @@ int check_fork_table_supported(const ObTableSchema &src_table_schema,
   bool has_spatial_index = false;
   bool has_global_index = false;
   bool has_async_vec_index = false;
-  bool has_column_store_index = false;
-  int64_t column_group_cnt = 0;
   if (src_table_schema.is_tmp_table() || src_table_schema.is_ctas_tmp_table()) {
     ret = OB_NOT_SUPPORTED;
     LOG_WARN("fork table on temporary table is not supported", KR(ret),
@@ -161,40 +147,11 @@ int check_fork_table_supported(const ObTableSchema &src_table_schema,
     ret = OB_ERR_OPERATION_ON_RECYCLE_OBJECT;
     LOG_WARN("can fork table from table in recyclebin", K(ret),
              K(src_table_schema));
-  } else if (src_table_schema.has_mlog_table()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("fork table on table with materialized view log is not supported",
-             KR(ret));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED,
-                   "fork table on table with materialized view log is");
-  } else if (src_table_schema.table_referenced_by_fast_lsm_mv()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN(
-        "fork table on table required by materialized view is not supported",
-        KR(ret));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED,
-                   "fork table on table required by materialized view is");
-  } else if (OB_FAIL(src_table_schema.get_store_column_group_count(column_group_cnt))) {
-    LOG_WARN("failed to get store column group count", KR(ret), K(src_table_schema));
-  } else if (column_group_cnt > 1) {
-    // column_group_cnt > 1 means the table has actual column store groups
-    // (SINGLE_COLUMN_GROUP or ALL_COLUMN_GROUP) beyond the default row store group
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("fork table on column store table is not supported", KR(ret),
-             K(src_table_schema), K(column_group_cnt));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED,
-                   "fork table on column store table is");
   } else if (OB_FAIL(check_table_index_features(
                  src_table_schema, schema_guard, has_semantic_index,
                  has_ivf_index, has_spatial_index, has_global_index,
-                 has_async_vec_index, has_column_store_index))) {
+                 has_async_vec_index))) {
     LOG_WARN("fail to check table index features", K(ret), K(src_table_schema));
-  } else if (has_column_store_index) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("fork table on table with column store index is not supported",
-             KR(ret), K(src_table_schema));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED,
-                   "fork table on table with column store index is");
   } else if (has_semantic_index) {
     ret = OB_NOT_SUPPORTED;
     LOG_WARN("fork table on table with semantic index is not supported",
@@ -332,7 +289,6 @@ int ObForkTableHelper::copy_tablet_autoinc_seq_info_()
     obcall::ObBatchSetTabletAutoincSeqArg arg;
     
     
-    arg.ls_id_ = SYS_LS;
     arg.is_tablet_creating_ = true;
 
     for (int64_t i = 0; OB_SUCC(ret) && i < src_tablet_ids_.count(); ++i) {
@@ -365,15 +321,14 @@ int ObForkTableHelper::copy_tablet_autoinc_seq_info_()
     if (OB_SUCC(ret)) {
       storage::ObTabletForkMdsArg fork_mds_arg;
       
-      fork_mds_arg.ls_id_ = SYS_LS;
       if (OB_FAIL(fork_mds_arg.set_autoinc_seq_arg(arg))) {
         LOG_WARN("failed to set autoinc seq arg", K(ret), K(arg));
       } else if (OB_FAIL(storage::ObTabletForkMdsHelper::register_mds(
                      fork_mds_arg, false, trans_))) {
-        LOG_WARN("failed to register fork mds", K(ret), K(SYS_LS));
+        LOG_WARN("failed to register fork mds", K(ret));
       } else {
         LOG_INFO("fork table: successfully registered fork mds for autoinc seq",
-                 K(SYS_LS), K(arg.autoinc_params_.count()));
+                 K(arg.autoinc_params_.count()));
       }
     }
   }
@@ -396,7 +351,7 @@ int ObForkTableHelper::copy_tablet_truncate_info_()
     int64_t empty_cnt = 0;
     int64_t registered_cnt = 0;
 
-    if (OB_FAIL(OB_TS_MGR.get_ts_sync(GCONF.rpc_timeout,
+    if (OB_FAIL(OB_TS_MGR.get_gts_sync(GCONF.rpc_timeout,
                                       max_readable_scn))) {
       LOG_WARN("failed to get gts", K(ret));
     }
@@ -433,9 +388,7 @@ int ObForkTableHelper::copy_tablet_truncate_info_()
       } else {
         storage::ObTabletForkMdsArg fork_mds_arg;
         
-        fork_mds_arg.ls_id_ = SYS_LS;
         rootserver::ObTruncateTabletArg truncate_arg;
-        truncate_arg.ls_id_ = SYS_LS;
         truncate_arg.index_tablet_id_ = dst_tablet_id;
         if (OB_FAIL(truncate_arg.truncate_info_.assign(
                 allocator, *latest_truncate_info))) {
@@ -449,7 +402,7 @@ int ObForkTableHelper::copy_tablet_truncate_info_()
         } else if (OB_FAIL(storage::ObTabletForkMdsHelper::register_mds(
                        fork_mds_arg, false /*need_flush_redo*/, trans_))) {
           LOG_WARN("failed to register fork mds for truncate info", K(ret),
-                   K(SYS_LS), K(dst_tablet_id));
+                   K(dst_tablet_id));
         } else {
           ++registered_cnt;
           LOG_DEBUG(
@@ -661,8 +614,7 @@ const char *ObForkTableHelper::get_table_schema_(const char *table_name)
         "distinct_cnt_synopsis_size, "
         "sample_size, density, bucket_cnt, histogram_type, global_stats, "
         "user_stats, "
-        "spare1, spare2, spare3, spare4, spare5, spare6, cg_macro_blk_cnt, "
-        "cg_micro_blk_cnt, cg_skip_rate";
+        "spare1, spare2, spare3, spare4, spare5, spare6";
   } else if (OB_NOT_NULL(table_name) &&
              0 == STRCMP(table_name, OB_ALL_HISTOGRAM_STAT_TNAME)) {
     ret_schema =
@@ -679,21 +631,11 @@ int ObForkTableHelper::get_tablet_handle_(
     storage::ObTabletHandle &tablet_handle) const
 {
   int ret = OB_SUCCESS;
-  ObLSService *ls_service = nullptr;
   ObLS *ls = nullptr;
-  ObLSHandle ls_handle;
 
   MOD_SCOPE {
-    if (OB_ISNULL(ls_service = share::g_mp->ls_service())) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("ls service is null", K(ret));
-    } else if (OB_FAIL(ls_service->get_ls(SYS_LS, ls_handle,
-                                          ObLSGetMod::DDL_MOD))) {
-      LOG_WARN("get ls failed", K(ret), K(SYS_LS));
-    } else if (FALSE_IT(ls = ls_handle.get_ls())) {
-    } else if (OB_ISNULL(ls)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("ls is null", K(ret), K(SYS_LS));
+    if (OB_FAIL(share::g_mp->ls_service()->get_ls(ls))) {
+      LOG_WARN("get ls failed", K(ret));
     } else if (OB_FAIL(ls->get_tablet(tablet_id, tablet_handle))) {
       LOG_WARN("failed to get tablet", K(ret), K(tablet_id));
     }

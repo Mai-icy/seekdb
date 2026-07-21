@@ -186,10 +186,6 @@ int ObSetCommentHelper::check_table_legitimacy_()
   } else if (OB_ISNULL(orig_table_schema_)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("orig_table_schema_ is nullptr", KR(ret), K_(table_id));
-  } else if (OB_UNLIKELY(orig_table_schema_->is_materialized_view())) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("alter materialized view is not supported", KR(ret));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "alter materialized view is");
   } else if (OB_UNLIKELY(orig_table_schema_->is_ctas_tmp_table())) {
     ret = OB_ERR_WRONG_OBJECT;
     ObCStringHelper helper;
@@ -209,9 +205,6 @@ int ObSetCommentHelper::check_table_legitimacy_()
   } else if (OB_UNLIKELY(orig_table_schema_->is_in_recyclebin())) {
     ret = OB_ERR_OPERATION_ON_RECYCLE_OBJECT;
     LOG_WARN("can not comment table in recyclebin", KR(ret), K(orig_table_schema_->is_in_recyclebin()));
-  } else if (OB_UNLIKELY(orig_table_schema_->is_in_splitting())) {
-    ret = OB_OP_NOT_ALLOW;
-    LOG_WARN("table is physical or logical split can not split", KR(ret), KPC(orig_table_schema_));
   } else {
     // not support parallel comment on mysql mode right now
     ret = OB_NOT_SUPPORTED;

@@ -236,8 +236,6 @@ public:
     partition_schema_version_ = schema_version;
   }
   int64_t get_partition_schema_version() const { return partition_schema_version_; }
-  bool is_in_splitting() const { return  partition_status_ == PARTITION_STATUS_LOGICAL_SPLITTING
-                                         || partition_status_ == PARTITION_STATUS_PHYSICAL_SPLITTING; }
   bool has_self_partition() const { return false; }
 
   bool is_sharding_none() const { return sharding_ == OB_PARTITION_SHARDING_NONE; }
@@ -780,7 +778,6 @@ private:
   ObCCLRuleMgr ccl_rule_mgr_;
   int64_t timestamp_in_slot_; // when schema mgr put in slot, we will set the timestamp
   int64_t allocator_idx_;
-  TableInfos mlog_infos_;
   ObAiModelMgr ai_model_mgr_;
   ObLocationMgr location_mgr_;
 };

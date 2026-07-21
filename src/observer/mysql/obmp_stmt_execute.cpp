@@ -35,7 +35,6 @@
 #include "observer/mysql/ob_async_cmd_driver.h"
 #include "observer/mysql/ob_async_plan_driver.h"
 #include "pl/ob_pl_package.h"
-#include "observer/mysql/obmp_stmt_prexecute.h"
 #include "observer/mysql/obmp_stmt_send_piece_data.h"
 #include "sql/plan_cache/ob_ps_cache.h"
 #include "sql/ob_sql_mock_schema_utils.h"
@@ -151,14 +150,6 @@ int ObMPStmtExecute::init_arraybinding_field(int64_t column_field_cnt,
 
   OZ (arraybinding_columns_->push_back(sql_no_field));
   OZ (arraybinding_columns_->push_back(err_no_field));
-  if (is_prexecute() && column_field_cnt > 3 && OB_NOT_NULL(column_fields)) {
-    // only for pre_execute
-    for (int64_t i = 0; OB_SUCC(ret) && i < column_fields->count(); i++) {
-      if (OB_FAIL(arraybinding_columns_->push_back(column_fields->at(i)))) {
-        LOG_WARN("fail to push arraybinding_columns_", "field", column_fields->at(i), K(i));
-      }
-    }
-  }
   OZ (arraybinding_columns_->push_back(err_msg_field));
 
   return ret;
@@ -194,52 +185,6 @@ int ObMPStmtExecute::init_arraybinding_paramstore(ObIAllocator &alloc)
   return ret;
 }
 
-
-// only used for pre_execute
-int ObMPStmtExecute::init_arraybinding_fields_and_row(ObMySQLResultSet &result)
-{
-  int ret = OB_SUCCESS;
-  int64_t returning_field_num = 0;
-
-  if (!is_prexecute()) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("not support execute protocol", K(ret));
-  } else if (OB_ISNULL(result.get_field_columns())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("not support execute protocol", K(ret));
-  } else {
-    ObIAllocator *alloc = static_cast<ObMPStmtPrexecute*>(this)->get_alloc();
-    if (OB_ISNULL(alloc)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("allocator is null", K(ret));
-    } else if (OB_ISNULL(result.get_field_columns())) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("returning param field is null", K(ret));
-    } else {
-      returning_field_num = result.get_field_columns()->count();
-    }
-
-    if (OB_FAIL(ret)) {
-      // do nothing
-    } else if (OB_ISNULL(arraybinding_columns_
-        = static_cast<ColumnsFieldArray*>(alloc->alloc(sizeof(ColumnsFieldArray))))) {
-      ret = OB_ALLOCATE_MEMORY_FAILED;
-      LOG_WARN("failed to allocate memory", K(ret));
-    } else if (OB_ISNULL(arraybinding_row_
-        = static_cast<ObNewRow*>(alloc->alloc(sizeof(ObNewRow))))) {
-      ret = OB_ALLOCATE_MEMORY_FAILED;
-      LOG_WARN("failed to allocate memory", K(ret));
-    } else {
-      arraybinding_columns_
-        = new(arraybinding_columns_)ColumnsFieldArray(*alloc, 3 + returning_field_num);
-      arraybinding_row_ = new(arraybinding_row_)ObNewRow();
-    }
-    OZ (init_arraybinding_field(returning_field_num + 3, result.get_field_columns()));
-    OZ (init_row_for_arraybinding(*alloc, returning_field_num + 3));
-  }
-
-  return ret;
-}
 
 int ObMPStmtExecute::init_for_arraybinding(ObIAllocator &alloc)
 {
@@ -436,11 +381,7 @@ int ObMPStmtExecute::send_eof_packet_for_arraybinding(ObSQLSessionInfo &session_
   flags.status_flags_.OB_SERVER_STATUS_IN_TRANS
     = (session_info.is_server_status_in_transaction() ? 1 : 0);
   flags.status_flags_.OB_SERVER_STATUS_AUTOCOMMIT = (session_info.get_local_autocommit() ? 1 : 0);
-  // MORE_RESULTS need false in prexecute protocol.
-  // only is_save_exception_ will use this func in prexecute protocol.
-  flags.status_flags_.OB_SERVER_MORE_RESULTS_EXISTS = is_prexecute() && is_save_exception_
-                                                        ? false : true;
-  flags.status_flags_.OB_SERVER_QUERY_WAS_SLOW = !session_info.partition_hit().get_bool();
+  flags.status_flags_.OB_SERVER_MORE_RESULTS_EXISTS = true;
   eofp.set_server_status(flags);
   OZ (response_packet(eofp, &session_info));
 
@@ -453,9 +394,7 @@ int ObMPStmtExecute::response_result_for_arraybinding(
 {
   int ret = OB_SUCCESS;
   if (exception_array.count() > 0) {
-    if (is_prexecute()) {
-      // do nothing
-    } else {
+    {
       OMPKResheader rhp;
       rhp.set_field_count(3);
       OZ (response_packet(rhp, &session_info));
@@ -463,7 +402,7 @@ int ObMPStmtExecute::response_result_for_arraybinding(
       for (int64_t i = 0; OB_SUCC(ret) && i < arraybinding_columns_->count(); ++i) {
         ObMySQLField field;
         OZ (ObMySQLResultSet::to_mysql_field(arraybinding_columns_->at(i), field));
-        ObMySQLResultSet::replace_lob_type(session_info, arraybinding_columns_->at(i), field);
+        ObMySQLResultSet::replace_lob_type(field);
         OMPKField fp(field);
         OZ (response_packet(fp, &session_info));
       }
@@ -495,7 +434,6 @@ int ObMPStmtExecute::response_result_for_arraybinding(
                     && arraybinding_columns_->count() > 3) ? true : false;
     ObOKPParam ok_param;
     ok_param.affected_rows_ = arraybinding_rowcnt_;
-    ok_param.is_partition_hit_ = session_info.partition_hit().get_bool();
     ok_param.has_pl_out_ = ps_out;
     OZ (send_ok_packet(session_info, ok_param));
   }
@@ -809,7 +747,6 @@ int ObMPStmtExecute::parse_request_param_value(ObIAllocator &alloc,
 {
   int ret = OB_SUCCESS;
   ObCharsetType charset = CHARSET_INVALID;
-  ObCharsetType ncharset = CHARSET_INVALID;
   ObCollationType cs_conn = CS_TYPE_INVALID;
   ObCollationType cs_server = CS_TYPE_INVALID;
   if (OB_ISNULL(session)) {
@@ -820,8 +757,6 @@ int ObMPStmtExecute::parse_request_param_value(ObIAllocator &alloc,
   } else if (OB_FAIL(session->get_collation_connection(cs_conn))) {
     LOG_WARN("get charset for client failed", K(ret));
   } else if (OB_FAIL(session->get_collation_server(cs_server))) {
-    LOG_WARN("get charset for client failed", K(ret));
-  } else if (OB_FAIL(session->get_ncharacter_set_connection(ncharset))) {
     LOG_WARN("get charset for client failed", K(ret));
   }
   // Step5: decode value
@@ -836,7 +771,6 @@ int ObMPStmtExecute::parse_request_param_value(ObIAllocator &alloc,
     if (OB_FAIL(parse_param_value(alloc,
                                          param_type,
                                          charset,
-                                         ncharset,
                                          cs_conn,
                                          pos,
                                          session->get_timezone_info(),
@@ -924,22 +858,7 @@ int ObMPStmtExecute::request_params(ObSQLSessionInfo *session,
     // all_param_num  = input_param_num + returning_param_num
     params_num_ = (all_param_num > input_param_num) ? all_param_num : input_param_num;
     int64_t returning_params_num = all_param_num - input_param_num;
-    if (is_prexecute() && 0 != params_num_) {
-      if (ps_session_info->get_num_of_returning_into() > 0) {
-        // check param_cnt for returning into
-        if (returning_params_num != ps_session_info->get_num_of_returning_into()
-            || input_param_num != ps_session_info->get_param_count()) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("param num is not match ps stmt prama count.", K(is_prexecute()), K(params_num_),
-                    K(ps_session_info->get_param_count()));
-        }
-      } else if (params_num_ != ps_session_info->get_param_count()) {
-        // check param_cnt
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("param num is not match ps stmt prama count.", K(is_prexecute()), K(params_num_),
-                 K(ps_session_info->get_param_count()));
-      }
-    }
+    UNUSED(returning_params_num);
     if (OB_SUCC(ret) && params_num_ > 0) {
       ParamTypeArray &param_types = ps_session_info->get_param_types();
       ParamTypeInfoArray param_type_infos;
@@ -1225,17 +1144,9 @@ int ObMPStmtExecute::execute_response(ObSQLSessionInfo &session,
           int cli_ret = OB_SUCCESS;
           retry_ctrl_.test_and_save_retry_state(
             gctx_, ctx_, result, ret, cli_ret, is_arraybinding_ /*ararybinding only local retry*/);
-          if (OB_ERR_PROXY_REROUTE == ret) {
-            LOG_DEBUG("run stmt_query failed, check if need retry",
-                      K(ret), K(cli_ret), K(retry_ctrl_.need_retry()), K_(stmt_id));
-          } else {
-            LOG_WARN("run stmt_query failed, check if need retry",
-                      K(ret), K(cli_ret), K(retry_ctrl_.need_retry()), K_(stmt_id));
-          }
+          LOG_WARN("run stmt_query failed, check if need retry",
+                   K(ret), K(cli_ret), K(retry_ctrl_.need_retry()), K_(stmt_id));
           ret = cli_ret;
-        }
-        if (OB_ERR_PROXY_REROUTE == ret && !is_arraybinding_) {
-          need_response_error = true;
         }
       }
     }
@@ -1253,7 +1164,6 @@ int ObMPStmtExecute::execute_response(ObSQLSessionInfo &session,
       }
       ret = tmp_ret;
     }
-  } else if (FALSE_IT(ctx_.enable_sql_resource_manage_ = true)) {
   } else if (OB_FAIL(gctx_.sql_engine_->stmt_execute(stmt_id_,
                                                       stmt_type_,
                                                       *params_,
@@ -1264,17 +1174,9 @@ int ObMPStmtExecute::execute_response(ObSQLSessionInfo &session,
       int cli_ret = OB_SUCCESS;
       retry_ctrl_.test_and_save_retry_state(
         gctx_, ctx_, result, ret, cli_ret, is_arraybinding_ /*ararybinding only local retry*/);
-      if (OB_ERR_PROXY_REROUTE == ret) {
-        LOG_DEBUG("run stmt_query failed, check if need retry",
-                  K(ret), K(cli_ret), K(retry_ctrl_.need_retry()), K_(stmt_id));
-      } else {
-        LOG_WARN("run stmt_query failed, check if need retry",
-                  K(ret), K(cli_ret), K(retry_ctrl_.need_retry()), K_(stmt_id));
-      }
+      LOG_WARN("run stmt_query failed, check if need retry",
+               K(ret), K(cli_ret), K(retry_ctrl_.need_retry()), K_(stmt_id));
       ret = cli_ret;
-    }
-    if (OB_ERR_PROXY_REROUTE == ret && !is_arraybinding_) {
-      need_response_error = true;
     }
   } else {
     //Monitoring item statistics start
@@ -1374,29 +1276,14 @@ int ObMPStmtExecute::do_process(ObSQLSessionInfo &session,
         } else if (OB_FAIL(set_session_active(session))) {
           LOG_WARN("fail to set session active", K(ret));
         } else {
-          if (is_prexecute()) {
-            ret = static_cast<ObMPStmtPrexecute*>(this)->
-                      execute_response(session,
-                                        *param_store,
-                                        ctx_,
-                                        result,
-                                        retry_ctrl_,
-                                        need_response_error,
-                                        is_diagnostics_stmt,
-                                        execution_id,
-                                        force_sync_resp,
-                                        async_resp_used,
-                                        inner_stmt_id);
-          } else {
-            ret = execute_response(session,
-                                    result,
-                                    need_response_error,
-                                    is_diagnostics_stmt,
-                                    execution_id,
-                                    force_sync_resp,
-                                    async_resp_used,
-                                    inner_stmt_id);
-          }
+          ret = execute_response(session,
+                                  result,
+                                  need_response_error,
+                                  is_diagnostics_stmt,
+                                  execution_id,
+                                  force_sync_resp,
+                                  async_resp_used,
+                                  inner_stmt_id);
           if ((OB_SUCC(ret) && is_diagnostics_stmt) || async_resp_used) {
             // if diagnostic stmt succeed, no need to clear warning buf.
             // or async resp is used, it will be cleared in callback thread.
@@ -1431,8 +1318,7 @@ int ObMPStmtExecute::do_process(ObSQLSessionInfo &session,
         // However, it can be determined: this request has errored, and is not yet complete. If it has not already been handed over to asynchronous EndTrans for finalization,
         // then it is necessary to reply with an error_packet below as a conclusion. Otherwise, no one will help send the error packet to the client afterwards,
         // May cause the client to hang waiting for a response.
-        bool is_partition_hit = session.get_err_final_partition_hit(ret);
-        int err = send_error_packet(ret, NULL, is_partition_hit);
+        int err = send_error_packet(ret, NULL);
         if (OB_SUCCESS != err) {  // send error packet
           LOG_WARN("send error packet failed", K(ret), K(err));
         }
@@ -1449,7 +1335,6 @@ int ObMPStmtExecute::do_process(ObSQLSessionInfo &session,
       sqlstat_record.record_sqlstat_end_value();
       sqlstat_record.set_rows_processed(result.get_affected_rows() + result.get_return_rows());
       sqlstat_record.set_partition_cnt(result.get_exec_context().get_das_ctx().get_related_tablet_cnt());
-      sqlstat_record.set_is_route_miss(result.get_session().partition_hit().get_bool()? 0 : 1);
       sqlstat_record.set_is_plan_cache_hit(ctx_.plan_cache_hit_);
       ObString sql_id = ObString::make_string(ctx_.sql_id_);
       sqlstat_record.move_to_sqlstat_cache(result.get_session(),
@@ -1526,39 +1411,32 @@ int ObMPStmtExecute::response_result(
 
   if (OB_LIKELY(NULL != result.get_physical_plan())) {
     if (need_trans_cb) {
-      ObAsyncPlanDriver drv(gctx_, ctx_, session, retry_ctrl_, *this, is_prexecute());
+      ObAsyncPlanDriver drv(gctx_, ctx_, session, retry_ctrl_, *this);
       // NOTE: sql_end_cb must be initialized before drv.response_result()
       ObSqlEndTransCb &sql_end_cb = session.get_mysql_end_trans_cb();
       if (OB_FAIL(sql_end_cb.init(packet_sender_, &session,
-                                    stmt_id_, params_num_, 
-                                    is_prexecute() ? packet_sender_.get_comp_seq() : 0))) {
+                                    stmt_id_, params_num_, 0))) {
         LOG_WARN("failed to init sql end callback", K(ret));
       } else if (OB_FAIL(drv.response_result(result))) {
         LOG_WARN("fail response async result", K(ret));
       }
       async_resp_used = result.is_async_end_trans_submitted();
     } else {
-      // Pilot ObQuerySyncDriver
       int32_t iteration_count = OB_INVALID_COUNT;
-      if (is_prexecute()) {
-        iteration_count = static_cast<ObMPStmtPrexecute*>(this)->get_iteration_count();
-      }
       ObSyncPlanDriver drv(gctx_,
                            ctx_,
                            session,
                            retry_ctrl_,
                            *this,
-                           is_prexecute(),
                            iteration_count);
       ret = drv.response_result(result);
     }
   } else {
     if (need_trans_cb) {
       ObSqlEndTransCb &sql_end_cb = session.get_mysql_end_trans_cb();
-      ObAsyncCmdDriver drv(gctx_, ctx_, session, retry_ctrl_, *this, is_prexecute());
+      ObAsyncCmdDriver drv(gctx_, ctx_, session, retry_ctrl_, *this);
       if (OB_FAIL(sql_end_cb.init(packet_sender_, &session,
-                                    stmt_id_, params_num_,
-                                    is_prexecute() ? packet_sender_.get_comp_seq() : 0))) {
+                                    stmt_id_, params_num_, 0))) {
         LOG_WARN("failed to init sql end callback", K(ret));
       } else if (OB_FAIL(drv.response_result(result))) {
         LOG_WARN("fail response async result", K(ret));
@@ -1568,7 +1446,7 @@ int ObMPStmtExecute::response_result(
       }
       async_resp_used = result.is_async_end_trans_submitted();
     } else {
-      ObSyncCmdDriver drv(gctx_, ctx_, session, retry_ctrl_, *this, is_prexecute());
+      ObSyncCmdDriver drv(gctx_, ctx_, session, retry_ctrl_, *this);
       session.set_pl_query_sender(&drv);
       session.set_ps_protocol(result.is_ps_protocol());
       if (OB_FAIL(drv.response_result(result))) {
@@ -1634,8 +1512,8 @@ int ObMPStmtExecute::do_process_single(ObSQLSessionInfo &session,
     OX (retry_ctrl_.set_sys_local_schema_version(sys_version));
 
     if (OB_SUCC(ret) && !is_send_long_data()) {
-      if (OB_LIKELY(session.get_is_in_retry()) 
-            || (is_arraybinding_ && (prepare_packet_sent_ || !is_prexecute()))) {
+      if (OB_LIKELY(session.get_is_in_retry())
+            || is_arraybinding_) {
         ret = process_retry(session,
 				                    param_store,
                             has_more_result,
@@ -1663,95 +1541,6 @@ int ObMPStmtExecute::do_process_single(ObSQLSessionInfo &session,
   return ret;
 }
 
-int ObMPStmtExecute::is_arraybinding_returning(sql::ObSQLSessionInfo &session, bool &is_ab_return)
-{
-  int ret = OB_SUCCESS;
-  ObPsCache *ps_cache = NULL;
-  ObPsStmtId inner_stmt_id = OB_INVALID_ID;
-  ObPsStmtInfoGuard guard;
-  ObPsStmtInfo *ps_info = NULL;
-  is_ab_return = false;
-  if (OB_ISNULL(ps_cache = session.get_ps_cache())) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_ERROR("physical plan context or ps plan cache is NULL or schema_guard is null",
-              K(ret), K(ps_cache));
-  } else if (OB_FAIL(session.get_inner_ps_stmt_id(stmt_id_, inner_stmt_id))) {
-    LOG_WARN("fail to get inner ps stmt_id", K(ret), K(stmt_id_), K(inner_stmt_id));
-  } else if (OB_FAIL(session.get_ps_cache()->get_stmt_info_guard(inner_stmt_id, guard))) {
-    LOG_WARN("get stmt info guard failed", K(ret), K(stmt_id_), K(inner_stmt_id));
-  } else if (OB_ISNULL(ps_info = guard.get_stmt_info())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("get stmt info is null", K(ret));
-  } else if (ps_info->get_num_of_returning_into() > 0) {
-    is_ab_return = true;
-    LOG_TRACE("is arraybinding returning", K(ret), KPC(ps_info));
-  }
-  return ret;
-}
-
-int ObMPStmtExecute::try_batch_multi_stmt_optimization(ObSQLSessionInfo &session,
-                                                       bool has_more_result,
-                                                       bool force_sync_resp,
-                                                       bool &async_resp_used,
-                                                       bool &optimization_done)
-{
-  // 1. save_exception cannot be batch
-  // 2. returning cannot batch
-  int ret = OB_SUCCESS;
-  optimization_done = false;
-  ctx_.multi_stmt_item_.set_ps_mode(true);
-  ctx_.multi_stmt_item_.set_ab_cnt(arraybinding_size_);
-  bool is_ab_returning = false;
-  ParamStore *array_binding_params = NULL;
-  bool enable_batch_opt = session.is_enable_batched_multi_statement();
-  bool use_plan_cache = session.get_local_ob_enable_plan_cache();
-  ObIAllocator &alloc = CURRENT_CONTEXT->get_arena_allocator();
-
-  if (!enable_batch_opt) {
-    // Does not support batch execution
-    LOG_TRACE("not open the batch optimization");
-  } else if (!use_plan_cache) {
-    LOG_TRACE("not enable the plan_cache", K(use_plan_cache));
-    // plan_cache switch is not turned on
-  } else if (!is_prexecute()) {
-    // Only enable batch optimization for the combined protocol
-  } else if (is_pl_stmt(stmt_type_)) {
-    LOG_TRACE("is pl execution, can't do the batch optimization");
-  } else if (1 == arraybinding_size_) {
-    LOG_TRACE("arraybinding size is 1, not need d batch");
-  } else if (get_save_exception()) {
-    LOG_TRACE("is save exception mode, not supported batch optimization");
-  } else if (OB_FAIL(is_arraybinding_returning(session, is_ab_returning))) {
-    LOG_WARN("failed to check is arraybinding returning", K(ret));
-  } else if (is_ab_returning) {
-    LOG_TRACE("returning not support the batch optimization");
-  } else if (OB_FAIL(ObSQLUtils::transform_pl_ext_type(*arraybinding_params_,
-                                                       arraybinding_size_,
-                                                       alloc,
-                                                       array_binding_params))) {
-    LOG_WARN("fail to trans_form extend type params_store", K(ret), K(arraybinding_size_));
-  } else if (OB_FAIL(do_process_single(session, array_binding_params, has_more_result, force_sync_resp, async_resp_used))) {
-    // Call the do_single interface
-    if (THIS_WORKER.need_retry()) {
-      // just go back to large query queue and retry
-    } else if (OB_BATCHED_MULTI_STMT_ROLLBACK == ret) {
-      LOG_TRACE("batched multi_stmt needs rollback", K(ret));
-      ret = OB_SUCCESS;
-    } else {
-      // Regardless of the error, execute once per line for fault tolerance
-      int ret_tmp = ret;
-      ret = OB_SUCCESS;
-      LOG_WARN("failed to process batch stmt, cover the error code, reset retry flag, then execute with single row",
-          K(ret_tmp), K(ret), K(THIS_WORKER.need_retry()));
-    }
-  } else {
-    optimization_done = true;
-  }
-  LOG_TRACE("after try batched multi-stmt optimization", K(ret), K(stmt_type_), K(use_plan_cache),
-      K(optimization_done), K(enable_batch_opt), K(is_ab_returning), K(THIS_WORKER.need_retry()), K(arraybinding_size_));
-  return ret;
-}
-
 int ObMPStmtExecute::process_execute_stmt(const ObMultiStmtItem &multi_stmt_item,
                                           ObSQLSessionInfo &session,
                                           bool has_more_result,
@@ -1769,25 +1558,18 @@ int ObMPStmtExecute::process_execute_stmt(const ObMultiStmtItem &multi_stmt_item
   } else {
     //set session log_level.Must use ObThreadLogLevelUtils::clear() in pair
     ObThreadLogLevelUtils::init(session.get_log_id_level_map());
-    // obproxy may use 'SET @@last_schema_version = xxxx' to set newest schema,
-    // observer will force refresh schema if local_schema_version < last_schema_version;
+    // Refresh the local schema cache up to the session's DDL fence.
     if (OB_FAIL(check_and_refresh_schema())) {
       LOG_WARN("failed to check_and_refresh_schema", K(ret));
     } else if (OB_FAIL(session.update_timezone_info())) {
       LOG_WARN("fail to update time zone info", K(ret));
     } else if (is_arraybinding_) {
-      bool optimization_done = false;
       ObSEArray<ObSavedException, 4> exception_array;
       if (OB_UNLIKELY(arraybinding_size_ <= 0)) {
         ret = OB_NOT_SUPPORTED;
         LOG_WARN("arraybinding has no parameters", K(ret), K(arraybinding_size_));
         LOG_USER_ERROR(OB_NOT_SUPPORTED, "oci arraybinding has no parameters");
-      } else if (OB_FAIL(try_batch_multi_stmt_optimization(session,
-                                                           has_more_result,
-                                                           force_sync_resp,
-                                                           async_resp_used, optimization_done))) {
-        LOG_WARN("fail to try_batch_multi_stmt_optimization", K(ret));
-      } else if (!optimization_done) {
+      } else {
         need_response_error = false;
         ctx_.multi_stmt_item_.set_ps_mode(true);
         ctx_.multi_stmt_item_.set_ab_cnt(0);
@@ -1796,9 +1578,7 @@ int ObMPStmtExecute::process_execute_stmt(const ObMultiStmtItem &multi_stmt_item
           OZ (construct_execute_param_for_arraybinding(i));
           OZ (do_process_single(session, params_, has_more_result, force_sync_resp, async_resp_used));
           if (OB_FAIL(ret)) {
-            if (is_save_exception_ && !is_prexecute()) {
-              // The old ps protocol will only collect error information here,
-              // and the new one has already done fault tolerance in the front
+            if (is_save_exception_) {
               ret = save_exception_for_arraybinding(i, ret, exception_array);
               ret = OB_SUCCESS;
             }
@@ -1821,10 +1601,7 @@ int ObMPStmtExecute::process_execute_stmt(const ObMultiStmtItem &multi_stmt_item
         LOG_WARN("fail to do process", K(ret), K(ctx_.cur_sql_));
       }
       
-      if (is_conn_valid()) {
-        set_request_expect_group_id(&session);
-        // ret = OB_SUCC(bak_ret) ? ret : bak_ret;
-      }
+      // ret = OB_SUCC(bak_ret) ? ret : bak_ret;
     }
     ObThreadLogLevelUtils::clear();
     const int64_t debug_sync_timeout = GCONF.debug_sync_timeout;
@@ -1875,8 +1652,6 @@ int ObMPStmtExecute::process()
   } else if (OB_ISNULL(sess)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("session is NULL or invalid", K_(stmt_id), K(sess), K(ret));
-  } else if (OB_FAIL(update_transmission_checksum_flag(*sess))) {
-    LOG_WARN("update transmisson checksum flag failed", K(ret));
   } else {
     ObSQLSessionInfo &session = *sess;
     int64_t tenant_version = 0;
@@ -1893,12 +1668,9 @@ int ObMPStmtExecute::process()
     session.set_thread_id(GETTID());
     const ObMySQLRawPacket &pkt = reinterpret_cast<const ObMySQLRawPacket&>(req_->get_packet());
     int64_t packet_len = pkt.get_clen();
-    const bool enable_flt = session.get_control_info().is_valid();
     if (OB_UNLIKELY(!session.is_valid())) {
       ret = OB_ERR_UNEXPECTED;
       LOG_ERROR("invalid session", K_(stmt_id), K(ret));
-    } else if (OB_FAIL(process_kill_client_session(session))) {
-      LOG_WARN("client session has been killed", K(ret));
     } else if (OB_UNLIKELY(session.is_zombie())) {
       //session has been killed some moment ago
       ret = OB_ERR_SESSION_INTERRUPTED;
@@ -1914,44 +1686,18 @@ int ObMPStmtExecute::process()
     } else if (OB_FAIL(gctx_.schema_service_->get_tenant_received_broadcast_version(
                 sys_version))) {
       LOG_WARN("fail get tenant broadcast version", K(ret));
-    } else if (!is_prexecute()
-               && pkt.exist_trace_info()
-               && OB_FAIL(session.update_sys_variable(SYS_VAR_OB_TRACE_INFO,
-                                                      pkt.get_trace_info()))) {
-      LOG_WARN("fail to update trace info", K(ret));
-    } else if (!is_prexecute() && OB_FAIL(process_extra_info(session, pkt, need_response_error))) {
-      LOG_WARN("fail get process extra info", K(ret));
     } else if (OB_UNLIKELY(packet_len > session.get_max_packet_size())) {
       //packet size check with session variable max_allowd_packet or net_buffer_length
       ret = OB_ERR_NET_PACKET_TOO_LARGE;
       LOG_WARN("packet too large than allowed for the session", K_(stmt_id), K(ret));
-    } else if (OB_FAIL(sql::ObFLTUtils::init_flt_info(pkt.get_extra_info(),
-                            session,
-                            conn->proxy_cap_flags_.is_full_link_trace_support(),
-                            enable_flt))) {
-      LOG_WARN("failed to init flt extra info", K(ret));
-    } else if (OB_FAIL(session.check_tenant_status())) {
-      need_disconnect = false;
-      LOG_INFO("unit has been migrated, need deny new request", K(ret));
     } else if (OB_FAIL(session.gen_configs_in_pc_str())) {
       LOG_WARN("fail to generate configuration string that can influence execution plan", K(ret));
     } else if (is_arraybinding_ && OB_FAIL(check_precondition_for_arraybinding(session))) {
       LOG_WARN("precondition for arraybinding is not satisfied", K(ret));
     } else {
-      FLTSpanGuardIfEnable(ps_execute, enable_flt);
-      if (enable_flt) {
-        char trace_id_buf[OB_MAX_TRACE_ID_BUFFER_SIZE] = {'\0'};
-        FLT_SET_TAG(log_trace_id, ObCurTraceId::get_trace_id_str(trace_id_buf, sizeof(trace_id_buf)),
-                      receive_ts, get_receive_timestamp(),
-                      client_info, session.get_client_info(),
-                      module_name, session.get_module_name(),
-                      action_name, session.get_action_name(),
-                      sess_id, session.get_server_sid());
-      }
       THIS_WORKER.set_timeout_ts(get_receive_timestamp() + query_timeout);
       retry_ctrl_.set_tenant_global_schema_version(tenant_version);
       retry_ctrl_.set_sys_global_schema_version(sys_version);
-      session.partition_hit().reset();
       session.set_pl_can_retry(true);
       session.set_enable_mysql_compatible_dates(
         session.get_enable_mysql_compatible_dates_from_config());
@@ -1966,7 +1712,7 @@ int ObMPStmtExecute::process()
       // Print out the SQL statement before exiting, for easy problem location
       if (OB_FAIL(ret)) {
         if (OB_EAGAIN == ret) {
-          //large query, do nothing
+          // Retryable request is handled by the upper scheduler.
         } else if (is_conn_valid()) {// The memory of sql string is invalid if conn_valid_ has been set false.
           LOG_WARN("fail execute sql", "sql_id", ctx_.sql_id_, K_(stmt_id), K(ret));
         } else {
@@ -2002,12 +1748,10 @@ int ObMPStmtExecute::process()
       ret = upper_scope_ret;
     }
 
-    record_flt_trace(session);
   }
 
   if (OB_NOT_NULL(sess) && !sess->get_in_transaction()) {
     // transcation ends, end trace
-    FLT_END_TRACE();
   }
 
   if (OB_FAIL(ret) && is_conn_valid()) {
@@ -2045,7 +1789,6 @@ int ObMPStmtExecute::get_package_type_by_name(ObIAllocator &allocator,
 {
   int ret = OB_SUCCESS;
   const share::schema::ObPackageInfo *package_info = NULL;
-  int64_t compatible_mode = COMPATIBLE_MYSQL_MODE;
   ObSchemaChecker schema_checker;
   CK (OB_NOT_NULL(type_info));
   CK (OB_NOT_NULL(ctx_.schema_guard_));
@@ -2057,7 +1800,6 @@ int ObMPStmtExecute::get_package_type_by_name(ObIAllocator &allocator,
                                       type_info->relation_name_,
                                       type_info->package_name_,
                                       share::schema::PACKAGE_TYPE,
-                                      compatible_mode,
                                       package_info));
   CK (OB_NOT_NULL(package_info));
   if (OB_SUCC(ret)) {
@@ -2117,7 +1859,6 @@ int ObMPStmtExecute::parse_basic_param_value(ObIAllocator &allocator,
                                              const uint32_t type,
                                              sql::ObSQLSessionInfo *session,
                                              const ObCharsetType charset,
-                                             const ObCharsetType ncharset,
                                              const ObCollationType cs_type,
                                              const char *& data,
                                              const common::ObTimeZoneInfo *tz_info,
@@ -2229,12 +1970,6 @@ int ObMPStmtExecute::parse_basic_param_value(ObIAllocator &allocator,
       ObString dst;
       uint64_t length = 0;
       ObCollationType cur_cs_type = ObCharset::get_default_collation(charset);
-      ObCollationType cur_ncs_type = ObCollationType::CS_TYPE_INVALID;
-      if (ncharset == ObCharsetType::CHARSET_INVALID || ncharset == ObCharsetType::CHARSET_BINARY) {
-        cur_ncs_type = ObCharset::get_default_collation(charset);
-      } else {
-        cur_ncs_type = ObCharset::get_default_collation(ncharset);
-      }
       PS_STATIC_DEFENSE_CHECK(checker, 1)
       {
         // check first byte of `length` field and trust the encoder reguarding the remaining bytes.
@@ -2366,7 +2101,6 @@ int ObMPStmtExecute::parse_basic_param_value(ObIAllocator &allocator,
 int ObMPStmtExecute::parse_param_value(ObIAllocator &allocator,
                                        const uint32_t type,
                                        const ObCharsetType charset,
-                                       const ObCharsetType ncharset,
                                        const ObCollationType cs_type,
                                        const char *&data,
                                        const common::ObTimeZoneInfo *tz_info,
@@ -2415,7 +2149,7 @@ int ObMPStmtExecute::parse_param_value(ObIAllocator &allocator,
       }
     } else {
       bool is_unsigned = NULL == type_info || !type_info->elem_type_.get_meta_type().is_unsigned_integer() ? false : true; 
-      if (OB_FAIL(parse_basic_param_value(allocator, type, session, charset, ncharset, cs_type,
+      if (OB_FAIL(parse_basic_param_value(allocator, type, session, charset, cs_type,
                                           data, tz_info, param, false, &analysis_checker_, is_unsigned))) {
         LOG_WARN("failed to parse basic param value", K(ret));
       } else {
@@ -2522,7 +2256,7 @@ int ObMPStmtExecute::parse_param_value(ObIAllocator &allocator,
         } else {
           const char* src = tmp;
           bool is_unsigned = NULL == type_info || !type_info->elem_type_.get_meta_type().is_unsigned_integer() ? false : true;
-          if (OB_FAIL(parse_basic_param_value(allocator, type, session, charset, ncharset, cs_type,
+          if (OB_FAIL(parse_basic_param_value(allocator, type, session, charset, cs_type,
                                               src, tz_info, param, false, NULL ,is_unsigned))) {
             LOG_WARN("failed to parse basic param value", K(ret));
           } else {
@@ -2921,13 +2655,11 @@ int ObMPStmtExecute::response_query_header(ObSQLSessionInfo &session, pl::ObDbms
                            session,
                            retry_ctrl_,
                            *this,
-                           false,
                            OB_INVALID_COUNT);
   if (0 == cursor.get_field_columns().count()) {
     // SELECT * INTO OUTFILE return null field, and only response ok packet
     ObOKPParam ok_param;
     ok_param.affected_rows_ = 0;
-    ok_param.is_partition_hit_ = session.partition_hit().get_bool();
     ok_param.has_more_result_ = false;
     if (OB_FAIL(send_ok_packet(session, ok_param))) {
       LOG_WARN("fail to send ok packt", K(ok_param), K(ret));
