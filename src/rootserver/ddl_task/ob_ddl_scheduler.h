@@ -31,9 +31,7 @@
 #include "rootserver/ddl_task/ob_table_redefinition_task.h"
 #include "rootserver/ob_server_thread_helper.h"
 #include "rootserver/ob_thread_idling.h"
-#include "lib/container/ob_se_array.h"
 #include "lib/hash/ob_hashmap.h"
-#include "lib/lock/ob_spin_lock.h"
 #include "lib/profile/ob_trace_id.h"
 #include "lib/task/ob_timer.h"
 
@@ -111,18 +109,10 @@ public:
   int remove_task(const ObDDLTaskID &task_id);
   int get_inactive_ddl_task_ids(ObArray<ObDDLTaskID>& remove_task_ids);
 private:
-  struct TaskActiveTime final
-  {
-    TaskActiveTime() : task_id_(), active_time_(0) {}
-    TaskActiveTime(const ObDDLTaskID &task_id, const int64_t active_time)
-      : task_id_(task_id), active_time_(active_time) {}
-    TO_STRING_KV(K_(task_id), K_(active_time));
-    ObDDLTaskID task_id_;
-    int64_t active_time_;
-  };
-  common::ObSEArray<TaskActiveTime, 4> register_task_times_;
+  static const int64_t BUCKET_LOCK_BUCKET_CNT = 10243L;
+  common::hash::ObHashMap<ObDDLTaskID, int64_t> register_task_time_;
   bool is_inited_;
-  common::ObSpinLock lock_;
+  common::ObBucketLock bucket_lock_;
 };
 struct ObPrepareAlterTableArgParam final
 {
@@ -238,7 +228,7 @@ private:
 };
 
 /*
- * the only scheduler for all ddl tasks executed in local DDL service
+ * the only scheduler for all ddl tasks executed in root service
  *
  * each category of ddl request has an unique task type.
  * every ddl task has its record in an inner table(__all_ddl_task_status),
@@ -302,6 +292,7 @@ public:
 
   int on_sstable_complement_job_reply(
       const common::ObTabletID &tablet_id,
+      const ObAddr &svr,
       const ObDDLTaskKey &task_key,
       const int64_t snapshot_version,
       const int64_t execution_id,

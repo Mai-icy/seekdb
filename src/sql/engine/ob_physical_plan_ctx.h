@@ -72,7 +72,7 @@ public:
 
 class ObPhysicalPlanCtx
 {
-  OB_UNIS_VERSION(2);
+  OB_UNIS_VERSION(1);
 public:
   explicit ObPhysicalPlanCtx(common::ObIAllocator &allocator);
   virtual ~ObPhysicalPlanCtx();

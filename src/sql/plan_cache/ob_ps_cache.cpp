@@ -18,6 +18,7 @@
 #include "ob_ps_cache.h"
 #include "sql/plan_cache/ob_ps_sql_utils.h"
 #include "sql/plan_cache/ob_ps_cache_callback.h"
+#include "lib/rc/ob_rc.h"
 
 namespace oceanbase
 {

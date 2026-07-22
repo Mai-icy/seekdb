@@ -15,7 +15,6 @@
  */
 
 #define USING_LOG_PREFIX SQL_PC
-#include "share/rc/ob_module_provider.h"
 #include "ob_plan_cache_value.h"
 #include "sql/resolver/ob_resolver_utils.h"
 #include "sql/plan_cache/ob_pcv_set.h"
@@ -153,7 +152,6 @@ ObPlanCacheValue::ObPlanCacheValue()
   not_param_info_.set_attr(ObMemAttr("NotParamInfo"));
   not_param_var_.set_attr(ObMemAttr("NotParamVar"));
   param_charset_type_.set_attr(ObMemAttr("ParamCharsType"));
-  param_charset_type_.set_block_size(PARAM_CHARSET_TYPE_BLOCK_SIZE);
   fmt_int_or_ch_decint_idx_.set_attr(ObMemAttr("FMTIntPrecIdx"));
 }
 

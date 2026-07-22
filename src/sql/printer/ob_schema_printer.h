@@ -48,6 +48,7 @@ namespace share
 {
 namespace schema
 {
+class ObServerRuntimeSchema;
 class ObDatabaseSchema;
 class ObTableSchema;
 class ObRoutineInfo;

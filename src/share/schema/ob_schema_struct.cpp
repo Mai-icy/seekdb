@@ -449,10 +449,13 @@ int ObSysTableChecker::check_inner_table_exist(
     // System-only inner tables always exist in a system database.
     exist = true;
   } else {
+    // Runtime-space inner tables are exposed through the runtime's system databases.
     if (is_oceanbase_sys_database_id(database_id)) {
+      // The oceanbase system database contains every runtime inner table.
       exist = true;
     } else {
       // information_schema, mysql, sys
+      // Compatibility databases use the MySQL system database list.
       exist = is_mysql_sys_database_id(database_id);
     }
   }
@@ -595,6 +598,26 @@ int ObSysTableChecker::add_sys_table_index_ids(
 
 /* ------------------------------------------ */
 
+bool ObSysTableChecker::is_cluster_private_runtime_table(const uint64_t table_id)
+{
+  bool bret = false;
+  uint64_t pure_id = table_id;
+  switch (pure_id) {
+#define CLUSTER_PRIVATE_TABLE_SWITCH
+#include "share/inner_table/ob_inner_table_schema_misc.ipp"
+#undef CLUSTER_PRIVATE_TABLE_SWITCH
+    {
+      bret = true;
+      break;
+    }
+    default : {
+      bret = false;
+      break;
+    }
+  }
+  return bret;
+}
+
 int ObSysTableChecker::ob_write_string(const ObString &src, ObString &dst)
 {
   int ret = OB_SUCCESS;
@@ -616,12 +639,14 @@ int ObDDLSequenceID::assign(const ObDDLSequenceID &other)
 {
   int ret = OB_SUCCESS;
   seq_id_ = other.seq_id_;
+  sys_leader_epoch_ = other.sys_leader_epoch_;
   return ret;
 }
 
 void ObDDLSequenceID::reset()
 {
   seq_id_ = common::OB_INVALID_ID;
+  sys_leader_epoch_ = common::OB_INVALID_ID;
 }
 
 bool ObDDLSequenceID::is_valid() const
@@ -668,6 +693,10 @@ ObDDLSequenceID::CompareResult ObDDLSequenceID::compare_to_other_id(const ObDDLS
   if (OB_UNLIKELY(!is_valid())
       || OB_UNLIKELY(!other.is_valid())) {
     result = CompareResult::NOT_COMPARABLE;
+  } else if (sys_leader_epoch_ < other.sys_leader_epoch_) {
+    result = CompareResult::LESS_THAN;
+  } else if (sys_leader_epoch_ > other.sys_leader_epoch_) {
+    result = CompareResult::MORE_OVER;
   } else if (seq_id_ < other.seq_id_) {
     result = CompareResult::LESS_THAN;
   } else if (seq_id_ == other.seq_id_) {
@@ -1071,6 +1100,9 @@ const ObSysVarSchema *ObSysVariableSchema::get_sysvar_schema(int64_t idx) const
   return ret;
 }
 
+/*-------------------------------------------------------------------------------------------------
+ * ------------------------------ObServerRuntimeSchema-------------------------------------------
+ ----------------------------------------------------------------------------------------------------*/
 ObSchema::ObSchema()
     : buffer_(this), error_ret_(OB_SUCCESS), is_inner_allocator_(false), allocator_(NULL)
 {
@@ -1632,7 +1664,7 @@ int ObServerRuntimeSchema::assign(const ObServerRuntimeSchema &src_schema)
 {
   int ret = OB_SUCCESS;
   *this = src_schema;
-  ret = get_err_ret();
+   ret = get_err_ret();
   return ret;
 }
 
@@ -1643,6 +1675,7 @@ bool ObServerRuntimeSchema::is_valid() const
 
 void ObServerRuntimeSchema::reset()
 {
+  
   schema_version_ = OB_INVALID_VERSION;
   reset_string(runtime_name_);
   locked_ = false;
@@ -6192,7 +6225,7 @@ int ObPartitionUtils::set_low_bound_val_by_interval_range_by_innersql(
   return ret;
 }
 
-
+// ObPartitionUtils::check_interval_partition_table moved definition to the upper-layer owner cpp(real upper-layer symbol user, declaration remains in this class header, transitional state)
 
 OB_SERIALIZE_MEMBER(ObVectorIndexRefreshInfo,
                     exec_env_,
@@ -6473,7 +6506,7 @@ DEF_TO_STRING(ObPrintPrivSet)
     ret = BUF_PRINTF("PRIV_ALTER_SYSTEM,");
   }
   if ((priv_set_ & OB_PRIV_REPL_SLAVE) && OB_SUCCESS == ret) {
-    ret = BUF_PRINTF("PRIV_REPL_SLAVE,");
+    ret = BUF_PRINTF(" REPLICATION SLAVE,");
   }
   if ((priv_set_ & OB_PRIV_REPL_CLIENT) && OB_SUCCESS == ret) {
     ret = BUF_PRINTF(" REPLICATION CLIENT,");
@@ -7419,8 +7452,7 @@ const char *OB_PRIV_LEVEL_STR[OB_PRIV_MAX_LEVEL] =
   "USER_LEVEL",
   "DB_LEVEL",
   "TABLE_LEVEL",
-  "DB_ACCESS_LEVEL",
-  "ROUTINE_LEVEL"
+  "DB_ACCESS_LEVEL"
 };
 
 const char *ob_priv_level_str(const ObPrivLevel grant_level)

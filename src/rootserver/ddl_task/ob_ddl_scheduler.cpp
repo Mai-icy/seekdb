@@ -16,6 +16,7 @@
 
 #define USING_LOG_PREFIX RS
 
+#include "lib/stat/ob_diagnostic_info_guard.h"
 #include "ob_ddl_scheduler.h"
 #include "rootserver/ob_local_ddl_serial_call.h"
 #include "rootserver/ddl_task/ob_drop_fts_index_task.h"
@@ -31,6 +32,7 @@
 #include "share/longops_mgr/ob_longops_mgr.h"
 #include "share/ob_ddl_sim_point.h"
 #include "sql/resolver/ddl/ob_fts_index_builder_util.h"
+#include "storage/fts/dict/ob_gen_dic_loader.h"
 #include "rootserver/ddl_task/ob_vec_ivf_index_build_task.h"
 
 namespace oceanbase
@@ -351,11 +353,12 @@ int ObDDLTaskQueue::update_task_ret_code(const ObDDLTaskID &task_id, const int r
     LOG_WARN("ddl_task is null", K(ret));
   } else {
     const ObTabletID unused_tablet_id;
+    const ObAddr unused_addr;
     const int64_t unused_snapshot_version = 0;
     const int64_t unused_execution_id = 0;
     const ObDDLTaskInfo unused_task_info;
     ret = table_redefinition_task->update_complete_sstable_job_status(
-        unused_tablet_id, unused_snapshot_version,
+        unused_tablet_id, unused_addr, unused_snapshot_version,
         unused_execution_id, ret_code, unused_task_info);
   }
   return ret;
@@ -399,11 +402,12 @@ int ObDDLTaskQueue::abort_task(const ObDDLTaskID &task_id)
 }
 
 ObDDLTaskHeartBeatMananger::ObDDLTaskHeartBeatMananger()
-  : register_task_times_(), is_inited_(false), lock_()
+  : is_inited_(false), bucket_lock_()
 {}
 
 ObDDLTaskHeartBeatMananger::~ObDDLTaskHeartBeatMananger()
 {
+  bucket_lock_.destroy();
 }
 
 int ObDDLTaskHeartBeatMananger::init()
@@ -412,6 +416,10 @@ int ObDDLTaskHeartBeatMananger::init()
   if (OB_UNLIKELY(is_inited_)) {
     ret = OB_INIT_TWICE;
     LOG_WARN("ObManagerRegisterHeartBeatTask inited twice", K(ret));
+  } else if (OB_FAIL(register_task_time_.create(BUCKET_LOCK_BUCKET_CNT, "register_task", "register_task"))) {
+    LOG_WARN("failed to create register_task_time map", K(ret));
+  } else if (OB_FAIL(bucket_lock_.init(BUCKET_LOCK_BUCKET_CNT))) {
+    LOG_WARN("fail to init bucket lock", K(ret));
   } else {
     is_inited_ = true;
   }
@@ -428,21 +436,13 @@ int ObDDLTaskHeartBeatMananger::update_task_active_time(const ObDDLTaskID &task_
     ret = OB_INVALID_ARGUMENT;
     LOG_INFO("invalid argument", K(ret), K(task_id));
   } else {
+    ObBucketHashWLockGuard lock_guard(bucket_lock_, task_id.task_id_);
+    // setting flag=1 to update the old time-value in the hash map with current time
     if (OB_FAIL(DDL_SIM(task_id.task_id_, HEART_BEAT_UPDATE_ACTIVE_TIME))) {
       LOG_WARN("ddl sim failed", K(ret), K(task_id));
-    } else {
-      bool found = false;
-      const int64_t active_time = ObTimeUtility::current_time();
-      common::ObSpinLockGuard guard(lock_);
-      for (int64_t i = 0; !found && i < register_task_times_.count(); ++i) {
-        if (register_task_times_.at(i).task_id_ == task_id) {
-          register_task_times_.at(i).active_time_ = active_time;
-          found = true;
-        }
-      }
-      if (!found && OB_FAIL(register_task_times_.push_back(TaskActiveTime(task_id, active_time)))) {
-        LOG_WARN("set register task time failed", K(ret), K(task_id));
-      }
+    } else if (OB_FAIL(register_task_time_.set_refactored(task_id,
+        ObTimeUtility::current_time(), 1, 0, 0))) {
+      LOG_WARN("set register task time failed", K(ret), K(task_id));
     }
   }
   return ret;
@@ -458,19 +458,9 @@ int ObDDLTaskHeartBeatMananger::remove_task(const ObDDLTaskID &task_id)
     ret = OB_INVALID_ARGUMENT;
     LOG_INFO("invalid argument", K(ret), K(task_id));
   } else {
-    bool found = false;
-    common::ObSpinLockGuard guard(lock_);
-    for (int64_t i = 0; !found && i < register_task_times_.count(); ++i) {
-      if (register_task_times_.at(i).task_id_ == task_id) {
-        found = true;
-        if (OB_FAIL(register_task_times_.remove(i))) {
-          LOG_WARN("remove register task time failed", K(ret), K(task_id));
-        }
-      }
-    }
-    if (!found) {
-      ret = OB_HASH_NOT_EXIST;
-      LOG_WARN("remove register task time failed", K(ret), K(task_id));
+    ObBucketHashWLockGuard lock_guard(bucket_lock_, task_id.task_id_);
+    if (OB_FAIL(register_task_time_.erase_refactored(task_id))) {
+      LOG_WARN("remove register task time failed", K(ret));
     }
   }
   return ret;
@@ -484,13 +474,17 @@ int ObDDLTaskHeartBeatMananger::get_inactive_ddl_task_ids(ObArray<ObDDLTaskID>& 
     LOG_WARN("ObManagerRegisterHeartBeatTask not inited", K(ret));
   } else {
     const int64_t TIME_OUT_THRESHOLD = 5L * 60L * 1000L * 1000L;
-    const int64_t now = ObTimeUtility::current_time();
-    common::ObSpinLockGuard guard(lock_);
-    for (int64_t i = 0; OB_SUCC(ret) && i < register_task_times_.count(); ++i) {
-      const TaskActiveTime &task_active_time = register_task_times_.at(i);
-      if (now - task_active_time.active_time_ > TIME_OUT_THRESHOLD) {
-        if (OB_FAIL(remove_task_ids.push_back(task_active_time.task_id_))) {
-          LOG_WARN("remove_task_ids push_back task_id fail", K(ret), K(task_active_time));
+    ObBucketTryRLockAllGuard all_ddl_task_guard(bucket_lock_);
+    if (OB_FAIL(all_ddl_task_guard.get_ret())) {
+      if (OB_EAGAIN == ret) {
+        ret = OB_SUCCESS;
+      }
+    } else {
+      for (common::hash::ObHashMap<ObDDLTaskID, int64_t>::iterator it = register_task_time_.begin(); OB_SUCC(ret) && it != register_task_time_.end(); it++) {
+        if (ObTimeUtility::current_time() - it->second > TIME_OUT_THRESHOLD) {
+          if (OB_FAIL(remove_task_ids.push_back(it->first))) {
+            LOG_WARN("remove_task_ids push_back task_id fail", K(ret), K(it->first));
+          }
         }
       }
     }
@@ -666,11 +660,12 @@ int ObUpdateSSTableCompleteStatusCallback::update_redef_task_info(ObTableRedefin
 {
   int ret = OB_SUCCESS;
   const ObTabletID unused_tablet_id;
+  const ObAddr unused_addr;
   const int64_t unused_snapshot_version = 0;
   const int64_t unused_execution_id = 0;
   const ObDDLTaskInfo unused_task_info;
   ret = redef_task.update_complete_sstable_job_status(
-      unused_tablet_id, unused_snapshot_version,
+      unused_tablet_id, unused_addr, unused_snapshot_version,
       unused_execution_id, ret_code_, unused_task_info);
   return ret;
 }
@@ -1075,6 +1070,7 @@ void ObDDLScheduler::do_work()
     int ret = OB_SUCCESS;
     ObDDLTask *task = nullptr;
     ObDDLTask *first_retry_task = nullptr;
+    ObDIActionGuard ag("DDLService", "DDLTaskScheduler", "detect task");
     lib::set_thread_name("DDLTaskExecutor");
     THIS_WORKER.set_worker_level(1);
     THIS_WORKER.set_curr_request_level(1);
@@ -1111,6 +1107,7 @@ void ObDDLScheduler::do_work()
         }
         idle_time = ObDDLTask::DEFAULT_TASK_IDLE_TIME_US;
       } else {
+        ObDIActionGuard ag(get_ddl_type(task->get_task_type()));
         ObCurTraceId::set(task->get_trace_id());
         int task_ret = task->process();
         task->calc_next_schedule_ts(task_ret, task_queue_.get_task_cnt() + thread_cnt);
@@ -3571,6 +3568,7 @@ int ObDDLScheduler::on_column_checksum_calc_reply(
 
 int ObDDLScheduler::on_sstable_complement_job_reply(
     const common::ObTabletID &tablet_id,
+    const ObAddr &svr,
     const ObDDLTaskKey &task_key,
     const int64_t snapshot_version,
     const int64_t execution_id,
@@ -3584,18 +3582,18 @@ int ObDDLScheduler::on_sstable_complement_job_reply(
   } else if (OB_UNLIKELY(!(task_key.is_valid() && snapshot_version > 0 && execution_id >= 0))) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(task_key), K(snapshot_version), K(execution_id), K(ret_code));
-  } else if (OB_FAIL(task_queue_.modify_task(task_key, [&tablet_id, &snapshot_version, &execution_id, &ret_code, &addition_info](ObDDLTask &task) -> int {
+  } else if (OB_FAIL(task_queue_.modify_task(task_key, [&tablet_id, &svr, &snapshot_version, &execution_id, &ret_code, &addition_info](ObDDLTask &task) -> int {
         int ret = OB_SUCCESS;
         const int64_t task_type = task.get_task_type();
         switch (task_type) {
           case ObDDLType::DDL_CREATE_INDEX:
           case ObDDLType::DDL_CREATE_PARTITIONED_LOCAL_INDEX:
-            if (OB_FAIL(static_cast<ObIndexBuildTask *>(&task)->update_complete_sstable_job_status(tablet_id, snapshot_version, execution_id, ret_code, addition_info))) {
+            if (OB_FAIL(static_cast<ObIndexBuildTask *>(&task)->update_complete_sstable_job_status(tablet_id, svr, snapshot_version, execution_id, ret_code, addition_info))) {
               LOG_WARN("update complete sstable job status failed", K(ret));
             }
             break;
           case ObDDLType::DDL_DROP_PRIMARY_KEY:
-            if (OB_FAIL(static_cast<ObDropPrimaryKeyTask *>(&task)->update_complete_sstable_job_status(tablet_id, snapshot_version, execution_id, ret_code, addition_info))) {
+            if (OB_FAIL(static_cast<ObDropPrimaryKeyTask *>(&task)->update_complete_sstable_job_status(tablet_id, svr, snapshot_version, execution_id, ret_code, addition_info))) {
               LOG_WARN("update complete sstable job status", K(ret));
             }
             break;
@@ -3606,7 +3604,7 @@ int ObDDLScheduler::on_sstable_complement_job_reply(
           case ObDDLType::DDL_CONVERT_TO_CHARACTER:
           case ObDDLType::DDL_TABLE_REDEFINITION:
           case ObDDLType::DDL_MODIFY_AUTO_INCREMENT_WITH_REDEFINITION:
-            if (OB_FAIL(static_cast<ObTableRedefinitionTask *>(&task)->update_complete_sstable_job_status(tablet_id, snapshot_version, execution_id, ret_code, addition_info))) {
+            if (OB_FAIL(static_cast<ObTableRedefinitionTask *>(&task)->update_complete_sstable_job_status(tablet_id, svr, snapshot_version, execution_id, ret_code, addition_info))) {
               LOG_WARN("update complete sstable job status", K(ret));
             }
             break;
@@ -3620,12 +3618,12 @@ int ObDDLScheduler::on_sstable_complement_job_reply(
           case ObDDLType::DDL_DROP_COLUMN:
           case ObDDLType::DDL_ADD_COLUMN_OFFLINE:
           case ObDDLType::DDL_COLUMN_REDEFINITION:
-            if (OB_FAIL(static_cast<ObColumnRedefinitionTask *>(&task)->update_complete_sstable_job_status(tablet_id, snapshot_version, execution_id, ret_code, addition_info))) {
+            if (OB_FAIL(static_cast<ObColumnRedefinitionTask *>(&task)->update_complete_sstable_job_status(tablet_id, svr, snapshot_version, execution_id, ret_code, addition_info))) {
               LOG_WARN("update complete sstable job status", K(ret), K(tablet_id), K(snapshot_version), K(ret_code));
             }
             break;
           case ObDDLType::DDL_DROP_VEC_INDEX:
-           if (OB_FAIL(static_cast<ObDropVecIndexTask *>(&task)->update_drop_lob_meta_row_job_status(tablet_id, snapshot_version, execution_id, ret_code, addition_info))) {
+           if (OB_FAIL(static_cast<ObDropVecIndexTask *>(&task)->update_drop_lob_meta_row_job_status(tablet_id, svr, snapshot_version, execution_id, ret_code, addition_info))) {
               LOG_WARN("update complete sstable job status", K(ret), K(tablet_id), K(snapshot_version), K(ret_code));
             }
             break;

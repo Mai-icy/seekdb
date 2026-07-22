@@ -99,6 +99,22 @@ public:
   static int check_error_ret_by_row(const ObInsCtDef &ins_ctdef,
                                     ObTableModifyOp &dml_op,
                                     const int errcode);
+  static int process_insert_batch(const ObInsCtDef &ins_ctdef,
+                                  ObTableModifyOp &dml_op,
+                                  const bool use_rich_format);
+  static int check_column_type_batch(const ObInsCtDef &ins_ctdef,
+                                     ObTableModifyOp &dml_op,
+                                     const bool use_rich_format);
+  static int check_geometry_column_batch(const ObInsCtDef &ins_ctdef,
+                                         ObTableModifyOp &dml_op,
+                                         const ColumnContent &column_info,
+                                         const bool use_rich_format);
+  static int check_column_null_batch(const ObInsCtDef &ins_ctdef,
+                                     ObTableModifyOp &dml_op,
+                                     const ColumnContent &column_info,
+                                     const bool use_rich_format);
+  static int check_filter_row_batch(const ObInsCtDef &ins_ctdef,
+                                    ObTableModifyOp &dml_op);
   static int process_before_stmt_trigger(const ObDMLBaseCtDef &dml_ctdef,
                                          ObDMLBaseRtDef &dml_rtdef,
                                          ObDMLRtCtx &dml_rtctx,

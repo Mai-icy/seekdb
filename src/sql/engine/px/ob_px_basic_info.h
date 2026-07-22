@@ -26,12 +26,15 @@ namespace sql
 #define IS_PX_COORD(type) \
      ((type) == PHY_PX_FIFO_COORD || \
       (type) == PHY_PX_MERGE_SORT_COORD ||\
-      (type) == PHY_PX_ORDERED_COORD)
+      (type) == PHY_PX_ORDERED_COORD ||\
+      (type) == PHY_VEC_PX_MERGE_SORT_COORD)
 // NOTE: There may be multiple receive op types, all of which need to be judged. Currently, there is only one.
 #define IS_PX_RECEIVE(type) \
      ((type) == PHY_PX_FIFO_RECEIVE || \
       (type) == PHY_PX_MERGE_SORT_RECEIVE || \
       (type) == PHY_PX_MERGE_SORT_COORD || \
+      (type) == PHY_VEC_PX_MERGE_SORT_COORD || \
+      (type) == PHY_VEC_PX_MERGE_SORT_RECEIVE || \
       (type) == PHY_PX_FIFO_COORD || \
       (type) == PHY_PX_ORDERED_COORD)
 
@@ -86,6 +89,7 @@ namespace sql
    (type) == PHY_PX_MULTI_PART_INSERT || \
    (type) == PHY_PX_MULTI_PART_UPDATE || \
    (type) == PHY_PX_MULTI_PART_SSTABLE_INSERT || \
+   (type) == PHY_VEC_PX_MULTI_PART_SSTABLE_INSERT || \
    (type) == PHY_LOCK)
 
 #define IS_SAMPLE_SCAN(type) \

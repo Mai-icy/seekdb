@@ -48,6 +48,7 @@ class ObAiService;
 }
 namespace sql
 {
+class ObSQLSessionPool;
 class ObSqlMemoryManager;
 class ObPlanBaselineMgr;
 class ObDataAccessService;
@@ -69,6 +70,7 @@ class ObSSTableMergeInfoMgr;
 class ObLobManager;
 class ObMemstoreFreezer;
 class ObCompactionMemPool;
+struct ObDDLMergeBucketLock;
 class ObDirectLoadMgr;
 class ObFreezeInfoMgr;
 class ObAccessService;
@@ -140,6 +142,7 @@ public:
   // ===== Module accessors =====
   virtual omt::ObSharedTimer * shared_timer() { return nullptr; }
   virtual blocksstable::ObSharedMacroBlockMgr * shared_macro_block_mgr() { return nullptr; }
+  virtual oceanbase::sql::ObSQLSessionPool * sql_session_pool() { return nullptr; }
   virtual storage::ObStorageMetaMemMgr * storage_meta_mem_mgr() { return nullptr; }
   virtual ObTableScanIteratorObjPool * table_scan_iterator_obj_pool() { return nullptr; }
   virtual common::ObIOService * io_service() { return nullptr; }
@@ -186,6 +189,7 @@ public:
   virtual compaction::ObTabletScheduler * tablet_scheduler() { return nullptr; }
   virtual compaction::ObMediumChecker * medium_checker() { return nullptr; }
   virtual storage::ObCompactionMemPool * compaction_mem_pool() { return nullptr; }
+  virtual storage::ObDDLMergeBucketLock * ddl_merge_bucket_lock() { return nullptr; }
   virtual storage::ObDirectLoadMgr * direct_load_mgr() { return nullptr; }
   virtual share::ObDagScheduler * dag_scheduler() { return nullptr; }
   virtual storage::ObFreezeInfoMgr * freeze_info_mgr() { return nullptr; }

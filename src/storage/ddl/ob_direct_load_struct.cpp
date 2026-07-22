@@ -506,12 +506,17 @@ int ObMacroBlockSliceStore::init(
     init_param.start_scn_ = start_scn;
     init_param.task_id_ = ddl_task_id;
     init_param.data_format_version_ = data_format_version;
-    init_param.block_type_ = DDL_MB_DATA_TYPE;
-    if (OB_ISNULL(ddl_redo_callback_ = OB_NEW(ObDDLRedoLogWriterCallback, ObMemAttr("DDL_MBSS")))) {
-      ret = OB_ALLOCATE_MEMORY_FAILED;
-      LOG_WARN("failed to alloc memory", K(ret));
-    } else if (OB_FAIL(static_cast<ObDDLRedoLogWriterCallback *>(ddl_redo_callback_)->init(init_param))) {
-      LOG_WARN("fail to init full ddl_redo_callback_", K(ret), K(init_param));
+    if (OB_UNLIKELY(!is_full_direct_load(direct_load_type))) {
+      ret = OB_NOT_SUPPORTED;
+      LOG_WARN("only full direct load is supported", KR(ret), K(direct_load_type));
+    } else {
+      init_param.block_type_ = DDL_MB_DATA_TYPE;
+      if (OB_ISNULL(ddl_redo_callback_ = OB_NEW(ObDDLRedoLogWriterCallback, ObMemAttr("DDL_MBSS")))) {
+        ret = OB_ALLOCATE_MEMORY_FAILED;
+        LOG_WARN("failed to alloc memory", K(ret));
+      } else if (OB_FAIL(static_cast<ObDDLRedoLogWriterCallback *>(ddl_redo_callback_)->init(init_param))) {
+        LOG_WARN("fail to init full ddl_redo_callback_", K(ret), K(init_param));
+      }
     }
     if (OB_SUCC(ret)) {
       ObMacroSeqParam macro_seq_param;
@@ -892,6 +897,24 @@ int ObDirectLoadSliceWriter::fill_lob_sstable_slice(
       }
     }
   } 
+  return ret;
+}
+
+int ObDirectLoadSliceWriter::fill_lob_into_memtable(
+    ObIAllocator &allocator,
+    const ObBatchSliceWriteInfo &info,
+    const common::ObObjMeta &col_type,
+    const ObLobStorageParam &lob_storage_param,
+    blocksstable::ObStorageDatum &datum)
+{
+  // to insert lob data into memtable.
+  int ret = OB_SUCCESS;
+  const int64_t timeout_ts = ObTimeUtility::fast_current_time() + ObInsertLobColumnHelper::LOB_ACCESS_TX_TIMEOUT;
+  if (OB_FAIL(ObInsertLobColumnHelper::insert_lob_column(
+    allocator, info.data_tablet_id_, col_type.get_type(), col_type.get_collation_type(),
+    lob_storage_param, datum, timeout_ts, true/*has_lob_header*/))) {
+    LOG_WARN("fail to insert_lob_col", K(ret), K(datum));
+  }
   return ret;
 }
 
@@ -3229,6 +3252,74 @@ int ObDDLTabletMergeDagParamV2::init_slice_sstable_array(hash::ObHashSet<int64_t
     }
     merge_ctx->slice_sstables_.destroy();
     merge_ctx->arena_.reset();
+  }
+  return ret;
+}
+
+int ObDDLMergeBucketLock::init()
+{
+  int ret = OB_SUCCESS;
+  if (is_inited_) {
+    ret = OB_INIT_TWICE;
+    LOG_WARN("lock has been inited", K(ret));
+  } else if (OB_FAIL(hash_set_.create(DDL_TABLET_BUCKET_NUM, ObMemAttr("DdlMrgBck")))) {
+    LOG_WARN("failed to create hash set", K(ret));
+  } else  {
+    is_inited_ = true;
+  }
+  return ret;
+}
+
+int ObDDLMergeBucketLock::server_module_init(ObDDLMergeBucketLock *&ddl_merge_bucket_lock)
+{
+  int ret = OB_SUCCESS;
+  
+  
+  if (OB_ISNULL(ddl_merge_bucket_lock)) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("invlaid argument, ddl merge bucket lock should not be null", K(ret));
+  } else if (OB_FAIL(ddl_merge_bucket_lock->init())) {
+    LOG_WARN("failed to init bucket lock", K(ret));
+  }
+  return ret;
+}
+
+int ObDDLMergeBucketLock::lock(const ObTabletID &tablet_id)
+{
+  int ret = OB_SUCCESS;
+  if (!tablet_id.is_valid()) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("invalid tablet_id", K(ret), K(tablet_id));
+  } else {
+    ObMutexGuard guard(mutex_);
+    if (OB_FAIL(hash_set_.set_refactored(tablet_id.id(), 0 /* not allow over write */))) {
+      if (OB_HASH_EXIST == ret) {
+        LOG_WARN("hash already exist", K(ret), K(tablet_id));
+        ret = OB_EAGAIN;
+      } else {
+        LOG_WARN("failed to set refactored", K(ret), K(tablet_id));
+      }
+    }
+  }
+  return ret;
+}
+
+int ObDDLMergeBucketLock::unlock(const ObTabletID &tablet_id)
+{
+  int ret = OB_SUCCESS;
+  if (!tablet_id.is_valid()) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("invalid tablet id", K(ret), K(tablet_id));
+  } else {
+    ObMutexGuard guard(mutex_);
+    if (OB_FAIL(hash_set_.erase_refactored(tablet_id.id()))) {
+      if (OB_HASH_NOT_EXIST == ret) {
+        LOG_WARN("lock not exist, set ret code as success", K(ret), K(tablet_id));
+        ret = OB_SUCCESS;
+      } else {
+        LOG_WARN("failed to erase refacotred", K(ret));
+      }
+    }
   }
   return ret;
 }
