@@ -616,10 +616,6 @@ void ObServer::destroy()
     FLOG_INFO("log block mgr destroy");
 
 
-    FLOG_INFO("begin to destroy rootservice event history");
-    ROOTSERVICE_EVENT_INSTANCE.destroy();
-    FLOG_INFO("rootservice event history destroyed");
-
     FLOG_INFO("begin to destroy kv global cache");
     ObKVGlobalCache::get_instance().destroy();
     FLOG_INFO("kv global cache destroyed");
@@ -1148,10 +1144,6 @@ int ObServer::stop()
     }
 
   
-    FLOG_INFO("begin to stop rootservice event history");
-    ROOTSERVICE_EVENT_INSTANCE.stop();
-    FLOG_INFO("rootservice event history stopped");
-
     FLOG_INFO("begin to stop kv global cache");
     ObKVGlobalCache::get_instance().stop();
     FLOG_INFO("kv global cache stopped");
@@ -1994,7 +1986,6 @@ int ObServer::init_global_context()
   gctx_.config_mgr_ = &config_mgr_;
   gctx_.tablet_operator_ = &tablet_operator_;
   gctx_.meta_db_pool_ = &meta_db_pool_;
-  gctx_.kv_storage_ = &kv_storage_;
   gctx_.sql_proxy_ = &sql_proxy_;
   gctx_.ddl_sql_proxy_ = &ddl_sql_proxy_;
   gctx_.res_inner_conn_pool_ = &res_inner_conn_pool_;
