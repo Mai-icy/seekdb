@@ -2925,7 +2925,6 @@ int ObTableSqlService::gen_table_dml_without_check(
             ObHexEscapeSqlStr(ObStoreFormat::get_row_store_name(table.get_row_store_type()))))
       || OB_FAIL(dml.add_column("store_format",
             ObHexEscapeSqlStr(ObStoreFormat::get_store_format_name(table.get_store_format()))))
-      || OB_FAIL(dml.add_column("duplicate_scope", table.get_duplicate_scope()))
       || OB_FAIL(dml.add_column("progressive_merge_round", table.get_progressive_merge_round()))
       || OB_FAIL(dml.add_column("storage_format_version", table.get_storage_format_version()))
       || OB_FAIL(dml.add_column("table_mode", table.get_table_mode()))
@@ -2957,7 +2956,6 @@ int ObTableSqlService::gen_table_dml_without_check(
       || (OB_FAIL(dml.add_column("name_generated_type", table.get_name_generated_type())))
       || (OB_FAIL(dml.add_column("lob_inrow_threshold", table.get_lob_inrow_threshold())))
       || (OB_FAIL(dml.add_column("auto_increment_cache_size", table.get_auto_increment_cache_size())))
-      || (OB_FAIL(dml.add_column("duplicate_read_consistency", table.get_duplicate_read_consistency())))
       || (OB_FAIL(dml.add_column("external_properties", ObHexEscapeSqlStr(table.get_external_properties()))))
       || (OB_FAIL(dml.add_column("index_params", ObHexEscapeSqlStr(index_params))))
       || (OB_FAIL(dml.add_column("micro_index_clustered", table.get_micro_index_clustered())))

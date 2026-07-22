@@ -938,7 +938,7 @@ OB_INLINE int ObMPQuery::do_process(ObSQLSessionInfo &session,
             need_response_error = false;
           }
         } else {
-          retry_ctrl_.set_packet_retry(ret);
+          retry_ctrl_.set_packet_retry();
           session.get_retry_info_for_update().set_last_query_retry_err(ret);
           session.get_retry_info_for_update().inc_retry_cnt();
         }

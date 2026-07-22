@@ -147,8 +147,6 @@ int ObSimpleTableSchemaV2::assign(const ObSimpleTableSchemaV2 &other)
       partition_status_ = other.partition_status_;
       partition_schema_version_ = other.partition_schema_version_;
       session_id_ = other.session_id_;
-      duplicate_scope_ = other.duplicate_scope_;
-      duplicate_read_consistency_ = other.duplicate_read_consistency_;
       in_offline_ddl_white_list_ = other.in_offline_ddl_white_list_;
       object_status_ = other.object_status_;
       is_force_view_ = other.is_force_view_;
@@ -214,8 +212,6 @@ void ObSimpleTableSchemaV2::reset()
     free(simple_constraint_info_array_.at(i).constraint_name_.ptr());
   }
   simple_foreign_key_info_array_.reset();
-  duplicate_scope_ = ObDuplicateScope::DUPLICATE_SCOPE_NONE;
-  duplicate_read_consistency_ = ObDuplicateReadConsistency::STRONG;
   simple_constraint_info_array_.reset();
   truncate_version_ = OB_INVALID_VERSION;
   ObPartitionSchema::reset();
@@ -620,14 +616,12 @@ int64_t ObSimpleTableSchemaV2::to_string(char *buf, const int64_t buf_len) const
     "hidden_partition_array",
     ObArrayWrap<ObPartition *>(hidden_partition_array_, hidden_partition_num_),
     K_(index_status),
-    K_(duplicate_scope),
     K_(sub_part_template_flags),
     K(get_tablet_id()),
     K_(max_dependency_version),
     K_(object_status),
     K_(is_force_view),
     K_(truncate_version),
-    K_(duplicate_read_consistency),
     K_(storage_cache_policy_type)
 );
   J_OBJ_END();
@@ -5841,7 +5835,6 @@ OB_DEF_SERIALIZE(ObTableSchema)
   OB_UNIS_ENCODE(pk_comment_);
   OB_UNIS_ENCODE(row_store_type_);
   OB_UNIS_ENCODE(store_format_);
-  OB_UNIS_ENCODE(duplicate_scope_);
   OB_UNIS_ENCODE_ARRAY(aux_vp_tid_array_, aux_vp_tid_array_count);
   OB_UNIS_ENCODE(table_mode_);
   OB_UNIS_ENCODE(trigger_list_);
@@ -5871,7 +5864,6 @@ OB_DEF_SERIALIZE(ObTableSchema)
   OB_UNIS_ENCODE(lob_inrow_threshold_);
   OB_UNIS_ENCODE(auto_increment_cache_size_);
   OB_UNIS_ENCODE(external_properties_);
-  OB_UNIS_ENCODE(duplicate_read_consistency_);
   OB_UNIS_ENCODE(index_params_);
   OB_UNIS_ENCODE(micro_index_clustered_);
   OB_UNIS_ENCODE(enable_macro_block_bloom_filter_);
@@ -6044,7 +6036,6 @@ OB_DEF_DESERIALIZE(ObTableSchema)
   OB_UNIS_DECODE_AND_FUNC(pk_comment_, deep_copy_str);
   OB_UNIS_DECODE(row_store_type_);
   OB_UNIS_DECODE(store_format_);
-  OB_UNIS_DECODE(duplicate_scope_);
   OB_UNIS_DECODE_ARRAY_AND_FUNC(aux_vp_tid_array_, aux_vp_tid_array_count, add_aux_vp_tid);
   OB_UNIS_DECODE(table_mode_);
   OB_UNIS_DECODE(trigger_list_);
@@ -6100,7 +6091,6 @@ OB_DEF_DESERIALIZE(ObTableSchema)
   OB_UNIS_DECODE(lob_inrow_threshold_);
   OB_UNIS_DECODE(auto_increment_cache_size_);
   OB_UNIS_DECODE_AND_FUNC(external_properties_, deep_copy_str);
-  OB_UNIS_DECODE(duplicate_read_consistency_);
   OB_UNIS_DECODE_AND_FUNC(index_params_, deep_copy_str);
   OB_UNIS_DECODE(micro_index_clustered_);
   OB_UNIS_DECODE(enable_macro_block_bloom_filter_);
@@ -6199,7 +6189,6 @@ OB_DEF_SERIALIZE_SIZE(ObTableSchema)
   OB_UNIS_ADD_LEN(pk_comment_);
   OB_UNIS_ADD_LEN(row_store_type_);
   OB_UNIS_ADD_LEN(store_format_);
-  OB_UNIS_ADD_LEN(duplicate_scope_);
   OB_UNIS_ADD_LEN_ARRAY(aux_vp_tid_array_, aux_vp_tid_array_count);
   OB_UNIS_ADD_LEN(table_mode_);
   OB_UNIS_ADD_LEN(trigger_list_);
@@ -6229,7 +6218,6 @@ OB_DEF_SERIALIZE_SIZE(ObTableSchema)
   OB_UNIS_ADD_LEN(lob_inrow_threshold_);
   OB_UNIS_ADD_LEN(auto_increment_cache_size_);
   OB_UNIS_ADD_LEN(external_properties_);
-  OB_UNIS_ADD_LEN(duplicate_read_consistency_);
   OB_UNIS_ADD_LEN(index_params_);
   OB_UNIS_ADD_LEN(micro_index_clustered_);
   OB_UNIS_ADD_LEN(enable_macro_block_bloom_filter_);
@@ -7653,7 +7641,6 @@ int64_t ObPrintableTableSchema::to_string(char *buf, const int64_t buf_len) cons
     K_(partition_num),
     K_(def_subpartition_num),
     K_(index_status),
-    K_(duplicate_scope),
     K_(sub_part_template_flags)
   );
   J_COMMA();
@@ -7701,8 +7688,7 @@ int64_t ObPrintableTableSchema::to_string(char *buf, const int64_t buf_len) cons
     K_(read_only),
     "aux_vp_tid_array", aux_vp_tid_array_,
     K_(aux_lob_meta_tid),
-    K_(aux_lob_piece_tid),
-    K_(duplicate_read_consistency)
+    K_(aux_lob_piece_tid)
   );
   J_OBJ_END();
   return pos;

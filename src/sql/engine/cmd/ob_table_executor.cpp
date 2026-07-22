@@ -515,12 +515,6 @@ int ObCreateTableExecutor::execute(ObExecContext &ctx, ObCreateTableStmt &stmt)
     LOG_WARN("session is null", K(ret));
   } else if (OB_FAIL(stmt.get_first_stmt(first_stmt))) {
     LOG_WARN("get first statement failed", K(ret));
-  } else if (table_schema.is_duplicate_table()) {
-
-    ret = OB_NOT_SUPPORTED;
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "create duplicate table under sys or meta tenant");
-    LOG_WARN("create dup table not supported", KR(ret), K(table_schema));
-
   }
 
   if (OB_FAIL(ret)) {
