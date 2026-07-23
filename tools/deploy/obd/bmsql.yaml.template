@@ -8,8 +8,6 @@ oceanbase-ce:
     datafile_size: 250G
     __min_full_resource_pool_memory: "4294967296"
   runtime_dependencies:
-  - src_path: plugin_dir
-    target_path: plugin_dir
   - src_path: admin
     target_path: admin
   - src_path: lib

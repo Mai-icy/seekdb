@@ -23,7 +23,7 @@
 #include "storage/fts/dict/ob_dic_lock.h"
 #include "share/ob_server_struct.h"
 #include "rootserver/ob_root_service.h"
-#include "plugin/sys/ob_plugin_helper.h"
+#include "storage/fts/ob_fts_parser_helper.h"
 #include "share/schema/ob_schema_utils.h"  // relocated-definition owner
 
 namespace oceanbase
@@ -2018,27 +2018,20 @@ int ObFtsIndexBuilderUtil::generate_fts_parser_name(
 {
   int ret = OB_SUCCESS;
   char *name_buf = nullptr;
-  if (OB_ISNULL(name_buf = static_cast<char *>(allocator.alloc(OB_PLUGIN_NAME_LENGTH)))) {
+  if (OB_ISNULL(name_buf = static_cast<char *>(allocator.alloc(storage::OB_FT_PARSER_NAME_LENGTH)))) {
     ret = common::OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("fail to alloc name buffer", K(ret));
   } else {
-    share::ObPluginName parser_name;
     storage::ObFTParser parser;
-    const char *name_str = nullptr;
+    ObString parser_name;
     if (arg.index_option_.parser_name_.empty()) {
-      name_str = common::OB_DEFAULT_FULLTEXT_PARSER_NAME;
+      parser_name = ObString::make_string(common::OB_DEFAULT_FULLTEXT_PARSER_NAME);
     } else {
-      name_str = arg.index_option_.parser_name_.ptr();
+      parser_name = arg.index_option_.parser_name_;
     }
-    if (OB_FAIL(parser_name.set_name(name_str))) {
-      LOG_WARN("fail to set plugin name", K(ret), KCSTRING(name_str));
-    } else if (OB_FAIL(plugin::ObPluginHelper::find_ftparser(name_str, parser))) {
-      if (OB_FUNCTION_NOT_DEFINED == ret) {
-        LOG_DEBUG("no such parser", K(name_str));
-      } else {
-        LOG_WARN("fail to get fulltext parser", K(ret), K(parser_name));
-      }
-    } else if (OB_FAIL(parser.serialize_to_str(name_buf, OB_PLUGIN_NAME_LENGTH))) {
+    if (OB_FAIL(parser.init(parser_name))) {
+      LOG_WARN("failed to get fulltext parser", K(ret), K(parser_name));
+    } else if (OB_FAIL(parser.serialize_to_str(name_buf, storage::OB_FT_PARSER_NAME_LENGTH))) {
       LOG_WARN("fail to serialize to cstring", K(ret), K(parser));
     } else {
       arg.index_option_.parser_name_ = common::ObString::make_string(name_buf);
@@ -2086,8 +2079,7 @@ int ObFtsIndexBuilderUtil::generate_fts_parser_property(
     }
 
     if (OB_SUCC(ret)) {
-      plugin::ObIFTParserDesc *ftparser_desc = nullptr;
-      plugin::ObPluginParam *param = nullptr;
+      const storage::ObIFTParserDesc *ftparser_desc = nullptr;
       storage::ObFTParser parser;
       const ObCharsetInfo *cs = nullptr;
       if (OB_ISNULL(cs = ObCharset::get_charset(collation_type))) {
@@ -2096,8 +2088,8 @@ int ObFtsIndexBuilderUtil::generate_fts_parser_property(
       } else if (OB_FAIL(parser.parse_from_str(arg.index_option_.parser_name_.ptr(),
                                                arg.index_option_.parser_name_.length()))) {
         LOG_WARN("failed to parser name and version", K(arg.index_option_.parser_name_), K(ret));
-      } else if (OB_FAIL(plugin::ObPluginHelper::find_ftparser(parser.get_parser_name().str(), ftparser_desc, param))) {
-        LOG_WARN("failed to find ftparser", K(parser), K(ret));
+      } else if (OB_FAIL(parser.get_desc(ftparser_desc))) {
+        LOG_WARN("failed to get fulltext parser", K(parser), K(ret));
       } else if (OB_ISNULL(ftparser_desc)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("find ftparser success but got null", K(arg.index_option_.parser_name_));

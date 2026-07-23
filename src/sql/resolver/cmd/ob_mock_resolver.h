@@ -43,12 +43,6 @@ private:
       case T_FLUSH_PRIVILEGES:
         ret = stmt::T_FLUSH_PRIVILEGES;
         break;
-      case T_INSTALL_PLUGIN:
-        ret = stmt::T_INSTALL_PLUGIN;
-        break;
-      case T_UNINSTALL_PLUGIN:
-        ret = stmt::T_UNINSTALL_PLUGIN;
-        break;
       case T_FLUSH_MOCK:
         ret = stmt::T_FLUSH_MOCK;
         break;
@@ -57,9 +51,6 @@ private:
         break;
       case T_HANDLER_MOCK:
         ret = stmt::T_HANDLER_MOCK;
-        break;
-      case T_SHOW_PLUGINS:
-        ret = stmt::T_SHOW_PLUGINS;
         break;
       case T_REPAIR_TABLE:
         ret = stmt::T_REPAIR_TABLE;

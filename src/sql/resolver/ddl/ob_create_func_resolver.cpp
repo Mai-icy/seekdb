@@ -67,33 +67,22 @@ int ObCreateFuncResolver::resolve(const ParseNode &parse_tree)
       create_func_arg.udf_.set_type(schema::ObUDF::AGGREGATE);
     }
 
-    ObObj plugin_path;
-    session_info_->get_sys_variable(SYS_VAR_PLUGIN_DIR, plugin_path);
-    ObString plugin_path_str;
-    if (OB_FAIL(plugin_path.get_string(plugin_path_str))) {
-      LOG_WARN("get plugin path failed", K(ret));
-    } else {
-      create_func_arg.udf_.set_name(ObString(create_func_node->children_[1]->str_len_, create_func_node->children_[1]->str_value_));
-      int64_t dl_len = plugin_path_str.length() + dl_c_len;
-      char *dl_buf = (char*)alloca(sizeof(char)*(dl_len));
-      MEMCPY(dl_buf, plugin_path_str.ptr(), plugin_path_str.length());
-      MEMCPY(dl_buf + plugin_path_str.length(), dl_c, dl_c_len);
-      ObString dl_str(dl_len, dl_buf);
-      create_func_arg.udf_.set_dl(dl_str);
-      switch (create_func_node->children_[2]->value_) {
-        case 1:
-          create_func_arg.udf_.set_ret(schema::ObUDF::STRING);
-          break;
-        case 2:
-          create_func_arg.udf_.set_ret(schema::ObUDF::INTEGER);
-          break;
-        case 3:
-          create_func_arg.udf_.set_ret(schema::ObUDF::REAL);
-          break;
-        case 4:
-          create_func_arg.udf_.set_ret(schema::ObUDF::DECIMAL);
-          break;
-      }
+    create_func_arg.udf_.set_name(ObString(create_func_node->children_[1]->str_len_,
+                                            create_func_node->children_[1]->str_value_));
+    create_func_arg.udf_.set_dl(ObString(dl_c_len, dl_c));
+    switch (create_func_node->children_[2]->value_) {
+      case 1:
+        create_func_arg.udf_.set_ret(schema::ObUDF::STRING);
+        break;
+      case 2:
+        create_func_arg.udf_.set_ret(schema::ObUDF::INTEGER);
+        break;
+      case 3:
+        create_func_arg.udf_.set_ret(schema::ObUDF::REAL);
+        break;
+      case 4:
+        create_func_arg.udf_.set_ret(schema::ObUDF::DECIMAL);
+        break;
     }
 
     if (OB_SUCC(ret)) {
@@ -155,4 +144,3 @@ int ObCreateFuncResolver::resolve(const ParseNode &parse_tree)
 
 }
 }
-

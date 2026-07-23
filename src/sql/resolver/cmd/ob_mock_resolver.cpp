@@ -27,12 +27,9 @@ int ObMockResolver::resolve(const ParseNode& parse_tree)
   int ret = OB_SUCCESS;
   switch (parse_tree.type_) {
     case T_FLUSH_PRIVILEGES:
-    case T_INSTALL_PLUGIN:
-    case T_UNINSTALL_PLUGIN:
     case T_FLUSH_MOCK:
     case T_FLUSH_TABLE_MOCK:
     case T_HANDLER_MOCK:
-    case T_SHOW_PLUGINS:
     case T_REPAIR_TABLE:
     case T_CHECKSUM_TABLE:
     case T_CACHE_INDEX:

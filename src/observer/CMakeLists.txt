@@ -310,7 +310,6 @@ ob_set_subtarget(ob_server virtual_table
   virtual_table/ob_all_virtual_session_ps_info.cpp
   virtual_table/ob_all_virtual_sql_stat.cpp
   virtual_table/ob_all_virtual_tmp_file.cpp
-  virtual_table/ob_all_virtual_plugin_info.cpp
   virtual_table/ob_all_virtual_change_stream_refresh_stat.cpp
   virtual_table/ob_tenant_show_catalog_databases.cpp
   virtual_table/ob_all_virtual_tenant_vector_mem_info.cpp
@@ -326,7 +325,7 @@ add_library(oceanbase_static
   ${CMAKE_CURRENT_BINARY_DIR}/ob_version.cpp)
 
 target_link_libraries(oceanbase_static
-  PUBLIC ob_base "${ob_objects}" ob_sql_static ob_storage_static ob_share_static oblib ob_plugin)
+  PUBLIC ob_base "${ob_objects}" ob_sql_static ob_storage_static ob_share_static oblib)
 
 if (OB_SO_CACHE)
   add_library(oceanbase SHARED IMPORTED GLOBAL)
@@ -351,7 +350,6 @@ else()
     ob_sql_static
     ob_storage_static
     ob_share_static
-    ob_plugin
     $<$<NOT:$<PLATFORM_ID:Darwin>>:-Wl,--no-whole-archive>
     $<$<PLATFORM_ID:Linux>:-static-libgcc>
     $<$<PLATFORM_ID:Linux>:-static-libstdc++>)
@@ -412,10 +410,6 @@ target_link_libraries(seekdb
   $<$<PLATFORM_ID:Windows>:ob_malloc>
   $<$<PLATFORM_ID:Windows>:synchronization>
   $<$<AND:$<NOT:$<PLATFORM_ID:Darwin>>,$<NOT:$<PLATFORM_ID:Windows>>>:-Wl,--end-group>
-  $<$<AND:$<NOT:$<PLATFORM_ID:Darwin>>,$<NOT:$<PLATFORM_ID:Windows>>>:-Wl,--whole-archive>
-  ob_plugin_export_static
-  $<$<AND:$<NOT:$<PLATFORM_ID:Darwin>>,$<NOT:$<PLATFORM_ID:Windows>>>:-Wl,--no-whole-archive>
-  $<$<AND:$<NOT:$<PLATFORM_ID:Darwin>>,$<NOT:$<PLATFORM_ID:Windows>>>:-Wl,--export-dynamic-symbol=obp_*>
   $<$<PLATFORM_ID:Linux>:-static-libgcc>
   $<$<PLATFORM_ID:Linux>:-static-libstdc++>
   ${link_malloc_hook}

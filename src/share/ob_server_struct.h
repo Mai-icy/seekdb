@@ -93,11 +93,6 @@ class ObStartupAccelTaskHandler;
 } // end of namespace observer
 
 
-namespace plugin
-{
-class ObPluginMgr;
-}
-
 namespace share
 {
 class ObTabletTableOperator;
@@ -153,8 +148,6 @@ struct ObGlobalContext
   observer::ObStartupAccelTaskHandler* startup_accel_handler_;
   bool in_bootstrap_;
   bool sys_package_ready_;
-  plugin::ObPluginMgr *plugin_mgr_ = nullptr;
-
   // Primary-Standby configuration
   common::ObClusterRole server_role_;
 

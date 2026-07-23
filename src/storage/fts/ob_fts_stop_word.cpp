@@ -18,11 +18,9 @@
 #define USING_LOG_PREFIX STORAGE_FTS
 
 #include "share/rc/ob_tenant_base.h"
-#include "plugin/sys/ob_plugin_mgr.h"
 #include "storage/fts/ob_fts_stop_word.h"
-#include "storage/fts/ob_fts_plugin_helper.h"
+#include "storage/fts/ob_fts_parser_helper.h"
 #include "storage/fts/ob_fts_parser_property.h"
-#include "storage/fts/ob_fts_plugin_helper.h"
 
 namespace oceanbase
 {
@@ -205,7 +203,7 @@ int ObAddWord::check_stopword(const ObFTWord &ft_word, bool &is_stopword)
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arguments", K(ret), K(ft_word));
   } else if (flag_.stopword()) {
-    ObStopWordChecker *stop_word_checker = ObFTParsePluginData::instance().stop_word_checker();
+    ObStopWordChecker *stop_word_checker = ObFTParseData::instance().stop_word_checker();
     if (OB_ISNULL(stop_word_checker)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("got null stop word checker", K(ret));

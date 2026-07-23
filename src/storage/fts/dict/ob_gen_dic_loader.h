@@ -19,7 +19,7 @@
 
 #include "lib/lock/ob_tc_rwlock.h"
 #include "storage/fts/dict/ob_dic_loader.h"
-#include "share/ob_plugin_helper.h"
+#include "storage/fts/ob_fts_parser_name.h"
 
 namespace oceanbase
 {
@@ -33,7 +33,7 @@ public:
   public:
     ObGenDicLoaderKey() : charset_(CHARSET_INVALID)
     {
-      MEMSET(parser_name_, '\0', share::OB_PLUGIN_NAME_LENGTH);
+      MEMSET(parser_name_, '\0', OB_FT_PARSER_NAME_LENGTH);
     }
     ~ObGenDicLoaderKey() = default;
     int init(const ObString &parser_name, const ObCharsetType charset);
@@ -60,7 +60,7 @@ public:
     int set_parser_name(const ObString &parser_name);
 
   private:
-    char parser_name_[share::OB_PLUGIN_NAME_LENGTH];
+    char parser_name_[OB_FT_PARSER_NAME_LENGTH];
     ObCharsetType charset_;
   };
 

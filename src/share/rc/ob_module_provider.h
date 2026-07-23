@@ -42,7 +42,6 @@ public:
   virtual omt::ObSharedTimer * shared_timer() { return nullptr; }
   virtual oceanbase::sql::ObTenantSQLSessionMgr * tenant_sql_session_mgr() { return nullptr; }
   virtual storage::ObTenantMetaMemMgr * tenant_meta_mem_mgr() { return nullptr; }
-  virtual storage::ObTenantFTPluginMgr * tenant_ft_plugin_mgr() { return nullptr; }
   virtual ObTxCtxObjPool * part_trans_ctx_obj_pool() { return nullptr; }
   virtual ObTableScanIteratorObjPool * table_scan_iterator_obj_pool() { return nullptr; }
   virtual common::ObTenantIOManager * tenant_io_manager() { return nullptr; }

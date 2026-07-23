@@ -35,11 +35,8 @@ int ObMockExecutor::execute(ObExecContext &exec_ctx, ObMockStmt &stmt)
 {
   int ret = OB_SUCCESS;
 
-  if (stmt::T_INSTALL_PLUGIN == stmt.get_stmt_type()
-      || stmt::T_UNINSTALL_PLUGIN == stmt.get_stmt_type()
-      || stmt::T_FLUSH_MOCK == stmt.get_stmt_type()
+  if (stmt::T_FLUSH_MOCK == stmt.get_stmt_type()
       || stmt::T_HANDLER_MOCK == stmt.get_stmt_type()
-      || stmt::T_SHOW_PLUGINS == stmt.get_stmt_type()
       || stmt::T_CREATE_SERVER == stmt.get_stmt_type() 
       || stmt::T_ALTER_SERVER == stmt.get_stmt_type() 
       || stmt::T_DROP_SERVER == stmt.get_stmt_type() 

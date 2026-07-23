@@ -9,8 +9,6 @@ oceanbase-ce:
     system_memory: '10G'
     datafile_size: '40G'
   runtime_dependencies:
-  - src_path: plugin_dir
-    target_path: plugin_dir
   - src_path: admin
     target_path: admin
   - src_path: lib

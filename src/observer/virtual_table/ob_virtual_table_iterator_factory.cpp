@@ -171,7 +171,6 @@
 #include "observer/virtual_table/ob_all_virtual_vector_index_info.h"
 #include "observer/virtual_table/ob_all_virtual_tmp_file.h"
 #include "observer/virtual_table/ob_all_virtual_dml_stats.h"
-#include "observer/virtual_table/ob_all_virtual_plugin_info.h"
 #include "observer/virtual_table/ob_all_virtual_change_stream_refresh_stat.h"
 #include "observer/virtual_table/ob_all_virtual_tenant_vector_mem_info.h"
 #include "observer/virtual_table/ob_all_virtual_ccl_status.h"
@@ -2014,15 +2013,6 @@ int ObVTIterCreator::create_vt_iter(ObVTableScanParam &params,
             }
             break;
           }
-          case OB_ALL_VIRTUAL_PLUGIN_INFO_TID:
-          {
-            ObAllVirtualPluginInfo *plugin_info_table = NULL;
-            if (OB_FAIL(NEW_VIRTUAL_TABLE(ObAllVirtualPluginInfo, plugin_info_table))) {
-              SERVER_LOG(ERROR, "ObAllVirtualPluginInfo construct failed", K(ret));
-            } else {
-              vt_iter = static_cast<ObVirtualTableIterator *>(plugin_info_table);
-            }
-          } break;
           case OB_ALL_VIRTUAL_VECTOR_MEM_INFO_TID:
           {
             ObAllVirtualTenantVectorMemInfo *gv_tenant_vector_mem_info = NULL;

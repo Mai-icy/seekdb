@@ -46,8 +46,6 @@
 
 #define USING_LOG_PREFIX STORAGE_FTS
 
-using namespace oceanbase::plugin;
-
 namespace oceanbase
 {
 namespace storage
@@ -903,7 +901,6 @@ int main(int argc, char **argv)
   system("rm -rf test_ft_parser.log");
   OB_LOGGER.set_file_name("test_ft_parser.log", true);
   OB_LOGGER.set_log_level("DEBUG");
-  // oceanbase::storage::ObTestFTPluginHelper::file_name = argv[0];
   testing::InitGoogleTest(&argc, argv);
 
   return RUN_ALL_TESTS();

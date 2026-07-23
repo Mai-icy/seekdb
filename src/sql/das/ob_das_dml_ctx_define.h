@@ -24,7 +24,7 @@
 #include "storage/ob_table_dml_param.h"
 #include "sql/engine/ob_operator.h"
 #include "sql/resolver/dml/ob_hint.h"
-#include "storage/fts/ob_fts_plugin_helper.h"
+#include "storage/fts/ob_fts_parser_helper.h"
 #include "storage/blocksstable/ob_datum_row_iterator.h"
 namespace oceanbase
 {

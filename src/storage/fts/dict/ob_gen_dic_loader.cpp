@@ -78,11 +78,11 @@ int ObGenDicLoader::ObGenDicLoaderKey::set_parser_name(const char *parser_name)
   if (OB_ISNULL(parser_name)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("The parser name is nullptr", K(ret), KP(parser_name));
-  } else if (OB_UNLIKELY(len >= OB_PLUGIN_NAME_LENGTH)) {
+  } else if (OB_UNLIKELY(len >= OB_FT_PARSER_NAME_LENGTH)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("The parser name is too long", K(ret), KCSTRING(parser_name));
   } else {
-    MEMSET(parser_name_, '\0', OB_PLUGIN_NAME_LENGTH);
+    MEMSET(parser_name_, '\0', OB_FT_PARSER_NAME_LENGTH);
     MEMCPY(parser_name_, parser_name, len);
   }
   return ret;
@@ -91,11 +91,11 @@ int ObGenDicLoader::ObGenDicLoaderKey::set_parser_name(const char *parser_name)
 int ObGenDicLoader::ObGenDicLoaderKey::set_parser_name(const ObString &parser_name)
 {
   int ret = OB_SUCCESS;
-  if (OB_UNLIKELY(parser_name.empty() || (parser_name.length() >= OB_PLUGIN_NAME_LENGTH))) {
+  if (OB_UNLIKELY(parser_name.empty() || (parser_name.length() >= OB_FT_PARSER_NAME_LENGTH))) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("parser name is not valid", K(ret), K(parser_name));
   } else {
-    MEMSET(parser_name_, '\0', OB_PLUGIN_NAME_LENGTH);
+    MEMSET(parser_name_, '\0', OB_FT_PARSER_NAME_LENGTH);
     MEMCPY(parser_name_, parser_name.ptr(), parser_name.length());
   }
   return ret;
