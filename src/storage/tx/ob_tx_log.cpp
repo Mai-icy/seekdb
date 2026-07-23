@@ -218,8 +218,7 @@ OB_SERIALIZE_MEMBER(ObTxCommitInfoLog,
                        /* 2 */ app_trace_id_str_,
                        /* 3 */ app_trace_info_,
                        /* 4 */ prev_record_lsn_,
-                       /* 5 */ redo_lsns_,
-                       /* 6 */ xid_);
+                       /* 5 */ redo_lsns_);
 
 OB_SERIALIZE_MEMBER(ObTxCommitLog,
                        /* 1 */ commit_version_,
@@ -246,11 +245,10 @@ ObTxCommitInfoLog::ObTxCommitInfoLog(bool is_elr,
                                      common::ObString &app_trace_id,
                                      const common::ObString &app_trace_info,
                                      const LogOffSet &prev_record_lsn,
-                                     ObRedoLSNArray &redo_lsns,
-                                     const ObXATransID &xid)
+                                     ObRedoLSNArray &redo_lsns)
     : can_elr_(is_elr),
       app_trace_id_str_(app_trace_id), app_trace_info_(app_trace_info),
-      prev_record_lsn_(prev_record_lsn), redo_lsns_(redo_lsns), xid_(xid)
+      prev_record_lsn_(prev_record_lsn), redo_lsns_(redo_lsns)
 {}
 
 ObTxCommitLog::ObTxCommitLog(share::SCN commit_version,

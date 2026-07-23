@@ -407,7 +407,7 @@ int ObMPQuery::process_single_stmt(const ObMultiStmtItem &multi_stmt_item,
     stmt::StmtType stmt_type = stmt::T_NONE;
     if (!ERRSIM_BEGIN_COMMIT_OPT_DISABLE && !multi_stmt_item.is_part_of_multi_stmt()) {
       check_is_trans_ctrl_cmd(multi_stmt_item.get_sql(), is_trans_ctrl_cmd, stmt_type);
-      if (is_trans_ctrl_cmd && !session.associated_xa()) {
+      if (is_trans_ctrl_cmd) {
         do_trans_ctrl_opt = true;
       }
     }
@@ -783,7 +783,7 @@ int ObMPQuery::process_trans_ctrl_cmd(ObSQLSessionInfo &session,
     bool read_only = session.get_tx_read_only();
     transaction::ObTxParam tx_param;
     TransState trans_state;
-    // stmt is T_START_TRANS and not xa cmd, try to end trans before start trans
+    // End the current transaction before starting a new one.
     if (OB_FAIL(ObSqlTransControl::end_trans_before_cmd_execute(session,
                                                                 need_disconnect,
                                                                 trans_state,

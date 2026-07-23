@@ -2559,7 +2559,7 @@ id	field	type	length	precision	nullable
 32	freeze_state	22	256	-1	0
 33	freeze_time_dist	22	256	-1	0
 34	compaction_info_list	22	128	-1	0
-table oceanbase.__all_virtual_trans_stat column_count 26 table_id 11027
+table oceanbase.__all_virtual_trans_stat column_count 23 table_id 11027
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=11027 order by column_id;
 id	field	type	length	precision	nullable
 16	trans_id	5	0	20	0
@@ -2578,16 +2578,13 @@ id	field	type	length	precision	nullable
 29	flushed_log_size	5	0	20	0
 30	is_exiting	5	0	20	0
 31	last_request_time	18	0	25	1
-32	gtrid	22	128	-1	0
-33	bqual	22	128	-1	0
-34	format_id	5	0	20	0
-35	start_scn	10	0	20	0
-36	end_scn	10	0	20	0
-37	rec_scn	10	0	20	0
-38	busy_cbs	5	0	20	0
-39	replay_complete	5	0	20	0
-40	serial_log_final_scn	5	0	20	0
-41	callback_list_stats	30	536870911	-1	0
+32	start_scn	10	0	20	0
+33	end_scn	10	0	20	0
+34	rec_scn	10	0	20	0
+35	busy_cbs	5	0	20	0
+36	replay_complete	5	0	20	0
+37	serial_log_final_scn	5	0	20	0
+38	callback_list_stats	30	536870911	-1	0
 table oceanbase.__all_virtual_trans_ctx_mgr_stat column_count 6 table_id 11028
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=11028 order by column_id;
 id	field	type	length	precision	nullable
@@ -2597,7 +2594,7 @@ id	field	type	length	precision	nullable
 19	block_all	5	0	20	0
 20	total_trans_ctx_count	5	0	20	0
 21	mgr_addr	5	0	20	0
-table oceanbase.__all_virtual_trans_scheduler column_count 21 table_id 11029
+table oceanbase.__all_virtual_trans_scheduler column_count 18 table_id 11029
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=11029 order by column_id;
 id	field	type	length	precision	nullable
 16	session_id	5	0	20	0
@@ -2618,9 +2615,6 @@ id	field	type	length	precision	nullable
 31	savepoints_total_cnt	5	0	20	0
 32	internal_abort_cause	5	0	20	0
 33	can_early_lock_release	1	0	4	0
-34	gtrid	22	128	-1	1
-35	bqual	22	128	-1	1
-36	format_id	5	0	20	0
 table oceanbase.__all_virtual_core_all_table column_count 85 table_id 11035
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=11035 order by column_id;
 id	field	type	length	precision	nullable
@@ -2791,15 +2785,14 @@ id	field	type	length	precision	nullable
 27	scope	22	256	-1	1
 28	source	22	256	-1	1
 29	edit_level	22	256	-1	1
-table oceanbase.__all_virtual_engine column_count 6 table_id 11043
+table oceanbase.__all_virtual_engine column_count 5 table_id 11043
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=11043 order by column_id;
 id	field	type	length	precision	nullable
 16	ENGINE	22	64	-1	0
 17	SUPPORT	22	4	-1	0
 18	COMMENT	22	2048	-1	0
 19	TRANSACTIONS	22	4	-1	0
-20	XA	22	4	-1	0
-21	SAVEPOINTS	22	4	-1	0
+20	SAVEPOINTS	22	4	-1	0
 table oceanbase.__all_virtual_plan_cache_plan_explain column_count 8 table_id 11048
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=11048 order by column_id;
 id	field	type	length	precision	nullable

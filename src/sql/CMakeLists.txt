@@ -434,7 +434,6 @@ ob_set_subtarget(ob_sql engine_cmd
   engine/cmd/ob_udf_executor.cpp
   engine/cmd/ob_user_cmd_executor.cpp
   engine/cmd/ob_variable_set_executor.cpp
-  engine/cmd/ob_xa_executor.cpp
   engine/cmd/ob_context_executor.cpp
   engine/cmd/ob_event_executor.cpp
   engine/cmd/ob_mock_executor.cpp
@@ -1262,11 +1261,6 @@ ob_set_subtarget(ob_sql resolver
   resolver/tcl/ob_savepoint_stmt.cpp
   resolver/tcl/ob_start_trans_resolver.cpp
   resolver/tcl/ob_tcl_resolver.cpp
-  resolver/xa/ob_xa_commit_resolver.cpp
-  resolver/xa/ob_xa_end_resolver.cpp
-  resolver/xa/ob_xa_prepare_resolver.cpp
-  resolver/xa/ob_xa_rollback_resolver.cpp
-  resolver/xa/ob_xa_start_resolver.cpp
 )
 
 ob_set_subtarget(ob_sql resolver_cmd

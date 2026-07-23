@@ -157,12 +157,6 @@ int ObRespTimeInfoCollector::collect(const sql::stmt::StmtType sql_type, const b
         }
         break;
       }
-      case sql::stmt::T_XA_COMMIT : {
-        if (OB_FAIL(commit_sql_info_.collect(pos, resp_time))) {
-          LOG_WARN("commit info failed to collect resp time", K(ret), K(pos), K(resp_time), K(utility_.bound_count()));
-        }
-        break;
-      }
       default: {
         if (OB_FAIL(other_sql_info_.collect(pos, resp_time))) {
           LOG_WARN("other info failed to collect resp time", K(ret), K(pos), K(resp_time), K(utility_.bound_count()));

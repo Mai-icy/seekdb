@@ -633,7 +633,6 @@ psmall_test += [
 'resolver.resolver_issue_35808008',
 'system_variable.innodb_stats_persistent',
 'groupby.double_overflow',
-'xa.xa_mysql',
 'mysql8_t_2.boot_coll_server_binary',
 'charset.ctype_swe7',
 'system_limits.crash_manycolumns_string',

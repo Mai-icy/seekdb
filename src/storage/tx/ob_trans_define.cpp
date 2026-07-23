@@ -346,7 +346,6 @@ void ObTxExecInfo::reset()
   data_complete_ = false;
   //touched_pkeys_.reset();
   multi_data_source_.reset();
-  xid_.reset();
   need_checksum_ = true;
   serial_final_scn_.reset();
   serial_final_seq_no_.reset();
@@ -456,7 +455,6 @@ int ObTxExecInfo::assign(const ObTxExecInfo &exec_info)
     }
     max_durable_lsn_ = exec_info.max_durable_lsn_;
     data_complete_ = exec_info.data_complete_;
-    xid_ = exec_info.xid_;
     need_checksum_ = exec_info.need_checksum_;
     serial_final_scn_ = exec_info.serial_final_scn_;
     serial_final_seq_no_ = exec_info.serial_final_seq_no_;
@@ -481,7 +479,6 @@ OB_SERIALIZE_MEMBER(ObTxExecInfo,
                     max_durable_lsn_,
   data_complete_,
 //                    touched_pkeys_,
-                    xid_,
                     need_checksum_,
                     mds_buffer_ctx_array_,
                     checksum_,

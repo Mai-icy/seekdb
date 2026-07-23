@@ -382,14 +382,12 @@ public:
       trans_flags_.reset();
       tx_result_.reset();
       nested_count_ = -1;
-      xid_.reset();
     }
   public:
     transaction::ObTxDesc *tx_desc_;
     TransFlags trans_flags_;
     transaction::ObTxExecResult tx_result_;
     int64_t nested_count_;
-    transaction::ObXATransID xid_;
   };
 
 public:
@@ -1844,18 +1842,12 @@ protected:
   // snapshot version is generated from remote server(called by start_stmt). So
   // use it only query is active and version is valid.
   share::SCN reserved_read_snapshot_version_;
-  transaction::ObXATransID xid_;
-  bool associated_xa_; // session joined distr-xa-trans by xa-start
   int64_t cached_tenant_config_version_;
 public:
-  const transaction::ObXATransID &get_xid() const { return xid_; }
   transaction::ObTransID get_tx_id() const { return tx_desc_ != NULL ? tx_desc_->get_tx_id() : transaction::ObTransID(); }
   transaction::ObTxDesc /*Nullable*/ *&get_tx_desc() { return tx_desc_; }
   const transaction::ObTxDesc /*Nullable*/ *get_tx_desc() const { return tx_desc_; }
   transaction::ObTxExecResult &get_trans_result() { return tx_result_; }
-  bool associated_xa() const { return associated_xa_; }
-  int associate_xa(const transaction::ObXATransID &xid) { associated_xa_ = true; return xid_.set(xid); }
-  void disassociate_xa() { associated_xa_ = false; xid_.reset(); }
 private:
   common::ObSEArray<TableStmtType, 2> total_stmt_tables_;
   common::ObSEArray<TableStmtType, 1> cur_stmt_tables_;

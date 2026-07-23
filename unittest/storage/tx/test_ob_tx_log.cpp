@@ -46,7 +46,6 @@ int64_t TEST_COMMIT_VERSION = 190878;
 int64_t TEST_CHECKSUM = 29890209;
 ObArray<uint8_t> TEST_CHECKSUM_SIGNATURE_ARRAY;
 int64_t TEST_LOG_ENTRY_NO = 1233;
-ObXATransID TEST_XID;
 ObTxPrevLogType TEST_PREV_LOG_TYPE(ObTxPrevLogType::TypeEnum::COMMIT_INFO);
 tablelock::ObTableLockPrioOpArray TEST_PRIO_OP_ARRAY;
 
@@ -121,8 +120,7 @@ TEST_F(TestObTxLog, tx_log_body_except_redo)
                                        TEST_TRACE_ID_STR,
                                        TEST_TRCE_INFO,
                                        TEST_LOG_OFFSET,
-                                       TEST_LOG_OFFSET_ARRY,
-                                       TEST_XID);
+                                       TEST_LOG_OFFSET_ARRY);
   ObTxCommitLog fill_commit(share::SCN::base_scn(),
                             TEST_CHECKSUM,
                             TEST_CHECKSUM_SIGNATURE_ARRAY,
@@ -192,8 +190,7 @@ TEST_F(TestObTxLog, tx_log_body_redo)
                                        TEST_TRACE_ID_STR,
                                        TEST_TRCE_INFO,
                                        TEST_LOG_OFFSET,
-                                       TEST_LOG_OFFSET_ARRY,
-                                       TEST_XID);
+                                       TEST_LOG_OFFSET_ARRY);
   ObTxCommitLog fill_commit(share::SCN::base_scn(),
                             TEST_CHECKSUM,
                             TEST_CHECKSUM_SIGNATURE_ARRAY,

@@ -82,12 +82,6 @@ int ObAllVirtualEngineTable::inner_get_next_row(common::ObNewRow *&row)
                                                      ObCharset::get_default_charset()));
               break;
             }
-          case XA: {
-              cells[cell_idx].set_varchar("NO");
-              cells[cell_idx].set_collation_type(ObCharset::get_default_collation(
-                                                     ObCharset::get_default_charset()));
-              break;
-            }
           case SAVEPOINTS: {
               cells[cell_idx].set_varchar("NO");
               cells[cell_idx].set_collation_type(ObCharset::get_default_collation(

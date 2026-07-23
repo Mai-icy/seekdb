@@ -69,7 +69,6 @@ IMPL_ON_DEMAND_PRINT_FUNC(ObTxExecInfo)
   TX_KV_PRINT_WITH_ERR(!redo_lsns_.empty(), redo_lsns, redo_lsns_, ", ");
   TX_KV_PRINT_WITH_ERR(!multi_data_source_.empty(), multi_data_source, multi_data_source_, ", ");
   TX_KV_PRINT_WITH_ERR(max_durable_lsn_.is_valid(),max_durable_lsn , max_durable_lsn_, ", ");
-  TX_KV_PRINT_WITH_ERR(!xid_.empty(), xid , xid_, ", ");
   TX_KV_PRINT_WITH_ERR(serial_final_scn_.is_valid(), serial_final_scn, serial_final_scn_, ", ");
   TX_KV_PRINT_WITH_ERR(serial_final_seq_no_.is_valid(), serial_final_seq_no,serial_final_seq_no_, ", ");
 

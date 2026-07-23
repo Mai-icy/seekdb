@@ -35,7 +35,6 @@
 #include "sql/resolver/ob_stmt_type.h"
 #include "storage/tx/ob_committer_define.h"
 #include "storage/tx/ob_trans_result.h"
-#include "storage/tx/ob_xa_define.h"
 #include "storage/tx/ob_multi_data_source_tx_buffer_node.h"
 #include "storage/tx/ob_tx_on_demand_print.h"
 #include "storage/tx/ob_tx_seq.h"
@@ -91,7 +90,6 @@ class ObTransCtx;
 class ObTxCtx;
 class ObMemtableKeyInfo;
 class AggreLogTask;
-class ObXACtx;
 class ObITxCallback;
 class ObTxMultiDataSourceLog;
 enum class NotifyType : int64_t;
@@ -1279,7 +1277,6 @@ public:
                K_(max_durable_lsn),
                K_(data_complete),
                //K_(touched_pkeys),
-               K_(xid),
                K_(need_checksum),
                K_(serial_final_scn),
                K_(serial_final_seq_no));
@@ -1301,8 +1298,6 @@ public:
   ObSEArray<share::SCN,1> checksum_scn_;
   palf::LSN max_durable_lsn_;
   bool data_complete_;
-  // for xa
-  ObXATransID xid_;
   bool need_checksum_;
   // since this scn
   share::SCN serial_final_scn_;

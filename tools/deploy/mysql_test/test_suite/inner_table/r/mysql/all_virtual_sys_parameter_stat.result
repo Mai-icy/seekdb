@@ -517,8 +517,6 @@ _use_hash_rollup
 _use_odps_jni_connector
 _wait_interval_after_parallel_ddl
 _with_subquery
-_xa_gc_interval
-_xa_gc_timeout
 __easy_memory_limit
 __easy_memory_reserved_percentage
 __min_full_resource_pool_memory

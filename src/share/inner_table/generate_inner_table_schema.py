@@ -1030,10 +1030,6 @@ def copy_keywords(keywords):
   log_debug("copy_keywords in: table_id=", tid, ",  table_name=" + tname, ", base_table_name=" + base_tname, ", base_table_name1=" + base_tname1, ", base_table_name2=" + base_tname2)
   # Default base_table_name equals its table name
   # base_table_name[1,2] records the original base table name in the scenario of multi-layer schema nested definitions
-  # For example: schema of table number 15118, which nestedly defines two layers of base tables:
-  # Real table name: ALL_VIRTUAL_GLOBAL_TRANSACTION
-  # First layer base table: __all_tenant_global_transaction
-  # Second layer base table: __all_virtual_global_transaction
   if base_tname == '':
     base_tname = tname;
     keywords["base_table_name"] = tname;

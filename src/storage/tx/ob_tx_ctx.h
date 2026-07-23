@@ -129,15 +129,13 @@ public:
   ~ObTxCtx() { destroy(); }
   void destroy();
   int init(const uint32_t session_id,
-           const uint32_t associated_session_id,
            const ObTransID &trans_id,
            const int64_t trans_expired_time,
            const uint64_t cluster_version,
            ObTransService *trans_service,
            ObLSTxCtxMgr *ls_ctx_mgr,
            const bool for_replay,
-           const TxCtxSource ctx_source,
-           ObXATransID xid);
+           const TxCtxSource ctx_source);
   void reset() { }
   int construct_context(const ObTransMsg &msg);
 public:
@@ -206,7 +204,6 @@ public:
 private:
   // thread unsafe
   ON_DEMAND_TO_STRING_KV_(K_(session_id),
-                          K_(associated_session_id),
                           K_(part_trans_action),
                           K_(pending_write),
                           K(extra_cb_group_list_.get_size()),
@@ -595,7 +592,6 @@ public:
                             ObTxSEQ from_seq,
                             const ObTxSEQ to_seq,
                             const int64_t seq_base);
-  bool is_xa_trans() const { return !exec_info_.xid_.empty(); }
   int handle_tx_keepalive_response(const int64_t status);
 private:
   bool fast_check_need_submit_redo_for_freeze_() const;

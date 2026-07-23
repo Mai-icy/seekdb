@@ -1701,8 +1701,6 @@ all_tenant_constraint_column_def = dict(
 def_table_schema(**all_tenant_constraint_column_def)
 def_table_schema(**gen_history_table_def(295,  all_tenant_constraint_column_def))
 
-# 296: __all_tenant_global_transaction (abandoned)
-
 all_tenant_dependency_def = dict(
   owner = 'lj229669',
   table_name = '__all_dependency',
@@ -3786,9 +3784,6 @@ def_table_schema(
   ('flushed_log_size', 'int'),
   ('is_exiting', 'int'),
   ('last_request_time', 'timestamp', 'true'),
-  ('gtrid', 'varbinary:128'),
-  ('bqual', 'varbinary:128'),
-  ('format_id', 'int', 'false', '1'),
   ('start_scn', 'uint'),
   ('end_scn', 'uint'),
   ('rec_scn', 'uint'),
@@ -3845,10 +3840,7 @@ def_table_schema(
   ('savepoints', 'varchar:1024', 'true'),
   ('savepoints_total_cnt', 'int'),
   ('internal_abort_cause', 'int'),
-  ('can_early_lock_release', 'bool'),
-  ('gtrid', 'varbinary:128', 'true'),
-  ('bqual', 'varbinary:128', 'true'),
-  ('format_id', 'int', 'false', '1')
+  ('can_early_lock_release', 'bool')
   ],  vtable_route_policy = 'local'
   )
 
@@ -3934,7 +3926,6 @@ def_table_schema(
   ('SUPPORT', 'varchar:MAX_BOOL_STR_LENGTH'),
   ('COMMENT', 'varchar:MAX_COLUMN_COMMENT_LENGTH'),
   ('TRANSACTIONS', 'varchar:MAX_BOOL_STR_LENGTH'),
-  ('XA', 'varchar:MAX_BOOL_STR_LENGTH'),
   ('SAVEPOINTS', 'varchar:MAX_BOOL_STR_LENGTH')
   ]
   )
@@ -5649,7 +5640,6 @@ def_table_schema(
 # 12203: __all_virtual_pg_backup_backupset_task # abandoned in 4.0
 
 # 12205: __all_virtual_cluster_failover_info # abandoned in 4.0
-# 12206: __all_virtual_global_transaction (abandoned)
 # 12207: __all_virtual_all_clusters # abandoned in 4.0
 
 # 12208: __all_virtual_ddl_task_status # removed (single-tenant: iterate VT mechanism deleted)
@@ -5854,8 +5844,6 @@ def_table_schema(**gen_sqlite_virtual_table_def(
 # 12260: __all_virtual_ddl_error_message # removed (single-tenant: iterate VT mechanism deleted)
 
 # 12261: __all_virtual_ls_replica_task (abandoned)
-
-# 12262: __all_virtual_pending_transaction # removed (single-tenant: iterate VT mechanism deleted)
 
 # 12263: __all_virtual_tenant_scheduler_job # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -8124,7 +8112,6 @@ def_table_schema(
            CAST('YES' AS CHAR(8)) as SUPPORT,
            CAST('Supports transactions' as CHAR(80)) as COMMENT,
            CAST('YES' as CHAR(3)) as TRANSACTIONS,
-           CAST('NO' as CHAR(3)) as XA,
            CAST('YES' as CHAR(3)) as SAVEPOINTS
     FROM DUAL;
 """.replace("\n", " ")
@@ -10999,10 +10986,7 @@ def_table_schema(
         END AS CHAR(10)) AS ACTION,
       pending_log_size AS PENDING_LOG_SIZE,
       flushed_log_size AS FLUSHED_LOG_SIZE,
-      LAST_REQUEST_TIME,
-      FORMAT_ID AS FORMATID,
-      HEX(GTRID) AS GLOBALID,
-      HEX(BQUAL) AS BRANCHID
+      LAST_REQUEST_TIME
     FROM oceanbase.__all_virtual_trans_stat
     WHERE is_exiting = 0
 """.replace("\n", " ")
@@ -13424,10 +13408,7 @@ def_table_schema(
       WHEN can_early_lock_release = 0 THEN 'FALSE'
       WHEN can_early_lock_release = 1 THEN 'TRUE'
       ELSE 'UNKNOWN'
-      END AS CAN_EARLY_LOCK_RELEASE,
-    format_id AS FORMATID,
-    HEX(gtrid) AS GLOBALID,
-    HEX(bqual) AS BRANCHID
+      END AS CAN_EARLY_LOCK_RELEASE
     FROM oceanbase.__all_virtual_trans_scheduler
 """.replace("\n", " ")
   )
@@ -16183,8 +16164,6 @@ def_sys_index_table(
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
   keywords = all_def_keywords['__all_objauth'])
-
-# 101062: idx_xa_trans_id (abandoned)
 
 def_sys_index_table(
   index_name = 'idx_dependency_ref_obj',

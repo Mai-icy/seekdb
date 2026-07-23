@@ -101,11 +101,6 @@
 #include "sql/resolver/ddl/ob_drop_sequence_resolver.h"
 #include "sql/resolver/ddl/ob_set_comment_resolver.h"
 #include "sql/resolver/expr/ob_raw_expr_wrap_enum_set.h"
-#include "sql/resolver/xa/ob_xa_start_resolver.h"
-#include "sql/resolver/xa/ob_xa_end_resolver.h"
-#include "sql/resolver/xa/ob_xa_prepare_resolver.h"
-#include "sql/resolver/xa/ob_xa_commit_resolver.h"
-#include "sql/resolver/xa/ob_xa_rollback_resolver.h"
 #include "sql/resolver/cmd/ob_get_diagnostics_resolver.h"
 #include "sql/resolver/cmd/ob_mock_resolver.h"
 #include "sql/resolver/cmd/ob_event_resolver.h"
@@ -522,7 +517,6 @@ int ObResolver::resolve(IsPrepared if_prepared, const ParseNode &parse_tree, ObS
       case T_SHOW_ENGINE:
       case T_SHOW_OPEN_TABLES:
       case T_SHOW_SEQUENCES:
-      case T_XA_RECOVER:
       case T_SHOW_CHECK_TABLE:
       case T_SHOW_CREATE_USER:
       case T_SHOW_CATALOGS:
@@ -700,26 +694,6 @@ int ObResolver::resolve(IsPrepared if_prepared, const ParseNode &parse_tree, ObS
       case T_SET_TABLE_COMMENT:
       case T_SET_COLUMN_COMMENT: {
         REGISTER_STMT_RESOLVER(SetComment);
-        break;
-      }
-      case T_XA_START: {
-        REGISTER_STMT_RESOLVER(XaStart);
-        break;
-      }
-      case T_XA_END: {
-        REGISTER_STMT_RESOLVER(XaEnd);
-        break;
-      }
-      case T_XA_PREPARE: {
-        REGISTER_STMT_RESOLVER(XaPrepare);
-        break;
-      }
-      case T_XA_COMMIT: {
-        REGISTER_STMT_RESOLVER(XaCommit);
-        break;
-      }
-      case T_XA_ROLLBACK: {
-        REGISTER_STMT_RESOLVER(XaRollBack);
         break;
       }
       case T_ALTER_DISKGROUP_ADD_DISK: {

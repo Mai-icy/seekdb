@@ -1264,12 +1264,6 @@ DEF_PARAM(_max_schema_slot_num, INT, OB_CLUSTER_PARAMETER, "128", "[2,256]",
 DEF_PARAM(_enable_add_fulltext_index_to_existing_table, BOOL, OB_CLUSTER_PARAMETER, "False",
          "enable create fulltext index after table is created",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_xa_gc_timeout, TIME, OB_CLUSTER_PARAMETER, "24h", "[1s,)",
-        "specifies the threshold value for a xa record to be considered as obsolete",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
-DEF_PARAM(_xa_gc_interval, TIME, OB_CLUSTER_PARAMETER, "1h", "[1s,)",
-        "specifies the scan interval of the gc worker",
-        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
 DEF_PARAM(_enable_easy_keepalive, BOOL, OB_CLUSTER_PARAMETER, "True",
          "enable keepalive for each TCP connection.",
          ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));

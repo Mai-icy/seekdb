@@ -1319,26 +1319,13 @@ constexpr int OB_TRANS_STMT_NEED_RETRY = -6241;
 constexpr int OB_SAVEPOINT_NOT_EXIST = -6242;
 constexpr int OB_TRANS_WAIT_SCHEMA_REFRESH = -6243;
 constexpr int OB_TRANS_OUT_OF_THRESHOLD = -6244;
-constexpr int OB_TRANS_XA_NOTA = -6245;
-constexpr int OB_TRANS_XA_RMFAIL = -6246;
-constexpr int OB_TRANS_XA_DUPID = -6247;
-constexpr int OB_TRANS_XA_OUTSIDE = -6248;
-constexpr int OB_TRANS_XA_INVAL = -6249;
-constexpr int OB_TRANS_XA_RMERR = -6250;
-constexpr int OB_TRANS_XA_PROTO = -6251;
-constexpr int OB_TRANS_XA_RBROLLBACK = -6252;
-constexpr int OB_TRANS_XA_RBTIMEOUT = -6253;
-constexpr int OB_TRANS_XA_RDONLY = -6254;
-constexpr int OB_TRANS_XA_RETRY = -6255;
 constexpr int OB_ERR_ROW_NOT_LOCKED = -6256;
 constexpr int OB_EMPTY_PG = -6257;
-constexpr int OB_TRANS_XA_ERR_COMMIT = -6258;
 constexpr int OB_ERR_RESTORE_POINT_EXIST = -6259;
 constexpr int OB_ERR_RESTORE_POINT_NOT_EXIST = -6260;
 constexpr int OB_ERR_BACKUP_POINT_EXIST = -6261;
 constexpr int OB_ERR_BACKUP_POINT_NOT_EXIST = -6262;
 constexpr int OB_ERR_RESTORE_POINT_TOO_MANY = -6263;
-constexpr int OB_TRANS_XA_BRANCH_FAIL = -6264;
 constexpr int OB_OBJ_LOCK_NOT_EXIST = -6265;
 constexpr int OB_OBJ_LOCK_EXIST = -6266;
 constexpr int OB_TRY_LOCK_OBJ_CONFLICT = -6267;
@@ -3458,26 +3445,13 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_SAVEPOINT_NOT_EXIST__USER_ERROR_MSG "savepoint does not exist"
 #define OB_TRANS_WAIT_SCHEMA_REFRESH__USER_ERROR_MSG "local schema is not new enough, replaying logs of user table from standby cluster needs to wait for schema refreshing "
 #define OB_TRANS_OUT_OF_THRESHOLD__USER_ERROR_MSG "out of transaction threshold"
-#define OB_TRANS_XA_NOTA__USER_ERROR_MSG "Unknown XID"
-#define OB_TRANS_XA_RMFAIL__USER_ERROR_MSG "The command cannot be executed when global transaction is in the %s state"
-#define OB_TRANS_XA_DUPID__USER_ERROR_MSG "The XID already exists"
-#define OB_TRANS_XA_OUTSIDE__USER_ERROR_MSG "Some work is done outside global transaction"
-#define OB_TRANS_XA_INVAL__USER_ERROR_MSG "Invalid arguments were given"
-#define OB_TRANS_XA_RMERR__USER_ERROR_MSG "Resource manager error occurred in the transaction branch"
-#define OB_TRANS_XA_PROTO__USER_ERROR_MSG "Routine invoked in an improper context"
-#define OB_TRANS_XA_RBROLLBACK__USER_ERROR_MSG "Rollback was caused by an unspecified reason"
-#define OB_TRANS_XA_RBTIMEOUT__USER_ERROR_MSG "Transaction branch took long"
-#define OB_TRANS_XA_RDONLY__USER_ERROR_MSG "Transaction was read-only and has been committed"
-#define OB_TRANS_XA_RETRY__USER_ERROR_MSG "Routine returned with no effect and may be re-issued"
 #define OB_ERR_ROW_NOT_LOCKED__USER_ERROR_MSG "Row has not been locked"
 #define OB_EMPTY_PG__USER_ERROR_MSG "Empty partition group"
-#define OB_TRANS_XA_ERR_COMMIT__USER_ERROR_MSG "RMFAIL: The command cannot be executed when global transaction is in the %s state"
 #define OB_ERR_RESTORE_POINT_EXIST__USER_ERROR_MSG "Restore point %s already exists"
 #define OB_ERR_RESTORE_POINT_NOT_EXIST__USER_ERROR_MSG "Restore point %s does not exist"
 #define OB_ERR_BACKUP_POINT_EXIST__USER_ERROR_MSG "Backup point %s already exists"
 #define OB_ERR_BACKUP_POINT_NOT_EXIST__USER_ERROR_MSG "Backup point %s does not exist"
 #define OB_ERR_RESTORE_POINT_TOO_MANY__USER_ERROR_MSG "cannot create restore point - too many restore points"
-#define OB_TRANS_XA_BRANCH_FAIL__USER_ERROR_MSG "another session or branch in same transaction failed or finalized"
 #define OB_OBJ_LOCK_NOT_EXIST__USER_ERROR_MSG "object lock does not exist."
 #define OB_OBJ_LOCK_EXIST__USER_ERROR_MSG "object lock exists."
 #define OB_TRY_LOCK_OBJ_CONFLICT__USER_ERROR_MSG "Try lock object conflict"
@@ -4255,7 +4229,7 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_ERR_DATA_TOO_LONG_MSG_FMT_V2__USER_ERROR_MSG "Data too long for column '%.*s' at row %ld"
 #define OB_ERR_INVALID_DATE_MSG_FMT_V2__USER_ERROR_MSG "Incorrect datetime value for column '%.*s' at row %ld"
 
-extern int g_all_ob_errnos[2335];
+extern int g_all_ob_errnos[2322];
 
   const char *ob_error_name(const int oberr);
   const char* ob_error_cause(const int oberr);

@@ -153,7 +153,6 @@ ENGINE	varchar(64)	NO
 SUPPORT	varchar(8)	NO			
 COMMENT	varchar(80)	NO			
 TRANSACTIONS	varchar(3)	NO			
-XA	varchar(3)	NO			
 SAVEPOINTS	varchar(3)	NO			
 select /*+QUERY_TIMEOUT(60000000)*/ count(*) as cnt from (select * from information_schema.ENGINES limit 1);
 cnt
@@ -1204,9 +1203,6 @@ ACTION	varchar(10)	NO
 PENDING_LOG_SIZE	bigint(20)	NO		NULL	
 FLUSHED_LOG_SIZE	bigint(20)	NO		NULL	
 LAST_REQUEST_TIME	timestamp(6)	YES		NULL	
-FORMATID	bigint(20)	NO			
-GLOBALID	varchar(257)	NO		NULL	
-BRANCHID	varchar(257)	NO		NULL	
 select /*+QUERY_TIMEOUT(60000000)*/ count(*) as cnt from (select * from oceanbase.V$OB_TRANSACTION_WRITE_STATE limit 1);
 cnt
 1
@@ -1901,9 +1897,6 @@ TX_OP_SN	bigint(20)	NO		NULL
 ACTIVE_TIME	timestamp(6)	YES		NULL	
 EXPIRE_TIME	timestamp(6)	YES		NULL	
 CAN_EARLY_LOCK_RELEASE	varchar(7)	NO			
-FORMATID	bigint(20)	NO			
-GLOBALID	varchar(257)	YES		NULL	
-BRANCHID	varchar(257)	YES		NULL	
 select /*+QUERY_TIMEOUT(60000000)*/ count(*) as cnt from (select * from oceanbase.V$OB_TRANSACTION_SCHEDULERS limit 1);
 cnt
 1
