@@ -107,6 +107,12 @@ gen_sqlite_table_def(
   primary_key = ['id']
   )
 
+# __all_zone_merge_info: SQLite table for zone merge info
+
+# __all_reserved_snapshot: SQLite table for reserved snapshot
+
+# __all_server_event_history: SQLite table for server event history
+
 # __all_column_checksum_error_info: SQLite table for column checksum error info
 gen_sqlite_table_def(
   table_name = '__all_column_checksum_error_info',
@@ -204,6 +210,7 @@ gen_sqlite_table_def(
   primary_key = ['name']
   )
 
+
 gen_sqlite_table_def(
     table_name = '__all_rootservice_job',
     columns = [
@@ -216,6 +223,8 @@ gen_sqlite_table_def(
   ],
     primary_key = ['job_id']
   )
+
+# __all_kv_table: SQLite KV table for simple information storage (tenant info, etc.)
 
 ################################################################################
 # OceanBase System Table Definitions
@@ -537,8 +546,501 @@ def_table_schema(
 # 6: __all_freeze_info  # abandoned in 4.0
 # 7: __all_table_v2 # abandoned in 4.0
 
+def_table_schema(**gen_history_table_def(12, all_table_def))
+
+def_table_schema(**gen_history_table_def(13, all_column_def))
+
 #
-# System Table (100, 1000]
+# Schema Fetch Dependency Table [100, 1000)
+#
+all_part_def = dict(
+    owner = 'yanmu.ztl',
+    table_name    = '__all_part',
+    table_id      = '100',
+    table_type = 'SYSTEM_TABLE',
+    gm_columns = ['gmt_create', 'gmt_modified'],
+    rowkey_columns = [
+        ('table_id', 'int'),
+        ('part_id', 'int')
+  ],
+    in_tenant_space = True,
+
+    normal_columns = [
+      ('part_name', 'varchar:OB_MAX_PARTITION_NAME_LENGTH', 'false', ''),
+      ('schema_version', 'int'),
+      ('high_bound_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('b_high_bound_val', 'varchar:OB_MAX_B_HIGH_BOUND_VAL_LENGTH', 'true'),
+      ('sub_part_num', 'int', 'true'),
+      ('sub_part_space', 'int', 'true'),
+      ('new_sub_part_space', 'int', 'true'),
+      ('sub_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('sub_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('new_sub_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('new_sub_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('block_size', 'int', 'true'),
+      ('compress_func_name', 'varchar:OB_MAX_COMPRESSOR_NAME_LENGTH', 'true'),
+      ('status', 'int', 'true'),
+      ('spare1', 'int', 'true'),
+      ('spare2', 'int', 'true'),
+      ('spare3', 'varchar:OB_OLD_MAX_VARCHAR_LENGTH', 'true'),
+      ('comment', 'varchar:OB_MAX_PARTITION_COMMENT_LENGTH', 'true'),
+      ('list_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('b_list_val', 'varchar:OB_MAX_B_PARTITION_EXPR_LENGTH', 'true'),
+      ('part_idx', 'int', 'true'),
+      ('source_partition_id', 'varchar:MAX_VALUE_LENGTH', 'true', ''),
+      ('tablespace_id', 'int', 'false', '-1'),
+      ('partition_type', 'int', 'false', '0'),
+      ('tablet_id', 'bigint', 'false', 'ObTabletID::INVALID_TABLET_ID'),
+      ('external_location', 'varbinary:OB_MAX_VARBINARY_LENGTH', 'true'),
+      ('storage_cache_policy', 'varchar:OB_MAX_VARCHAR_LENGTH', 'false', 'NONE')
+  ]
+  )
+
+def_table_schema(**all_part_def)
+
+def_table_schema(**gen_history_table_def(101, all_part_def))
+
+all_sub_part_def = dict(
+    owner = 'yanmu.ztl',
+    table_name    = '__all_sub_part',
+    table_id      = '102',
+    table_type = 'SYSTEM_TABLE',
+    gm_columns = ['gmt_create', 'gmt_modified'],
+    rowkey_columns = [
+        ('table_id', 'int'),
+        ('part_id', 'int'),
+        ('sub_part_id', 'int')
+  ],
+    in_tenant_space = True,
+
+    normal_columns = [
+      ('sub_part_name', 'varchar:OB_MAX_PARTITION_NAME_LENGTH', 'false', ''),
+      ('schema_version', 'int'),
+      ('high_bound_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('b_high_bound_val', 'varchar:OB_MAX_B_HIGH_BOUND_VAL_LENGTH', 'true'),
+      ('block_size', 'int', 'true'),
+      ('compress_func_name', 'varchar:OB_MAX_COMPRESSOR_NAME_LENGTH', 'true'),
+      ('status', 'int', 'true'),
+      ('spare1', 'int', 'true'),
+      ('spare2', 'int', 'true'),
+      ('spare3', 'varchar:OB_OLD_MAX_VARCHAR_LENGTH', 'true'),
+      ('comment', 'varchar:OB_MAX_PARTITION_COMMENT_LENGTH', 'true'),
+      ('list_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('b_list_val', 'varchar:OB_MAX_B_PARTITION_EXPR_LENGTH', 'true'),
+      ('tablespace_id', 'int', 'false', '-1'),
+      ('sub_part_idx', 'int', 'false', '-1'),
+      ('source_partition_id', 'varchar:MAX_VALUE_LENGTH', 'false', ''),
+      ('partition_type', 'int', 'false', '0'),
+      ('tablet_id', 'bigint', 'false', 'ObTabletID::INVALID_TABLET_ID'),
+      ('storage_cache_policy', 'varchar:OB_MAX_VARCHAR_LENGTH', 'false', 'NONE')
+  ]
+  )
+
+def_table_schema(**all_sub_part_def)
+
+def_table_schema(**gen_history_table_def(103, all_sub_part_def))
+
+all_part_info_def = dict(
+    owner = 'yanmu.ztl',
+    table_name    = '__all_part_info',
+    table_id      = '104',
+    table_type = 'SYSTEM_TABLE',
+    gm_columns = ['gmt_create', 'gmt_modified'],
+    rowkey_columns = [
+        ('table_id', 'int')
+  ],
+    in_tenant_space = True,
+
+    normal_columns = [
+      ('part_type', 'int', 'false'),
+      ('schema_version', 'int'),
+      ('part_num', 'int', 'false'),
+      ('part_space', 'int', 'false'),
+      ('new_part_space', 'int', 'true'),
+      ('sub_part_type', 'int', 'true'),
+      ('def_sub_part_num', 'int', 'true'),
+      ('part_expr', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('sub_part_expr', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('new_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('new_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('def_sub_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('def_sub_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('new_def_sub_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('new_def_sub_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('block_size', 'int', 'true'),
+      ('compress_func_name', 'varchar:OB_MAX_COMPRESSOR_NAME_LENGTH', 'true'),
+      ('spare1', 'int', 'true'),
+      ('spare2', 'int', 'true'),
+      ('spare3', 'varchar:OB_OLD_MAX_VARCHAR_LENGTH', 'true')
+  ]
+  )
+
+def_table_schema(**all_part_info_def)
+
+def_table_schema(**gen_history_table_def(105, all_part_info_def))
+
+all_def_sub_part_def = dict(
+    owner = 'yanmu.ztl',
+    table_name    = '__all_def_sub_part',
+    table_id      = '106',
+    table_type = 'SYSTEM_TABLE',
+    gm_columns = ['gmt_create', 'gmt_modified'],
+    rowkey_columns = [
+        ('table_id', 'int'),
+        ('sub_part_id', 'int')
+  ],
+    in_tenant_space = True,
+
+    normal_columns = [
+      ('sub_part_name', 'varchar:OB_MAX_PARTITION_NAME_LENGTH', 'false', ''),
+      ('schema_version', 'int'),
+      ('high_bound_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('b_high_bound_val', 'varchar:OB_MAX_B_HIGH_BOUND_VAL_LENGTH', 'true'),
+      ('block_size', 'int', 'true'),
+      ('compress_func_name', 'varchar:OB_MAX_COMPRESSOR_NAME_LENGTH', 'true'),
+      ('spare1', 'int', 'true'),
+      ('spare2', 'int', 'true'),
+      ('spare3', 'varchar:OB_OLD_MAX_VARCHAR_LENGTH', 'true'),
+      ('comment', 'varchar:OB_MAX_PARTITION_COMMENT_LENGTH', 'true'),
+      ('list_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
+      ('b_list_val', 'varchar:OB_MAX_B_PARTITION_EXPR_LENGTH', 'true'),
+      ('sub_part_idx', 'int', 'true'),
+      ('source_partition_id', 'varchar:MAX_VALUE_LENGTH', 'true', ''),
+      ('tablespace_id', 'int', 'false', '-1')
+    ]
+  )
+
+def_table_schema(**all_def_sub_part_def)
+
+def_table_schema(**gen_history_table_def(107, all_def_sub_part_def))
+
+all_sys_variable_history_def= dict(
+    owner = 'xiaochu.yh',
+    table_name     = '__all_sys_variable_history',
+    table_id       = '108',
+    table_type = 'SYSTEM_TABLE',
+    gm_columns = ['gmt_create', 'gmt_modified'],
+    rowkey_columns = [
+        ('name', 'varchar:OB_MAX_CONFIG_NAME_LEN', 'false', ''),
+        ('schema_version', 'int')
+    ],
+    in_tenant_space = True,
+    normal_columns = [
+      ('is_deleted', 'int', 'false'),
+      ('data_type', 'int'),
+      ('value', 'varchar:OB_MAX_CONFIG_VALUE_LEN', 'true'),
+      ('info', 'varchar:OB_MAX_CONFIG_INFO_LEN'),
+      ('flags', 'int'),
+      ('min_val', 'varchar:OB_MAX_CONFIG_VALUE_LEN', 'false', ''),
+      ('max_val', 'varchar:OB_MAX_CONFIG_VALUE_LEN', 'false', '')
+  ]
+  )
+
+def_table_schema(**all_sys_variable_history_def)
+
+all_foreign_key_def = dict(
+  owner = 'webber.wb',
+  table_name    = '__all_foreign_key',
+  table_id      = '109',
+  table_type = 'SYSTEM_TABLE',
+  gm_columns = ['gmt_create', 'gmt_modified'],
+  rowkey_columns = [
+    ('foreign_key_id', 'int')
+  ],
+  in_tenant_space = True,
+
+  normal_columns = [
+    ('foreign_key_name', 'varchar:OB_MAX_EXTENDED_CONSTRAINT_NAME_LENGTH', 'false', ''),
+    ('child_table_id', 'int'),
+    ('parent_table_id', 'int'),
+    ('update_action', 'int'),
+    ('delete_action', 'int'),
+    ('ref_cst_type', 'int', 'false', '0'),
+    ('ref_cst_id', 'int', 'false', '-1'),
+    ('rely_flag', 'bool', 'false', 'false'),
+    ('enable_flag', 'bool', 'false', 'true'),
+    ('validate_flag', 'int', 'false', '1'),
+    ('is_parent_table_mock', 'bool', 'false', 'false'),
+    ('name_generated_type', 'int', 'false', '0')
+  ]
+  )
+
+def_table_schema(**all_foreign_key_def)
+
+def_table_schema(**gen_history_table_def(110, all_foreign_key_def))
+
+all_constraint_def = dict(
+    owner = 'bin.lb',
+    table_name    = '__all_constraint',
+    table_id      = '111',
+    table_type = 'SYSTEM_TABLE',
+    gm_columns = ['gmt_create', 'gmt_modified'],
+    rowkey_columns = [
+        ('table_id', 'int'),
+        ('constraint_id', 'int')
+  ],
+    in_tenant_space = True,
+
+    normal_columns = [
+      ('constraint_name', 'varchar:OB_MAX_EXTENDED_CONSTRAINT_NAME_LENGTH', 'false'),
+      ('check_expr', 'varchar:OB_MAX_CONSTRAINT_EXPR_LENGTH', 'false'),
+      ('schema_version', 'int'),
+      ('constraint_type', 'int'),
+      ('rely_flag', 'bool', 'false', 'false'),
+      ('enable_flag', 'bool', 'false', 'true'),
+      ('validate_flag', 'int', 'false', '1'),
+      ('name_generated_type', 'int', 'false', '0')
+  ]
+  )
+
+def_table_schema(**all_constraint_def)
+
+def_table_schema(**gen_history_table_def(112, all_constraint_def))
+
+all_trigger_def = dict(
+  owner = 'webber.wb',
+  table_name    = '__all_trigger',
+  table_id      = '113',
+  table_type = 'SYSTEM_TABLE',
+  gm_columns = ['gmt_create', 'gmt_modified'],
+  rowkey_columns = [
+      ('trigger_id', 'int')
+  ],
+  in_tenant_space = True,
+  normal_columns = [
+    ('trigger_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'false'),
+    ('database_id', 'int', 'false'),
+    ('owner_id', 'int', 'false'),
+    ('schema_version', 'int', 'false'),
+    ('trigger_type', 'int', 'false'),
+    ('trigger_events', 'int', 'false'),
+    ('timing_points', 'int', 'false'),
+    ('base_object_type', 'int', 'false'),
+    ('base_object_id', 'int', 'false'),
+    ('trigger_flags', 'int', 'false'),
+    ('update_columns', 'varchar:OB_MAX_UPDATE_COLUMNS_LENGTH', 'true'),
+    ('ref_old_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'false'),
+    ('ref_new_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'false'),
+    ('ref_parent_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'false'),
+    ('when_condition', 'varchar:OB_MAX_WHEN_CONDITION_LENGTH', 'true'),
+    ('trigger_body', 'varchar:OB_MAX_TRIGGER_BODY_LENGTH', 'true'),
+    ('package_spec_source', 'varchar:OB_MAX_TRIGGER_BODY_LENGTH', 'true'),
+    ('package_body_source', 'varchar:OB_MAX_TRIGGER_BODY_LENGTH', 'true'),
+    ('package_flag', 'int', 'false'),
+    ('package_exec_env', 'varchar:OB_MAX_PROC_ENV_LENGTH', 'true'),
+    ('sql_mode', 'int', 'false'),
+    ('trigger_priv_user', 'varchar:OB_MAX_USER_NAME_LENGTH_STORE', 'true'),
+    ('order_type', 'int', 'false'),
+    ('ref_trg_db_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'true'),
+    ('ref_trg_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'true'),
+    ('action_order', 'int', 'false'),
+    ('analyze_flag', 'int', 'false', 0),
+    ('trigger_body_v2', 'longtext', 'false', '')
+  ]
+  )
+
+def_table_schema(**all_trigger_def)
+
+def_table_schema(**gen_history_table_def(114, all_trigger_def))
+
+def_table_schema(
+  owner = 'jiangxiu.wt',
+  table_name = '__all_table_stat',
+  table_id = '115',
+  table_type = 'SYSTEM_TABLE',
+  gm_columns = ['gmt_create', 'gmt_modified'],
+  rowkey_columns = [
+      ('table_id', 'int'),
+      ('partition_id', 'int')
+  ],
+  in_tenant_space = True,
+  is_cluster_private = False,
+
+  normal_columns = [
+      ('object_type', 'int'),
+      ('last_analyzed', 'timestamp'),
+      ('sstable_row_cnt', 'int'),
+      ('sstable_avg_row_len', 'double'),
+      ('macro_blk_cnt', 'int'),
+      ('micro_blk_cnt', 'int'),
+      ('memtable_row_cnt', 'int'),
+      ('memtable_avg_row_len', 'double'),
+      ('row_cnt', 'int'),
+      ('avg_row_len', 'double'),
+      ('global_stats', 'int', 'true', '0'),
+      ('user_stats', 'int', 'true', '0'),
+      ('stattype_locked', 'int', 'true', '0'),
+      ('stale_stats', 'int', 'true', '0'),
+      ('spare1', 'int', 'true'),
+      ('spare2', 'int', 'true'),
+      ('spare3', 'int', 'true'),
+      ('spare4', 'varchar:MAX_VALUE_LENGTH', 'true'),
+      ('spare5', 'varchar:MAX_VALUE_LENGTH', 'true'),
+      ('spare6', 'varchar:MAX_VALUE_LENGTH', 'true'),
+      ('index_type', 'bool')
+  ]
+  )
+
+def_table_schema(
+  owner = 'jiangxiu.wt',
+  table_name = '__all_column_stat',
+  table_id = '116',
+  table_type = 'SYSTEM_TABLE',
+  gm_columns = ['gmt_create', 'gmt_modified'],
+  rowkey_columns = [
+      ('table_id', 'int'),
+      ('partition_id', 'int'),
+      ('column_id', 'int')
+  ],
+  in_tenant_space = True,
+  is_cluster_private = False,
+
+  normal_columns = [
+      ('object_type', 'int'),
+      ('last_analyzed', 'timestamp'),
+      ('distinct_cnt', 'int'),
+      ('null_cnt', 'int'),
+      ('max_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('b_max_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('min_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('b_min_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('avg_len', 'double'),
+      ('distinct_cnt_synopsis','varchar:MAX_LLC_BITMAP_LENGTH'),
+      ('distinct_cnt_synopsis_size', 'int'),
+      ('sample_size', 'int'),
+      ('density', 'double'),
+      ('bucket_cnt', 'int'),
+      ('histogram_type', 'int'),
+      ('global_stats', 'int', 'true', '0'),
+      ('user_stats', 'int', 'true', '0'),
+      ('spare1', 'int', 'true'),
+      ('spare2', 'int', 'true'),
+      ('spare3', 'int', 'true'),
+      ('spare4', 'varchar:MAX_VALUE_LENGTH', 'true'),
+      ('spare5', 'varchar:MAX_VALUE_LENGTH', 'true'),
+      ('spare6', 'varchar:MAX_VALUE_LENGTH', 'true')
+  ]
+  )
+
+def_table_schema(
+  owner = 'jiangxiu.wt',
+  table_name = '__all_histogram_stat',
+  table_id = '117',
+  table_type = 'SYSTEM_TABLE',
+  gm_columns = ['gmt_create', 'gmt_modified'],
+  rowkey_columns = [
+      ('table_id', 'int'),
+      ('partition_id', 'int'),
+      ('column_id', 'int'),
+      ('endpoint_num', 'int')
+  ],
+  in_tenant_space = True,
+  is_cluster_private = False,
+
+  normal_columns = [
+      ('object_type', 'int'),
+      ('endpoint_normalized_value', 'double'),
+      ('endpoint_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('b_endpoint_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('endpoint_repeat_cnt', 'int')
+  ]
+  )
+
+def_table_schema(
+  owner = 'jiangxiu.wt',
+  table_name = '__all_column_stat_history',
+  table_id = '118',
+  table_type = 'SYSTEM_TABLE',
+  gm_columns = ['gmt_create', 'gmt_modified'],
+  rowkey_columns = [
+      ('table_id', 'int'),
+      ('partition_id', 'int'),
+      ('column_id', 'int'),
+      ('savtime', 'timestamp')
+  ],
+  in_tenant_space = True,
+  is_cluster_private = False,
+  normal_columns = [
+      ('object_type', 'int'),
+      ('flags', 'int'),
+      ('last_analyzed', 'timestamp'),
+      ('distinct_cnt', 'int'),
+      ('null_cnt', 'int'),
+      ('max_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('b_max_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('min_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('b_min_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('avg_len', 'double'),
+      ('distinct_cnt_synopsis','varchar:MAX_LLC_BITMAP_LENGTH'),
+      ('distinct_cnt_synopsis_size', 'int'),
+      ('sample_size', 'int'),
+      ('density', 'double'),
+      ('bucket_cnt', 'int'),
+      ('histogram_type', 'int'),
+      ('spare1', 'int', 'true'),
+      ('spare2', 'int', 'true'),
+      ('spare3', 'int', 'true'),
+      ('spare4', 'varchar:MAX_VALUE_LENGTH', 'true'),
+      ('spare5', 'varchar:MAX_VALUE_LENGTH', 'true'),
+      ('spare6', 'varchar:MAX_VALUE_LENGTH', 'true')
+  ]
+  )
+
+def_table_schema(
+  owner = 'jiangxiu.wt',
+  table_name = '__all_histogram_stat_history',
+  table_id = '119',
+  table_type = 'SYSTEM_TABLE',
+  gm_columns = ['gmt_create', 'gmt_modified'],
+  rowkey_columns = [
+      ('table_id', 'int'),
+      ('partition_id', 'int'),
+      ('column_id', 'int'),
+      ('endpoint_num', 'int'),
+      ('savtime', 'timestamp')
+  ],
+  in_tenant_space = True,
+  is_cluster_private = False,
+  normal_columns = [
+      ('object_type', 'int'),
+      ('endpoint_normalized_value', 'double'),
+      ('endpoint_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('b_endpoint_value', 'varchar:MAX_VALUE_LENGTH'),
+      ('endpoint_repeat_cnt', 'int'),
+      ('spare1', 'int', 'true'),
+      ('spare2', 'int', 'true'),
+      ('spare3', 'int', 'true'),
+      ('spare4', 'varchar:MAX_VALUE_LENGTH', 'true'),
+      ('spare5', 'varchar:MAX_VALUE_LENGTH', 'true'),
+      ('spare6', 'varchar:MAX_VALUE_LENGTH', 'true')
+  ]
+  )
+
+def_table_schema(
+  owner = 'zhenling.zzg',
+  table_name = '__all_aux_stat',
+  table_id = '120',
+  table_type = 'SYSTEM_TABLE',
+  gm_columns = ['gmt_create', 'gmt_modified'],
+  rowkey_columns = [
+      ('id', 'bigint')
+  ],
+  in_tenant_space = True,
+  is_cluster_private = False,
+  normal_columns = [
+      ('last_analyzed', 'timestamp'),
+      ('cpu_speed', 'bigint', 'true', '2500'),
+      ('disk_seq_read_speed', 'bigint', 'true', '2000'),
+      ('disk_rnd_read_speed', 'bigint', 'true', '150'),
+      ('network_speed', 'bigint', '1000')
+  ]
+  )
+
+
+#
+# Other System Table [1000, 10000)
 #
 
 # 101: __all_meta_table # abandoned in 4.0
@@ -546,7 +1048,7 @@ def_table_schema(
 all_user_def = dict(
     owner = 'sean.yyj',
     table_name    = '__all_user',
-    table_id      = '102',
+    table_id      = '1000',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -599,12 +1101,12 @@ all_user_def = dict(
 
 def_table_schema(**all_user_def)
 
-def_table_schema(**gen_history_table_def(103, all_user_def))
+def_table_schema(**gen_history_table_def(1001, all_user_def))
 
 all_database_def = dict(
     owner = 'yanmu.ztl',
     table_name    = '__all_database',
-    table_id      = '104',
+    table_id      = '1002',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -624,12 +1126,12 @@ all_database_def = dict(
 
 def_table_schema(**all_database_def)
 
-def_table_schema(**gen_history_table_def(105, all_database_def))
+def_table_schema(**gen_history_table_def(1003, all_database_def))
 
 all_tablegroup_def = dict(
     owner = 'yanmu.ztl',
     table_name    = '__all_tablegroup',
-    table_id      = '106',
+    table_id      = '1004',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -657,7 +1159,7 @@ all_tablegroup_def = dict(
 
 def_table_schema(**all_tablegroup_def)
 
-def_table_schema(**gen_history_table_def(107, all_tablegroup_def))
+def_table_schema(**gen_history_table_def(1005, all_tablegroup_def))
 
 # 108: __all_tenant (abandoned)
 # 109: __all_tenant_history (abandoned)
@@ -665,7 +1167,7 @@ def_table_schema(**gen_history_table_def(107, all_tablegroup_def))
 all_table_privilege_def = dict(
     owner = 'sean.yyj',
     table_name    = '__all_table_privilege',
-    table_id      = '110',
+    table_id      = '1006',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -695,12 +1197,12 @@ all_table_privilege_def = dict(
 
 def_table_schema(**all_table_privilege_def)
 
-def_table_schema(**gen_history_table_def(111, all_table_privilege_def))
+def_table_schema(**gen_history_table_def(1007, all_table_privilege_def))
 
 all_database_privilege_def = dict(
     owner = 'sean.yyj',
     table_name    = '__all_database_privilege',
-    table_id      = '112',
+    table_id      = '1008',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -727,11 +1229,7 @@ all_database_privilege_def = dict(
 
 def_table_schema(**all_database_privilege_def)
 
-def_table_schema(**gen_history_table_def(113, all_database_privilege_def))
-
-def_table_schema(**gen_history_table_def(114, all_table_def))
-
-def_table_schema(**gen_history_table_def(115, all_column_def))
+def_table_schema(**gen_history_table_def(1009, all_database_privilege_def))
 
 # 116: __all_zone (abandoned)
 # 117: __all_server (abandoned)
@@ -743,7 +1241,7 @@ def_table_schema(**gen_history_table_def(115, all_column_def))
 all_sys_variable_def= dict(
     owner = 'xiaochu.yh',
     table_name     = '__all_sys_variable',
-    table_id       = '120',
+    table_id       = '1010',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -765,7 +1263,7 @@ def_table_schema(**all_sys_variable_def)
 def_table_schema(
     owner = 'yanmu.ztl',
     table_name     = '__all_sys_stat',
-    table_id       = '121',
+    table_id       = '1011',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -789,16 +1287,22 @@ def_table_schema(
 # 128: __all_charset (abandoned)
 # 129: __all_collation (abandoned)
 
+
+
+
+
+
 # 137: __all_clog_history_info # abandoned in 4.0
 
 # 139: __all_clog_history_info_v2 # abandoned in 4.0
+
 
 # 141: __all_privilege (abandoned)
 
 all_outline_def = dict(
     owner = 'xiaoyi.xy',
     table_name    = '__all_outline',
-    table_id      = '142',
+    table_id      = '1018',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -831,14 +1335,14 @@ all_outline_def = dict(
 
 def_table_schema(**all_outline_def)
 
-def_table_schema(**gen_history_table_def(143, all_outline_def))
+def_table_schema(**gen_history_table_def(1019, all_outline_def))
 
 # 144: __all_election_event_history # abandoned in 4.0
 
 def_table_schema(
   owner = 'bin.lb',
   table_name = '__all_recyclebin',
-  table_id = '145',
+  table_id = '1020',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create'],
   in_tenant_space = True,
@@ -855,239 +1359,38 @@ def_table_schema(
   ]
   )
 
-all_part_def = dict(
-    owner = 'yanmu.ztl',
-    table_name    = '__all_part',
-    table_id      = '146',
-    table_type = 'SYSTEM_TABLE',
-    gm_columns = ['gmt_create', 'gmt_modified'],
-    rowkey_columns = [
-        ('table_id', 'int'),
-        ('part_id', 'int')
-  ],
-    in_tenant_space = True,
 
-    normal_columns = [
-      ('part_name', 'varchar:OB_MAX_PARTITION_NAME_LENGTH', 'false', ''),
-      ('schema_version', 'int'),
-      ('high_bound_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('b_high_bound_val', 'varchar:OB_MAX_B_HIGH_BOUND_VAL_LENGTH', 'true'),
-      ('sub_part_num', 'int', 'true'),
-      ('sub_part_space', 'int', 'true'),
-      ('new_sub_part_space', 'int', 'true'),
-      ('sub_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('sub_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('new_sub_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('new_sub_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('block_size', 'int', 'true'),
-      ('compress_func_name', 'varchar:OB_MAX_COMPRESSOR_NAME_LENGTH', 'true'),
-      ('status', 'int', 'true'),
-      ('spare1', 'int', 'true'),
-      ('spare2', 'int', 'true'),
-      ('spare3', 'varchar:OB_OLD_MAX_VARCHAR_LENGTH', 'true'),
-      ('comment', 'varchar:OB_MAX_PARTITION_COMMENT_LENGTH', 'true'),
-      ('list_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('b_list_val', 'varchar:OB_MAX_B_PARTITION_EXPR_LENGTH', 'true'),
-      ('part_idx', 'int', 'true'),
-      ('source_partition_id', 'varchar:MAX_VALUE_LENGTH', 'true', ''),
-      ('tablespace_id', 'int', 'false', '-1'),
-      ('partition_type', 'int', 'false', '0'),
-      ('tablet_id', 'bigint', 'false', 'ObTabletID::INVALID_TABLET_ID'),
-      ('external_location', 'varbinary:OB_MAX_VARBINARY_LENGTH', 'true'),
-      ('storage_cache_policy', 'varchar:OB_MAX_VARCHAR_LENGTH', 'false', 'NONE')
-  ]
-  )
 
-def_table_schema(**all_part_def)
 
-def_table_schema(**gen_history_table_def(147, all_part_def))
 
-all_sub_part_def = dict(
-    owner = 'yanmu.ztl',
-    table_name    = '__all_sub_part',
-    table_id      = '148',
-    table_type = 'SYSTEM_TABLE',
-    gm_columns = ['gmt_create', 'gmt_modified'],
-    rowkey_columns = [
-        ('table_id', 'int'),
-        ('part_id', 'int'),
-        ('sub_part_id', 'int')
-  ],
-    in_tenant_space = True,
 
-    normal_columns = [
-      ('sub_part_name', 'varchar:OB_MAX_PARTITION_NAME_LENGTH', 'false', ''),
-      ('schema_version', 'int'),
-      ('high_bound_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('b_high_bound_val', 'varchar:OB_MAX_B_HIGH_BOUND_VAL_LENGTH', 'true'),
-      ('block_size', 'int', 'true'),
-      ('compress_func_name', 'varchar:OB_MAX_COMPRESSOR_NAME_LENGTH', 'true'),
-      ('status', 'int', 'true'),
-      ('spare1', 'int', 'true'),
-      ('spare2', 'int', 'true'),
-      ('spare3', 'varchar:OB_OLD_MAX_VARCHAR_LENGTH', 'true'),
-      ('comment', 'varchar:OB_MAX_PARTITION_COMMENT_LENGTH', 'true'),
-      ('list_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('b_list_val', 'varchar:OB_MAX_B_PARTITION_EXPR_LENGTH', 'true'),
-      ('tablespace_id', 'int', 'false', '-1'),
-      ('sub_part_idx', 'int', 'false', '-1'),
-      ('source_partition_id', 'varchar:MAX_VALUE_LENGTH', 'false', ''),
-      ('partition_type', 'int', 'false', '0'),
-      ('tablet_id', 'bigint', 'false', 'ObTabletID::INVALID_TABLET_ID'),
-      ('storage_cache_policy', 'varchar:OB_MAX_VARCHAR_LENGTH', 'false', 'NONE')
-  ]
-  )
 
-def_table_schema(**all_sub_part_def)
 
-def_table_schema(**gen_history_table_def(149, all_sub_part_def))
 
-all_part_info_def = dict(
-    owner = 'yanmu.ztl',
-    table_name    = '__all_part_info',
-    table_id      = '150',
-    table_type = 'SYSTEM_TABLE',
-    gm_columns = ['gmt_create', 'gmt_modified'],
-    rowkey_columns = [
-        ('table_id', 'int')
-  ],
-    in_tenant_space = True,
-
-    normal_columns = [
-      ('part_type', 'int', 'false'),
-      ('schema_version', 'int'),
-      ('part_num', 'int', 'false'),
-      ('part_space', 'int', 'false'),
-      ('new_part_space', 'int', 'true'),
-      ('sub_part_type', 'int', 'true'),
-      ('def_sub_part_num', 'int', 'true'),
-      ('part_expr', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('sub_part_expr', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('new_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('new_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('def_sub_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('def_sub_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('new_def_sub_part_interval', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('new_def_sub_interval_start', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('block_size', 'int', 'true'),
-      ('compress_func_name', 'varchar:OB_MAX_COMPRESSOR_NAME_LENGTH', 'true'),
-      ('spare1', 'int', 'true'),
-      ('spare2', 'int', 'true'),
-      ('spare3', 'varchar:OB_OLD_MAX_VARCHAR_LENGTH', 'true')
-  ]
-  )
-
-def_table_schema(**all_part_info_def)
-
-def_table_schema(**gen_history_table_def(151, all_part_info_def))
 
 # TODO: abandoned
-all_def_sub_part_def = dict(
-    owner = 'yanmu.ztl',
-    table_name    = '__all_def_sub_part',
-    table_id      = '152',
-    table_type = 'SYSTEM_TABLE',
-    gm_columns = ['gmt_create', 'gmt_modified'],
-    rowkey_columns = [
-        ('table_id', 'int'),
-        ('sub_part_id', 'int')
-  ],
-    in_tenant_space = True,
 
-    normal_columns = [
-      ('sub_part_name', 'varchar:OB_MAX_PARTITION_NAME_LENGTH', 'false', ''),
-      ('schema_version', 'int'),
-      ('high_bound_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('b_high_bound_val', 'varchar:OB_MAX_B_HIGH_BOUND_VAL_LENGTH', 'true'),
-      ('block_size', 'int', 'true'),
-      ('compress_func_name', 'varchar:OB_MAX_COMPRESSOR_NAME_LENGTH', 'true'),
-      ('spare1', 'int', 'true'),
-      ('spare2', 'int', 'true'),
-      ('spare3', 'varchar:OB_OLD_MAX_VARCHAR_LENGTH', 'true'),
-      ('comment', 'varchar:OB_MAX_PARTITION_COMMENT_LENGTH', 'true'),
-      ('list_val', 'varchar:OB_MAX_PARTITION_EXPR_LENGTH', 'true'),
-      ('b_list_val', 'varchar:OB_MAX_B_PARTITION_EXPR_LENGTH', 'true'),
-      ('sub_part_idx', 'int', 'true'),
-      ('source_partition_id', 'varchar:MAX_VALUE_LENGTH', 'true', ''),
-      ('tablespace_id', 'int', 'false', '-1')
-    ]
-  )
 
-def_table_schema(**all_def_sub_part_def)
 
-def_table_schema(**gen_history_table_def(153, all_def_sub_part_def))
+# 154: __all_server_event_history # migrated to SQLite, see gen_sqlite_table_def above
+# Placeholder - original definition removed, using SQLite version
 
 # 155: __all_rootservice_job # migrated to SQLite, see gen_sqlite_table_def above
 # Placeholder - original definition removed, using SQLite version
 
 # 156: __all_unit_load_history # abandoned in 4.0.
 
-all_sys_variable_history_def= dict(
-    owner = 'xiaochu.yh',
-    table_name     = '__all_sys_variable_history',
-    table_id       = '157',
-    table_type = 'SYSTEM_TABLE',
-    gm_columns = ['gmt_create', 'gmt_modified'],
-    rowkey_columns = [
-        ('name', 'varchar:OB_MAX_CONFIG_NAME_LEN', 'false', ''),
-        ('schema_version', 'int')
-    ],
-    in_tenant_space = True,
-    normal_columns = [
-      ('is_deleted', 'int', 'false'),
-      ('data_type', 'int'),
-      ('value', 'varchar:OB_MAX_CONFIG_VALUE_LEN', 'true'),
-      ('info', 'varchar:OB_MAX_CONFIG_INFO_LEN'),
-      ('flags', 'int'),
-      ('min_val', 'varchar:OB_MAX_CONFIG_VALUE_LEN', 'false', ''),
-      ('max_val', 'varchar:OB_MAX_CONFIG_VALUE_LEN', 'false', '')
-  ]
-  )
-def_table_schema(**all_sys_variable_history_def)
 
-# 158: __all_restore_job (abandoned)
-# 159: __all_restore_task # abandoned in 4.0
 
-# __all_restore_job_history
-# 160: __all_restore_job_history (abandoned)
 
-all_foreign_key_def = dict(
-  owner = 'webber.wb',
-  table_name    = '__all_foreign_key',
-  table_id      = '166',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('foreign_key_id', 'int')
-  ],
-  in_tenant_space = True,
 
-  normal_columns = [
-    ('foreign_key_name', 'varchar:OB_MAX_EXTENDED_CONSTRAINT_NAME_LENGTH', 'false', ''),
-    ('child_table_id', 'int'),
-    ('parent_table_id', 'int'),
-    ('update_action', 'int'),
-    ('delete_action', 'int'),
-    ('ref_cst_type', 'int', 'false', '0'),
-    ('ref_cst_id', 'int', 'false', '-1'),
-    ('rely_flag', 'bool', 'false', 'false'),
-    ('enable_flag', 'bool', 'false', 'true'),
-    ('validate_flag', 'int', 'false', '1'),
-    ('is_parent_table_mock', 'bool', 'false', 'false'),
-    ('name_generated_type', 'int', 'false', '0')
-  ]
-  )
 
-def_table_schema(**all_foreign_key_def)
 
-def_table_schema(**gen_history_table_def(167, all_foreign_key_def))
 
 all_foreign_key_column_def = dict(
   owner = 'webber.wb',
   table_name    = '__all_foreign_key_column',
-  table_id      = '168',
+  table_id      = '1022',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1104,12 +1407,12 @@ all_foreign_key_column_def = dict(
 
 def_table_schema(**all_foreign_key_column_def)
 
-def_table_schema(**gen_history_table_def(169, all_foreign_key_column_def))
+def_table_schema(**gen_history_table_def(1023, all_foreign_key_column_def))
 
 def_table_schema(
     owner = 'xiaochu.yh',
     table_name     = '__all_auto_increment',
-    table_id       = '182',
+    table_id       = '1024',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1131,7 +1434,7 @@ def_table_schema(
 def_table_schema(
   owner = 'zhenjiang.xzj',
   table_name     = '__all_ddl_checksum',
-  table_id       = '188',
+  table_id       = '1025',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1154,7 +1457,7 @@ def_table_schema(
 all_routine_def = dict(
     owner = 'linlin.xll',
     table_name    = '__all_routine',
-    table_id      = '189',
+    table_id      = '1026',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1183,12 +1486,12 @@ all_routine_def = dict(
 
 def_table_schema(**all_routine_def)
 
-def_table_schema(**gen_history_table_def(190, all_routine_def))
+def_table_schema(**gen_history_table_def(1027, all_routine_def))
 
 all_routine_param_def = dict(
     owner = 'linlin.xll',
     table_name    = '__all_routine_param',
-    table_id      = '191',
+    table_id      = '1028',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1220,12 +1523,12 @@ all_routine_param_def = dict(
   )
 
 def_table_schema(**all_routine_param_def)
-def_table_schema(**gen_history_table_def(192, all_routine_param_def))
+def_table_schema(**gen_history_table_def(1029, all_routine_param_def))
 
 all_package_def = dict(
     owner = 'linlin.xll',
     table_name    = '__all_package',
-    table_id      = '196',
+    table_id      = '1030',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1248,12 +1551,12 @@ all_package_def = dict(
   )
 
 def_table_schema(**all_package_def)
-def_table_schema(**gen_history_table_def(197, all_package_def))
+def_table_schema(**gen_history_table_def(1031, all_package_def))
 
 def_table_schema(
   owner = 'jingyan.kfy',
   table_name     = '__all_acquired_snapshot',
-  table_id       = '202',
+  table_id       = '1032',
   table_type = 'SYSTEM_TABLE',
   gm_columns = [],
   rowkey_columns = [
@@ -1272,38 +1575,13 @@ def_table_schema(
 
 # 205: __all_tenant_gc_partition_info # abandoned in 4.0
 
-all_constraint_def = dict(
-    owner = 'bin.lb',
-    table_name    = '__all_constraint',
-    table_id      = '206',
-    table_type = 'SYSTEM_TABLE',
-    gm_columns = ['gmt_create', 'gmt_modified'],
-    rowkey_columns = [
-        ('table_id', 'int'),
-        ('constraint_id', 'int')
-  ],
-    in_tenant_space = True,
 
-    normal_columns = [
-      ('constraint_name', 'varchar:OB_MAX_EXTENDED_CONSTRAINT_NAME_LENGTH', 'false'),
-      ('check_expr', 'varchar:OB_MAX_CONSTRAINT_EXPR_LENGTH', 'false'),
-      ('schema_version', 'int'),
-      ('constraint_type', 'int'),
-      ('rely_flag', 'bool', 'false', 'false'),
-      ('enable_flag', 'bool', 'false', 'true'),
-      ('validate_flag', 'int', 'false', '1'),
-      ('name_generated_type', 'int', 'false', '0')
-  ]
-  )
 
-def_table_schema(**all_constraint_def)
-
-def_table_schema(**gen_history_table_def(207, all_constraint_def))
 
 def_table_schema(
   owner = 'yanmu.ztl',
   table_name     = '__all_ori_schema_version',
-  table_id       = '208',
+  table_id       = '1033',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1319,7 +1597,7 @@ def_table_schema(
 all_func_def = dict(
     owner = 'bin.lb',
     table_name    = '__all_func',
-    table_id      = '209',
+    table_id      = '1034',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1340,13 +1618,14 @@ all_func_def = dict(
 
 def_table_schema(**all_func_def)
 
-def_table_schema(**gen_history_table_def(210, all_func_def))
+def_table_schema(**gen_history_table_def(1035, all_func_def))
+
 
 
 def_table_schema(
   owner = 'xiaochu.yh',
   table_name    = '__all_sequence_object',
-  table_id      = '213',
+  table_id      = '1037',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1373,7 +1652,7 @@ def_table_schema(
 def_table_schema(
   owner = 'xiaochu.yh',
   table_name    = '__all_sequence_object_history',
-  table_id      = '214',
+  table_id      = '1038',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1402,7 +1681,7 @@ def_table_schema(
 def_table_schema(
     owner = 'xiaochu.yh',
     table_name     = '__all_sequence_value',
-    table_id       = '215',
+    table_id       = '1039',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1432,7 +1711,7 @@ def_table_schema(
 all_tenant_role_grantee_map_def = dict(
   owner = 'sean.yyj',
   table_name = '__all_role_grantee_map',
-  table_id = '235',
+  table_id = '1040',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1447,13 +1726,13 @@ all_tenant_role_grantee_map_def = dict(
   ]
   )
 def_table_schema(**all_tenant_role_grantee_map_def)
-def_table_schema(**gen_history_table_def(236, all_tenant_role_grantee_map_def))
+def_table_schema(**gen_history_table_def(1041, all_tenant_role_grantee_map_def))
 
 
 def_table_schema(
   owner = 'jim.wjh',
   table_name    = '__all_user_failed_login_stat',
-  table_id      = '249',
+  table_id      = '1042',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1471,51 +1750,6 @@ def_table_schema(
   )
 
 
-all_trigger_def = dict(
-  owner = 'webber.wb',
-  table_name    = '__all_trigger',
-  table_id      = '254',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-      ('trigger_id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('trigger_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'false'),
-    ('database_id', 'int', 'false'),
-    ('owner_id', 'int', 'false'),
-    ('schema_version', 'int', 'false'),
-    ('trigger_type', 'int', 'false'),
-    ('trigger_events', 'int', 'false'),
-    ('timing_points', 'int', 'false'),
-    ('base_object_type', 'int', 'false'),
-    ('base_object_id', 'int', 'false'),
-    ('trigger_flags', 'int', 'false'),
-    ('update_columns', 'varchar:OB_MAX_UPDATE_COLUMNS_LENGTH', 'true'),
-    ('ref_old_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'false'),
-    ('ref_new_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'false'),
-    ('ref_parent_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'false'),
-    ('when_condition', 'varchar:OB_MAX_WHEN_CONDITION_LENGTH', 'true'),
-    ('trigger_body', 'varchar:OB_MAX_TRIGGER_BODY_LENGTH', 'true'),
-    ('package_spec_source', 'varchar:OB_MAX_TRIGGER_BODY_LENGTH', 'true'),
-    ('package_body_source', 'varchar:OB_MAX_TRIGGER_BODY_LENGTH', 'true'),
-    ('package_flag', 'int', 'false'),
-    ('package_exec_env', 'varchar:OB_MAX_PROC_ENV_LENGTH', 'true'),
-    ('sql_mode', 'int', 'false'),
-    ('trigger_priv_user', 'varchar:OB_MAX_USER_NAME_LENGTH_STORE', 'true'),
-    ('order_type', 'int', 'false'),
-    ('ref_trg_db_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'true'),
-    ('ref_trg_name', 'varchar:OB_MAX_TRIGGER_NAME_LENGTH', 'true'),
-    ('action_order', 'int', 'false'),
-    ('analyze_flag', 'int', 'false', 0),
-    ('trigger_body_v2', 'longtext', 'false', '')
-  ]
-  )
-
-def_table_schema(**all_trigger_def)
-def_table_schema(**gen_history_table_def(255, all_trigger_def))
-
 # 256: __all_seed_parameter (abandoned)
 # 257: __all_failover_scn # abandoned in 4.0
 
@@ -1525,7 +1759,7 @@ def_table_schema(**gen_history_table_def(255, all_trigger_def))
 all_sysauth_def = dict(
     owner = 'sean.yyj',
     table_name     = '__all_sysauth',
-    table_id       = '260',
+    table_id       = '1043',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     in_tenant_space = True,
@@ -1540,12 +1774,12 @@ all_sysauth_def = dict(
   )
 
 def_table_schema(**all_sysauth_def)
-def_table_schema(**gen_history_table_def(261, all_sysauth_def))
+def_table_schema(**gen_history_table_def(1044, all_sysauth_def))
 
 all_objauth_def = dict(
     owner = 'sean.yyj',
     table_name     = '__all_objauth',
-    table_id       = '262',
+    table_id       = '1045',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     in_tenant_space = True,
@@ -1564,23 +1798,16 @@ all_objauth_def = dict(
   )
 
 def_table_schema(**all_objauth_def)
-def_table_schema(**gen_history_table_def(263, all_objauth_def))
+def_table_schema(**gen_history_table_def(1046, all_objauth_def))
 
 
-# 264: __all_tenant_backup_info # abandoned in 4.0
-# 265: __all_restore_info (abandoned)
 
-# 266: __all_tenant_backup_log_archive_status # abandoned in 4.0
-# 267: __all_backup_log_archive_status_history # abandoned in 4.0
-# 268: __all_tenant_backup_task # abandoned in 4.0
-# 269: __all_backup_task_history # abandoned in 4.0
-# 270: __all_tenant_pg_backup_task # abandoned in 4.0
 # 271:__all_failover_info # abandoned in 4.0
 
 all_tenant_error_def = dict(
     owner = 'lj229669',
     table_name = '__all_error',
-    table_id = '272',
+    table_id = '1047',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1605,26 +1832,16 @@ def_table_schema(**all_tenant_error_def)
 # 273: __all_server_recovery_status # abandoned in 4.0
 # 274: __all_datafile_recovery_status # abandoned in 4.0
 
-# 276: all_tenant_backup_clean_info # abandoned in 4.0
-# 277: __all_backup_clean_info_history # abandoned in 4.0
-# 278: __all_backup_task_clean_history # abandoned in 4.0
 
-# 279: __all_restore_progress (abandoned)
 
-# 280: __all_restore_history # abandoned in 4.0
-# 281: __all_tenant_restore_pg_info # abandoned in 4.0
 # 282: __all_table_v2_history # abandoned in 4.0
 
-# 285: __all_backup_validation_job # abandoned in 4.0
-# 286: __all_backup_validation_job_history # abandoned in 4.0
-# 287: __all_tenant_backup_validation_task # abandoned in 4.0
-# 288: __all_backup_validation_task_history # abandoned in 4.0
-# 289: __all_tenant_pg_backup_validation_task # abandoned in 4.0
+
 
 def_table_schema(
   owner = 'dachuan.sdc',
   table_name     = '__all_time_zone_name',
-  table_id       = '291',
+  table_id       = '1049',
   table_type = 'SYSTEM_TABLE',
   gm_columns = [],
   rowkey_columns = [
@@ -1642,7 +1859,7 @@ def_table_schema(
 def_table_schema(
   owner = 'dachuan.sdc',
   table_name     = '__all_time_zone_transition',
-  table_id       = '292',
+  table_id       = '1050',
   table_type = 'SYSTEM_TABLE',
   gm_columns = [],
   rowkey_columns = [
@@ -1661,7 +1878,7 @@ def_table_schema(
 def_table_schema(
   owner = 'dachuan.sdc',
   table_name     = '__all_time_zone_transition_type',
-  table_id       = '293',
+  table_id       = '1051',
   table_type = 'SYSTEM_TABLE',
   gm_columns = [],
   rowkey_columns = [
@@ -1682,7 +1899,7 @@ def_table_schema(
 all_tenant_constraint_column_def = dict(
   owner = 'bin.lb',
   table_name    = '__all_constraint_column',
-  table_id      = '294',
+  table_id      = '1052',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1696,12 +1913,12 @@ all_tenant_constraint_column_def = dict(
   ]
   )
 def_table_schema(**all_tenant_constraint_column_def)
-def_table_schema(**gen_history_table_def(295,  all_tenant_constraint_column_def))
+def_table_schema(**gen_history_table_def(1053,  all_tenant_constraint_column_def))
 
 all_tenant_dependency_def = dict(
   owner = 'lj229669',
   table_name = '__all_dependency',
-  table_id = '297',
+  table_id = '1054',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1727,13 +1944,6 @@ all_tenant_dependency_def = dict(
 
 def_table_schema(**all_tenant_dependency_def)
 
-# 298: __all_backup_backupset_job # abandoned in 4.0
-# 299: __all_backup_backupset_job_history # abandoned in 4.0
-# 300: __all_tenant_backup_backupset_task # abandoned in 4.0
-# 301: __all_backup_backupset_task_history # abandoned in 4.0
-# 302: __all_tenant_pg_backup_backupset_task # abandoned in 4.0
-# 303: __all_tenant_backup_backup_log_archive_status # abandoned in 4.0
-# 304: __all_backup_backup_log_archive_status_history # abandoned in 4.0
 
 # 305: removed (legacy resource manager deleted)
 # 306: removed (legacy resource manager deleted)
@@ -1742,7 +1952,7 @@ def_table_schema(**all_tenant_dependency_def)
 def_table_schema(
     owner = 'zhenjiang.xzj',
     table_name    = '__all_ddl_error_message',
-    table_id      = '308',
+    table_id      = '1058',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1767,23 +1977,15 @@ def_table_schema(
   )
 
 # 309: __all_space_usage (abandoned)
-# 310: __all_backup_backuppiece_job # abandoned in 4.0
-# 311: __all_backup_backuppiece_job_history # abandoned in 4.0
-# 312: __all_backup_backuppiece_task # abandoned in 4.0
-# 313: __all_backup_backuppiece_task_history # abandoned in 4.0
-# 314: __all_backup_piece_files # abandoned in 4.0
-# 315: __all_backup_set_files # abandoned
 
 # 316: removed (legacy resource manager deleted)
 
-# 317: __all_backup_info # abandoned
 
-# 318: __all_backup_log_archive_status_v2 # abandoned in 4.0
 
 def_table_schema(
   owner = 'zhenjiang.xzj',
   table_name = '__all_ddl_task_status',
-  table_id = '319',
+  table_id = '1060',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1812,7 +2014,6 @@ def_table_schema(
   )
 
 # 320: (abandoned)
-# 321: __all_backup_backup_log_archive_status_v2 # abandoned in 4.0
 
 # 322: __all_deadlock_event_history # migrated to SQLite, see gen_sqlite_table_def above
 # Placeholder - original definition removed, using SQLite version
@@ -1820,7 +2021,7 @@ def_table_schema(
 all_column_usage_def = dict(
     owner = 'yibo.tyf',
     table_name    = '__all_column_usage',
-    table_id      = '323',
+    table_id      = '1061',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1854,7 +2055,7 @@ def_table_schema(**all_column_usage_def)
 def_table_schema(
   owner = 'linlin.xll',
   table_name     = '__all_job',
-  table_id       = '324',
+  table_id       = '1062',
   table_type     = 'SYSTEM_TABLE',
   gm_columns     = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -1881,10 +2082,11 @@ def_table_schema(
   ]
   )
 
+
 all_tenant_directory_def = dict(
     owner = 'jiahua.cjh',
     table_name     = '__all_directory',
-    table_id       = '326',
+    table_id       = '1064',
     table_type     = 'SYSTEM_TABLE',
     gm_columns     = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -1898,115 +2100,15 @@ all_tenant_directory_def = dict(
   )
 
 def_table_schema(**all_tenant_directory_def)
-def_table_schema(**gen_history_table_def(327, all_tenant_directory_def))
+def_table_schema(**gen_history_table_def(1065, all_tenant_directory_def))
 
-def_table_schema(
-  owner = 'jiangxiu.wt',
-  table_name = '__all_table_stat',
-  table_id = '328',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-      ('table_id', 'int'),
-      ('partition_id', 'int')
-  ],
-  in_tenant_space = True,
-  is_cluster_private = False,
 
-  normal_columns = [
-      ('object_type', 'int'),
-      ('last_analyzed', 'timestamp'),
-      ('sstable_row_cnt', 'int'),
-      ('sstable_avg_row_len', 'double'),
-      ('macro_blk_cnt', 'int'),
-      ('micro_blk_cnt', 'int'),
-      ('memtable_row_cnt', 'int'),
-      ('memtable_avg_row_len', 'double'),
-      ('row_cnt', 'int'),
-      ('avg_row_len', 'double'),
-      ('global_stats', 'int', 'true', '0'),
-      ('user_stats', 'int', 'true', '0'),
-      ('stattype_locked', 'int', 'true', '0'),
-      ('stale_stats', 'int', 'true', '0'),
-      ('spare1', 'int', 'true'),
-      ('spare2', 'int', 'true'),
-      ('spare3', 'int', 'true'),
-      ('spare4', 'varchar:MAX_VALUE_LENGTH', 'true'),
-      ('spare5', 'varchar:MAX_VALUE_LENGTH', 'true'),
-      ('spare6', 'varchar:MAX_VALUE_LENGTH', 'true'),
-      ('index_type', 'bool')
-  ]
-  )
 
-def_table_schema(
-  owner = 'jiangxiu.wt',
-  table_name = '__all_column_stat',
-  table_id = '329',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-      ('table_id', 'int'),
-      ('partition_id', 'int'),
-      ('column_id', 'int')
-  ],
-  in_tenant_space = True,
-  is_cluster_private = False,
-
-  normal_columns = [
-      ('object_type', 'int'),
-      ('last_analyzed', 'timestamp'),
-      ('distinct_cnt', 'int'),
-      ('null_cnt', 'int'),
-      ('max_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('b_max_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('min_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('b_min_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('avg_len', 'double'),
-      ('distinct_cnt_synopsis','varchar:MAX_LLC_BITMAP_LENGTH'),
-      ('distinct_cnt_synopsis_size', 'int'),
-      ('sample_size', 'int'),
-      ('density', 'double'),
-      ('bucket_cnt', 'int'),
-      ('histogram_type', 'int'),
-      ('global_stats', 'int', 'true', '0'),
-      ('user_stats', 'int', 'true', '0'),
-      ('spare1', 'int', 'true'),
-      ('spare2', 'int', 'true'),
-      ('spare3', 'int', 'true'),
-      ('spare4', 'varchar:MAX_VALUE_LENGTH', 'true'),
-      ('spare5', 'varchar:MAX_VALUE_LENGTH', 'true'),
-      ('spare6', 'varchar:MAX_VALUE_LENGTH', 'true')
-  ]
-  )
-
-def_table_schema(
-  owner = 'jiangxiu.wt',
-  table_name = '__all_histogram_stat',
-  table_id = '330',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-      ('table_id', 'int'),
-      ('partition_id', 'int'),
-      ('column_id', 'int'),
-      ('endpoint_num', 'int')
-  ],
-  in_tenant_space = True,
-  is_cluster_private = False,
-
-  normal_columns = [
-      ('object_type', 'int'),
-      ('endpoint_normalized_value', 'double'),
-      ('endpoint_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('b_endpoint_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('endpoint_repeat_cnt', 'int')
-  ]
-  )
 
 def_table_schema(
   owner = 'yibo.tyf',
   table_name = '__all_monitor_modified',
-  table_id = '331',
+  table_id = '1066',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2029,7 +2131,7 @@ def_table_schema(
 def_table_schema(
   owner = 'jiangxiu.wt',
   table_name = '__all_table_stat_history',
-  table_id = '332',
+  table_id = '1067',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2062,80 +2164,12 @@ def_table_schema(
   ]
   )
 
-def_table_schema(
-  owner = 'jiangxiu.wt',
-  table_name = '__all_column_stat_history',
-  table_id = '333',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-      ('table_id', 'int'),
-      ('partition_id', 'int'),
-      ('column_id', 'int'),
-      ('savtime', 'timestamp')
-  ],
-  in_tenant_space = True,
-  is_cluster_private = False,
-  normal_columns = [
-      ('object_type', 'int'),
-      ('flags', 'int'),
-      ('last_analyzed', 'timestamp'),
-      ('distinct_cnt', 'int'),
-      ('null_cnt', 'int'),
-      ('max_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('b_max_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('min_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('b_min_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('avg_len', 'double'),
-      ('distinct_cnt_synopsis','varchar:MAX_LLC_BITMAP_LENGTH'),
-      ('distinct_cnt_synopsis_size', 'int'),
-      ('sample_size', 'int'),
-      ('density', 'double'),
-      ('bucket_cnt', 'int'),
-      ('histogram_type', 'int'),
-      ('spare1', 'int', 'true'),
-      ('spare2', 'int', 'true'),
-      ('spare3', 'int', 'true'),
-      ('spare4', 'varchar:MAX_VALUE_LENGTH', 'true'),
-      ('spare5', 'varchar:MAX_VALUE_LENGTH', 'true'),
-      ('spare6', 'varchar:MAX_VALUE_LENGTH', 'true')
-  ]
-  )
 
-def_table_schema(
-  owner = 'jiangxiu.wt',
-  table_name = '__all_histogram_stat_history',
-  table_id = '334',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-      ('table_id', 'int'),
-      ('partition_id', 'int'),
-      ('column_id', 'int'),
-      ('endpoint_num', 'int'),
-      ('savtime', 'timestamp')
-  ],
-  in_tenant_space = True,
-  is_cluster_private = False,
-  normal_columns = [
-      ('object_type', 'int'),
-      ('endpoint_normalized_value', 'double'),
-      ('endpoint_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('b_endpoint_value', 'varchar:MAX_VALUE_LENGTH'),
-      ('endpoint_repeat_cnt', 'int'),
-      ('spare1', 'int', 'true'),
-      ('spare2', 'int', 'true'),
-      ('spare3', 'int', 'true'),
-      ('spare4', 'varchar:MAX_VALUE_LENGTH', 'true'),
-      ('spare5', 'varchar:MAX_VALUE_LENGTH', 'true'),
-      ('spare6', 'varchar:MAX_VALUE_LENGTH', 'true')
-  ]
-  )
 
 def_table_schema(
   owner = 'jiangxiu.wt',
   table_name = '__all_optstat_global_prefs',
-  table_id = '335',
+  table_id = '1068',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2158,7 +2192,7 @@ def_table_schema(
 def_table_schema(
   owner = 'jiangxiu.wt',
   table_name = '__all_optstat_user_prefs',
-  table_id = '336',
+  table_id = '1069',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2180,7 +2214,7 @@ def_table_schema(
 def_table_schema(
     owner = 'yanmu.ztl',
     table_name = '__all_tablet_to_table',
-    table_id = '343',
+    table_id = '1070',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -2199,24 +2233,10 @@ def_table_schema(
 # 345: legacy ls status table (abandoned)
 # 346: __all_zone_v2 # abandoned in 4.0
 
-# 348: __all_log_archive_progress # abandoned
-# 349: __all_log_archive_history # abandoned
-# 350: __all_log_archive_piece_files # abandoned
-# 351: legacy ls log archive progress table # abandoned
 
 
 # 352: legacy ls table (abandoned)
 # 353: abandoned
-# 354: __all_backup_storage_info # abandoned
-# 357: __all_backup_job # abandoned
-# 358: __all_backup_job_history # abandoned
-# 359: __all_backup_task # abandoned
-# 360: __all_backup_task_history # abandoned
-# 361: __all_backup_ls_task (abandoned)
-# 362: __all_backup_ls_task_history # abandoned
-# 363: __all_backup_ls_task_info# abandoned
-# 364: __all_backup_skipped_tablet# abandoned
-# 365: __all_backup_skipped_tablet_history
 # 366: __all_tenant_info (abandoned)
 # 367: __all_cluster_info # abandoned in 4.0
 # 368: __all_cluster_config # abandoned in 4.0
@@ -2224,7 +2244,7 @@ def_table_schema(
 def_table_schema(
   owner = 'yanmu.ztl',
   table_name    = '__all_tablet_to_table_history',
-  table_id      = '369',
+  table_id      = '1071',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2240,7 +2260,6 @@ def_table_schema(
   )
 
 # 370: legacy ls recovery stat table (abandoned)
-# 371: __all_backup_ls_task_info_history # abandoned
 
 # 372: __all_tablet_replica_checksum # migrated to SQLite, see gen_sqlite_table_def above
 # Placeholder - original definition removed, using SQLite version
@@ -2250,7 +2269,7 @@ def_table_schema(
 def_table_schema(
     owner = 'quanwei.wqw',
     table_name = '__all_tablet_checksum',
-    table_id   = '373',
+    table_id   = '1072',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -2273,7 +2292,7 @@ def_table_schema(
 def_table_schema(
   owner = 'fyy280124',
   table_name     = '__all_scheduler_job',
-  table_id       = '377',
+  table_id       = '1074',
   table_type     = 'SYSTEM_TABLE',
   gm_columns     = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2330,10 +2349,11 @@ def_table_schema(
   ]
   )
 
+
 def_table_schema(
   owner = 'fyy280124',
   table_name     = '__all_scheduler_program',
-  table_id       = '379',
+  table_id       = '1076',
   table_type     = 'SYSTEM_TABLE',
   gm_columns     = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2364,7 +2384,7 @@ def_table_schema(
 def_table_schema(
   owner = 'fyy280124',
   table_name     = '__all_scheduler_program_argument',
-  table_id       = '380',
+  table_id       = '1077',
   table_type     = 'SYSTEM_TABLE',
   gm_columns     = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2387,7 +2407,7 @@ def_table_schema(
 all_context_def = dict(
   owner = 'peihan.dph',
   table_name    = '__all_context',
-  table_id      = '381',
+  table_id      = '1078',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2407,24 +2427,18 @@ all_context_def = dict(
   ]
   )
 def_table_schema(**all_context_def)
-def_table_schema(**gen_history_table_def(382, all_context_def))
+def_table_schema(**gen_history_table_def(1079, all_context_def))
 
 # 383: __all_global_context_value (abandoned)
 # 385: legacy ls election reference info table (abandoned)
 
-# backup clean inner table
-# 386: __all_backup_delete_job # abandoned
-# 387: __all_backup_delete_job_history # abandoned
-# 388: __all_backup_delete_task # abandoned
-# 389: __all_backup_delete_task_history # abandoned
-# 390: __all_backup_delete_ls_task # abandoned
-# 391: __all_backup_delete_ls_task_history # abandoned
+# 392: __all_zone_merge_info # abandoned, migrated to SQLite
 # 393: __all_merge_info # abandoned, migrated to SQLite
 
 def_table_schema(
   owner = 'donglou.zl',
   table_name    = '__all_freeze_info',
-  table_id      = '394',
+  table_id      = '1080',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2441,16 +2455,11 @@ def_table_schema(
 
 # 395: __all_disk_io_calibration (abandoned)
 # 399: abandoned
-# 400:__all_backup_parameter abandoned
-# 401: legacy ls restore progress table (abandoned)
-# 402: legacy ls restore history table (abandoned)
-# 403: __all_backup_storage_info_history (abandoned)
-# 404: __all_backup_delete_policy (abandoned)
 
 all_mock_fk_parent_table_def = dict(
   owner = 'bin.lb',
   table_name    = '__all_mock_fk_parent_table',
-  table_id      = '405',
+  table_id      = '1081',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2466,12 +2475,12 @@ all_mock_fk_parent_table_def = dict(
 
 def_table_schema(**all_mock_fk_parent_table_def)
 
-def_table_schema(**gen_history_table_def(406, all_mock_fk_parent_table_def))
+def_table_schema(**gen_history_table_def(1082, all_mock_fk_parent_table_def))
 
 all_mock_fk_parent_table_column_def = dict(
   owner = 'bin.lb',
   table_name    = '__all_mock_fk_parent_table_column',
-  table_id      = '407',
+  table_id      = '1083',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2487,8 +2496,7 @@ all_mock_fk_parent_table_column_def = dict(
 
 def_table_schema(**all_mock_fk_parent_table_column_def)
 
-def_table_schema(**gen_history_table_def(408, all_mock_fk_parent_table_column_def))
-# 409: __all_log_restore_source abandoned
+def_table_schema(**gen_history_table_def(1084, all_mock_fk_parent_table_column_def))
 
 # 410: __all_kv_ttl_task (abandoned)
 # 411: __all_kv_ttl_task_history (abandoned)
@@ -2498,7 +2506,7 @@ def_table_schema(**gen_history_table_def(408, all_mock_fk_parent_table_column_de
 def_table_schema(
   owner = 'tonghui.ht',
   table_name    = '__all_spatial_reference_systems',
-  table_id      = '413',
+  table_id      = '1085',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2541,8 +2549,10 @@ def_table_schema(
 # 432: legacy ls arb replica task history table (abandoned)
 
 
+# 444: __all_reserved_snapshot # migrated to SQLite, see gen_sqlite_table_def above
+# Placeholder - original definition removed, using SQLite version
+
 # 445: __all_cluster_event_history # migrated to SQLite, see gen_sqlite_table_def above
-# 447 : legacy ls log restore stat table
 
 # 450: __all_external_table_file # abandoned in seekdb
 
@@ -2570,7 +2580,7 @@ def_table_schema(
 def_table_schema(
     owner = 'yangyifei.yyf',
     table_name = '__all_dbms_lock_allocated',
-    table_id = '471',
+    table_id = '1098',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -2593,7 +2603,7 @@ def_table_schema(
 def_table_schema(
   table_name     = '__all_scheduler_job_class',
   owner          = 'huangrenhuang.hrh',
-  table_id       = '474',
+  table_id       = '1099',
   table_type     = 'SYSTEM_TABLE',
   gm_columns     = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2627,7 +2637,7 @@ def_table_schema(
 all_routine_privilege_def = dict(
     owner = 'mingye.swj',
     table_name    = '__all_routine_privilege',
-    table_id      = '490',
+    table_id      = '1101',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -2646,29 +2656,11 @@ all_routine_privilege_def = dict(
   )
 
 def_table_schema(**all_routine_privilege_def)
-def_table_schema(**gen_history_table_def(491, all_routine_privilege_def))
+def_table_schema(**gen_history_table_def(1102, all_routine_privilege_def))
 
 # __wr_sqlstat # removed
 
-def_table_schema(
-  owner = 'zhenling.zzg',
-  table_name = '__all_aux_stat',
-  table_id = '494',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-      ('id', 'bigint')
-  ],
-  in_tenant_space = True,
-  is_cluster_private = False,
-  normal_columns = [
-      ('last_analyzed', 'timestamp'),
-      ('cpu_speed', 'bigint', 'true', '2500'),
-      ('disk_seq_read_speed', 'bigint', 'true', '2000'),
-      ('disk_rnd_read_speed', 'bigint', 'true', '150'),
-      ('network_speed', 'bigint', '1000')
-  ]
-  )
+
 
 
 
@@ -2683,7 +2675,7 @@ def_table_schema(
 all_column_privilege_def = dict(
     owner = 'mingye.swj',
     table_name    = '__all_column_privilege',
-    table_id      = '505',
+    table_id      = '1107',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -2701,7 +2693,7 @@ all_column_privilege_def = dict(
 
 def_table_schema(**all_column_privilege_def)
 
-def_table_schema(**gen_history_table_def(506, all_column_privilege_def))
+def_table_schema(**gen_history_table_def(1108, all_column_privilege_def))
 
 # 507: __all_tenant_snapshot_ls_replica_history (abandoned)
 # 508: legacy ls replica task history table (abandoned)
@@ -2716,7 +2708,7 @@ def_table_schema(**gen_history_table_def(506, all_column_privilege_def))
 def_table_schema(
   owner = 'yangyifei.yyf',
   table_name = '__all_detect_lock_info_v2',
-  table_id = '521',
+  table_id = '1111',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2737,41 +2729,24 @@ def_table_schema(
   ]
   )
 
+# 522 : __all_pkg_type
+# 523 : __all_pkg_type_attr
+# 524 : __all_pkg_coll_type
 # 525: __wr_sql_plan
+
+
+
 
 # __wr_sql_plan # removed
 
 # 527: __all_kv_redis_table abandoned
-
-all_ncomp_dll_v2 = dict(
-  owner = 'hr351303',
-  table_name = '__all_ncomp_dll_v2',
-  table_id = '528',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('database_id', 'int', 'false'),
-    ('key_id', 'int'),
-    ('compile_db_id', 'int'),
-    ('arch_type', 'varchar:128'),
-    ('build_version', 'varchar:OB_SERVER_VERSION_LENGTH')
-  ],
-  in_tenant_space = True,
-
-  normal_columns = [
-    ('merge_version', 'int'),
-    ('dll', 'longblob', 'false'),
-    ('stack_size', 'longblob', 'true')
-  ]
-  )
-def_table_schema(**all_ncomp_dll_v2)
 
 # __wr_sql_plan_aux_key2snapshot # removed
 
 def_table_schema(
   owner = 'youchuan.yc',
   table_name = '__ft_dict_ik_utf8',
-  table_id = '531',
+  table_id = '1116',
   table_type = 'SYSTEM_TABLE',
     gm_columns = [],
     rowkey_columns = [
@@ -2784,7 +2759,7 @@ def_table_schema(
 def_table_schema(
   owner = 'youchuan.yc',
   table_name = '__ft_stopword_ik_utf8',
-  table_id = '532',
+  table_id = '1117',
   table_type = 'SYSTEM_TABLE',
     gm_columns = [],
     rowkey_columns = [
@@ -2797,7 +2772,7 @@ def_table_schema(
 def_table_schema(
   owner = 'youchuan.yc',
   table_name = '__ft_quantifier_ik_utf8',
-  table_id = '533',
+  table_id = '1118',
   table_type = 'SYSTEM_TABLE',
     gm_columns = [],
     rowkey_columns = [
@@ -2814,7 +2789,7 @@ def_table_schema(
 all_catalog_def = dict(
     owner = 'linyi.cl',
     table_name    = '__all_catalog',
-    table_id      = '537',
+    table_id      = '1119',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -2830,12 +2805,12 @@ all_catalog_def = dict(
 
 def_table_schema(**all_catalog_def)
 
-def_table_schema(**gen_history_table_def(538, all_catalog_def))
+def_table_schema(**gen_history_table_def(1120, all_catalog_def))
 
 all_catalog_privilege_def = dict(
     owner = 'linyi.cl',
     table_name    = '__all_catalog_privilege',
-    table_id      = '539',
+    table_id      = '1121',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -2851,29 +2826,12 @@ all_catalog_privilege_def = dict(
 
 def_table_schema(**all_catalog_privilege_def)
 
-def_table_schema(**gen_history_table_def(540, all_catalog_privilege_def))
+def_table_schema(**gen_history_table_def(1122, all_catalog_privilege_def))
 
-# 542: __sslog_table
-def_table_schema(
-  owner = 'jiabokai.jbk',
-  table_name = '__all_pl_recompile_objinfo',
-  table_id = '544',
-  table_type = 'SYSTEM_TABLE',
-    gm_columns = ['gmt_create', 'gmt_modified'],
-    rowkey_columns = [
-    ('recompile_obj_id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('ref_obj_name', 'varchar:OB_MAX_CORE_TALBE_NAME_LENGTH'),
-    ('schema_version', 'int'),
-    ('fail_count', 'int')
-  ]
-  )
 def_table_schema(
   owner = 'yangjiali.yjl',
   table_name = '__all_vector_index_task',
-  table_id = '545',
+  table_id = '1124',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2895,7 +2853,7 @@ def_table_schema(
 def_table_schema(
   owner = 'yangjiali.yjl',
   table_name = '__all_vector_index_task_history',
-  table_id = '546',
+  table_id = '1125',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2917,7 +2875,7 @@ def_table_schema(
 all_ccl_rule_def = dict(
   owner = 'zhl413386',
   table_name = '__all_ccl_rule',
-  table_id = '547',
+  table_id = '1126',
   table_type = 'SYSTEM_TABLE',
   gm_columns = ['gmt_create', 'gmt_modified'],
   rowkey_columns = [
@@ -2941,14 +2899,14 @@ all_ccl_rule_def = dict(
   )
 
 def_table_schema(**all_ccl_rule_def)
-def_table_schema(**gen_history_table_def(548, all_ccl_rule_def))
+def_table_schema(**gen_history_table_def(1127, all_ccl_rule_def))
 
 
 
 all_ai_model_def = dict(
     owner = 'shenyunlong.syl',
     table_name = '__all_ai_model',
-    table_id = '550',
+    table_id = '1128',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -2966,12 +2924,12 @@ all_ai_model_def = dict(
 )
 
 def_table_schema(**all_ai_model_def)
-def_table_schema(**gen_history_table_def(551, all_ai_model_def))
+def_table_schema(**gen_history_table_def(1129, all_ai_model_def))
 
 all_ai_model_endpoint_def = dict(
     owner = 'shenyunlong.syl',
     table_name = '__all_ai_model_endpoint',
-    table_id = '552',
+    table_id = '1130',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -3000,7 +2958,7 @@ def_table_schema(**all_ai_model_endpoint_def)
 all_tenant_location_def = dict(
     owner = 'cjl476581',
     table_name     = '__all_location',
-    table_id       = '553',
+    table_id       = '1131',
     table_type     = 'SYSTEM_TABLE',
     gm_columns     = ['gmt_create', 'gmt_modified'],
     rowkey_columns = [
@@ -3014,12 +2972,12 @@ all_tenant_location_def = dict(
     in_tenant_space = True
   )
 def_table_schema(**all_tenant_location_def)
-def_table_schema(**gen_history_table_def(554, all_tenant_location_def))
+def_table_schema(**gen_history_table_def(1132, all_tenant_location_def))
 
 all_objauth_mysql_def = dict(
     owner = 'cjl476581',
     table_name     = '__all_objauth_mysql',
-    table_id       = '555',
+    table_id       = '1133',
     table_type = 'SYSTEM_TABLE',
     gm_columns = ['gmt_create', 'gmt_modified'],
     in_tenant_space = True,
@@ -3035,7 +2993,7 @@ all_objauth_mysql_def = dict(
   ]
   )
 def_table_schema(**all_objauth_mysql_def)
-def_table_schema(**gen_history_table_def(556, all_objauth_mysql_def))
+def_table_schema(**gen_history_table_def(1134, all_objauth_mysql_def))
 
 
 # Reserved position (placeholder before this line)
@@ -4345,7 +4303,6 @@ def_table_schema(
   )
 
 
-# 11102: __tenant_virtual_show_restore_preview (removed: backup/restore/log-archive deleted)
 
 def_table_schema(
     owner = 'lixia.yq',
@@ -5352,7 +5309,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-# 12157: __all_virtual_standby_status # abandoned in 4.0
 
 def_table_schema(
   owner = 'longzhong.wlz',
@@ -5460,14 +5416,8 @@ def_table_schema(
 
 # 12166: __all_virtual_objauth_history # removed (single-tenant: iterate VT mechanism deleted)
 
-# 12167: __all_virtual_backup_info # abandoned
 
-# 12168: __all_virtual_backup_log_archive_status # abandoned in 4.0
-# 12170: __all_virtual_backup_task # abandoned in 4.0
-# 12171: __all_virtual_pg_backup_task # abandoned in 4.0
 
-# 12173: __all_virtual_pg_backup_log_archive_status # abandoned in 4.0
-# 12174: __all_virtual_server_backup_log_archive_status # abandoned in 4.0
 
 # 12175: __all_virtual_error # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -5493,9 +5443,7 @@ def_table_schema(
 
 # 12177: REFERENTIAL_CONSTRAINTS # abandoned in 4.0
 # 12179: __all_virtual_table_modifications # abandoned in 4.0
-# 12180: __all_virtual_backup_clean_info # abandoned in 4.0
 
-# 12184: __all_virtual_pg_log_archive_stat # abandoned in 4.0
 
 def_table_schema(
   owner = 'adou.ly',
@@ -5522,8 +5470,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-# 12188: __all_virtual_backup_validation_task # abandoned in 4.0
-# 12189: __all_virtual_pg_backup_validation_task # abandoned in 4.0
 
 # 12190: __all_virtual_time_zone # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -5620,9 +5566,6 @@ def_table_schema(
   )
 
 # 12200: __all_virtual_reserved_table_mgr # abandoned in 4.0
-# 12201: __all_virtual_backupset_history_mgr # abandoned in 4.0
-# 12202: __all_virtual_backup_backupset_task # abandoned in 4.0
-# 12203: __all_virtual_pg_backup_backupset_task # abandoned in 4.0
 
 # 12205: __all_virtual_cluster_failover_info # abandoned in 4.0
 # 12207: __all_virtual_all_clusters # abandoned in 4.0
@@ -5731,13 +5674,8 @@ def_table_schema(
 
 # 12229: __all_virtual_optstat_user_prefs # removed (single-tenant: iterate VT mechanism deleted)
 
-# 12231: __all_virtual_log_archive_progress # abandoned
-# 12232: __all_virtual_log_archive_history # abandoned
-# 12233: __all_virtual_log_archive_piece_files # abandoned
-# 12234: __all_virtual_ls_log_archive_progress # abandoned
 
 # 12235: CHECK_CONSTRAINTS # abandoned in 4.0
-# 12236: __all_virtual_backup_storage_info # abandoned
 
 # 12237: __all_virtual_ls_status (abandoned)
 # 12238: __all_virtual_ls (abandoned)
@@ -5782,13 +5720,6 @@ def_table_schema(
     ('total_wait_secs', 'int')
   ],  vtable_route_policy = 'local'
   )
-# 12245: __all_virtual_backup_task # abandoned
-# 12246: __all_virtual_backup_task_history # abandoned
-# 12247: __all_virtual_backup_ls_task # abandoned
-# 12248: __all_virtual_backup_ls_task_history # abandoned
-# 12249: __all_virtual_backup_ls_task_info # abandoned
-# 12250: __all_virtual_backup_skipped_tablet # abandoned
-# 12251: __all_virtual_backup_skipped_tablet_history # abandoned
 
 # 12253: __all_virtual_tablet_to_table_history # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -5816,7 +5747,6 @@ def_table_schema(
 
 # 12255: __all_virtual_tenant_info (abandoned)
 # 12256: __all_virtual_ls_recovery_stat (abandoned)
-# 12257: __all_virtual_backup_ls_task_info_history # abandoned
 
 # __all_virtual_tablet_replica_checksum: SQLite virtual table (migrated from iterate)
 def_table_schema(**gen_sqlite_virtual_table_def(
@@ -5838,8 +5768,6 @@ def_table_schema(**gen_sqlite_virtual_table_def(
 
 # 12266: __all_virtual_tenant_scheduler_program_argument # removed (single-tenant: iterate VT mechanism deleted)
 
-# 12267: __all_virtual_backup_validation_task_v2
-# 12268: __all_virtual_pg_backup_validation_task_v2
 
 # 12269: __all_virtual_tenant_context # removed (single-tenant: iterate VT mechanism deleted)
 # 12270: __all_virtual_tenant_context_history # removed (single-tenant: iterate VT mechanism deleted)
@@ -5912,7 +5840,6 @@ def_table_schema(
       ('create_time', 'int'),
       ('role', 'varchar:64'),
       ('switchover_status', 'varchar:100'),
-      ('log_restore_source', 'varchar:1024'),
       ('sync_scn', 'uint'),
       ('readable_scn', 'uint')
     ],  vtable_route_policy = 'local'
@@ -5950,7 +5877,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-# 12279: __all_virtual_archive_stat (removed: backup/restore/log-archive deleted)
 
 def_table_schema(
   owner = 'keqing.llt',
@@ -5989,11 +5915,6 @@ def_table_schema(
 
 # 12282: __all_virtual_proxy_routine (abandoned in seekdb)
 
-# backup clean virtual table
-# 12283: __all_virtual_backup_delete_task # abandoned
-# 12284: __all_virtual_backup_delete_task_history # abandoned
-# 12285: __all_virtual_backup_delete_ls_task # abandoned
-# 12286: __all_virtual_backup_delete_ls_task_history # abandoned
 
 def_table_schema(
   owner = 'yanyuan.cxf',
@@ -6067,6 +5988,7 @@ def_table_schema(
   ('wait_seq', 'int')
   ],  vtable_route_policy = 'local'
   )
+
 
 def_table_schema(**gen_sqlite_virtual_table_def(
   table_id = '12291',
@@ -6143,9 +6065,6 @@ def_table_schema(
   ('rec_log_scn', 'uint')
   ],  vtable_route_policy = 'local'
   )
-# 12296: __all_virtual_backup_set_files (abandoned)
-# 12297: __all_virtual_backup_job (abandoned)
-# 12298: __all_virtual_backup_job_history (abandoned)
 
 
 # 12302: __all_virtual_ash # removed
@@ -6168,16 +6087,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 # 12304: abandoned
-# 12305: __all_virtual_backup_parameter (abandoned)
-# 12306: __all_virtual_restore_job  (abandoned)
-# 12307: __all_virtual_restore_job_history (abandoned)
-# 12308: __all_virtual_restore_progress (abandoned)
-# 12309: __all_virtual_ls_restore_progress (abandoned)
-# 12310: __all_virtual_ls_restore_history (abandoned)
-# 12311: __all_virtual_backup_storage_info_history (abandoned)
-# 12312: __all_virtual_backup_delete_job (abandoned)
-# 12313: __all_virtual_backup_delete_job_history (abandoned)
-# 12314: __all_virtual_backup_delete_policy (abandoned)
 
 def_table_schema(
   owner = 'lihongqin.lhq',
@@ -6284,7 +6193,6 @@ def_table_schema(
 # 12322: __all_virtual_mock_fk_parent_table_column # removed (single-tenant: iterate VT mechanism deleted)
 
 # 12323: __all_virtual_mock_fk_parent_table_column_history # removed (single-tenant: iterate VT mechanism deleted)
-# 12324: __all_virtual_log_restore_source abandoned
 
 def_table_schema(
   owner = 'wangzelin.wzl',
@@ -6541,7 +6449,6 @@ def_table_schema(
 # 12364: legacy ls arb replica task table (abandoned)
 # 12365: legacy ls arb replica task history table (abandoned)
 
-# 12366: __all_virtual_archive_dest_status (removed: backup/restore/log-archive deleted)
 
 # 12367: __all_virtual_kv_hotkey_stat
 
@@ -6776,6 +6683,7 @@ def_table_schema(
 )
 
 # 12414: __all_virtual_wr_control # removed
+# 12415: __all_virtual_event_history - migrated to SQLite, see gen_sqlite_virtual_table_def above
 
 # 12418: removed (legacy resource isolation deleted)
 # 12419: removed (legacy resource isolation deleted)
@@ -7218,13 +7126,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-# 12506: __all_virtual_ncomp_dll_v2 # removed (single-tenant: iterate VT mechanism deleted)
-# 12507: __all_virtual_logstore_service_status
-# 12508: __all_virtual_logstore_service_info
-# 12510: __all_virtual_standby_log_transport_stat
-
-# 12511: __all_virtual_wr_sql_plan_aux_key2snapshot # removed
-# 12512: __all_virtual_tablet_mds_info
 # 12513: removed
 
 # 12515: __all_virtual_plugin_info
@@ -7261,8 +7162,6 @@ def_table_schema(
 
 # 12520: __all_virtual_sswriter_group_stat
 # 12521: __all_virtual_sswriter_lease_mgr
-
-# 12523: __all_virtual_pl_recompile_objinfo # removed (single-tenant: iterate VT mechanism deleted)
 
 # 12524: __all_virtual_vector_index_task # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -7377,6 +7276,13 @@ def_table_schema(
   ]
   )
 # 12559: __tenant_virtual_list_file # abandoned in seekdb
+
+# __all_virtual_reserved_snapshot: SQLite virtual table
+# Note: Using table_id 12447 (next available after 12444-12446)
+
+# __all_virtual_server_event_history: SQLite virtual table
+# Note: Using table_id 12155 (next available after 12154 which is abandoned)
+
 
 def_table_schema(**gen_sqlite_virtual_table_def(
     table_id = '12563',
@@ -7839,7 +7745,9 @@ def_table_schema(
                     from (select 201001 as database_id, 1 as table_id, '__all_core_table' as table_name, 45 as collation_type, 0 as table_type, '' as comment, 'DYNAMIC' as store_format, 0 as table_mode
                 union all select 201001 as database_id, 3 as table_id, '__all_table'      as table_name, 45 as collation_type, 0 as table_type, '' as comment, 'DYNAMIC' as store_format, 0 as table_mode
                 union all select 201001 as database_id, 4 as table_id, '__all_column'     as table_name, 45 as collation_type, 0 as table_type, '' as comment, 'DYNAMIC' as store_format, 0 as table_mode
-                union all select 201001 as database_id, 5 as table_id, '__all_ddl_operation'     as table_name, 45 as collation_type, 0 as table_type, '' as comment, 'DYNAMIC' as store_format, 0 as table_mode) c
+                union all select 201001 as database_id, 5 as table_id, '__all_ddl_operation'     as table_name, 45 as collation_type, 0 as table_type, '' as comment, 'DYNAMIC' as store_format, 0 as table_mode
+                union all select 201001 as database_id, 12 as table_id, '__all_table_history'    as table_name, 45 as collation_type, 0 as table_type, '' as comment, 'DYNAMIC' as store_format, 0 as table_mode
+                union all select 201001 as database_id, 13 as table_id, '__all_column_history'   as table_name, 45 as collation_type, 0 as table_type, '' as comment, 'DYNAMIC' as store_format, 0 as table_mode) c
                     join oceanbase.__all_virtual_core_all_table d
                       on d.table_name = '__all_core_table'
                     where 1 = 1
@@ -8673,6 +8581,7 @@ def_table_schema(
 # 21041: GV$SQL_PLAN_STATISTICS # abandoned in 4.0
 # 21042: V$SQL_PLAN_STATISTICS # abandoned in 4.0
 
+
 def_table_schema(
   owner = 'dachuan.sdc',
   database_id    = 'OB_MYSQL_SCHEMA_ID',
@@ -8847,7 +8756,9 @@ SELECT /*+LEADING((D T) VC) USE_NL(VC) NO_USE_NL_MATERIALIZATION(VC)*/
        VC.SRS_ID FROM (SELECT 1 AS TABLE_ID, 201001 AS DATABASE_ID, '__all_core_table' AS TABLE_NAME FROM DUAL
              UNION ALL SELECT 3 AS TABLE_ID, 201001 AS DATABASE_ID, '__all_table' AS TABLE_NAME FROM DUAL
              UNION ALL SELECT 4 AS TABLE_ID, 201001 AS DATABASE_ID, '__all_column' AS TABLE_NAME FROM DUAL
-             UNION ALL SELECT 5 AS TABLE_ID, 201001 AS DATABASE_ID, '__all_ddl_operation' AS TABLE_NAME FROM DUAL) T INNER JOIN OCEANBASE.__ALL_DATABASE D INNER JOIN OCEANBASE.__ALL_VIRTUAL_INFORMATION_COLUMNS VC
+             UNION ALL SELECT 5 AS TABLE_ID, 201001 AS DATABASE_ID, '__all_ddl_operation' AS TABLE_NAME FROM DUAL
+             UNION ALL SELECT 12 AS TABLE_ID, 201001 AS DATABASE_ID, '__all_table_history' AS TABLE_NAME FROM DUAL
+             UNION ALL SELECT 13 AS TABLE_ID, 201001 AS DATABASE_ID, '__all_column_history' AS TABLE_NAME FROM DUAL) T INNER JOIN OCEANBASE.__ALL_DATABASE D INNER JOIN OCEANBASE.__ALL_VIRTUAL_INFORMATION_COLUMNS VC
 WHERE T.DATABASE_ID = D.DATABASE_ID
       AND D.DATABASE_NAME = VC.TABLE_SCHEMA
       AND T.TABLE_NAME = VC.TABLE_NAME
@@ -8902,7 +8813,6 @@ WHERE T.TABLE_ID = C.TABLE_ID
 # 21073: gv$partition_audit # abandoned in 4.0
 # 21074: v$partition_audit # abandoned in 4.0
 # 21075: V$OB_CLUSTER # abandoned in 4.0
-# 21076: v$ob_standby_status # abandoned in 4.0
 # 21077: v$ob_cluster_stats # abandoned in 4.0
 # 21078: V$OB_CLUSTER_EVENT_HISTORY # abandoned in 4.0
 
@@ -9063,16 +8973,6 @@ FROM
 """.replace("\n", " ")
 )
 
-# 21102: CDB_OB_BACKUP_ARCHIVELOG_SUMMARY # abandoned in 4.0
-# 21103: CDB_OB_BACKUP_JOB_DETAILS # abandoned in 4.0
-# 21104: CDB_OB_BACKUP_SET_DETAILS # abandoned in 4.0
-# 21105: CDB_OB_BACKUP_SET_EXPIRED # abandoned in 4.0
-# 21106: CDB_OB_BACKUP_PROGRESS # abandoned in 4.0
-# 21107: CDB_OB_BACKUP_ARCHIVELOG_PROGRESS # abandoned in 4.0
-# 21108: CDB_OB_BACKUP_CLEAN_HISTORY # abandoned in 4.0
-# 21109: CDB_OB_BACKUP_TASK_CLEAN_HISTORY # abandoned in 4.0
-# 21110: CDB_OB_RESTORE_PROGRESS # abandoned
-# 21111: CDB_OB_RESTORE_JOB_HISTORY # abandoned
 
 # 21112: GV$OB_SERVER_SCHEMA_INFO # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_server_schema_info)
 
@@ -9107,28 +9007,9 @@ def_table_schema(
 """.replace("\n", " ")
 )
 
-# 21122: CDB_OB_BACKUP_VALIDATION_JOB # abandoned in 4.0
-# 21123: CDB_OB_BACKUP_VALIDATION_JOB_HISTORY # abandoned in 4.0
-# 21124: CDB_OB_TENANT_BACKUP_VALIDATION_TASK # abandoned in 4.0
-# 21125: CDB_OB_BACKUP_VALIDATION_TASK_HISTORY # abandoned in 4.0
-# 21126: v$restore_point # abandoned in 4.0
-# 21127: CDB_OB_BACKUP_SET_OBSOLETE # abandoned in 4.0
-# 21128: CDB_OB_BACKUP_BACKUPSET_JOB # abandoned in 4.0
-# 21129: CDB_OB_BACKUP_BACKUPSET_JOB_HISTORY # abandoned in 4.0
-# 21130: CDB_OB_BACKUP_BACKUPSET_TASK # abandoned in 4.0
-# 21131: CDB_OB_BACKUP_BACKUPSET_TASK_HISTORY # abandoned in 4.0
-# 21132: CDB_OB_BACKUP_BACKUP_ARCHIVELOG_SUMMARY # abandoned in 4.0
 # 21133: v$ob_cluster_failover_info # abandoned in 4.0
-# 21136: CDB_OB_ARCHIVELOG_PIECE_FILES # abandoned
-# 21137: CDB_OB_BACKUP_SET_FILES (abandoned)
 
-# 21138: CDB_OB_BACKUP_BACKUPPIECE_JOB # abandoned in 4.0
-# 21139: CDB_OB_BACKUP_BACKUPPIECE_JOB_HISTORY # abandoned in 4.0
-# 21140: CDB_OB_BACKUP_BACKUPPIECE_TASK # abandoned in 4.0
-# 21141: CDB_OB_BACKUP_BACKUPPIECE_TASK_HISTORY # abandoned in 4.0
 # 21142: v$ob_all_clusters # abandoned in 4.0
-# 21143: CDB_OB_BACKUP_ARCHIVELOG # abandoned in 4.0
-# 21144: CDB_OB_BACKUP_BACKUP_ARCHIVELOG # abandoned in 4.0
 
 def_table_schema(
   owner = 'jim.wjh',
@@ -9307,11 +9188,6 @@ def_table_schema(
   ]
   )
 #
-# 21152: CDB_OB_BACKUP_JOBS # abandoned
-# 21153: CDB_OB_BACKUP_JOB_HISTORY # abandoned
-# 21154: CDB_OB_BACKUP_TASKS # abandoned
-# 21155: CDB_OB_BACKUP_TASK_HISTORY # abandoned
-# 21156: CDB_OB_LOG_ARCHIVE_LS_SUMMARY
 
 def_table_schema(
   owner = 'xiaochu.yh',
@@ -9372,6 +9248,8 @@ def_table_schema(
 # 21161: DBA_OB_RESOURCE_POOLS (abandoned)
 # 21161: DBA_OB_SERVERS (abandoned)
 # 21163: DBA_OB_ZONES (abandoned)
+
+#### sys tenant only view
 
 # 21165: DBA_OB_TENANT_JOBS (abandoned)
 # 21166: DBA_OB_UNIT_JOBS (abandoned)
@@ -9540,6 +9418,7 @@ def_table_schema(
   AND T.INDEX_ATTRIBUTES_SET & 16 = 0
   """.replace("\n", " ")
   )
+
 
 def_table_schema(
   owner           = 'donglou.zl',
@@ -10796,7 +10675,6 @@ def_table_schema(
     START_SERVICE_TIME,
     USEC_TO_TIME(CREATE_TIME) AS CREATE_TIME,
     ROLE,
-    LOG_RESTORE_SOURCE,
     SYNC_SCN,
     READABLE_SCN
   FROM oceanbase.__all_virtual_server_stat
@@ -11078,13 +10956,6 @@ def_table_schema(
 # 21244: V$OB_IO_QUOTA
 
 
-# 4.0 backup clean view
-# 21245: CDB_OB_BACKUP_DELETE_JOBS # abandoned
-# 21246: CDB_OB_BACKUP_DELETE_JOB_HISTORY # abandoned
-# 21247: CDB_OB_BACKUP_DELETE_TASKS # abandoned
-# 21248: CDB_OB_BACKUP_DELETE_TASK_HISTORY # abandoned
-# 21249: CDB_OB_BACKUP_DELETE_POLICY # abandoned
-# 21250: CDB_OB_BACKUP_STORAGE_INFO # abandoned
 
 
 def_table_schema(
@@ -11745,11 +11616,6 @@ def_table_schema(
         AND STAT.INDEX_TYPE = 1
 """.replace("\n", " ")
 )
-# 21260: DBA_OB_BACKUP_JOBS # abandoned
-# 21261: DBA_OB_BACKUP_JOB_HISTORY # abandoned
-# 21262: DBA_OB_BACKUP_TASKS # abandoned
-# 21263: DBA_OB_BACKUP_TASK_HISTORY # abandoned
-# 21264: DBA_OB_BACKUP_SET_FILES (abandoned)
 
 # 21267: GV$ACTIVE_SESSION_HISTORY # removed
 
@@ -11949,14 +11815,6 @@ def_table_schema(
     ]
   )
 
-# 21274: CDB_OB_BACKUP_STORAGE_INFO_HISTORY # abandoned
-# 21275: DBA_OB_BACKUP_STORAGE_INFO # abandoned
-# 21276: DBA_OB_BACKUP_STORAGE_INFO_HISTORY # abandoned
-# 21277: DBA_OB_BACKUP_DELETE_POLICY # abandoned
-# 21278: DBA_OB_BACKUP_DELETE_JOBS # abandoned
-# 21279: DBA_OB_BACKUP_DELETE_JOB_HISTORY # abandoned
-# 21280: DBA_OB_BACKUP_DELETE_TASKS # abandoned
-# 21281: DBA_OB_BACKUP_DELETE_TASK_HISTORY # abandoned
 
 
 def_table_schema(
@@ -12017,21 +11875,8 @@ def_table_schema(
     normal_columns = [
     ]
   )
-# 21284: DBA_OB_RESTORE_PROGRESS (abandoned)
-# 21285: DBA_OB_RESTORE_HISTORY (abandoned)
 
-# 21286: DBA_OB_ARCHIVE_MODE
-# 21287: DBA_OB_ARCHIVE_DEST (abandoned)
-# 21288: DBA_OB_ARCHIVELOG (abandoned)
-# 21289: DBA_OB_ARCHIVELOG_SUMMARY (abandoned)
-# 21290: DBA_OB_ARCHIVELOG_PIECE_FILES (abandoned)
-# 21291: DBA_OB_BACKUP_PARAMETER (abandoned)
 
-# 21292: CDB_OB_ARCHIVE_MODE
-# 21293: CDB_OB_ARCHIVE_DEST (abandoned)
-# 21294: CDB_OB_ARCHIVELOG (abandoned)
-# 21295: CDB_OB_ARCHIVELOG_SUMMARY (abandoned)
-# 21296: CDB_OB_BACKUP_PARAMETER (abandoned)
 # 21297: DBA_OB_DEADLOCK_EVENT_HISTORY (abandoned)
 
 def_table_schema(
@@ -12197,6 +12042,7 @@ def_table_schema(
 
 # 21322: GV$OB_TENANTS
 # 21323: V$OB_TENANTS
+
 
 def_table_schema(
   owner           = 'donglou.zl',
@@ -12446,11 +12292,13 @@ def_table_schema(
   """.replace("\n", " ")
 )
 
+
 # 21341: GV$OB_SQL_PLAN # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_sql_plan)
 # 21342: V$OB_SQL_PLAN # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_sql_plan)
 
 # 21343: abandoned
 # 21344: abandoned
+
 
 def_table_schema(
   owner = 'shady.hxy',
@@ -13601,11 +13449,6 @@ WHERE T.TABLE_TYPE IN (3,6,8,9,14)
 # 21360: CDB_OB_LS_ARB_REPLICA_TASK_HISTORY (abandoned)
 # 21361: DBA_OB_LS_ARB_REPLICA_TASK_HISTORY (abandoned)
 
-# 21362: V$OB_ARCHIVE_DEST_STATUS (removed: backup/restore/log-archive deleted)
-# 21363: DBA_OB_LS_LOG_ARCHIVE_PROGRESS # abandoned
-# 21364: CDB_OB_LS_LOG_ARCHIVE_PROGRESS # abandoned
-# 21365: DBA_OB_LS_LOG_RESTORE_STAT
-# 21366: CDB_OB_LS_LOG_RESTORE_STAT
 
 # 21367: GV$OB_KV_HOTKEY_STAT
 # 21368: V$OB_KV_HOTKEY_STAT
@@ -13782,8 +13625,6 @@ def_table_schema(
     OBJ_LOCK.EXTRA_INFO LIKE '%tx_ctx%'
 """.replace("\n", " ")
 )
-# 21401: CDB_OB_LOG_RESTORE_SOURCE # abandoned
-# 21402: DBA_OB_LOG_RESTORE_SOURCE # abandoned
 
 # 21403: DBA_OB_EXTERNAL_TABLE_FILE
 
@@ -13987,6 +13828,7 @@ JOIN OCEANBASE.__ALL_OPTSTAT_GLOBAL_PREFS GP
 # 21445: DBA_OB_LS_HISTORY (abandoned)
 # 21446: CDB_OB_LS_HISTORY (abandoned)
 
+
 # 21448: CDB_OB_TENANT_EVENT_HISTORY (abandoned)
 # 21459: GV$OB_SESSION # removed (single-tenant GV/V collapse; folded into V$OB_SESSION)
 def_table_schema(
@@ -14187,6 +14029,7 @@ def_table_schema(
     from oceanbase.__all_aux_stat;
 """.replace("\n", " ")
 )
+
 
 def_table_schema(
   owner           = 'dingjincheng.djc',
@@ -15251,6 +15094,7 @@ def_table_schema(
 """.replace("\n", " ")
   )
 
+
 # 21591: DBA_OB_SERVER_SPACE_USAGE (abandoned)
 # 21592: CDB_OB_SERVER_SPACE_USAGE (abandoned)
 # 21593: DBA_OB_SPACE_USAGE
@@ -15497,8 +15341,6 @@ def_table_schema(
 # 21629: DBA_OB_OBJECT_BALANCE_WEIGHT
 # 21630: CDB_OB_OBJECT_BALANCE_WEIGHT
 
-# 21631: GV$OB_STANDBY_LOG_TRANSPORT_STAT
-# 21632: V$OB_STANDBY_LOG_TRANSPORT_STAT
 # 21633: removed
 
 # 21635: GV$OB_PLUGINS # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_plugin_info)
@@ -15888,17 +15730,15 @@ def_sys_index_table(
 # Index for other sys table (100000, 101000)
 def_sys_index_table(
   index_name = 'idx_data_table_id',
-  index_table_id = 101001,
+  index_table_id = 100012,
   index_columns = ['data_table_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
   keywords = all_def_keywords['__all_table_history'])
-# 101002: __all_log_archive_piece_files # abandoned
-# 101003: __all_backup_set_files # abandoned
 
 def_sys_index_table(
   index_name = 'idx_task_key',
-  index_table_id = 101004,
+  index_table_id = 102000,
   index_columns = ['target_object_id', 'object_id', 'schema_version'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_UNIQUE_LOCAL',
@@ -15906,7 +15746,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_ur_name',
-  index_table_id = 101005,
+  index_table_id = 102001,
   index_columns = ['user_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15914,7 +15754,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_db_name',
-  index_table_id = 101006,
+  index_table_id = 102002,
   index_columns = ['database_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15922,7 +15762,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_tg_name',
-  index_table_id = 101007,
+  index_table_id = 102003,
   index_columns = ['tablegroup_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15930,9 +15770,11 @@ def_sys_index_table(
 
 # 101008: idx_tenant_deleted(abandoned)
 
+
+
 def_sys_index_table(
   index_name = 'idx_recyclebin_db_type',
-  index_table_id = 101011,
+  index_table_id = 102006,
   index_columns = ['database_id','type'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15940,7 +15782,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_part_name',
-  index_table_id = 101012,
+  index_table_id = 101000,
   index_columns = ['part_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15948,7 +15790,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_sub_part_name',
-  index_table_id = 101013,
+  index_table_id = 101001,
   index_columns = ['sub_part_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15956,7 +15798,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_def_sub_part_name',
-  index_table_id = 101014,
+  index_table_id = 101002,
   index_columns = ['sub_part_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15966,7 +15808,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_fk_child_tid',
-  index_table_id = 101018,
+  index_table_id = 101003,
   index_columns = ['child_table_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15974,7 +15816,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_fk_parent_tid',
-  index_table_id = 101019,
+  index_table_id = 101004,
   index_columns = ['parent_table_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15982,7 +15824,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_fk_name',
-  index_table_id = 101020,
+  index_table_id = 101005,
   index_columns = ['foreign_key_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15990,7 +15832,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_fk_his_child_tid',
-  index_table_id = 101021,
+  index_table_id = 101006,
   index_columns = ['child_table_id', 'schema_version'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -15998,7 +15840,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_fk_his_parent_tid',
-  index_table_id = 101022,
+  index_table_id = 101007,
   index_columns = ['parent_table_id', 'schema_version'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16006,7 +15848,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_ddl_checksum_task',
-  index_table_id = 101025,
+  index_table_id = 102007,
   index_columns = ['ddl_task_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16014,7 +15856,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_db_routine_name',
-  index_table_id = 101026,
+  index_table_id = 102008,
   index_columns = ['database_id', 'routine_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16022,7 +15864,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_routine_name',
-  index_table_id = 101027,
+  index_table_id = 102009,
   index_columns = ['routine_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16030,7 +15872,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_routine_pkg_id',
-  index_table_id = 101028,
+  index_table_id = 102010,
   index_columns = ['package_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16038,7 +15880,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_routine_param_name',
-  index_table_id = 101029,
+  index_table_id = 102011,
   index_columns = ['param_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16046,7 +15888,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_db_pkg_name',
-  index_table_id = 101030,
+  index_table_id = 102012,
   index_columns = ['database_id', 'package_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16054,7 +15896,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_pkg_name',
-  index_table_id = 101031,
+  index_table_id = 102013,
   index_columns = ['package_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16062,7 +15904,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_snapshot_tablet',
-  index_table_id = 101032,
+  index_table_id = 102014,
   index_columns = ['tablet_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16070,7 +15912,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_cst_name',
-  index_table_id = 101033,
+  index_table_id = 101008,
   index_columns = ['constraint_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16078,7 +15920,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_grantee_role_id',
-  index_table_id = 101040,
+  index_table_id = 102015,
   index_columns = ['role_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16086,7 +15928,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_grantee_his_role_id',
-  index_table_id = 101041,
+  index_table_id = 102016,
   index_columns = ['role_id', 'schema_version'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16094,7 +15936,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_trigger_base_obj_id',
-  index_table_id = 101054,
+  index_table_id = 101009,
   index_columns = ['base_object_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16102,7 +15944,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_db_trigger_name',
-  index_table_id = 101055,
+  index_table_id = 101010,
   index_columns = ['database_id', 'trigger_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16110,7 +15952,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_trigger_name',
-  index_table_id = 101056,
+  index_table_id = 101011,
   index_columns = ['trigger_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16118,7 +15960,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_trigger_his_base_obj_id',
-  index_table_id = 101057,
+  index_table_id = 101012,
   index_columns = ['base_object_id', 'schema_version'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16126,7 +15968,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_objauth_grantor',
-  index_table_id = 101058,
+  index_table_id = 102017,
   index_columns = ['grantor_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16134,7 +15976,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_objauth_grantee',
-  index_table_id = 101059,
+  index_table_id = 102018,
   index_columns = ['grantee_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16142,7 +15984,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_dependency_ref_obj',
-  index_table_id = 101063,
+  index_table_id = 102019,
   index_columns = ['ref_obj_id', 'ref_obj_type'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16150,7 +15992,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_ddl_error_object',
-  index_table_id = 101064,
+  index_table_id = 102020,
   index_columns = ['object_id', 'target_object_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16158,7 +16000,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_table_stat_his_savtime',
-  index_table_id = 101065,
+  index_table_id = 102021,
   index_columns = ['savtime'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16166,7 +16008,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_column_stat_his_savtime',
-  index_table_id = 101066,
+  index_table_id = 102022,
   index_columns = ['savtime'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16174,7 +16016,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_histogram_stat_his_savtime',
-  index_table_id = 101067,
+  index_table_id = 102023,
   index_columns = ['savtime'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16182,15 +16024,16 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_tablet_to_table_id',
-  index_table_id = 101069,
+  index_table_id = 102024,
   index_columns = ['table_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
   keywords = all_def_keywords['__all_tablet_to_table'])
 
+
 def_sys_index_table(
   index_name = 'idx_ctx_namespace',
-  index_table_id = 101071,
+  index_table_id = 102026,
   index_columns = ['namespace'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16199,7 +16042,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_directory_name',
-  index_table_id = 101074,
+  index_table_id = 102027,
   index_columns = ['directory_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16207,7 +16050,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_job_powner',
-  index_table_id = 101075,
+  index_table_id = 102028,
   index_columns = ['powner'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16215,7 +16058,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_seq_obj_db_name',
-  index_table_id = 101076,
+  index_table_id = 102029,
   index_columns = ['database_id', 'sequence_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16223,7 +16066,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_seq_obj_name',
-  index_table_id = 101077,
+  index_table_id = 102030,
   index_columns = ['sequence_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16231,7 +16074,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_recyclebin_ori_name',
-  index_table_id = 101078,
+  index_table_id = 102031,
   index_columns = ['original_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16239,7 +16082,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_tb_priv_db_name',
-  index_table_id = 101079,
+  index_table_id = 102032,
   index_columns = ['database_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16247,7 +16090,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_tb_priv_tb_name',
-  index_table_id = 101080,
+  index_table_id = 102033,
   index_columns = ['table_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16255,7 +16098,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_db_priv_db_name',
-  index_table_id = 101081,
+  index_table_id = 102034,
   index_columns = ['database_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16265,7 +16108,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_dbms_lock_allocated_lockhandle',
-  index_table_id = 101090,
+  index_table_id = 102035,
   index_columns = ['lockhandle'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16273,7 +16116,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_dbms_lock_allocated_expiration',
-  index_table_id = 101091,
+  index_table_id = 102036,
   index_columns = ['expiration'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16282,24 +16125,29 @@ def_sys_index_table(
 # 101093: idx_kv_ttl_task_table_id (abandoned)
 # 101094: idx_kv_ttl_task_history_upd_time (abandoned)
 
-# 101095: idx_mview_refresh_run_stats_num_mvs_current (removed)
 
-# 101096: idx_mview_refresh_stats_end_time (removed)
-# 101097: idx_mview_refresh_stats_mview_end_time (removed)
 
 # 101099: idx_client_to_server_session_info_client_session_id (removed)
 
 def_sys_index_table(
   index_name = 'idx_column_privilege_name',
-  index_table_id = 101100,
+  index_table_id = 102042,
   index_columns = ['user_id', 'database_name', 'table_name', 'column_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
   keywords = all_def_keywords['__all_column_privilege'])
 
+
+
+
+
+
+
+
+
 def_sys_index_table(
   index_name = 'idx_catalog_name',
-  index_table_id = 101113,
+  index_table_id = 102052,
   index_columns = ['catalog_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16307,7 +16155,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_catalog_priv_catalog_name',
-  index_table_id = 101114,
+  index_table_id = 102053,
   index_columns = ['catalog_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16315,7 +16163,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_ccl_rule_id',
-  index_table_id = 101115,
+  index_table_id = 102054,
   index_columns = ['ccl_rule_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16323,7 +16171,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_endpoint_name',
-  index_table_id = 101116,
+  index_table_id = 102055,
   index_columns = ['endpoint_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_UNIQUE_LOCAL',
@@ -16331,7 +16179,7 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_ai_model_name',
-  index_table_id = 101117,
+  index_table_id = 102056,
   index_columns = ['ai_model_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
@@ -16339,21 +16187,21 @@ def_sys_index_table(
 
 def_sys_index_table(
   index_name = 'idx_location_name',
-  index_table_id = 101118,
+  index_table_id = 102057,
   index_columns = ['location_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
   keywords = all_def_keywords['__all_location'])
 def_sys_index_table(
   index_name = 'idx_objauth_mysql_user_id',
-  index_table_id = 101119,
+  index_table_id = 102058,
   index_columns = ['user_id'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
   keywords = all_def_keywords['__all_objauth_mysql'])
 def_sys_index_table(
   index_name = 'idx_objauth_mysql_obj_name',
-  index_table_id = 101120,
+  index_table_id = 102059,
   index_columns = ['obj_name'],
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',

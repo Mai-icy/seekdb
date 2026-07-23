@@ -1033,8 +1033,6 @@ int ObPLContext::set_default_database(ObPLFunction &routine,
                                       share::schema::ObSchemaGetterGuard &guard)
 {
   int ret = OB_SUCCESS;
-  bool is_special_ir = false;
-  
   bool need_set_db = true;
 
   // Only system packages with invoker's right do not need set db.
@@ -1042,9 +1040,7 @@ int ObPLContext::set_default_database(ObPLFunction &routine,
     need_set_db = !routine.is_invoker_right();
   }
 
-  OZ (routine.is_special_pkg_invoke_right(guard, is_special_ir));
   if (need_set_db
-      && !is_special_ir
       && routine.get_proc_type() != NESTED_FUNCTION
       && routine.get_proc_type() != NESTED_PROCEDURE
       && routine.get_proc_type() != STANDALONE_ANONYMOUS) {
@@ -3925,48 +3921,6 @@ bool ObPLFunction::should_init_as_session_cursor()
   LOG_DEBUG("check external session cursor", K(b_ret));
 
   return b_ret;
-}
-
-int ObPLFunction::is_special_pkg_invoke_right(ObSchemaGetterGuard &guard, bool &flag)
-{
-  typedef const char *(*name_pair_ptr)[2];
-  static const char *name_pair[] = { "dbms_utility", "name_resolve" };
-  static const char *name_pair1[] = { "dbms_utility", "ICD_NAME_RES" };
-  static const char *name_pair2[] = { "dbms_utility", "old_current_schema" };
-  static const char *name_pair3[] = { "dbms_utility", "exec_ddl_statement" };
-  static const char *name_pair4[] = { "dbms_describe", "describe_procedure" };
-  static name_pair_ptr name_arr[] = {
-    &name_pair,
-    &name_pair1,
-    &name_pair2,
-    &name_pair3,
-    &name_pair4
-    // { "dbms_utility", "name_resolve" }
-  };
-  int ret = OB_SUCCESS;
-  uint64_t pkg_id = get_package_id();
-  uint64_t db_id = get_database_id();
-  uint64_t func_id = get_routine_id();
-  if (OB_INVALID_ID != pkg_id
-     && !ObTriggerInfo::is_trigger_package_id(pkg_id)
-     && OB_INVALID_ID != func_id) {
-    const ObSimplePackageSchema *pkg_schema = NULL;
-    if (OB_FAIL(guard.get_simple_package_info( pkg_id, pkg_schema))) {
-      LOG_WARN("failed to get pkg schema", K(ret), K(1UL), K(pkg_id));
-    } else if (OB_ISNULL(pkg_schema)) {
-      // TODO: udt routine may through here, must not be dbms_utility, go through.
-    } else {
-      for (int i = 0; OB_SUCC(ret) && i < sizeof(name_arr) / sizeof(name_pair_ptr); ++i) {
-        name_pair_ptr np = name_arr[i];
-        if (ObCharset::case_insensitive_equal(pkg_schema->get_package_name(), ObString((*np)[0]))
-        && ObCharset::case_insensitive_equal(get_function_name(), ObString((*np)[1]))) {
-          flag = true;
-          break;
-        }
-      }
-    }
-  }
-  return ret;
 }
 
 int ObPLINS::calc_expr(uint64_t package_id, int64_t expr_idx, ObObjParam &result)
