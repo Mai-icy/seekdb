@@ -635,10 +635,6 @@ int ObTableHelper::inner_generate_table_schema_(const ObCreateTableArg &arg, ObT
     LOG_WARN("create table with table_id in 4.x is not supported",
              KR(ret), "table_id", arg.schema_.get_table_id());
     LOG_USER_ERROR(OB_NOT_SUPPORTED, "create table with id is");
-  } else if (arg.schema_.is_duplicate_table()) { // check compatibility for duplicate table
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not user tenant, create duplicate table not supported", KR(ret));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "not user tenant, create duplicate table");
   }
 
   if (FALSE_IT(new_table.set_table_id(mock_table_id))) {

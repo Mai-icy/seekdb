@@ -322,7 +322,6 @@ psmall_test=[
 'selectotherdb',
 'sfu',
 'sfu_norow_alias',
-'show_create_duplicate_table',
 'show_create_tablegroup',
 'skyline.skyline_basic_mysql',
 'skyline.skyline_complicate_mysql',

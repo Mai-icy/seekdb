@@ -173,24 +173,11 @@ int ObDDLService::create_user_tables(
   int ret = OB_SUCCESS;
   ddl_task_id = 0;
   RS_TRACE(create_user_tables_begin);
-  bool have_duplicate_table = false;
   if (OB_FAIL(check_inner_stat())) {
     LOG_WARN("not init", K(ret));
   } else if (table_schemas.count() < 1) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("table_schemas have no element", K(ret));
-  } else {
-    have_duplicate_table = table_schemas.at(0).is_duplicate_table();
-  }
-
-  if (OB_FAIL(ret)) {
-    //do nothing
-  } else if (!have_duplicate_table) {
-    // do nothing
-  } else {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("not user tenant, create duplicate table not supported", KR(ret));
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "not user tenant, create duplicate table");
   }
 
   if (OB_FAIL(ret)) {
@@ -1405,18 +1392,6 @@ int ObDDLService::set_tablegroup_id(ObTableSchema &table_schema)
     }
   }
 
-  // TODO: (2019.6.24 wendu) Cannot add replicated table to tablegroup
-  if (OB_SUCC(ret)) {
-    if (ObDuplicateScope::DUPLICATE_SCOPE_NONE != table_schema.get_duplicate_scope()
-        && OB_INVALID_ID != table_schema.get_tablegroup_id()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("changing tablegroup of duplicate table is not supported", K(ret),
-               "table_id", table_schema.get_table_id(),
-               "tablegroup_id", table_schema.get_tablegroup_id());
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "changing tablegroup of duplicate table is");
-    }
-  }
-
   if (OB_SUCC(ret)) {
     uint64_t table_id = table_schema.get_table_id();
     if (!(is_inner_table(table_id)
@@ -1912,13 +1887,6 @@ int ObDDLService::set_new_table_options(
   } else if (OB_FAIL(set_raw_table_options(
           alter_table_schema, new_table_schema, schema_guard, need_update_index_table))) {
     LOG_WARN("fail to set raw table options", K(ret), K(new_table_schema), K(orig_table_schema));
-  } else if (ObDuplicateScope::DUPLICATE_SCOPE_NONE != new_table_schema.get_duplicate_scope()
-             && OB_INVALID_ID != new_table_schema.get_tablegroup_id()) {
-    ret = OB_NOT_SUPPORTED;
-    LOG_WARN("changing duplicate_scope of table in tablegroup is not supported", K(ret),
-             "table_id", new_table_schema.get_table_id(),
-             "tablegroup_id", new_table_schema.get_tablegroup_id());
-    LOG_USER_ERROR(OB_NOT_SUPPORTED, "changing duplicate_scope of table in tablegroup is");
   } else {
     if (OB_SUCC(ret)
         && alter_table_schema.alter_option_bitset_.has_member(obcall::ObAlterTableArg::TABLEGROUP_NAME)) {
@@ -2209,13 +2177,6 @@ int ObDDLService::set_raw_table_options(
             }
             schema_guard.set_session_id(org_session_id);
           }
-          break;
-        }
-        case ObAlterTableArg::DUPLICATE_SCOPE: {
-          // alter table duplicate scope not allowed in master now
-          new_table_schema.set_duplicate_attribute(alter_table_schema.get_duplicate_scope(),
-                                                   alter_table_schema.get_duplicate_read_consistency());
-          need_update_index_table = true;
           break;
         }
         case ObAlterTableArg::ENABLE_ROW_MOVEMENT: {
@@ -15054,10 +15015,6 @@ int ObDDLService::alter_table(obcall::ObAlterTableArg &alter_table_arg,
     LOG_DEBUG("debug view comment", K(is_alter_comment), K(alter_table_schema));
     ObTZMapWrap tz_map_wrap;
     if (OB_FAIL(ret)) {
-    } else if (alter_table_arg.has_alter_duplicate_scope()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("not user tenant, alter table duplicate scope not supported", KR(ret));
-      LOG_USER_ERROR(OB_NOT_SUPPORTED, "not user tenant, alter table duplicate scope");
     } else if (OB_FAIL(OTTZ_MGR.get_tenant_tz(tz_map_wrap))) {
       LOG_WARN("get tenant timezone map failed", K(ret));
     } else if (FALSE_IT(alter_table_arg.set_tz_info_map(tz_map_wrap.get_tz_map()))) {
@@ -27502,8 +27459,8 @@ int ObDDLSQLTransaction::end(const bool commit)
 {
   int ret = OB_SUCCESS;
 
-  // Always reset index_name_checker_ before DDL commits.
-  if (commit) {
+  // always reset index_name_checker_ before non parallell ddl commits.
+  if (commit && !ObSchemaService::in_parallel_ddl_thread()) {
     if (OB_ISNULL(GCTX.root_service_)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("root_service is null", KR(ret));
@@ -27551,7 +27508,7 @@ int ObDDLSQLTransaction::end(const bool commit)
     }
   }
 
-  if (OB_SUCC(ret) && commit) {
+  if (OB_SUCC(ret) && !ObSchemaService::in_parallel_ddl_thread() && commit) {
     if (FAILEDx(register_ddl_trans())) {
       LOG_WARN("fail to register DDL transaction", KR(ret));
     }

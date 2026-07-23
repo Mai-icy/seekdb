@@ -416,8 +416,6 @@ const int64_t OB_MAX_COMMAND_LENGTH = 4096;
 const int64_t OB_MAX_SESSION_STATE_LENGTH = 128;
 const int64_t OB_MAX_SESSION_INFO_LENGTH = 128;
 const int64_t OB_MAX_TRANS_STATE_LENGTH = 32;
-const int64_t OB_MAX_DUP_TABLE_TABLET_SET_ATTR_LENGTH = 16;
-const int64_t OB_MAX_DUP_TABLE_TABLET_SET_STATE_LENGTH = 16;
 const int64_t OB_MAX_VERSION_LENGTH = 256;
 const int64_t COLUMN_CHECKSUM_LENGTH = 8 * 1024;
 const int64_t OB_MAX_SYS_PARAM_INFO_LENGTH = 1024;
@@ -1915,8 +1913,6 @@ const int64_t MAX_CONSTRAINT_NAME_LEN = 128;
 const char *const OB_LOG_ROW_VALUE_PARTIAL_LOB = "partial_lob";
 const char *const OB_LOG_ROW_VALUE_PARTIAL_JSON = "partial_json";
 const char *const OB_LOG_ROW_VALUE_PARTIAL_ALL = "partial_all";
-// default duplicate read consistency is strong
-const int64_t OB_DEFAULT_DUPLICATE_READ_CONSISTENCY = 0;
 // json partial update expr flag
 enum ObJsonPartialUpdateFlag
 {
@@ -2485,6 +2481,7 @@ OB_INLINE char* ob_get_tname_v2()
   return ret_tname;
 }
 
+static const char* PARALLEL_DDL_THREAD_NAME = "DDLPQueueTh";
 static const char* REPLAY_SERVICE_THREAD_NAME = "ReplaySrv";
 
 // There are many clusters in arbitration server, we need a field identify the different clusters.

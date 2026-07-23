@@ -1030,18 +1030,6 @@ int ObSchemaRetrieveUtils::fill_table_schema(const bool check_deleted,
         SHARE_SCHEMA_LOG(WARN, "set part expr failed", K(ret));
       }
     }
-    //duplicate attribute
-    const ObDuplicateScope duplicate_scope_default = ObDuplicateScope::DUPLICATE_SCOPE_NONE;
-    const ObDuplicateReadConsistency duplicate_read_consistency_default = ObDuplicateReadConsistency::STRONG;
-    ObDuplicateScope duplicate_scope = duplicate_scope_default;
-    ObDuplicateReadConsistency duplicate_read_consistency = duplicate_read_consistency_default;
-    EXTRACT_INT_FIELD_MYSQL_WITH_DEFAULT_VALUE(result, "duplicate_scope", duplicate_scope, ObDuplicateScope, true /* skip null error*/,
-                                                false, duplicate_scope_default);
-    EXTRACT_INT_FIELD_MYSQL_WITH_DEFAULT_VALUE(result, "duplicate_read_consistency", duplicate_read_consistency, ObDuplicateReadConsistency, true /* skip null error*/,
-                                               true, duplicate_read_consistency_default);
-    if (OB_SUCC(ret)) {
-      table_schema.set_duplicate_attribute(duplicate_scope, duplicate_read_consistency);
-    }
     bool ignore_column_error = false;
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
       result, sub_part_template_flags, table_schema, int64_t, true /* skip null error*/,
@@ -3063,18 +3051,6 @@ int ObSchemaRetrieveUtils::fill_table_schema(const bool check_deleted,
     }
     if (OB_SUCC(ret)) {
       EXTRACT_VARCHAR_FIELD_TO_CLASS_MYSQL(result, table_name, table_schema);
-      // duplicate attribute
-      const ObDuplicateScope duplicate_scope_default = ObDuplicateScope::DUPLICATE_SCOPE_NONE;
-      const ObDuplicateReadConsistency duplicate_read_consistency_default = ObDuplicateReadConsistency::STRONG;
-      ObDuplicateScope duplicate_scope = duplicate_scope_default;
-      ObDuplicateReadConsistency duplicate_read_consistency = duplicate_read_consistency_default;
-      EXTRACT_INT_FIELD_MYSQL_WITH_DEFAULT_VALUE(result, "duplicate_scope", duplicate_scope, ObDuplicateScope, true /* skip null error*/,
-                                                 false, duplicate_scope_default);
-      EXTRACT_INT_FIELD_MYSQL_WITH_DEFAULT_VALUE(result, "duplicate_read_consistency", duplicate_read_consistency, ObDuplicateReadConsistency, true /* skip null error*/,
-                                                 true, duplicate_read_consistency_default);
-      if (OB_SUCC(ret)) {
-        table_schema.set_duplicate_attribute(duplicate_scope, duplicate_read_consistency);
-      }
       ignore_column_error = false;
       EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
         result, sub_part_template_flags, table_schema, int64_t, true /* skip null error*/,

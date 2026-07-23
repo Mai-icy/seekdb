@@ -950,23 +950,6 @@ public:
   virtual bool is_user_subpartition_table() const override;
   inline bool is_partitioned_table() const { return PARTITION_LEVEL_ONE == get_part_level() || PARTITION_LEVEL_TWO == get_part_level(); }
   virtual ObPartitionLevel get_part_level() const override;
-  virtual share::ObDuplicateScope get_duplicate_scope() const override { return duplicate_scope_; }
-  inline void set_duplicate_attribute(const share::ObDuplicateScope duplicate_scope,
-                                      const share::ObDuplicateReadConsistency duplicate_read_consistency) {
-    duplicate_scope_ = duplicate_scope;
-    duplicate_read_consistency_ = duplicate_read_consistency;
-  }
-  inline void set_duplicate_read_consistency(const share::ObDuplicateReadConsistency duplicate_read_consistency) { duplicate_read_consistency_ = duplicate_read_consistency; }
-  inline share::ObDuplicateReadConsistency get_duplicate_read_consistency() const { return duplicate_read_consistency_; }
-
-  inline bool is_duplicate_table() const { 
-    return duplicate_scope_ == ObDuplicateScope::DUPLICATE_SCOPE_CLUSTER
-           && duplicate_read_consistency_ == ObDuplicateReadConsistency::STRONG; 
-  }
-  inline bool is_broadcast_table() const { 
-    return duplicate_scope_ == ObDuplicateScope::DUPLICATE_SCOPE_CLUSTER
-           && duplicate_read_consistency_ == ObDuplicateReadConsistency::WEAK; 
-  }
   // for encrypt
   virtual const common::ObString &get_encryption_str() const override { return EMPTY_STRING; }
   int get_encryption_id(int64_t &encrypt_id) const;
@@ -1025,8 +1008,6 @@ protected:
   common::ObArray<ObSimpleConstraintInfo> simple_constraint_info_array_;
   // Original index name without prefix (__idx_<table_id>_).
   common::ObString origin_index_name_;
-  share::ObDuplicateScope duplicate_scope_;
-  share::ObDuplicateReadConsistency duplicate_read_consistency_;
   int64_t truncate_version_;
 
   int64_t max_dependency_version_;

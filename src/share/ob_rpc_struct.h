@@ -1468,7 +1468,6 @@ public:
        LOCALITY,
        SESSION_ID,
        STORE_FORMAT,
-       DUPLICATE_SCOPE,
        ENABLE_ROW_MOVEMENT,
        PROGRESSIVE_MERGE_ROUND,
        STORAGE_FORMAT_VERSION,
@@ -1571,10 +1570,6 @@ public:
   bool is_valid() const;
   bool has_rename_action() const
   { return alter_table_schema_.alter_option_bitset_.has_member(TABLE_NAME); }
-  bool has_alter_duplicate_scope() const
-  {
-    return alter_table_schema_.alter_option_bitset_.has_member(DUPLICATE_SCOPE);
-  }
   bool need_progressive_merge() const {
     return alter_table_schema_.alter_option_bitset_.has_member(BLOCK_SIZE)
         || alter_table_schema_.alter_option_bitset_.has_member(COMPRESS_METHOD)
