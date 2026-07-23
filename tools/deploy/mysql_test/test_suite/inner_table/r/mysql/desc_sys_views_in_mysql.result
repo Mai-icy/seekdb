@@ -331,9 +331,6 @@ OUTLINE_ID	bigint(20)	NO		NULL
 OUTLINE_DATA	longtext	NO		NULL	
 ACS_SEL_INFO	longtext	NO		NULL	
 TABLE_SCAN	tinyint(4)	NO		NULL	
-EVOLUTION	tinyint(4)	NO		NULL	
-EVO_EXECUTIONS	bigint(20)	NO		NULL	
-EVO_CPU_TIME	bigint(20) unsigned	NO		NULL	
 TIMEOUT_COUNT	bigint(20)	NO		NULL	
 PS_STMT_ID	bigint(20)	NO		NULL	
 SESSID	bigint(20) unsigned	NO		NULL	

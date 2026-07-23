@@ -8675,14 +8675,14 @@ static const _error _error_OB_ERR_MULTIPLE_JSON_VALUES = {
       .str_error             = "More than one value was found by '%.*s' on the specified path.",
       .str_user_error        = "More than one value was found by '%.192s' on the specified path."
 };
-static const _error _error_OB_SQL_RETRY_SPM = {
-      .error_name            = "OB_SQL_RETRY_SPM",
+static const _error _error_OB_SQL_RETRY_OUTLINE = {
+      .error_name            = "OB_SQL_RETRY_OUTLINE",
       .error_cause           = "Internal Error",
       .error_solution        = "Contact OceanBase Support",
       .mysql_errno           = -1,
       .sqlstate              = "HY000",
-      .str_error             = "retry sql due to spm",
-      .str_user_error        = "retry sql due to spm"
+      .str_error             = "retry SQL with outline",
+      .str_user_error        = "retry SQL with outline"
 };
 static const _error _error_OB_OUTLINE_NOT_REPRODUCIBLE = {
       .error_name            = "OB_OUTLINE_NOT_REPRODUCIBLE",
@@ -21909,7 +21909,7 @@ struct ObStrErrorInit
     _errors[-OB_ERR_INVALID_JSON_PATH_ARRAY_CELL] = &_error_OB_ERR_INVALID_JSON_PATH_ARRAY_CELL;
     _errors[-OB_ERR_MISSING_JSON_VALUE] = &_error_OB_ERR_MISSING_JSON_VALUE;
     _errors[-OB_ERR_MULTIPLE_JSON_VALUES] = &_error_OB_ERR_MULTIPLE_JSON_VALUES;
-    _errors[-OB_SQL_RETRY_SPM] = &_error_OB_SQL_RETRY_SPM;
+    _errors[-OB_SQL_RETRY_OUTLINE] = &_error_OB_SQL_RETRY_OUTLINE;
     _errors[-OB_OUTLINE_NOT_REPRODUCIBLE] = &_error_OB_OUTLINE_NOT_REPRODUCIBLE;
     _errors[-OB_INVALID_ARGUMENT_FOR_TIMESTAMP_TO_SCN] = &_error_OB_INVALID_ARGUMENT_FOR_TIMESTAMP_TO_SCN;
     _errors[-OB_INVALID_ARGUMENT_FOR_SCN_TO_TIMESTAMP] = &_error_OB_INVALID_ARGUMENT_FOR_SCN_TO_TIMESTAMP;

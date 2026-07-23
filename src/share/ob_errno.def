@@ -1078,7 +1078,7 @@ DEFINE_ERROR_EXT_DEP(OB_ERR_BLOB_CANT_HAVE_DEFAULT, -5430, ER_BLOB_CANT_HAVE_DEF
 DEFINE_ERROR_EXT_DEP(OB_ERR_INVALID_JSON_PATH_ARRAY_CELL, -5431, ER_INVALID_JSON_PATH_ARRAY_CELL, "42000", "A path expression is not a path to a cell in an array", "A path expression is not a path to a cell in an array");
 DEFINE_ERROR_EXT_DEP(OB_ERR_MISSING_JSON_VALUE, -5432, ER_MISSING_JSON_VALUE, "22035", "No value was found by '%.*s' on the specified path.", "No value was found by '%.192s' on the specified path.");
 DEFINE_ERROR_EXT_DEP(OB_ERR_MULTIPLE_JSON_VALUES, -5433, ER_MULTIPLE_JSON_VALUES, "22034", "More than one value was found by '%.*s' on the specified path.", "More than one value was found by '%.192s' on the specified path.");
-DEFINE_ERROR(OB_SQL_RETRY_SPM, -5434, -1, "HY000", "retry sql due to spm");
+DEFINE_ERROR(OB_SQL_RETRY_OUTLINE, -5434, -1, "HY000", "retry SQL with outline");
 DEFINE_ERROR(OB_OUTLINE_NOT_REPRODUCIBLE, -5435, -1, "HY000", "outline not reproducible");
 DEFINE_ERROR_EXT_DEP(OB_INVALID_ARGUMENT_FOR_TIMESTAMP_TO_SCN, -5436, -1, "42000", "Invalid argument for timestamp_to_scn()", " TIMESTAMP_TO_SCN expected timestamp argument");
 DEFINE_ERROR_EXT_DEP(OB_INVALID_ARGUMENT_FOR_SCN_TO_TIMESTAMP, -5437, -1, "42000", "Invalid argument for scn_to_timestamp()", "SCN_TO_TIMESTAMP expected a integer number as nsec argument");

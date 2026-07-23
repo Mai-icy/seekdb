@@ -807,7 +807,7 @@ constexpr int OB_ERR_WRONG_PARAMETERS_TO_NATIVE_FCT = -5407;
 constexpr int OB_ERR_CTE_MAX_RECURSION_DEPTH = -5408;
 constexpr int OB_DUPLICATE_OBJECT_NAME_EXIST = -5409;
 constexpr int OB_ERR_REFRESH_SCHEMA_TOO_LONG = -5410;
-constexpr int OB_SQL_RETRY_SPM = -5434;
+constexpr int OB_SQL_RETRY_OUTLINE = -5434;
 constexpr int OB_OUTLINE_NOT_REPRODUCIBLE = -5435;
 constexpr int OB_EER_WINDOW_NO_CHILD_PARTITIONING = -5438;
 constexpr int OB_EER_WINDOW_NO_INHERIT_FRAME = -5439;
@@ -2863,7 +2863,7 @@ constexpr int OB_ERR_INVALID_DATE_MSG_FMT_V2 = -4219;
 #define OB_ERR_INVALID_JSON_PATH_ARRAY_CELL__USER_ERROR_MSG "A path expression is not a path to a cell in an array"
 #define OB_ERR_MISSING_JSON_VALUE__USER_ERROR_MSG "No value was found by '%.192s' on the specified path."
 #define OB_ERR_MULTIPLE_JSON_VALUES__USER_ERROR_MSG "More than one value was found by '%.192s' on the specified path."
-#define OB_SQL_RETRY_SPM__USER_ERROR_MSG "retry sql due to spm"
+#define OB_SQL_RETRY_OUTLINE__USER_ERROR_MSG "retry SQL with outline"
 #define OB_OUTLINE_NOT_REPRODUCIBLE__USER_ERROR_MSG "outline not reproducible"
 #define OB_INVALID_ARGUMENT_FOR_TIMESTAMP_TO_SCN__USER_ERROR_MSG " TIMESTAMP_TO_SCN expected timestamp argument"
 #define OB_INVALID_ARGUMENT_FOR_SCN_TO_TIMESTAMP__USER_ERROR_MSG "SCN_TO_TIMESTAMP expected a integer number as nsec argument"
