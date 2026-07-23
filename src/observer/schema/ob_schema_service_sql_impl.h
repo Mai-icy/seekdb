@@ -140,6 +140,12 @@ public:
   int get_core_table_schemas(common::ObISQLClient &sql_client,
                              const ObRefreshSchemaStatus &schema_status,
                              common::ObArray<ObTableSchema> &core_schemas);
+  int get_core_table_schema(const ObRefreshSchemaStatus &schema_status,
+                            const uint64_t table_id,
+                            const int64_t schema_version,
+                            common::ObISQLClient &sql_client,
+                            common::ObIAllocator &allocator,
+                            ObTableSchema *&table_schema);
 
   int get_sys_table_schemas(common::ObISQLClient &sql_client,
                             const ObRefreshSchemaStatus &schema_status,
@@ -459,6 +465,9 @@ public:
   virtual int get_core_and_sys_version(common::ObISQLClient &sql_client,
                                int64_t &core_schema_version,
                                int64_t &sys_schema_version);
+  virtual int get_normal_schema_version(common::ObISQLClient &sql_client,
+                                        const ObRefreshSchemaStatus &schema_status,
+                                        int64_t &normal_schema_version);
   virtual int get_baseline_schema_version(
               common::ObISQLClient &sql_client,
               const ObRefreshSchemaStatus &schema_status,
@@ -666,6 +675,10 @@ public:
   /*----------- interfaces for latest schema end -------------*/
 
 private:
+  int get_core_table_schemas_at_version(common::ObISQLClient &sql_client,
+                                        const ObRefreshSchemaStatus &schema_status,
+                                        const int64_t schema_version,
+                                        common::ObArray<ObTableSchema> &core_schemas);
   bool check_inner_stat();
   int fetch_new_normal_rowid_table_tablet_ids_(const uint64_t size,
       uint64_t &min_tablet_id);
@@ -679,9 +692,11 @@ private:
 
   int get_core_table_priorities(common::ObISQLClient &sql_client,
                                 const ObRefreshSchemaStatus &schema_status,
+                                const int64_t schema_version,
                                 common::ObArray<ObTableSchema> &core_schemas);
   int get_core_table_columns(common::ObISQLClient &sql_client,
                              const ObRefreshSchemaStatus &schema_status,
+                             const int64_t schema_version,
                              common::ObArray<ObTableSchema> &core_schemas);
 
   // get schemas of sys tables and user tables, read from schema related core tables
