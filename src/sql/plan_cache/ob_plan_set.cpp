@@ -1390,11 +1390,7 @@ int ObSqlPlanSet::select_plan(ObPlanCacheCtx &pc_ctx, ObPlanCacheObject *&cache_
 //
 //  if (OB_SUCC(ret) && true == is_all_non_partition) { //get local plan directly
 //    ObPartitionKey partition_key = partition_key_;
-//    // directly get plan when spm is off
-//   if (is_spm_acs_closed_ && OB_NOT_NULL(direct_local_plan_)) {
-//      plan = direct_local_plan_;
-//      plan->inc_ref_count(pc_ctx.handle_id_);
-//    } else if (OB_FAIL(gen_partition_key(table_parts, partition_key))) {
+//    if (OB_FAIL(gen_partition_key(table_parts, partition_key))) {
 //      LOG_WARN("fail to gen partition key", K(ret));
 //    } else if (OB_FAIL(local_plans_.get_plan(pc_ctx, partition_key, plan))) {
 //      SQL_PC_LOG(DEBUG, "get local plan failed", K(ret));

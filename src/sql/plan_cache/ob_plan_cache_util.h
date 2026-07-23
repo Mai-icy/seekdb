@@ -249,12 +249,6 @@ enum ParamProperty
   TRANS_NEG_PARAM,
 };
 
-enum AsynUpdateBaselineStat {
-  ASYN_NOTHING = 0,
-  ASYN_REPLACE,
-  ASYN_INSERT
-};
-
 struct ObPCParam
 {
   ParseNode *node_;
@@ -587,13 +581,11 @@ struct ObPlanStat
   common::ObString config_str_;
   common::ObString raw_sql_; // record the original sql when generating plan
   common::ObCollationType sql_cs_type_;
-  //******** for spm ******
-  // Is this plan currently evolving
+  // SQL identity retained with the cached plan for diagnostics and outline matching.
   uint64_t  db_id_;
   common::ObString constructed_sql_;
   common::ObString sql_id_;
   common::ObString format_sql_id_;
-  //******** for spm end ******
   // ***** for acs
   bool is_bind_sensitive_;
   bool is_bind_aware_;

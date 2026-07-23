@@ -87,8 +87,6 @@ static const NonReservedKeyword Mysql_none_reserved_keywords[] =
   {"backup", BACKUP},
   {"balance", BALANCE},
   {"base", BASE},
-  {"baseline", BASELINE},
-  {"baseline_id", BASELINE_ID},
   {"basic", BASIC},
   {"before", BEFORE},
   {"begin", BEGI},

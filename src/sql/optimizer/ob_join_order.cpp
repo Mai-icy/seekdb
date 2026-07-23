@@ -14201,7 +14201,6 @@ int ObJoinOrder::get_valid_path_info_from_hint(const ObRelIds &table_set,
       // Additionally, there is only one distributed method path that can be utilized to generate a valid plan
       // when allocating recursive UNION ALL. Therefore, for joins including a fake CTE,
       // we can directly ignore the distributed method hint to avoid the inability to generate a valid plan.
-      // For SPM evolution, we will throw an error when a valid plan cannot be generated using the hint.
     } else if (NULL != log_join_hint && !log_join_hint->dist_method_hints_.empty()) {
       path_info.distributed_methods_ = log_join_hint->dist_methods_;
     } else if (log_hint.is_outline_data_) {

@@ -442,23 +442,14 @@ private:
   int64_t mocked_schema_id_counter_;
 };
 
-struct ObBaselineKey
+struct ObSqlPlanKey
 {
-  ObBaselineKey()
+  ObSqlPlanKey()
   : db_id_(common::OB_INVALID_ID),
     constructed_sql_(),
     sql_id_(),
     format_sql_id_(),
     format_sql_() {}
-  ObBaselineKey(uint64_t db_id, const ObString &constructed_sql,
-                const ObString &sql_id, const ObString &format_sql_id,
-                const ObString &format_sql)
-  : db_id_(db_id),
-    constructed_sql_(constructed_sql),
-    sql_id_(sql_id),
-    format_sql_id_(format_sql_id),
-    format_sql_(format_sql) {}
-
   inline void reset()
   {
     db_id_ = common::OB_INVALID_ID;
@@ -603,7 +594,7 @@ public:
   bool is_sensitive_;    // whether it contains sensitive information, if so, do not record in sql_audit
   common::ObFixedArray<int64_t, common::ObIAllocator> multi_stmt_rowkey_pos_;
   ObRawExpr *snapshot_query_expr_;
-  ObBaselineKey bl_key_;
+  ObSqlPlanKey plan_key_;
   bool is_execute_call_stmt_;
   bool is_text_ps_mode_;
   uint64_t first_plan_hash_;

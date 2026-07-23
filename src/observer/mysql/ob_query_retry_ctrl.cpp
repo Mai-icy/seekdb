@@ -1058,7 +1058,7 @@ int ObQueryRetryCtrl::init()
   // wait and retry, will see new part
   ERR_RETRY_FUNC("SQL",      OB_NO_PARTITION_FOR_INTERVAL_PART,  short_wait_retry_proc,             short_wait_retry_proc,                         nullptr);
   ERR_RETRY_FUNC("SQL",      OB_BATCHED_MULTI_STMT_ROLLBACK,     batch_execute_opt_retry_proc,      batch_execute_opt_retry_proc,                  nullptr);
-  ERR_RETRY_FUNC("SQL",      OB_SQL_RETRY_SPM,                   force_local_retry_proc,            force_local_retry_proc,                        nullptr);
+  ERR_RETRY_FUNC("SQL",      OB_SQL_RETRY_OUTLINE,               force_local_retry_proc,            force_local_retry_proc,                        nullptr);
 
   /* timeout */
   ERR_RETRY_FUNC("SQL",      OB_TIMEOUT,                         timeout_proc,                timeout_proc,                                        nullptr);

@@ -385,7 +385,7 @@ int ObMPQuery::process_single_stmt(const ObMultiStmtItem &multi_stmt_item,
   sql::ObTraceSpanGuard query_span(&session, sql::TRACE_COM_QUERY_PROCESS);
   sql::ObTraceSpanGuard stmt_span(&session, sql::TRACE_MPQUERY_SINGLE_STMT);
   ObReqTimeGuard req_timeinfo_guard;
-  ctx_.bl_key_.reset();
+  ctx_.plan_key_.reset();
   bool need_response_error = true;
   session.get_raw_audit_record().request_memory_used_ = 0;
   observer::ObProcessMallocCallback pmcb(0,
@@ -499,7 +499,7 @@ int ObMPQuery::process_single_stmt(const ObMultiStmtItem &multi_stmt_item,
         !ctx_.multi_stmt_item_.is_batched_multi_stmt()) {
     send_error_packet(ret, NULL);
   }
-  ctx_.bl_key_.reset();
+  ctx_.plan_key_.reset();
   ctx_.reset();
   return ret;
 }
@@ -1099,7 +1099,7 @@ OB_INLINE int ObMPQuery::do_process(ObSQLSessionInfo &session,
                                  enable_adaptive_pc ? &adpt_pc_conf : nullptr);
           plan->update_cache_access_stat(audit_record.table_scan_stat_);
         } else if (ctx_.self_add_plan_ && ctx_.plan_cache_hit_) {
-          // spm evolution plan first execute
+          // First execution of a plan generated during this request.
           plan->update_plan_stat(audit_record,
                                  true,
                                  table_row_count_list,

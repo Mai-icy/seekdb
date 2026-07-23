@@ -51,7 +51,6 @@ class ObTablePartitionInfo;
 class ObPhyOperatorMonnitorInfo;
 struct ObAuditRecordData;
 class ObOpSpec;
-class ObEvolutionPlan;
 class ObSqlSchemaGuard;
 
 //class ObPhysicalPlan: public common::ObDLinkBase<ObPhysicalPlan>
@@ -349,11 +348,6 @@ public:
     is_late_materialized_ = is_late_mat;
   }
 
-  inline void set_is_dep_base_table(bool v) { is_dep_base_table_ = v; }
-  inline bool is_dep_base_table() const { return is_dep_base_table_; }
-
-  inline void set_is_insert_select(bool v) { is_insert_select_ = v; }
-  inline bool is_insert_select() const { return is_insert_select_; }
   inline void set_is_plain_insert(bool v) { is_plain_insert_ = v; }
   inline bool is_plain_insert() const { return is_plain_insert_; }
   inline void set_is_inner_sql(bool v) { is_inner_sql_ = v; }
@@ -555,14 +549,8 @@ private:
   bool is_returning_; // whether returning is set
   // Mark whether the plan is a late materialization plan
   bool is_late_materialized_;
-  // **** for spm ****
-  // Determine whether this plan depends on base table
-  bool is_dep_base_table_;
-  //judgethisplancorrespondingsqlwhether it isinsert into ... select ...
-  bool is_insert_select_;
-  // insert into values(x),(x)...(x)
+  // Whether this is INSERT INTO ... VALUES (...).
   bool is_plain_insert_;
-  // **** for spm end ***
   // column field array has parameterized column
   // If there are parameterized columns, ob_result_set must deep copy column_fields_ each time, and construct the column using a template
   bool contain_paramed_column_field_;

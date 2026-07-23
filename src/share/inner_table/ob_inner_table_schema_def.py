@@ -1698,9 +1698,6 @@ def_table_schema(
   ]
   )
 
-# 216: __all_tenant_plan_baseline # abandoned in 4.0
-# 217: __all_tenant_plan_baseline_history
-
 # 218: __all_ddl_helper # abandoned in 4.0
 
 # 219: __all_freeze_schema_version (abandoned)
@@ -2517,9 +2514,6 @@ def_table_schema(
   )
 
 # 395: __all_disk_io_calibration (abandoned)
-# 396:__all_plan_baseline abandoned
-# 397:__all_plan_baseline_item abandoned
-# 398:__all_spm_config abandoned
 # 399: abandoned
 # 400:__all_backup_parameter abandoned
 # 401: legacy ls restore progress table (abandoned)
@@ -2777,7 +2771,6 @@ def_table_schema(**gen_history_table_def(1108, all_column_privilege_def))
 # 517: __all_storage_io_usage (abandoned)
 
 
-# 520 : __all_spm_evo_result abandoned
 
 def_table_schema(
   owner = 'yangyifei.yyf',
@@ -3522,8 +3515,6 @@ def_table_schema(
     ('cli_query', 'int'),
     ('outline_exec', 'int'),
     ('plan_explain', 'int'),
-    ('asyn_baseline', 'int'),
-    ('load_baseline', 'int'),
     ('ps_exec', 'int'),
     ('gv_sql', 'int'),
     ('pl_anon', 'int'),
@@ -3599,9 +3590,6 @@ def_table_schema(
       ('acs_sel_info', 'longtext', 'false'),
       ('table_scan', 'bool'),
       ('db_id', 'uint'),
-      ('evolution', 'bool'),
-      ('evo_executions', 'int'),
-      ('evo_cpu_time', 'uint'),
       ('timeout_count', 'int'),
       ('ps_stmt_id', 'int'),
       ('delayed_px_querys', 'int'),
@@ -5243,9 +5231,6 @@ def_table_schema(
 
 # 12116: __all_virtual_tenant_gc_partition_info # abandoned in 4.0
 
-# 12117: __all_virtual_tenant_plan_baseline # abandoned in 4.0
-# 12118: __all_virtual_tenant_plan_baseline_history # abandoned in 4.0
-
 # 12119: __all_virtual_sequence_object # removed (single-tenant: iterate VT mechanism deleted)
 
 # 12120: __all_virtual_sequence_object_history # removed (single-tenant: iterate VT mechanism deleted)
@@ -6229,10 +6214,6 @@ def_table_schema(
 # 12298: __all_virtual_backup_job_history (abandoned)
 
 
-# 12299: __all_virtual_plan_baseline abandoned
-# 12300: __all_virtual_plan_baseline_item abandoned
-# 12301: __all_virtual_spm_config abandoned
-
 # 12302: __all_virtual_ash # removed
 
 def_table_schema(
@@ -7204,7 +7185,6 @@ def_table_schema(
 # 12493: __all_virtual_kv_group_commit_status abandoned
 
 # 12494: __all_virtual_session_sys_variable
-# 12495: __all_virtual_spm_evo_result abandoned
 
 def_table_schema(
   owner = 'huhaosheng.hhs',
@@ -8618,7 +8598,7 @@ def_table_schema(
     SLOW_COUNT,HIT_COUNT,PLAN_SIZE,EXECUTIONS,DISK_READS,DIRECT_WRITES,BUFFER_GETS,APPLICATION_WAIT_TIME,
     CONCURRENCY_WAIT_TIME,USER_IO_WAIT_TIME,ROWS_PROCESSED,ELAPSED_TIME,CPU_TIME,
     DELAYED_PX_QUERYS,OUTLINE_VERSION,OUTLINE_ID,OUTLINE_DATA,ACS_SEL_INFO,
-    TABLE_SCAN,EVOLUTION, EVO_EXECUTIONS, EVO_CPU_TIME, TIMEOUT_COUNT, PS_STMT_ID, SESSID,
+    TABLE_SCAN, TIMEOUT_COUNT, PS_STMT_ID, SESSID,
     TEMP_TABLES, OBJECT_TYPE,HINTS_INFO,HINTS_ALL_WORKED, PL_SCHEMA_ID,
     IS_BATCHED_MULTI_STMT, RULE_NAME,
     (CASE PLAN_STATUS WHEN 0 THEN 'ACTIVE' ELSE 'INACTIVE' END) AS PLAN_STATUS,
@@ -11852,9 +11832,6 @@ def_table_schema(
 # 21262: DBA_OB_BACKUP_TASKS # abandoned
 # 21263: DBA_OB_BACKUP_TASK_HISTORY # abandoned
 # 21264: DBA_OB_BACKUP_SET_FILES (abandoned)
-
-# 21265: DBA_SQL_PLAN_BASELINES abandoned
-# 21266: DBA_SQL_MANAGEMENT_CONFIG abandoned
 
 # 21267: GV$ACTIVE_SESSION_HISTORY # removed
 
@@ -15510,8 +15487,6 @@ def_table_schema(
 
 # 21615: CDB_WR_RES_MGR_SYSSTAT # removed
 
-# 21616: DBA_OB_SPM_EVO_RESULT abandoned
-# 21617: CDB_OB_SPM_EVO_RESULT abandoned
 
 # 21618: DBA_OB_KV_REDIS_TABLE abandoned
 
@@ -16312,8 +16287,6 @@ def_sys_index_table(
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
   keywords = all_def_keywords['__all_context'])
 
-# 101072: idx_spm_item_sql_id abandoned
-# 101073: idx_spm_item_value abandoned
 
 def_sys_index_table(
   index_name = 'idx_directory_name',

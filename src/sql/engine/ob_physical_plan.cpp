@@ -83,8 +83,6 @@ ObPhysicalPlan::ObPhysicalPlan(MemoryContext &mem_context /* = CURRENT_CONTEXT *
     var_init_exprs_(allocator_),
     is_returning_(false),
     is_late_materialized_(false),
-    is_dep_base_table_(false),
-    is_insert_select_(false),
     is_plain_insert_(false),
     contain_paramed_column_field_(false),
     first_array_index_(OB_INVALID_INDEX),
@@ -177,8 +175,6 @@ void ObPhysicalPlan::reset()
   ObPlanCacheObject::reset();
   is_returning_ = false;
   is_late_materialized_ = false;
-  is_dep_base_table_ = false;
-  is_insert_select_ = false;
   is_plain_insert_ = false;
   base_constraints_.reset();
   strict_constrinats_.reset();
@@ -511,7 +507,7 @@ void ObPhysicalPlan::update_plan_expired_info(const ObAuditRecordData &record,
       fill_row_count_info(true, stat_.access_table_num_, stat_.table_row_count_first_exec_, *table_row_count_list);
     }
   } else if (!info_inited) {
-    /* finish evolution, init use sampling infos */
+    /* Initialize the plan-expiration reference statistics from concurrent samples. */
     int64_t first_exec_row_count = 0;
     do {
       first_exec_row_count = ATOMIC_LOAD(&(stat_.first_exec_row_count_));
@@ -532,10 +528,10 @@ void ObPhysicalPlan::update_plan_expired_info(const ObAuditRecordData &record,
           if (stat_.table_row_count_first_exec_[i].row_count_ >= 0) {
             stat_.table_row_count_first_exec_[i].row_count_ /= sample_count;
           }
-          LOG_DEBUG("init first row stat for spm plan", K(i), K(stat_.table_row_count_first_exec_[i]));
+          LOG_DEBUG("init first row stat for plan expiration", K(i), K(stat_.table_row_count_first_exec_[i]));
         }
       }
-      LOG_DEBUG("init first exec info for spm plan", K(sample_count), K(stat_.first_exec_row_count_), K(stat_.first_exec_usec_));
+      LOG_DEBUG("init first exec info for plan expiration", K(sample_count), K(stat_.first_exec_row_count_), K(stat_.first_exec_usec_));
     }
   } else if (stat_.table_row_count_first_exec_ != NULL && table_row_count_list != NULL
              && record.get_elapsed_time() > SLOW_QUERY_TIME_FOR_PLAN_EXPIRE
@@ -1153,7 +1149,7 @@ int ObPhysicalPlan::update_cache_obj_stat(ObILibCacheCtx &ctx)
       }
       stat_.ps_stmt_id_ = pc_ctx.sql_ctx_.statement_id_;
     } else {
-      ObTruncatedString trunc_stmt(pc_ctx.sql_ctx_.bl_key_.constructed_sql_, sql_length);
+      ObTruncatedString trunc_stmt(pc_ctx.sql_ctx_.plan_key_.constructed_sql_, sql_length);
       if (OB_FAIL(ob_write_string(get_allocator(),
                                   trunc_stmt.string(),
                                   stat_.stmt_))) {

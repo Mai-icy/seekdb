@@ -230,7 +230,7 @@ void ObSqlCtx::clear()
   strict_constraints_.reset();
   non_strict_constraints_.reset();
   multi_stmt_rowkey_pos_.reset();
-  bl_key_.reset();
+  plan_key_.reset();
   cur_stmt_ = nullptr;
   is_text_ps_mode_ = false;
   ins_opt_ctx_.clear();
