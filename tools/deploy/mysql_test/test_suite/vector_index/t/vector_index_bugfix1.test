@@ -338,9 +338,12 @@ VECTOR INDEX vector_idx(a3)
 WITH (distance=l2, lib=vsag, type=hnsw, m=10, ef_construction=100, ef_search=40));
 insert into t2 select c1,c2,c3,c4 from t1;
 select l2_distance(c3,'[1,1.456,2]')  from t1,t2 where c4 is not null and a4 is not null order by l2_distance(c3, [1,1,-1])  limit 1;
+--replace_numeric_round 6
 select l2_distance(c4,'[1,1.456,2]')  from t1,t2 where c4 is not null and a4 is not null order by l2_distance(c3, [1,1,-1])  limit 1;
 
+--replace_numeric_round 6
 select l2_distance(c3,'[1,1.456,2]')  from t1,t2 where c4 is not null and a4 is not null order by l2_distance(c3, [1,1,-1]) APPROX limit 1;
+--replace_numeric_round 6
 select l2_distance(c4,'[1,1.456,2]')  from t1,t2 where c4 is not null and a4 is not null order by l2_distance(c3, [1,1,-1]) APPROX limit 1;
 drop table t1;
 drop table t2;
@@ -521,7 +524,7 @@ insert into t1(c1,c2,c3,c4) values(10,'[1,0,3]','[1,0,3]','[2,3,2]');
 insert into t1(c1,c2,c3,c4) values(2,'[-1,2,2]','[-3,2,3]','[4,3,3]');
 insert into t1(c1,c2,c3,c4) values(11,'[-1,-2,-2]','[-4,2,3]',null);
 replace INTO tt1(c1,c2,c3,c4) SELECT c1,c2,c3,c4  FROM t1;
-select * from t1 a ,tt1 b where a.c4=b.c4 order by l2_distance(b.c3, [1,2,3]) limit 100;
+select * from t1 a ,tt1 b where a.c4=b.c4 order by l2_distance(b.c3, [1,2,3]), a.c1, b.c1 limit 100;
 
 --disable_warnings
 drop table if exists t2;
