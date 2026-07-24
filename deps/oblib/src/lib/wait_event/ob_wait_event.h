@@ -36,8 +36,6 @@ WAIT_EVENT_DEF(DB_FILE_COMPACT_READ, 11001, "db file compact read", "schedule_qu
 WAIT_EVENT_DEF(DB_FILE_COMPACT_WRITE, 11002, "db file compact write", "schedule_queue_delay", "device_delay", "callback_delay", SYSTEM_IO, false, true)
 WAIT_EVENT_DEF(DB_FILE_INDEX_BUILD_READ, 11003, "db file index build read", "schedule_queue_delay", "device_delay", "callback_delay", SYSTEM_IO, false, true)
 WAIT_EVENT_DEF(DB_FILE_INDEX_BUILD_WRITE, 11004, "db file index build write", "schedule_queue_delay", "device_delay", "callback_delay", SYSTEM_IO, false, true)
-WAIT_EVENT_DEF(DB_FILE_MIGRATE_READ, 11005, "db file migrate read", "schedule_queue_delay", "device_delay", "callback_delay", SYSTEM_IO, false, true)
-WAIT_EVENT_DEF(DB_FILE_MIGRATE_WRITE, 11006, "db file migrate write", "schedule_queue_delay", "device_delay", "callback_delay", SYSTEM_IO, false, true)
 WAIT_EVENT_DEF(BLOOM_FILTER_BUILD_READ, 11007, "bloomfilter build read", "schedule_queue_delay", "device_delay", "callback_delay", SYSTEM_IO, false, true)
 WAIT_EVENT_DEF(INTERM_RESULT_DISK_WRITE, 11008, "interm result disk write", "schedule_queue_delay", "device_delay", "callback_delay", USER_IO, false, true)
 WAIT_EVENT_DEF(INTERM_RESULT_DISK_READ, 11009, "interm result disk read", "schedule_queue_delay", "device_delay", "callback_delay", USER_IO, false, true)
@@ -93,7 +91,6 @@ WAIT_EVENT_DEF(BUILD_INDEX_SCHEDULER_COND_WAIT, 15126, "build index scheduler co
 WAIT_EVENT_DEF(DAG_WORKER_COND_WAIT, 15132, "dag worker condition wait", "address", "", "", CONCURRENCY, false, true)
 WAIT_EVENT_DEF(IO_CALLBACK_QUEUE_LOCK_WAIT, 15134, "io callback queue condition wait", "address", "", "", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(IO_CHANNEL_COND_WAIT, 15135, "io channel condition wait", "address", "", "", CONCURRENCY, true, true)
-// 15155 - 15158 and 15248 - 15250 were used by removed backup/archive services. Do not reuse.
 WAIT_EVENT_DEF(SQL_WF_PARTICIPATOR_COND_WAIT, 15256, "window function participator cond wait", "address", "", "", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(HA_SERVICE_COND_WAIT, 15159, "ha service condition wait", "address", "", "", CONCURRENCY, false, true)
 WAIT_EVENT_DEF(PX_LOOP_COND_WAIT, 15160, "px loop condition wait", "address", "", "", NETWORK, true, true)
@@ -102,9 +99,6 @@ WAIT_EVENT_DEF(RESOURCE_SERVICE_LOCK_WAIT, 15263, "latch: resource_service lock 
 WAIT_EVENT_DEF(DIRECT_LOAD_RESCAN_LOCK_WAIT, 15265, "latch: direct load rescan lock wait", "address", "number", "tries", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(TENANT_SNAPSHOT_SERVICE_COND_WAIT, 15267, "tenant snapshot service condition wait", "address", "", "", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(ASYNC_COMMITTING_WAIT, 16018, "tx commiting wait", "", "", "", COMMIT, false, true)
-// 18000 was used by the removed external OBCDC connector. Do not reuse.
-WAIT_EVENT_DEF(BACKUP_TMP_FILE_WAIT, 18001, "backup tmp file wait", "", "", "", CONCURRENCY, true, true)
-WAIT_EVENT_DEF(BACKUP_TMP_FILE_QUEUE_WAIT, 18002, "backup tmp file queue wait", "", "", "", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(SYNC_GET_GTS_WAIT, 18101, "sync get gts timestamp wait", "address", "", "", NETWORK, true, true)
 WAIT_EVENT_DEF(LOCK_FOR_READ_WAIT, 18102, "sleep: lock for read need wait for concurrency control", "sleep_interval", "", "", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(DEADLOCK_MGR_BUCKET_LOCK, 18103, "latch: deadlock manager bucket access wait", "spin count", "", "", CONCURRENCY, true, true)
@@ -113,7 +107,6 @@ WAIT_EVENT_DEF(LS_REPLAY_CTRL_LOCK, 18105, "latch: logstream replay control wait
 WAIT_EVENT_DEF(INDEPENDENT_DAG_COND_WAIT, 18106, "independent dag condition wait", "address", "", "", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(TMP_FILE_FLUSH_COND_WAIT, 18107, "tmp file flush condition wait", "address", "", "", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(MACRO_BLOOM_FILTER_COND_WAIT, 18108, "macro block bloom filter condition wait", "address", "", "", CONCURRENCY, true, true)
-// 18109 was used by removed backup service waits. Do not reuse.
 WAIT_EVENT_DEF(TMP_FILE_COND_WAIT, 18110, "tmp file condition wait", "address", "", "", CONCURRENCY, true, true)
 
 //sleep
@@ -123,12 +116,8 @@ WAIT_EVENT_DEF(DTL_DESTROY_CHANNEL_SLEEP, 20002, "sleep: dtl destroy channel sle
 WAIT_EVENT_DEF(STORAGE_WRITING_THROTTLE_SLEEP, 20003, "sleep: storage writing throttle sleep", "sleep_interval", "", "", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(STORAGE_AUTOINC_FETCH_RETRY_SLEEP, 20004, "sleep: tablet autoinc fetch new range retry wait", "sleep_interval", "", "", CONCURRENCY, true, true)
 WAIT_EVENT_DEF(STORAGE_AUTOINC_FETCH_CONFLICT_SLEEP, 20005, "sleep: tablet autoinc fetch new range conflict wait", "sleep_interval", "", "", CONCURRENCY, true, true)
-WAIT_EVENT_DEF(STORAGE_HA_FINISH_TRANSFER, 20006, "sleep: finish transfer sleep wait", "sleep_interval", "", "", CONCURRENCY, true, true)
-
 // logsergice
-// 20007 was used by the removed log external storage I/O task. Do not reuse.
 WAIT_EVENT_DEF(DH_LOCAL_SYNC_COND_WAIT, 20010, "datahub local sync conditional wait", "address", "", "", CONCURRENCY, true, true)
-WAIT_EVENT_DEF(TRANSFER_HANDLER_COND_WAIT, 20011, "transfer handler condition wait", "address", "", "", CONCURRENCY, true, true)
 
 //sleep part-2
 //For rate limiting periodic tasks.

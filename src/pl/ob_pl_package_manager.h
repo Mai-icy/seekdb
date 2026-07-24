@@ -201,11 +201,6 @@ private:
                              ObPLPackageState *&package_state,
                              const ObPLPackage *package_for_verify);
 
-  int update_special_package_status(const ObPLResolveCtx &resolve_ctx,
-                                    uint64_t package_id,
-                                    const ObPLVar &var,
-                                    const ObObj &old_val,
-                                    const ObObj &new_val);
 };
 } //end namespace pl
 } //end namespace oceanbase

@@ -17,7 +17,6 @@
 #define OCEANBASE_PL_ROUTINE_STORAGE_H_
 
 #include "share/ob_define.h"
-#include "common/mysqlclient/ob_isql_client.h"
 #include "ob_pl_stmt.h"
 #include "pl/ob_pl_allocator.h"
 #include "sql/resolver/expr/ob_raw_expr_util.h"
@@ -28,7 +27,6 @@ namespace oceanbase
 namespace common
 {
 class ObIAllocator;
-class ObISQLClient;
 class ObMySQLTransaction;
 }
 
@@ -53,9 +51,6 @@ public:
                             bool& exist,
                             ObSQLSessionInfo &session_info);                  
 
-  static int delete_dll_from_disk(common::ObISQLClient &trans,
-                                  uint64_t key_id,
-                                  uint64_t database_id);
 };
 
 }

@@ -2854,8 +2854,7 @@ int ObDMLResolver::resolve_basic_table_without_cte(const ParseNode &parse_tree, 
         } else { }
       }
       if (OB_SUCCESS == ret && sample_node != NULL && T_SAMPLE_SCAN == sample_node->type_) {
-        if (is_virtual_table(table_item->ref_id_) &&
-            !is_real_table_mapping_virtual_table(table_item->ref_id_)) {
+        if (is_virtual_table(table_item->ref_id_)) {
           ret = OB_NOT_SUPPORTED;
           LOG_USER_ERROR(OB_NOT_SUPPORTED, "sampling virtual table");
         } else if (OB_FAIL(resolve_sample_clause(sample_node, *table_item))) {

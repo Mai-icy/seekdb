@@ -35,7 +35,6 @@ ObAllVirtualServer::ObAllVirtualServer()
       config_(nullptr)
 {
   ip_buf_[0] = '\0';
-  log_restore_source_buf_[0] = '\0';
   role_buf_[0] = '\0';
   switchover_status_buf_[0] = '\0';
 }
@@ -44,7 +43,6 @@ ObAllVirtualServer::~ObAllVirtualServer()
 {
   addr_.reset();
   ip_buf_[0] = '\0';
-  log_restore_source_buf_[0] = '\0';
   role_buf_[0] = '\0';
   switchover_status_buf_[0] = '\0';
   config_ = nullptr;
@@ -119,14 +117,6 @@ int ObAllVirtualServer::inner_get_next_row(ObNewRow *&row)
       } else {
         snprintf(switchover_status_buf_, sizeof(switchover_status_buf_), "UNKNOWN");
       }
-    }
-
-    // Get log_restore_source from config parameter
-    log_restore_source_buf_[0] = '\0';
-    const ObString config_value = GCONF.log_restore_source.str();
-    if (!config_value.empty()) {
-      snprintf(log_restore_source_buf_, sizeof(log_restore_source_buf_), "%.*s",
-               static_cast<int>(config_value.length()), config_value.ptr());
     }
 
     // Get sync_scn and readable_scn from LS in real-time
@@ -236,10 +226,6 @@ int ObAllVirtualServer::inner_get_next_row(ObNewRow *&row)
           break;
         case SWITCHOVER_STATUS:
           cur_row_.cells_[i].set_varchar(switchover_status_buf_);
-          cur_row_.cells_[i].set_collation_type(ObCharset::get_default_collation(ObCharset::get_default_charset()));
-          break;
-        case LOG_RESTORE_SOURCE:
-          cur_row_.cells_[i].set_varchar(log_restore_source_buf_);
           cur_row_.cells_[i].set_collation_type(ObCharset::get_default_collation(ObCharset::get_default_charset()));
           break;
         case SYNC_SCN:

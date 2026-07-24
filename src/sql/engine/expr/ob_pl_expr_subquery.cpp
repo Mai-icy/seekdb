@@ -17,6 +17,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 
 #include "ob_pl_expr_subquery.h"
+#include "observer/mysql/ob_query_retry_ctrl.h"
 #include "pl/ob_pl_resolver.h"
 #include "sql/resolver/expr/ob_raw_expr_util.h"
 #include "sql/engine/expr/ob_expr_lob_utils.h"

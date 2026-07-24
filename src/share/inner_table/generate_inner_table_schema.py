@@ -104,7 +104,6 @@ all_iterate_virtual_tables = []
 all_iterate_private_virtual_tables = []
 all_sqlite_tables = []
 all_sqlite_virtual_tables = []
-real_table_virtual_table_names = []
 cluster_private_tables = []
 core_related_tables = []
 all_only_sys_table_name = {}
@@ -2307,65 +2306,6 @@ def def_sys_index_table(index_name, index_table_id, index_columns, index_using_t
   cpp_f = cpp_f_tmp
   cpp_f.write(index_def)
 
-def def_agent_index_table(index_name, index_table_id, index_columns, index_using_type, index_type,
-  real_table_name, real_index_name, keywords):
-  global cpp_f
-  global cpp_f_tmp
-  global StringIO
-  global sys_index_tables
-  kw = copy_keywords(keywords)
-
-  index_kw = copy_keywords(all_def_keywords[real_table_name + '_' + real_index_name])
-  if 'index' in kw:
-    raise Exception("should not have index", kw['table_name'])
-  if not kw['real_vt']:
-    raise Exception("only support extended mapping table", kw['table_name'])
-  if not index_name.endswith('_real_agent'):
-    raise Exception("wrong index name", index_name)
-  if not index_name.startswith(real_index_name):
-    raise Exception("wrong index name", index_name, real_index_name)
-  if not is_extended_virtual_table(index_table_id):
-    raise Exception("index table id is invalid", index_table_id)
-  if not kw['base_def_keywords']['table_name'] == real_table_name:
-    raise Exception("table name mismatch", kw['base_def_keywords']['table_name'], real_table_name)
-  if not index_kw['index_name'] == real_index_name:
-    raise Exception("index name mismatch", index_kw['index_name'], real_index_name)
-  if not index_kw['index_columns'] == index_columns:
-    raise Exception("index column mismatch", index_kw['index_columns'], index_columns)
-  
-
-  index_def = ''
-  cpp_f_tmp = cpp_f
-  cpp_f = io.StringIO()
-  kw['index_name'] = index_name
-  kw['index_columns'] = index_columns
-  kw['index_table_id'] = index_table_id
-  kw['index_using_type'] = index_using_type
-  kw['index_type'] = index_type
-  kw['table_type'] = 'USER_INDEX'
-  kw['index_status'] = 'INDEX_STATUS_AVAILABLE'
-  kw['name_postfix'] = '_ORA'
-  dtid = table_name2tid(kw['table_name'] + kw['name_postfix'])
-  kw['data_table_id'] = dtid
-  kw['partition_columns'] = []
-  kw['partition_expr'] = []
-  kw['storing_columns'] =[]
-  kw["mapping_tid"] = table_name2tid(real_table_name + '_' + real_index_name)
-  kw["self_tid"] = table_name2index_tid(kw['table_name'] + kw['name_postfix'], kw['index_name'])
-  kw["real_vt"] = True
-  real_table_virtual_table_names.append(kw)
-
-  #In order to upgrade compatibility, 
-  #the agent inner table index cannot be added to the schema of the main table following the path of the main table.
-  #Only the schema refresh triggered by the creation of the index table can add simple index info, 
-  #so the agent table index is not added to the sys index here
-
-  #sys_index_tables.append(kw)
-  def_table_schema(**kw)
-  index_def = cpp_f.getvalue()
-  cpp_f = cpp_f_tmp
-  cpp_f.write(index_def)
-
 # def gen_iterate_private_virtual_table_def(...) removed (single-tenant: iterate VT mechanism deleted)
 
 def gen_sqlite_table_def(table_name, columns, primary_key):
@@ -3211,25 +3151,6 @@ private:
     h_f.write("\n  {0},".format(name))
   h_f.write("  };\n\n")
 
-  # define extended virtual table mapping oceanbase real table, the schema must be same
-  h_f.write("/* start/end_pos is start/end postition for column with tenant id */\n")
-  h_f.write("struct VTMapping\n")
-  h_f.write("{\n")
-  h_f.write("   uint32_t mapping_tid_;\n")
-  h_f.write("   bool is_real_vt_;\n")
-  h_f.write("};\n\n")
-  #h_f.write("// define all columns with tenant id\n")
-  #tmp_vt_tables = [x for x in real_table_virtual_table_names]
-  #tmp_vt_tables.sort(key = lambda x: x['table_name'])
-  #total_columns_with_id = 0
-  #for tmp_kw in tmp_vt_tables:
-  #  if tmp_kw.has_key("columns_with_id") and tmp_kw["columns_with_id"]:
-  #    for column_name in tmp_kw["columns_with_id"]:
-  #      h_f.write("\n  \"{0}\",".format(column_name.upper()))
-  #      total_columns_with_id = total_columns_with_id + 1
-  #h_f.write("\n};\n\n")
-  h_f.write("extern VTMapping vt_mappings[5000];\n\n")
-
   h_f.write("const char* const tenant_space_table_names [] = {")
   for name in tenant_space_table_names:
     h_f.write("\n  {0},".format(name))
@@ -3300,39 +3221,6 @@ static inline bool is_restrict_access_virtual_table(const uint64_t tid)
   h_f.write("{\n");
   h_f.write("  return common::is_virtual_table(tid) && is_tenant_table(tid);\n");
   h_f.write("}\n\n");
-
-  ## Mapping oceanbase real table to extended virtual table
-  # extended virtual table get origin table id in oceanbase database
-  ## it's extended virtual table, it's not agent table!!!
-  h_f.write("static inline uint64_t get_real_table_mappings_tid(const uint64_t tid)\n");
-  h_f.write("{\n")
-  h_f.write("  uint64_t org_tid = common::OB_INVALID_ID;\n")
-  h_f.write("  uint64_t pure_id = tid;\n")
-  h_f.write("  if (pure_id > common::OB_MAX_MYSQL_VIRTUAL_TABLE_ID && pure_id < common::OB_MAX_VIRTUAL_TABLE_ID) {\n")
-  h_f.write("    int64_t idx = pure_id - common::OB_MAX_MYSQL_VIRTUAL_TABLE_ID - 1;\n")
-  h_f.write("    VTMapping &tmp_vt_mapping = vt_mappings[idx];\n")
-  h_f.write("    if (tmp_vt_mapping.is_real_vt_) {\n")
-  h_f.write("      org_tid = tmp_vt_mapping.mapping_tid_;\n")
-  h_f.write("    }\n")
-  h_f.write("  }\n")
-  h_f.write("  return org_tid;\n")
-  h_f.write("}\n\n")
-
-  h_f.write("static inline bool is_real_table_mapping_virtual_table(const uint64_t tid)\n")
-  h_f.write("{\n")
-  h_f.write("  return common::OB_INVALID_ID != get_real_table_mappings_tid(tid);\n")
-  h_f.write("}\n\n")
-  ## end mapping oceanbase real table to extended virtual table
-
-  h_f.write("static inline void get_real_table_vt_mapping(const uint64_t tid, VTMapping *&vt_mapping)\n");
-  h_f.write("{\n")
-  h_f.write("  uint64_t pure_id = tid;\n")
-  h_f.write("  vt_mapping = nullptr;\n")
-  h_f.write("  if (pure_id > common::OB_MAX_MYSQL_VIRTUAL_TABLE_ID && pure_id < common::OB_MAX_VIRTUAL_TABLE_ID) {\n")
-  h_f.write("    int64_t idx = pure_id - common::OB_MAX_MYSQL_VIRTUAL_TABLE_ID - 1;\n")
-  h_f.write("    vt_mapping = &vt_mappings[idx];\n")
-  h_f.write("  }\n")
-  h_f.write("}\n\n")
 
   h_f.write("static inline bool is_only_rs_virtual_table(const uint64_t tid)\n");
   h_f.write("{\n");
@@ -3465,65 +3353,6 @@ def end_generate_constants_h():
   constants_h_f.close()
   id_to_name_f.close()
 
-def write_vt_mapping_cpp(h_file_name):
-  global cpp_f
-  cpp_f = open(share_out_path(h_file_name), 'w')
-  head = copyright + """
-#define USING_LOG_PREFIX SHARE_SCHEMA
-#include "ob_inner_table_schema.h"
-
-namespace oceanbase
-{
-namespace share
-{
-"""
-  cpp_f.write(head)
-
-  tmp_vt_tables = [x for x in real_table_virtual_table_names]
-  tmp_vt_tables.sort(key = lambda x: x['table_name'])
-  #total_columns_with_id = 0
-  #for tmp_kw in tmp_vt_tables:
-  #  if tmp_kw.has_key("columns_with_id") and tmp_kw["columns_with_id"]:
-  #    for column_name in tmp_kw["columns_with_id"]:
-  #      total_columns_with_id = total_columns_with_id + 1
-  cpp_f.write("VTMapping vt_mappings[5000];\n")
-  cpp_f.write("bool vt_mapping_init()\n")
-  cpp_f.write("{\n")
-  tmp_start_pos = 0
-  tmp_end_pos = 0
-  cpp_f.write("   int64_t start_idx = common::OB_MAX_MYSQL_VIRTUAL_TABLE_ID + 1;\n")
-  for tmp_kw in tmp_vt_tables:
-    cpp_f.write("   {\n")
-    cpp_f.write("   int64_t idx = {0} - start_idx;\n".format(tmp_kw["self_tid"]))
-    cpp_f.write("   VTMapping &tmp_vt_mapping = vt_mappings[idx];\n")
-    if "mapping_tid" in tmp_kw and tmp_kw["mapping_tid"]:
-      cpp_f.write("   tmp_vt_mapping.mapping_tid_ = {0};\n".format(tmp_kw["mapping_tid"]))
-    if "real_vt" in tmp_kw and tmp_kw["real_vt"]:
-      is_real_vt = "true"
-      cpp_f.write("   tmp_vt_mapping.is_real_vt_ = {0};\n".format(is_real_vt))
-    #if tmp_kw.has_key("columns_with_id") and tmp_kw["columns_with_id"]:
-    #  for column_name in tmp_kw["columns_with_id"]:
-    #    tmp_end_pos = tmp_end_pos + 1
-    #  cpp_f.write("   tmp_vt_mapping.start_pos_ = {0};\n".format(tmp_start_pos))
-    #  cpp_f.write("   tmp_vt_mapping.end_pos_ = {0};\n".format(tmp_end_pos))
-    cpp_f.write("   }\n\n")
-    tmp_start_pos = tmp_end_pos
-    tmp_end_pos = tmp_start_pos
-  cpp_f.write("   return true;\n")
-  cpp_f.write("} // end define vt_mappings\n\n")
-
-  cpp_f.write("bool inited_vt = vt_mapping_init();\n")
-  #if total_columns_with_id != tmp_end_pos:
-  #  raise Exception("columns with tenant id {0} is not match with {1}".format(total_columns_with_tenant_, tmp_end_pos))
-
-
-  end = """
-} // end namespace share
-} // end namespace oceanbase
-"""
-  cpp_f.write(end)
-  cpp_f.close()
-
 def write_lob_mapping_cpp(h_file_name):
   global cpp_f
   cpp_f = open(share_out_path(h_file_name), 'w')
@@ -3594,7 +3423,6 @@ if __name__ == "__main__":
   end_generate_constants_h()
 
   ## write virtual table for init virtual table information
-  write_vt_mapping_cpp("ob_inner_table_schema.vt.cpp")
   write_lob_mapping_cpp("ob_inner_table_schema.lob.cpp")
   f = start_generate_misc_data("ob_inner_table_schema_misc.ipp")
   # iterate / agent virtual table dispatch removed (single-tenant: iterate VT mechanism deleted)

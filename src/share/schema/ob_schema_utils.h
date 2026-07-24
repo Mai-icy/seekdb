@@ -51,7 +51,6 @@ public:
 
 
   static uint64_t get_extract_schema_id(const uint64_t schema_id);
-  static uint64_t get_real_table_mappings_tid(const uint64_t ref_table_id);
   static int get_all_table_name(
              const char* &table_name,
              const ObServerSchemaService *schema_service = NULL);

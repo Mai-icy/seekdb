@@ -1381,11 +1381,7 @@ def_table_schema(
 # 156: __all_unit_load_history # abandoned in 4.0.
 
 
-# 158: __all_restore_job (abandoned)
-# 159: __all_restore_task # abandoned in 4.0
 
-# __all_restore_job_history
-# 160: __all_restore_job_history (abandoned)
 
 
 
@@ -1805,14 +1801,7 @@ def_table_schema(**all_objauth_def)
 def_table_schema(**gen_history_table_def(1046, all_objauth_def))
 
 
-# 264: __all_tenant_backup_info # abandoned in 4.0
-# 265: __all_restore_info (abandoned)
 
-# 266: __all_tenant_backup_log_archive_status # abandoned in 4.0
-# 267: __all_backup_log_archive_status_history # abandoned in 4.0
-# 268: __all_tenant_backup_task # abandoned in 4.0
-# 269: __all_backup_task_history # abandoned in 4.0
-# 270: __all_tenant_pg_backup_task # abandoned in 4.0
 # 271:__all_failover_info # abandoned in 4.0
 
 all_tenant_error_def = dict(
@@ -1843,21 +1832,10 @@ def_table_schema(**all_tenant_error_def)
 # 273: __all_server_recovery_status # abandoned in 4.0
 # 274: __all_datafile_recovery_status # abandoned in 4.0
 
-# 276: all_tenant_backup_clean_info # abandoned in 4.0
-# 277: __all_backup_clean_info_history # abandoned in 4.0
-# 278: __all_backup_task_clean_history # abandoned in 4.0
 
-# 279: __all_restore_progress (abandoned)
 
-# 280: __all_restore_history # abandoned in 4.0
-# 281: __all_tenant_restore_pg_info # abandoned in 4.0
 # 282: __all_table_v2_history # abandoned in 4.0
 
-# 285: __all_backup_validation_job # abandoned in 4.0
-# 286: __all_backup_validation_job_history # abandoned in 4.0
-# 287: __all_tenant_backup_validation_task # abandoned in 4.0
-# 288: __all_backup_validation_task_history # abandoned in 4.0
-# 289: __all_tenant_pg_backup_validation_task # abandoned in 4.0
 
 
 def_table_schema(
@@ -1966,13 +1944,6 @@ all_tenant_dependency_def = dict(
 
 def_table_schema(**all_tenant_dependency_def)
 
-# 298: __all_backup_backupset_job # abandoned in 4.0
-# 299: __all_backup_backupset_job_history # abandoned in 4.0
-# 300: __all_tenant_backup_backupset_task # abandoned in 4.0
-# 301: __all_backup_backupset_task_history # abandoned in 4.0
-# 302: __all_tenant_pg_backup_backupset_task # abandoned in 4.0
-# 303: __all_tenant_backup_backup_log_archive_status # abandoned in 4.0
-# 304: __all_backup_backup_log_archive_status_history # abandoned in 4.0
 
 # 305: removed (legacy resource manager deleted)
 # 306: removed (legacy resource manager deleted)
@@ -2006,18 +1977,10 @@ def_table_schema(
   )
 
 # 309: __all_space_usage (abandoned)
-# 310: __all_backup_backuppiece_job # abandoned in 4.0
-# 311: __all_backup_backuppiece_job_history # abandoned in 4.0
-# 312: __all_backup_backuppiece_task # abandoned in 4.0
-# 313: __all_backup_backuppiece_task_history # abandoned in 4.0
-# 314: __all_backup_piece_files # abandoned in 4.0
-# 315: __all_backup_set_files # abandoned
 
 # 316: removed (legacy resource manager deleted)
 
-# 317: __all_backup_info # abandoned
 
-# 318: __all_backup_log_archive_status_v2 # abandoned in 4.0
 
 def_table_schema(
   owner = 'zhenjiang.xzj',
@@ -2051,7 +2014,6 @@ def_table_schema(
   )
 
 # 320: (abandoned)
-# 321: __all_backup_backup_log_archive_status_v2 # abandoned in 4.0
 
 # 322: __all_deadlock_event_history # migrated to SQLite, see gen_sqlite_table_def above
 # Placeholder - original definition removed, using SQLite version
@@ -2271,24 +2233,10 @@ def_table_schema(
 # 345: legacy ls status table (abandoned)
 # 346: __all_zone_v2 # abandoned in 4.0
 
-# 348: __all_log_archive_progress # abandoned
-# 349: __all_log_archive_history # abandoned
-# 350: __all_log_archive_piece_files # abandoned
-# 351: legacy ls log archive progress table # abandoned
 
 
 # 352: legacy ls table (abandoned)
 # 353: abandoned
-# 354: __all_backup_storage_info # abandoned
-# 357: __all_backup_job # abandoned
-# 358: __all_backup_job_history # abandoned
-# 359: __all_backup_task # abandoned
-# 360: __all_backup_task_history # abandoned
-# 361: __all_backup_ls_task (abandoned)
-# 362: __all_backup_ls_task_history # abandoned
-# 363: __all_backup_ls_task_info# abandoned
-# 364: __all_backup_skipped_tablet# abandoned
-# 365: __all_backup_skipped_tablet_history
 # 366: __all_tenant_info (abandoned)
 # 367: __all_cluster_info # abandoned in 4.0
 # 368: __all_cluster_config # abandoned in 4.0
@@ -2312,7 +2260,6 @@ def_table_schema(
   )
 
 # 370: legacy ls recovery stat table (abandoned)
-# 371: __all_backup_ls_task_info_history # abandoned
 
 # 372: __all_tablet_replica_checksum # migrated to SQLite, see gen_sqlite_table_def above
 # Placeholder - original definition removed, using SQLite version
@@ -2485,13 +2432,6 @@ def_table_schema(**gen_history_table_def(1079, all_context_def))
 # 383: __all_global_context_value (abandoned)
 # 385: legacy ls election reference info table (abandoned)
 
-# backup clean inner table
-# 386: __all_backup_delete_job # abandoned
-# 387: __all_backup_delete_job_history # abandoned
-# 388: __all_backup_delete_task # abandoned
-# 389: __all_backup_delete_task_history # abandoned
-# 390: __all_backup_delete_ls_task # abandoned
-# 391: __all_backup_delete_ls_task_history # abandoned
 # 392: __all_zone_merge_info # abandoned, migrated to SQLite
 # 393: __all_merge_info # abandoned, migrated to SQLite
 
@@ -2515,11 +2455,6 @@ def_table_schema(
 
 # 395: __all_disk_io_calibration (abandoned)
 # 399: abandoned
-# 400:__all_backup_parameter abandoned
-# 401: legacy ls restore progress table (abandoned)
-# 402: legacy ls restore history table (abandoned)
-# 403: __all_backup_storage_info_history (abandoned)
-# 404: __all_backup_delete_policy (abandoned)
 
 all_mock_fk_parent_table_def = dict(
   owner = 'bin.lb',
@@ -2562,7 +2497,6 @@ all_mock_fk_parent_table_column_def = dict(
 def_table_schema(**all_mock_fk_parent_table_column_def)
 
 def_table_schema(**gen_history_table_def(1084, all_mock_fk_parent_table_column_def))
-# 409: __all_log_restore_source abandoned
 
 # 410: __all_kv_ttl_task (abandoned)
 # 411: __all_kv_ttl_task_history (abandoned)
@@ -2619,7 +2553,6 @@ def_table_schema(
 # Placeholder - original definition removed, using SQLite version
 
 # 445: __all_cluster_event_history # migrated to SQLite, see gen_sqlite_table_def above
-# 447 : legacy ls log restore stat table
 
 # 450: __all_external_table_file # abandoned in seekdb
 
@@ -2808,29 +2741,6 @@ def_table_schema(
 
 # 527: __all_kv_redis_table abandoned
 
-all_ncomp_dll_v2 = dict(
-  owner = 'hr351303',
-  table_name = '__all_ncomp_dll_v2',
-  table_id = '1115',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('database_id', 'int', 'false'),
-    ('key_id', 'int'),
-    ('compile_db_id', 'int'),
-    ('arch_type', 'varchar:128'),
-    ('build_version', 'varchar:OB_SERVER_VERSION_LENGTH')
-  ],
-  in_tenant_space = True,
-
-  normal_columns = [
-    ('merge_version', 'int'),
-    ('dll', 'longblob', 'false'),
-    ('stack_size', 'longblob', 'true')
-  ]
-  )
-def_table_schema(**all_ncomp_dll_v2)
-
 # __wr_sql_plan_aux_key2snapshot # removed
 
 def_table_schema(
@@ -2918,23 +2828,6 @@ def_table_schema(**all_catalog_privilege_def)
 
 def_table_schema(**gen_history_table_def(1122, all_catalog_privilege_def))
 
-# 542: __sslog_table
-def_table_schema(
-  owner = 'jiabokai.jbk',
-  table_name = '__all_pl_recompile_objinfo',
-  table_id = '1123',
-  table_type = 'SYSTEM_TABLE',
-    gm_columns = ['gmt_create', 'gmt_modified'],
-    rowkey_columns = [
-    ('recompile_obj_id', 'int')
-  ],
-  in_tenant_space = True,
-  normal_columns = [
-    ('ref_obj_name', 'varchar:OB_MAX_CORE_TALBE_NAME_LENGTH'),
-    ('schema_version', 'int'),
-    ('fail_count', 'int')
-  ]
-  )
 def_table_schema(
   owner = 'yangjiali.yjl',
   table_name = '__all_vector_index_task',
@@ -4410,7 +4303,6 @@ def_table_schema(
   )
 
 
-# 11102: __tenant_virtual_show_restore_preview (removed: backup/restore/log-archive deleted)
 
 def_table_schema(
     owner = 'lixia.yq',
@@ -5417,7 +5309,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-# 12157: __all_virtual_standby_status # abandoned in 4.0
 
 def_table_schema(
   owner = 'longzhong.wlz',
@@ -5525,14 +5416,8 @@ def_table_schema(
 
 # 12166: __all_virtual_objauth_history # removed (single-tenant: iterate VT mechanism deleted)
 
-# 12167: __all_virtual_backup_info # abandoned
 
-# 12168: __all_virtual_backup_log_archive_status # abandoned in 4.0
-# 12170: __all_virtual_backup_task # abandoned in 4.0
-# 12171: __all_virtual_pg_backup_task # abandoned in 4.0
 
-# 12173: __all_virtual_pg_backup_log_archive_status # abandoned in 4.0
-# 12174: __all_virtual_server_backup_log_archive_status # abandoned in 4.0
 
 # 12175: __all_virtual_error # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -5558,9 +5443,7 @@ def_table_schema(
 
 # 12177: REFERENTIAL_CONSTRAINTS # abandoned in 4.0
 # 12179: __all_virtual_table_modifications # abandoned in 4.0
-# 12180: __all_virtual_backup_clean_info # abandoned in 4.0
 
-# 12184: __all_virtual_pg_log_archive_stat # abandoned in 4.0
 
 def_table_schema(
   owner = 'adou.ly',
@@ -5587,8 +5470,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-# 12188: __all_virtual_backup_validation_task # abandoned in 4.0
-# 12189: __all_virtual_pg_backup_validation_task # abandoned in 4.0
 
 # 12190: __all_virtual_time_zone # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -5685,9 +5566,6 @@ def_table_schema(
   )
 
 # 12200: __all_virtual_reserved_table_mgr # abandoned in 4.0
-# 12201: __all_virtual_backupset_history_mgr # abandoned in 4.0
-# 12202: __all_virtual_backup_backupset_task # abandoned in 4.0
-# 12203: __all_virtual_pg_backup_backupset_task # abandoned in 4.0
 
 # 12205: __all_virtual_cluster_failover_info # abandoned in 4.0
 # 12207: __all_virtual_all_clusters # abandoned in 4.0
@@ -5796,13 +5674,8 @@ def_table_schema(
 
 # 12229: __all_virtual_optstat_user_prefs # removed (single-tenant: iterate VT mechanism deleted)
 
-# 12231: __all_virtual_log_archive_progress # abandoned
-# 12232: __all_virtual_log_archive_history # abandoned
-# 12233: __all_virtual_log_archive_piece_files # abandoned
-# 12234: __all_virtual_ls_log_archive_progress # abandoned
 
 # 12235: CHECK_CONSTRAINTS # abandoned in 4.0
-# 12236: __all_virtual_backup_storage_info # abandoned
 
 # 12237: __all_virtual_ls_status (abandoned)
 # 12238: __all_virtual_ls (abandoned)
@@ -5847,13 +5720,6 @@ def_table_schema(
     ('total_wait_secs', 'int')
   ],  vtable_route_policy = 'local'
   )
-# 12245: __all_virtual_backup_task # abandoned
-# 12246: __all_virtual_backup_task_history # abandoned
-# 12247: __all_virtual_backup_ls_task # abandoned
-# 12248: __all_virtual_backup_ls_task_history # abandoned
-# 12249: __all_virtual_backup_ls_task_info # abandoned
-# 12250: __all_virtual_backup_skipped_tablet # abandoned
-# 12251: __all_virtual_backup_skipped_tablet_history # abandoned
 
 # 12253: __all_virtual_tablet_to_table_history # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -5881,7 +5747,6 @@ def_table_schema(
 
 # 12255: __all_virtual_tenant_info (abandoned)
 # 12256: __all_virtual_ls_recovery_stat (abandoned)
-# 12257: __all_virtual_backup_ls_task_info_history # abandoned
 
 # __all_virtual_tablet_replica_checksum: SQLite virtual table (migrated from iterate)
 def_table_schema(**gen_sqlite_virtual_table_def(
@@ -5903,8 +5768,6 @@ def_table_schema(**gen_sqlite_virtual_table_def(
 
 # 12266: __all_virtual_tenant_scheduler_program_argument # removed (single-tenant: iterate VT mechanism deleted)
 
-# 12267: __all_virtual_backup_validation_task_v2
-# 12268: __all_virtual_pg_backup_validation_task_v2
 
 # 12269: __all_virtual_tenant_context # removed (single-tenant: iterate VT mechanism deleted)
 # 12270: __all_virtual_tenant_context_history # removed (single-tenant: iterate VT mechanism deleted)
@@ -5977,7 +5840,6 @@ def_table_schema(
       ('create_time', 'int'),
       ('role', 'varchar:64'),
       ('switchover_status', 'varchar:100'),
-      ('log_restore_source', 'varchar:1024'),
       ('sync_scn', 'uint'),
       ('readable_scn', 'uint')
     ],  vtable_route_policy = 'local'
@@ -6015,7 +5877,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-# 12279: __all_virtual_archive_stat (removed: backup/restore/log-archive deleted)
 
 def_table_schema(
   owner = 'keqing.llt',
@@ -6054,11 +5915,6 @@ def_table_schema(
 
 # 12282: __all_virtual_proxy_routine (abandoned in seekdb)
 
-# backup clean virtual table
-# 12283: __all_virtual_backup_delete_task # abandoned
-# 12284: __all_virtual_backup_delete_task_history # abandoned
-# 12285: __all_virtual_backup_delete_ls_task # abandoned
-# 12286: __all_virtual_backup_delete_ls_task_history # abandoned
 
 def_table_schema(
   owner = 'yanyuan.cxf',
@@ -6209,9 +6065,6 @@ def_table_schema(
   ('rec_log_scn', 'uint')
   ],  vtable_route_policy = 'local'
   )
-# 12296: __all_virtual_backup_set_files (abandoned)
-# 12297: __all_virtual_backup_job (abandoned)
-# 12298: __all_virtual_backup_job_history (abandoned)
 
 
 # 12302: __all_virtual_ash # removed
@@ -6234,16 +6087,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 # 12304: abandoned
-# 12305: __all_virtual_backup_parameter (abandoned)
-# 12306: __all_virtual_restore_job  (abandoned)
-# 12307: __all_virtual_restore_job_history (abandoned)
-# 12308: __all_virtual_restore_progress (abandoned)
-# 12309: __all_virtual_ls_restore_progress (abandoned)
-# 12310: __all_virtual_ls_restore_history (abandoned)
-# 12311: __all_virtual_backup_storage_info_history (abandoned)
-# 12312: __all_virtual_backup_delete_job (abandoned)
-# 12313: __all_virtual_backup_delete_job_history (abandoned)
-# 12314: __all_virtual_backup_delete_policy (abandoned)
 
 def_table_schema(
   owner = 'lihongqin.lhq',
@@ -6350,7 +6193,6 @@ def_table_schema(
 # 12322: __all_virtual_mock_fk_parent_table_column # removed (single-tenant: iterate VT mechanism deleted)
 
 # 12323: __all_virtual_mock_fk_parent_table_column_history # removed (single-tenant: iterate VT mechanism deleted)
-# 12324: __all_virtual_log_restore_source abandoned
 
 def_table_schema(
   owner = 'wangzelin.wzl',
@@ -6607,7 +6449,6 @@ def_table_schema(
 # 12364: legacy ls arb replica task table (abandoned)
 # 12365: legacy ls arb replica task history table (abandoned)
 
-# 12366: __all_virtual_archive_dest_status (removed: backup/restore/log-archive deleted)
 
 # 12367: __all_virtual_kv_hotkey_stat
 
@@ -7285,13 +7126,6 @@ def_table_schema(
   ],  vtable_route_policy = 'local'
   )
 
-# 12506: __all_virtual_ncomp_dll_v2 # removed (single-tenant: iterate VT mechanism deleted)
-# 12507: __all_virtual_logstore_service_status
-# 12508: __all_virtual_logstore_service_info
-# 12510: __all_virtual_standby_log_transport_stat
-
-# 12511: __all_virtual_wr_sql_plan_aux_key2snapshot # removed
-# 12512: __all_virtual_tablet_mds_info
 # 12513: removed
 
 # 12516: __all_virtual_catalog # removed (single-tenant: iterate VT mechanism deleted)
@@ -7304,8 +7138,6 @@ def_table_schema(
 
 # 12520: __all_virtual_sswriter_group_stat
 # 12521: __all_virtual_sswriter_lease_mgr
-
-# 12523: __all_virtual_pl_recompile_objinfo # removed (single-tenant: iterate VT mechanism deleted)
 
 # 12524: __all_virtual_vector_index_task # removed (single-tenant: iterate VT mechanism deleted)
 
@@ -8929,7 +8761,6 @@ WHERE T.TABLE_ID = C.TABLE_ID
 # 21073: gv$partition_audit # abandoned in 4.0
 # 21074: v$partition_audit # abandoned in 4.0
 # 21075: V$OB_CLUSTER # abandoned in 4.0
-# 21076: v$ob_standby_status # abandoned in 4.0
 # 21077: v$ob_cluster_stats # abandoned in 4.0
 # 21078: V$OB_CLUSTER_EVENT_HISTORY # abandoned in 4.0
 
@@ -9090,16 +8921,6 @@ FROM
 """.replace("\n", " ")
 )
 
-# 21102: CDB_OB_BACKUP_ARCHIVELOG_SUMMARY # abandoned in 4.0
-# 21103: CDB_OB_BACKUP_JOB_DETAILS # abandoned in 4.0
-# 21104: CDB_OB_BACKUP_SET_DETAILS # abandoned in 4.0
-# 21105: CDB_OB_BACKUP_SET_EXPIRED # abandoned in 4.0
-# 21106: CDB_OB_BACKUP_PROGRESS # abandoned in 4.0
-# 21107: CDB_OB_BACKUP_ARCHIVELOG_PROGRESS # abandoned in 4.0
-# 21108: CDB_OB_BACKUP_CLEAN_HISTORY # abandoned in 4.0
-# 21109: CDB_OB_BACKUP_TASK_CLEAN_HISTORY # abandoned in 4.0
-# 21110: CDB_OB_RESTORE_PROGRESS # abandoned
-# 21111: CDB_OB_RESTORE_JOB_HISTORY # abandoned
 
 # 21112: GV$OB_SERVER_SCHEMA_INFO # removed (single-tenant GV/V collapse; use oceanbase.__all_virtual_server_schema_info)
 
@@ -9134,28 +8955,9 @@ def_table_schema(
 """.replace("\n", " ")
 )
 
-# 21122: CDB_OB_BACKUP_VALIDATION_JOB # abandoned in 4.0
-# 21123: CDB_OB_BACKUP_VALIDATION_JOB_HISTORY # abandoned in 4.0
-# 21124: CDB_OB_TENANT_BACKUP_VALIDATION_TASK # abandoned in 4.0
-# 21125: CDB_OB_BACKUP_VALIDATION_TASK_HISTORY # abandoned in 4.0
-# 21126: v$restore_point # abandoned in 4.0
-# 21127: CDB_OB_BACKUP_SET_OBSOLETE # abandoned in 4.0
-# 21128: CDB_OB_BACKUP_BACKUPSET_JOB # abandoned in 4.0
-# 21129: CDB_OB_BACKUP_BACKUPSET_JOB_HISTORY # abandoned in 4.0
-# 21130: CDB_OB_BACKUP_BACKUPSET_TASK # abandoned in 4.0
-# 21131: CDB_OB_BACKUP_BACKUPSET_TASK_HISTORY # abandoned in 4.0
-# 21132: CDB_OB_BACKUP_BACKUP_ARCHIVELOG_SUMMARY # abandoned in 4.0
 # 21133: v$ob_cluster_failover_info # abandoned in 4.0
-# 21136: CDB_OB_ARCHIVELOG_PIECE_FILES # abandoned
-# 21137: CDB_OB_BACKUP_SET_FILES (abandoned)
 
-# 21138: CDB_OB_BACKUP_BACKUPPIECE_JOB # abandoned in 4.0
-# 21139: CDB_OB_BACKUP_BACKUPPIECE_JOB_HISTORY # abandoned in 4.0
-# 21140: CDB_OB_BACKUP_BACKUPPIECE_TASK # abandoned in 4.0
-# 21141: CDB_OB_BACKUP_BACKUPPIECE_TASK_HISTORY # abandoned in 4.0
 # 21142: v$ob_all_clusters # abandoned in 4.0
-# 21143: CDB_OB_BACKUP_ARCHIVELOG # abandoned in 4.0
-# 21144: CDB_OB_BACKUP_BACKUP_ARCHIVELOG # abandoned in 4.0
 
 def_table_schema(
   owner = 'jim.wjh',
@@ -9334,11 +9136,6 @@ def_table_schema(
   ]
   )
 #
-# 21152: CDB_OB_BACKUP_JOBS # abandoned
-# 21153: CDB_OB_BACKUP_JOB_HISTORY # abandoned
-# 21154: CDB_OB_BACKUP_TASKS # abandoned
-# 21155: CDB_OB_BACKUP_TASK_HISTORY # abandoned
-# 21156: CDB_OB_LOG_ARCHIVE_LS_SUMMARY
 
 def_table_schema(
   owner = 'xiaochu.yh',
@@ -10826,7 +10623,6 @@ def_table_schema(
     START_SERVICE_TIME,
     USEC_TO_TIME(CREATE_TIME) AS CREATE_TIME,
     ROLE,
-    LOG_RESTORE_SOURCE,
     SYNC_SCN,
     READABLE_SCN
   FROM oceanbase.__all_virtual_server_stat
@@ -11108,13 +10904,6 @@ def_table_schema(
 # 21244: V$OB_IO_QUOTA
 
 
-# 4.0 backup clean view
-# 21245: CDB_OB_BACKUP_DELETE_JOBS # abandoned
-# 21246: CDB_OB_BACKUP_DELETE_JOB_HISTORY # abandoned
-# 21247: CDB_OB_BACKUP_DELETE_TASKS # abandoned
-# 21248: CDB_OB_BACKUP_DELETE_TASK_HISTORY # abandoned
-# 21249: CDB_OB_BACKUP_DELETE_POLICY # abandoned
-# 21250: CDB_OB_BACKUP_STORAGE_INFO # abandoned
 
 
 def_table_schema(
@@ -11775,11 +11564,6 @@ def_table_schema(
         AND STAT.INDEX_TYPE = 1
 """.replace("\n", " ")
 )
-# 21260: DBA_OB_BACKUP_JOBS # abandoned
-# 21261: DBA_OB_BACKUP_JOB_HISTORY # abandoned
-# 21262: DBA_OB_BACKUP_TASKS # abandoned
-# 21263: DBA_OB_BACKUP_TASK_HISTORY # abandoned
-# 21264: DBA_OB_BACKUP_SET_FILES (abandoned)
 
 # 21267: GV$ACTIVE_SESSION_HISTORY # removed
 
@@ -11979,14 +11763,6 @@ def_table_schema(
     ]
   )
 
-# 21274: CDB_OB_BACKUP_STORAGE_INFO_HISTORY # abandoned
-# 21275: DBA_OB_BACKUP_STORAGE_INFO # abandoned
-# 21276: DBA_OB_BACKUP_STORAGE_INFO_HISTORY # abandoned
-# 21277: DBA_OB_BACKUP_DELETE_POLICY # abandoned
-# 21278: DBA_OB_BACKUP_DELETE_JOBS # abandoned
-# 21279: DBA_OB_BACKUP_DELETE_JOB_HISTORY # abandoned
-# 21280: DBA_OB_BACKUP_DELETE_TASKS # abandoned
-# 21281: DBA_OB_BACKUP_DELETE_TASK_HISTORY # abandoned
 
 
 def_table_schema(
@@ -12047,21 +11823,8 @@ def_table_schema(
     normal_columns = [
     ]
   )
-# 21284: DBA_OB_RESTORE_PROGRESS (abandoned)
-# 21285: DBA_OB_RESTORE_HISTORY (abandoned)
 
-# 21286: DBA_OB_ARCHIVE_MODE
-# 21287: DBA_OB_ARCHIVE_DEST (abandoned)
-# 21288: DBA_OB_ARCHIVELOG (abandoned)
-# 21289: DBA_OB_ARCHIVELOG_SUMMARY (abandoned)
-# 21290: DBA_OB_ARCHIVELOG_PIECE_FILES (abandoned)
-# 21291: DBA_OB_BACKUP_PARAMETER (abandoned)
 
-# 21292: CDB_OB_ARCHIVE_MODE
-# 21293: CDB_OB_ARCHIVE_DEST (abandoned)
-# 21294: CDB_OB_ARCHIVELOG (abandoned)
-# 21295: CDB_OB_ARCHIVELOG_SUMMARY (abandoned)
-# 21296: CDB_OB_BACKUP_PARAMETER (abandoned)
 # 21297: DBA_OB_DEADLOCK_EVENT_HISTORY (abandoned)
 
 def_table_schema(
@@ -13634,11 +13397,6 @@ WHERE T.TABLE_TYPE IN (3,6,8,9,14)
 # 21360: CDB_OB_LS_ARB_REPLICA_TASK_HISTORY (abandoned)
 # 21361: DBA_OB_LS_ARB_REPLICA_TASK_HISTORY (abandoned)
 
-# 21362: V$OB_ARCHIVE_DEST_STATUS (removed: backup/restore/log-archive deleted)
-# 21363: DBA_OB_LS_LOG_ARCHIVE_PROGRESS # abandoned
-# 21364: CDB_OB_LS_LOG_ARCHIVE_PROGRESS # abandoned
-# 21365: DBA_OB_LS_LOG_RESTORE_STAT
-# 21366: CDB_OB_LS_LOG_RESTORE_STAT
 
 # 21367: GV$OB_KV_HOTKEY_STAT
 # 21368: V$OB_KV_HOTKEY_STAT
@@ -13815,8 +13573,6 @@ def_table_schema(
     OBJ_LOCK.EXTRA_INFO LIKE '%tx_ctx%'
 """.replace("\n", " ")
 )
-# 21401: CDB_OB_LOG_RESTORE_SOURCE # abandoned
-# 21402: DBA_OB_LOG_RESTORE_SOURCE # abandoned
 
 # 21403: DBA_OB_EXTERNAL_TABLE_FILE
 
@@ -15533,8 +15289,6 @@ def_table_schema(
 # 21629: DBA_OB_OBJECT_BALANCE_WEIGHT
 # 21630: CDB_OB_OBJECT_BALANCE_WEIGHT
 
-# 21631: GV$OB_STANDBY_LOG_TRANSPORT_STAT
-# 21632: V$OB_STANDBY_LOG_TRANSPORT_STAT
 # 21633: removed
 
 def_table_schema(
@@ -15926,8 +15680,6 @@ def_sys_index_table(
   index_using_type = 'USING_BTREE',
   index_type = 'INDEX_TYPE_NORMAL_LOCAL',
   keywords = all_def_keywords['__all_table_history'])
-# 101002: __all_log_archive_piece_files # abandoned
-# 101003: __all_backup_set_files # abandoned
 
 def_sys_index_table(
   index_name = 'idx_task_key',
@@ -16318,10 +16070,7 @@ def_sys_index_table(
 # 101093: idx_kv_ttl_task_table_id (abandoned)
 # 101094: idx_kv_ttl_task_history_upd_time (abandoned)
 
-# 101095: idx_mview_refresh_run_stats_num_mvs_current (removed)
 
-# 101096: idx_mview_refresh_stats_end_time (removed)
-# 101097: idx_mview_refresh_stats_mview_end_time (removed)
 
 # 101099: idx_client_to_server_session_info_client_session_id (removed)
 

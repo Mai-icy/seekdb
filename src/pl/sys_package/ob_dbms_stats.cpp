@@ -4108,8 +4108,7 @@ int ObDbmsStats::parse_gather_stat_options(ObExecContext &ctx,
   if (OB_ISNULL(param.allocator_)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(ret), K(param.allocator_));
-  } else if (est_percent.is_null() ||
-            (is_virtual_table(param.table_id_) && !is_real_table_mapping_virtual_table(param.table_id_))) {
+  } else if (est_percent.is_null() || is_virtual_table(param.table_id_)) {
     //if specify estimate percent null meanings 100% percent sample
     param.sample_info_.set_percent(100.0);
   } else if (OB_FAIL(est_percent.get_number(num_est_percent))) {
@@ -4407,9 +4406,8 @@ int ObDbmsStats::parse_granularity_and_method_opt(ObExecContext &ctx,
                                                   ObTableStatParam &param)
 {
   int ret = OB_SUCCESS;
-  //virtual table(not include real agent table) doesn't gather histogram.
-  bool is_vt = is_virtual_table(param.table_id_) &&
-               !share::is_real_table_mapping_virtual_table(param.table_id_);
+  // Virtual tables do not gather histograms.
+  bool is_vt = is_virtual_table(param.table_id_);
   bool use_size_auto = false;
   if (0 == param.method_opt_.case_compare("Z") && !is_vt) {
     if (OB_FAIL(set_default_column_params(param.column_params_))) {
@@ -5560,9 +5558,6 @@ int ObDbmsStats::get_all_table_ids_in_database(ObExecContext &ctx,
             // 1. user table
             // 2. valid sys table
             // 3. valid virtual table
-          } else if (share::is_real_table_mapping_virtual_table(table_schemas.at(i)->get_table_id())
-                     && table_schemas.at(i)->is_index_table()) {
-            // skip
           } else if (OB_FAIL(table_ids.push_back(table_schemas.at(i)->get_table_id()))) {
             LOG_WARN("failed to push back id", K(ret));
           } else {/*do nothing*/}
@@ -5859,10 +5854,7 @@ int ObDbmsStats::get_non_partitioned_table_stale_percent(sql::ObExecContext &ctx
                                                          StatTable &stat_table)
 {
   int ret = OB_SUCCESS;
-  //if this is virtual table real agent, we need see the real table id modifed count
-  uint64_t table_id = share::is_real_table_mapping_virtual_table(table_schema.get_table_id()) ?
-                                   share::get_real_table_mappings_tid(table_schema.get_table_id()) :
-                                   table_schema.get_table_id();
+  uint64_t table_id = table_schema.get_table_id();
   const int64_t part_id = PARTITION_LEVEL_ZERO == table_schema.get_part_level() ? table_schema.get_table_id() : -1;
   int64_t inc_modified_count = 0;
   int64_t row_cnt = 0;

@@ -26,7 +26,6 @@
  #include "storage/compaction/ob_compaction_schedule_util.h"
  #include "rootserver/ddl_task/ob_sys_ddl_util.h" // for ObSysDDLSchedulerUtil
  #include "share/ob_rpc_struct.h"
- #include "pl/ob_pl_persistent.h"
  using namespace oceanbase::lib;
  using namespace oceanbase::common;
  using namespace oceanbase::share;
@@ -762,14 +761,6 @@ int ObCreateViewHelper::drop_trigger_schemas_() {
                                                                            new_schema_version /* not used */,
                                                                            trigger_info->get_object_type()))) {
         LOG_WARN("fail to delete schema object dependency", KR(ret), KPC(trigger_info));
-      } else if (OB_FAIL(pl::ObRoutinePersistentInfo::delete_dll_from_disk(get_trans_(),
-                 share::schema::ObTriggerInfo::get_trigger_spec_package_id(trigger_info->get_trigger_id()),
-                                                                           trigger_info->get_database_id()))) {
-        LOG_WARN("fail to delete ddl from disk", KR(ret), KPC(trigger_info));
-      } else if (OB_FAIL(pl::ObRoutinePersistentInfo::delete_dll_from_disk(get_trans_(),
-                 share::schema::ObTriggerInfo::get_trigger_body_package_id(trigger_info->get_trigger_id()),
-                                                                          trigger_info->get_database_id()))) {
-        LOG_WARN("fail to delete ddl from disk", KR(ret), KPC(trigger_info));
       }
       if (OB_SUCC(ret)) {
         ObErrorInfo error_info;

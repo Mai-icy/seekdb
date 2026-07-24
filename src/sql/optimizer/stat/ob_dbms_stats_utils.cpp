@@ -1990,8 +1990,6 @@ int ObDbmsStatsUtils::get_table_index_infos(share::schema::ObSchemaGetterGuard *
   if (OB_ISNULL(schema_guard)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(ret), K(schema_guard));
-  } else if (share::is_real_table_mapping_virtual_table(table_id)) {
-    // do not gather stats for mapped inner table indexes
   } else if (OB_FAIL(schema_guard->get_can_read_index_array(table_id,
                                                             index_tid_arr,
                                                             index_count,

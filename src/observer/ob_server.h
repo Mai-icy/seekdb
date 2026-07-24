@@ -215,7 +215,7 @@ private:
   int init_sequence();
   int init_pl();
   int init_global_context();
-  int parse_role_and_restore_source(const ObServerOptions &opts);
+  int parse_role(const ObServerOptions &opts);
   int init_version();
   int init_px_target_mgr();
   int init_storage();

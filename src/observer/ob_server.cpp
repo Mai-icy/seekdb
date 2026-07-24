@@ -295,8 +295,8 @@ int ObServer::init(const ObServerOptions &opts, const ObPLogWriterCfg &log_cfg)
       LOG_ERROR("init affinity ctrl topology failed", KR(ret));
     } else if (OB_FAIL(init_global_context())) {
       LOG_ERROR("init global context failed", KR(ret));
-    } else if (OB_FAIL(parse_role_and_restore_source(opts))) {
-      LOG_ERROR("parse role and restore source failed", KR(ret));
+    } else if (OB_FAIL(parse_role(opts))) {
+      LOG_ERROR("parse role failed", KR(ret));
     } else if (OB_FAIL(init_version())) {
       LOG_ERROR("init version failed", KR(ret));
     } else if (OB_FAIL(init_sql_proxy())) {
@@ -1997,7 +1997,7 @@ int ObServer::init_global_context()
   return ret;
 }
 
-int ObServer::parse_role_and_restore_source(const ObServerOptions &opts)
+int ObServer::parse_role(const ObServerOptions &opts)
 {
   int ret = OB_SUCCESS;
 
@@ -2018,9 +2018,6 @@ int ObServer::parse_role_and_restore_source(const ObServerOptions &opts)
       LOG_ERROR("invalid role", K(opts.role_));
     }
   }
-
-  // Note: restore_source is now read from config parameter log_restore_source
-  // Use: -o log_restore_source='ip:port;ip:port'
 
   if (OB_SUCC(ret)) {
     LOG_INFO("role parsed", "role", "PRIMARY");

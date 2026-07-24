@@ -163,7 +163,6 @@ ob_set_subtarget(ob_share common_mixed
   ob_sys_time_zone_util.cpp
   ls/ob_restore_status.cpp
   location_cache/ob_location_struct.cpp
-  inner_table/ob_inner_table_schema.vt.cpp
   inner_table/ob_inner_table_schema.lob.cpp
   inner_table/ob_inner_table_schema_misc.ipp
   object/ob_obj_cast.cpp

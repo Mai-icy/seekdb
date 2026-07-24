@@ -17,11 +17,6 @@
       ],
       "tenant": [
         {
-          "name": "log_transport_compress_all",
-          "value": 1,
-          "comment": "In scenarios with limited bandwidth, network bandwidth can be saved with a small amount of CPU overhead through RPC compression"
-        },
-        {
           "name": "_enable_filter_reordering",
           "value": false,
           "comment": "disable filter reordering for simple OLTP workloads"
@@ -52,11 +47,6 @@
       ],
       "tenant": [
         {
-          "name": "log_transport_compress_all",
-          "value": 1,
-          "comment": "In scenarios with limited bandwidth, network bandwidth can be saved with a small amount of CPU overhead through RPC compression"
-        },
-        {
           "name": "_enable_filter_reordering",
           "value": false,
           "comment": "disable filter reordering for complex OLTP workloads"
@@ -86,11 +76,6 @@
         }
       ],
       "tenant": [
-        {
-          "name": "log_transport_compress_all",
-          "value": 1,
-          "comment": "In scenarios with limited bandwidth, network bandwidth can be saved with a small amount of CPU overhead through RPC compression"
-        },
         {
           "name": "_enable_filter_reordering",
           "value": false,

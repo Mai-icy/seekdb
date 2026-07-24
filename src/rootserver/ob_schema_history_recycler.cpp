@@ -430,7 +430,6 @@ int ObSchemaHistoryRecycler::get_recycle_schema_version_for_ddl(
 // get recycle schema version by tenant from:
 // 1. schema_history_expire_time.
 // 2. reserved major version.
-// 3. backup reserved schema_version.
 int ObSchemaHistoryRecycler::get_recycle_schema_version_by_global_stat(
     const common::ObIArray<uint64_t> &batch_ids)
 {
@@ -527,7 +526,7 @@ int ObSchemaHistoryRecycler::get_recycle_schema_version_by_global_stat(
     }
 
     if (OB_SUCC(ret)) {
-      // step 4. restore point
+      // step 3. restore point
       // int64_t schema_version = 0;
       // for (int64_t i = 0; OB_SUCC(ret) && i < tenants.count(); i++) {
       //   const uint64_t tenant = tenants.at(i);

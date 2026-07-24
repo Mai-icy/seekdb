@@ -57,12 +57,6 @@ enum ObLogBaseType
   //for recovery_ls_service
   RECOVERY_LS_SERVICE_LOG_BASE_TYPE = 12,
 
-  //for standby timestamp service
-  STANDBY_TIMESTAMP_LOG_BASE_TYPE = 13,
-
-  //for recovery_ls_service
-  RESTORE_SERVICE_LOG_BASE_TYPE = 16,
-
   RESERVED_SNAPSHOT_LOG_BASE_TYPE = 17,
 
   MEDIUM_COMPACTION_LOG_BASE_TYPE = 18,
@@ -74,9 +68,6 @@ enum ObLogBaseType
   // for arbitration service
   ARBITRATION_SERVICE_LOG_BASE_TYPE = 21,
 
-  // for NET_STANDBY_TNT_SERVICE
-  NET_STANDBY_TNT_SERVICE_LOG_BASE_TYPE = 22,
-
   // 23 was used by the removed endpoint ingress bandwidth service. Do not reuse.
 
   HEARTBEAT_SERVICE_LOG_BASE_TYPE = 24,
@@ -86,8 +77,6 @@ enum ObLogBaseType
 
   // for obj lock garbage collect service
   OBJ_LOCK_GARBAGE_COLLECT_SERVICE_LOG_BASE_TYPE = 27,
-
-  // 31 - 34 were used by removed backup/archive services. Do not reuse.
 
   COMMON_LS_SERVICE_LOG_BASE_TYPE = 36,
 
@@ -168,10 +157,6 @@ int log_base_type_to_string(const ObLogBaseType log_type,
     strncpy(str ,"PRIMARY_LS_SERVICE", str_len);
   } else if (log_type == RECOVERY_LS_SERVICE_LOG_BASE_TYPE) {
     strncpy(str ,"RECOVERY_LS_SERVICE", str_len);
-  } else if (log_type == STANDBY_TIMESTAMP_LOG_BASE_TYPE) {
-    strncpy(str ,"STANDBY_TIMESTAMP", str_len);
-  } else if (log_type == RESTORE_SERVICE_LOG_BASE_TYPE) {
-    strncpy(str ,"RESTORE_SERVICE", str_len);
   } else if (log_type == RESERVED_SNAPSHOT_LOG_BASE_TYPE) {
     strncpy(str ,"RESERVED_SNAPSHOT", str_len);
   } else if (log_type == MEDIUM_COMPACTION_LOG_BASE_TYPE) {
@@ -180,8 +165,6 @@ int log_base_type_to_string(const ObLogBaseType log_type,
     strncpy(str ,"ARB_GARBAGE_COLLECTE_SERVICE", str_len);
   } else if (log_type == ARBITRATION_SERVICE_LOG_BASE_TYPE) {
     strncpy(str ,"ARBITRATION_SERVICE", str_len);
-  } else if (log_type == NET_STANDBY_TNT_SERVICE_LOG_BASE_TYPE) {
-    strncpy(str ,"NET_STANDBY_TNT_SERVICE", str_len);
   } else if (log_type == HEARTBEAT_SERVICE_LOG_BASE_TYPE) {
     strncpy(str ,"HEARTBEAT_SERVICE", str_len);
   } else if (log_type == PADDING_LOG_BASE_TYPE) {
@@ -292,18 +275,6 @@ public:
   (void)replay_handler_.unregister_handler(type);                                            \
   (void)checkpoint_executor_.unregister_handler(type);                                       \
 
-#define REGISTER_TO_RESTORESERVICE(type, subhandler)                                        \
-  if (OB_SUCC(ret)) {                                                                       \
-    if (OB_FAIL(restore_local_log_handler_set_.register_handler(type, subhandler))) {         \
-      LOG_WARN("restore_local_log_handler_set_ register failed",                              \
-          K(ret), K(type));                                                                 \
-    } else {                                                                                \
-      LOG_INFO("register to restoreservice success", K(type));                             \
-    }                                                                                       \
-  }
-
-#define UNREGISTER_FROM_RESTORESERVICE(type, subhandler)                                     \
-  (void)restore_local_log_handler_set_.unregister_handler(type);
 } // namespace logservice
 } // namespace oceanbase
 

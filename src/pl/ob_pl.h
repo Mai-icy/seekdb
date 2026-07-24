@@ -492,16 +492,6 @@ public:
   }
 
   bool should_init_as_session_cursor();
-  /*
-  * some package subprogram has special invoker right, though the package may have definer privs
-  * for example: dbms_utility package is definer privs, but some function such as
-  * name_resolve must be run as current_user.
-  * see: 
-  * we hacked it using name compared, for the interface funtion can't get the origin db name and id
-  * test -> oceanbase, we see oceanbase in interface but can't see test.
-  */
-  int is_special_pkg_invoke_right(ObSchemaGetterGuard &guard, bool &flag);
-
   common::ObFixedArray<ObPLSqlInfo, common::ObIAllocator>& get_sql_infos()
   {
     return sql_infos_;

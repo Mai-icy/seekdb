@@ -29,7 +29,6 @@
 #include "pl/sys_package/ob_dbms_limit_calculator_mysql.h"
 #include "pl/sys_package/ob_dbms_vector_mysql.h"
 #include "pl/sys_package/ob_dbms_hybrid_vector_mysql.h"
-#include "pl/pl_recompile/ob_pl_recompile_task_helper.h"
 #include "pl/sys_package/ob_dbms_ai_service.h"
 #include "pl/sys_package/ob_dbms_index_manager.h"
 
@@ -165,9 +164,6 @@
   INTERFACE_DEF(INTERFACE_DBMS_OB_LIMIT_CALCULATOR_PHY_RES_CALCULATE_BY_STADNBY_TENANT, "PHY_RES_CALCULATE_BY_STANDBY_TENANT", (ObDBMSLimitCalculator::phy_res_calculate_by_standby_tenant))
   // end of dbms_ob_limit_calculator
 
-
-  // start of dbms_ddl
-  // end of dbms_ddl
 
   // start of dbms_ai_service
   INTERFACE_DEF(INTERFACE_DBMS_AI_SERVICE_CREATE_AI_MODEL_MYSQL, "DBMS_AI_SERVICE_CREATE_AI_MODEL_MYSQL", (ObDBMSAiService::create_ai_model))

@@ -53,7 +53,6 @@ class ObAllVirtualServer : public common::ObVirtualTableScannerIterator
     CREATE_TIME,
     ROLE,
     SWITCHOVER_STATUS,
-    LOG_RESTORE_SOURCE,
     SYNC_SCN,
     READABLE_SCN
   };
@@ -69,7 +68,6 @@ private:
   char ip_buf_[common::OB_IP_STR_BUFF];
   common::ObAddr addr_;
   common::ObServerConfig *config_;
-  char log_restore_source_buf_[1024];
   char role_buf_[64];
   char switchover_status_buf_[128];
 

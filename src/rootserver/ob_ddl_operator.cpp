@@ -29,9 +29,7 @@
 #include "rootserver/ob_root_service.h"
 #include "rootserver/ob_tablet_drop.h"
 #include "sql/optimizer/stat/ob_dbms_stats_maintenance_window.h"
-#include "pl/ob_pl_persistent.h"
 #include "pl/pl_cache/ob_pl_cache_mgr.h"
-#include "pl/pl_recompile/ob_pl_recompile_task_helper.h"
 #include "share/schema/ob_ccl_rule_sql_service.h"
 #include "share/schema/ob_dependency_info.h"  // relocated-definition owner
 #include "share/schema/ob_multi_version_schema_service.h"  // relocated-definition owner
@@ -353,10 +351,6 @@ int ObDDLOperator::drop_database(const ObDatabaseSchema &db_schema,
                                                                            package_schema->get_package_id(),
                                                                            new_schema_version, trans))) {
            LOG_WARN("drop package failed", KR(ret), "package_id", package_schema->get_package_id());
-         } else if (OB_FAIL(pl::ObRoutinePersistentInfo::delete_dll_from_disk(trans,
-                                                                              package_schema->get_package_id(),
-                                                                              package_schema->get_database_id()))) {
-          LOG_WARN("fail to delete ddl from disk", K(ret));
          }
        }
      }
@@ -388,10 +382,6 @@ int ObDDLOperator::drop_database(const ObDatabaseSchema &db_schema,
         } else if (OB_FAIL(schema_service_impl->get_routine_sql_service().drop_routine(
                            *routine_info, new_schema_version, trans))) {
           LOG_WARN("drop routine failed", KR(ret), "routine_id", routine_id);
-        } else if (OB_FAIL(pl::ObRoutinePersistentInfo::delete_dll_from_disk(trans,
-                                                                             routine_info->get_routine_id(),
-                                                                             routine_info->get_database_id()))) {
-          LOG_WARN("fail to delete ddl from disk", K(ret));
         }
       }
     }
@@ -4738,8 +4728,6 @@ int ObDDLOperator::init_tenant_schemas(
     LOG_WARN("failed to init tenant optimizer stats info", K(ret));
   } else if (OB_FAIL(init_tenant_users(tenant_schema, sys_variable, trans))) {
     LOG_WARN("insert default user failed", K(ret));
-  } else if (OB_FAIL(init_tenant_recompile_pl_obj(sys_variable, trans))) {
-    LOG_WARN("failed to init tenant recompile pl obj", K(ret));
   } else if (OB_FAIL(init_freeze_info(trans))) {
     LOG_WARN("insert freeze info failed", KR(ret));
   } else if (OB_FAIL(init_tenant_srs(trans))) {
@@ -4901,19 +4889,6 @@ int ObDDLOperator::init_tenant_databases(const ObTenantSchema &tenant_schema,
     }
   }
 
-  return ret;
-}
-
-int ObDDLOperator::init_tenant_recompile_pl_obj(const share::schema::ObSysVariableSchema &sys_variable,
-                                       ObMySQLTransaction &trans)
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(pl::ObPLRecompileTaskHelper::init_tenant_recompile_job(
-                                      sys_variable, trans))) {
-    RS_LOG(WARN, "failed init pl recompile task!", K(ret));
-  } else {
-    // do nothing
-  }
   return ret;
 }
 

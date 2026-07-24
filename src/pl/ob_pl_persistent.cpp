@@ -17,7 +17,6 @@
 #define USING_LOG_PREFIX PL_STORAGEROUTINE
 #include "ob_pl_persistent.h"
 #include "ob_pl_build.h"
-#include "share/ob_version.h"
 
 namespace oceanbase
 {
@@ -176,45 +175,6 @@ template int ObRoutinePersistentInfo::check_dep_schema<sql::DependenyTableStore>
                                           const sql::DependenyTableStore &dep_schema_objs,
                                           int64_t merge_version,
                                           bool &match);
-
-
-int ObRoutinePersistentInfo::delete_dll_from_disk(common::ObISQLClient &trans,
-                                              uint64_t key_id,
-                                              uint64_t database_id)
-{
-  int ret = OB_SUCCESS;
-
-  ObMySQLProxy *sql_proxy = nullptr;
-  bool is_primary_cluster = true;
-  if (OB_ISNULL(sql_proxy = GCTX.sql_proxy_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("unexpected sql proxy", K(ret));
-  } else if (OB_FAIL(ObShareUtil::is_primary_cluster(is_primary_cluster))) {
-    LOG_WARN("fail to check whether is primary cluster", KR(ret), K(is_primary_cluster));
-  } else if (!is_primary_cluster) {
-    // do nothing
-  } else {
-
-    ObSqlString sql;
-    int64_t affected_rows = 0;
-    ObMySQLProxy *sql_proxy = nullptr;
-    if (OB_INVALID_ID == key_id) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpected key id.", K(ret));
-    } else if (OB_FAIL(sql.assign_fmt("delete FROM %s where database_id = %ld and key_id = %ld", OB_ALL_NCOMP_DLL_V2_TNAME, database_id, key_id))) {
-      LOG_WARN("delete from __all_ncomp_dll_v2 table failed.", K(ret), K(key_id));
-    } else {
-      if (OB_FAIL(trans.write(sql.ptr(), affected_rows))) {
-        LOG_WARN("execute query failed", K(ret), K(sql));
-      } else {
-        // do nothing
-        LOG_INFO("succ to delete dll", K(key_id), K(affected_rows));
-      }
-    }
-  }
-
-  return ret;
-}
 
 
 } // namespace pl

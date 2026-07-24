@@ -26,6 +26,7 @@
 #include "share/ob_ddl_checksum.h"
 #include "share/ob_ddl_sim_point.h"
 #include "common/object/ob_object.h"
+#include "common/mysqlclient/ob_isql_connection.h"
 #include "share/compaction/ob_shared_storage_compaction_util.h"
 #include "share/tablet/ob_tablet_table_operator.h"
 #include "share/storage/ob_tablet_replica_checksum_table_storage.h"

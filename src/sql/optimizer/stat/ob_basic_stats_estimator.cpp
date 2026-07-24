@@ -154,9 +154,7 @@ int ObBasicStatsEstimator::estimate_block_count(ObExecContext &ctx,
   ObSEArray<ObObjectID, 4> partition_ids;
   ObSEArray<EstimateBlockRes, 4> estimate_result;
   hash::ObHashMap<int64_t, int64_t> first_part_idx_map;
-  uint64_t table_id = share::is_real_table_mapping_virtual_table(param.table_id_)
-                          ? share::get_real_table_mappings_tid(param.table_id_)
-                          : param.table_id_;
+  uint64_t table_id = param.table_id_;
   if (is_virtual_table(table_id)) {  // virtual table no need estimate block count
     // do nothing
   } else if (OB_FAIL(get_all_tablet_id_and_object_id(param, tablet_ids, partition_ids))) {
@@ -744,9 +742,7 @@ int ObBasicStatsEstimator::update_last_modified_count(sqlclient::ObISQLConnectio
   bool is_all_update = false;
 
 
-  //if this is virtual table real agent, we need update the real table id modifed count
-  uint64_t table_id = share::is_real_table_mapping_virtual_table(param.table_id_) ?
-                              share::get_real_table_mappings_tid(param.table_id_) : param.table_id_;
+  uint64_t table_id = param.table_id_;
   if (OB_ISNULL(conn)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(ret), K(conn));

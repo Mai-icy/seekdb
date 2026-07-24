@@ -1090,7 +1090,6 @@ RPC_CERT_EXPIRE_TIME	timestamp(6)	NO
 START_SERVICE_TIME	bigint(20)	NO		NULL
 CREATE_TIME	timestamp(6)	NO		NULL
 ROLE	varchar(64)	NO		NULL
-LOG_RESTORE_SOURCE	varchar(1024)	NO		NULL
 SYNC_SCN	bigint(20) unsigned	NO		NULL
 READABLE_SCN	bigint(20) unsigned	NO		NULL
 select /*+QUERY_TIMEOUT(60000000)*/ count(*) as cnt from (select * from oceanbase.V$OB_SERVER_STAT limit 1);

@@ -71,10 +71,6 @@ ob_set_subtarget(ob_pl sys_package
   sys_package/ob_dbms_index_manager.cpp
 )
 
-ob_set_subtarget(ob_pl pl_recompile
-  pl_recompile/ob_pl_recompile_task_helper.cpp
-)
-
 ob_server_add_target(ob_pl)
 
 set(SYS_PACK_SQL_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/share/inner_table/sys_package)

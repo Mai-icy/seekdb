@@ -39,16 +39,6 @@ uint64_t ObSchemaUtils::get_extract_schema_id(const uint64_t schema_id)
   return schema_id;
 }
 
-uint64_t ObSchemaUtils::get_real_table_mappings_tid(const uint64_t ref_table_id)
-{
-  int ret = OB_SUCCESS;
-  uint64_t base_table_id = share::get_real_table_mappings_tid(ref_table_id);
-  if (common::OB_INVALID_ID != base_table_id) {
-    LOG_DEBUG("debug get real table id", K(ret), K(ref_table_id), K(base_table_id));
-  }
-  return base_table_id;
-}
-
 int ObSchemaUtils::get_all_table_name(
     const char* &table_name,
     const ObServerSchemaService *schema_service /*=NULL*/)

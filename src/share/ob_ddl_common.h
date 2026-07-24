@@ -184,7 +184,6 @@ enum ObDDLTaskType
   UPDATE_AUTOINC_SCHEMA = 9,
   CANCEL_DDL_TASK = 10,
   MODIFY_NOT_NULL_COLUMN_STATE_TASK = 11,
-  // 12 was used by removed recover restore table DDL. Do not reuse.
   SWITCH_VEC_INDEX_NAME_TASK = 15
 };
 

@@ -4175,9 +4175,8 @@ void ObTenantDagScheduler::reload_config()
   set_thread_score(ObDagPrio::DAG_PRIO_COMPACTION_HIGH, GCONF.compaction_high_thread_score);
   set_thread_score(ObDagPrio::DAG_PRIO_COMPACTION_MID, GCONF.compaction_mid_thread_score);
   set_thread_score(ObDagPrio::DAG_PRIO_COMPACTION_LOW, GCONF.compaction_low_thread_score);
-  // HA_MID / HA_LOW are aliases of HA_HIGH (see ObDagPrio). Setting only
-  // HA_HIGH here; setting all three would write the same scheduler slot three
-  // times and let ha_low_thread_score clobber ha_high_thread_score.
+  // HA_MID / HA_LOW are aliases of HA_HIGH (see ObDagPrio), so configure the
+  // shared scheduler slot once through ha_high_thread_score.
   set_thread_score(ObDagPrio::DAG_PRIO_HA_HIGH, GCONF.ha_high_thread_score);
   set_thread_score(ObDagPrio::DAG_PRIO_DDL, GCONF.ddl_thread_score);
   set_thread_score(ObDagPrio::DAG_PRIO_TTL, GCONF.ttl_thread_score);

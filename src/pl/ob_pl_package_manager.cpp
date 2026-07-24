@@ -965,8 +965,6 @@ int ObPLPackageManager::set_package_var_val(const ObPLResolveCtx &resolve_ctx,
   OZ (package_state->set_package_var_val(var_idx, new_var_val, resolve_ctx, !need_deserialize));
   OX (need_free_old = true);
   OX (need_free_new = false);
-  OZ (update_special_package_status(resolve_ctx, package_id, *var, old_var_val, new_var_val));
-
   if (OB_NOT_NULL(var) && var->get_type().is_cursor_type() && !var->get_type().is_cursor_var()) {
     // package ref cursor variable, refrence outside, do not destruct old var val.
   } else {
@@ -990,31 +988,6 @@ int ObPLPackageManager::set_package_var_val(const ObPLResolveCtx &resolve_ctx,
   }
   return ret;
 }
-
-int ObPLPackageManager::update_special_package_status(const ObPLResolveCtx &resolve_ctx,
-                                                      uint64_t package_id,
-                                                      const ObPLVar &var,
-                                                      const ObObj &old_val,
-                                                      const ObObj &new_val)
-{
-  int ret = OB_SUCCESS;
-
-  ObPLPackage *package_spec = nullptr;
-  ObPLPackage *package_body = nullptr;
-
-  OZ (get_cached_package(resolve_ctx, package_id, package_spec, package_body));
-
-  CK (OB_NOT_NULL(package_spec));
-
-  if (OB_FAIL(ret)) {
-    // do nothing
-  } else if (true &&
-               0 == package_spec->get_name().compare("DBMS_PROFILER")) {
-  }
-
-  return ret;
-}
-
 
 int ObPLPackageManager::load_package_spec(const ObPLResolveCtx &resolve_ctx,
                                           const ObPackageInfo &package_spec_info,

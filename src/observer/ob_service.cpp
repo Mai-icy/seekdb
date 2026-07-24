@@ -44,7 +44,6 @@
 #include "share/ob_global_merge_table_operator.h"
 #include "share/ob_column_checksum_error_operator.h"
 #include "storage/meta_store/ob_server_storage_meta_service.h"
-// ObLogRestoreSourceMgr removed - using config parameter instead
 #include "share/ob_all_tenant_info.h"  // ObAllTenantInfoProxy
 #include "share/ob_server_struct.h"    // GCTX
 #include "storage/ls/ob_ls.h"
@@ -246,8 +245,7 @@ int ObService::start()
       LOG_ERROR("failed to load tenant info from KV storage on restart, KV must have data from bootstrap",
                KR(ret));
     } else {
-      // Reject old data directories persisted as standby instead of starting
-      // without the removed standby schema refresh path.
+      // SeekDB only supports primary-role data directories.
       if (tenant_info.is_primary()) {
         GCTX.server_role_ = common::PRIMARY_CLUSTER;
       } else if (tenant_info.is_standby()) {
@@ -1640,7 +1638,7 @@ int ObService::init_tenant_config(
 
 int ObService::change_external_storage_dest(obcall::ObAdminSetConfigArg &arg)
 {
-  // Backup/archive dest removed, changing external storage dest is not supported
+  // Changing external storage destination is not supported.
   int ret = OB_NOT_SUPPORTED;
   UNUSED(arg);
   LOG_WARN("change external storage dest is not supported", K(ret));
