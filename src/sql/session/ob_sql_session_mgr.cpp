@@ -25,31 +25,206 @@ using namespace oceanbase::sql;
 using namespace oceanbase::share;
 using namespace oceanbase::observer;
 
+ObSQLSessionMgr::SessionPool::SessionPool()
+  : session_pool_()
+{
+  MEMSET(session_array_, 0, POOL_CAPACITY * sizeof(ObSQLSessionInfo *));
+}
+
+int ObSQLSessionMgr::SessionPool::init(const int64_t capacity)
+{
+  int ret = OB_SUCCESS;
+  int64_t real_cap = capacity;
+  if (real_cap > POOL_CAPACITY) {
+    real_cap = POOL_CAPACITY;
+  }
+  char *session_buf = reinterpret_cast<char *>(session_array_);
+  OZ (session_pool_.init(real_cap, session_buf));
+  return ret;
+}
+
+int ObSQLSessionMgr::SessionPool::pop_session(ObSQLSessionInfo *&session)
+{
+  int ret = OB_SUCCESS;
+  session = NULL;
+  if (OB_FAIL(session_pool_.pop(session))) {
+    if (ret != OB_ENTRY_NOT_EXIST) {
+      LOG_WARN("failed to pop session", K(ret),
+               K(session_pool_.get_total()), K(session_pool_.get_free()));
+    } else {
+      ret = OB_SUCCESS;
+      LOG_DEBUG("session pool is empty",
+                K(session_pool_.get_total()), K(session_pool_.get_free()));
+    }
+  }
+  return ret;
+}
+
+int ObSQLSessionMgr::SessionPool::push_session(ObSQLSessionInfo *&session)
+{
+  int ret = OB_SUCCESS;
+  if (OB_NOT_NULL(session)) {
+    if (OB_FAIL(session_pool_.push(session))) {
+      if (ret != OB_SIZE_OVERFLOW) {
+        LOG_WARN("failed to push session", K(ret),
+                 K(session_pool_.get_total()), K(session_pool_.get_free()));
+      } else {
+        ret = OB_SUCCESS;
+        LOG_DEBUG("session pool is full",
+                  K(session_pool_.get_total()), K(session_pool_.get_free()));
+      }
+    } else {
+      session = NULL;
+    }
+  }
+  return ret;
+}
+
+int64_t ObSQLSessionMgr::SessionPool::count() const
+{
+  return session_pool_.get_total();
+}
+
 ObSQLSessionMgr::ObSQLSessionMgr()
-  : sessinfo_map_(),
+  : session_pool_(),
+    allocated_session_count_(0),
+    session_allocator_(lib::ObMemAttr("SQLSessionInfo"), share::server_cpu_count(), 4),
+    sessinfo_map_(ValueAlloc(this)),
     next_sessid_(1)
 {}
 
 ObSQLSessionMgr::~ObSQLSessionMgr()
 {}
 
+ObSQLSessionInfo *ObSQLSessionMgr::alloc_session()
+{
+  int ret = OB_SUCCESS;
+  ObSQLSessionInfo *session = NULL;
+  OX (session_pool_.pop_session(session));
+  if (OB_ISNULL(session)) {
+    OX (session = op_instance_alloc_args(&session_allocator_,
+                                         ObSQLSessionInfo));
+    if (session != NULL) {
+      OX (ATOMIC_FAA(&allocated_session_count_, 1));
+    }
+  }
+  OV (OB_NOT_NULL(session));
+  OX (session->set_valid(true));
+  OX (session->set_shadow(true));
+  return session;
+}
+
+void ObSQLSessionMgr::release_session(ObSQLSessionInfo *session)
+{
+  int ret = OB_SUCCESS;
+  SessionPool *session_pool = NULL;
+  // add tracepoint for control session pool.
+  int64_t code = 0;
+  code = OB_E(EventTable::EN_SESS_POOL_MGR_CTRL) OB_SUCCESS;
+  if (true &&
+      session->can_release_to_pool() && code == OB_SUCCESS) {
+    if (session->is_use_inner_allocator() && !session->is_server_stopping()) {
+      session_pool = &session_pool_;
+    }
+  }
+  if (OB_NOT_NULL(session_pool)) {
+    OX (session->destroy(true));
+    OX (session->set_acquire_from_pool(true));
+    OX (session_pool->push_session(session));
+  }
+  if (OB_NOT_NULL(session)) {
+    OX (op_free(session));
+    OX (ATOMIC_FAA(&allocated_session_count_, -1));
+    OX (session = NULL);
+  }
+}
+
+void ObSQLSessionMgr::clean_session_pool()
+{
+  int ret = OB_SUCCESS;
+  ObSQLSessionInfo *session = NULL;
+  // Shutdown normally stops new accesses before draining this pool. Any session
+  // that races with the drain is released when the process terminates.
+  while (session_pool_.count() > 0) {
+    OX (session_pool_.pop_session(session));
+    if (OB_NOT_NULL(session)) {
+      OX (op_free(session));
+      OX (ATOMIC_FAA(&allocated_session_count_, -1));
+      OX (session = NULL);
+    }
+  }
+}
+
+int ObSQLSessionMgr::ValueAlloc::clean_sessions()
+{
+  int ret = OB_SUCCESS;
+  if (OB_ISNULL(session_mgr_)) {
+    ret = OB_NOT_INIT;
+    LOG_WARN("session manager is null", K(ret));
+  } else {
+    session_mgr_->clean_session_pool();
+  }
+  return ret;
+}
+
+namespace
+{
+class KillInnerSessionByClient
+{
+public:
+  explicit KillInnerSessionByClient(const uint64_t client_key)
+      : client_key_(client_key),
+        ret_(OB_SUCCESS),
+        killed_count_(0)
+  {
+  }
+
+  bool operator()(ObSQLSessionMgr::Key, ObSQLSessionInfo *session)
+  {
+    if (OB_ISNULL(session)) {
+      ret_ = OB_SUCCESS == ret_ ? OB_ERR_UNEXPECTED : ret_;
+      LOG_WARN_RET(ret_, "session is null", K_(client_key));
+    } else if (client_key_ == session->get_inner_sql_client_key()) {
+      const int tmp_ret =
+          ObSQLSessionMgr::kill_query(*session, ObSQLSessionState::QUERY_KILLED);
+      if (OB_SUCCESS != tmp_ret) {
+        ret_ = OB_SUCCESS == ret_ ? tmp_ret : ret_;
+        LOG_WARN_RET(tmp_ret, "failed to kill inner sql query",
+                     K_(client_key), "session_id", session->get_server_sid());
+      }
+      ++killed_count_;
+    }
+    // Continue traversing so one failed session does not prevent the others
+    // belonging to the same client from being interrupted.
+    return true;
+  }
+
+  int get_ret() const { return ret_; }
+  int64_t get_killed_count() const { return killed_count_; }
+
+private:
+  uint64_t client_key_;
+  int ret_;
+  int64_t killed_count_;
+};
+}
+
 ObSQLSessionInfo *ObSQLSessionMgr::ValueAlloc::alloc_value()
 {
   int ret = OB_SUCCESS;
-  ObSQLSessionInfo *session = op_instance_alloc_args(&session_allocator_,
-                                                     ObSQLSessionInfo);
+  ObSQLSessionInfo *session = NULL;
   int64_t alloc_total_count = 0;
-  if (OB_ISNULL(session)) {
+  if (OB_ISNULL(session_mgr_)) {
+    ret = OB_NOT_INIT;
+    LOG_WARN("session manager is null", K(ret));
+  } else if (OB_ISNULL(session = session_mgr_->alloc_session())) {
     ret = OB_ALLOCATE_MEMORY_FAILED;
     LOG_WARN("fail to alloc session", K(ret));
   } else {
-    ATOMIC_FAA(&active_count_, 1);
-    session->set_valid(true);
-    session->set_shadow(true);
-  }
-  alloc_total_count = ATOMIC_FAA(&alloc_total_count_, 1);
-  if (alloc_total_count > 0 && alloc_total_count % 10000 == 0) {
-    LOG_INFO("alloc_session_count", K(alloc_total_count));
+    OX (alloc_total_count = ATOMIC_FAA(&alloc_total_count_, 1));
+    if (alloc_total_count > 0 && alloc_total_count % 10000 == 0) {
+      LOG_INFO("alloc_session_count", K(alloc_total_count));
+    }
   }
   return session;
 }
@@ -57,10 +232,15 @@ ObSQLSessionInfo *ObSQLSessionMgr::ValueAlloc::alloc_value()
 void ObSQLSessionMgr::ValueAlloc::free_value(ObSQLSessionInfo *session)
 {
   if (OB_NOT_NULL(session)) {
+    int ret = OB_SUCCESS;
     int64_t free_total_count = 0;
-    op_free(session);
-    ATOMIC_FAA(&active_count_, -1);
-    free_total_count = ATOMIC_FAA(&free_total_count_, 1);
+    if (OB_NOT_NULL(session_mgr_)) {
+      session_mgr_->release_session(session);
+    } else {
+      LOG_ERROR_RET(OB_NOT_INIT, "session manager is null while freeing session");
+      op_free(session);
+    }
+    OX (free_total_count = ATOMIC_FAA(&free_total_count_, 1));
     if (free_total_count > 0 && free_total_count % 10000 == 0) {
       LOG_INFO("free_session_count", K(free_total_count));
     }
@@ -70,7 +250,9 @@ void ObSQLSessionMgr::ValueAlloc::free_value(ObSQLSessionInfo *session)
 int ObSQLSessionMgr::init()
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL(sessinfo_map_.init())) {
+  if (OB_FAIL(session_pool_.init(SessionPool::POOL_CAPACITY))) {
+    LOG_WARN("fail to init session pool", K(ret));
+  } else if (OB_FAIL(sessinfo_map_.init())) {
     LOG_WARN("fail to init session map", K(ret));
   }
   // Start from 1 so first allocated sessid is 2, avoiding collision with
@@ -352,19 +534,48 @@ int ObSQLSessionMgr::kill_all_sessions(bool force_kill)
   KillAllSessions kt_func(this, force_kill);
   OZ (for_each_session(kt_func));
   OX (ret = kt_func.get_ret_code());
+  OZ (sessinfo_map_.clean_sessions());
   LOG_INFO("killed all sessions", K(force_kill));
   return ret;
 }
 
 void ObSQLSessionMgr::wait_sessions_drained()
 {
-  while (sessinfo_map_.get_alloc_handle().count() != 0) {
-    LOG_WARN_RET(OB_NEED_RETRY, "session manager is waiting for sessions to drain",
-                 "count", sessinfo_map_.get_alloc_handle().count());
-    usleep(1000 * 1000);
-  }
+  int64_t session_count = 0;
+  do {
+    clean_session_pool();
+    session_count = ATOMIC_LOAD(&allocated_session_count_);
+    if (session_count > 0) {
+      LOG_WARN_RET(OB_NEED_RETRY, "session manager is waiting for sessions to drain",
+                   K(session_count));
+      usleep(1000 * 1000);
+    }
+  } while (session_count > 0);
   LOG_INFO("all managed sessions have drained");
 }
+
+int ObSQLSessionMgr::kill_inner_sessions_by_client_key(const uint64_t client_key)
+{
+  int ret = OB_SUCCESS;
+  int64_t killed_count = 0;
+  if (OB_UNLIKELY(0 == client_key)) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("invalid inner sql client key", K(ret), K(client_key));
+  } else {
+    KillInnerSessionByClient kill_func(client_key);
+    if (OB_FAIL(for_each_session(kill_func))) {
+      LOG_WARN("failed to traverse sessions", K(ret), K(client_key));
+    } else {
+      ret = kill_func.get_ret();
+      killed_count = kill_func.get_killed_count();
+    }
+  }
+  if (killed_count > 0) {
+    LOG_INFO("kill inner sql queries by client", K(ret), K(client_key), K(killed_count));
+  }
+  return ret;
+}
+
 
 bool ObSQLSessionMgr::CheckSessionFunctor::operator()(sql::ObSQLSessionMgr::Key key,
                                                       ObSQLSessionInfo *sess_info)
