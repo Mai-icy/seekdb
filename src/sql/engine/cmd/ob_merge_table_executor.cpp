@@ -36,7 +36,6 @@ int ObMergeTableExecutor::execute(ObExecContext &ctx, ObMergeTableStmt &stmt)
   int ret = OB_SUCCESS;
   ObSQLSessionInfo *session = ctx.get_my_session();
   ObInnerSQLConnection *conn = NULL;
-  sqlclient::ObISQLConnectionGuard conn_guard;
   
   bool need_tx = false;
   int64_t total_affected_rows = 0;
@@ -47,12 +46,9 @@ int ObMergeTableExecutor::execute(ObExecContext &ctx, ObMergeTableStmt &stmt)
   } else if (OB_ISNULL(ctx.get_sql_proxy())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("sql proxy is null", K(ret));
-  } else if (OB_FAIL(
-                 ObInnerSQLConnection::create_spi_connection_with_external_session(
-                     session, conn_guard))) {
+  } else if (OB_FAIL(ObInnerSQLConnection::create_spi(session, conn))) {
     LOG_WARN("failed to acquire inner sql connection", K(ret));
   } else {
-    conn = static_cast<ObInnerSQLConnection *>(conn_guard.get_ptr());
   }
 
   if (OB_SUCC(ret) && !session->is_in_transaction()) {
@@ -138,6 +134,11 @@ int ObMergeTableExecutor::execute(ObExecContext &ctx, ObMergeTableStmt &stmt)
     if (OB_NOT_NULL(plan_ctx)) {
       plan_ctx->set_affected_rows(total_affected_rows);
     }
+  }
+
+  if (OB_NOT_NULL(conn)) {
+    conn->unref();
+    conn = NULL;
   }
 
   return ret;

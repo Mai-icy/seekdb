@@ -74,7 +74,6 @@ int ObHybridSearchExecutor::execute_search(ObObj &query_res) {
   ObString query_sql;
   common::ObMySQLProxy *sql_proxy = NULL;
   observer::ObInnerSQLConnection *conn = NULL;
-  common::sqlclient::ObISQLConnectionGuard conn_guard;
   if (OB_ISNULL(ctx_)) {
     ret = OB_NOT_INIT;
     LOG_WARN("exec context is not initialized", K(ret));
@@ -86,12 +85,9 @@ int ObHybridSearchExecutor::execute_search(ObObj &query_res) {
   } else if (OB_ISNULL(sql_proxy = ctx_->get_sql_proxy())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("sql proxy is null", K(ret), KP(sql_proxy));
-  } else if (OB_FAIL(
-                 observer::ObInnerSQLConnection::create_spi_connection_with_external_session(
-                     session_info_, conn_guard))) {
+  } else if (OB_FAIL(observer::ObInnerSQLConnection::create_spi(session_info_, conn))) {
     LOG_WARN("failed to acquire connection with current session", K(ret));
-  } else if (OB_ISNULL(conn = static_cast<observer::ObInnerSQLConnection *>(
-                           conn_guard.get_ptr()))) {
+  } else if (OB_ISNULL(conn)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("inner sql connection is null", K(ret), KP(conn));
   } else {
@@ -138,6 +134,11 @@ int ObHybridSearchExecutor::execute_search(ObObj &query_res) {
         ret = COVER_SUCC(tmp_ret);
       }
     }
+  }
+
+  if (OB_NOT_NULL(conn)) {
+    conn->unref();
+    conn = NULL;
   }
 
   return ret;

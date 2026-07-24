@@ -1032,17 +1032,15 @@ int ObDynamicSampling::do_estimate_rowcount(ObSQLSessionInfo *session_info,
   }
   if (OB_SUCC(ret)) {
     observer::ObInnerSQLConnection *conn = NULL;
-    sqlclient::ObISQLConnectionGuard conn_guard;
     SMART_VAR(ObMySQLProxy::MySQLResult, proxy_result) {
       sqlclient::ObMySQLResult *client_result = NULL;
       if (OB_UNLIKELY(raw_sql.empty())) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("get unexpected empty", K(ret));
-      } else if (OB_FAIL(observer::ObInnerSQLConnection::create_connection_with_external_session(
-                             session_info, conn_guard))) {
+      } else if (OB_FAIL(observer::ObInnerSQLConnection::create_with_session(
+                             session_info, conn))) {
         LOG_WARN("failed to acquire inner connection", K(ret));
-      } else if (OB_ISNULL(conn = static_cast<observer::ObInnerSQLConnection *>(
-                               conn_guard.get_ptr()))) {
+      } else if (OB_ISNULL(conn)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("conn is null", K(ret));
       } else if (OB_FAIL(conn->execute_read(raw_sql.ptr(),
@@ -1084,6 +1082,10 @@ int ObDynamicSampling::do_estimate_rowcount(ObSQLSessionInfo *session_info,
           ret = OB_SUCCESS;
         }
       }
+    }
+    if (conn != NULL) {
+      conn->unref();
+      conn = NULL;
     }
   }
   return ret;

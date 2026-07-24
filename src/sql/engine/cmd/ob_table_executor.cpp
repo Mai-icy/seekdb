@@ -387,7 +387,6 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
           bool original_autocommit = false;
           ObBasicSessionInfo::UserScopeGuard user_scope_guard(my_session->get_sql_scope_flags());
           observer::ObInnerSQLConnection *conn = NULL;
-          sqlclient::ObISQLConnectionGuard conn_guard;
           
           if (OB_FAIL(my_session->get_autocommit(original_autocommit))) {
             LOG_WARN("failed to get autocommit", K(ret));
@@ -395,11 +394,10 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
                      !original_autocommit && OB_FAIL(my_session->set_autocommit(true))) {
             LOG_WARN("failed to set autocommit", K(ret));
           } else {
-            if (OB_FAIL(observer::ObInnerSQLConnection::create_connection_with_external_session(
-                            my_session, conn_guard))) {
+            if (OB_FAIL(observer::ObInnerSQLConnection::create_with_session(
+                            my_session, conn))) {
               LOG_WARN("failed to acquire inner connection", K(ret));
-            } else if (OB_ISNULL(conn = static_cast<observer::ObInnerSQLConnection *>(
-                                     conn_guard.get_ptr()))) {
+            } else if (OB_ISNULL(conn)) {
               ret = OB_INNER_STAT_ERROR;
               LOG_WARN("connection can not be NULL", K(ret));
             } else if (OB_FAIL(
@@ -414,8 +412,10 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
                 LOG_WARN("failed to set autocommit", K(ret), K(tmp_ret), K(original_autocommit));
               }
             }
-            conn = NULL;
-            conn_guard.reset();
+            if (OB_NOT_NULL(conn)) {
+              conn->unref();
+              conn = NULL;
+            }
           } 
         }
 

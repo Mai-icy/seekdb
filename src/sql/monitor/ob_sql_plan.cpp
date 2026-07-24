@@ -317,7 +317,6 @@ int ObSqlPlan::inner_store_sql_plan_for_explain(ObExecContext *ctx,
   std::string time_str = current_time.toDateTime();
   sql::ObSQLSessionInfo *session = NULL;
   ObInnerSQLConnection *conn = NULL;
-  sqlclient::ObISQLConnectionGuard conn_guard;
   ObSQLSessionInfo::StmtSavedValue *saved_session = NULL;
   transaction::ObTxDesc *save_tx_desc = NULL;
   int64_t save_nested_count = 0;
@@ -329,12 +328,9 @@ int ObSqlPlan::inner_store_sql_plan_for_explain(ObExecContext *ctx,
       OB_ISNULL(session = ctx->get_my_session())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("unexpect null sql proxy", K(ret));
-  } else if (OB_FAIL(
-                 ObInnerSQLConnection::create_spi_connection_with_external_session(
-                     session, conn_guard))) {
+  } else if (OB_FAIL(ObInnerSQLConnection::create_spi(session, conn))) {
     LOG_WARN("failed to get sql connection", K(ret));
-  } else if (OB_ISNULL(conn = static_cast<ObInnerSQLConnection *>(
-                           conn_guard.get_ptr()))) {
+  } else if (OB_ISNULL(conn)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("unexpect null sql connection", K(ret));
   } else if (OB_FAIL(prepare_and_store_session(session,
@@ -472,7 +468,10 @@ int ObSqlPlan::inner_store_sql_plan_for_explain(ObExecContext *ctx,
       LOG_WARN("failed to exec inner sql", K(ret));
     }
   }
-  conn_guard.reset();
+  if (OB_NOT_NULL(conn)) {
+    conn->unref();
+    conn = NULL;
+  }
   if (OB_NOT_NULL(session) && need_restore_session) {
     int end_ret = restore_session(session,
                                   saved_session,
