@@ -45,9 +45,13 @@ public:
   using ObISQLClient::write;
 
   int connect(const int32_t group_id, ObISQLClient *sql_client);
-  virtual sqlclient::ObISQLConnection *get_connection() override { return conn_.get_ptr(); }
-  virtual int acquire_connection(sqlclient::ObISQLConnectionGuard &conn,
+  virtual sqlclient::ObISQLConnection *get_connection() override { return conn_; }
+  virtual int acquire_connection(sqlclient::ObISQLConnection *&conn,
+                                 ObISQLClient *client_addr,
                                  const int32_t group_id) override;
+  virtual int release_connection(sqlclient::ObISQLConnection *conn,
+                                 const bool success) override;
+  virtual int on_client_inactive(ObISQLClient *client_addr) override;
 
   // in some situation, it allows continuation of SQL execution after failure in transaction,
   // and last_error should be reset.
@@ -63,14 +67,14 @@ public:
 protected:
   int errno_;
   int64_t statement_count_;
-  sqlclient::ObISQLConnectionGuard conn_;
+  sqlclient::ObISQLConnection *conn_;
   ObISQLClient *sql_client_;
   DISALLOW_COPY_AND_ASSIGN(ObSingleConnectionProxy);
 };
 
 inline bool ObSingleConnectionProxy::check_inner_stat() const
 {
-  bool bret = (OB_SUCCESS == errno_ && NULL != sql_client_ && conn_.is_valid());
+  bool bret = (OB_SUCCESS == errno_ && NULL != sql_client_ && NULL != conn_);
   if (!bret) {
     COMMON_MYSQLP_LOG_RET(WARN, errno_, "invalid inner stat",
                           "errno", errno_, K_(sql_client), K_(conn));
