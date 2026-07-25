@@ -19,6 +19,7 @@
 #include "ob_static_engine_expr_cg.h"
 #include "sql/resolver/expr/ob_raw_expr_util.h"
 #include "sql/code_generator/ob_expr_generator_impl.h"
+#include "sql/engine/expr/ob_expr_get_path.h"
 #include "sql/engine/expr/ob_expr_lob_utils.h"
 
 namespace oceanbase
@@ -497,6 +498,25 @@ int ObStaticEngineExprCG::cg_expr_by_operator(const ObIArray<ObRawExpr *> &raw_e
           LOG_WARN("unpexected dynamic eval qm", K(ret), KPC(c_expr));
         } else {
           rt_expr->eval_func_ = eval_questionmark_nmb2decint_eqcast;
+        }
+      }
+    } else if (T_PSEUDO_EXTERNAL_FILE_COL == raw_expr->get_expr_type()) {
+      ObIExprExtraInfo *extra_info = nullptr;
+      ObPseudoColumnRawExpr *column_expr = static_cast<ObPseudoColumnRawExpr*>(raw_expr);
+      if (OB_FAIL(ObExprExtraInfoFactory::alloc(*op_cg_ctx_.allocator_, rt_expr->type_, extra_info))) {
+        LOG_WARN("Failed to allocate memory for ObDataAccessPathExtraInfo", K(ret));
+      } else if (OB_ISNULL(extra_info)) {
+        ret = OB_ERR_UNEXPECTED;
+        LOG_WARN("extra_info should not be nullptr", K(ret));
+      } else {
+        ObDataAccessPathExtraInfo *data_access_info = static_cast<ObDataAccessPathExtraInfo *>(extra_info);
+        if (OB_FAIL(ob_write_string(*op_cg_ctx_.allocator_,
+                                    column_expr->get_data_access_path(),
+                                    data_access_info->data_access_path_))) {
+          LOG_WARN("fail to write string", K(ret));
+        } else {
+          rt_expr->extra_info_ = extra_info;
+          LOG_DEBUG("external file col expr", K(ret), "path", data_access_info->data_access_path_);
         }
       }
     } else if (!IS_EXPR_OP(rt_expr->type_) || IS_AGGR_FUN(rt_expr->type_)) {
@@ -1504,7 +1524,13 @@ ObStaticEngineExprCG::ObExprBatchSize ObStaticEngineExprCG::get_expr_execute_siz
   bool has_wrapper_inner_expr = false;
   for (int64_t i = 0; i < raw_exprs.count(); i++) {
     ObItemType type = raw_exprs.at(i)->get_expr_type();
-    if (T_OP_GET_USER_VAR == type) {
+    if (T_OP_ASSIGN == type) {
+      // User-variable assignments are stateful across rows. Evaluating a
+      // whole expression batch at once can read the same previous value for
+      // multiple rows before the assignment expression is evaluated.
+      size = ObExprBatchSize::one;
+      break;
+    } else if (T_OP_GET_USER_VAR == type) {
       has_usr_var_expr = true;
     } else if (T_FUN_UDF == type) {
       has_udf_expr = true;
@@ -1612,7 +1638,8 @@ int ObStaticEngineExprCG::gen_expr_with_row_desc(const ObRawExpr *expr,
                                  session,
                                  schema_guard,
                                  0,
-                                 param_cnt);
+                                 param_cnt,
+                                 GET_MIN_CLUSTER_VERSION()); // ?
     expr_cg.set_rt_question_mark_eval(true);
     expr_cg.set_need_flatten_gen_col(false);
     expr_cg.set_contain_dynamic_eval_rt_qm(contain_dynamic_eval_rt_qm_);
