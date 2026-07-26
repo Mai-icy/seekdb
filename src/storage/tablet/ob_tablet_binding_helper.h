@@ -161,6 +161,9 @@ public:
   void reset();
   TO_STRING_KV(K_(tablet_ids), K_(binding_datas));
 public:
+
+  uint64_t data_format_version_;
+  share::ObLSID ls_id_;
   ObSArray<ObTabletID> tablet_ids_;
   ObSArray<ObTabletBindingMdsUserData> binding_datas_;
 private:

@@ -21,12 +21,12 @@
 #include "logservice/ob_log_base_type.h"
 #include "share/scn.h"
 #include "lib/lock/ob_recursive_mutex.h"
-#include "share/rc/ob_tenant_base.h"
+#include "share/rc/ob_server_runtime.h"
 #include "observer/vector_index/ob_plugin_vector_index_adaptor.h"
 #include "observer/vector_index/ob_plugin_vector_index_scheduler.h"
 #include "observer/vector_index/ob_plugin_vector_index_util.h"
 #include "storage/vector_type/ob_vector_common_util.h"
-#include "observer/vector_index/ob_tenant_vector_index_async_task.h"
+#include "observer/vector_index/ob_vector_index_async_task.h"
 #include "observer/vector_index/ob_vector_index_async_task_util.h"
 #include "ob_vector_kmeans_ctx.h"
 #include "observer/vector_index/ob_vector_index_ivf_cache_mgr.h"
@@ -330,16 +330,15 @@ public:
     sql_proxy_(NULL),
     memory_context_(NULL),
     all_vsag_use_mem_(NULL),
-    tenant_vec_async_task_sched_(nullptr),
-    is_vec_async_task_started_(false),
-    single_index_mgr_(nullptr)
+    vec_async_task_sched_(nullptr),
+    is_vec_async_task_started_(false)
   {}
   virtual ~ObPluginVectorIndexService();
   int init(schema::ObMultiVersionSchemaService *schema_service,
            ObLSService *ls_service);
   bool is_inited() { return is_inited_; }
-  // mtl interfaces
-  static int mtl_init(ObPluginVectorIndexService *&service);
+  // Server module interfaces.
+  static int server_module_init(ObPluginVectorIndexService *&service);
   int start();
   void stop();
   void wait();
@@ -367,7 +366,7 @@ public:
   void inner_switch_to_follower();
   void deactivate() override;
   int activate() override;
-  int alloc_tenant_vec_async_task_sched();
+  int alloc_vec_async_task_sched();
   ObFIFOAllocator &get_allocator() { return allocator_; }
 
   // feature interfaces
@@ -460,10 +459,10 @@ private:
   common::ObMySQLProxy *sql_proxy_;
   ObFIFOAllocator allocator_;
   // do not use this memory context directly
-  // use wrapped memory context in ob_tenant_vector_allocator.h and init by this memory context
+  // use wrapped memory context in ob_vector_allocator.h and init by this memory context
   lib::MemoryContext memory_context_;
   uint64_t *all_vsag_use_mem_;
-  ObTenantVecAsyncTaskScheduler *tenant_vec_async_task_sched_;
+  ObVecAsyncTaskScheduler *vec_async_task_sched_;
   bool is_vec_async_task_started_;
   ObPluginVectorIndexMgr *single_index_mgr_;
   ObVecIndexAsyncTaskHandler vec_async_task_handle_;

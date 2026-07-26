@@ -17,7 +17,7 @@
 #ifndef OCEANBASE_STORAGE_OB_BUILD_INDEX_TASK_H_
 #define OCEANBASE_STORAGE_OB_BUILD_INDEX_TASK_H_
 
-#include "observer/scheduler/ob_tenant_dag_scheduler.h"
+#include "observer/scheduler/ob_dag_scheduler.h"
 #include "storage/blocksstable/ob_block_sstable_struct.h"
 #include "storage/ob_store_row_comparer.h"
 #include "storage/ob_parallel_external_sort.h"
@@ -272,7 +272,6 @@ public:
   virtual int fill_info_param(compaction::ObIBasicInfoParam *&out_param, ObIAllocator &allocator) const override;
   virtual bool ignore_warning() override;
   virtual int fill_dag_key(char *buf, const int64_t buf_len) const override;
-  virtual bool is_ha_dag() const override { return false; }
   ObUniqueCheckingParam &get_param() { return param_; }
   ObUniqueCheckingContext &get_context() { return context_; }
   int prepare_context();

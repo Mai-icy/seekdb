@@ -666,7 +666,6 @@ int Processor::init_aggr_row_extra_info(RuntimeContext &agg_ctx, char *extra_arr
     case T_FUN_ORA_JSON_ARRAYAGG:
     case T_FUN_JSON_OBJECTAGG:
     case T_FUN_ORA_JSON_OBJECTAGG:
-    case T_FUN_AGG_UDF:
     case T_FUNC_SYS_ARRAY_AGG: {
       agg_ctx.need_advance_collect_ = true;
       ret = OB_NOT_SUPPORTED;
