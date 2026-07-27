@@ -20,7 +20,7 @@
 #include "storage/tx/ob_weak_read_util.h"
 #include "storage/tx_storage/ob_ls_service.h"
 #include "storage/ls/ob_ls.h"
-#include "observer/omt/ob_server_runtime.h"
+#include "observer/omt/ob_tenant.h"
 // ------------------------------------------------------------------------------------------
 // Implimentation notes:
 // there are two relation we need care:
@@ -59,7 +59,8 @@ using namespace share;
 namespace transaction {
 
 inline int ObTransService::init_tx_(ObTxDesc &tx,
-                                    const uint32_t session_id)
+                                    const uint32_t session_id,
+                                    const uint64_t cluster_version)
 {
   int ret = OB_SUCCESS;
 
@@ -69,18 +70,24 @@ inline int ObTransService::init_tx_(ObTxDesc &tx,
   tx.expire_ts_ = INT64_MAX;
   tx.op_sn_     = 1;
   tx.state_     = ObTxDesc::State::IDLE;
+  tx.cluster_version_ = cluster_version;
+  // cluster_version is invalid, need to get it
+  if (0 == cluster_version && OB_FAIL(GET_MIN_DATA_VERSION(tx.cluster_version_))) {
+    TRANS_LOG(WARN, "get min data version fail", K(ret), K(tx));
+  }
   tx.seq_base_ = common::ObSequence::get_max_seq_no() - 1;
   return ret;
 }
 
 int ObTransService::acquire_tx(ObTxDesc *&tx,
-                               const uint32_t session_id)
+                               const uint32_t session_id,
+                               const uint64_t cluster_version)
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(tx_desc_mgr_.alloc(tx))) {
     TRANS_LOG(WARN, "alloc tx fail", K(ret));
   } else {
-    ret = init_tx_(*tx, session_id);
+    ret = init_tx_(*tx, session_id, cluster_version);
   }
   TRANS_LOG(TRACE, "acquire tx", KPC(tx), K(session_id));
   if (OB_SUCC(ret)) {
@@ -132,9 +139,18 @@ int ObTransService::finalize_tx_(ObTxDesc &tx)
  */
 int ObTransService::release_tx(ObTxDesc &tx)
 {
+  /*
+   * for compatible with cross tenant session usage
+   * we should switch tenant to prevent missmatch
+   * eg.
+   *    SYS tenant swith to Normal tenant execute SQL
+   *    and then destory its session after switch back
+   */
   int ret = OB_SUCCESS;
   TRANS_LOG(TRACE, "release tx", KPC(this), K(tx));
-  // There is one process-wide ObTransService; release directly on this service.
+  // Single-tenant: sys tenant is constant and there is a single ObTransService.
+  // The historical cross-tenant switch-and-retry now recurses forever because
+  // MTL_SWITCH no longer changes sys tenant; release directly on this service.
   {
     ObTransTraceLog &tlog = tx.get_tlog();
     REC_TRANS_TRACE_EXT(&tlog, release, OB_Y(ret),
@@ -156,7 +172,7 @@ int ObTransService::release_tx(ObTxDesc &tx)
   return ret;
 }
 
-int ObTransService::reuse_tx(ObTxDesc &tx)
+int ObTransService::reuse_tx(ObTxDesc &tx, const uint64_t data_version)
 {
   int ret = OB_SUCCESS;
   int spin_cnt = 0;
@@ -195,7 +211,7 @@ int ObTransService::reuse_tx(ObTxDesc &tx)
 #endif
     }
     // it is safe to operate tx without lock when not shared
-    ret = reinit_tx_(tx, tx.sess_id_);
+    ret = reinit_tx_(tx, tx.sess_id_, data_version);
   }
   TRANS_LOG(DEBUG, "reuse tx", K(ret), K(orig_tx_id), K(tx));
   ObTransTraceLog &tlog = tx.get_tlog();
@@ -209,10 +225,10 @@ int ObTransService::reuse_tx(ObTxDesc &tx)
   return ret;
 }
 
-int ObTransService::reinit_tx_(ObTxDesc &tx, const uint32_t session_id)
+int ObTransService::reinit_tx_(ObTxDesc &tx, const uint32_t session_id, const uint64_t cluster_version)
 {
   tx.reset();
-  return init_tx_(tx, session_id);
+  return init_tx_(tx, session_id, cluster_version);
 }
 
 int ObTransService::stop_tx(ObTxDesc &tx)

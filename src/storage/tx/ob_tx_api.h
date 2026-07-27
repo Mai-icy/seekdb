@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-int acquire_tx(ObTxDesc *&tx, const uint32_t session_id = 0);
+int acquire_tx(ObTxDesc *&tx, const uint32_t session_id = 0, const uint64_t data_version = 0);
 
 /**
  * start_tx - explicit start transaction
@@ -113,11 +113,12 @@ int release_tx(ObTxDesc &tx);
  * when txn end, in stead of release txn descriptor, reuse it for
  * better performance.
  *
- * @tx: the target transaction's descriptor
+ * @tx:           the target transaction's descriptor
+ * @data_version: tx data_version 
  *
  * Return: OB_SUCCESS -OK
  */
-int reuse_tx(ObTxDesc &tx);
+int reuse_tx(ObTxDesc &tx, const uint64_t data_version);
 
 /**
  * stop_tx - stop txn immediately (for admin reason)
@@ -168,10 +169,10 @@ int get_read_snapshot(ObTxDesc &tx,
 // ------------------------------------------------------------------
 
 /**
- * get_read_snapshot_version - get a database read snapshot
+ * get_read_snapshot_version - get a read snapshot of current tenant
  *
  * the snasphot can be used to read a consistency view of the state
- * of the current database
+ * of current tenant
  *
  * @expire_ts:                 microseconds of timestamp after which
  *                             acquire action timeout
