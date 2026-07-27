@@ -20,7 +20,6 @@
 #include <stdint.h>
 #include "share/ob_define.h"
 #include "lib/allocator/page_arena.h"
-#include "lib/hash/ob_pointer_hashmap.h"
 #include "share/cache/ob_kv_storecache.h"
 #include "share/schema/ob_schema_struct.h"
 #include "share/schema/ob_table_schema.h"
@@ -147,7 +146,7 @@ private:
 
 class ObSchemaCache
 {
-  static const int64_t OB_SCHEMA_CACHE_SYS_CACHE_MAP_BUCKET_NUM = 512;
+  static const int64_t OB_SCHEMA_CACHE_BOOTSTRAP_CACHE_MAP_BUCKET_NUM = 512;
 public:
   ObSchemaCache();
   virtual ~ObSchemaCache();
@@ -194,11 +193,7 @@ public:
   // - table_id: (table_id)
   int put_tablet_cache(const ObTabletCacheKey &key,
                        const uint64_t table_id);
-  void clear_bootstrap_schema();
 private:
-  typedef common::hash::ObHashMap<ObSchemaCacheKey,
-                                  const ObSchemaCacheValue*,
-                                  common::hash::ReadWriteDefendMode> NoSwapCache;
   typedef common::ObKVCache<ObSchemaCacheKey, ObSchemaCacheValue> KVCache;
   typedef common::ObKVCache<ObSchemaCacheKey, ObSchemaHistoryCacheValue> HistoryCache;
   typedef common::ObKVCache<ObTabletCacheKey, ObTabletCacheValue> TabletCache;
@@ -206,24 +201,8 @@ private:
   bool is_valid_key(const ObSchemaType schema_type,
                     const uint64_t schema_id,
                     const int64_t schema_version) const;
-  bool need_use_sys_cache(const ObSchemaCacheKey &cache_key) const;
   int init_all_core_table();
-  bool is_necessary_schema(const ObSchemaCacheKey &cache_key) const;
-  bool is_necessary_table(const uint64_t table_id) const;
-  int put_schema_to_cache(
-      const ObSchemaCacheKey &cache_key,
-      const ObSchema &schema,
-      NoSwapCache &target_cache,
-      const char *cache_name);
-  int put_sys_schema(
-      const ObSchemaCacheKey &cache_key,
-      const ObSchema &schema);
-  int put_bootstrap_schema(
-      const ObSchemaCacheKey &cache_key,
-      const ObSchema &schema);
 private:
-  lib::MemoryContext mem_context_;
-  NoSwapCache sys_cache_;
   KVCache cache_;
   HistoryCache history_cache_;
   bool is_inited_;
@@ -231,9 +210,6 @@ private:
   ObSimpleTenantSchema simple_gts_tenant_;
   ObTenantSchema full_gts_tenant_;
   TabletCache tablet_cache_;
-  // only use for bootstrap schema, will be cleared after bootstrap finished
-  NoSwapCache bootstrap_cache_;
-  common::ObLatch bootstrap_cache_lock_;
 private:
   DISALLOW_COPY_AND_ASSIGN(ObSchemaCache);
 };

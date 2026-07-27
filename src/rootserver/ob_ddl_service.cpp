@@ -27514,6 +27514,30 @@ int ObDDLSQLTransaction::end(const bool commit)
     }
   }
 
+  // Set the normal schema watermark only after all schema operations have
+  // finished and, for parallel DDL, wait_task_ready() has granted this
+  // transaction permission to commit. Updating the shared core-table row in
+  // log_operation() lets a later DDL task hold the row lock while it waits for
+  // an earlier task, forming a lock-order cycle. Keeping the update in this
+  // transaction preserves atomic visibility with the schema records. The
+  // incremental set only moves the watermark forward.
+  if (OB_SUCC(ret)
+      && commit
+      && start_operation_schema_version_ != tsi_oper->last_operation_schema_version_) {
+    const int64_t final_schema_version = tsi_oper->last_operation_schema_version_;
+    if (OB_UNLIKELY(final_schema_version <= 0)) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("invalid final schema version for setting normal schema watermark",
+               KR(ret), K(final_schema_version), K_(start_operation_schema_version));
+    } else {
+      ObGlobalStatProxy proxy(*this);
+      if (OB_FAIL(proxy.set_normal_schema_version(final_schema_version))) {
+        LOG_WARN("failed to set normal schema watermark",
+                 KR(ret), K(final_schema_version));
+      }
+    }
+  }
+
   if (OB_SUCCESS != (tmp_ret = common::ObMySQLTransaction::end(commit && OB_SUCC(ret)))) {
     LOG_WARN("failed to end transaction", K(ret), K(tmp_ret), K(commit));
   }
