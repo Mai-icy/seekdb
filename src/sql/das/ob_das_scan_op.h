@@ -175,7 +175,6 @@ public:
   { }
 
   virtual ~ObDASScanRtDef();
-  bool enable_rich_format() const { return scan_flag_.enable_rich_format_; }
 
   INHERIT_TO_STRING_KV("ObDASBaseRtDef", ObDASBaseRtDef,
                        K_(runtime_schema_version),
@@ -301,7 +300,6 @@ public:
       common::ObTabletID &rowkey_doc_tid);
   int get_index_merge_tablet_ids(common::ObIArray<common::ObTabletID> &index_merge_tablet_ids);
   int get_func_lookup_tablet_ids(ObDASRelatedTabletID &related_tablet_ids);
-  bool enable_rich_format() const { return scan_rtdef_->enable_rich_format(); }
   INHERIT_TO_STRING_KV("parent", ObIDASTaskOp,
                        KPC_(scan_ctdef),
                        KPC_(scan_rtdef),

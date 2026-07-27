@@ -14600,19 +14600,6 @@ int ObLogPlan::remove_duplicate_constraints()
   return ret;
 }
 
-int ObLogPlan::get_enable_rich_vector_format(bool &enable)
-{
-  int ret = OB_SUCCESS;
-  ObSQLSessionInfo *session_info = nullptr;
-  if (OB_ISNULL(session_info = get_optimizer_context().get_session_info())) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("session is null", K(ret));
-  } else {
-    enable = session_info->use_rich_format();
-  }
-  return ret;
-}
-
 int ObLogPlan::check_can_scala_storage_pushdown(ObSQLSessionInfo &session_info,
                                                 const ObSelectStmt &stmt,
                                                 bool &can_pushdown)

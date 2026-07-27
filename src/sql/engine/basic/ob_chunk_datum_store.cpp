@@ -18,7 +18,6 @@
 
 #include "ob_chunk_datum_store.h"
 #include "sql/engine/ob_exec_context.h"
-#include "sql/engine/expr/ob_array_expr_utils.h"
 // for ObChunkStoreUtil
 
 namespace oceanbase
@@ -159,14 +158,13 @@ void ObChunkDatumStore::StoredRow::swizzling(char *base/*= NULL*/)
   }
 }
 
-template <bool UNSWIZZLING, bool IS_VECTOR_ROW>
+template <bool UNSWIZZLING>
 int ObChunkDatumStore::StoredRow::do_build(StoredRow *&sr,
                                            const ObExprPtrIArray &exprs,
                                            ObEvalCtx &ctx,
                                            char *buf,
                                            const int64_t buf_len,
-                                           const uint32_t extra_size,
-                                           int64_t vector_row_idx)
+                                           const uint32_t extra_size)
 {
   int ret = OB_SUCCESS;
   sr = reinterpret_cast<StoredRow *>(buf);
@@ -181,30 +179,6 @@ int ObChunkDatumStore::StoredRow::do_build(StoredRow *&sr,
       if (OB_UNLIKELY(NULL == expr)) {
         // Set datum to NULL for NULL expr
         datums[i].set_null();
-      } else if (IS_VECTOR_ROW) {
-      // TODO: shanting2.0 remove later.
-        if (OB_UNLIKELY(VEC_INVALID == expr->get_format(ctx))) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("expr not evaluated before", K(ret), KPC(expr));
-        } else {
-          ObIVector *vec = expr->get_vector(ctx);
-          const char *payload = NULL;
-          ObLength len = 0;
-          ObEvalCtx::TempAllocGuard tmp_alloc_g(ctx);
-          if (OB_UNLIKELY(expr->is_nested_expr())) {
-            if (OB_FAIL(ObArrayExprUtils::get_collection_payload(
-                  tmp_alloc_g.get_allocator(), ctx, *expr, vector_row_idx, payload, len))) {
-              LOG_WARN("get collection payload failed", K(ret));
-            }
-          } else {
-            vec->get_payload(vector_row_idx, payload, len);
-          }
-          if (OB_SUCC(ret)) {
-            ObDatum in_datum(payload, len, vec->is_null(vector_row_idx));
-            ret = UNSWIZZLING ? deep_copy_unswizzling(in_datum, &datums[i], buf, buf_len, pos) :
-                                datums[i].deep_copy(in_datum, buf, buf_len, pos);
-          }
-        }
       } else {
         ObDatum *in_datum = NULL;
         if (OB_FAIL(expr->eval(ctx, in_datum))) {
@@ -230,17 +204,11 @@ int ObChunkDatumStore::StoredRow::build(StoredRow *&sr,
                                         char *buf,
                                         const int64_t buf_len,
                                         const uint32_t extra_size, /* = 0 */
-                                        const bool unswizzling /* = false */,
-                                        int64_t vector_row_idx /* OB_INVALID_ID */)
+                                        const bool unswizzling /* = false */)
 {
-  bool is_vector_row = OB_INVALID_ID != vector_row_idx;
   return unswizzling
-      ? (is_vector_row
-         ? do_build<true, true>(sr, exprs, ctx, buf, buf_len, extra_size, vector_row_idx)
-         : do_build<true, false>(sr, exprs, ctx, buf, buf_len, extra_size, vector_row_idx))
-      : (is_vector_row
-         ? do_build<false, true>(sr, exprs, ctx, buf, buf_len, extra_size, vector_row_idx)
-         : do_build<false, false>(sr, exprs, ctx, buf, buf_len, extra_size, vector_row_idx));
+      ? do_build<true>(sr, exprs, ctx, buf, buf_len, extra_size)
+      : do_build<false>(sr, exprs, ctx, buf, buf_len, extra_size);
 }
 
 int ObChunkDatumStore::StoredRow::build(StoredRow *&sr,
@@ -291,8 +259,7 @@ int ObChunkDatumStore::Block::add_row(const common::ObIArray<ObExpr*> &exprs, Ob
 }
 
 int ObChunkDatumStore::BlockBufferWrap::append_row(
-  const common::ObIArray<ObExpr*> &exprs, ObEvalCtx *ctx, int64_t row_extend_size,
-  int64_t vector_row_idx)
+  const common::ObIArray<ObExpr*> &exprs, ObEvalCtx *ctx, int64_t row_extend_size)
 {
   int ret = OB_SUCCESS;
   OB_ASSERT(is_inited());
@@ -306,17 +273,8 @@ int ObChunkDatumStore::BlockBufferWrap::append_row(
     for (int64_t i = 0; OB_SUCC(ret) && i < sr->cnt_; ++i) {
       ObDatum *datum = new (&sr->cells()[i])ObDatum();
       // Attension : can't print dst datum after deep_copy_unswizzling
-      if (OB_INVALID_ID == vector_row_idx) {
-        ret = deep_copy_unswizzling(static_cast<ObDatum&>(exprs.at(i)->locate_expr_datum(*ctx)),
-                                    datum, head(), max_size, pos);
-      } else {
-        const ObIVector *vec = exprs.at(i)->get_vector(*ctx);
-        const char *payload = NULL;
-        ObLength len = 0;
-        vec->get_payload(vector_row_idx, payload, len);
-        ObDatum in_datum(payload, len, vec->is_null(vector_row_idx));
-        ret = deep_copy_unswizzling(in_datum, datum, head(), max_size, pos);
-      }
+      ret = deep_copy_unswizzling(static_cast<ObDatum&>(exprs.at(i)->locate_expr_datum(*ctx)),
+                                  datum, head(), max_size, pos);
       if (OB_FAIL(ret)) {
         if (OB_BUF_NOT_ENOUGH != ret) {
           LOG_WARN("failed to copy datum", K(ret), K(i), K(pos),
@@ -338,8 +296,7 @@ int ObChunkDatumStore::BlockBufferWrap::append_row(
 
 int ObChunkDatumStore::Block::append_row(
   const common::ObIArray<ObExpr*> &exprs, ObEvalCtx *ctx,
-  BlockBuffer *buf, int64_t row_extend_size, StoredRow **stored_row, const bool unswizzling,
-  int64_t vector_row_idx)
+  BlockBuffer *buf, int64_t row_extend_size, StoredRow **stored_row, const bool unswizzling)
 {
   int ret = OB_SUCCESS;
   if (!buf->is_inited()) {
@@ -348,7 +305,7 @@ int ObChunkDatumStore::Block::append_row(
   } else {
     StoredRow *sr = NULL;
     if (OB_FAIL(StoredRow::build(sr, exprs, *ctx, buf->head(), buf->remain(),
-                                 row_extend_size, unswizzling, vector_row_idx))) {
+                                 row_extend_size, unswizzling))) {
       if (OB_BUF_NOT_ENOUGH != ret) {
         LOG_WARN("build stored row failed", K(ret));
       }

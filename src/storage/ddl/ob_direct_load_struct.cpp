@@ -18,6 +18,7 @@
 
 #include "ob_direct_load_struct.h"
 #include "storage/ddl/ob_ddl_storage_util.h"
+#include "storage/ddl/ob_ddl_vector_utils.h"
 #include "share/rc/ob_module_provider.h"
 #include "share/ob_ddl_error_message_table_operator.h"
 #include "storage/ob_tablet_autoincrement_service.h"
@@ -1342,11 +1343,11 @@ int ObDirectLoadSliceWriter::fill_sstable_slice(
         } else if (OB_UNLIKELY(i >= column_items.count()) || OB_UNLIKELY(!column_items.at(i).is_valid_)) {
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("column schema is wrong", K(ret), K(i), K(column_items));
-        } else if (OB_FAIL(ObDASUtils::reshape_vector_value(column_items.at(i).col_type_,
-                                                            column_items.at(i).col_accuracy_,
-                                                            arena,
-                                                            vector,
-                                                            selector))) {
+        } else if (OB_FAIL(ObDDLVectorUtils::reshape_storage_vector(column_items.at(i).col_type_,
+                                                                    column_items.at(i).col_accuracy_,
+                                                                    arena,
+                                                                    vector,
+                                                                    selector))) {
           LOG_WARN("fail to reshape vector value", K(ret));
         }
       }
@@ -3252,74 +3253,6 @@ int ObDDLTabletMergeDagParamV2::init_slice_sstable_array(hash::ObHashSet<int64_t
     }
     merge_ctx->slice_sstables_.destroy();
     merge_ctx->arena_.reset();
-  }
-  return ret;
-}
-
-int ObDDLMergeBucketLock::init()
-{
-  int ret = OB_SUCCESS;
-  if (is_inited_) {
-    ret = OB_INIT_TWICE;
-    LOG_WARN("lock has been inited", K(ret));
-  } else if (OB_FAIL(hash_set_.create(DDL_TABLET_BUCKET_NUM, ObMemAttr("DdlMrgBck")))) {
-    LOG_WARN("failed to create hash set", K(ret));
-  } else  {
-    is_inited_ = true;
-  }
-  return ret;
-}
-
-int ObDDLMergeBucketLock::server_module_init(ObDDLMergeBucketLock *&ddl_merge_bucket_lock)
-{
-  int ret = OB_SUCCESS;
-  
-  
-  if (OB_ISNULL(ddl_merge_bucket_lock)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invlaid argument, ddl merge bucket lock should not be null", K(ret));
-  } else if (OB_FAIL(ddl_merge_bucket_lock->init())) {
-    LOG_WARN("failed to init bucket lock", K(ret));
-  }
-  return ret;
-}
-
-int ObDDLMergeBucketLock::lock(const ObTabletID &tablet_id)
-{
-  int ret = OB_SUCCESS;
-  if (!tablet_id.is_valid()) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid tablet_id", K(ret), K(tablet_id));
-  } else {
-    ObMutexGuard guard(mutex_);
-    if (OB_FAIL(hash_set_.set_refactored(tablet_id.id(), 0 /* not allow over write */))) {
-      if (OB_HASH_EXIST == ret) {
-        LOG_WARN("hash already exist", K(ret), K(tablet_id));
-        ret = OB_EAGAIN;
-      } else {
-        LOG_WARN("failed to set refactored", K(ret), K(tablet_id));
-      }
-    }
-  }
-  return ret;
-}
-
-int ObDDLMergeBucketLock::unlock(const ObTabletID &tablet_id)
-{
-  int ret = OB_SUCCESS;
-  if (!tablet_id.is_valid()) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("invalid tablet id", K(ret), K(tablet_id));
-  } else {
-    ObMutexGuard guard(mutex_);
-    if (OB_FAIL(hash_set_.erase_refactored(tablet_id.id()))) {
-      if (OB_HASH_NOT_EXIST == ret) {
-        LOG_WARN("lock not exist, set ret code as success", K(ret), K(tablet_id));
-        ret = OB_SUCCESS;
-      } else {
-        LOG_WARN("failed to erase refacotred", K(ret));
-      }
-    }
   }
   return ret;
 }

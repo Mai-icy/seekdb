@@ -85,7 +85,6 @@ int ObMPQuery::process()
     ObSQLSessionInfo &session = *sess;
     ObSQLSessionInfo::LockGuard lock_guard(session.get_query_lock());
     session.set_current_trace_id(ObCurTraceId::get_trace_id());
-    session.init_use_rich_format();
     if (OB_SUCC(ret)) {
       int64_t runtime_schema_version = 0;
       int64_t sys_version = 0;

@@ -191,7 +191,6 @@ public:
                             const ObIArray<ObRawExpr *> &keys);
   inline void set_in_server_cnt(int64_t in_server_cnt) {  in_server_cnt_ = in_server_cnt;  }
   inline int64_t get_in_server_cnt() {  return in_server_cnt_;  }
-  bool support_rich_format_vectorize() const;
   virtual int open_px_resource_analyze(OPEN_PX_RESOURCE_ANALYZE_DECLARE_ARG) override;
   virtual int close_px_resource_analyze(CLOSE_PX_RESOURCE_ANALYZE_DECLARE_ARG) override;
   void set_px_info(ObPxResourceAnalyzer::PxInfo *px_info) { px_info_ = px_info; }

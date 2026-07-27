@@ -294,8 +294,6 @@ public:
   inline int64_t get_ddl_execution_id() const { return ddl_execution_id_; }
   inline void set_ddl_task_id(const int64_t ddl_task_id) { ddl_task_id_ = ddl_task_id; }
   inline int64_t get_ddl_task_id() const { return ddl_task_id_; }
-  inline void set_use_rich_format(const bool v) { use_rich_format_ = v; }
-  inline bool get_use_rich_format() const { return use_rich_format_; }
   void set_record_plan_info(bool v) { need_record_plan_info_ = v; }
   bool need_record_plan_info() const { return need_record_plan_info_; }
   bool try_record_plan_info();
@@ -542,8 +540,6 @@ public:
   bool has_instead_of_trigger_; // mask if has instead of trigger on view
   bool need_record_plan_info_;
   ObLogicalPlanRawData logical_plan_;
-  // for detector manager
-  bool use_rich_format_;
   ObSubSchemaCtx subschema_ctx_;
   int64_t das_dop_;
   bool disable_auto_memory_mgr_;

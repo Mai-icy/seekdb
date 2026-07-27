@@ -181,7 +181,9 @@ struct ObObjCastParams
       exec_ctx_(NULL),
       gen_query_range_(false),
       dest_max_length_(LENGTH_UNKNOWN_YET)
-  {}
+  {
+    set_compatible_cast_mode();
+  }
 
   ObObjCastParams(ObIAllocator *allocator_v2, const ObDataTypeCastParams *dtc_params,
                   ObCastMode cast_mode, ObCollationType dest_collation,
@@ -202,6 +204,7 @@ struct ObObjCastParams
       gen_query_range_(false),
       dest_max_length_(LENGTH_UNKNOWN_YET)
   {
+    set_compatible_cast_mode();
     if (NULL != dtc_params) {
     	dtc_params_ = *dtc_params;
     }
@@ -228,6 +231,7 @@ struct ObObjCastParams
       gen_query_range_(false),
       dest_max_length_(LENGTH_UNKNOWN_YET)
   {
+    set_compatible_cast_mode();
     if (NULL != dtc_params) {
     	dtc_params_ = *dtc_params;
     }
@@ -247,6 +251,11 @@ struct ObObjCastParams
   {
     UNUSED(attr);
     return alloc(size);
+  }
+
+  void set_compatible_cast_mode()
+  {
+    return;
   }
 
   void set_allow_invalid_dates_cast_mode()

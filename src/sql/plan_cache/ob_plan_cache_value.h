@@ -338,6 +338,7 @@ private:
   friend class ::test::TestPlanSet_basic_Test;
   friend class ::test::TestPlanCacheValue_basic_Test;
 private:
+  static const int64_t PARAM_CHARSET_TYPE_BLOCK_SIZE = 256;
   //***********  for match **************
   // Record non-parameterized constant information and information where constants are negative
   common::ObSEArray<NotParamInfo, 4> not_param_info_;
@@ -392,7 +393,6 @@ private:
   common::ObFixedArray<PCVSchemaObj *, common::ObIAllocator> stored_schema_objs_;
   common::ObBitSet<> must_be_positive_idx_;
   stmt::StmtType stmt_type_;
-  bool enable_rich_vector_format_;
   common::ObBitSet<> fmt_int_or_ch_decint_idx_;
   int64_t switchover_epoch_;
 

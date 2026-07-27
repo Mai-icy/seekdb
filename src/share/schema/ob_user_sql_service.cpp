@@ -623,7 +623,9 @@ int ObUserSqlService::grant_revoke_user(
     // insert into __all_user
     if (FAILEDx(exec.exec_update(OB_ALL_USER_TNAME, dml, affected_rows))) {
       LOG_WARN("execute insert failed", K(ret));
-    } else if (!is_single_row(affected_rows)) {
+    // An idempotent role grant may only refresh gmt_modified. Within the same time tick,
+    // the row remains unchanged and MySQL reports zero affected rows.
+    } else if (!is_zero_row(affected_rows) && !is_single_row(affected_rows)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("affected_rows unexpected", K(affected_rows), K(ret));
     }
