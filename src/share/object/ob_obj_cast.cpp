@@ -2014,23 +2014,7 @@ static int float_uint(const ObObjType expect_type, ObObjCastParams &params,
     LOG_ERROR("invalid input type",
         K(ret), K(in), K(expect_type));
   } else {
-    if (in_value <= static_cast<double>(LLONG_MIN) || in_value >= static_cast<double>(ULLONG_MAX)) {
-      value = static_cast<uint64_t>(LLONG_MIN);
-      ret = OB_DATA_OUT_OF_RANGE;
-    } else {
-      // Compatible with MySQL behavior, floating-point numbers within (INT64_MAX, UINT64_MAX) cast to uint column result approximately equals the original float value
-      // and in other scenarios such as cast as unsigned, the result should be INT64_MAX + 1, i.e., rint(in_value)->int->uint
-      if (is_column_convert) {
-        value = static_cast<uint64_t>(rint(in_value));
-      } else {
-        value = static_cast<uint64_t>(static_cast<int64_t>(rint(in_value)));
-      }
-      if (in_value < 0 && value != 0) {
-        // Here processing the range [LLONG_MIN, 0) of in, converting to unsigned should report OB_DATA_OUT_OF_RANGE.
-        // out is not equal to 0 to avoid values in the range [-0.5, 0) being misjudged, because their rounded values are 0, which is within the valid range.
-        ret = OB_DATA_OUT_OF_RANGE;
-      }
-    }
+    ret = round_floating_to_uint64(in_value, true, is_column_convert, value);
     if (CAST_FAIL(ret)) {
       LOG_WARN("cast float to uint failed", K(ret), K(in), K(value));
     }
@@ -2289,7 +2273,8 @@ static int float_bit(const ObObjType expect_type, ObObjCastParams &params,
 {
   UNUSED(cast_mode);
   int ret = OB_SUCCESS;
-  uint64_t value = static_cast<uint64_t>(in.get_float());
+  uint64_t value = static_cast<uint64_t>(
+      truncate_floating_to_int64_clamped(in.get_float()));
   int32_t bit_len = 0;
   if (OB_UNLIKELY(ObFloatTC != in.get_type_class()
                   || ObBitTC != ob_obj_type_class(expect_type))) {
@@ -2313,7 +2298,7 @@ static int float_enum(const ObExpectType &expect_type, ObObjCastParams &params, 
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(expect_type), K(in), K(ret));
   } else {
-    int64_t value = static_cast<int64_t>(in.get_float());
+    int64_t value = truncate_floating_to_int64_clamped(in.get_float());
     ObObj int_val(value);
     if (OB_FAIL(int_enum(expect_type, params, int_val, out))) {
       LOG_WARN("fail to cast int to enum", K(expect_type), K(in), K(int_val), K(out), K(ret));
@@ -2330,7 +2315,7 @@ static int float_set(const ObExpectType &expect_type, ObObjCastParams &params, c
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(expect_type), K(in), K(ret));
   } else {
-    int64_t value = static_cast<int64_t>(in.get_float());
+    int64_t value = truncate_floating_to_int64_clamped(in.get_float());
     ObObj int_val(value);
     if (OB_FAIL(int_set(expect_type, params, int_val, out))) {
       LOG_WARN("fail to cast int to enum", K(expect_type), K(in), K(int_val), K(out), K(ret));
@@ -2476,28 +2461,7 @@ static int double_uint(const ObObjType expect_type, ObObjCastParams &params,
     LOG_ERROR("invalid input type",
         K(ret), K(in), K(expect_type));
   } else {
-    if (in_value <= static_cast<double>(LLONG_MIN)) {
-      value = static_cast<uint64_t>(LLONG_MIN);
-      ret = OB_DATA_OUT_OF_RANGE;
-    } else if (in_value >= static_cast<double>(ULLONG_MAX)) {
-      value = static_cast<uint64_t>(LLONG_MAX);
-      ret = OB_DATA_OUT_OF_RANGE;
-    } else {
-      if (is_column_convert) {
-        value = static_cast<uint64_t>(rint(in_value));
-      // Slightly different from float_uint, when converting double to uint for values in the range [INT64_MAX, UINT64_MAX), the result in scenarios other than column_convert
-      // should be INT64_MAX instead of INT64_MAX + 1.
-      } else if (in_value >= static_cast<double>(LLONG_MAX)) {
-        value = static_cast<uint64_t>(LLONG_MAX);
-      } else {
-        value = static_cast<uint64_t>(static_cast<int64_t>(rint(in_value)));
-      }
-      if (in_value < 0 && value != 0) {
-        // Here processing the range [LLONG_MIN, 0) of in, converting to unsigned should report OB_DATA_OUT_OF_RANGE.
-        // out is not equal to 0 to avoid values in the range [-0.5, 0) being misjudged, because their rounded values are 0, which is within the valid range.
-        ret = OB_DATA_OUT_OF_RANGE;
-      }
-    }
+    ret = round_floating_to_uint64(in_value, false, is_column_convert, value);
     if (CAST_FAIL(ret)) {
       LOG_WARN("cast float to uint failed", K(ret), K(in), K(value));
     }
@@ -2821,7 +2785,8 @@ static int double_bit(const ObObjType expect_type, ObObjCastParams &params,
 {
   UNUSED(cast_mode);
   int ret = OB_SUCCESS;
-  uint64_t value = static_cast<uint64_t>(in.get_double());
+  uint64_t value = static_cast<uint64_t>(
+      truncate_floating_to_int64_clamped(in.get_double()));
   int32_t bit_len = 0;
   if (OB_UNLIKELY(ObDoubleTC != in.get_type_class()
                   || ObBitTC != ob_obj_type_class(expect_type))) {
@@ -2844,7 +2809,7 @@ static int double_enum(const ObExpectType &expect_type, ObObjCastParams &params,
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(expect_type), K(in), K(ret));
   } else {
-    int64_t value = static_cast<int64_t>(in.get_double());
+    int64_t value = truncate_floating_to_int64_clamped(in.get_double());
     ObObj int_val(value);
     if (OB_FAIL(int_enum(expect_type, params, int_val, out))) {
       LOG_WARN("fail to cast int to enum", K(expect_type), K(in), K(int_val), K(out), K(ret));
@@ -2861,7 +2826,7 @@ static int double_set(const ObExpectType &expect_type, ObObjCastParams &params, 
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(expect_type), K(in), K(ret));
   } else {
-    int64_t value = static_cast<int64_t>(in.get_double());
+    int64_t value = truncate_floating_to_int64_clamped(in.get_double());
     ObObj int_val(value);
     if (OB_FAIL(int_set(expect_type, params, int_val, out))) {
       LOG_WARN("fail to cast int to enum", K(expect_type), K(in), K(int_val), K(out), K(ret));
