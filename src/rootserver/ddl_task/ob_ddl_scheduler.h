@@ -29,9 +29,11 @@
 #include "rootserver/ddl_task/ob_index_build_task.h"
 #include "rootserver/ddl_task/ob_modify_autoinc_task.h"
 #include "rootserver/ddl_task/ob_table_redefinition_task.h"
-#include "rootserver/ob_tenant_thread_helper.h" // for DEFINE_MTL_FUNC
+#include "rootserver/ob_server_thread_helper.h"
 #include "rootserver/ob_thread_idling.h"
+#include "lib/container/ob_se_array.h"
 #include "lib/hash/ob_hashmap.h"
+#include "lib/lock/ob_spin_lock.h"
 #include "lib/profile/ob_trace_id.h"
 #include "lib/task/ob_timer.h"
 
@@ -56,8 +58,6 @@ class ObMySQLResult;
 }
 namespace rootserver
 {
-class ObRootService;
-
 class ObDDLTaskQueue
 {
 public:
@@ -111,10 +111,18 @@ public:
   int remove_task(const ObDDLTaskID &task_id);
   int get_inactive_ddl_task_ids(ObArray<ObDDLTaskID>& remove_task_ids);
 private:
-  static const int64_t BUCKET_LOCK_BUCKET_CNT = 10243L;
-  common::hash::ObHashMap<ObDDLTaskID, int64_t> register_task_time_;
+  struct TaskActiveTime final
+  {
+    TaskActiveTime() : task_id_(), active_time_(0) {}
+    TaskActiveTime(const ObDDLTaskID &task_id, const int64_t active_time)
+      : task_id_(task_id), active_time_(active_time) {}
+    TO_STRING_KV(K_(task_id), K_(active_time));
+    ObDDLTaskID task_id_;
+    int64_t active_time_;
+  };
+  common::ObSEArray<TaskActiveTime, 4> register_task_times_;
   bool is_inited_;
-  common::ObBucketLock bucket_lock_;
+  common::ObSpinLock lock_;
 };
 struct ObPrepareAlterTableArgParam final
 {
@@ -134,7 +142,6 @@ public:
           const ObString &orig_table_name,
           const ObString &orig_database_name,
           const ObString &target_database_name,
-          const ObTimeZoneInfo &tz_info,
           const ObTimeZoneInfoWrap &tz_info_wrap,
           const ObString *nls_formats,
           const bool foreign_key_checks);
@@ -161,7 +168,6 @@ public:
   common::ObString orig_table_name_;
   common::ObString orig_database_name_;
   common::ObString target_database_name_;
-  common::ObTimeZoneInfo tz_info_;
   common::ObTimeZoneInfoWrap tz_info_wrap_;
   common::ObArenaAllocator allocator_;
   common::ObString nls_formats_[common::ObNLSFormatEnum::NLS_MAX];
@@ -238,7 +244,7 @@ private:
  * every ddl task has its record in an inner table(__all_ddl_task_status),
  * which will be used to recover or cleanup the task when the root server has switched
  */
-class ObDDLScheduler : public rootserver::ObTenantThreadHelper,
+class ObDDLScheduler : public rootserver::ObServerThreadHelper,
                        public logservice::ObICheckpointSubHandler,
                        public logservice::ObIReplaySubHandler
 {
@@ -272,10 +278,10 @@ public:
   void deactivate() override;
   int activate() override;
 
-  // mtl_functions
-  static int mtl_init(ObDDLScheduler *&ddl_scheduler);
-  static void mtl_stop(ObDDLScheduler *&ddl_scheduler);
-  static void mtl_wait(ObDDLScheduler *&ddl_scheduler);
+  // server_module_functions
+  static int server_module_init(ObDDLScheduler *&ddl_scheduler);
+  static void server_module_stop(ObDDLScheduler *&ddl_scheduler);
+  static void server_module_wait(ObDDLScheduler *&ddl_scheduler);
 
   int create_ddl_task(
       const ObCreateDDLTaskParam &param,
@@ -332,7 +338,7 @@ public:
   int prepare_alter_table_arg(const ObPrepareAlterTableArgParam &param,
                               const ObTableSchema *target_table_schema,
                               obcall::ObAlterTableArg &alter_table_arg);
-  inline share::ObDDLReplicaBuilder &get_ddl_builder() { return ddl_builder_; }
+  inline share::ObDDLLocalBuilder &get_ddl_builder() { return ddl_builder_; }
 private:
   class DDLIdling : public ObThreadIdling
   {
@@ -348,8 +354,8 @@ private:
     virtual ~DDLScanTask() {};
     int init();
     int schedule();
-    void mtl_thread_wait();
-    void mtl_thread_stop();
+    void server_module_thread_wait();
+    void server_module_thread_stop();
     void destroy();
     bool task_exist() { return timer_.task_exist(*this); }
     int cancel() { return timer_.inited() ? timer_.cancel(*this) : OB_SUCCESS; }
@@ -367,8 +373,8 @@ private:
     virtual ~HeartBeatCheckTask() {};
     int init();
     int schedule();
-    void mtl_thread_wait();
-    void mtl_thread_stop();
+    void server_module_thread_wait();
+    void server_module_thread_stop();
     void destroy();
     bool task_exist() { return timer_.task_exist(*this); }
     int cancel() { return timer_.inited() ? timer_.cancel(*this) : OB_SUCCESS; }
@@ -405,7 +411,7 @@ private:
       const int32_t sub_task_trace_id,
       const obcall::ObCreateIndexArg *create_index_arg,
       const share::ObDDLType task_type,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record,
       const int64_t snapshot_version = 0,
@@ -416,7 +422,7 @@ private:
       const share::schema::ObTableSchema *index_schema,
       const int64_t parallelism,
       const int64_t parent_task_id,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       const obcall::ObCreateIndexArg *create_index_arg,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record,
@@ -430,7 +436,7 @@ private:
       const int64_t parent_task_id,
       const share::ObDDLType task_type,
       const obcall::ObCreateIndexArg *create_index_arg,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record);
   int create_build_vec_index_task(
@@ -440,7 +446,7 @@ private:
       const int64_t parallelism,
       const int64_t parent_task_id,
       const obcall::ObCreateIndexArg *create_index_arg,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record,
       const int64_t snapshot_version,
@@ -466,7 +472,7 @@ private:
       const int64_t task_id,
       const int32_t sub_task_trace_id,
       const obcall::ObAlterTableArg *alter_table_arg,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       const bool ddl_need_retry_at_executor,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record);
@@ -480,7 +486,7 @@ private:
       const int64_t task_id,
       const int32_t sub_task_trace_id,
       const obcall::ObAlterTableArg *alter_table_arg,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record);
 
@@ -493,7 +499,7 @@ private:
       const int64_t task_id,
       const int32_t sub_task_trace_id,
       const obcall::ObAlterTableArg *alter_table_arg,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record);
 
@@ -515,7 +521,7 @@ private:
       const int64_t parent_task_id,
       const int32_t sub_task_trace_id,
       const obcall::ObRebuildIndexArg *rebuild_index_arg,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record);
 
@@ -552,7 +558,7 @@ private:
       const share::schema::ObTableSchema *sq_meta_schema_,
       const share::schema::ObTableSchema *pq_centroid_schema_,
       const share::schema::ObTableSchema *pq_code_schema_,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       const obcall::ObDropIndexArg *drop_index_arg,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record);
@@ -567,7 +573,7 @@ private:
       const share::schema::ObTableSchema *delta_buffer_schema_,
       const share::schema::ObTableSchema *index_snapshot_data_schema_,
       const share::schema::ObTableSchema *embedded_vec_schema_,
-      const uint64_t tenant_data_version,
+      const uint64_t data_format_version,
       const obcall::ObDropIndexArg *drop_index_arg,
       ObIAllocator &allocator,
       ObDDLTaskRecord &task_record);
@@ -617,8 +623,6 @@ private:
   int remove_task_from_longops_mgr(ObDDLTask *ddl_task);
   int remove_ddl_task(ObDDLTask *ddl_task);
   void add_event_info(const ObDDLTaskRecord &ddl_record, const ObString &ddl_event_stmt);
-  int check_conflict_with_upgrade();
-
 private:
   static const int64_t TOTAL_LIMIT = 1024L * 1024L * 1024L;
   static const int64_t HOLD_LIMIT = 8 * 1024L * 1024L;
@@ -631,7 +635,7 @@ private:
   ObDDLTaskHeartBeatMananger manager_reg_heart_beat_task_;
   DDLScanTask scan_task_;
   HeartBeatCheckTask heart_beat_check_task_;
-  share::ObDDLReplicaBuilder ddl_builder_;
+  share::ObDDLLocalBuilder ddl_builder_;
 };
 
 template<typename T>
