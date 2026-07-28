@@ -6307,7 +6307,7 @@ int ObLogicalOperator::find_max_px_resource_child(OPEN_PX_RESOURCE_ANALYZE_DECLA
     int64_t max_child_thread_cnt = -1;
     int64_t max_child_group_cnt = -1;
     ObLogicalOperator *child = NULL;
-    bool append_map = false;
+    update_max = false;
     for (int64_t i = first_nonblock_child; i < get_num_of_child() && OB_SUCC(ret); i++) {
       if (OB_ISNULL(child = get_child(i))) {
         ret = OB_ERR_UNEXPECTED;

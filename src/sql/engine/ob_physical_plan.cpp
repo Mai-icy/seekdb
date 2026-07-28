@@ -187,8 +187,6 @@ void ObPhysicalPlan::reset()
   is_packed_ = false;
   has_instead_of_trigger_ = false;
   use_rich_format_ = false;
-  stat_.expected_worker_map_.destroy();
-  stat_.minimal_worker_map_.destroy();
   need_record_plan_info_ = false;
   logical_plan_.reset();
   subschema_ctx_.reset();
@@ -212,8 +210,6 @@ void ObPhysicalPlan::destroy()
 #endif
   sql_expression_factory_.destroy();
   expr_op_factory_.destroy();
-  stat_.expected_worker_map_.destroy();
-  stat_.minimal_worker_map_.destroy();
   subschema_ctx_.destroy();
 }
 
@@ -1005,49 +1001,6 @@ void ObPhysicalPlan::calc_whether_need_trans()
     bool_ret = true;
   }
   is_need_trans_ = bool_ret;
-}
-
-int ObPhysicalPlan::set_expected_worker_map(const common::hash::ObHashMap<ObAddr, int64_t> &c)
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(assign_worker_map(stat_.expected_worker_map_, c))) {
-    LOG_WARN("set expected worker map failed", K(ret));
-  }
-  return ret;
-}
-const ObPlanStat::AddrMap& ObPhysicalPlan:: get_expected_worker_map() const
-{
-  return stat_.expected_worker_map_;
-}
-
-int ObPhysicalPlan::set_minimal_worker_map(const common::hash::ObHashMap<ObAddr, int64_t> &c)
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(assign_worker_map(stat_.minimal_worker_map_, c))) {
-    LOG_WARN("set minimal worker map failed", K(ret));
-  }
-  return ret;
-}
-
-int ObPhysicalPlan::assign_worker_map(ObPlanStat::AddrMap &worker_map, const common::hash::ObHashMap<ObAddr, int64_t> &c)
-{
-  int ret = OB_SUCCESS;
-  ObMemAttr attr("WorkerMap");
-  ObMemAttr node_attr("WorkerMapNode");
-  if (worker_map.created()) {
-    worker_map.clear();
-  } else if (OB_FAIL(worker_map.create(common::hash::cal_next_prime(100), attr, node_attr))){
-    LOG_WARN("create hash map failed", K(ret));
-  }
-  if (OB_SUCC(ret)) {
-    for (common::hash::ObHashMap<ObAddr, int64_t>::const_iterator it = c.begin();
-        OB_SUCC(ret) && it != c.end(); ++it) {
-      if (OB_FAIL(worker_map.set_refactored(it->first, it->second))){
-        SQL_PC_LOG(WARN, "set refactored failed", K(ret), K(it->first), K(it->second));
-      }
-    }
-  }
-  return ret;
 }
 
 int ObPhysicalPlan::update_cache_obj_stat(ObILibCacheCtx &ctx)

@@ -146,12 +146,6 @@ public:
   int64_t get_expected_worker_count() const { return stat_.expected_worker_count_; }
   void set_minimal_worker_count(int64_t c) { stat_.minimal_worker_count_ = c; }
   int64_t get_minimal_worker_count() const { return stat_.minimal_worker_count_; }
-  int set_expected_worker_map(const common::hash::ObHashMap<ObAddr, int64_t> &c);
-  const ObPlanStat::AddrMap& get_expected_worker_map() const;
-  int set_minimal_worker_map(const common::hash::ObHashMap<ObAddr, int64_t> &c);
-  const common::hash::ObHashMap<ObAddr, int64_t>& get_minimal_worker_map() const;
-  int assign_worker_map(ObPlanStat::AddrMap &worker_map,
-                        const common::hash::ObHashMap<ObAddr, int64_t> &c);
   const char* get_sql_id() const { return stat_.sql_id_.ptr(); }
   const ObString& get_sql_id_string() const { return stat_.sql_id_; }
   uint32_t get_next_phy_operator_id() { return next_phy_operator_id_++; }

@@ -11496,9 +11496,7 @@ int ObLogPlan::calc_plan_resource()
     ObPxResourceAnalyzer analyzer;
     if (OB_FAIL(analyzer.analyze(*plan_root,
                                  max_parallel_thread_count,
-                                 max_parallel_group_count,
-                                 get_optimizer_context().get_expected_worker_map(),
-                                 get_optimizer_context().get_minimal_worker_map()))) {
+                                 max_parallel_group_count))) {
       LOG_WARN("fail analyze px stmt thread group reservation count", K(ret));
     } else {
       LOG_TRACE("[PxResAnaly]max parallel thread group count",

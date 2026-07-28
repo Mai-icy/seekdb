@@ -1685,8 +1685,8 @@ public:
   // 2. If this operator is single-child and block, then open and close its child.
   // 3. If this operator has multiple children, open all children by default and
   //    operators should override this function according to their unique execution logic.
-  // append_map = false means it's in the progress of LogSet searching for child
-  //   with max running thread/group count, and we will not modify max_count or max_map.
+  // update_max = false means it is searching for the child with the largest
+  // running thread/group count and should not update the plan-wide peak.
   virtual int open_px_resource_analyze(OPEN_PX_RESOURCE_ANALYZE_DECLARE_ARG);
   // Make the operator in state that all data has been outputted already.
   virtual int close_px_resource_analyze(CLOSE_PX_RESOURCE_ANALYZE_DECLARE_ARG);
