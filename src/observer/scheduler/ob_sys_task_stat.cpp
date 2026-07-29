@@ -15,6 +15,7 @@
  */
 
 #include "ob_sys_task_stat.h"
+#include "lib/allocator/ob_malloc.h"
 
 namespace oceanbase
 {
@@ -63,14 +64,13 @@ ObSysTaskStat::ObSysTaskStat()
 
 ObSysTaskStatMgr::ObSysTaskStatMgr()
   : lock_(common::ObLatchIds::SYS_TASK_STAT_LOCK),
-    task_array_()
+    task_list_()
 {
-  task_array_.set_label(ObModIds::OB_SYS_TASK_STATUS);
-  task_array_.reserve(DEFAULT_SYS_TASK_STATUS_COUNT); // ignore ret
 }
 
 ObSysTaskStatMgr::~ObSysTaskStatMgr()
 {
+  clear_task_list_();
 }
 
 ObSysTaskStatMgr &ObSysTaskStatMgr::get_instance()
@@ -86,8 +86,10 @@ int ObSysTaskStatMgr::get_iter(ObSysStatMgrIter &iter)
 
   SpinRLockGuard guard(lock_);
 
-  for (int64_t i = 0; OB_SUCC(ret) && i < task_array_.count(); ++i) {
-    if (OB_FAIL(iter.push(task_array_.at(i)))) {
+  for (ObSysTaskStatNode *node = task_list_.get_first();
+       OB_SUCC(ret) && node != task_list_.get_header();
+       node = node->get_next()) {
+    if (OB_FAIL(iter.push(node->task_))) {
       SERVER_LOG(WARN, "failed to add task status", K(ret));
     }
   }
@@ -99,6 +101,39 @@ int ObSysTaskStatMgr::get_iter(ObSysStatMgrIter &iter)
   }
 
   return ret;
+}
+
+int ObSysTaskStatMgr::alloc_task_node_(
+    const ObSysTaskStat &task,
+    ObSysTaskStatNode *&node)
+{
+  int ret = OB_SUCCESS;
+  node = NULL;
+  ObMemAttr attr(ObModIds::OB_SYS_TASK_STATUS);
+  void *buf = ob_malloc(sizeof(ObSysTaskStatNode), attr);
+  if (OB_ISNULL(buf)) {
+    ret = OB_ALLOCATE_MEMORY_FAILED;
+    SERVER_LOG(WARN, "failed to allocate sys task status node", K(ret));
+  } else {
+    node = new(buf) ObSysTaskStatNode(task);
+  }
+  return ret;
+}
+
+void ObSysTaskStatMgr::free_task_node_(ObSysTaskStatNode *node)
+{
+  if (OB_NOT_NULL(node)) {
+    node->~ObSysTaskStatNode();
+    ob_free(node);
+  }
+}
+
+void ObSysTaskStatMgr::clear_task_list_()
+{
+  ObSysTaskStatNode *node = NULL;
+  while (OB_NOT_NULL(node = task_list_.remove_first())) {
+    free_task_node_(node);
+  }
 }
 
 int ObSysTaskStatMgr::generate_task_id(ObTaskId &task_id)
@@ -117,6 +152,7 @@ int ObSysTaskStatMgr::generate_task_id(ObTaskId &task_id)
 int ObSysTaskStatMgr::add_task(ObSysTaskStat &task)
 {
   int ret = OB_SUCCESS;
+  ObSysTaskStatNode *new_node = NULL;
 
   if (!self_addr_.is_valid()) {
     ret = OB_INVALID_ERROR;
@@ -130,27 +166,40 @@ int ObSysTaskStatMgr::add_task(ObSysTaskStat &task)
     }
   }
 
+  if (OB_SUCC(ret) && OB_FAIL(alloc_task_node_(task, new_node))) {
+    SERVER_LOG(WARN, "failed to allocate task node", K(ret), K(task));
+  }
 
-  SpinWLockGuard guard(lock_);
-  for (int64_t i = 0; OB_SUCC(ret) && i < task_array_.count(); ++i) {
-    if (task_array_.at(i).task_id_.equals(task.task_id_)) {
-      ret = OB_ENTRY_EXIST;
-      if (DDL_TASK != task.task_type_) {
-        SERVER_LOG(ERROR, "task id is exist, cannot add again",
-            K(ret), K(task), K(i), K(task_array_.at(i)));
+  if (OB_SUCC(ret)) {
+    SpinWLockGuard guard(lock_);
+    for (ObSysTaskStatNode *node = task_list_.get_first();
+         OB_SUCC(ret) && node != task_list_.get_header();
+         node = node->get_next()) {
+      if (node->task_.task_id_.equals(task.task_id_)) {
+        ret = OB_ENTRY_EXIST;
+        if (DDL_TASK != task.task_type_) {
+          SERVER_LOG(ERROR, "task id is exist, cannot add again",
+              K(ret), K(task), "existing_task", node->task_);
+        } else {
+          SERVER_LOG(WARN, "ddl task id is exist, cannot add again",
+              K(ret), K(task), "existing_task", node->task_);
+        }
+      }
+    }
+
+    if (OB_SUCC(ret)) {
+      if (!task_list_.add_last(new_node)) {
+        ret = OB_ERR_UNEXPECTED;
+        SERVER_LOG(WARN, "failed to add task status node", K(ret), K(task));
       } else {
-        SERVER_LOG(WARN, "ddl task id is exist, cannot add again",
-            K(ret), K(task), K(i), K(task_array_.at(i)));
+        new_node = NULL;
+        SERVER_LOG(INFO, "succeed to add sys task", K(task));
       }
     }
   }
 
-  if (OB_SUCC(ret)) {
-    if (OB_FAIL(task_array_.push_back(task))) {
-      SERVER_LOG(WARN, "failed to add task status", K(ret));
-    } else {
-      SERVER_LOG(INFO, "succeed to add sys task", K(task));
-    }
+  if (OB_NOT_NULL(new_node)) {
+    free_task_node_(new_node);
   }
 
   return ret;
@@ -159,32 +208,30 @@ int ObSysTaskStatMgr::add_task(ObSysTaskStat &task)
 int ObSysTaskStatMgr::del_task(const ObTaskId &task_id)
 {
   int ret = OB_SUCCESS;
-  int64_t status_idx = -1;
+  ObSysTaskStatNode *removed_node = NULL;
 
   if (task_id.is_invalid()) {
     ret = OB_INVALID_ARGUMENT;
     SERVER_LOG(WARN, "invalid task_id", K(ret), K(task_id));
   } else {
     SpinWLockGuard guard(lock_);
-    for (int64_t i = 0; OB_SUCC(ret) && i < task_array_.count(); ++i) {
-      if (task_array_.at(i).task_id_.equals(task_id)) {
-        status_idx = i;
+    for (ObSysTaskStatNode *node = task_list_.get_first();
+         OB_ISNULL(removed_node) && node != task_list_.get_header();
+         node = node->get_next()) {
+      if (node->task_.task_id_.equals(task_id)) {
+        removed_node = task_list_.remove(node);
       }
     }
 
-    if (OB_SUCC(ret)) {
-      if (status_idx != -1) {
-        ObSysTaskStat removed_task = task_array_.at(status_idx);
-        if (OB_FAIL(task_array_.remove(status_idx))) {
-          SERVER_LOG(WARN, "failed to del task status", K(ret), K(status_idx));
-        } else {
-          SERVER_LOG(INFO, "succeed to del sys task", K(removed_task));
-        }
-      } else {
-        ret = OB_ENTRY_NOT_EXIST;
-        SERVER_LOG(WARN, "sys task not exist", K(ret), K(task_id));
-      }
+    if (OB_ISNULL(removed_node)) {
+      ret = OB_ENTRY_NOT_EXIST;
+      SERVER_LOG(WARN, "sys task not exist", K(ret), K(task_id));
     }
+  }
+
+  if (OB_NOT_NULL(removed_node)) {
+    SERVER_LOG(INFO, "succeed to del sys task", "removed_task", removed_node->task_);
+    free_task_node_(removed_node);
   }
 
   return ret;
@@ -212,8 +259,10 @@ int ObSysTaskStatMgr::task_exist(const ObTaskId &task_id, bool &is_exist)
     STORAGE_LOG(WARN, "invalid task id", K(ret));
   } else {
     SpinRLockGuard guard(lock_);
-    for (int64_t i = 0; OB_SUCC(ret) && i < task_array_.count(); ++i) {
-      if (task_id.equals(task_array_.at(i).task_id_)) {
+    for (ObSysTaskStatNode *node = task_list_.get_first();
+         !is_exist && node != task_list_.get_header();
+         node = node->get_next()) {
+      if (task_id.equals(node->task_.task_id_)) {
         is_exist = true;
       }
     }
@@ -232,11 +281,13 @@ int ObSysTaskStatMgr::cancel_task(const ObTaskId &task_id)
   } else {
     SpinWLockGuard guard(lock_);
     bool found_task = false;
-    for (int64_t i = 0; i < task_array_.count(); ++i) {
-      if (task_id.equals(task_array_.at(i).task_id_)) {
+    for (ObSysTaskStatNode *node = task_list_.get_first();
+         !found_task && node != task_list_.get_header();
+         node = node->get_next()) {
+      if (task_id.equals(node->task_.task_id_)) {
         found_task = true;
-        task_array_.at(i).is_cancel_ = true;
-        SERVER_LOG(INFO, "cancel task", "task", task_array_.at(i), K(i));
+        node->task_.is_cancel_ = true;
+        SERVER_LOG(INFO, "cancel task", "task", node->task_);
       }
     }
 
@@ -260,10 +311,12 @@ int ObSysTaskStatMgr::is_task_cancel(const ObTaskId &task_id, bool &is_cancel)
   } else {
     SpinRLockGuard guard(lock_);
     bool found_task = false;
-    for (int64_t i = 0; OB_SUCC(ret) && i < task_array_.count(); ++i) {
-      if (task_id.equals(task_array_.at(i).task_id_)) {
+    for (ObSysTaskStatNode *node = task_list_.get_first();
+         !found_task && node != task_list_.get_header();
+         node = node->get_next()) {
+      if (task_id.equals(node->task_.task_id_)) {
         found_task = true;
-        is_cancel = task_array_.at(i).is_cancel_;
+        is_cancel = node->task_.is_cancel_;
       }
     }
     if (!found_task) {
