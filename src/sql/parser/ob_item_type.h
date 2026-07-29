@@ -2312,9 +2312,6 @@ typedef enum ObItemType
   T_INDEX_MERGE_HINT = 4891,
   T_NO_INDEX_MERGE_HINT = 4892,
 
-  // hint for disable rich format of operators
-  T_DISABLE_OP_RICH_FORMAT = 4894,
-
     // alter type
   T_TYPE_ALTER = 4901,
   T_TYPE_ALTER_CLAUSE = 4902,

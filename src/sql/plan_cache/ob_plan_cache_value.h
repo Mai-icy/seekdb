@@ -393,7 +393,6 @@ private:
   common::ObFixedArray<PCVSchemaObj *, common::ObIAllocator> stored_schema_objs_;
   common::ObBitSet<> must_be_positive_idx_;
   stmt::StmtType stmt_type_;
-  bool enable_rich_vector_format_;
   common::ObBitSet<> fmt_int_or_ch_decint_idx_;
   int64_t switchover_epoch_;
 
