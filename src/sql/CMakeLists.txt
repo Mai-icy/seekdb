@@ -77,6 +77,11 @@ ob_set_subtarget(ob_sql engine_vector_fixed
   engine/vector/vector_basic_op.cpp
 )
 
+set_source_files_properties(
+  engine/expr/ob_distribution.cpp
+  PROPERTIES COMPILE_OPTIONS "-ffp-contract=off"
+)
+
 ob_set_subtarget(ob_sql optimizer_stat
   optimizer/stat/ob_basic_stats_estimator.cpp
   optimizer/stat/ob_dbms_stats_copy_table_stats.cpp
@@ -770,6 +775,7 @@ ob_set_subtarget(ob_sql engine_expr
   engine/expr/ob_expr_substr.cpp
   engine/expr/ob_expr_generator_func.cpp
   engine/expr/ob_expr_zipf.cpp
+  engine/expr/ob_distribution.cpp
   engine/expr/ob_expr_uniform.cpp
   engine/expr/ob_expr_normal.cpp
   engine/expr/ob_expr_substrb.cpp
