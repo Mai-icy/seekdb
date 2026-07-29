@@ -861,19 +861,7 @@ int ObOperator::switch_iterator()
 
 int ObOperator::inner_switch_iterator()
 {
-  int ret = OB_SUCCESS;
-  ObPhysicalPlanCtx *plan_ctx = ctx_.get_physical_plan_ctx();
-  if (OB_ISNULL(plan_ctx)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("plan ctx is null", K(ret));
-  } else if (plan_ctx->get_bind_array_count() <= 0) {
-    ret = OB_ITER_END;
-  } else {
-    startup_passed_ = spec_.startup_filters_.empty();
-
-    // Differ from ObPhyOperator::switch_iterator(), current binding array index is moved from
-    // ObExprCtx to ObPhysicalPlanCtx, can not increase in Operator.
-  }
+  int ret = OB_ITER_END;
   clear_batch_end_flag();
   return ret;
 }

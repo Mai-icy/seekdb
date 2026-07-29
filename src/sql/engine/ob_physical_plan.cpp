@@ -39,7 +39,6 @@ ObPhysicalPlan::ObPhysicalPlan(MemoryContext &mem_context /* = CURRENT_CONTEXT *
     signature_(0),
     field_columns_(mem_context->get_arena_allocator()),
     param_columns_(mem_context->get_arena_allocator()),
-    returning_param_columns_(mem_context->get_arena_allocator()),
     autoinc_params_(allocator_),
     stmt_need_privs_(allocator_),
     vars_(allocator_),
@@ -79,11 +78,9 @@ ObPhysicalPlan::ObPhysicalPlan(MemoryContext &mem_context /* = CURRENT_CONTEXT *
     op_stats_(),
     need_drive_dml_query_(false),
     var_init_exprs_(allocator_),
-    is_returning_(false),
     is_late_materialized_(false),
     is_plain_insert_(false),
     contain_paramed_column_field_(false),
-    first_array_index_(OB_INVALID_INDEX),
     need_consistent_snapshot_(true),
     is_batched_multi_stmt_(false),
     is_new_engine_(false),
@@ -99,7 +96,7 @@ ObPhysicalPlan::ObPhysicalPlan(MemoryContext &mem_context /* = CURRENT_CONTEXT *
     ddl_execution_id_(-1),
     ddl_task_id_(0),
     is_packed_(false),
-    has_instead_of_trigger_(false),
+    reserved_advanced_trigger_(false),
     need_record_plan_info_(false),
     logical_plan_(),
     subschema_ctx_(allocator_),
@@ -131,7 +128,6 @@ void ObPhysicalPlan::reset()
   signature_ = 0;
   field_columns_.reset();
   param_columns_.reset();
-  returning_param_columns_.reset();
   autoinc_params_.reset();
   stmt_need_privs_.reset();
   vars_.reset();
@@ -162,14 +158,12 @@ void ObPhysicalPlan::reset()
   is_update_uniq_index_ = false;
   contain_index_location_ = false;
   ObPlanCacheObject::reset();
-  is_returning_ = false;
   is_late_materialized_ = false;
   is_plain_insert_ = false;
   base_constraints_.reset();
   strict_constrinats_.reset();
   non_strict_constrinats_.reset();
   contain_paramed_column_field_ = false;
-  first_array_index_ = OB_INVALID_INDEX;
   need_consistent_snapshot_ = true;
   is_batched_multi_stmt_ = false;
   is_new_engine_ = false;
@@ -183,7 +177,7 @@ void ObPhysicalPlan::reset()
   batch_size_ = 0;
   contain_pl_udf_or_trigger_ = false;
   is_packed_ = false;
-  has_instead_of_trigger_ = false;
+  reserved_advanced_trigger_ = false;
   need_record_plan_info_ = false;
   logical_plan_.reset();
   subschema_ctx_.reset();
@@ -320,27 +314,6 @@ int ObPhysicalPlan::set_param_fields(const common::ParamsFieldArray &params)
       if (OB_FAIL(tmp_field.deep_copy(param_field, &allocator_))) {
         LOG_WARN("deep copy field failed", K(ret));
       } else if (OB_FAIL(param_columns_.push_back(tmp_field))) {
-        LOG_WARN("push back field columns failed", K(ret));
-      }
-    }
-  }
-  return ret;
-}
-
-int ObPhysicalPlan::set_returning_param_fields(const common::ParamsFieldArray &params)
-{
-  int ret = OB_SUCCESS;
-  int64_t N = params.count();
-  WITH_CONTEXT(mem_context_) {
-    if(N > 0 && OB_FAIL(returning_param_columns_.reserve(N))) {
-      LOG_WARN("failed to reserved returning param field", K(ret));
-    }
-    ObField tmp_field;
-    for (int i = 0; OB_SUCC(ret) && i < N; ++i) {
-      const ObField &param_field = params.at(i);
-      if (OB_FAIL(tmp_field.deep_copy(param_field, &allocator_))) {
-        LOG_WARN("deep copy field failed", K(ret));
-      } else if (OB_FAIL(returning_param_columns_.push_back(tmp_field))) {
         LOG_WARN("push back field columns failed", K(ret));
       }
     }
@@ -663,7 +636,6 @@ OB_SERIALIZE_MEMBER(ObPhysicalPlan,
                     stat_.sql_id_,
                     is_contain_inner_table_,
                     is_update_uniq_index_,
-                    is_returning_,
                     location_type_,
                     use_px_,
                     vars_,
@@ -680,7 +652,7 @@ OB_SERIALIZE_MEMBER(ObPhysicalPlan,
                     need_serial_exec_,
                     contain_pl_udf_or_trigger_,
                     is_packed_,
-                    has_instead_of_trigger_,
+                    reserved_advanced_trigger_,
                     is_plain_insert_,
                     ddl_execution_id_,
                     ddl_task_id_,

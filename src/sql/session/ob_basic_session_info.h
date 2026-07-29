@@ -412,10 +412,6 @@ public:
   ObLengthSemantics get_default_length_semantics() const;
   ObLengthSemantics get_actual_length_semantics() const;
   int64_t get_local_timestamp() const;
-  const common::ObString get_local_nls_date_format() const;
-  const common::ObString get_local_nls_timestamp_format() const;
-  const common::ObString get_local_nls_timestamp_tz_format() const;
-  int get_local_nls_format(const ObObjType type, ObString &format_str) const;
   int set_time_zone(const common::ObString &str_val, const bool is_oralce_mode,
                     const bool need_check_valid /* true */);
   //getters
@@ -545,10 +541,6 @@ public:
   const common::ObTimeZoneInfo *get_timezone_info() const { return tz_info_wrap_.get_time_zone_info(); }
   const common::ObTimeZoneInfoWrap &get_tz_info_wrap() const { return tz_info_wrap_; }
   inline int set_tz_info_wrap(const common::ObTimeZoneInfoWrap &other) { return tz_info_wrap_.deep_copy(other); }
-  inline void set_nls_formats(const common::ObString *nls_formats)
-  {
-    UNUSED(nls_formats);
-  }
   int get_influence_plan_sys_var(ObSysVarInPC &sys_vars) const;
   int get_sys_var_in_pc_str(common::ObString &str) {
     int ret = OB_SUCCESS;
@@ -896,9 +888,6 @@ public:
   inline ObDataTypeCastParams get_dtc_params() const
   {
     return ObDataTypeCastParams(get_timezone_info(),
-                                get_local_nls_date_format(),
-                                get_local_nls_timestamp_format(),
-                                get_local_nls_timestamp_tz_format(),
                                 get_nls_collation(),
                                 get_nls_collation_nation(),
                                 get_local_collation_connection());
@@ -1066,8 +1055,8 @@ public:
   int restore_basic_session(StmtSavedValue &saved_value);
   int begin_nested_session(StmtSavedValue &saved_value, bool skip_cur_stmt_tables = false);
   int end_nested_session(StmtSavedValue &saved_value);
-  int begin_autonomous_session(TransSavedValue &saved_value);
-  int end_autonomous_session(TransSavedValue &saved_value);
+  int begin_inner_tx_session(TransSavedValue &saved_value);
+  int end_inner_tx_session(TransSavedValue &saved_value);
   int merge_stmt_tables();
   int set_start_stmt();
   int set_end_stmt();
@@ -1720,7 +1709,7 @@ protected:
   // free() call returns memory back to block pool
   common::ObSmallBlockAllocator<> block_allocator_;
   common::ObSmallBlockAllocator<> ps_session_info_allocator_;
-  common::ObSmallBlockAllocator<> cursor_info_allocator_; // for alloc memory of PS CURSOR/SERVER REF CURSOR
+  common::ObSmallBlockAllocator<> cursor_info_allocator_; // for prepared-statement server cursors
   common::ObSmallBlockAllocator<> package_info_allocator_; // for alloc memory of session package state
   common::ObStringBuf sess_level_name_pool_; // will reset when disconnect session
   common::ObStringBuf conn_level_name_pool_; // will reset when reset connection and disconnect session
@@ -1937,34 +1926,6 @@ inline int64_t ObBasicSessionInfo::get_local_timestamp() const
 {
   return sys_vars_cache_.get_timestamp();
 }
-inline const common::ObString ObBasicSessionInfo::get_local_nls_date_format() const
-{
-  return ObTimeConverter::COMPAT_OLD_NLS_DATE_FORMAT;
-}
-inline const common::ObString ObBasicSessionInfo::get_local_nls_timestamp_format() const
-{
-  return ObTimeConverter::COMPAT_OLD_NLS_TIMESTAMP_FORMAT;
-}
-inline const common::ObString ObBasicSessionInfo::get_local_nls_timestamp_tz_format() const
-{
-  return ObTimeConverter::COMPAT_OLD_NLS_TIMESTAMP_TZ_FORMAT;
-}
-
-inline int ObBasicSessionInfo::get_local_nls_format(const ObObjType type, ObString &format_str) const
-{
-  int ret = common::OB_SUCCESS;
-  switch (type) {
-    case ObDateTimeType:
-      format_str = ObTimeConverter::COMPAT_OLD_NLS_DATE_FORMAT;
-      break;
-    default:
-      ret = OB_INVALID_DATE_VALUE;
-      SQL_SESSION_LOG(WARN, "invalid argument. wrong type for source.", K(ret), K(type));
-      break;
-  }
-  return ret;
-}
-
 // Object (currently only used for PL, subsequent expr will be handled similarly) execution environment
 class ObExecEnv
 {

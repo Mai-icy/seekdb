@@ -36,15 +36,12 @@ int ObDASUtils::check_nested_sql_mutating(ObTableID ref_table_id, ObExecContext 
   //indicating that this SQL is triggered by a foreign key,
   //and no mutating check is required.
   //pl_stack != nullptr means this sql is triggered by trigger or pl udf
-  //only this sql(trigger or pl udf) needs to check mutating,
-  //and the statement in autonomous transaction does not need to be checked
+  //only this sql(trigger or pl udf) needs to check mutating
   if (OB_ISNULL(cur_parent_ctx)) {
     //do nothing
   } else if (cur_parent_ctx->get_das_ctx().is_fk_cascading_) {
     cur_parent_ctx = nullptr;
   } else if (OB_ISNULL(cur_parent_ctx->get_pl_stack_ctx())) {
-    cur_parent_ctx = nullptr;
-  } else if (cur_parent_ctx->get_pl_stack_ctx()->in_autonomous()) {
     cur_parent_ctx = nullptr;
   }
   while (OB_SUCC(ret) && cur_parent_ctx != nullptr) {
@@ -76,8 +73,6 @@ int ObDASUtils::check_nested_sql_mutating(ObTableID ref_table_id, ObExecContext 
       } else if (cur_parent_ctx->get_das_ctx().is_fk_cascading_) {
         cur_parent_ctx = nullptr;
       } else if (OB_ISNULL(cur_parent_ctx->get_pl_stack_ctx())) {
-        cur_parent_ctx = nullptr;
-      } else if (cur_parent_ctx->get_pl_stack_ctx()->in_autonomous()) {
         cur_parent_ctx = nullptr;
       }
     }

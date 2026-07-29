@@ -179,7 +179,6 @@ int ObCallProcedureExecutor::execute(ObExecContext &ctx, ObCallProcedureStmt &st
     }
     if (OB_SUCC(ret)) {
       ObArray<int64_t> path;
-      ObArray<int64_t> nocopy_params;
       ObObj result;
       int64_t pkg_id = package_id;
       if (OB_FAIL(ctx.get_pl_engine()->execute(ctx,
@@ -188,7 +187,6 @@ int ObCallProcedureExecutor::execute(ObExecContext &ctx, ObCallProcedureStmt &st
                                               routine_id,
                                               path,
                                               params,
-                                              nocopy_params,
                                               result))) {
         LOG_WARN("failed to execute pl",  K(ret), K(package_id), K(routine_id), K(pkg_id));
       }
@@ -261,7 +259,6 @@ int ObCallProcedureExecutor::execute(ObExecContext &ctx, ObCallProcedureStmt &st
         for (int64_t i = 0; i < null_params.count() && i < params.count(); ++i) {
           if (null_params.at(i) &&
               params.at(i).is_pl_extend() &&
-              params.at(i).get_meta().get_extend_type() != pl::PL_REF_CURSOR_TYPE &&
               params.at(i).get_ext() != 0) {
             pl::ObUserDefinedType::destruct_obj(params.at(i), ctx.get_my_session());
           }
@@ -426,15 +423,9 @@ int ObAnonymousBlockExecutor::execute(ObExecContext &ctx, ObAnonymousBlockStmt &
             OX (field.charsetnr_ = collation);
           } else { // complex data type
             field.length_ = field.accuracy_.get_length();
-            if (value.is_ref_cursor_type()) {
-              OZ (ob_write_string(ctx.get_allocator(), ObString("SYS_REFCURSOR"), field.type_name_));
-            } else {
-              ret = OB_NOT_SUPPORTED;
-              LOG_WARN("anonymous out parameter type is not anonymous collection",
-                       K(ret), K(value));
-              LOG_USER_ERROR(OB_NOT_SUPPORTED,
-                             "anonymous out parameter type is not anonymous collection");
-            }
+            ret = OB_NOT_SUPPORTED;
+            LOG_WARN("anonymous out parameter type is not supported", K(ret), K(value));
+            LOG_USER_ERROR(OB_NOT_SUPPORTED, "anonymous complex out parameter");
           }
           if (need_push) {
             OZ (ctx.get_field_columns()->push_back(field));
@@ -449,7 +440,6 @@ int ObAnonymousBlockExecutor::execute(ObExecContext &ctx, ObAnonymousBlockStmt &
       for (int64_t i = 0; i < null_params.count() && i < stmt.get_params()->count(); ++i) {
         if (null_params.at(i) &&
             stmt.get_params()->at(i).is_pl_extend() &&
-            stmt.get_params()->at(i).get_meta().get_extend_type() != pl::PL_REF_CURSOR_TYPE &&
             stmt.get_params()->at(i).get_ext() != 0) {
           pl::ObUserDefinedType::destruct_obj(stmt.get_params()->at(i), ctx.get_my_session());
         }

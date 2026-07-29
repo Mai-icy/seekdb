@@ -1378,7 +1378,6 @@ int ObJoinOrder::check_exec_force_use_das(const uint64_t table_id,
     bool force_das_tsc = opt_ctx.in_nested_sql() || //contain nested sql(pl udf or in nested sql), trigger or foreign key in the top sql not force to use DAS TSC
                          opt_ctx.has_pl_udf() ||
                          opt_ctx.has_subquery_in_function_table() ||  //has function table
-                         opt_ctx.has_cursor_expression() ||
                          (opt_ctx.has_var_assign() && session_info->is_var_assign_use_das_enabled()) ||
                          (opt_ctx.is_batched_multi_stmt() && table_item->is_basic_table()) || //batch update table(multi queries or arraybinding)
                          (table_item->for_update_ && table_item->skip_locked_ && session_info->get_pl_context()) // select for update skip locked stmt in PL use das force
@@ -10226,9 +10225,6 @@ int ObJoinOrder::generate_subquery_paths(PathHelper &helper)
   } else {
     log_plan->set_is_subplan_scan(true);
     log_plan->set_nonrecursive_plan_for_fake_cte(get_plan()->get_nonrecursive_plan_for_fake_cte());
-    if (parent_stmt->is_insert_stmt()) {
-      log_plan->set_insert_stmt(static_cast<const ObInsertStmt*>(parent_stmt));
-    }
     if (OB_FAIL(log_plan->generate_raw_plan())) {
       LOG_WARN("failed to optimize sub-select", K(ret));
     } else if (OB_FAIL(log_plan->get_candidate_plans().get_best_plan(best_child_plan))) {
@@ -17629,17 +17625,13 @@ int ObJoinOrder::check_match_to_type(ObRawExpr *to_type_expr, ObRawExpr *candi_e
   } else {
     ObItemType type = to_type_expr->get_expr_type();
     ObItemType candi_type = candi_expr->get_expr_type();
-    if (T_FUN_SYS_TO_CHAR == type
-        || T_FUN_SYS_TO_NCHAR == type
-        || T_FUN_SYS_TO_NUMBER == type
+    if (T_FUN_SYS_TO_NCHAR == type
         || T_FUN_SYS_TO_BINARY_FLOAT == type
         || T_FUN_SYS_TO_BINARY_DOUBLE == type
         || T_FUN_SYS_DATE == type
         || T_FUN_SYS_TO_BINARY_DOUBLE == type) {
       is_valid = true;
-    } else if (T_FUN_SYS_TO_CHAR == candi_type
-        || T_FUN_SYS_TO_NCHAR == candi_type
-        || T_FUN_SYS_TO_NUMBER == candi_type
+    } else if (T_FUN_SYS_TO_NCHAR == candi_type
         || T_FUN_SYS_TO_BINARY_FLOAT == candi_type
         || T_FUN_SYS_TO_BINARY_DOUBLE == candi_type
         || T_FUN_SYS_DATE == candi_type

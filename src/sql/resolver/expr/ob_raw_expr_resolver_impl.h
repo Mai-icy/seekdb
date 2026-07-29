@@ -91,7 +91,6 @@ private:
   int process_sub_query_node(const ParseNode *node, ObRawExpr *&expr);
   int process_agg_node(const ParseNode *node, ObRawExpr *&expr);
   int process_group_aggr_node(const ParseNode *node, ObRawExpr *&expr);
-  int process_keep_aggr_node(const ParseNode *node, ObRawExpr *&expr);
   int process_sort_list_node(const ParseNode *node, ObAggFunRawExpr *parent_agg_expr);
   int process_timestamp_node(const ParseNode *node, common::ObString &err_info, ObRawExpr *&expr);
   int process_systimestamp_node(const ParseNode *node,
@@ -162,7 +161,6 @@ private:
   bool is_win_expr_valid_scope(ObStmtScope scope) const;
   int check_and_canonicalize_window_expr(ObRawExpr *expr);
   int process_ident_node(const ParseNode &node, ObRawExpr *&expr);
-  int process_multiset_node(const ParseNode *node, ObRawExpr *&expr);
   int process_cursor_attr_node(const ParseNode &node, ObRawExpr *&expr);
   int process_obj_access_node(const ParseNode &node, ObRawExpr *&expr);
   int resolve_obj_access_idents(const ParseNode &node, ObQualifiedName &q_name);
@@ -174,7 +172,6 @@ private:
   int process_plsql_var_node(const ParseNode *node, ObRawExpr *&expr);
   int process_call_param_node(const ParseNode *node, ObRawExpr *&expr);
 
-  int convert_keep_aggr_to_common_aggr(ObAggFunRawExpr *&agg_expr);
 
   int expand_node(common::ObIAllocator &allocator, ParseNode *node, int p, ObVector<const ParseNode*> &arr);
   static int not_int_check(const ObRawExpr *expr);
@@ -188,7 +185,6 @@ private:
   int process_odbc_time_literals(const ObItemType dst_time_type,
                                  const ParseNode *expr_node,
                                  ObRawExpr *&expr);
-  int process_sql_udt_construct_node(const ParseNode *node, ObRawExpr *&expr);
   int process_array_contains_node(const ParseNode *node, ObRawExpr *&expr);
   int remove_format_json_opt_in_pl(ParseNode *node, int8_t expr_flag);
   int remove_strict_opt_in_pl(ParseNode *node, int8_t expr_flag);
@@ -203,7 +199,6 @@ private:
   int transform_ratio_afun_to_arg_div_sum(const ParseNode *ratio_to_report, ParseNode *&div);
   int convert_any_or_all_expr(ObRawExpr *&expr, bool &happened);
   int get_opposite_string(const common::ObString &orig_string, common::ObString &new_string, common::ObIAllocator &allocator);
-  int reset_keep_aggr_sort_direction(ObIArray<OrderItem> &aggr_sort_item);
   int reset_aggr_sort_nulls_first(ObIArray<OrderItem> &aggr_sort_item);
   int resolve_left_node_of_obj_access_idents(const ParseNode &node, ObQualifiedName &q_name);
   int resolve_right_node_of_obj_access_idents(const ParseNode &node, ObQualifiedName &q_name);

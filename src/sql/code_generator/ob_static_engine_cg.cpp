@@ -41,7 +41,6 @@
 #include "sql/optimizer/ob_log_temp_table_access.h"
 #include "sql/optimizer/ob_log_temp_table_insert.h"
 #include "sql/optimizer/ob_log_temp_table_transformation.h"
-#include "sql/optimizer/ob_log_err_log.h"
 #include "sql/optimizer/ob_log_stat_collector.h"
 #include "sql/optimizer/ob_log_expand.h"
 #include "sql/engine/ob_operator_factory.h"
@@ -94,7 +93,6 @@
 #include "sql/engine/pdml/static/ob_px_multi_part_delete_op.h"
 #include "sql/engine/pdml/static/ob_px_multi_part_update_op.h"
 #include "sql/engine/pdml/static/ob_px_sstable_insert_op.h"
-#include "sql/engine/dml/ob_err_log_op.h"
 #include "sql/engine/basic/ob_select_into_op.h"
 #include "sql/engine/basic/ob_function_table_op.h"
 #include "sql/engine/basic/ob_json_table_op.h"
@@ -1016,9 +1014,8 @@ int ObStaticEngineCG::generate_spec(
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("unexpected status: basic funcs is not init", K(ret));
         } else if (expr->obj_meta_.is_ext()) {
-          // user-defined types without ORDER or MAP methods are not supported
-          ret = OB_ERR_NO_ORDER_MAP_SQL;
-          LOG_WARN("cannot ORDER objects without MAP or ORDER method", K(ret));
+          ret = OB_ERR_INVALID_TYPE_FOR_OP;
+          LOG_WARN("complex values do not support DISTINCT", K(ret));
         } else {
           ObOrderDirection order_direction = default_asc_direction();
           bool is_ascending = is_ascending_direction(order_direction);
@@ -1217,7 +1214,7 @@ int ObStaticEngineCG::generate_hash_set_spec(ObLogSet &op, ObHashSetSpec &spec)
         LOG_WARN("unexpected status: basic funcs is not init", K(ret));
       } else if (ob_is_user_defined_pl_type(expr->datum_meta_.type_)) {
         // user-defined types without ORDER or MAP methods are not supported
-        ret = OB_ERR_NO_ORDER_MAP_SQL;
+        ret = OB_ERR_INVALID_TYPE_FOR_OP;
         LOG_WARN("cannot ORDER objects without MAP or ORDER method", K(ret));
       } else if (OB_FAIL(spec.sort_collations_.push_back(field_collation))) {
         LOG_WARN("failed to push back sort collation", K(ret));
@@ -1334,7 +1331,7 @@ int ObStaticEngineCG::generate_merge_set_spec(ObLogSet &op, ObMergeSetSpec &spec
           LOG_WARN("failed to push back sort collation", K(ret));
         } else if (ob_is_user_defined_pl_type(expr->datum_meta_.type_)) {
           // user-defined types without ORDER or MAP methods are not supported
-          ret = OB_ERR_NO_ORDER_MAP_SQL;
+          ret = OB_ERR_INVALID_TYPE_FOR_OP;
           LOG_WARN("cannot ORDER objects without MAP or ORDER method", K(ret));
         } else {
           ObSortCmpFunc cmp_func;
@@ -1481,7 +1478,7 @@ int ObStaticEngineCG::check_not_support_cmp_type(const ObExpr* expr)
   int ret = OB_SUCCESS;
   if (ob_is_user_defined_pl_type(expr->datum_meta_.type_)) {
     // user-defined types without ORDER or MAP methods are not supported
-    ret = OB_ERR_NO_ORDER_MAP_SQL;
+    ret = OB_ERR_INVALID_TYPE_FOR_OP;
     LOG_WARN("cannot ORDER objects without MAP or ORDER method", K(ret));
   } else if (OB_UNLIKELY(ObCollectionSQLType == expr->datum_meta_.type_)) {
     ret = OB_ERR_INVALID_TYPE_FOR_OP;
@@ -1882,12 +1879,6 @@ int ObStaticEngineCG::generate_spec(ObLogExprValues &op,
     }
   }
 
-  // cg error logging def
-  if (OB_FAIL(ret)) {
-
-  } else if (OB_FAIL(dml_cg_service_.generate_err_log_ctdef(op.get_err_log_define(), spec.err_log_ct_def_))) {
-    LOG_WARN("fail to cg err_log_ins_ctdef", K(ret));
-  }
   return ret;
 }
 
@@ -2018,7 +2009,6 @@ int ObStaticEngineCG::generate_insert_with_das(ObLogInsert &op, ObTableInsertSpe
       spec.plan_->need_drive_dml_query_ = true;
       spec.use_dist_das_ = op.is_multi_part_dml();
       spec.gi_above_ = op.is_gi_above() && !spec.use_dist_das_;
-      spec.is_returning_ = op.is_returning();
       spec.is_pdml_ = op.is_pdml();
       spec.das_dop_ = op.get_das_dop();
       spec.plan_->set_das_dop(op.get_das_dop());
@@ -2037,7 +2027,6 @@ int ObStaticEngineCG::generate_insert_with_das(ObLogInsert &op, ObTableInsertSpe
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("ins_ctdef is null", K(ret));
     } else {
-      ins_ctdef->has_instead_of_trigger_ = op.has_instead_of_trigger();
       spec.ins_ctdefs_.at(0).at(i) = ins_ctdef;
       spec.need_foreign_key_check_ |= (ins_ctdef->fk_args_.count() > 0);
       spec.need_trigger_fire_ |= (ins_ctdef->trig_ctdef_.tg_args_.count() > 0);
@@ -2068,7 +2057,6 @@ int ObStaticEngineCG::generate_delete_with_das(ObLogDelete &op, ObTableDeleteSpe
     spec.plan_->need_drive_dml_query_ = true;
     spec.use_dist_das_ = op.is_multi_part_dml();
     spec.gi_above_ = op.is_gi_above() && !spec.use_dist_das_;
-    spec.is_returning_ = op.is_returning();
     spec.is_pdml_ = op.is_pdml();
     spec.plan_->set_das_dop(op.get_das_dop());
     spec.das_dop_ = op.get_das_dop();
@@ -2106,7 +2094,6 @@ int ObStaticEngineCG::generate_delete_with_das(ObLogDelete &op, ObTableDeleteSpe
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("del_ctdef is null", K(ret));
       } else {
-        del_ctdef->has_instead_of_trigger_ = op.has_instead_of_trigger();
         spec.need_foreign_key_check_ |= (del_ctdef->fk_args_.count() > 0);
         spec.need_trigger_fire_ |= (del_ctdef->trig_ctdef_.tg_args_.count() > 0);
         ctdefs.at(j) = del_ctdef;
@@ -2306,7 +2293,6 @@ int ObStaticEngineCG::generate_update_with_das(ObLogUpdate &op, ObTableUpdateSpe
     spec.plan_->need_drive_dml_query_ = true;
     spec.use_dist_das_ = op.is_multi_part_dml();
     spec.gi_above_ = op.is_gi_above() && !spec.use_dist_das_;
-    spec.is_returning_ = op.is_returning();
     spec.is_pdml_ = op.is_pdml();
     spec.plan_->set_das_dop(op.get_das_dop());
     spec.das_dop_ = op.get_das_dop();
@@ -2342,7 +2328,6 @@ int ObStaticEngineCG::generate_update_with_das(ObLogUpdate &op, ObTableUpdateSpe
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("upd_ctdef is null", K(ret));
       } else {
-        upd_ctdef->has_instead_of_trigger_ = op.has_instead_of_trigger();
         spec.need_foreign_key_check_ |= (upd_ctdef->fk_args_.count() > 0);
         spec.need_trigger_fire_ |= (upd_ctdef->trig_ctdef_.tg_args_.count() > 0);
         ctdefs.at(j) = upd_ctdef;
@@ -3951,7 +3936,6 @@ int ObStaticEngineCG::generate_spec(ObLogGroupBy &op, ObHashGroupBySpec &spec,
     for (int64_t i = 0; i < spec.aggr_infos_.count(); ++i) {
       const ObAggrInfo &aggr_info = spec.aggr_infos_.at(i);
       if (T_FUN_GROUP_CONCAT == aggr_info.get_expr_type()
-          || T_FUN_KEEP_WM_CONCAT == aggr_info.get_expr_type()
           || T_FUN_WM_CONCAT == aggr_info.get_expr_type()
           || T_FUN_JSON_ARRAYAGG == aggr_info.get_expr_type()
           || T_FUN_ORA_JSON_ARRAYAGG == aggr_info.get_expr_type()
@@ -5014,36 +4998,6 @@ int ObStaticEngineCG::generate_spec(
   return ret;
 }
 
-int ObStaticEngineCG::generate_spec(ObLogErrLog &op,
-                                    ObErrLogSpec &spec, const bool in_root_job)
-{
-  int ret = OB_SUCCESS;
-  stmt::StmtType stmt_type = stmt::StmtType::T_INSERT;
-  UNUSED(in_root_job);
-  if (OB_FAIL(dml_cg_service_.generate_err_log_ctdef(op.get_err_log_define(), spec.err_log_ct_def_))) {
-    LOG_WARN("fail to cg err_log_ctdef", K(ret));
-  } else if (OB_FAIL(op.get_err_log_type(stmt_type))) {
-    LOG_WARN("fail get error logging stmt type", K(ret));
-  } else {
-    ObDASOpType type = DAS_OP_TABLE_INSERT;
-    switch(stmt_type) {
-    case stmt::StmtType::T_INSERT:
-      type = DAS_OP_TABLE_INSERT;
-      break;
-    case stmt::StmtType::T_UPDATE:
-      type = DAS_OP_TABLE_UPDATE;
-      break;
-    default:
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("unexpect stmt type");
-      break;
-    }
-    spec.type_ = type;
-  }
-  return ret;
-}
-
-
 int ObStaticEngineCG::generate_spec(ObLogTableScan &op, ObRowSampleScanSpec &spec, const bool)
 {
   int ret = OB_SUCCESS;
@@ -5423,7 +5377,6 @@ int ObStaticEngineCG::fill_aggr_info(ObAggFunRawExpr &raw_expr,
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("expr is null ", K(ret), K(expr));
         } else if ((T_FUN_GROUP_CONCAT == raw_expr.get_expr_type() ||
-                    T_FUN_KEEP_WM_CONCAT == raw_expr.get_expr_type() ||
                     T_FUN_WM_CONCAT == raw_expr.get_expr_type())
                    && OB_UNLIKELY(!param_raw_expr.get_result_meta().is_string_type())) {
           ret = OB_ERR_UNEXPECTED;
@@ -5437,7 +5390,7 @@ int ObStaticEngineCG::fill_aggr_info(ObAggFunRawExpr &raw_expr,
         } else if (aggr_info.has_distinct_) {
           if (ob_is_user_defined_pl_type(expr->datum_meta_.type_)) {
             // user-defined types without ORDER or MAP methods are not supported
-            ret = OB_ERR_NO_ORDER_MAP_SQL;
+            ret = OB_ERR_INVALID_TYPE_FOR_OP;
             LOG_WARN("cannot ORDER objects without MAP or ORDER method", K(ret));
           } else {
             ObSortFieldCollation field_collation(i, expr->datum_meta_.cs_type_, is_ascending, null_pos);
@@ -5473,18 +5426,9 @@ int ObStaticEngineCG::fill_aggr_info(ObAggFunRawExpr &raw_expr,
     }
 
     if (OB_SUCC(ret) && (T_FUN_GROUP_CONCAT == raw_expr.get_expr_type() ||
-                         T_FUN_GROUP_RANK == raw_expr.get_expr_type() ||
-                         T_FUN_GROUP_DENSE_RANK == raw_expr.get_expr_type() ||
-                         T_FUN_GROUP_PERCENT_RANK == raw_expr.get_expr_type() ||
-                         T_FUN_GROUP_CUME_DIST == raw_expr.get_expr_type() ||
                          T_FUN_GROUP_PERCENTILE_CONT == raw_expr.get_expr_type() ||
                          T_FUN_GROUP_PERCENTILE_DISC == raw_expr.get_expr_type() ||
                          T_FUN_MEDIAN == raw_expr.get_expr_type() ||
-                         T_FUN_KEEP_SUM == raw_expr.get_expr_type() ||
-                         T_FUN_KEEP_MAX == raw_expr.get_expr_type() ||
-                         T_FUN_KEEP_MIN == raw_expr.get_expr_type() ||
-                         T_FUN_KEEP_COUNT == raw_expr.get_expr_type() ||
-                         T_FUN_KEEP_WM_CONCAT == raw_expr.get_expr_type() ||
                          T_FUN_HYBRID_HIST == raw_expr.get_expr_type() ||
                          T_FUN_ORA_JSON_ARRAYAGG == raw_expr.get_expr_type() ||
                          T_FUNC_SYS_ARRAY_AGG == raw_expr.get_expr_type())) {
@@ -5997,9 +5941,8 @@ int ObStaticEngineCG::fill_wf_info(ObIArray<ObExpr *> &all_expr,
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("expr is null ", K(ret), K(expr));
       } else if (ob_is_user_defined_pl_type(expr->datum_meta_.type_)) {
-        // partition by does not support this user-defined type
-        ret = OB_ERR_NO_ORDER_MAP_SQL;
-        LOG_WARN("cannot ORDER objects without MAP or ORDER method", K(ret));
+        ret = OB_ERR_INVALID_TYPE_FOR_OP;
+        LOG_WARN("complex values do not support window partitioning", K(ret));
       } else if (OB_FAIL(wf_info.partition_exprs_.push_back(expr))) {
         LOG_WARN("push_back failed", K(ret), K(expr));
       }
@@ -6037,7 +5980,7 @@ int ObStaticEngineCG::fil_sort_info(const ObIArray<OrderItem> &sort_keys,
         LOG_WARN("failed to generate rt expr", K(ret));
       } else if (ob_is_user_defined_pl_type(expr->datum_meta_.type_)) {
         // user-defined types without ORDER or MAP methods are not supported
-        ret = OB_ERR_NO_ORDER_MAP_SQL;
+        ret = OB_ERR_INVALID_TYPE_FOR_OP;
         LOG_WARN("cannot ORDER objects without MAP or ORDER method", K(ret));
       } else if (sort_exprs != NULL && OB_FAIL(sort_exprs->push_back(expr))) {
         LOG_WARN("failed to push back expr", K(ret));
@@ -6667,22 +6610,6 @@ int ObStaticEngineCG::set_properties_post(const ObLogPlan &log_plan, ObPhysicalP
     }
   }
 
-  //resolve the first array index of array binding, and store in physical plan
-  if (OB_SUCC(ret)
-      && OB_NOT_NULL(my_session->get_pl_implicit_cursor())
-      && my_session->get_pl_implicit_cursor()->get_in_forall() // Only need Array Binding optimization in FORALL context
-      && (!log_plan.get_optimizer_context().is_batched_multi_stmt())) {
-    // batch multi stmt used param store's array parameter, but it is not an array binding optimization, therefore, it needs to be excluded here
-    bool is_found = false;
-    const ParamStore &param_store = plan_ctx->get_param_store();
-    for (int64_t i = 0; OB_SUCC(ret) && !is_found && i < param_store.count(); ++i) {
-      if (param_store.at(i).is_ext_sql_array()) {
-        phy_plan.set_first_array_index(i);
-        is_found = true;
-      }
-    }
-  }
-
   // assgin subschema ctx
   if (OB_SUCC(ret)
       && (plan_ctx->get_subschema_ctx().is_inited()
@@ -6883,10 +6810,6 @@ int ObStaticEngineCG::get_phy_op_type(ObLogicalOperator &log_op,
       } else {
         type = PHY_INSERT;
       }
-      break;
-    }
-    case log_op_def::LOG_ERR_LOG: {
-      type = PHY_ERR_LOG;
       break;
     }
     case log_op_def::LOG_EXPR_VALUES: {
@@ -7336,8 +7259,6 @@ int ObStaticEngineCG::check_op_vectorization(ObLogicalOperator *op, ObSqlSchemaG
     } else if (OB_FAIL(schema_guard->get_table_schema(tsc->get_table_id(), tsc->get_ref_table_id(),
                                                       op->get_stmt(), table_schema))) {
       LOG_WARN("get table schema failed", K(tsc->get_table_id()), K(ret));
-    } else if (OB_NOT_NULL(table_schema) && 0 < table_schema->get_aux_vp_tid_count()) {
-      disable_vectorize = true;
     }
     if (!disable_vectorize) {
       exprs_not_support_vectorize(tsc->get_access_exprs(), disable_vectorize);

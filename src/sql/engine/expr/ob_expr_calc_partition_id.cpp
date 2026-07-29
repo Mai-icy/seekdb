@@ -36,7 +36,6 @@ OB_SERIALIZE_MEMBER(CalcPartitionBaseInfo,
                     part_num_,
                     subpart_num_,
                     partition_id_calc_type_,
-                    may_add_interval_part_,
                     calc_id_type_);
 
 int CalcPartitionBaseInfo::deep_copy(common::ObIAllocator &allocator,
@@ -59,22 +58,9 @@ int CalcPartitionBaseInfo::deep_copy(common::ObIAllocator &allocator,
       base_info->part_num_ = part_num_;
       base_info->subpart_num_ = subpart_num_;
       base_info->partition_id_calc_type_ = partition_id_calc_type_;
-      base_info->may_add_interval_part_ = may_add_interval_part_;
       base_info->calc_id_type_ = calc_id_type_;
     }
   }
-  return ret;
-}
-
-int ObExprCalcPartitionBase::set_may_add_interval_part(ObExpr *expr,
-                                                       const MayAddIntervalPart info)
-{
-  int ret = OB_SUCCESS;
-  CalcPartitionBaseInfo *calc_part_info = NULL;
-  CK (OB_NOT_NULL(expr));
-  OX (calc_part_info = reinterpret_cast<CalcPartitionBaseInfo *>(expr->extra_info_));
-  CK (OB_NOT_NULL(calc_part_info));
-  OX (calc_part_info->may_add_interval_part_ = info);
   return ret;
 }
 
@@ -119,7 +105,6 @@ int ObExprCalcPartitionBase::cg_expr(ObExprCGCtx &expr_cg_ctx,
   } else if (OB_FAIL(init_calc_part_info(expr_cg_ctx.allocator_,
                                          *table_schema,
                                          raw_expr.get_partition_id_calc_type(),
-                                         raw_expr.get_may_add_interval_part(),
                                          calc_part_info))) {
     LOG_WARN("fail to init tl expr info", K(ret));
   } else if (OB_ISNULL(calc_part_info)) {
@@ -149,7 +134,6 @@ int ObExprCalcPartitionBase::cg_expr(ObExprCGCtx &expr_cg_ctx,
 int ObExprCalcPartitionBase::init_calc_part_info(ObIAllocator *allocator,
                                                  const ObTableSchema &table_schema,
                                                  PartitionIdCalcType calc_type,
-                                                 MayAddIntervalPart add_part,
                                                  CalcPartitionBaseInfo *&calc_part_info) const
 {
   int ret = OB_SUCCESS;
@@ -169,7 +153,6 @@ int ObExprCalcPartitionBase::init_calc_part_info(ObIAllocator *allocator,
       calc_part_info->part_num_ = table_schema.get_first_part_num();
       calc_part_info->subpart_num_ = OB_INVALID_ID; // Currently not used, if used, need to consider heterogeneous number of secondary partitions
       calc_part_info->partition_id_calc_type_ = calc_type;
-      calc_part_info->may_add_interval_part_ = add_part;
       calc_part_info->calc_id_type_ = get_calc_id_type();
       LOG_DEBUG("table location expr info", KPC(calc_part_info), K(ret));
     }
@@ -458,51 +441,6 @@ int ObExprCalcPartitionBase::build_row(ObEvalCtx &ctx,
   return ret;
 }
 
-int ObExprCalcPartitionBase::add_interval_part(ObExecContext &exec_ctx,
-                                             const CalcPartitionBaseInfo &calc_part_info,
-                                             ObIAllocator &allocator, ObNewRow &row)
-{
-  int ret = OB_SUCCESS;
-  if (MayAddIntervalPart::YES == calc_part_info.may_add_interval_part_) {
-    
-    const ObTableSchema *table_schema = NULL;
-    bool is_interval = false;
-    CK (OB_NOT_NULL(exec_ctx.get_sql_ctx()));
-    OZ (exec_ctx.get_sql_ctx()->schema_guard_->get_table_schema( calc_part_info.ref_table_id_, table_schema));
-    CK (OB_NOT_NULL(table_schema));
-    OX (is_interval = table_schema->is_interval_part());
-    if (OB_SUCC(ret) && is_interval) {
-      if (OB_FAIL(ObTableLocation::send_add_interval_partition_rpc_new_engine(
-                  allocator, exec_ctx.get_sql_ctx()->session_info_,
-                  exec_ctx.get_sql_ctx()->schema_guard_, table_schema, row))) {
-        if (is_need_retry_interval_part_error(ret)) {
-          set_interval_partition_insert_error(ret);
-        }
-        LOG_WARN("failed to send add interval partition rpc", K(ret));
-      } else {
-        set_interval_partition_insert_error(ret);
-      }
-    }
-  } else if (MayAddIntervalPart::PART_CHANGE_ERR == calc_part_info.may_add_interval_part_) {
-    ret = OB_ERR_UPD_CAUSE_PART_CHANGE;
-    LOG_WARN("cause partition movement", K(ret));
-  }
-  return ret;
-}
-
-/*
-  when the table is partitioned by interval, call this function may have three different action
-  when the partition id is not exist.
-  1. set part id to 0 indicate part not found, this is default action. used by normal part calc such
-  as join repart
-  2. add interval partition and set an error code force stmt retry. used by dml such as pdml shuffle
-  3. set and error code and make the query stop and report and error msg to client, used by update
-  partition key column which may cause partition changed. ex: update t1 set c1 = c1 + 201; t1 is
-  interval partitioned which only has one partition created (0-200), and partitioned by c1.
-
-  function add_interval_part handle case 2, 3. case 1 is default.
-*
-*/
 int ObExprCalcPartitionBase::calc_partition_id(const ObExpr &part_expr,
                                                ObEvalCtx &ctx,
                                                const CalcPartitionBaseInfo &calc_part_info,

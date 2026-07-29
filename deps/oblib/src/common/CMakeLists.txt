@@ -108,7 +108,6 @@ ob_set_subtarget(oblib_common reloc_datum
 )
 
 ob_set_subtarget(oblib_common reloc_timezone
-  timezone/ob_datetime_format_models.cpp
   timezone/ob_time_convert.cpp
   timezone/ob_timezone_info.cpp
 )

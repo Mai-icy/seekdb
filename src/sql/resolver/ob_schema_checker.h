@@ -141,15 +141,6 @@ public:
                   const share::schema::ObUserInfo *&user_info);
   int get_user_info(const uint64_t user_id,
                     const share::schema::ObUserInfo *&user_info);
-  // First try to get the schema of tbl_name, if it does not exist, treat tbl_name as a synonym name, and get the synonym
-  // The schema of the represented table
-  int get_table_schema_with_synonym(const common::ObString &tbl_db_name,
-                                    const common::ObString &tbl_name,
-                                    bool is_index_table,
-                                    bool &has_synonym,
-                                    common::ObString &new_db_name,
-                                    common::ObString &new_tbl_name,
-                                    const share::schema::ObTableSchema *&tbl_schema);
   int get_table_schema(
                        const common::ObString &database_name,
                        const common::ObString &table_name,
@@ -238,10 +229,6 @@ public:
   int get_idx_schema_by_origin_idx_name(const uint64_t database_id,
                                         const common::ObString &index_name,
                                         const share::schema::ObTableSchema *&table_schema);
-  int check_exist_same_name_object_with_synonym(uint64_t database_id,
-                                                const common::ObString &object_name,
-                                                bool &exist,
-                                                bool &is_private_syn);
   int check_mysql_grant_role_priv(const ObSqlCtx &sql_ctx,
                                   const common::ObIArray<uint64_t> &granting_role_ids);
   int check_set_default_role_priv(const ObSqlCtx &sql_ctx);

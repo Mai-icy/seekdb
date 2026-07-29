@@ -246,11 +246,6 @@ int ObCreateTableExecutor::prepare_alter_arg(ObCreateTableStmt &stmt,
   
   if (OB_FAIL(alter_table_arg.tz_info_wrap_.deep_copy(my_session->get_tz_info_wrap()))) {
     LOG_WARN("failed to deep_copy tz info wrap", "tz_info_wrap", my_session->get_tz_info_wrap(), K(ret));
-  } else if (OB_FAIL(alter_table_arg.set_nls_formats(
-      my_session->get_local_nls_date_format(),
-      my_session->get_local_nls_timestamp_format(),
-      my_session->get_local_nls_timestamp_tz_format()))) {
-    LOG_WARN("failed to set_nls_formats", K(ret));
   } else if (OB_FAIL(alter_table_schema->assign(table_schema))) {
     LOG_WARN("failed to assign alter table schema", K(ret));
   } else if (!table_schema.is_mysql_tmp_table()
@@ -349,10 +344,6 @@ int ObCreateTableExecutor::execute_ctas(ObExecContext &ctx,
         LOG_WARN("failed to prepare drop table arg", K(ret));
       } else if (OB_FAIL(ctx.get_sql_ctx()->schema_guard_->reset())){
         LOG_WARN("schema_guard reset failed", K(ret));
-      } else if (create_table_arg.schema_.is_interval_part()) {
-        ret = OB_NOT_SUPPORTED;
-        LOG_WARN("create ctas for interval part table is not supported", KR(ret));
-        LOG_USER_ERROR(OB_NOT_SUPPORTED, "create ctas for interval part table is");
       } else {// 2. create table
         DEBUG_SYNC(BEFORE_SEND_PARALLEL_CREATE_TABLE);
         create_table_arg.is_parallel_ = false;
@@ -692,10 +683,6 @@ int ObAlterTableExecutor::alter_table_rpc_v2(
     }
   }
   if (OB_SUCC(ret)) {
-    if (obcall::ObAlterTableArg::SET_INTERVAL == alter_table_arg.alter_part_type_
-        || obcall::ObAlterTableArg::INTERVAL_TO_RANGE == alter_table_arg.alter_part_type_) {
-      alter_table_arg.is_alter_partitions_ = true;
-    }
     AlterTableSchema &alter_table_schema = const_cast<AlterTableSchema &>(alter_table_arg.alter_table_schema_);
     if (OB_FAIL(populate_based_schema_obj_info_(alter_table_arg))) {
       LOG_WARN("fail to populate based schema obj info", KR(ret));
@@ -1513,17 +1500,6 @@ int ObAlterTableExecutor::check_alter_partition(ObExecContext &ctx,
       LOG_WARN("no operation", K(arg.alter_part_type_), K(ret));
     }
     LOG_DEBUG("dump table schema", K(table_schema));
-  } else if (stmt.get_interval_expr() != NULL) {
-    CK (NULL != stmt.get_transition_expr());
-    OZ (ObPartitionExecutorUtils::check_transition_interval_valid(
-                                        stmt::T_CREATE_TABLE,
-                                        ctx,
-                                        stmt.get_transition_expr(),
-                                        stmt.get_interval_expr()));
-    OZ (ObPartitionExecutorUtils::set_interval_value(ctx,
-                                                     stmt::T_CREATE_TABLE,
-                                                     table_schema,
-                                                     stmt.get_interval_expr()));
   }
 
   return ret;

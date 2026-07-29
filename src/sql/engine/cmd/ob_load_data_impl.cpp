@@ -2255,7 +2255,6 @@ int ObLoadDataSPImpl::ToolBox::init(ObExecContext &ctx, ObLoadDataStmt &load_stm
       OZ (databuff_printf(buf, buf_len, pos, "Start time:\t"));
       OZ (ObTimeConverter::datetime_to_str(cur_ts,
                                            TZ_INFO(session),
-                                           ObString(),
                                            MAX_SCALE_FOR_TEMPORAL,
                                            buf, buf_len, pos, true));
       OZ (databuff_printf(buf, buf_len, pos, "\n"));

@@ -68,8 +68,6 @@ int ObDDLSqlGenerator::get_priv_name(const int64_t priv, const char *&name)
       name = "PROCESS"; break;
     case OB_PRIV_BOOTSTRAP:
       name = "BOOSTRAP"; break;
-    case OB_PRIV_CREATE_SYNONYM:
-      name = "CREATE SYNONYM"; break;
     case OB_PRIV_AUDIT:
       name = "AUDIT"; break;
     case OB_PRIV_COMMENT:

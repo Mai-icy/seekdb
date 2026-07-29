@@ -173,8 +173,6 @@ ob_set_subtarget(ob_sql dtl
 
 ob_set_subtarget(ob_sql engine
   engine/ob_ddl_common_sql_impl.cpp
-  engine/cmd/ob_timezone_importer.cpp
-  engine/cmd/ob_srs_importer.cpp
   engine/ob_des_exec_context.cpp
   engine/ob_exec_context.cpp
   engine/ob_exec_feedback_info.cpp
@@ -302,8 +300,6 @@ ob_set_subtarget(ob_sql engine_dml
   engine/dml/ob_conflict_checker.cpp
   engine/dml/ob_dml_ctx_define.cpp
   engine/dml/ob_dml_service.cpp
-  engine/dml/ob_err_log_op.cpp
-  engine/dml/ob_err_log_service.cpp
   engine/dml/ob_table_delete_op.cpp
   engine/dml/ob_table_insert_op.cpp
   engine/dml/ob_table_insert_up_op.cpp
@@ -348,7 +344,6 @@ ob_set_subtarget(ob_sql engine_expr
   engine/expr/ob_expr_char_length.cpp
   engine/expr/ob_expr_cast.cpp
   engine/expr/ob_expr_coalesce.cpp
-  engine/expr/ob_expr_coll_pred.cpp
   engine/expr/ob_expr_collation.cpp
   engine/expr/ob_expr_collection_construct.cpp
   engine/expr/ob_expr_column_conv.cpp
@@ -483,7 +478,6 @@ ob_set_subtarget(ob_sql engine_expr
   engine/expr/ob_expr_md5.cpp
   engine/expr/ob_expr_mid.cpp
   engine/expr/ob_expr_mod.cpp
-  engine/expr/ob_expr_multiset.cpp
   engine/expr/ob_expr_tokenize.cpp
   engine/expr/ob_expr_gtid.cpp
   engine/expr/ob_expr_inner_table_option_printer.cpp
@@ -546,7 +540,6 @@ ob_set_subtarget(ob_sql engine_expr
   engine/expr/ob_expr_update_xml.cpp
   engine/expr/ob_expr_sql_udt_utils.cpp
   engine/expr/ob_expr_collection_construct.cpp
-  engine/expr/ob_expr_sql_udt_construct.cpp
   engine/expr/ob_expr_priv_st_numinteriorrings.cpp
   engine/expr/ob_expr_priv_st_iscollection.cpp
   engine/expr/ob_expr_priv_st_equals.cpp
@@ -603,7 +596,6 @@ ob_set_subtarget(ob_sql engine_expr
   engine/expr/ob_expr_xor.cpp
   engine/expr/ob_infix_expression.cpp
   engine/expr/ob_iter_expr_range_param.cpp
-  engine/expr/ob_number_format_models.cpp
   engine/expr/ob_pl_expr_subquery.cpp
   engine/expr/ob_postfix_expression.cpp
   engine/expr/ob_rt_datum_arith.cpp
@@ -624,7 +616,6 @@ ob_set_subtarget(ob_sql engine_expr
   engine/expr/ob_expr_week_of_func.cpp
   engine/expr/ob_expr_weight_string.cpp
   engine/expr/ob_expr_to_outfile_row.cpp
-  engine/expr/ob_expr_to_temporal_base.cpp
   engine/expr/ob_expr_to_type.cpp
   engine/expr/ob_expr_trim.cpp
   engine/expr/ob_expr_truncate.cpp
@@ -939,7 +930,6 @@ ob_set_subtarget(ob_sql optimizer
   optimizer/ob_log_del_upd.cpp
   optimizer/ob_log_delete.cpp
   optimizer/ob_log_distinct.cpp
-  optimizer/ob_log_err_log.cpp
   optimizer/ob_log_exchange.cpp
   optimizer/ob_log_expr_values.cpp
   optimizer/ob_log_for_update.cpp

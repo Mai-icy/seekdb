@@ -18,8 +18,8 @@
 
 #include "ob_expr_in.h"
 #include "sql/engine/expr/ob_expr_subquery_ref.h"
-#include "sql/engine/expr/ob_expr_multiset.h"
 #include "sql/engine/subquery/ob_subplan_filter_op.h"
+#include "src/pl/ob_pl.h"
 
 
 namespace oceanbase
@@ -480,6 +480,44 @@ int ObExprInOrNotIn::calc_result_typeN(ObExprResType &type,
  *    b. NULL if none of them is TRUE, and at least one of them is NULL
  *    c. FALSE if all of them are FALSE
 */
+static int eval_composite_comparison(ObExecContext &exec_ctx,
+                                     const char *pl,
+                                     ParamStore &params,
+                                     ObBitSet<> &out_args)
+{
+  int ret = OB_SUCCESS;
+  CK (OB_NOT_NULL(GCTX.pl_engine_));
+  CK (OB_NOT_NULL(exec_ctx.get_sql_ctx()));
+  if (OB_SUCC(ret)) {
+    bool is_inner_mock_backup = false;
+    const bool is_ps_backup = exec_ctx.get_sql_ctx()->is_prepare_protocol_;
+    const bool is_mock_prepare_backup = exec_ctx.get_sql_ctx()->is_mock_prepare_;
+    exec_ctx.get_sql_ctx()->is_prepare_protocol_ = true;
+    exec_ctx.get_sql_ctx()->is_mock_prepare_ = true;
+    if (OB_NOT_NULL(exec_ctx.get_pl_stack_ctx())) {
+      is_inner_mock_backup = exec_ctx.get_pl_stack_ctx()->get_is_inner_mock();
+      exec_ctx.get_pl_stack_ctx()->set_is_inner_mock(true);
+    }
+    DEFER(exec_ctx.get_sql_ctx()->is_prepare_protocol_ = is_ps_backup);
+    DEFER(exec_ctx.get_sql_ctx()->is_mock_prepare_ = is_mock_prepare_backup);
+    DEFER(if (OB_NOT_NULL(exec_ctx.get_pl_stack_ctx())) {
+      exec_ctx.get_pl_stack_ctx()->set_is_inner_mock(is_inner_mock_backup);
+    });
+    out_args.reuse();
+    CREATE_WITH_TEMP_CONTEXT(lib::ContextParam().set_mem_attr(
+        GET_PL_MOD_STRING(pl::OB_PL_COMPOSITE_COMPARE), ObCtxIds::DEFAULT_CTX_ID)) {
+      char old_sql_id[common::OB_MAX_SQL_ID_LENGTH + 1];
+      MEMCPY(old_sql_id, exec_ctx.get_sql_ctx()->sql_id_, sizeof(old_sql_id));
+      MEMSET(exec_ctx.get_sql_ctx()->sql_id_, '\0', sizeof(exec_ctx.get_sql_ctx()->sql_id_));
+      if (OB_FAIL(GCTX.pl_engine_->execute(exec_ctx, params, OB_INVALID_ID, pl, out_args))) {
+        LOG_WARN("failed to execute composite comparison block", K(ret), K(pl), K(params), K(out_args));
+      }
+      MEMCPY(exec_ctx.get_sql_ctx()->sql_id_, old_sql_id, sizeof(old_sql_id));
+    }
+  }
+  return ret;
+}
+
 int ObExprInOrNotIn::eval_pl_udt_in(const ObExpr &expr,
                                     ObEvalCtx &ctx,
                                     ObDatum &expr_datum)
@@ -564,10 +602,7 @@ int ObExprInOrNotIn::eval_pl_udt_in(const ObExpr &expr,
         is_equal = false;
         out_args.reuse();
 
-        if (OB_FAIL(ObExprMultiSet::eval_composite_relative_anonymous_block(ctx.exec_ctx_,
-                                                                            CMP_PL,
-                                                                            params,
-                                                                            out_args))) {
+        if (OB_FAIL(eval_composite_comparison(ctx.exec_ctx_, CMP_PL, params, out_args))) {
           LOG_WARN("failed to execute PS anonymous bolck",
                    K(ret), K(i), K(lhs), K(rhs), K(params));
         } else if (out_args.num_members() != 1 || !out_args.has_member(2)) {

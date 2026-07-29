@@ -954,82 +954,6 @@ int ObLocalManagementService::parallel_create_table_like(const obcall::ObCreateT
   return ret;
 }
 
-int ObLocalManagementService::precheck_interval_part(const obcall::ObAlterTableArg &arg)
-{
-  int ret = OB_SUCCESS;
-  ObSchemaGetterGuard schema_guard;
-  const ObAlterTableArg::AlterPartitionType op_type = arg.alter_part_type_;
-  const ObSimpleTableSchemaV2 *simple_table_schema = NULL;
-  const AlterTableSchema &alter_table_schema = arg.alter_table_schema_;
-
-  if (!alter_table_schema.is_interval_part()
-      || obcall::ObAlterTableArg::ADD_PARTITION != op_type) {
-  } else if (OB_ISNULL(schema_service_)) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("error unexpected, schema service must not be NULL", K(ret));
-  } else if (OB_FAIL(schema_service_->get_runtime_schema_guard(schema_guard))) {
-    LOG_WARN("fail to get schema guard", K(ret));
-  } else if (OB_FAIL(schema_guard.get_simple_table_schema(
-             alter_table_schema.get_table_id(), simple_table_schema))) {
-    LOG_WARN("get table schema failed", KR(ret), K(alter_table_schema));
-  } else if (OB_ISNULL(simple_table_schema)) {
-    ret = OB_TABLE_NOT_EXIST;
-    LOG_WARN("simple_table_schema is null", K(ret), K(alter_table_schema));
-  } else if (simple_table_schema->get_schema_version() < alter_table_schema.get_schema_version()) {
-  } else if (simple_table_schema->get_interval_range() != alter_table_schema.get_interval_range()
-             || simple_table_schema->get_transition_point() != alter_table_schema.get_transition_point()) {
-    ret = OB_ERR_INTERVAL_PARTITION_ERROR;
-    LOG_WARN("interval_range or transition_point is changed", KR(ret), \
-             KPC(simple_table_schema), K(alter_table_schema));
-  } else {
-    int64_t j = 0;
-    const ObRowkey *rowkey_orig= NULL;
-    bool is_all_exist = true;
-    ObPartition **inc_part_array = alter_table_schema.get_part_array();
-    ObPartition **orig_part_array = simple_table_schema->get_part_array();
-    if (OB_ISNULL(inc_part_array)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("ptr is null", K(ret), K(alter_table_schema), KPC(simple_table_schema));
-    } else if (OB_ISNULL(orig_part_array)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("ptr is null", K(ret), K(alter_table_schema), KPC(simple_table_schema));
-    }
-    for (int64_t i = 0; is_all_exist && OB_SUCC(ret) && i < alter_table_schema.get_part_option().get_part_num(); ++i) {
-      const ObRowkey *rowkey_cur = NULL;
-      if (OB_ISNULL(inc_part_array[i])) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("ptr is null", K(ret), K(alter_table_schema), KPC(simple_table_schema));
-      } else if (OB_UNLIKELY(NULL == (rowkey_cur = &inc_part_array[i]->get_high_bound_val()))) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("ptr is null", K(ret), K(alter_table_schema), KPC(simple_table_schema));
-      }
-      while (is_all_exist && OB_SUCC(ret) && j < simple_table_schema->get_part_option().get_part_num()) {
-        if (OB_ISNULL(orig_part_array[j])) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("ptr is null", K(ret), K(alter_table_schema), KPC(simple_table_schema));
-        } else if (OB_UNLIKELY(NULL == (rowkey_orig = &orig_part_array[j]->get_high_bound_val()))) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("ptr is null", K(ret), K(alter_table_schema), KPC(simple_table_schema));
-        } else if (*rowkey_orig < *rowkey_cur) {
-          j++;
-        } else {
-          break;
-        }
-      }
-      if (OB_FAIL(ret)) {
-      } else if (*rowkey_orig != *rowkey_cur) {
-        is_all_exist = false;
-      }
-    }
-    if (OB_FAIL(ret)) {
-    } else if (is_all_exist) {
-      LOG_INFO("all interval part for add is exist", K(alter_table_schema), KPC(simple_table_schema));
-      ret = OB_ERR_INTERVAL_PARTITION_EXIST;
-    }
-  }
-  return ret;
-}
-
 int ObLocalManagementService::update_ddl_task_active_time(const obcall::ObUpdateDDLTaskActiveTimeArg &arg)
 {
   LOG_DEBUG("receive recv ddl task status arg", K(arg));
@@ -1203,10 +1127,6 @@ int ObLocalManagementService::alter_table(const obcall::ObAlterTableArg &arg, ob
   } else if (!arg.is_valid()) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid arg", K(arg), K(ret));
-  } else if (OB_FAIL(precheck_interval_part(arg))) {
-    if (ret != OB_ERR_INTERVAL_PARTITION_EXIST) {
-      LOG_WARN("fail to precheck_interval_part", K(arg), KR(ret));
-    }
   } else {
     if (OB_FAIL(ret)) {
     } else if (OB_FAIL(ddl_service_.get_runtime_schema_guard_with_version_in_inner_table(schema_guard))) {

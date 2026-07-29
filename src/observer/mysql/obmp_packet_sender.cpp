@@ -515,9 +515,6 @@ int ObMPPacketSender::send_ok_packet(ObSQLSessionInfo &session, ObOKPParam &ok_p
       if (ok_param.is_on_connect_ || ok_param.is_on_change_user_) {
         need_track_session_info = true;
         okp.set_use_standard_serialize(true);
-        if (OB_FAIL(ObMPUtils::add_nls_format(okp, session))) {
-          LOG_WARN("fail to add_nls_format", K(ret));
-        }
       } else {
         if (!ok_param.has_more_result_) {
           need_track_session_info = true;
@@ -525,8 +522,6 @@ int ObMPPacketSender::send_ok_packet(ObSQLSessionInfo &session, ObOKPParam &ok_p
             okp.set_use_standard_serialize(true);
             if (OB_FAIL(ObMPUtils::add_changed_session_info(okp, session))) {
               SERVER_LOG(WARN, "fail to add changed session info", K(ret));
-            } else if (OB_FAIL(ObMPUtils::add_nls_format(okp, session, true))) {
-              LOG_WARN("fail to add_nls_format", K(ret));
             }
           }
         }

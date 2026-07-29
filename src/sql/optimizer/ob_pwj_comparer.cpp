@@ -538,21 +538,7 @@ int ObStrictPwjComparer::check_logical_equal_and_calc_match_map(const PwjTable &
 bool ObStrictPwjComparer::is_same_part_type(const ObPartitionFuncType part_type1,
                                             const ObPartitionFuncType part_type2)
 {
-  bool ret = false;
-  if (part_type1 != part_type2)
-  {
-    if (PARTITION_FUNC_TYPE_RANGE_COLUMNS == part_type1
-        && is_interval_part(part_type2)) {
-      ret = true;
-    } else if (PARTITION_FUNC_TYPE_RANGE_COLUMNS == part_type2
-               && is_interval_part(part_type1)) {
-      ret = true;
-    }
-  } else {
-    ret = true;
-  }
-
-  return ret;
+  return part_type1 == part_type2;
 }
 
 int ObStrictPwjComparer::is_first_partition_logically_equal(const PwjTable &l_table,

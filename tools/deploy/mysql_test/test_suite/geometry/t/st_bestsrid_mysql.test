@@ -8,7 +8,6 @@
   connection obsys;
   alter system load module data module=gis infile = 'etc/';
   connection obmysql;
-  sleep 10;
   use test;
 
   --echo # st_transform is the same as mysql, use _st_transform instead

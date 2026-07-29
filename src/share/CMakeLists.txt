@@ -183,7 +183,6 @@ ob_set_subtarget(ob_share common_mixed
   storage/ob_admin_job_table_storage.cpp
   longops_mgr/ob_i_longops.cpp
   longops_mgr/ob_longops_mgr.cpp
-  ob_module_data_arg.cpp
 )
 
 ob_set_subtarget(ob_share tablet

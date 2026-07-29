@@ -600,43 +600,6 @@ int ObDatumHexUtils::unhex(const ObExpr &expr,
   }
   return ret;
 }
-// According to in_type, force_use_standard_format information, get format_str from session
-int common_get_nls_format(const ObBasicSessionInfo *session,
-                          ObEvalCtx &ctx,
-                          const ObExpr *rt_expr,
-                          const ObObjType in_type,
-                          const bool force_use_standard_format,
-                          ObString &format_str)
-{
-  int ret = OB_SUCCESS;
-  if (OB_ISNULL(session) || OB_ISNULL(rt_expr)) {
-    ret = OB_INVALID_ARGUMENT;
-    LOG_WARN("session or rt_expr is NULL", K(ret), K(session), KP(rt_expr));
-  } else {
-    ObString nls_format;
-    ObSessionSysVar *local_var = NULL;
-    ObSolidifiedVarsGetter helper(*rt_expr, ctx, session);
-    switch (in_type) {
-      case ObDateTimeType:
-        if (OB_FAIL(helper.get_local_nls_date_format(nls_format))) {
-          LOG_WARN("get nls timestamp tz format failed", K(ret));
-        } else {
-          format_str = (force_use_standard_format
-              ? ObTimeConverter::COMPAT_OLD_NLS_DATE_FORMAT
-              : (nls_format.empty()
-                ? ObTimeConverter::DEFAULT_NLS_DATE_FORMAT
-                : nls_format));
-        }
-        break;
-      default:
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("unexpected in_type", K(in_type), K(ret));
-        break;
-    }
-  }
-  return ret;
-}
-
 static int common_int_datetime(const ObExpr &expr,
                                const int64_t in_val,
                                ObEvalCtx &ctx,
@@ -1688,14 +1651,7 @@ static int common_string_otimestamp(const ObExpr &expr,
       LOG_WARN("get time zone info failed", K(ret));
     } else {
       ObTimeConvertCtx cvrt_ctx(tz_info_local, true);
-      if (OB_FAIL(common_get_nls_format(session,
-              ctx,
-              &expr,
-              expr.datum_meta_.type_,
-              CM_IS_FORCE_USE_STANDARD_NLS_FORMAT(expr.extra_),
-              cvrt_ctx.nls_format_))) {
-        LOG_WARN("common_get_nls_format failed", K(ret));
-      } else if (CAST_FAIL(ObTimeConverter::str_to_otimestamp(in_str, cvrt_ctx,
+      if (CAST_FAIL(ObTimeConverter::str_to_otimestamp(in_str, cvrt_ctx,
               expr.datum_meta_.type_,
               out_val, res_scale))) {
         LOG_WARN("str_to_otimestamp failed", K(ret), K(in_str));
@@ -2320,7 +2276,7 @@ static int common_double_time(const ObExpr &expr,
 }
 
 int common_datetime_string(const ObExpr &expr, const ObObjType in_type, const ObObjType out_type,
-                           const ObScale in_scale, bool force_use_std_nls_format,
+                           const ObScale in_scale,
                            const int64_t in_val, ObEvalCtx &ctx, char *buf,
                            int64_t buf_len, int64_t &out_len)
 {
@@ -2374,7 +2330,6 @@ int common_datetime_geometry(const ObExpr &expr, const ObDatum *child_res, ObDat
   ObMySQLDateTime in_val = child_res->get_int();
   if (OB_FAIL(common_datetime_string(expr, expr.args_[0]->datum_meta_.type_, expr.datum_meta_.type_,
                                      expr.args_[0]->datum_meta_.scale_,
-                                     CM_IS_FORCE_USE_STANDARD_NLS_FORMAT(expr.extra_),
                                      in_val.datetime_, ctx, buf, sizeof(buf), len))) {
     LOG_WARN("common_datetime_string failed", K(ret));
   } else {
@@ -5139,7 +5094,6 @@ CAST_FUNC_NAME(datetime, number)
       int warning = OB_SUCCESS;
       ObObjType in_type = expr.args_[0]->datum_meta_.type_;
       int64_t in_val = child_res->get_int();
-      ObString nls_format;
       char buf[OB_CAST_TO_VARCHAR_MAX_LENGTH] = {0};
       int64_t len = 0;
       ObNumStackOnceAlloc tmp_alloc;
@@ -5154,7 +5108,7 @@ CAST_FUNC_NAME(datetime, number)
       } else {
         const ObTimeZoneInfo *tz_info = (ObTimestampType == in_type) ?
           tz_info_local : NULL;
-        if (OB_FAIL(ObTimeConverter::datetime_to_str(in_val, tz_info, nls_format,
+        if (OB_FAIL(ObTimeConverter::datetime_to_str(in_val, tz_info,
                       in_scale, buf, sizeof(buf), len, false))) {
           LOG_WARN("failed to convert datetime to string", K(ret));
         } else if (CAST_FAIL(number.from(buf, len, tmp_alloc, &res_precision, &res_scale))) {
@@ -5176,7 +5130,6 @@ CAST_FUNC_NAME(mdatetime, number)
     {
       int warning = OB_SUCCESS;
       ObMySQLDateTime in_val = child_res->get_int();
-      ObString nls_format;
       char buf[OB_CAST_TO_VARCHAR_MAX_LENGTH] = {0};
       int64_t len = 0;
       ObNumStackOnceAlloc tmp_alloc;
@@ -5184,7 +5137,7 @@ CAST_FUNC_NAME(mdatetime, number)
       ObPrecision res_precision; // useless
       ObScale res_scale; // useless
       ObScale in_scale = expr.args_[0]->datum_meta_.scale_;
-      if (OB_FAIL(ObTimeConverter::mdatetime_to_str(in_val, NULL, nls_format, in_scale, buf,
+      if (OB_FAIL(ObTimeConverter::mdatetime_to_str(in_val, NULL, in_scale, buf,
                                                     sizeof(buf), len, false))) {
         LOG_WARN("failed to convert datetime to string", K(ret));
       } else if (CAST_FAIL(number.from(buf, len, tmp_alloc, &res_precision, &res_scale))) {
@@ -5492,7 +5445,6 @@ CAST_FUNC_NAME(datetime, string)
                                        expr.args_[0]->datum_meta_.type_,
                                        expr.datum_meta_.type_,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       CM_IS_FORCE_USE_STANDARD_NLS_FORMAT(expr.extra_),
                                        in_val, ctx, buf, sizeof(buf), len))) {
       LOG_WARN("common_datetime_string failed", K(ret));
     } else {
@@ -5516,7 +5468,6 @@ CAST_FUNC_NAME(mdatetime, string)
                                        expr.args_[0]->datum_meta_.type_,
                                        expr.datum_meta_.type_,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       CM_IS_FORCE_USE_STANDARD_NLS_FORMAT(expr.extra_),
                                        in_val.datetime_, ctx, buf, sizeof(buf), len))) {
       LOG_WARN("common_datetime_string failed", K(ret));
     } else {
@@ -5540,7 +5491,6 @@ CAST_FUNC_NAME(datetime, text)
                                        expr.args_[0]->datum_meta_.type_,
                                        expr.datum_meta_.type_,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       CM_IS_FORCE_USE_STANDARD_NLS_FORMAT(expr.extra_),
                                        in_val, ctx, buf, sizeof(buf), len))) {
       LOG_WARN("common_datetime_string failed", K(ret));
     } else {
@@ -5564,7 +5514,6 @@ CAST_FUNC_NAME(mdatetime, text)
                                        expr.args_[0]->datum_meta_.type_,
                                        expr.datum_meta_.type_,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       CM_IS_FORCE_USE_STANDARD_NLS_FORMAT(expr.extra_),
                                        in_val.datetime_, ctx, buf, sizeof(buf), len))) {
       LOG_WARN("common_datetime_string failed", K(ret));
     } else {
@@ -5588,7 +5537,6 @@ CAST_FUNC_NAME(datetime, bit)
                                        expr.args_[0]->datum_meta_.type_,
                                        expr.datum_meta_.type_,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       CM_IS_FORCE_USE_STANDARD_NLS_FORMAT(expr.extra_),
                                        in_val, ctx, buf, sizeof(buf), len))) {
       LOG_WARN("common_datetime_string failed", K(ret));
     } else if (OB_FAIL(common_string_bit(expr, ObString(len, buf), ctx, res_datum))) {
@@ -5609,7 +5557,6 @@ CAST_FUNC_NAME(mdatetime, bit)
                                        expr.args_[0]->datum_meta_.type_,
                                        expr.datum_meta_.type_,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       CM_IS_FORCE_USE_STANDARD_NLS_FORMAT(expr.extra_),
                                        in_val.datetime_, ctx, buf, sizeof(buf), len))) {
       LOG_WARN("common_datetime_string failed", K(ret));
     } else if (OB_FAIL(common_string_bit(expr, ObString(len, buf), ctx, res_datum))) {
@@ -5719,9 +5666,8 @@ CAST_FUNC_NAME(datetime, decimalint)
           LOG_WARN("get time zone info failed", K(ret));
         }
       }
-      ObString nls_format;
       if (OB_FAIL(ret)) {
-      } else if (OB_FAIL(ObTimeConverter::datetime_to_str(in_val, tz_info_local, nls_format, in_scale, buf,
+      } else if (OB_FAIL(ObTimeConverter::datetime_to_str(in_val, tz_info_local, in_scale, buf,
                                                    sizeof(buf), length, false))) {
         LOG_WARN("datetime_to_str failed", K(ret), K(in_val), K(in_scale));
       } else if (OB_FAIL(wide::from_string(buf, length, tmp_alloc, scale, in_precision, int_bytes,
@@ -5761,9 +5707,8 @@ CAST_FUNC_NAME(mdatetime, decimalint)
       ObScale out_scale = expr.datum_meta_.scale_;
       ObPrecision out_prec = expr.datum_meta_.precision_;
       ObObjType in_type = expr.args_[0]->datum_meta_.type_;
-      ObString nls_format;
       if (OB_FAIL(ret)) {
-      } else if (OB_FAIL(ObTimeConverter::mdatetime_to_str(in_val, NULL, nls_format, in_scale, buf,
+      } else if (OB_FAIL(ObTimeConverter::mdatetime_to_str(in_val, NULL, in_scale, buf,
                                                    sizeof(buf), length, false))) {
         LOG_WARN("datetime_to_str failed", K(ret), K(in_val), K(in_scale));
       } else if (OB_FAIL(wide::from_string(buf, length, tmp_alloc, scale, in_precision, int_bytes,
@@ -10231,7 +10176,6 @@ CAST_ENUMSET_FUNC_NAME(datetime, enum)
                                        expr.args_[0]->datum_meta_.type_,
                                        ObVarcharType,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       false,
                                        in_val,
                                        ctx,
                                        buf,
@@ -10262,7 +10206,6 @@ CAST_ENUMSET_FUNC_NAME(mdatetime, enum)
                                        expr.args_[0]->datum_meta_.type_,
                                        ObVarcharType,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       false,
                                        in_val.datetime_,
                                        ctx,
                                        buf,
@@ -10293,7 +10236,6 @@ CAST_ENUMSET_FUNC_NAME(datetime, set)
                                        expr.args_[0]->datum_meta_.type_,
                                        ObVarcharType,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       false,
                                        in_val,
                                        ctx,
                                        buf,
@@ -10324,7 +10266,6 @@ CAST_ENUMSET_FUNC_NAME(mdatetime, set)
                                        expr.args_[0]->datum_meta_.type_,
                                        ObVarcharType,
                                        expr.args_[0]->datum_meta_.scale_,
-                                       false,
                                        in_val.datetime_,
                                        ctx,
                                        buf,
