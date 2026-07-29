@@ -294,12 +294,6 @@ private:
   bool is_contain_tmp_tbl() const;
 
   /**
-   * @brief if there is a synonym in dependency tables
-   * @retval is_contain: true for containing synonym
-   */
-  bool is_contain_synonym() const;
-
-  /**
    * @brief if there is a sys package/type in dependency tables
    * @retval is_contain: true for containing sys package/type
    */

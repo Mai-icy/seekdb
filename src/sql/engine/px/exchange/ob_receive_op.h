@@ -42,8 +42,7 @@ namespace sql
 #define IS_TABLE_INSERT(type) \
 (((type) == PHY_INSERT) || \
  ((type) == PHY_REPLACE) || \
- ((type) == PHY_INSERT_ON_DUP) || \
- ((type) == PHY_INSERT_RETURNING))
+ ((type) == PHY_INSERT_ON_DUP))
 
 
 

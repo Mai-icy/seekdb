@@ -105,7 +105,6 @@ class ObPxMultiPartUpdateSpec;
 class ObTempTableAccessOpSpec;
 class ObTempTableInsertOpSpec;
 class ObTempTableTransformationOpSpec;
-class ObErrLogSpec;
 class ObSelectIntoSpec;
 class ObFunctionTableSpec;
 class ObLinkDmlSpec;
@@ -282,8 +281,6 @@ private:
   int generate_spec(ObLogSubPlanFilter &op, ObSubPlanFilterSpec &spec, const bool in_root_job);
 
   int generate_spec(ObLogSubPlanScan &op, ObSubPlanScanSpec &spec, const bool in_root_job);
-
-  int generate_spec(ObLogErrLog &op, ObErrLogSpec &spec, const bool in_root_job);
 
   int generate_spec(ObLogTableScan &op, ObTableScanSpec &spec, const bool in_root_job);
   int generate_spec(ObLogTableScan &op, ObFakeCTETableSpec &spec, const bool in_root_job);

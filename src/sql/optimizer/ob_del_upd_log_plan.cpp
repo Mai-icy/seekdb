@@ -253,11 +253,10 @@ int ObDelUpdLogPlan::check_table_rowkey_distinct(
   } else if (OB_ISNULL(best_plan)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(ret));
-  } else if (!del_upd_stmt->is_dml_table_from_join() ||
-             del_upd_stmt->has_instead_of_trigger()) {
+  } else if (!del_upd_stmt->is_dml_table_from_join()) {
     // DML statement does not contain join conditions, it can guarantee that all rows involved in the DML come from the target table, there are no duplicate rows, therefore deduplication is not needed
     LOG_TRACE("skip check_table_rowkey_distinct", K(del_upd_stmt->is_dml_table_from_join()),
-              K(del_upd_stmt->dml_source_from_join()), K(del_upd_stmt->has_instead_of_trigger()));
+              K(del_upd_stmt->dml_source_from_join()));
   } else {
     for (int64_t i = 0; OB_SUCC(ret) && i < index_dml_infos.count(); ++i) {
       IndexDMLInfo *index_dml_info = index_dml_infos.at(i);
@@ -308,8 +307,6 @@ int ObDelUpdLogPlan::calculate_insert_table_location_and_sharding(ObTablePartiti
       OB_ISNULL(session_info = get_optimizer_context().get_session_info())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(del_upd_stmt), K(schema_guard), K(session_info), K(ret));
-  } else if (del_upd_stmt->has_instead_of_trigger()) {
-    /*do nothing*/
   } else if (del_upd_stmt->is_insert_stmt() &&
              !static_cast<const ObInsertStmt*>(del_upd_stmt)->value_from_select()) {
     /*do nothing*/
@@ -510,8 +507,6 @@ int ObDelUpdLogPlan::compute_exchange_info_for_pdml_del_upd(const ObShardingInfo
         ret = OB_ERR_UNEXPECTED;
         LOG_WARN("unexpect null part expr", K(ret));
       } else {
-        part_id_expr->set_may_add_interval_part(MayAddIntervalPart::YES);
-        exch_info.may_add_interval_part_ = MayAddIntervalPart::YES;
         exch_info.set_calc_part_id_expr(part_id_expr);
       }
     }
@@ -719,8 +714,6 @@ int ObDelUpdLogPlan::compute_repartition_info_for_pdml_insert(const IndexDMLInfo
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("unexpect null part expr", K(ret));
   } else {
-    part_id_expr->set_may_add_interval_part(MayAddIntervalPart::YES);
-    exch_info.may_add_interval_part_ = MayAddIntervalPart::YES;
     exch_info.set_calc_part_id_expr(part_id_expr);
   }
   return ret;
@@ -895,8 +888,6 @@ int ObDelUpdLogPlan::allocate_pdml_delete_as_top(ObLogicalOperator *&top,
   } else {
     delete_op->set_is_pdml(true);
     if (is_last_dml_op && get_stmt()->is_delete_stmt()) {
-      delete_op->set_pdml_is_returning(get_stmt()->is_returning());
-      delete_op->set_is_returning(get_stmt()->is_returning());
     } else {
       delete_op->set_pdml_is_returning(true);
     }
@@ -1249,8 +1240,6 @@ int ObDelUpdLogPlan::allocate_pdml_insert_as_top(ObLogicalOperator *&top,
     insert_op->set_index_maintenance(is_index_maintenance);
     insert_op->set_pdml_update_split(is_pdml_update_split);
     if (is_last_dml_op) {
-      insert_op->set_pdml_is_returning(get_stmt()->is_returning());
-      insert_op->set_is_returning(get_stmt()->is_returning());
     } else {
       insert_op->set_pdml_is_returning(true); // Default pdml needs to return data for every delete
     }
@@ -1409,8 +1398,6 @@ int ObDelUpdLogPlan::allocate_pdml_update_as_top(ObLogicalOperator *&top,
     update_op->set_child(ObLogicalOperator::first_child, top);
     update_op->set_is_pdml(true);
     if (is_last_dml_op) {
-      update_op->set_pdml_is_returning(update_stmt->is_returning());
-      update_op->set_is_returning(update_stmt->is_returning());
     } else {
       update_op->set_pdml_is_returning(true); // Default pdml needs to return data for every delete
     }
@@ -1666,8 +1653,7 @@ int ObDelUpdLogPlan::gen_px_coord_sampling_sort_keys(const ObIArray<OrderItem> &
 
 int ObDelUpdLogPlan::prepare_table_dml_info_basic(const ObDmlTableInfo& table_info,
                                                   IndexDMLInfo*& table_dml_info,
-                                                  ObIArray<IndexDMLInfo*> &index_dml_infos,
-                                                  const bool has_tg)
+                                                  ObIArray<IndexDMLInfo*> &index_dml_infos)
 {
   int ret = OB_SUCCESS;
   void *ptr= NULL;
@@ -1685,8 +1671,6 @@ int ObDelUpdLogPlan::prepare_table_dml_info_basic(const ObDmlTableInfo& table_in
     table_dml_info = new (ptr) IndexDMLInfo();
     if (OB_FAIL(table_dml_info->assign(table_info))) {
       LOG_WARN("failed to assign table info", K(ret));
-    } else if (has_tg) {
-      table_dml_info->is_primary_index_ = true;
     } else if (OB_FAIL(schema_guard->get_table_schema(
                                                       table_info.ref_table_id_, index_schema))) {
       LOG_WARN("failed to get table schema", K(ret));
@@ -1725,7 +1709,7 @@ int ObDelUpdLogPlan::prepare_table_dml_info_basic(const ObDmlTableInfo& table_in
       }
     }
   }
-  if (OB_SUCC(ret) && !has_tg) {
+  if (OB_SUCC(ret)) {
     uint64_t index_tid[OB_MAX_AUX_TABLE_PER_MAIN_TABLE];
     int64_t index_cnt = OB_MAX_AUX_TABLE_PER_MAIN_TABLE;
     if (OB_FAIL(schema_guard->get_can_write_index_array(table_info.ref_table_id_, index_tid, index_cnt, true))) {

@@ -303,12 +303,11 @@ int ObExprDateAdjust::calc_date_adjust(const ObExpr &expr, ObEvalCtx &ctx, ObDat
             const int64_t datetime_buf_len = DATETIME_MAX_LENGTH + 1;
             char *buf = expr.get_str_res_mem(ctx, datetime_buf_len);
             int64_t pos = 0;
-            ObString format;
             if (OB_ISNULL(buf)) {
               ret = OB_ALLOCATE_MEMORY_FAILED;
               LOG_WARN("allocate memory failed", K(ret));
             } else if (OB_FAIL(ObTimeConverter::datetime_to_str(res_dt_val, NULL,
-                                              format, -1, buf,
+                                              -1, buf,
                                               datetime_buf_len, pos, true))) {
               LOG_WARN("failed to cast object to ObVarcharType ", K(ret));
             } else {

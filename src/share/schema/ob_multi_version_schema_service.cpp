@@ -524,8 +524,6 @@ int ObMultiVersionSchemaService::get_schema(const ObSchemaMgr *mgr,
           } else {
             if (OB_FAIL(add_aux_schema_from_mgr(*mgr, *table_schema, USER_INDEX))) {
               LOG_WARN("get index schemas failed", K(ret), KPC(table_schema));
-            } else if (OB_FAIL(add_aux_schema_from_mgr(*mgr, *table_schema, AUX_VERTIAL_PARTITION_TABLE))) {
-              LOG_WARN("get aux vp table schemas failed", K(ret), KPC(table_schema));
             } else if (OB_FAIL(add_aux_schema_from_mgr(*mgr, *table_schema, AUX_LOB_META))) {
               LOG_WARN("get aux lob meta table schemas failed", K(ret), KPC(table_schema));
             } else if (OB_FAIL(add_aux_schema_from_mgr(*mgr, *table_schema, AUX_LOB_PIECE))) {
@@ -637,10 +635,6 @@ int ObMultiVersionSchemaService::add_aux_schema_from_mgr(
                      simple_aux_table->get_table_type(),
                      simple_aux_table->get_index_type())))) {
             LOG_WARN("fail to add simple_index_info", K(ret), K(*simple_aux_table));
-          }
-        } else if (simple_aux_table->is_aux_vp_table()) {
-          if (OB_FAIL(table_schema.add_aux_vp_tid(simple_aux_table->get_table_id()))) {
-            LOG_WARN("add aux_vp table id failed", K(ret), K(simple_aux_table->get_table_id()));
           }
         } else if (simple_aux_table->is_aux_lob_meta_table()) {
           table_schema.set_aux_lob_meta_tid(simple_aux_table->get_table_id());
@@ -2882,21 +2876,6 @@ int ObMultiVersionSchemaService::cal_purge_table_timeout_(
         LOG_WARN("fail to push back lob meta tid", KR(ret), K(mtid));
       } else if (OB_FAIL(table_ids.push_back(ptid))) {
         LOG_WARN("fail to push back lob piece tid", KR(ret), K(ptid));
-      }
-    }
-    // get vp table
-    if (OB_SUCC(ret)) {
-      ObSEArray<uint64_t, 16> aux_tid_array; // for aux_vp or aux_lob
-      if (OB_FAIL(orig_table_schema->get_aux_vp_tid_array(aux_tid_array))) {
-        LOG_WARN("get_aux_vp_tid_array failed", K(ret), KPC(orig_table_schema));
-      } else {
-        int64_t array_count = aux_tid_array.count();
-        for (int64_t i = 0; OB_SUCC(ret) && i < array_count; i++) {
-          uint64_t table_id = aux_tid_array.at(i);
-          if (OB_FAIL(table_ids.push_back(table_id))) {
-            LOG_WARN("fail to push back vp", KR(ret), K(table_id));
-          }
-        }
       }
     }
     // cal tablet cost

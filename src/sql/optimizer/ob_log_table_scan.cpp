@@ -1945,19 +1945,6 @@ int ObLogTableScan::get_plan_object_info(PlanText &plan_text,
         OB_ISNULL(table_item=stmt->get_table_item_by_id(table_id_))) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("unexpect null param", K(ret));
-    } else if (table_item->is_synonym()) {
-      BUF_PRINT_OB_STR(table_item->synonym_db_name_.ptr(),
-                      table_item->synonym_db_name_.length(),
-                      plan_item.object_owner_,
-                      plan_item.object_owner_len_);
-      BUF_PRINT_OB_STR(table_item->synonym_name_.ptr(),
-                      table_item->synonym_name_.length(),
-                      plan_item.object_name_,
-                      plan_item.object_name_len_);
-      BUF_PRINT_STR("SYNONYM",
-                    plan_item.object_type_,
-                    plan_item.object_type_len_);
-      plan_item.object_id_ = ref_table_id_;
     } else if (table_item->is_fake_cte_table()) {
       BUF_PRINT_OB_STR(table_item->table_name_.ptr(),
                       table_item->table_name_.length(),

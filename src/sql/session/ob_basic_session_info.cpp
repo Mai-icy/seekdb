@@ -25,6 +25,7 @@
 #include "share/ob_timezone_mgr.h"
 #include "share/ob_version_parser.h"
 #include "pl/ob_pl_package_state.h"
+#include "pl/ob_pl_server_cursor.h"
 #include "rpc/obmysql/ob_sql_sock_session.h"
 #include "sql/engine/expr/ob_expr_regexp_context.h"
 #include "observer/ob_server.h"
@@ -77,7 +78,7 @@ ObBasicSessionInfo::ObBasicSessionInfo()
       ps_session_info_allocator_(sizeof(ObPsSessionInfo), common::OB_MALLOC_NORMAL_BLOCK_SIZE - 32,
                                  // Here subtracting 32 is to adapt to the ObMalloc alignment rule, preventing memory allocation exceeding 8k
                                  ObMalloc(lib::ObMemAttr("PsSessionInfo"))),
-      cursor_info_allocator_(sizeof(pl::ObDbmsCursorInfo), common::OB_MALLOC_NORMAL_BLOCK_SIZE - 32,
+      cursor_info_allocator_(sizeof(pl::ObPLServerCursorInfo), common::OB_MALLOC_NORMAL_BLOCK_SIZE - 32,
                              ObMalloc(lib::ObMemAttr("SessCursorInfo"))),
       package_info_allocator_(sizeof(pl::ObPLPackageState), common::OB_MALLOC_NORMAL_BLOCK_SIZE - 32,
                               ObMalloc(lib::ObMemAttr("SessPackageInfo"))),
@@ -779,10 +780,6 @@ int ObBasicSessionInfo::get_global_sys_variable(const ObBasicSessionInfo *sessio
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("session is NULL", K(ret), K(var_name));
   } else {
-    //const ObDataTypeCastParams dtc_params(session->get_timezone_info(),
-    //                                      session->get_local_nls_formats(),
-    //                                      session->get_nls_collation(),
-    //                                      session->get_nls_collation_nation());
     ObDataTypeCastParams dtc_params = session->get_dtc_params();
     if (OB_FAIL(get_global_sys_variable(calc_buf, dtc_params, var_name, val))) {
       LOG_WARN("fail to get global sys variable", K(ret), K(var_name));
@@ -2426,7 +2423,6 @@ OB_INLINE int ObBasicSessionInfo::process_session_variable(ObSysVarClassType var
           param_obj.set_number(value);
           ObCollationType cast_coll_type = static_cast<ObCollationType>(
                                            get_local_collation_connection());
-          //const ObDataTypeCastParams dtc_params(TZ_INFO(this), GET_NLS_FORMATS(this), get_nls_collation(), get_nls_collation_nation());;
           ObDataTypeCastParams dtc_params = get_dtc_params();
           ObCastCtx cast_ctx(&allocator,
                              &dtc_params,
@@ -5020,12 +5016,12 @@ int ObBasicSessionInfo::trans_restore_session(TransSavedValue &saved_value)
   return ret;
 }
 
-int ObBasicSessionInfo::begin_autonomous_session(TransSavedValue &saved_value)
+int ObBasicSessionInfo::begin_inner_tx_session(TransSavedValue &saved_value)
 {
   return trans_save_session(saved_value);
 }
 
-int ObBasicSessionInfo::end_autonomous_session(TransSavedValue &saved_value)
+int ObBasicSessionInfo::end_inner_tx_session(TransSavedValue &saved_value)
 {
   return trans_restore_session(saved_value);
 }

@@ -624,10 +624,6 @@ public:
                               const ObSqlCtx *sql_ctx,
                               bool &is_weak_read);
 
-  int send_add_interval_partition_rpc(ObExecContext &exec_ctx,
-                                      share::schema::ObSchemaGetterGuard *schema_guard,
-                                      ObNewRow &row) const;
-
   /**
    * Calculate the table's partition location list from the input parameters.
    *
@@ -704,12 +700,6 @@ public:
                                  const ObIArray<ObTabletID> &tablet_ids,
                                  const ObIArray<ObObjectID> &partition_ids,
                                  const ObIArray<ObObjectID> &first_level_part_ids) const;
-
-  static int send_add_interval_partition_rpc_new_engine(ObIAllocator &allocator,
-                                                        ObSQLSessionInfo *session,
-                                                        ObSchemaGetterGuard *schema_guard,
-                                                        const ObTableSchema *table_schema,
-                                                        ObNewRow &row);
 
   inline void set_table_id(uint64_t table_id) { loc_meta_.table_loc_id_ = table_id; }
 

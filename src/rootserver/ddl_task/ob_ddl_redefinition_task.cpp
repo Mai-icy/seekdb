@@ -645,8 +645,6 @@ int ObDDLRedefinitionTask::add_constraint_ddl_task(const int64_t constraint_id)
       LOG_WARN("get database schema failed", K(ret));
     } else if (OB_FAIL(alter_table_arg.tz_info_wrap_.deep_copy(alter_table_arg_.tz_info_wrap_))) {
       LOG_WARN("deep copy timezone info failed", K(ret));
-    } else if (OB_FAIL(alter_table_arg.set_nls_formats(alter_table_arg_.nls_formats_))) {
-      LOG_WARN("set nls formats failed", K(ret));
     } else {
 
       alter_table_arg.alter_constraint_type_ = obcall::ObAlterTableArg::ADD_CONSTRAINT;
@@ -746,8 +744,6 @@ int ObDDLRedefinitionTask::add_fk_ddl_task(const int64_t fk_id)
       LOG_WARN("get database schema failed", K(ret));
     } else if (OB_FAIL(alter_table_arg.tz_info_wrap_.deep_copy(alter_table_arg_.tz_info_wrap_))) {
       LOG_WARN("deep copy timezone info failed", K(ret));
-    } else if (OB_FAIL(alter_table_arg.set_nls_formats(alter_table_arg_.nls_formats_))) {
-      LOG_WARN("set nls formats failed", K(ret));
     } else {
       obcall::ObCreateForeignKeyArg fk_arg;
       ObForeignKeyInfo fk_info;

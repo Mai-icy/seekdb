@@ -654,15 +654,15 @@ int ObTransDeadlockDetectorAdapter::change_detector_waiting_obj_from_row_to_tran
   #undef PRINT_WRAPPER
 }
 
-// Register autonomous trans dependency relationship, no need session id here, cause this trans should not be killed
+// Register the dependency between a parent transaction and a temporary inner transaction.
 // 
 // @param [in] last_trans_id who is the trans before start autonomous trans.
 // @param [in] now_trans_id who is the trans after start autonomous trans.
 // @param [in] query_timeout from session, to tell detector how long it will live(avoid leak).
 // @return void.
-int ObTransDeadlockDetectorAdapter::autonomous_register_to_deadlock(const ObTransID last_trans_id,
-                                                                   const ObTransID now_trans_id,
-                                                                   const int64_t query_timeout)
+int ObTransDeadlockDetectorAdapter::inner_tx_register_to_deadlock(const ObTransID last_trans_id,
+                                                                 const ObTransID now_trans_id,
+                                                                 const int64_t query_timeout)
 {
   #define PRINT_WRAPPER KR(ret), K(last_trans_id), K(now_trans_id), K(query_timeout)
   CHECK_DEADLOCK_ENABLED();

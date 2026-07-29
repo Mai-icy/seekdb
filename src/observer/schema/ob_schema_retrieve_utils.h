@@ -379,7 +379,6 @@ public:
   static int retrieve_trigger_list(T &result, common::ObIArray<uint64_t> &trigger_list);
   template<typename T>
   static int retrieve_routine_param_schema(T &result, common::ObIArray<ObRoutineInfo> &routine_infos);
-  RETRIEVE_SCHEMA_FUNC_DECLARE(synonym);
   RETRIEVE_SCHEMA_FUNC_DECLARE(udf);
   RETRIEVE_SCHEMA_FUNC_DECLARE(sys_priv);
   RETRIEVE_SCHEMA_FUNC_DECLARE(obj_priv);

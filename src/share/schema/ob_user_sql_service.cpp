@@ -767,7 +767,6 @@ int ObUserSqlService::gen_user_dml(
       || OB_FAIL(dml.add_column("PRIV_SUPER", user.get_priv(OB_PRIV_SUPER) ? 1 : 0))
       || OB_FAIL(dml.add_column("PRIV_PROCESS", user.get_priv(OB_PRIV_PROCESS) ? 1 : 0))
       || OB_FAIL(dml.add_column("IS_LOCKED", user.get_is_locked() ? 1 : 0))
-      || OB_FAIL(dml.add_column("PRIV_CREATE_SYNONYM", user.get_priv(OB_PRIV_CREATE_SYNONYM) ? 1 : 0))
       || OB_FAIL(dml.add_column("PRIV_FILE", user.get_priv(OB_PRIV_FILE) ? 1 : 0))
       || OB_FAIL(dml.add_column("PRIV_ALTER_SYSTEM", user.get_priv(OB_PRIV_ALTER_SYSTEM) ? 1 : 0))
       || OB_FAIL(dml.add_column("max_connections", user.get_max_connections()))

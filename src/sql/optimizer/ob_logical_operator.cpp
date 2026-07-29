@@ -119,9 +119,6 @@ int ObExchangeInfo::init_calc_part_id_expr(ObOptimizerContext &opt_ctx)
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("fail to init calc part id expr", K(ret));
   } else {
-    if (MayAddIntervalPart::YES == may_add_interval_part_) {
-      calc_part_id_expr_->set_may_add_interval_part(may_add_interval_part_);
-    }
     if (OB_REPARTITION_ONE_SIDE_ONE_LEVEL_FIRST == repartition_type_) {
       calc_part_id_expr_->set_partition_id_calc_type(CALC_IGNORE_SUB_PART);
     } else if (OB_REPARTITION_ONE_SIDE_ONE_LEVEL_SUB == repartition_type_) {
@@ -185,7 +182,6 @@ int ObExchangeInfo::assign(const ObExchangeInfo &other)
     need_null_aware_shuffle_ = other.need_null_aware_shuffle_;
     is_wf_hybrid_ = other.is_wf_hybrid_;
     wf_hybrid_aggr_status_expr_ = other.wf_hybrid_aggr_status_expr_;
-    may_add_interval_part_ = other.may_add_interval_part_;
     sample_type_ = other.sample_type_;
     parallel_ = other.parallel_;
   }
@@ -2588,7 +2584,6 @@ int ObLogicalOperator::gen_location_constraint(void *ctx)
       // treated as a strict partition-wise relationship.
 
       if (log_op_def::LOG_INSERT == get_type() &&
-          !get_stmt()->has_instead_of_trigger() &&
           static_cast<ObLogInsert*>(this)->is_insert_select()) {
         // base table constraints for INSERT
         // multi part insert only records the base table location constraint, non-multi part insert needs to record both simultaneously
@@ -3468,11 +3463,6 @@ int ObLogicalOperator::set_plan_root_output_exprs()
     if (!sel_stmt->has_select_into() && OB_FAIL(sel_stmt->get_select_exprs(output_exprs_))) {
       LOG_WARN("failed to get select exprs", K(ret));
     } else { /*do nothing*/ }
-  } else if (stmt->is_returning()) {
-    const ObDelUpdStmt *del_upd_stmt = static_cast<const ObDelUpdStmt *>(stmt);
-    if (OB_FAIL(append(output_exprs_, del_upd_stmt->get_returning_exprs()))) {
-      LOG_WARN("failed to append returning exprs into output", K(ret));
-    }
   } else { /*do nothing*/ }
 
   return ret;

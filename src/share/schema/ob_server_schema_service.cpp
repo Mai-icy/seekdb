@@ -824,24 +824,6 @@ int ObServerSchemaService::get_increment_routine_keys_reversely(
   return ret;
 }
 
-int ObServerSchemaService::get_increment_synonym_keys(
-  const ObSchemaMgr &schema_mgr,
-  const ObSchemaOperation &schema_operation,
-  AllSchemaKeys &schema_keys)
-{
-  int ret = OB_SUCCESS;
-  return ret;
-}
-
-int ObServerSchemaService::get_increment_synonym_keys_reversely(
-    const ObSchemaMgr &schema_mgr,
-    const ObSchemaOperation &schema_operation,
-    AllSchemaKeys &schema_keys)
-{
-  int ret = OB_SUCCESS;
-  return ret;
-}
-
 int ObServerSchemaService::get_increment_package_keys(
     const ObSchemaMgr &schema_mgr,
     const ObSchemaOperation &schema_operation,
@@ -2220,12 +2202,6 @@ int ObServerSchemaService::replay_log(
                                                schema_operation, schema_keys))) {
             LOG_WARN("fail to get increment table id", K(ret));
           }
-        } else if (schema_operation.op_type_ > OB_DDL_SYNONYM_OPERATION_BEGIN
-                   && schema_operation.op_type_ < OB_DDL_SYNONYM_OPERATION_END) {
-          if (OB_FAIL(get_increment_synonym_keys(schema_mgr,
-                                                 schema_operation, schema_keys))) {
-            LOG_WARN("fail to get increment synonym id", K(ret));
-          }
         } else if (schema_operation.op_type_ > OB_DDL_OUTLINE_OPERATION_BEGIN
                    && schema_operation.op_type_ < OB_DDL_OUTLINE_OPERATION_END) {
           if (OB_FAIL(get_increment_outline_keys(schema_mgr,
@@ -2344,11 +2320,6 @@ int ObServerSchemaService::replay_log_reversely(
         if (OB_FAIL(get_increment_table_keys_reversely(schema_mgr, schema_operation, schema_keys))) {
           LOG_WARN("fail to get increment table keys reversely", KR(ret));
         }
-      } else if (schema_operation.op_type_ > OB_DDL_SYNONYM_OPERATION_BEGIN
-                 && schema_operation.op_type_ < OB_DDL_SYNONYM_OPERATION_END) {
-        if (OB_FAIL(get_increment_synonym_keys_reversely(schema_mgr, schema_operation, schema_keys))) {
-          LOG_WARN("fail to get increment synonym keys reversely", KR(ret));
-        }
       } else if (schema_operation.op_type_ > OB_DDL_OUTLINE_OPERATION_BEGIN
                  && schema_operation.op_type_ < OB_DDL_OUTLINE_OPERATION_END) {
         if (OB_FAIL(get_increment_outline_keys_reversely(schema_mgr, schema_operation, schema_keys))) {
@@ -2429,7 +2400,6 @@ bool ObServerSchemaService::need_construct_aux_infos_(
   bool bret = true;
   if (table_schema.is_index_table()
       || table_schema.is_view_table()
-      || table_schema.is_aux_vp_table()
       || table_schema.is_aux_lob_table()) {
     bret = false;
   }
@@ -2466,10 +2436,6 @@ int ObServerSchemaService::construct_aux_infos_(
         table_schema.set_aux_lob_meta_tid(aux_table_meta.table_id_);
       } else if (AUX_LOB_PIECE == aux_table_meta.table_type_) {
         table_schema.set_aux_lob_piece_tid(aux_table_meta.table_id_);
-      } else if (AUX_VERTIAL_PARTITION_TABLE == aux_table_meta.table_type_) {
-        if (OB_FAIL(table_schema.add_aux_vp_tid(aux_table_meta.table_id_))) {
-          LOG_WARN("add aux vp table id failed", KR(ret), K(aux_table_meta));
-        }
       }
     } // end FOREACH_CNT_X
   }

@@ -1388,23 +1388,9 @@ bool ObPlanCacheValue::is_contain_tmp_tbl() const
   return is_contain;
 }
 
-bool ObPlanCacheValue::is_contain_synonym() const
-{
-  bool is_contain = false;
-
-  for (int64_t i = 0; !is_contain && i < stored_schema_objs_.count(); i++) {
-    if (nullptr != stored_schema_objs_.at(i)
-        && (SYNONYM_SCHEMA == stored_schema_objs_.at(i)->schema_type_)) {
-      is_contain = true;
-    }
-  }
-
-  return is_contain;
-}
-
 /*!
- * System package/type changes may advance only the system schema version. Always
- * validate cached objects that depend on system packages or types.
+ * Updating system packages only increases the system tenant schema version. Objects
+ * under normal tenants that depend on system packages therefore always recheck them.
  */
 bool ObPlanCacheValue::is_contain_sys_pl_object() const
 {
@@ -1412,8 +1398,7 @@ bool ObPlanCacheValue::is_contain_sys_pl_object() const
 
   for (int64_t i = 0; !is_contain && i < stored_schema_objs_.count(); i++) {
     if (nullptr != stored_schema_objs_.at(i)
-        && (PACKAGE_SCHEMA == stored_schema_objs_.at(i)->schema_type_
-            || UDT_SCHEMA == stored_schema_objs_.at(i)->schema_type_)
+        && PACKAGE_SCHEMA == stored_schema_objs_.at(i)->schema_type_
         && true) {
       is_contain = true;
     }
@@ -1506,7 +1491,7 @@ int ObPlanCacheValue::set_stored_schema_objs(const DependenyTableStore &dep_tabl
       table_schema = nullptr;
       int hash_err = OB_SUCCESS;
       if (table_version.get_schema_type() != TABLE_SCHEMA) {
-        // If not table schema, directly store schema id and version only, synonym store an additional db_id
+        // If not table schema, directly store schema id and version only.
         if (OB_FAIL(ret)) {
         } else if (nullptr == (obj_buf = pc_alloc_->alloc(sizeof(PCVSchemaObj)))) {
           ret = OB_ALLOCATE_MEMORY_FAILED;
@@ -1613,9 +1598,6 @@ int ObPlanCacheValue::get_all_dep_schema(ObPlanCacheCtx &pc_ctx,
       } else if (TABLE_SCHEMA != pcv_schema->schema_type_) {
         // if no table schema, get schema version is enough
         int64_t new_version = 0;
-        if (PACKAGE_SCHEMA == stored_schema_objs_.at(i)->schema_type_
-            || UDT_SCHEMA == stored_schema_objs_.at(i)->schema_type_) {
-        }
         if (OB_FAIL(ret)) { 
         } else if (OB_FAIL(schema_guard.get_schema_version(pcv_schema->schema_type_,
                                                     pcv_schema->schema_id_,
@@ -1623,11 +1605,9 @@ int ObPlanCacheValue::get_all_dep_schema(ObPlanCacheCtx &pc_ctx,
           LOG_WARN("failed to get schema version",
                    K(ret), K(pcv_schema->schema_type_), K(pcv_schema->schema_id_));
         } else {
-          if (SYNONYM_SCHEMA != pcv_schema->schema_type_) {
-            tmp_schema_obj.schema_id_ = pcv_schema->schema_id_;
-            tmp_schema_obj.schema_version_ = new_version;
-            tmp_schema_obj.schema_type_ = pcv_schema->schema_type_;
-          }
+          tmp_schema_obj.schema_id_ = pcv_schema->schema_id_;
+          tmp_schema_obj.schema_version_ = new_version;
+          tmp_schema_obj.schema_type_ = pcv_schema->schema_type_;
           if (OB_FAIL(schema_array.push_back(tmp_schema_obj))) {
             LOG_WARN("failed to push back array", K(ret));
           } else {
@@ -1780,13 +1760,12 @@ int ObPlanCacheValue::need_check_schema_version(ObPlanCacheCtx &pc_ctx,
         Therefore, if there is a temporary table, you need to recheck the schema .
      */
     need_check = ((new_schema_version != cached_runtime_schema_version)
-                  || is_contain_synonym()
                   || is_contain_tmp_tbl()
                   || is_contain_sys_pl_object()
                   || contain_sys_name_table_);
     if (need_check && REACH_TIME_INTERVAL(10000000)) { // 10s interval print
       LOG_INFO("need check schema", K(new_schema_version), K(cached_runtime_schema_version),
-               K(is_contain_synonym()), K(contain_sys_name_table_), K(is_contain_tmp_tbl()),
+               K(contain_sys_name_table_), K(is_contain_tmp_tbl()),
                K(is_contain_sys_pl_object()), K(need_check), K(constructed_sql_));
     }
   }

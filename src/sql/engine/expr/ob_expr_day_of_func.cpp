@@ -671,12 +671,11 @@ int ObExprSubAddtime::subaddtime_varchar(const ObExpr &expr, ObEvalCtx &ctx, ObD
         char *buf = expr.get_str_res_mem(ctx, datetime_buf_len);
         int64_t pos = 0;
 				// Compatible with MySQL behavior, display 6 decimal places if there are milliseconds, otherwise do not display
-        ObString format;
         if (OB_ISNULL(buf)) {
           ret = OB_ALLOCATE_MEMORY_FAILED;
           LOG_WARN("allocate memory failed", K(ret));
         } else if (param_with_date && OB_FAIL(ObTimeConverter::datetime_to_str(int_usec, NULL,
-                                                format, -1, buf,
+                                                -1, buf,
                                                 datetime_buf_len, pos, true))) {
           LOG_WARN("datetime to str failed", K(ret));
         } else if (!param_with_date && OB_FAIL(ObTimeConverter::time_to_str(int_usec, -1, buf,

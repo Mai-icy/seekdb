@@ -391,9 +391,6 @@ int ObCreateIndexResolver::fill_session_info_into_arg(const sql::ObSQLSessionInf
   CK (OB_NOT_NULL(crt_idx_stmt));
   if (OB_SUCC(ret)) {
     ObCreateIndexArg &arg = crt_idx_stmt->get_create_index_arg();
-    arg.nls_date_format_ = session->get_local_nls_date_format();
-    arg.nls_timestamp_format_ = session->get_local_nls_timestamp_format();
-    arg.nls_timestamp_tz_format_ = session->get_local_nls_timestamp_tz_format();
     if (OB_FAIL(ObLocalSessionVarHelper::load_session_vars(session, arg.local_session_var_))) {
       LOG_WARN("fail to fill session info into local_session_var", K(ret));
     }
@@ -409,9 +406,6 @@ int ObCreateIndexResolver::resolve(const ParseNode &parse_tree)
   ParseNode *if_not_exist_node = NULL;
   const ObTableSchema *tbl_schema = NULL;
   const ObTableSchema *data_tbl_schema = NULL;
-  bool has_synonym = false;
-  ObString new_db_name;
-  ObString new_tbl_name;
 
   if (OB_UNLIKELY(T_CREATE_INDEX != parse_tree.type_)
       || OB_UNLIKELY(CREATE_INDEX_CHILD_NUM != parse_tree.num_child_)
@@ -443,12 +437,9 @@ int ObCreateIndexResolver::resolve(const ParseNode &parse_tree)
 
   if (FAILEDx(resolve_index_table_name_node(parse_node.children_[1], crt_idx_stmt))) {
     LOG_WARN("fail to resolve index table name node", K(ret));
-  } else if (OB_FAIL(schema_checker_->get_table_schema_with_synonym(crt_idx_stmt->get_database_name(),
+  } else if (OB_FAIL(schema_checker_->get_table_schema(crt_idx_stmt->get_database_name(),
                                                        crt_idx_stmt->get_table_name(),
                                                        false/*not index table*/,
-                                                       has_synonym,
-                                                       new_db_name,
-                                                       new_tbl_name,
                                                        tbl_schema))) {
     if (OB_TABLE_NOT_EXIST == ret) {
       ObCStringHelper helper;
@@ -466,20 +457,6 @@ int ObCreateIndexResolver::resolve(const ParseNode &parse_tree)
   } else {
     crt_idx_stmt->set_table_id(tbl_schema->get_table_id());
     data_tbl_schema = tbl_schema;
-  }
-  if (OB_SUCC(ret) && has_synonym) {
-    ObString tmp_new_db_name;
-    ObString tmp_new_tbl_name;
-    // related issue : 
-    if (OB_FAIL(deep_copy_str(new_db_name, tmp_new_db_name))) {
-      LOG_WARN("failed to deep copy new_db_name", K(ret));
-    } else if (OB_FAIL(deep_copy_str(new_tbl_name, tmp_new_tbl_name))) {
-      LOG_WARN("failed to deep copy new_tbl_name", K(ret));
-    } else {
-      crt_idx_stmt->set_database_name(tmp_new_db_name);
-      crt_idx_stmt->set_table_name(tmp_new_tbl_name);
-      crt_idx_stmt->set_name_generated_type(GENERATED_TYPE_USER);
-    }
   }
   if (FAILEDx(resolve_index_name_node(parse_node.children_[0], crt_idx_stmt))) {
     LOG_WARN("fail to resolve index name node", K(ret));
@@ -501,11 +478,10 @@ int ObCreateIndexResolver::resolve(const ParseNode &parse_tree)
     LOG_WARN("fail to generate index schema", K(ret));
   } else {
     if (NULL != parse_node.children_[5]) {
-      // 0: normal partition node // 1: vertical partition node, not support specifying vertical partition when building global index
       if (1 != parse_node.children_[5]->num_child_
           || T_PARTITION_OPTION != parse_node.children_[5]->type_) {
         ret = OB_NOT_SUPPORTED;
-        LOG_USER_ERROR(OB_NOT_SUPPORTED, "column vertical partition for index table");
+        LOG_USER_ERROR(OB_NOT_SUPPORTED, "invalid partition option for index table");
         LOG_WARN("node is invalid", K(ret));
       } else if (NULL == parse_node.children_[5]->children_[0]) {
         ret = OB_ERR_UNEXPECTED;

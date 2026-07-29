@@ -97,7 +97,6 @@ public:
       part_num_(common::OB_INVALID_COUNT),
       subpart_num_(common::OB_INVALID_COUNT),
       partition_id_calc_type_(CALC_NORMAL),
-      may_add_interval_part_(MayAddIntervalPart::NO),
       calc_id_type_(CALC_TABLET_ID)
   {}
   virtual ~CalcPartitionBaseInfo() {
@@ -116,13 +115,12 @@ public:
   int64_t part_num_;
   int64_t subpart_num_;
   PartitionIdCalcType partition_id_calc_type_; //used to mark expr set partition id calc type.
-  MayAddIntervalPart may_add_interval_part_; // a further action if cann't found interval partition
   CalcPartIdType calc_id_type_; // mark calc tablet_id or partition_id
   TO_STRING_KV(K_(ref_table_id), K_(related_table_ids),
                K_(part_level), K_(part_type),
                K_(subpart_type), K_(part_num), K_(subpart_num),
                K_(partition_id_calc_type),
-               K_(may_add_interval_part), K_(calc_id_type));
+               K_(calc_id_type));
 };
 //calc partition base
 // Calculate the partition id corresponding to a row of data, if no corresponding partition id is found,
@@ -184,8 +182,6 @@ public:
 
   virtual CalcPartIdType get_calc_id_type() const = 0;
 
-  static int set_may_add_interval_part(ObExpr *expr,
-                                       const MayAddIntervalPart info);
 
   static int calc_no_partition_location(const ObExpr &expr,
                                         ObEvalCtx &ctx,
@@ -215,7 +211,6 @@ private:
  int init_calc_part_info(common::ObIAllocator *allocator,
                          const share::schema::ObTableSchema &table_schema,
                          PartitionIdCalcType calc_type,
-                         MayAddIntervalPart add_part,
                          CalcPartitionBaseInfo *&calc_part_info) const;
   static int concat_part_and_tablet_id(const ObExpr &expr,
                                        ObEvalCtx &ctx,
@@ -232,9 +227,6 @@ private:
                                common::ObObjectID first_part_id,
                                common::ObTabletID &tablet_id,
                                common::ObObjectID &partition_id);
-  static int add_interval_part(ObExecContext &exec_ctx,
-                const CalcPartitionBaseInfo &calc_part_info,
-                ObIAllocator &allocator, ObNewRow &row);
 };
 
 //calc partition id

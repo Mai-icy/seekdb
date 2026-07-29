@@ -11205,8 +11205,6 @@ int ObTransformUtils::extract_udt_exprs(ObRawExpr *expr, ObIArray<ObRawExpr *> &
   if (OB_ISNULL(expr)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", K(ret), K(expr));
-  } else if (expr->get_expr_type() == T_FUN_SYS_PRIV_SQL_UDT_CONSTRUCT) {
-    // do nothing
   } else if (expr->is_column_ref_expr()) {
     ObColumnRefRawExpr *col_expr = static_cast<ObColumnRefRawExpr *>(expr);
     if (ob_is_extend(col_expr->get_data_type())) {

@@ -32,27 +32,6 @@ using namespace oceanbase::share;
 using namespace oceanbase::share::schema;
 using namespace oceanbase::sql;
 
-int ObIndexSSTableBuildTask::set_nls_format(const ObString &nls_date_format,
-                                            const ObString &nls_timestamp_format,
-                                            const ObString &nls_timestamp_tz_format)
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(deep_copy_ob_string(allocator_,
-                                  nls_date_format,
-                                  nls_date_format_))) {
-    LOG_WARN("fail to deep copy nls date format", K(ret));
-  } else if (OB_FAIL(deep_copy_ob_string(allocator_,
-                                         nls_timestamp_format,
-                                         nls_timestamp_format_))) {
-    LOG_WARN("fail to deep copy nls timestamp format", K(ret));
-  } else if (OB_FAIL(deep_copy_ob_string(allocator_,
-                                         nls_timestamp_tz_format,
-                                         nls_timestamp_tz_format_))) {
-    LOG_WARN("fail to deep copy nls timestamp tz format", K(ret));
-  }
-  return ret;
-}
-
 int ObIndexSSTableBuildTask::set_addition_info(const ObIArray<ObTabletID> &index_partition_ids)
 {
   int ret = OB_SUCCESS;
@@ -166,9 +145,6 @@ int ObIndexSSTableBuildTask::process()
         session_param.ddl_info_.set_source_table_hidden(data_schema->is_user_hidden_table());
         session_param.ddl_info_.set_dest_table_hidden(index_schema->is_user_hidden_table());
         session_param.ddl_info_.set_retryable_ddl(is_retryable_ddl_);
-        session_param.nls_formats_[ObNLSFormatEnum::NLS_DATE] = nls_date_format_;
-        session_param.nls_formats_[ObNLSFormatEnum::NLS_TIMESTAMP] = nls_timestamp_format_;
-        session_param.nls_formats_[ObNLSFormatEnum::NLS_TIMESTAMP_TZ] = nls_timestamp_tz_format_;
         int tmp_ret = OB_SUCCESS;
         user_sql_proxy = GCTX.ddl_sql_proxy_;
         DEBUG_SYNC(BEFORE_INDEX_SSTABLE_BUILD_TASK_SEND_SQL);
@@ -246,11 +222,7 @@ ObAsyncTask *ObIndexSSTableBuildTask::deep_copy(char *buf, const int64_t buf_siz
         parallelism_,
         is_partitioned_local_index_task_,
         is_retryable_ddl_);
-    if (OB_SUCCESS != (task->set_nls_format(nls_date_format_, nls_timestamp_format_, nls_timestamp_tz_format_))) {
-      task->~ObIndexSSTableBuildTask();
-      task = nullptr;
-      LOG_WARN_RET(OB_ALLOCATE_MEMORY_FAILED, "failed to set nls format");
-    } else if (OB_SUCCESS != (task->set_addition_info(addition_info_.partition_ids_))) {
+    if (OB_SUCCESS != (task->set_addition_info(addition_info_.partition_ids_))) {
       task->~ObIndexSSTableBuildTask();
       task = nullptr;
       LOG_WARN_RET(OB_ALLOCATE_MEMORY_FAILED, "failed to set index partition ids");
@@ -878,11 +850,7 @@ int ObIndexBuildTask::send_local_build_request(
           parallelism,
           is_partitioned_local_index_task,
           is_retryable_ddl_);
-      if (OB_FAIL(task.set_nls_format(create_index_arg_.nls_date_format_,
-                                      create_index_arg_.nls_timestamp_format_,
-                                      create_index_arg_.nls_timestamp_tz_format_))) {
-        LOG_WARN("failed to set nls format", K(ret), K(create_index_arg_));
-      } else if (OB_FAIL(task.set_addition_info(index_partition_ids))) {
+      if (OB_FAIL(task.set_addition_info(index_partition_ids))) {
         LOG_WARN("failed to set partition ids", K(ret), K(index_partition_ids));
       } else if (OB_FAIL(local_management_service_->submit_ddl_local_build_task(task))) {
         LOG_WARN("fail to submit task", K(ret), KPC(this));

@@ -769,11 +769,6 @@ int ObResultSet::do_close(int *client_ret)
       ret = OB_NOT_INIT;
       LOG_WARN("result set isn't init", K(ret));
     } else {
-      if (OB_NOT_NULL(get_physical_plan()) && get_physical_plan()->is_returning()) {
-        // In the returning scenario, affected_rows_ can only be determined after returning the data,
-        // so fill in affected_rows when closing.
-        affected_rows_ = plan_ctx->get_affected_rows();
-      }
       store_affected_rows(*plan_ctx);
       store_found_rows(*plan_ctx);
     }
@@ -965,10 +960,8 @@ int ObResultSet::from_plan(const ObPhysicalPlan &phy_plan, const ObIArray<ObPCPa
     p_field_columns_ = phy_plan.contain_paramed_column_field()
                                   ? &field_columns_
                                   : &phy_plan.get_field_columns();
-    p_returning_param_columns_ = &phy_plan.get_returning_param_fields();
     stmt_type_ = phy_plan.get_stmt_type();
     literal_stmt_type_ = phy_plan.get_literal_stmt_type();
-    is_returning_ = phy_plan.is_returning();
     plan_ctx->set_is_affect_found_row(phy_plan.is_affect_found_row());
     if (is_ps_protocol() && ps_param_count != phy_plan.get_param_fields().count()) {
       if (OB_FAIL(reserve_param_columns(ps_param_count))) {
@@ -981,7 +974,7 @@ int ObResultSet::from_plan(const ObPhysicalPlan &phy_plan, const ObIArray<ObPCPa
         OZ (add_param_column(param_field), K(param_field), K(i), K(ps_param_count));
       }
       LOG_DEBUG("reset param count ", K(ps_param_count), K(plan_ctx->get_orig_question_mark_cnt()),
-        K(phy_plan.get_returning_param_fields().count()), K(phy_plan.get_param_fields().count()));
+        K(phy_plan.get_param_fields().count()));
     } else {
       p_param_columns_ = &phy_plan.get_param_fields();
     }
@@ -1002,10 +995,6 @@ int ObResultSet::to_plan(const PlanCacheMode mode, ObPhysicalPlan *phy_plan)
                && OB_FAIL(phy_plan->set_param_fields(param_columns_))) {
       // param fields is only needed ps mode
       LOG_WARN("failed to copy param field to plan", K(ret));
-    } else if ((PC_PS_MODE == mode || PC_PL_MODE == mode)
-               && OB_FAIL(phy_plan->set_returning_param_fields(returning_param_columns_))) {
-      // returning param fields is only needed ps mode
-      LOG_WARN("failed to copy returning param field to plan", K(ret));
     }
   }
 
@@ -1082,8 +1071,6 @@ bool ObResultSet::need_end_trans_callback() const
   if (stmt::T_SELECT == get_stmt_type()) {
     // For the select statement, the callback is never taken, regardless of the transaction status
     need = false;
-  } else if (is_returning_) {
-    need = false;
   } else if (stmt::T_END_TRANS == get_stmt_type()) {
     need = true;
   } else {
@@ -1112,9 +1099,6 @@ int ObResultSet::ExternalRetrieveInfo::build_into_exprs(
     is_select_for_update_ = (static_cast<ObSelectStmt&>(stmt)).has_for_update();
     has_hidden_rowid_ = (static_cast<ObSelectStmt&>(stmt)).has_hidden_rowid();
     is_skip_locked_ = (static_cast<ObSelectStmt&>(stmt)).is_skip_locked();
-  } else if (stmt.is_insert_stmt() || stmt.is_update_stmt() || stmt.is_delete_stmt()) {
-    ObDelUpdStmt &dml_stmt = static_cast<ObDelUpdStmt&>(stmt);
-    OZ (into_exprs_.assign(dml_stmt.get_returning_into_exprs()));
   }
 
   return ret;
@@ -1172,8 +1156,6 @@ int ObResultSet::ExternalRetrieveInfo::build(
   OZ (build_into_exprs(stmt, ns, is_dynamic_sql));
   CK (OB_NOT_NULL(session_info.get_cur_exec_ctx()));
   CK (OB_NOT_NULL(session_info.get_cur_exec_ctx()->get_sql_ctx()));
-  OX (is_bulk_ = session_info.get_cur_exec_ctx()->get_sql_ctx()->is_bulk_);
-  OX (session_info.get_cur_exec_ctx()->get_sql_ctx()->is_bulk_ = false);
   if (stmt.is_dml_stmt()) {
   }
   if (OB_SUCC(ret)) {
@@ -1243,15 +1225,10 @@ int ObResultSet::ExternalRetrieveInfo::build(
 
 int ObResultSet::drive_dml_query()
 {
-  // DML uses PX execution framework, in non-returning cases, it needs to be done proactively
-  // Call get_next_row to drive the entire framework execution
+  // DML using PX may need to be driven proactively through get_next_row().
   int ret = OB_SUCCESS;
-  if (get_physical_plan()->is_returning()
-      || (get_physical_plan()->is_local_plan() && !get_physical_plan()->need_drive_dml_query_)) {
-    //1. dml returning will drive dml write through result.get_next_row()
-    //2. partial dml query will drive dml write through operator open
-    //3. partial dml query need to drive dml write through result.drive_dml_query,
-    //use the flag result.drive_dml_query to distinguish situation 2,3
+  if (get_physical_plan()->is_local_plan() && !get_physical_plan()->need_drive_dml_query_) {
+    // Partial local DML may be driven while opening the operator.
   } else if (get_physical_plan()->need_drive_dml_query_) {
     const ObNewRow *row = nullptr;
     if (OB_LIKELY(OB_ITER_END == (ret = inner_get_next_row(row)))) {

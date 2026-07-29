@@ -743,10 +743,6 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
           common::ObString pk_name;
           // ele_pos + 1, points to the next column_schema
           ++ele_pos;
-          ObString tmp_str[ObNLSFormatEnum::NLS_MAX];
-          tmp_str[ObNLSFormatEnum::NLS_DATE] = session_info_->get_local_nls_date_format();
-          tmp_str[ObNLSFormatEnum::NLS_TIMESTAMP] = session_info_->get_local_nls_timestamp_format();
-          tmp_str[ObNLSFormatEnum::NLS_TIMESTAMP_TZ] = session_info_->get_local_nls_timestamp_tz_format();
           if (OB_FAIL(resolve_column_definition(column, element, stat,
                                                 is_modify_column_visibility,
                                                 pk_name,
@@ -756,7 +752,6 @@ int ObCreateTableResolver::resolve_table_elements(const ParseNode *node,
             SQL_RESV_LOG(WARN, "resolve column definition failed", K(ret));
           } else if (OB_FAIL(check_default_value(column.get_cur_default_value(),
                                           session_info_->get_tz_info_wrap(),
-                                          tmp_str,
                                           NULL,
                                           *allocator_,
                                           table_schema,
@@ -2033,7 +2028,7 @@ int ObCreateTableResolver::resolve_index_node(const ParseNode *node)
         if (ObItemType::T_INDEX == node->type_ && NULL != node->children_[4]) {
           if (1 != node->children_[4]->num_child_ || T_PARTITION_OPTION != node->children_[4]->type_) {
             ret = OB_NOT_SUPPORTED;
-            LOG_USER_ERROR(OB_NOT_SUPPORTED, "column vertical partition for index");
+            LOG_USER_ERROR(OB_NOT_SUPPORTED, "invalid partition option for index");
           } else if (OB_ISNULL(node->children_[4]->children_[0])) {
             ret = OB_ERR_UNEXPECTED;
             LOG_WARN("node is null", K(ret));

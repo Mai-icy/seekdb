@@ -1516,11 +1516,6 @@ ObStaticEngineExprCG::ObExprBatchSize ObStaticEngineExprCG::get_expr_execute_siz
     } else if (T_FUN_SYS_WRAPPER_INNER == type) {
       size = ObExprBatchSize::one;
       break;
-    } else if (T_REF_QUERY == type) {
-      if (static_cast<ObQueryRefRawExpr*>(raw_exprs.at(i))->is_cursor()) {
-        size = ObExprBatchSize::one;
-        break;
-      }
     }
     LOG_DEBUG("check expr type", K(type), KPC(raw_exprs.at(i)));
     // There are certain cases: that a SQL could not be executed vectorizely

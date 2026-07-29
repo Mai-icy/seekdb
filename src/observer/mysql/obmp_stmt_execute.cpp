@@ -34,6 +34,7 @@
 #include "observer/mysql/ob_async_cmd_driver.h"
 #include "observer/mysql/ob_async_plan_driver.h"
 #include "pl/ob_pl_package.h"
+#include "pl/ob_pl_server_cursor.h"
 #include "observer/mysql/obmp_stmt_send_piece_data.h"
 #include "sql/plan_cache/ob_ps_cache.h"
 
@@ -566,7 +567,7 @@ int ObMPStmtExecute::before_process()
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("session is NULL or invalid", K(ret), K(session));
     } else {
-      OZ (request_params(session, pos, ps_stmt_checksum, alloc, -1));
+      OZ (request_params(session, pos, ps_stmt_checksum, alloc));
       OZ (store_params_value_to_str(alloc, *session));
     }
     if (session != NULL) {
@@ -800,8 +801,7 @@ bool ObMPStmtExecute::is_contain_complex_element(const sql::ParamTypeArray &para
 int ObMPStmtExecute::request_params(ObSQLSessionInfo *session,
                                     const char* &pos,
                                     uint32_t ps_stmt_checksum,
-                                    ObIAllocator &alloc,
-                                    int32_t all_param_num)
+                                    ObIAllocator &alloc)
 {
   int ret = OB_SUCCESS;
   ObPsSessionInfo *ps_session_info = NULL;
@@ -852,17 +852,11 @@ int ObMPStmtExecute::request_params(ObSQLSessionInfo *session,
       // pl not support save exception
       is_save_exception_ = 0;
     }
-    // for returning into,
-    // all_param_num  = input_param_num + returning_param_num
-    params_num_ = (all_param_num > input_param_num) ? all_param_num : input_param_num;
-    int64_t returning_params_num = all_param_num - input_param_num;
-    UNUSED(returning_params_num);
+    params_num_ = input_param_num;
     if (OB_SUCC(ret) && params_num_ > 0) {
       ParamTypeArray &param_types = ps_session_info->get_param_types();
       ParamTypeInfoArray param_type_infos;
       ParamCastArray param_cast_infos;
-      ParamTypeArray returning_param_types;
-      ParamTypeInfoArray returning_param_type_infos;
       // Step1: Handle null value bitmap
       const char *bitmap = pos;
       int64_t bitmap_types = (params_num_ + 7) / 8;
@@ -898,13 +892,6 @@ int ObMPStmtExecute::request_params(ObSQLSessionInfo *session,
         param_cast_infos.at(i) = false;
       }
 
-      if (OB_FAIL(ret)) {
-
-      } else if (params_num_ <= input_param_num) {
-        // not need init returning_param_types and returning_param_type_infos
-      } else if (OB_FAIL(returning_param_type_infos.prepare_allocate(params_num_ - input_param_num))) {
-        LOG_WARN("array prepare allocate failed", K(ret));
-      }
       // Step3: Get type information
       if (OB_SUCC(ret)) {
         if (1 == new_param_bound_flag) {
@@ -936,21 +923,6 @@ int ObMPStmtExecute::request_params(ObSQLSessionInfo *session,
           analysis_checker_.need_check_ = false;
         }
       }
-      // Step3-2: Get returning into params type information
-      if (OB_SUCC(ret) && returning_params_num > 0) {
-        if (new_param_bound_flag != 1) {
-          ret = OB_ERR_UNEXPECTED;
-          LOG_WARN("returning into parm must define type", K(ret));
-        } else if (OB_FAIL(parse_request_type(pos,
-                                              returning_params_num,
-                                              new_param_bound_flag,
-                                              cs_conn,
-                                              returning_param_types,
-                                              returning_param_type_infos))) {
-          LOG_WARN("fail to parse returning into params type", K(ret));
-        }
-      }
-
       if (OB_SUCC(ret) && is_arraybinding_) {
         OZ (check_param_type_for_arraybinding(param_type_infos));
       }
@@ -981,33 +953,6 @@ int ObMPStmtExecute::request_params(ObSQLSessionInfo *session,
         }
       }
 
-      // Step5-2: decode returning into value
-      // need parse returning into params
-      if (OB_SUCC(ret) && returning_params_num > 0) {
-        CK(returning_param_types.count() == returning_params_num);
-        CK(returning_param_type_infos.count() == returning_params_num);
-        for (int64_t i = 0; OB_SUCC(ret) && i < returning_params_num; ++i) {
-          ObObjParam param;
-          if (OB_FAIL(parse_request_param_value(alloc,
-                                                session,
-                                                pos,
-                                                i + input_param_num,
-                                                returning_param_types.at(i),
-                                                returning_param_type_infos.at(i),
-                                                param,
-                                                bitmap))) {
-            LOG_WARN("fail to parse request returning into param values", K(ret), K(i));
-          } else {
-            LOG_DEBUG("after parser resolve returning into", K(param), K(i));
-            if (param.is_pl_extend()) {
-              int ret = ObUserDefinedType::destruct_obj(param, nullptr);
-              if (OB_SUCCESS != ret) {
-                LOG_WARN("fail to destruct obj", K(ret), K(i));
-              }
-            }
-          }
-        }
-      }
     }
     ctx_.schema_guard_ = old_guard;
     ctx_.session_info_ = old_sess_info;
@@ -1106,7 +1051,7 @@ int ObMPStmtExecute::execute_response(ObSQLSessionInfo &session,
   if OB_FAIL(ret) {
     // do nothing
   } else if (is_execute_ps_cursor()) {
-    ObDbmsCursorInfo *cursor = NULL;
+    ObPLServerCursorInfo *cursor = NULL;
     bool use_stream = false;
     // 1.create cursor
     if (OB_NOT_NULL(session.get_cursor(stmt_id_))) {
@@ -1114,7 +1059,7 @@ int ObMPStmtExecute::execute_response(ObSQLSessionInfo &session,
         LOG_WARN("fail to close result set", K(ret), K(stmt_id_), K(session.get_server_sid()));
       }
     }
-    OZ (session.make_dbms_cursor(cursor, stmt_id_));
+    OZ (session.make_server_cursor(cursor, stmt_id_));
     CK (OB_NOT_NULL(cursor));
     OX (cursor->set_stmt_type(stmt::T_SELECT));
     OX (cursor->set_ps_sql(ctx_.cur_sql_));
@@ -1134,9 +1079,9 @@ int ObMPStmtExecute::execute_response(ObSQLSessionInfo &session,
     if (OB_SUCC(ret)) {
       ObPLExecCtx pl_ctx(cursor->get_allocator(), &result.get_exec_context(), NULL/*params*/,
                         NULL/*result*/, &ret, NULL/*func*/, true);
-      int64_t orc_max_ret_rows = INT64_MAX;
-      if (OB_FAIL(ObSPIService::dbms_dynamic_open(
-                     &pl_ctx, *cursor, false, orc_max_ret_rows))) {
+      int64_t max_result_rows = INT64_MAX;
+      if (OB_FAIL(ObSPIService::open_server_cursor(
+                     &pl_ctx, *cursor, max_result_rows))) {
         LOG_WARN("open cursor fail. ", K(ret), K(stmt_id_));
         if (!THIS_WORKER.need_retry()) {
           int cli_ret = OB_SUCCESS;
@@ -2110,13 +2055,6 @@ int ObMPStmtExecute::parse_param_value(ObIAllocator &allocator,
                                             param))) {
         LOG_WARN("failed to parse complex value", K(ret));
       }
-    } else if (OB_UNLIKELY(MYSQL_TYPE_CURSOR == type)) {
-      CK (OB_NOT_NULL(ctx_.session_info_));
-      if (OB_SUCC(ret)) {
-        ObPLCursorInfo *cursor = NULL;
-        // OZ (ctx_.session_info_->make_cursor(cursor));
-        OX (param.set_extend(reinterpret_cast<int64_t>(cursor), PL_CURSOR_TYPE));
-      }
     } else {
       bool is_unsigned = NULL == type_info || !type_info->elem_type_.get_meta_type().is_unsigned_integer() ? false : true; 
       if (OB_FAIL(parse_basic_param_value(allocator, type, session, charset, cs_type,
@@ -2557,7 +2495,7 @@ int ObMPStmtExecute::parse_mysql_time_value(const char *&data, ObObj &param, ObP
   return ret;
 }
 
-int ObMPStmtExecute::response_query_header(ObSQLSessionInfo &session, pl::ObDbmsCursorInfo &cursor)
+int ObMPStmtExecute::response_query_header(ObSQLSessionInfo &session, pl::ObPLServerCursorInfo &cursor)
 {
   int ret = OB_SUCCESS;
   ObSyncPlanDriver drv(gctx_,

@@ -563,7 +563,6 @@ public:
   static bool is_online_stat_gathering_nested_sql(ObExecContext *cur_ctx);
   static bool is_iter_uncommitted_row(ObExecContext *cur_ctx);
   static bool is_nested_sql(ObExecContext *cur_ctx);
-  static bool is_in_autonomous_block(ObExecContext *cur_ctx);
 
   static int get_result_from_ctx(ObExecContext &exec_ctx,
                                  const ObRawExpr *expr,
@@ -580,10 +579,6 @@ public:
                                            int64_t query_num,
                                            int64_t param_num,
                                            ParamStore &param_store);
-  static int transform_pl_ext_type(ParamStore &src, int64_t array_binding_size, ObIAllocator &alloc, ParamStore *&dst, bool is_forall = false);
-  static int get_one_group_params(int64_t &pos, ParamStore &src, ParamStore &obj_params);
-  static int copy_params_to_array_params(int64_t query_pos, ParamStore &src, ParamStore &dst, ObIAllocator &alloc, bool is_forall = false);
-  static int init_elements_info(ParamStore &src, ParamStore &dst);
   /*-----------------------
   *  Observer no longer depends on Linux NTP service to adjust server time since 4.0.
   *  So, timestamp between servers can be vary large.

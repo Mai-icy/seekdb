@@ -231,7 +231,6 @@ const char *ObPrivMgr::get_priv_name(int64_t priv_shift) {
     case OB_PRIV_SUPER_SHIFT: cret = "SUPER"; break;
     case OB_PRIV_PROCESS_SHIFT: cret = "PROCESS"; break;
     case OB_PRIV_BOOTSTRAP_SHIFT: cret = "BOOTSTRAP"; break;
-    case OB_PRIV_CREATE_SYNONYM_SHIFT: cret = "CREATE SYNONYM"; break;
     case OB_PRIV_AUDIT_SHIFT: cret = "AUDIT"; break;
     case OB_PRIV_COMMENT_SHIFT: cret = "COMMENT"; break;
     case OB_PRIV_LOCK_SHIFT: cret = "LOCK"; break;

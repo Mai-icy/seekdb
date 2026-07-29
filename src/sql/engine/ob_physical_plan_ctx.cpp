@@ -40,8 +40,6 @@ ObPhysicalPlanCtx::ObPhysicalPlanCtx(common::ObIAllocator &allocator)
       last_insert_id_session_(0),
       expr_op_size_(0),
       is_ignore_stmt_(false),
-      bind_array_count_(0),
-      bind_array_idx_(0),
       runtime_schema_version_(OB_INVALID_VERSION),
       orig_question_mark_cnt_(0),
       srs_version_(OB_INVALID_VERSION),

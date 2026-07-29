@@ -632,28 +632,6 @@ int ObTableHelper::inner_generate_table_schema_(const ObCreateTableArg &arg, ObT
     }
   } // end for
 
-  // fill table schema for interval part
-  if (OB_SUCC(ret)
-      && new_table.has_partition()
-      && new_table.is_interval_part()) {
-    int64_t part_num = new_table.get_part_option().get_part_num();
-    ObPartition **part_array = new_table.get_part_array();
-    const ObRowkey *transition_point = NULL;
-    if (OB_ISNULL(part_array)
-        || OB_UNLIKELY(0 == part_num)) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("range part array is null or part_num is 0", KR(ret));
-    } else if (OB_ISNULL(transition_point = &part_array[part_num - 1]->get_high_bound_val())) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("transition_point is null", KR(ret), KPC(transition_point));
-    } else if (OB_FAIL(sql::ObPartitionExecutorUtils::check_interval_partition_table(
-                       *transition_point, new_table.get_interval_range()))) {
-      LOG_WARN("fail to check_interval_partition_table", KR(ret), K(new_table));
-    } else if (OB_FAIL(new_table.set_transition_point(*transition_point))) {
-      LOG_WARN("fail to set transition point", KR(ret), K(new_table));
-    }
-  }
-
   return ret;
 }
 

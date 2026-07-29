@@ -387,13 +387,6 @@ public:
     row_deleted_count_ = 0;
     warning_count_ = 0;
   }
-  inline void set_bind_array_count(int64_t bind_array_count) { bind_array_count_ = bind_array_count; }
-  inline int64_t get_bind_array_count() const { return bind_array_count_; }
-
-  // Current index for array binding parameters used by operators and expressions.
-  void set_bind_array_idx(const int64_t idx) { bind_array_idx_ = idx; }
-  int64_t get_bind_array_idx() const { return bind_array_idx_; }
-  void inc_bind_array_idx() { bind_array_idx_++; }
   inline void set_exec_ctx(const ObExecContext *exec_ctx) { exec_ctx_ = exec_ctx; }
   void set_error_ignored(bool ignored) { is_error_ignored_ = ignored; }
   bool is_error_ignored() const { return is_error_ignored_; }

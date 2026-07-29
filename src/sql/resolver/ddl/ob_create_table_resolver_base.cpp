@@ -62,7 +62,6 @@ int ObCreateTableResolverBase::resolve_partition_option(
             LOG_WARN("failed to resolve partition option", KR(ret));
           }
         }
-        /*  vertical partition is not support in 4.x, remove its code here */
       } else {
         ret = OB_INVALID_ARGUMENT;
         SQL_RESV_LOG(WARN, "node type is invalid.", KR(ret), K(node->type_));

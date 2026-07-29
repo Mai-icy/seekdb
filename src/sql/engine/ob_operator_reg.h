@@ -500,11 +500,6 @@ class ObPxMSCoordOpInput;
 REGISTER_OPERATOR(ObLogExchange, PHY_PX_MERGE_SORT_COORD, ObPxMSCoordSpec,
                   ObPxMSCoordOp, ObPxMSCoordOpInput, VECTORIZED_OP);
 
-class ObLogErrLog;
-class ObErrLogSpec;
-class ObErrLogOp;
-REGISTER_OPERATOR(ObLogErrLog, PHY_ERR_LOG, ObErrLogSpec, ObErrLogOp, NOINPUT);
-
 class ObLogSelectInto;
 class ObSelectIntoSpec;
 class ObSelectIntoOp;

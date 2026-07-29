@@ -695,97 +695,6 @@ int ObExprFuncRound::calc_round_expr_numeric2_batch(const ObExpr &expr,
   return ret;
 }
 
-int calc_round_expr_datetime_inner(const ObDatum &x_datum, const ObString &fmt_str,
-                                   ObEvalCtx &ctx, int64_t &dt,
-                                   const sql::ObExpr &expr)
-{
-  int ret = OB_SUCCESS;
-  ObTime ob_time;
-  ObSolidifiedVarsGetter helper(expr, ctx, ctx.exec_ctx_.get_my_session());
-  const common::ObTimeZoneInfo *tz_info = NULL;
-  if (OB_FAIL(helper.get_time_zone_info(tz_info))) {
-    LOG_WARN("get tz info failed", K(ret));
-  } else if (OB_FAIL(ob_datum_to_ob_time_with_date(x_datum, ObDateTimeType, NUMBER_SCALE_UNKNOWN_YET,
-                              tz_info, ob_time,
-                              get_cur_time(ctx.exec_ctx_.get_physical_plan_ctx()), 0, false))) {
-    LOG_WARN("ob_datum_to_ob_time_with_date failed", K(ret));
-  } else {
-    ObTimeConvertCtx cvrt_ctx(TZ_INFO(ctx.exec_ctx_.get_my_session()), false);
-    if (expr.arg_cnt_ > 1 && !!(expr.args_[1]->is_static_const_)) {
-      auto rt_ctx_id = static_cast<uint64_t>(expr.expr_ctx_id_);
-      ObExprSingleFormatCtx *single_fmt_ctx = NULL;
-      if (NULL == (single_fmt_ctx = static_cast<ObExprSingleFormatCtx *>
-                   (ctx.exec_ctx_.get_expr_op_ctx(rt_ctx_id)))) {
-        if (OB_FAIL(ctx.exec_ctx_.create_expr_op_ctx(rt_ctx_id, single_fmt_ctx))) {
-          LOG_WARN("failed to create operator ctx", K(ret));
-        } else if (OB_FAIL(ObExprTRDateFormat::get_format_id_by_format_string(
-                             fmt_str, single_fmt_ctx->fmt_id_))) {
-          LOG_WARN("fail to get format id by format string", K(ret));
-        }
-      }
-      OZ (ObExprTRDateFormat::round_new_obtime_by_fmt_id(ob_time, single_fmt_ctx->fmt_id_));
-    } else {
-      OZ (ObExprTRDateFormat::round_new_obtime(ob_time, fmt_str));
-    }
-    if (OB_SUCC(ret)) {
-      if (OB_FAIL(ObTimeConverter::ob_time_to_datetime(ob_time, cvrt_ctx, dt))) {
-        LOG_WARN("fail to cast ob_time to datetime", K(ret), K(fmt_str));
-      }
-    }
-  }
-  return ret;
-}
-
-int calc_round_expr_datetime1(const sql::ObExpr &expr, sql::ObEvalCtx &ctx,
-                              sql::ObDatum &res_datum)
-{
-  int ret = OB_SUCCESS;
-  int64_t dt = 0;
-  ObDatum *x_datum = NULL;
-  ObString fmt_str("DD");
-  if (OB_FAIL(expr.args_[0]->eval(ctx, x_datum))) {
-    LOG_WARN("eval arg failed", K(ret), K(expr));
-  } else if (x_datum->is_null()) {
-    res_datum.set_null();
-  } else if (OB_FAIL(calc_round_expr_datetime_inner(*x_datum, fmt_str, ctx, dt, expr))) {
-    LOG_WARN("calc_round_expr_datetime_inner failed", K(ret));
-  } else {
-    res_datum.set_datetime(dt);
-  }
-  return ret;
-}
-
-int ObExprFuncRound::calc_round_expr_datetime1_batch(const ObExpr &expr,
-                            ObEvalCtx &ctx,
-                            const ObBitVector &skip,
-                            const int64_t batch_size)
-{
-  int ret = OB_SUCCESS;
-  ObString fmt_str("DD");
-  ObBitVector &eval_flags = expr.get_evaluated_flags(ctx);
-  if (OB_FAIL(expr.args_[0]->eval_batch(ctx, skip, batch_size))) {
-      LOG_WARN("eval arg failed", K(ret), K(expr));
-  } else {
-    ObDatum *results = expr.locate_batch_datums(ctx);
-    for (int64_t i = 0; OB_SUCC(ret) && i < batch_size; ++i) {
-      if (skip.at(i) || eval_flags.at(i)) {
-        continue;
-      }
-      int64_t dt = 0;
-      ObDatum &x_datum = expr.args_[0]->locate_expr_datum(ctx, i);
-      eval_flags.set(i);
-      if (x_datum.is_null()) {
-        results[i].set_null();
-      } else if (OB_FAIL(calc_round_expr_datetime_inner(x_datum, fmt_str, ctx, dt, expr))) {
-        LOG_WARN("calc_round_expr_datetime_inner failed", K(ret));
-      } else {
-        results[i].set_datetime(dt);
-      }
-    }
-  }
-  return ret;
-}
-
 int ObExprFuncRound::cg_expr(ObExprCGCtx &expr_cg_ctx, const ObRawExpr &raw_expr,
                              ObExpr &rt_expr) const
 {
@@ -803,20 +712,14 @@ int ObExprFuncRound::cg_expr(ObExprCGCtx &expr_cg_ctx, const ObRawExpr &raw_expr
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("invalid arg type or res type", K(ret), K(x_type), K(res_type));
     } else if (2 == rt_expr.arg_cnt_) {
-      const ObObjType fmt_type = rt_expr.args_[1]->datum_meta_.type_;
       rt_expr.eval_func_ = calc_round_expr_numeric2;
       // Only implement vectorization when parameter 0 is batch and parameter 1 is constant
       if (rt_expr.args_[0]->is_batch_result() && !(rt_expr.args_[1]->is_batch_result())) {
         rt_expr.eval_batch_func_ = calc_round_expr_numeric2_batch;
       }
     } else {
-      if (ObDateTimeType == x_type) {
-        rt_expr.eval_func_ = calc_round_expr_datetime1;
-        rt_expr.eval_batch_func_ = calc_round_expr_datetime1_batch;
-      } else {
-        rt_expr.eval_func_ = calc_round_expr_numeric1;
-        rt_expr.eval_batch_func_ = calc_round_expr_numeric1_batch;
-      }
+      rt_expr.eval_func_ = calc_round_expr_numeric1;
+      rt_expr.eval_batch_func_ = calc_round_expr_numeric1_batch;
     }
   }
   return ret;

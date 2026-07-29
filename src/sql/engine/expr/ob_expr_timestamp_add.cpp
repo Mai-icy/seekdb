@@ -225,7 +225,7 @@ int calc_timestampadd_expr(const ObExpr &expr, ObEvalCtx &ctx, ObDatum &res_datu
       ret = OB_ALLOCATE_MEMORY_FAILED;
       LOG_WARN("allocate memory failed", K(ret), K(buf_len));
     } else if (OB_FAIL(common_datetime_string(expr, ObDateTimeType, ObVarcharType,
-                                              expr.args_[2]->datum_meta_.scale_, false,
+                                              expr.args_[2]->datum_meta_.scale_,
                                               res, ctx, buf, buf_len, out_len))) {
       LOG_WARN("common_datetime_string failed", K(ret), K(res), K(expr));
     } else {
