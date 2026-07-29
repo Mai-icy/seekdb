@@ -485,7 +485,7 @@ int ObTransDeadlockDetectorAdapter::create_detector_node_(CollectCallBack &on_co
 
 // Call from SQL trans control, check if need register to deadlock or replace block list
 // (depends on session status, is registered to deadlock or not)
-// 
+//
 // @param [in] on_collect_op collect deadlock related info when deadlock detected.
 // @param [in] func the block function to tell detector waiting for who.
 // @param [in] self_trans_id who am i.

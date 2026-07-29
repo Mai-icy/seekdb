@@ -182,7 +182,7 @@ private:
   }
   inline int create_groupby_store_row(LastCompactRow *&store_row);
   int reuse_group(const int64_t group_id);
-  int before_process_next_batch(const int64_t max_row_cnt);
+  int before_process_next_batch();
 
   int get_cur_group_row(const ObBatchRows &brs, int64_t group_row_id,
                         aggregate::AggrRowPtrRef curr_aggr_row, LastCompactRow *&cur_gby_store_row,

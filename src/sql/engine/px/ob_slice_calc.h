@@ -20,7 +20,7 @@
 #include "sql/executor/ob_task_event.h"
 #include "sql/engine/expr/ob_sql_expression.h"
 #include "lib/container/ob_fixed_array.h"
-#include "sql/executor/ob_shuffle_service.h"
+#include "share/schema/ob_schema_struct.h"
 #include "sql/engine/px/ob_px_dtl_msg.h"
 #include "sql/ob_sql_define.h"
 #include "sql/engine/sort/ob_sort_basic_info.h"
@@ -40,6 +40,7 @@ namespace schema
 namespace sql
 {
 class ObExecContext;
+typedef common::ObColumnInfo ObTransmitRepartColumn;
 
 struct ObHashColumn : public common::ObColumnInfo
 {
@@ -104,7 +105,6 @@ public:
       : support_vectorized_calc_(false),
       is_multi_slice_calc_type_(false),
       alloc_(allocator),
-      shuffle_service_(allocator),
       slice_indexes_(NULL),
       tablet_ids_(nullptr),
       is_first_row_(true),
@@ -167,7 +167,6 @@ protected:
   bool support_vectorized_calc_;
   bool is_multi_slice_calc_type_;
   common::ObIAllocator &alloc_;
-  ObShuffleService shuffle_service_;
   int64_t *slice_indexes_;
   int64_t *tablet_ids_;
   // used by null aware hash join

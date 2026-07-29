@@ -19,7 +19,6 @@
 
 #include "share/config/ob_server_config.h"
 #include "storage/blocksstable/ob_block_sstable_struct.h"
-#include "storage/ob_i_table.h"
 
 namespace oceanbase
 {
@@ -27,7 +26,6 @@ namespace storage
 {
 class ObRowsInfo;
 class ObRowKeysInfo;
-class ObSSTableReadHandle;
 }
 namespace blocksstable
 {
@@ -150,8 +148,7 @@ public:
    * @param [in] bloom_filter
    */
   int put_bloom_filter(const MacroBlockId& macro_block_id,
-      const ObBloomFilterCacheValue &bloom_filter,
-      const bool adaptive = false);
+      const ObBloomFilterCacheValue &bloom_filter);
   /**
    * check if the macro block contains the rowkey
    * @param [in] macro_block_id

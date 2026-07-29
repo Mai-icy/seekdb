@@ -277,7 +277,7 @@ const char *ObPrivMgr::get_first_priv_name(ObPrivSet priv_set) {
 int ObPrivMgr::get_priv_schema_count(int64_t &priv_schema_count) const
 {
   int ret = OB_SUCCESS;
-  priv_schema_count = table_privs_.size() + db_privs_.size() 
+  priv_schema_count = table_privs_.size() + db_privs_.size()
                       + sys_privs_.size() + obj_privs_.size()
                       + obj_mysql_privs_.size();
   return ret;

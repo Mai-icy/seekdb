@@ -326,7 +326,7 @@ ObSchemaMgr::ObSchemaMgr(ObIAllocator &allocator)
       allocator_(allocator),
       schema_version_(OB_INVALID_VERSION),
       is_consistent_(true),
-      user_infos_(0, NULL, lib::ObMemAttr(ObModIds::OB_SCHEMA_RUNTIME_INFO_VEC, ObCtxIds::SCHEMA_SERVICE)),
+      user_infos_(0, NULL, lib::ObMemAttr(ObModIds::OB_SCHEMA_USER_INFO_VEC, ObCtxIds::SCHEMA_SERVICE)),
       database_infos_(0, NULL, lib::ObMemAttr(ObModIds::OB_SCHEMA_DB_INFO_VEC, ObCtxIds::SCHEMA_SERVICE)),
       database_name_map_(lib::ObMemAttr(ObModIds::OB_SCHEMA_DATABASE_NAME_MAP, ObCtxIds::SCHEMA_SERVICE)),
       table_infos_(0, NULL, lib::ObMemAttr(ObModIds::OB_SCHEMA_TABLE_INFO_VEC, ObCtxIds::SCHEMA_SERVICE)),

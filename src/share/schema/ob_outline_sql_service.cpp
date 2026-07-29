@@ -69,7 +69,6 @@ int ObOutlineSqlService::replace_outline(const ObOutlineInfo &outline_info,
   } else {
     ObSqlString sql;
 
-
     uint64_t outline_id = outline_info.get_outline_id();
     uint64_t compat_version = 0;
     // modify __all_outline table

@@ -5029,7 +5029,7 @@ int ObTransformPreProcess::try_gen_straight_join_leading(ObDMLStmt *stmt, bool &
     LOG_WARN("unexpected null", K(ret), K(query_hint));
   } else {
     ObHint *leading_hint = stmt->get_stmt_hint().get_normal_hint(T_LEADING);
-    bool exist_leading_hint = query_hint->has_outline_data() || 
+    bool exist_leading_hint = query_hint->has_outline_data() ||
                               query_hint->has_user_def_outline() ||
                               OB_NOT_NULL(leading_hint);
     ObSEArray<TableItem*, 4> flattened_tables;

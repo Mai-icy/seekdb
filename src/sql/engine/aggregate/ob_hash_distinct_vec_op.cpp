@@ -72,6 +72,7 @@ int ObHashDistinctVecOp::inner_open()
     LOG_WARN("failed to init mem context", K(ret));
   } else {
     first_got_row_ = true;
+    bypass_ctrl_.cut_ratio_ = ObAdaptiveByPassCtrl::INIT_CUT_RATIO;
 
     if (MY_SPEC.is_block_mode_) {
       get_next_batch_func_ = &ObHashDistinctVecOp::do_block_distinct_for_batch;

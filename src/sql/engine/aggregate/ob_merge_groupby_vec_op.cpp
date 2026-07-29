@@ -515,7 +515,7 @@ int ObMergeGroupByVecOp::advance_collect_result(int64_t group_id)
   return ret;
 }
 
-int ObMergeGroupByVecOp::before_process_next_batch(const int64_t max_row_cnt)
+int ObMergeGroupByVecOp::before_process_next_batch()
 {
   int ret = OB_SUCCESS;
   set_output_queue_cnt(0);
@@ -542,7 +542,7 @@ int ObMergeGroupByVecOp::inner_get_next_batch(const int64_t max_row_cnt)
     }
   } else {
     LOG_DEBUG("begin to get_next_batch rows from child", K(child_batch_cnt));
-    if (OB_FAIL(before_process_next_batch(child_batch_cnt))) {
+    if (OB_FAIL(before_process_next_batch())) {
       LOG_WARN("failed to before process next batch", K(child_batch_cnt));
     } else {
       brs_holder_.reset();

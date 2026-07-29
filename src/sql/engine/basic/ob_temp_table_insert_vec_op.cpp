@@ -314,7 +314,6 @@ int ObTempTableInsertVecOp::prepare_interm_result_id_for_local(uint64_t &interm_
   temp_table_ctx.is_local_interm_result_ = true;
   interm_result_id = dtl::ObDtlChannel::generate_id();
   ObTempTableResultInfo info;
-  info.addr_ = GCTX.self_addr();
   if (OB_FAIL(info.interm_result_ids_.push_back(interm_result_id))) {
     LOG_WARN("failed to push back", K(ret));
   } else if (OB_FAIL(temp_table_ctx.interm_result_infos_.push_back(info))) {

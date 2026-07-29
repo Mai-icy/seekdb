@@ -25,6 +25,9 @@ namespace oceanbase
 namespace rootserver
 {
 
+using namespace share;
+using namespace share::schema;
+
 int ObObjPrivMysqlDDLOperator::grant_object(
                                const ObObjMysqlPrivSortKey &object_priv_key,
                                const ObPrivSet priv_set,

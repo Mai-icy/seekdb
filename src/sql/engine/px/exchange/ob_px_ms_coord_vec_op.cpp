@@ -456,7 +456,7 @@ int ObPxMSCoordVecOp::next_row(const bool need_store_output)
                                                 row_heap_.writable_channel_idx()))) {
             LOG_WARN("failed to unblock channels", K(ret));
           } else {
-            LOG_DEBUG("debug old unblock_channel", K(ret));
+            LOG_DEBUG("unblocked data channel", K(ret));
           }
         }
       } else if (OB_ITER_END != ret) {
