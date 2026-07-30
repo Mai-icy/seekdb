@@ -1314,7 +1314,7 @@ int ObPLPackageManager::get_package_item_state(const ObPLResolveCtx &resolve_ctx
       LOG_WARN("memory allocate failed", K(ret));
     } else {
       new (package_state)
-        ObPLPackageState(package_id, state_version, package.get_serially_reusable());
+        ObPLPackageState(package_id, state_version);
       ExecCtxBak exec_ctx_bak;
       sql::ObExecEnv exec_env_bak;
       ObArenaAllocator tmp_allocator;
@@ -1346,7 +1346,7 @@ int ObPLPackageManager::get_package_item_state(const ObPLResolveCtx &resolve_ctx
             package_state->reset(&(resolve_ctx.session_info_));
             package_state->~ObPLPackageState();
             new (package_state)
-              ObPLPackageState(package_id, state_version, package.get_serially_reusable());
+              ObPLPackageState(package_id, state_version);
             LOG_WARN("failed to del package state", K(ret), K(package_id), K(tmp_ret));
           } else {
             // Deletion successful will release memory

@@ -1518,26 +1518,6 @@ int ObSQLSessionInfo::reset_all_package_state_by_dbms_session()
   return ret;
 }
 
-int ObSQLSessionInfo::reset_all_serially_package_state()
-{
-  int ret = OB_SUCCESS;
-  ObSEArray<int64_t, 4> serially_packages;
-  if (0 != package_state_map_.size()) {
-    FOREACH(it, package_state_map_) {
-      if (it->second->get_serially_reusable()) {
-        it->second->reset(this);
-        it->second->~ObPLPackageState();
-        get_package_allocator().free(it->second);
-        OZ (serially_packages.push_back(it->first));
-      }
-    }
-  }
-  for (int64_t i = 0; OB_SUCC(ret) && i < serially_packages.count(); ++i) {
-    OZ (package_state_map_.erase_refactored(serially_packages.at(i)));
-  }
-  return ret;
-}
-
 int ObSQLSessionInfo::replace_user_variable(
   const common::ObString &name, const ObSessionVariable &value)
 {

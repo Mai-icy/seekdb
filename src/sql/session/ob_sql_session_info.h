@@ -654,7 +654,6 @@ public:
   }
   void reset_all_package_state();
   int reset_all_package_state_by_dbms_session();
-  int reset_all_serially_package_state();
   int set_client_id(const common::ObString &client_identifier);
   int set_module_name(const common::ObString &mod);
   int set_action_name(const common::ObString &act);

@@ -581,48 +581,6 @@
     }\
   }
 
-// For dblink resultsets, object_id may be number(38), but table_id_ in table_schema
-// column_name's type inside obj schema is int64_t type, and the return value in resultset is number
-#define EXTRACT_INT_FIELD_FROM_NUMBER_TO_CLASS_MYSQL(result, column_name, obj, type) \
-  if (OB_SUCC(ret)) \
-  { \
-    common::number::ObNumber number_value; \
-    char buffer[common::number::ObNumber::MAX_NUMBER_ALLOC_BUFF_SIZE]; \
-    ObDataBuffer data_buffer(buffer, sizeof(buffer)); \
-    int64_t context_val = -1; \
-    if (OB_SUCCESS != (ret = (result).get_number(#column_name, number_value, data_buffer)))  \
-    { \
-      SQL_LOG(WARN, "fail to get column in row. ", "column_name", #column_name, K(ret)); \
-    } \
-    else if (!number_value.is_valid_int64(context_val)) { \
-      SQL_LOG(WARN, "failed to get int64 from number", K(number_value), K(ret)); \
-    } \
-    else \
-    { \
-      (obj).set_##column_name(static_cast<type>(context_val)); \
-    }\
-  }
-
-#define EXTRACT_INT_FIELD_FROM_NUMBER_TO_CLASS_MYSQL_WITH_TENAND_ID(result, column_name, obj) \
-  if (OB_SUCC(ret)) \
-  { \
-    common::number::ObNumber number_value; \
-    char buffer[common::number::ObNumber::MAX_NUMBER_ALLOC_BUFF_SIZE]; \
-    ObDataBuffer data_buffer(buffer, sizeof(buffer)); \
-    int64_t context_val = -1; \
-    if (OB_SUCCESS != (ret = (result).get_number(#column_name, number_value, data_buffer)))  \
-    { \
-      SQL_LOG(WARN, "fail to get column in row. ", "column_name", #column_name, K(ret)); \
-    } \
-    else if (!number_value.is_valid_int64(context_val)) { \
-      SQL_LOG(WARN, "failed to get int64 from number", K(number_value), K(ret)); \
-    } \
-    else \
-    { \
-      (obj).set_##column_name(context_val); \
-    }\
-  }
-
 #define EXTRACT_INT_FIELD_FROM_NUMBER_MYSQL(result, column_name, field) \
   if (OB_SUCC(ret)) \
   { \
