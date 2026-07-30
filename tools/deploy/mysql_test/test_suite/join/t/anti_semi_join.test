@@ -306,5 +306,3 @@ select /*+ use_nl(xy_t1 xy_t2)*/ c1, c2 from xy_t2 where not exists (select 1 fr
 select /*+ no_rewrite*/ c1, c2 from xy_t2 where not exists (select 1 from xy_t1 where xy_t1.c1 = xy_t2.c2 and xy_t1.c2 < xy_t2.c2) order by 1,2;
 
 drop table xy_t1, xy_t2;
-
-
