@@ -55,7 +55,6 @@ ObBasicSessionInfo::SysVarsCacheData ObBasicSessionInfo::SysVarsCache::base_data
 
 ObBasicSessionInfo::ObBasicSessionInfo()
   :   
-      session_pool_(NULL),
       query_mutex_(common::ObLatchIds::SESSION_QUERY_LOCK),
       thread_data_mutex_(common::ObLatchIds::SESSION_THREAD_DATA_LOCK),
       is_valid_(true),
@@ -140,10 +139,7 @@ ObBasicSessionInfo::ObBasicSessionInfo()
       is_password_expired_(false),
       process_query_time_(0),
       last_update_tz_time_(0),
-      use_rich_vector_format_(false),
       last_refresh_schema_version_(OB_INVALID_VERSION),
-      force_rich_vector_format_(ForceRichFormatStatus::Disable),
-      config_use_rich_format_(true),
       sys_var_config_hash_val_(0),
       is_real_inner_session_(false)
 {
@@ -350,8 +346,8 @@ void ObBasicSessionInfo::reset(bool skip_sys_var)
   cached_runtime_config_version_ = 0;
   is_deserialized_ = false;
   CHAR_CARRAY_INIT(runtime_);
-  
-  
+
+
   user_id_ = OB_INVALID_ID;
   client_version_.reset();
   driver_version_.reset();
@@ -448,8 +444,6 @@ void ObBasicSessionInfo::reset(bool skip_sys_var)
   is_password_expired_ = false;
   process_query_time_ = 0;
   last_update_tz_time_ = 0;
-  use_rich_vector_format_ = true;
-  force_rich_vector_format_ = ForceRichFormatStatus::Disable;
   // Finally reset all allocator
   // Otherwise thread_data_.user_name_ such properties will have dangling pointers, which may cause core dump when iterating through the session_mgr's foreach interface.
   sess_level_name_pool_.reset();
@@ -463,7 +457,6 @@ void ObBasicSessionInfo::reset(bool skip_sys_var)
   }
   client_identifier_.reset();
   last_refresh_schema_version_ = OB_INVALID_VERSION;
-  config_use_rich_format_ = true;
   sys_var_config_hash_val_ = 0;
   is_real_inner_session_ = false;
 }
@@ -2541,12 +2534,6 @@ OB_INLINE int ObBasicSessionInfo::process_session_variable(ObSysVarClassType var
       OX (sys_vars_cache_.set_runtime_bloom_filter_max_size(int_val));
       break;
     }
-    case SYS_VAR__ENABLE_RICH_VECTOR_FORMAT: {
-      int64_t int_val = 0;
-      OZ (val.get_int(int_val), val);
-      OX (sys_vars_cache_.set_enable_rich_vector_format(int_val != 0));
-      break;
-    }
     case SYS_VAR_OB_DEFAULT_LOB_INROW_THRESHOLD: {
       int64_t int_val = 0;
       OZ (val.get_int(int_val), val);
@@ -2610,9 +2597,7 @@ int ObBasicSessionInfo::fill_sys_vars_cache_base_value(
   switch (var) {
     case SYS_VAR_SQL_MODE: {
       ObSQLMode sql_mode = static_cast<ObSQLMode>(val.get_uint64());
-      ObSQLMode real_sql_mode = (sql_mode & (~ALL_SMO_COMPACT_MODE)) |
-          (sys_vars_cache.get_sql_mode() & ALL_SMO_COMPACT_MODE);
-      sys_vars_cache.set_base_sql_mode(real_sql_mode);
+      sys_vars_cache.set_base_sql_mode(sql_mode);
       break;
     }
     case SYS_VAR_AUTO_INCREMENT_INCREMENT: {
@@ -2842,12 +2827,6 @@ int ObBasicSessionInfo::fill_sys_vars_cache_base_value(
       int64_t int_val = 0;
       OZ (val.get_int(int_val), val);
       OX (sys_vars_cache.set_base_runtime_bloom_filter_max_size(int_val));
-      break;
-    }
-    case SYS_VAR__ENABLE_RICH_VECTOR_FORMAT: {
-      int64_t int_val = 0;
-      OZ (val.get_int(int_val), val);
-      OX (sys_vars_cache.set_base_enable_rich_vector_format(int_val != 0));
       break;
     }
     case SYS_VAR_OB_DEFAULT_LOB_INROW_THRESHOLD: {
@@ -3527,7 +3506,6 @@ OB_DEF_SERIALIZE(ObBasicSessionInfo::SysVarsCacheData)
               runtime_filter_wait_time_ms_,
               runtime_filter_max_in_num_,
               runtime_bloom_filter_max_size_,
-              enable_rich_vector_format_,
               enable_sql_plan_monitor_);
   return ret;
 }
@@ -3551,7 +3529,6 @@ OB_DEF_DESERIALIZE(ObBasicSessionInfo::SysVarsCacheData)
               runtime_filter_wait_time_ms_,
               runtime_filter_max_in_num_,
               runtime_bloom_filter_max_size_,
-              enable_rich_vector_format_,
               enable_sql_plan_monitor_);
   return ret;
 }
@@ -3575,7 +3552,6 @@ OB_DEF_SERIALIZE_SIZE(ObBasicSessionInfo::SysVarsCacheData)
               runtime_filter_wait_time_ms_,
               runtime_filter_max_in_num_,
               runtime_bloom_filter_max_size_,
-              enable_rich_vector_format_,
               enable_sql_plan_monitor_);
   return len;
 }
@@ -3708,8 +3684,7 @@ OB_DEF_SERIALIZE(ObBasicSessionInfo)
               thread_data_.client_addr_,
               thread_data_.user_client_addr_,
               process_query_time_,
-              show_trace_row_format_,
-              use_rich_vector_format_);
+              show_trace_row_format_);
   }();
   uint32_t unused_uint32_field = INVALID_SESSID;
   OB_UNIS_ENCODE(ObString(sql_id_));
@@ -3875,7 +3850,6 @@ OB_DEF_DESERIALIZE(ObBasicSessionInfo)
               thread_data_.user_client_addr_,
               process_query_time_,
               show_trace_row_format_);
-  LST_DO_CODE(OB_UNIS_DECODE, use_rich_vector_format_);
   // deep copy string.
   if (OB_SUCC(ret)) {
     if (OB_FAIL(sess_level_name_pool_.write_string(app_trace_id_, &app_trace_id_))) {
@@ -3910,7 +3884,6 @@ OB_DEF_DESERIALIZE(ObBasicSessionInfo)
   is_deserialized_ = true;
   tz_info_wrap_.set_tz_info_map(tz_info_map);
   release_to_pool_ = OB_SUCC(ret);
-  force_rich_vector_format_ = ForceRichFormatStatus::Disable;
   }();
   uint32_t unused_uint32_field = INVALID_SESSID;
   ObString sql_id;
@@ -4152,8 +4125,7 @@ OB_DEF_SERIALIZE_SIZE(ObBasicSessionInfo)
               thread_data_.client_addr_,
               thread_data_.user_client_addr_,
               process_query_time_,
-              show_trace_row_format_,
-              use_rich_vector_format_);
+              show_trace_row_format_);
   OB_UNIS_ADD_LEN(ObString(sql_id_));
   OB_UNIS_ADD_LEN(sys_var_config_hash_val_);
   OB_UNIS_ADD_LEN(enable_mysql_compatible_dates_);
@@ -4929,9 +4901,6 @@ int ObBasicSessionInfo::base_save_session(BaseSavedValue &saved_value, bool skip
     OX (sys_vars_cache_.get_autocommit_info(saved_value.inc_autocommit_));
     OX (sys_vars_cache_.set_autocommit_info(false));
   }
-  if (OB_SUCC(ret)) {
-    saved_value.force_rich_format_status_ = force_rich_vector_format_;
-  }
   return ret;
 }
 
@@ -4974,9 +4943,6 @@ int ObBasicSessionInfo::base_restore_session(BaseSavedValue &saved_value)
     thread_data_.cur_query_[len] = '\0';
   }
   OX (cur_phy_plan_ = saved_value.cur_phy_plan_);
-  if (OB_SUCC(ret)) {
-    force_rich_vector_format_ = saved_value.force_rich_format_status_;
-  }
   return ret;
 }
 
