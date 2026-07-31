@@ -814,33 +814,12 @@ int ObExecContext::init_physical_plan_ctx(const ObPhysicalPlan &plan)
       }
       phy_plan_ctx_->set_consistency_level(consistency);
       phy_plan_ctx_->set_timeout_timestamp(start_time + plan_timeout);
-      phy_plan_ctx_->set_rich_format(my_session_->use_rich_format());
       reference_my_plan(&plan);
       phy_plan_ctx_->set_ignore_stmt(plan.is_ignore());
       phy_plan_ctx_->set_foreign_key_checks(0 != foreign_key_checks);
       phy_plan_ctx_->set_table_row_count_list_capacity(plan.get_access_table_num());
       phy_plan_ctx_->set_check_pdml_affected_rows(supprt_check_pdml_affected_row);
       THIS_WORKER.set_timeout_ts(phy_plan_ctx_->get_timeout_timestamp());
-    }
-  }
-  if (OB_SUCC(ret)) {
-    const auto &param_store = phy_plan_ctx_->get_param_store();
-    int64_t first_array_index = plan.get_first_array_index();
-    const ObSqlArrayObj *array_param = NULL;
-    if (OB_LIKELY(OB_INVALID_INDEX == first_array_index)) {
-      //this query has no array binding, do nothing
-    } else if (OB_UNLIKELY(first_array_index >= param_store.count())) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("first array index is invalid", K(ret), K(first_array_index), K(param_store.count()));
-    } else if (OB_UNLIKELY(!param_store.at(first_array_index).is_ext_sql_array())) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("first array param is invalid", K(ret), K(param_store.at(first_array_index)));
-    } else if (OB_ISNULL(array_param = reinterpret_cast<const ObSqlArrayObj*>(
-        param_store.at(first_array_index).get_ext()))) {
-      ret = OB_ERR_UNEXPECTED;
-      LOG_WARN("array param is null", K(ret), K(param_store.at(first_array_index)));
-    } else {
-      phy_plan_ctx_->set_bind_array_count(array_param->count_);
     }
   }
   return ret;

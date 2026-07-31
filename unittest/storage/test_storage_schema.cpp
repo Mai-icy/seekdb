@@ -193,7 +193,6 @@ TEST_F(TestStorageSchema, serialize_and_deserialize2)
   ObStorageSchema storage_schema;
   TestSchemaPrepare::prepare_schema(table_schema);
   table_schema.set_compress_func_name("compress_func_1");
-  table_schema.add_aux_vp_tid(8989789);
   ASSERT_EQ(OB_SUCCESS, storage_schema.init(allocator_, table_schema));
 
   const int64_t buf_len = 1024 * 1024;
@@ -215,7 +214,6 @@ TEST_F(TestStorageSchema, serialize_and_deserialize_with_big_schema)
   ObStorageSchema storage_schema;
   TestSchemaPrepare::prepare_schema(table_schema);
   table_schema.set_compress_func_name("compress_func_1");
-  table_schema.add_aux_vp_tid(8989789);
 
   int64_t column_id = 100;
   share::schema::ObColumnSchemaV2 column;
@@ -311,7 +309,6 @@ TEST_F(TestStorageSchema, test_clipped_schema_for_tablet_fork)
   ObStorageSchema storage_schema1;
   TestSchemaPrepare::prepare_schema(table_schema);
   table_schema.set_compress_func_name("compress_func_1");
-  table_schema.add_aux_vp_tid(8989789);
 
   int64_t stored_column_cnt;
   int64_t column_id = 100;

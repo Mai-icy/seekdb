@@ -526,35 +526,6 @@ int ObSchemaChecker::get_user_info(const ObString &user_name,
   return ret;
 }
 
-int ObSchemaChecker::get_table_schema_with_synonym(const ObString &tbl_db_name,
-                                                   const ObString &tbl_name,
-                                                   bool is_index_table,
-                                                   bool &has_synonym,
-                                                   ObString &new_db_name,
-                                                   ObString &new_tbl_name,
-                                                   const share::schema::ObTableSchema *&tbl_schema)
-{
-  // synonym has been drop in lite version
-  int ret = OB_SUCCESS;
-  uint64_t tbl_db_id = OB_INVALID_ID;
-  uint64_t obj_db_id = OB_INVALID_ID;
-  ObString obj_name;
-  new_db_name.reset();
-  new_tbl_name.reset();
-  has_synonym = false;
-  tbl_schema = NULL;
-  ObSEArray<uint64_t, 8> syn_id_arr;
-
-  if (OB_FAIL(get_table_schema( tbl_db_name, tbl_name, is_index_table, tbl_schema))) {
-      LOG_WARN("get_table_schema failed", K(ret), K(tbl_db_name), K(tbl_db_id), K(tbl_name));
-  } else {
-    has_synonym = false;
-  }
-
-  return ret;
-}
-
-
 int ObSchemaChecker::get_table_schema( const ObString &database_name,
                                       const ObString &table_name, const bool is_index_table,
                                       const ObTableSchema *&table_schema, const bool with_hidden_flag,
@@ -1191,68 +1162,6 @@ int ObSchemaChecker::get_column_schema_inner(uint64_t table_id, const uint64_t c
   return ret;
 }
 
-
-
-int ObSchemaChecker::check_exist_same_name_object_with_synonym(uint64_t database_id,
-                                     const common::ObString &object_name,
-                                     bool &exist,
-                                     bool &is_private_syn)
-{
-  int ret = OB_SUCCESS;
-  exist = false;
-  is_private_syn = false;
-  common::ObString database_name;
-  const ObDatabaseSchema  *db_schema = NULL;
-  const share::schema::ObTableSchema *table_schema = NULL;
-  if (OB_FAIL(get_database_schema( database_id, db_schema))) {
-    LOG_WARN("fail to get db schema", K(ret));
-  } else if (OB_NOT_NULL(db_schema)) {
-    database_name = db_schema->get_database_name();
-    ret = get_table_schema( database_name, object_name, false, table_schema);
-    if (OB_SUCC(ret) && OB_NOT_NULL(table_schema)) {
-      exist = true;
-    }
-
-    //check procedure/function
-    if (OB_TABLE_NOT_EXIST == ret) {
-      uint64_t routine_id = 0;
-      bool is_proc = false;
-      if (OB_FAIL(get_routine_id(database_name, object_name, routine_id, is_proc))) {
-        if (OB_ERR_SP_DOES_NOT_EXIST == ret) {
-          ret = OB_TABLE_NOT_EXIST;
-        }
-      } else {
-        exist = true;
-      }
-    }
-    //check package
-    if (OB_TABLE_NOT_EXIST == ret) {
-      uint64_t package_id = 0;
-      if (OB_FAIL(get_package_id(database_name, object_name,
-                                  package_id))) {
-        if (OB_ERR_PACKAGE_DOSE_NOT_EXIST == ret) {
-          if (OB_FAIL(get_package_id(OB_SYS_DATABASE_ID,
-                                      object_name,
-                                      package_id))) {
-            if (OB_ERR_PACKAGE_DOSE_NOT_EXIST == ret) {
-              ret = OB_TABLE_NOT_EXIST;
-            }
-          } else {
-            exist = true;
-          }
-        }
-      } else {
-        exist = true;
-      }
-    }
-
-  }
-  if (OB_TABLE_NOT_EXIST == ret) {
-    ret = OB_SUCCESS;
-  }
-
-  return ret;
-}
 
 
 int ObSchemaChecker::remove_tmp_cte_schemas(const ObString& cte_table_name)
