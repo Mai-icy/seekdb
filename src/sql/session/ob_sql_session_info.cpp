@@ -23,6 +23,7 @@
 #include "storage/tx/ob_ts_mgr.h"
 #include "rootserver/ob_local_ddl_serial_call.h"
 #include "pl/ob_pl_package.h"
+#include "pl/ob_pl_server_cursor.h"
 #include "observer/mysql/obmp_stmt_send_piece_data.h"
 #include "observer/ob_server.h"
 #include "sql/plan_cache/ob_ps_cache.h"
@@ -164,7 +165,7 @@ ObSQLSessionInfo::ObSQLSessionInfo() :
 ObSQLSessionInfo::~ObSQLSessionInfo()
 {
   plan_cache_ = NULL;
-  destroy(false);
+  destroy();
 }
 
 int ObSQLSessionInfo::init(uint32_t sessid,
@@ -174,8 +175,7 @@ int ObSQLSessionInfo::init(uint32_t sessid,
   static const int64_t PS_BUCKET_NUM = 64;
   if (OB_FAIL(ObBasicSessionInfo::init(sessid, bucket_allocator, tz_info))) {
     LOG_WARN("fail to init basic session info", K(ret));
-  } else if (!is_acquire_from_pool() &&
-             OB_FAIL(package_state_map_.create(hash::cal_next_prime(4),
+  } else if (OB_FAIL(package_state_map_.create(hash::cal_next_prime(4),
                                                ObMemAttr("PackStateMap")))) {
     LOG_WARN("create package state map failed", K(ret));
   } else {
@@ -190,7 +190,6 @@ int ObSQLSessionInfo::init(uint32_t sessid,
   }
   if (OB_FAIL(ret)) {
     package_state_map_.clear();
-    sock_fd_map_.clear();
   }
   return ret;
 }
@@ -209,7 +208,7 @@ int ObSQLSessionInfo::test_init(uint32_t version, uint32_t sessid,
   return ret;
 }
 
-void ObSQLSessionInfo::reset(bool skip_sys_var)
+void ObSQLSessionInfo::reset()
 {
   if (is_inited_) {
     // ObVersionProvider::reset();
@@ -242,7 +241,6 @@ void ObSQLSessionInfo::reset(bool skip_sys_var)
     next_client_ps_stmt_id_ = 0;
     session_type_ = INVALID_TYPE;
     package_state_map_.reuse();
-    sock_fd_map_.reuse();
     pl_context_ = NULL;
     pl_can_retry_ = true;
     plsql_exec_time_ = 0;
@@ -269,7 +267,7 @@ void ObSQLSessionInfo::reset(bool skip_sys_var)
     int temp_ret = OB_SUCCESS;
     optimizer_tracer_.reset();
     //call at last time
-    ObBasicSessionInfo::reset(skip_sys_var);
+    ObBasicSessionInfo::reset();
   }
   in_bytes_ = 0;
   out_bytes_ = 0;
@@ -417,16 +415,6 @@ bool ObSQLSessionInfo::is_var_assign_use_das_enabled() const
   return bret;
 }
 
-bool ObSQLSessionInfo::is_nlj_spf_use_rich_format_enabled() const
-{
-  bool bret = false;
-  
-  {
-    bret = GCONF._enable_nlj_spf_use_rich_format;
-  }
-  return bret;
-}
-
 int ObSQLSessionInfo::is_adj_index_cost_enabled(bool &enabled, int64_t &stats_cost_percent) const
 {
   int ret = OB_SUCCESS;
@@ -468,7 +456,7 @@ bool ObSQLSessionInfo::is_sqlstat_enabled()
   return bret;
 }
 
-void ObSQLSessionInfo::destroy(bool skip_sys_var)
+void ObSQLSessionInfo::destroy()
 {
   if (is_inited_) {
     int ret = OB_SUCCESS;
@@ -539,7 +527,7 @@ void ObSQLSessionInfo::destroy(bool skip_sys_var)
       get_session_allocator().free(btree_iter_cache_);
       btree_iter_cache_ = nullptr;
     }
-    reset(skip_sys_var);
+    reset();
     is_inited_ = false;
   }
 }
@@ -1006,7 +994,6 @@ int ObSQLSessionInfo::prepare_ps_stmt(const ObPsStmtId inner_stmt_id,
         session_info->set_stmt_type(stmt_info->get_stmt_type());
         session_info->set_ps_stmt_checksum(stmt_info->get_ps_stmt_checksum());
         session_info->set_inner_stmt_id(inner_stmt_id);
-        session_info->set_num_of_returning_into(stmt_info->get_num_of_returning_into());
         if (OB_FAIL(session_info->fill_param_types_with_null_type())) {
           LOG_WARN("fill param types failed", K(ret),
                                         K(stmt_info->get_ps_sql()),
@@ -1015,7 +1002,7 @@ int ObSQLSessionInfo::prepare_ps_stmt(const ObPsStmtId inner_stmt_id,
                                         K(inner_stmt_id),
                                         K(get_server_sid()),
                                         K(stmt_info->get_num_of_param()),
-                                        K(stmt_info->get_num_of_returning_into()));
+                                        K(*stmt_info));
         }
         LOG_TRACE("add ps session info", K(stmt_info->get_ps_sql()),
                                         K(stmt_info->get_ps_stmt_checksum()),
@@ -1023,7 +1010,7 @@ int ObSQLSessionInfo::prepare_ps_stmt(const ObPsStmtId inner_stmt_id,
                                         K(inner_stmt_id),
                                         K(get_server_sid()),
                                         K(stmt_info->get_num_of_param()),
-                                        K(stmt_info->get_num_of_returning_into()));
+                                        K(*stmt_info));
       }
 
       if (OB_SUCC(ret)) {
@@ -1073,20 +1060,6 @@ ObPLCursorInfo *ObSQLSessionInfo::get_cursor(int64_t cursor_id)
     LOG_TRACE("get cursor info failed", K(cursor_id), K(get_server_sid()));
   }
   return cursor;
-}
-
-ObDbmsCursorInfo *ObSQLSessionInfo::get_dbms_cursor(int64_t cursor_id)
-{
-  int ret = OB_SUCCESS;
-  ObPLCursorInfo *cursor = NULL;
-  ObDbmsCursorInfo *dbms_cursor = NULL;
-  OV (OB_NOT_NULL(cursor = get_cursor(cursor_id)),
-      OB_INVALID_ARGUMENT, cursor_id);
-  OV (cursor->is_dbms_sql_cursor(), 
-      OB_INVALID_ARGUMENT, cursor_id);
-  OV (OB_NOT_NULL(dbms_cursor = dynamic_cast<ObDbmsCursorInfo *>(cursor)),
-      OB_INVALID_ARGUMENT, cursor_id);
-  return dbms_cursor;
 }
 
 int ObSQLSessionInfo::add_cursor(pl::ObPLCursorInfo *cursor)
@@ -1216,7 +1189,6 @@ int ObSQLSessionInfo::print_all_cursor()
 {
   int ret = OB_SUCCESS;
   int64_t open_cnt = 0;
-  int64_t unexpected_cnt = 0;
   LOG_DEBUG("CURSOR DEBUG: total cursors in cursor map: ",
             K(pl_cursor_cache_.pl_cursor_map_.size()));
   for (CursorCache::CursorMap::iterator iter = pl_cursor_cache_.pl_cursor_map_.begin();  //ignore ret
@@ -1227,18 +1199,11 @@ int ObSQLSessionInfo::print_all_cursor()
     } else {
       if (cursor_info->isopen()) {
         open_cnt++;
-        LOG_DEBUG("CURSOR DEBUG: found open cursor", K(*cursor_info),
-                                                    K(cursor_info->get_ref_count()));
-      } else {
-        if (0 != cursor_info->get_ref_count()) {
-          unexpected_cnt++;
-          LOG_DEBUG("CURSOR DEBUG: found closed cursor", K(*cursor_info),
-                                                      K(cursor_info->get_ref_count()));
-        }
+        LOG_DEBUG("CURSOR DEBUG: found open cursor", K(*cursor_info));
       }
     }
   }
-  LOG_DEBUG("CURSOR DEBUG: may illegal cursors in cursor map: ",  K(open_cnt), K(unexpected_cnt));
+  LOG_DEBUG("CURSOR DEBUG: open cursors in cursor map", K(open_cnt));
   return ret;
 }
 
@@ -1257,16 +1222,8 @@ int ObSQLSessionInfo::init_cursor_cache()
 }
 
 
-int ObSQLSessionInfo::make_cursor(pl::ObPLCursorInfo *&cursor)
-{
-  int ret = OB_SUCCESS;
-  pl::ObPLCursorInfo* tmp_cursor = NULL;
-  UNUSED(cursor);
-  return ret;
-}
-
-int ObSQLSessionInfo::make_dbms_cursor(pl::ObDbmsCursorInfo *&cursor,
-                                       uint64_t id)
+int ObSQLSessionInfo::make_server_cursor(pl::ObPLServerCursorInfo *&cursor,
+                                         uint64_t id)
 {
   int ret = OB_SUCCESS;
   void *buf = NULL;
@@ -1274,20 +1231,14 @@ int ObSQLSessionInfo::make_dbms_cursor(pl::ObDbmsCursorInfo *&cursor,
     OZ (pl_cursor_cache_.init(),
         1UL, get_server_sid());
   }
-  OV (OB_NOT_NULL(buf = get_cursor_allocator().alloc(sizeof(ObDbmsCursorInfo))),
-      OB_ALLOCATE_MEMORY_FAILED, sizeof(ObDbmsCursorInfo));
-  OX (MEMSET(buf, 0, sizeof(ObDbmsCursorInfo)));
-  OV (OB_NOT_NULL(cursor = new (buf) ObDbmsCursorInfo(get_cursor_allocator())));
-  OZ (cursor->init());
+  OV (OB_NOT_NULL(buf = get_cursor_allocator().alloc(sizeof(ObPLServerCursorInfo))),
+      OB_ALLOCATE_MEMORY_FAILED, sizeof(ObPLServerCursorInfo));
+  OX (MEMSET(buf, 0, sizeof(ObPLServerCursorInfo)));
+  OV (OB_NOT_NULL(cursor = new (buf) ObPLServerCursorInfo()));
   OX (cursor->set_id(id));
-  OX (cursor->set_dbms_sql_cursor());
   OZ (add_cursor(cursor));
-  /*
-   * A dbms cursor can be repeatedly parsed after being opened, each time switching to a different statement, so internal different objects need to use different allocators:
-   * 1. cursor_id does not change after open_cursor until close_cursor, so its lifecycle is relatively long, allocated from the session's allocator.
-   * 2. sql_stmt_ and other properties change every time after parsing, so their lifecycle is shorter, memory is allocated from entity, and a new entity is created each time it is parsed.
-   * 3. spi_result and spi_cursor also need to be reset every time it is parsed.
-   */
+  // A prepared-statement cursor owns a session-lifetime shell and shorter-lived
+  // SQL/result entities that are recreated for each execution.
   return ret;
 }
 
@@ -1562,26 +1513,6 @@ int ObSQLSessionInfo::reset_all_package_state_by_dbms_session()
     }
     // wether reset succ or not, set need_reset_package to false
     set_need_reset_package(false);
-  }
-  return ret;
-}
-
-int ObSQLSessionInfo::reset_all_serially_package_state()
-{
-  int ret = OB_SUCCESS;
-  ObSEArray<int64_t, 4> serially_packages;
-  if (0 != package_state_map_.size()) {
-    FOREACH(it, package_state_map_) {
-      if (it->second->get_serially_reusable()) {
-        it->second->reset(this);
-        it->second->~ObPLPackageState();
-        get_package_allocator().free(it->second);
-        OZ (serially_packages.push_back(it->first));
-      }
-    }
-  }
-  for (int64_t i = 0; OB_SUCC(ret) && i < serially_packages.count(); ++i) {
-    OZ (package_state_map_.erase_refactored(serially_packages.at(i)));
   }
   return ret;
 }

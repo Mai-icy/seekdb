@@ -58,9 +58,8 @@ class ObPL;
 struct ObPLExecRecursionCtx;
 struct ObPLSqlCodeInfo;
 class ObPLContext;
-class ObDbmsCursorInfo;
+class ObPLServerCursorInfo;
 
-class ObPLProfiler;
 
 } // namespace pl
 
@@ -153,25 +152,6 @@ private:
 
 typedef common::hash::ObHashMap<uint64_t, pl::ObPLPackageState *,
                                 common::hash::NoPthreadDefendMode> ObPackageStateMap;
-#define OB_UTL_TCP_DEFAULT_TX_TIMEOUT -1  //wait indefinitely
-struct ObSockFdParam
-{
-  ObSockFdParam()
-  : session_id_(OB_INVALID_ID), m_addr_info_(NULL), tx_timeout_(OB_UTL_TCP_DEFAULT_TX_TIMEOUT), collation_(CS_TYPE_INVALID)
-  {}
-
-  ObSockFdParam(const int64_t session_id, void* m_addr_info, const int32_t tx_timeout, const ObCollationType coll_type)
-  : session_id_(session_id), m_addr_info_(m_addr_info), tx_timeout_(tx_timeout), collation_(coll_type)
-  {}
-
-  int64_t  session_id_;
-  void*    m_addr_info_; 
-  int32_t  tx_timeout_;
-  ObCollationType collation_;
-
-  TO_STRING_KV(K_(session_id), K_(m_addr_info), K_(collation));
-};
-typedef common::hash::ObHashMap<int64_t, ObSockFdParam, common::hash::NoPthreadDefendMode> ObSockFdMap;
 typedef common::LinkHashNode<SessionInfoKey> SessionInfoHashNode;
 typedef common::LinkHashValue<SessionInfoKey> SessionInfoHashValue;
 // ObBasicSessionInfo stores system variables and state serialized for distributed SQL tasks.
@@ -409,8 +389,8 @@ public:
   //for test
   int test_init(uint32_t version, uint32_t sessid,
            common::ObIAllocator *bucket_allocator);
-  void destroy(bool skip_sys_var = false);
-  void reset(bool skip_sys_var);
+  void destroy() override;
+  void reset() override;
   void clean_status();
   void set_plan_cache(ObPlanCache *cache) { plan_cache_ = cache; }
   void set_ps_cache(ObPsCache *cache) { ps_cache_ = cache; }
@@ -554,14 +534,6 @@ public:
     pl_context_ = pl_stack_ctx;
   }
 
-  inline pl::ObPLProfiler *get_pl_profiler() const
-  {
-    pl::ObPLProfiler *profiler = nullptr;
-
-
-    return profiler;
-  }
-
   inline void set_pl_query_sender(observer::ObQueryDriver *driver) { pl_query_sender_ = driver; }
   inline observer::ObQueryDriver* get_pl_query_sender() { return pl_query_sender_; }
 
@@ -584,7 +556,6 @@ public:
 
   CursorCache &get_cursor_cache() { return pl_cursor_cache_; }
   pl::ObPLCursorInfo *get_cursor(int64_t cursor_id);
-  pl::ObDbmsCursorInfo *get_dbms_cursor(int64_t cursor_id);
   int add_cursor(pl::ObPLCursorInfo *cursor);
   int close_cursor(pl::ObPLCursorInfo *&cursor);
   int close_cursor(int64_t cursor_id);
@@ -592,12 +563,11 @@ public:
   };
   inline void dec_session_cursor() {
   };
-  int make_cursor(pl::ObPLCursorInfo *&cursor);
   int add_non_session_cursor(pl::ObPLCursorInfo *cursor);
   void del_non_session_cursor(pl::ObPLCursorInfo *cursor);
   int init_cursor_cache();
-  int make_dbms_cursor(pl::ObDbmsCursorInfo *&cursor,
-                       uint64_t id = OB_INVALID_ID);
+  int make_server_cursor(pl::ObPLServerCursorInfo *&cursor,
+                         uint64_t id = OB_INVALID_ID);
   int print_all_cursor();
 
   inline void *get_inner_conn() { return inner_conn_; }
@@ -684,7 +654,6 @@ public:
   }
   void reset_all_package_state();
   int reset_all_package_state_by_dbms_session();
-  int reset_all_serially_package_state();
   int set_client_id(const common::ObString &client_identifier);
   int set_module_name(const common::ObString &mod);
   int set_action_name(const common::ObString &act);
@@ -693,7 +662,6 @@ public:
   const common::ObString& get_module_name() const { return client_app_info_.module_name_; }
   const common::ObString& get_action_name() const  { return client_app_info_.action_name_; }
   const common::ObString& get_client_info() const { return client_app_info_.client_info_; }
-  ObSockFdMap &get_sock_fd_map() { return sock_fd_map_; }
   const common::ObString &get_audit_filter_name() const { return audit_filter_name_; }
   int prepare_ps_stmt(const ObPsStmtId inner_stmt_id,
                       const ObPsStmtInfo *stmt_info,
@@ -718,7 +686,6 @@ public:
   bool is_qualify_filter_enabled() const;
   int is_enable_range_extraction_for_not_in(bool &enabled) const;
   bool is_var_assign_use_das_enabled() const;
-  bool is_nlj_spf_use_rich_format_enabled() const;
   int is_adj_index_cost_enabled(bool &enabled, int64_t &stats_cost_percent) const;
   bool is_spf_mlj_group_rescan_enabled() const;
   bool enable_parallel_das_dml() const;
@@ -959,7 +926,6 @@ private:
   ObPsStmtId next_client_ps_stmt_id_;
   SessionType session_type_;
   ObPackageStateMap package_state_map_;
-  ObSockFdMap sock_fd_map_;
 
   pl::ObPLContext *pl_context_;
   CursorCache pl_cursor_cache_;

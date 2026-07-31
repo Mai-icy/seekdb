@@ -18,7 +18,7 @@
 
 #include "ob_table_modify_op.h"
 #include "sql/engine/dml/ob_dml_service.h"
-#include "observer/ob_inner_sql_connection_pool.h"
+#include "observer/ob_inner_sql_connection.h"
 
 namespace oceanbase
 {
@@ -664,15 +664,14 @@ ObTableModifyOp::ObTableModifyOp(ObExecContext &ctx,
                                  ObOpInput *input)
   : ObOperator(ctx, spec, input),
     sql_proxy_(NULL),
+    inner_conn_guard_(),
     inner_conn_(NULL),
     saved_conn_(),
     need_foreign_key_check_(false),
     need_close_conn_(false),
     iter_end_(false),
     dml_rtctx_(eval_ctx_, ctx, *this),
-    is_error_logging_(false),
     execute_single_row_(false),
-    err_log_rt_def_(),
     dml_modify_rows_(ctx.get_allocator()),
     last_store_row_(),
     saved_session_(NULL)
@@ -994,9 +993,7 @@ int ObTableModifyOp::calc_single_table_loc()
 int ObTableModifyOp::open_inner_conn()
 {
   int ret = OB_SUCCESS;
-  ObInnerSQLConnectionPool *pool = NULL;
   ObSQLSessionInfo *session = NULL;
-  ObISQLConnection *conn;
   if (OB_ISNULL(sql_proxy_ = ctx_.get_sql_proxy())) {
     ret = OB_NOT_INIT;
     LOG_WARN("sql proxy is NULL", K(ret));
@@ -1005,19 +1002,17 @@ int ObTableModifyOp::open_inner_conn()
     LOG_WARN("session is NULL", K(ret));
   } else if (NULL != session->get_inner_conn()) {
     // do nothing.
-  } else if (OB_ISNULL(pool = static_cast<ObInnerSQLConnectionPool*>(sql_proxy_->get_pool()))) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("connection pool is NULL", K(ret));
-  } else if (INNER_POOL != pool->get_type()) {
-    LOG_WARN("connection pool type is not inner", K(ret), K(pool->get_type()));
-  } else if (OB_FAIL(pool->acquire(session, conn))) {
+  } else if (OB_FAIL(
+                 ObInnerSQLConnection::create_connection_with_external_session(
+                     session, inner_conn_guard_))) {
     LOG_WARN("failed to acquire inner connection", K(ret));
   } else {
     /**
      * session is the only data struct which can pass through multi layer nested sql,
      * so we put inner conn in session to share it within multi layer nested sql.
      */
-    session->set_inner_conn(conn);
+    session->set_inner_conn(
+        static_cast<ObInnerSQLConnection *>(inner_conn_guard_.get_ptr()));
     need_close_conn_ = true;
   }
   if (OB_SUCC(ret)) {
@@ -1035,13 +1030,16 @@ int ObTableModifyOp::close_inner_conn()
   int ret = OB_SUCCESS;
   if (need_close_conn_) {
     ObSQLSessionInfo *session = ctx_.get_my_session();
-    if (OB_ISNULL(sql_proxy_) || OB_ISNULL(session)) {
+    if (OB_ISNULL(session)) {
       ret = OB_INVALID_ARGUMENT;
-      LOG_WARN("sql_proxy of session is NULL", K(ret), KP(sql_proxy_), KP(session));
+      LOG_WARN("session is NULL", K(ret), KP(session));
+    } else if (OB_ISNULL(session->get_inner_conn())) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("inner connection is NULL", K(ret));
     } else {
-      OZ(sql_proxy_->close(static_cast<ObInnerSQLConnection *>(session->get_inner_conn()), true));
-      OX(session->set_inner_conn(NULL));
+      session->set_inner_conn(NULL);
     }
+    inner_conn_guard_.reset();
     need_close_conn_ = false;
   }
   sql_proxy_ = NULL;
@@ -1222,11 +1220,6 @@ int ObTableModifyOp::inner_get_next_row()
         LOG_WARN("write row to das failed", K(ret));
       } else if (OB_FAIL(discharge_das_write_buffer())) {
         LOG_WARN("discharge das write buffer failed", K(ret));
-      } else if (is_error_logging_ && err_log_rt_def_.first_err_ret_ != OB_SUCCESS) {
-        clear_evaluated_flag();
-        err_log_rt_def_.curr_err_log_record_num_++;
-        err_log_rt_def_.reset();
-        continue;
       } else if (MY_SPEC.is_returning_) {
         break;
       }
