@@ -333,7 +333,8 @@ public:
     // sql which not in pl use the same strategy to avoid never getting the lock.
     if (v.is_from_pl_) {
       if (v.local_retry_times_ <= 1 ||
-          !v.session_.get_pl_can_retry()) {
+          !v.session_.get_pl_can_retry() ||
+          ObSQLUtils::is_in_autonomous_block(v.session_.get_cur_exec_ctx())) {
         v.no_more_test_ = true;
         v.retry_type_ = RETRY_TYPE_LOCAL;
       } else {
@@ -437,7 +438,8 @@ public:
     // sql which not in pl use the same strategy to avoid never getting the lock.
     if (v.is_from_pl_) {
       if (v.local_retry_times_ <= 1 ||
-          !v.session_.get_pl_can_retry()) {
+          !v.session_.get_pl_can_retry() ||
+          ObSQLUtils::is_in_autonomous_block(v.session_.get_cur_exec_ctx())) {
         v.no_more_test_ = true;
         v.retry_type_ = RETRY_TYPE_LOCAL;
         sleep_before_local_retry(v,
@@ -509,7 +511,8 @@ private:
     ObExecContext *parent_ctx = v.session_.get_cur_exec_ctx();
     bool is_pl_nested = (parent_ctx != nullptr
                          && ObStmt::is_dml_stmt(parent_ctx->get_sql_ctx()->stmt_type_)
-                         && parent_ctx->get_pl_stack_ctx() != nullptr);
+                         && parent_ctx->get_pl_stack_ctx() != nullptr
+                         && !parent_ctx->get_pl_stack_ctx()->in_autonomous());
     bool is_fk_nested = (parent_ctx != nullptr && parent_ctx->get_das_ctx().is_fk_cascading_);
     bool is_online_stat_gathering_nested = (parent_ctx != nullptr && parent_ctx->is_online_stats_gathering());
     return is_pl_nested || is_fk_nested || is_online_stat_gathering_nested;
@@ -898,6 +901,7 @@ int ObQueryRetryCtrl::init()
   ERR_RETRY_FUNC("SQL",      OB_ERR_INSUFFICIENT_PX_WORKER,      px_thread_not_enough_proc,  short_wait_retry_proc,                                nullptr);
   // create a new interval part when inserting a row which has no matched part,
   // wait and retry, will see new part
+  ERR_RETRY_FUNC("SQL",      OB_NO_PARTITION_FOR_INTERVAL_PART,  short_wait_retry_proc,             short_wait_retry_proc,                         nullptr);
   ERR_RETRY_FUNC("SQL",      OB_BATCHED_MULTI_STMT_ROLLBACK,     batch_execute_opt_retry_proc,      batch_execute_opt_retry_proc,                  nullptr);
   ERR_RETRY_FUNC("SQL",      OB_SQL_RETRY_OUTLINE,               force_local_retry_proc,            force_local_retry_proc,                        nullptr);
 

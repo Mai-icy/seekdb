@@ -154,9 +154,13 @@ int ObRawExprInfoExtractor::clear_info(ObRawExpr &expr)
   int ret = OB_SUCCESS;
   ObExprInfo &expr_info = expr.get_expr_info();
   bool is_implicit_cast = expr_info.has_member(IS_OP_OPERAND_IMPLICIT_CAST);
+  bool is_self_param = expr_info.has_member(IS_UDT_UDF_SELF_PARAM);
   expr_info.reset();
   if (is_implicit_cast) {
     OZ(expr_info.add_member(IS_OP_OPERAND_IMPLICIT_CAST));
+  }
+  if (is_self_param) {
+    OZ(expr_info.add_member(IS_UDT_UDF_SELF_PARAM));
   }
   return ret;
 }

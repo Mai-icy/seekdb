@@ -174,6 +174,7 @@ int ObCommonSqlProxy::write(const ObString sql,
       LOG_WARN("fail to set ddl info", K(ret));
     }
     if (param->ddl_info_.is_ddl()) {
+      conn->set_nls_formats(param->nls_formats_);
     }
     if (!param->secure_file_priv_.empty()) {
       conn->set_session_variable("secure_file_priv", param->secure_file_priv_);

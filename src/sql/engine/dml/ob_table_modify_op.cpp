@@ -670,7 +670,9 @@ ObTableModifyOp::ObTableModifyOp(ObExecContext &ctx,
     need_close_conn_(false),
     iter_end_(false),
     dml_rtctx_(eval_ctx_, ctx, *this),
+    is_error_logging_(false),
     execute_single_row_(false),
+    err_log_rt_def_(),
     dml_modify_rows_(ctx.get_allocator()),
     last_store_row_(),
     saved_session_(NULL)
@@ -1220,6 +1222,11 @@ int ObTableModifyOp::inner_get_next_row()
         LOG_WARN("write row to das failed", K(ret));
       } else if (OB_FAIL(discharge_das_write_buffer())) {
         LOG_WARN("discharge das write buffer failed", K(ret));
+      } else if (is_error_logging_ && err_log_rt_def_.first_err_ret_ != OB_SUCCESS) {
+        clear_evaluated_flag();
+        err_log_rt_def_.curr_err_log_record_num_++;
+        err_log_rt_def_.reset();
+        continue;
       } else if (MY_SPEC.is_returning_) {
         break;
       }

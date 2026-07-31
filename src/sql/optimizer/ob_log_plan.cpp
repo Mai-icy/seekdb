@@ -36,6 +36,7 @@
 #include "sql/optimizer/ob_log_values.h"
 #include "sql/optimizer/ob_log_temp_table_insert.h"
 #include "sql/optimizer/ob_log_temp_table_access.h"
+#include "sql/optimizer/ob_log_err_log.h"
 #include "sql/optimizer/ob_log_stat_collector.h"
 #include "sql/optimizer/ob_insert_log_plan.h"
 #include "sql/optimizer/ob_log_for_update.h"
@@ -106,6 +107,7 @@ ObLogPlan::ObLogPlan(ObOptimizerContext &ctx, const ObDMLStmt *stmt)
     temp_table_info_(NULL),
     const_exprs_(),
     hash_dist_info_(),
+    insert_stmt_(NULL),
     basic_table_metas_(),
     update_table_metas_(),
     selectivity_ctx_(ctx, this, stmt),
@@ -4060,6 +4062,55 @@ int ObLogPlan::init_candidate_plans(ObIArray<CandidatePlan> &candi_plans)
   return ret;
 }
 
+int ObLogPlan::candi_allocate_err_log(const ObDelUpdStmt *del_upd_stmt)
+{
+  int ret = OB_SUCCESS;
+  CandidatePlan candidate_plan;
+  ObSEArray<CandidatePlan, 4> error_log_plans;
+  for (int64_t i = 0; OB_SUCC(ret) && i < candidates_.candidate_plans_.count(); ++i) {
+    candidate_plan = candidates_.candidate_plans_.at(i);
+    if (OB_ISNULL(candidate_plan.plan_tree_)) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("get unexpected null", K(ret));
+    } else if (OB_FAIL(allocate_err_log_as_top(del_upd_stmt, candidate_plan.plan_tree_))) {
+      LOG_WARN("failed to allocate select into", K(ret));
+    } else if (OB_FAIL(error_log_plans.push_back(candidate_plan))) {
+      LOG_WARN("failed to push back candidate plan", K(ret));
+    } else { /*do nothing*/ }
+  }
+  if (OB_SUCC(ret)) {
+    if (OB_FAIL(prune_and_keep_best_plans(error_log_plans))) {
+      LOG_WARN("failed to prune and keep best plans", K(ret));
+    } else { /*do nothing*/ }
+  }
+  return ret;
+}
+
+int ObLogPlan::allocate_err_log_as_top(const ObDelUpdStmt *del_upd_stmt, ObLogicalOperator *&top)
+{
+  int ret = OB_SUCCESS;
+  ObLogErrLog *err_log_op = NULL;
+  if (OB_ISNULL(del_upd_stmt) || OB_ISNULL(top)) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("get unexpected null", K(ret), K(top), K(del_upd_stmt));
+  } else if (OB_ISNULL(err_log_op = static_cast<ObLogErrLog *>(get_log_op_factory().
+                       allocate(*this, LOG_ERR_LOG)))) {
+    ret = OB_ALLOCATE_MEMORY_FAILED;
+    LOG_WARN("failed to allocate error logging operator", K(ret));
+  } else {
+    err_log_op->set_del_upd_stmt(del_upd_stmt);
+    err_log_op->set_child(ObLogicalOperator::first_child, top);
+    if (OB_FAIL(err_log_op->extract_err_log_info())) {
+      LOG_WARN("failed to extract err log info", K(ret));
+    } else if (OB_FAIL(err_log_op->compute_property())) {
+      LOG_WARN("failed to compute property", K(ret));
+    } else {
+      top = err_log_op;
+    }
+  }
+  return ret;
+}
+
 /*
  * for expr values, old top may be null
  */
@@ -7723,6 +7774,7 @@ int ObLogPlan::candi_allocate_subplan_filter(const ObIArray<ObRawExpr*> &subquer
   int ret = OB_SUCCESS;
   ObBitSet<> initplan_idxs;
   ObBitSet<> onetime_idxs;
+  bool for_cursor_expr = false;
   ObSEArray<ObLogPlan*, 4> subplans;
   ObSEArray<ObQueryRefRawExpr *, 4> query_refs;
   ObSEArray<ObExecParamRawExpr *, 4> params;
@@ -7744,6 +7796,7 @@ int ObLogPlan::candi_allocate_subplan_filter(const ObIArray<ObRawExpr*> &subquer
                                                   onetime_exprs,
                                                   initplan_idxs,
                                                   onetime_idxs,
+                                                  for_cursor_expr,
                                                   for_on_condition))) {
     LOG_WARN("failed to generated subplan filter info", K(ret));
   } else if (NULL != filters && OB_FAIL(ObRawExprUtils::copy_and_formalize(*filters,
@@ -7765,6 +7818,7 @@ int ObLogPlan::candi_allocate_subplan_filter(const ObIArray<ObRawExpr*> &subquer
                                                     initplan_idxs,
                                                     onetime_idxs,
                                                     new_filters,
+                                                    for_cursor_expr,
                                                     is_update_set))) {
       LOG_WARN("failed to allocate subplan filter", K(ret));
     } else { /*do nothing*/ }
@@ -7779,6 +7833,7 @@ int ObLogPlan::inner_candi_allocate_subplan_filter(ObIArray<ObLogPlan*> &subplan
                                                    ObBitSet<> &initplan_idxs,
                                                    ObBitSet<> &onetime_idxs,
                                                    const ObIArray<ObRawExpr *> &filters,
+                                                   const bool for_cursor_expr,
                                                    const bool is_update_set)
 {
   int ret = OB_SUCCESS;
@@ -7791,6 +7846,7 @@ int ObLogPlan::inner_candi_allocate_subplan_filter(ObIArray<ObLogPlan*> &subplan
                                              best_dist_subplan_list))) {
     LOG_WARN("failed to prepare subplan candidate list", K(ret));
   } else if (OB_FAIL(get_valid_subplan_filter_dist_method(subplans,
+                                                          for_cursor_expr,
                                                           has_onetime,
                                                           false,
                                                           dist_methods))) {
@@ -7804,6 +7860,7 @@ int ObLogPlan::inner_candi_allocate_subplan_filter(ObIArray<ObLogPlan*> &subplan
                                                           initplan_idxs,
                                                           onetime_idxs,
                                                           filters,
+                                                          for_cursor_expr,
                                                           is_update_set,
                                                           dist_methods,
                                                           subquery_plans))) {
@@ -7812,6 +7869,7 @@ int ObLogPlan::inner_candi_allocate_subplan_filter(ObIArray<ObLogPlan*> &subplan
     LOG_TRACE("succeed to allocate subplan filter using hint", K(subquery_plans.count()), K(dist_methods));
     OPT_TRACE("success to generate subplan filter plan with hint");
   } else if (OB_FAIL(get_valid_subplan_filter_dist_method(subplans,
+                                                          for_cursor_expr,
                                                           has_onetime,
                                                           true,
                                                           dist_methods))) {
@@ -7824,6 +7882,7 @@ int ObLogPlan::inner_candi_allocate_subplan_filter(ObIArray<ObLogPlan*> &subplan
                                                           initplan_idxs,
                                                           onetime_idxs,
                                                           filters,
+                                                          for_cursor_expr,
                                                           is_update_set,
                                                           dist_methods,
                                                           subquery_plans))) {
@@ -7905,6 +7964,7 @@ int ObLogPlan::prepare_subplan_candidate_list(ObIArray<ObLogPlan*> &subplans,
 }
 
 int ObLogPlan::get_valid_subplan_filter_dist_method(ObIArray<ObLogPlan*> &subplans,
+                                                    const bool for_cursor_expr,
                                                     const bool has_onetime,
                                                     const bool ignore_hint,
                                                     int64_t &dist_methods)
@@ -7958,9 +8018,9 @@ int ObLogPlan::get_valid_subplan_filter_dist_method(ObIArray<ObLogPlan*> &subpla
     }
 
     if (OB_FAIL(ret)) {
-    } else if (contain_recursive_cte) {
+    } else if (for_cursor_expr || contain_recursive_cte) {
       dist_methods &= (DIST_BASIC_METHOD | DIST_PULL_TO_LOCAL);
-      OPT_TRACE("SPF will use basic method or pull to local due to recursive CTE");
+      OPT_TRACE("SPF will use basic method or pull to local due to cursor or recursive CTE");
     } else if (!get_optimizer_context().is_var_assign_only_in_root_stmt()
                && get_optimizer_context().has_var_assign()) {
       dist_methods &= (DIST_BASIC_METHOD | DIST_PULL_TO_LOCAL);
@@ -7978,6 +8038,7 @@ int ObLogPlan::inner_candi_allocate_subplan_filter(ObIArray<ObSEArray<CandidateP
                                                    ObBitSet<> &initplan_idxs,
                                                    ObBitSet<> &onetime_idxs,
                                                    const ObIArray<ObRawExpr *> &filters,
+                                                   const bool for_cursor_expr,
                                                    const bool is_update_set,
                                                    const int64_t dist_methods,
                                                    ObIArray<CandidatePlan> &subquery_plans)
@@ -7992,6 +8053,7 @@ int ObLogPlan::inner_candi_allocate_subplan_filter(ObIArray<ObSEArray<CandidateP
                                                             initplan_idxs,
                                                             onetime_idxs,
                                                             filters,
+                                                            for_cursor_expr,
                                                             is_update_set,
                                                             dist_methods,
                                                             subquery_plans))) {
@@ -8044,7 +8106,8 @@ int ObLogPlan::inner_candi_allocate_subplan_filter(ObIArray<ObSEArray<CandidateP
                                                     onetime_idxs,
                                                     dist_methods,
                                                     filters,
-                                                    is_update_set))) {
+                                                    is_update_set,
+                                                    for_cursor_expr))) {
               LOG_WARN("failed to create subplan filter plan", K(ret));
             } else if (NULL != curr_candidate_plan.plan_tree_
                       && OB_FAIL(subquery_plans.push_back(curr_candidate_plan))) {
@@ -8079,6 +8142,7 @@ int ObLogPlan::inner_candi_allocate_massive_subplan_filter(ObIArray<ObSEArray<Ca
                                                             ObBitSet<> &initplan_idxs,
                                                             ObBitSet<> &onetime_idxs,
                                                             const ObIArray<ObRawExpr *> &filters,
+                                                            const bool for_cursor_expr,
                                                             const bool is_update_set,
                                                             const int64_t dist_methods,
                                                             ObIArray<CandidatePlan> &subquery_plans)
@@ -8177,7 +8241,8 @@ int ObLogPlan::inner_candi_allocate_massive_subplan_filter(ObIArray<ObSEArray<Ca
                                                       onetime_idxs,
                                                       dist_methods,
                                                       filters,
-                                                      is_update_set))) {
+                                                      is_update_set,
+                                                      for_cursor_expr))) {
           LOG_WARN("failed to create subplan filter plan", K(ret));
         } else if (NULL != curr_candidate_plan.plan_tree_
                     && OB_FAIL(subquery_plans.push_back(curr_candidate_plan))) {
@@ -8203,6 +8268,7 @@ int ObLogPlan::generate_subplan_filter_info(const ObIArray<ObRawExpr *> &subquer
                                             ObIArray<ObExecParamRawExpr *> &onetime_exprs,
                                             ObBitSet<> &initplan_idxs,
                                             ObBitSet<> &onetime_idxs,
+                                            bool &for_cursor_expr,
                                             bool for_on_condition)
 {
   int ret = OB_SUCCESS;
@@ -8248,6 +8314,7 @@ int ObLogPlan::generate_subplan_filter_info(const ObIArray<ObRawExpr *> &subquer
     } else {
       ++ idx;
       info->allocated_ = true;
+      for_cursor_expr = for_cursor_expr || candi_query_refs.at(i)->is_cursor();
       if (info->init_plan_) {
         if (ObOptimizerUtil::find_item(onetime_query_refs, candi_query_refs.at(i))) {
           if (OB_FAIL(onetime_idxs.add_member(idx))) {
@@ -8267,10 +8334,12 @@ int ObLogPlan::generate_subplan_filter_info(const ObIArray<ObRawExpr *> &subquer
 int ObLogPlan::get_subplan_filter_distributed_method(ObLogicalOperator *&top,
                                                      const ObIArray<ObLogicalOperator*> &subquery_ops,
                                                      const ObIArray<ObExecParamRawExpr *> &params,
+                                                     const bool for_cursor_expr,
                                                      const bool has_onetime,
                                                      int64_t &distributed_methods)
 {
   int ret = OB_SUCCESS;
+  UNUSED(for_cursor_expr);
   bool is_child_ops_match_all = false;
   bool can_re_parallel = false;
   ObQueryCtx *query_ctx = NULL;
@@ -8411,7 +8480,8 @@ int ObLogPlan::create_subplan_filter_plan(ObLogicalOperator *&top,
                                           const ObBitSet<> &onetime_idxs,
                                           const int64_t dist_methods,
                                           const ObIArray<ObRawExpr*> &filters,
-                                          const bool is_update_set)
+                                          const bool is_update_set,
+                                          const bool for_cursor_expr)
 {
   int ret = OB_SUCCESS;
   ObExchangeInfo exch_info;
@@ -8423,6 +8493,7 @@ int ObLogPlan::create_subplan_filter_plan(ObLogicalOperator *&top,
   } else if (OB_FAIL(get_subplan_filter_distributed_method(top,
                                                            subquery_ops,
                                                            params,
+                                                           for_cursor_expr,
                                                            !onetime_idxs.is_empty(),
                                                            cur_dist_methods))) {
     LOG_WARN("failed to get subplan filter distributed method", K(ret));
@@ -10097,6 +10168,9 @@ int ObLogPlan::check_need_multi_partition_dml(const ObDMLStmt &stmt,
   if (OB_UNLIKELY(index_dml_infos.empty())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("index dml info is empty", K(ret));
+  } else if (stmt.has_instead_of_trigger()) {
+    is_multi_part_dml = true;
+    is_result_local = true;
   } else if (use_parallel_das) {
     is_multi_part_dml = true;
     is_result_local = true;
@@ -10955,7 +11029,8 @@ int ObLogPlan::collect_table_location(ObLogicalOperator *op)
         LOG_WARN("failed to add table partition info", K(ret));
       } else { /*do nothing*/ }
     } else if (log_op_def::LOG_INSERT == op->get_type()
-               && static_cast<ObLogInsert*>(op)->is_insert_select()) {
+               && static_cast<ObLogInsert*>(op)->is_insert_select()
+               && !static_cast<ObLogDelUpd*>(op)->has_instead_of_trigger()) {
       ObLogInsert *insert_op = static_cast<ObLogInsert*>(op);
       ObTablePartitionInfo *table_partition_info = insert_op->get_table_partition_info();
       if (OB_ISNULL(table_partition_info)) {
@@ -14477,6 +14552,19 @@ int ObLogPlan::remove_duplicate_constraints()
         LOG_WARN("failed to remove a element from array", K(ret));
       }
     }
+  }
+  return ret;
+}
+
+int ObLogPlan::get_enable_rich_vector_format(bool &enable)
+{
+  int ret = OB_SUCCESS;
+  ObSQLSessionInfo *session_info = nullptr;
+  if (OB_ISNULL(session_info = get_optimizer_context().get_session_info())) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("session is null", K(ret));
+  } else {
+    enable = session_info->use_rich_format();
   }
   return ret;
 }

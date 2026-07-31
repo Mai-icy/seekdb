@@ -692,6 +692,7 @@ int ObPrepareAlterTableArgParam::init(const uint64_t session_id,
                                       const ObString &orig_database_name,
                                       const ObString &target_database_name,
                                       const ObTimeZoneInfoWrap &tz_info_wrap,
+                                      const ObString *nls_formats,
                                       const bool foreign_key_checks)
 {
   int ret = OB_SUCCESS;
@@ -709,11 +710,39 @@ int ObPrepareAlterTableArgParam::init(const uint64_t session_id,
     // do nothinh
   } else if (OB_FAIL(tz_info_wrap_.deep_copy(tz_info_wrap))) {
     LOG_WARN("failed to deep_copy tz info wrap", K(ret), "tz_info_wrap", tz_info_wrap);
+  } else if (OB_FAIL(set_nls_formats(nls_formats))) {
+    LOG_WARN("failed to set nls formats", K(ret));
   } else {
     foreign_key_checks_ = foreign_key_checks;
   }
   return ret;
 }
+int ObPrepareAlterTableArgParam::set_nls_formats(const common::ObString *nls_formats)
+{
+  int ret = OB_SUCCESS;
+  if (OB_ISNULL(nls_formats)) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("nls_formats is nullptr", K(ret));
+  } else {
+    char *tmp_ptr[ObNLSFormatEnum::NLS_MAX] = {};
+    for (int64_t i = 0; OB_SUCC(ret) && i < ObNLSFormatEnum::NLS_MAX; ++i) {
+      if (OB_ISNULL(tmp_ptr[i] = (char *)allocator_.alloc(nls_formats[i].length()))) {
+        ret = OB_ALLOCATE_MEMORY_FAILED;
+        SHARE_LOG(ERROR, "failed to alloc memory!", "size", nls_formats[i].length(), K(ret));
+      } else {
+        MEMCPY(tmp_ptr[i], nls_formats[i].ptr(), nls_formats[i].length());
+        nls_formats_[i].assign_ptr(tmp_ptr[i], nls_formats[i].length());
+      }
+    }
+    if (OB_FAIL(ret)) {
+      for (int64_t i = 0; i < ObNLSFormatEnum::NLS_MAX; ++i) {
+        allocator_.free(tmp_ptr[i]);
+      }
+    }
+  }
+  return ret;
+}
+
 int ObDDLScheduler::DDLScanTask::init()
 {
   int ret = OB_SUCCESS;
@@ -1498,6 +1527,8 @@ int ObDDLScheduler::prepare_alter_table_arg(const ObPrepareAlterTableArgParam &p
     // do nothing
   } else if (OB_FAIL(alter_table_arg.tz_info_wrap_.deep_copy(param.tz_info_wrap_))) {
     LOG_WARN("failed to deep_copy tz info wrap", K(ret), "tz_info_wrap", param.tz_info_wrap_);
+  } else if (OB_FAIL(alter_table_arg.set_nls_formats(param.nls_formats_))) {
+    LOG_WARN("failed to set_nls_formats", K(ret));
   } else if (OB_FAIL(alter_table_schema->assign(*target_table_schema))) {
     LOG_WARN("failed to assign alter table schema", K(ret));
   } else if (OB_FAIL(alter_table_schema->set_origin_table_name(param.orig_table_name_))) {
@@ -1729,6 +1760,7 @@ int ObDDLScheduler::start_redef_table(const obcall::ObStartRedefTableArg &arg, o
                              orig_database_schema->get_database_name_str(),
                              orig_database_schema->get_database_name_str(),
                              arg.tz_info_wrap_,
+                             arg.nls_formats_,
                              arg.foreign_key_checks_))) {
         LOG_WARN("param init failed", K(ret));
       } else if (OB_FAIL(prepare_alter_table_arg(param, target_table_schema, alter_table_arg))) {

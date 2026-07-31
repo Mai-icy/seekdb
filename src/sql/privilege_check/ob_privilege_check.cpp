@@ -705,6 +705,15 @@ int get_drop_outline_stmt_need_privs(
   return ret;
 }
 
+int get_create_synonym_priv(
+    const ObSessionPrivInfo &session_priv,
+    const ObStmt *basic_stmt,
+    ObIArray<ObNeedPriv> &need_privs)
+{
+  int ret = OB_SUCCESS;
+  return ret;
+}
+
 int get_create_tablespace_priv(
     const ObSessionPrivInfo &session_priv,
     const ObStmt *basic_stmt,
@@ -726,6 +735,15 @@ int get_create_tablespace_priv(
     need_priv.priv_level_ = OB_PRIV_USER_LEVEL;
     ADD_NEED_PRIV(need_priv);
   }
+  return ret;
+}
+
+int get_drop_synonym_priv(
+    const ObSessionPrivInfo &session_priv,
+    const ObStmt *basic_stmt,
+    ObIArray<ObNeedPriv> &need_privs)
+{
+  int ret = OB_SUCCESS;
   return ret;
 }
 

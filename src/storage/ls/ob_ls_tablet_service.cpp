@@ -3098,6 +3098,8 @@ int ObLSTabletService::check_old_row_legitimacy(
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("old row is invalid", K(ret), K(old_row), K(data_table.get_rowkey_column_num()), KP(column_ids_ptr));
   } else if (is_need_check_old_row) {
+    //the vertical partition is no longer maintained,
+    //and the defense check skips the vertical partition function
     ObArenaAllocator scan_allocator((common::ObMemAttr(ObModIds::OB_TABLE_SCAN_ITER)));
     ObRowGetter storage_row_getter(scan_allocator, *data_tablet_handle.get_obj());
     ObDatumRow *storage_old_row = nullptr;

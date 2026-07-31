@@ -296,6 +296,7 @@ private:
   int finish_bootstrap();
   int set_config_after_bootstrap_();
 
+  int precheck_interval_part(const obcall::ObAlterTableArg &arg);
 
   int parallel_ddl_pre_check_();
   int check_tx_share_memory_limit_(obcall::ObAdminSetConfigItem &item);

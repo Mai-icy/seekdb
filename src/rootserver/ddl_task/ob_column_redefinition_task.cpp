@@ -260,6 +260,10 @@ int ObColumnRedefinitionTask::copy_table_indexes()
             ObTraceIdGuard trace_id_guard(get_trace_id());
             ATOMIC_INC(&sub_task_trace_id_);
             ObDDLEventInfo ddl_event_info(sub_task_trace_id_);
+            // this create index arg is not valid, only has nls format(but domain index need valid create index arg)
+            create_index_arg.nls_date_format_ = alter_table_arg_.nls_formats_[0];
+            create_index_arg.nls_timestamp_format_ = alter_table_arg_.nls_formats_[1];
+            create_index_arg.nls_timestamp_tz_format_ = alter_table_arg_.nls_formats_[2];
             if (OB_FAIL(new_schema_guard.get_table_schema( index_ids.at(i), index_schema))) {
               LOG_WARN("get table schema failed", K(ret));
             } else if (OB_ISNULL(index_schema)) {

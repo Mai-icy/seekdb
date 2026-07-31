@@ -132,6 +132,7 @@ public:
     sql_mode_(0),
     tz_info_wrap_(),
     allocator_(lib::ObLabel("PrepAlterTblArg")),
+    nls_formats_{},
     foreign_key_checks_(true)
   {}
   ~ObPrepareAlterTableArgParam() = default;
@@ -142,6 +143,7 @@ public:
           const ObString &orig_database_name,
           const ObString &target_database_name,
           const ObTimeZoneInfoWrap &tz_info_wrap,
+          const ObString *nls_formats,
           const bool foreign_key_checks);
   bool is_valid() const
   {
@@ -149,6 +151,7 @@ public:
             !orig_database_name_.empty() &&
             !target_database_name_.empty();
   }
+  int set_nls_formats(const common::ObString *nls_formats);
   TO_STRING_KV(K_(session_id),
                 K_(sql_mode),
                 K_(ddl_stmt_str),
@@ -156,6 +159,7 @@ public:
                 K_(orig_database_name),
                 K_(target_database_name),
                 K_(tz_info_wrap),
+                "nls_formats", common::ObArrayWrap<ObString>(nls_formats_, common::ObNLSFormatEnum::NLS_MAX),
                 K_(foreign_key_checks));
 public:
   uint64_t session_id_;
@@ -166,6 +170,7 @@ public:
   common::ObString target_database_name_;
   common::ObTimeZoneInfoWrap tz_info_wrap_;
   common::ObArenaAllocator allocator_;
+  common::ObString nls_formats_[common::ObNLSFormatEnum::NLS_MAX];
   bool foreign_key_checks_;
 };
 

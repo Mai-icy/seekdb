@@ -34,4 +34,3 @@ disconnect obsys_wait_merge;
 connection default;
 --enable_query_log
 --enable_result_log
-

@@ -116,6 +116,7 @@ private:
 
   int set_agg_min_max_result_type(ObAggFunRawExpr &expr, ObExprResType &result_type,
                                   bool &need_add_cast);
+  int set_agg_regr_result_type(ObAggFunRawExpr &expr, ObExprResType &result_type);  
   int set_array_agg_result_type(ObAggFunRawExpr &expr, ObExprResType& result_type);
 
   // helper functions for add_implicit_cast
@@ -138,10 +139,12 @@ private:
                                               const ObExprResType &input_type,
                                               const ObCastMode &cm);
   int check_group_aggr_param(ObAggFunRawExpr &expr);
+  int check_group_rank_aggr_param(ObAggFunRawExpr &expr);
   int check_median_percentile_param(ObAggFunRawExpr &expr);
   int add_median_percentile_implicit_cast(ObAggFunRawExpr &expr,
                                           const ObCastMode& cast_mode,
                                           const bool keep_type);
+  int add_group_aggr_implicit_cast(ObAggFunRawExpr &expr, const ObCastMode& cast_mode);
   int adjust_cast_as_signed_unsigned(ObSysFunRawExpr &expr);
 
   bool ignore_scale_adjust_for_decimal_int(const ObItemType expr_type);

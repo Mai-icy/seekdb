@@ -188,7 +188,6 @@ int64_t ObTriggerInfo::get_convert_size() const
 
 
 
-// moved definition to sql/resolver/ddl/ob_trigger_resolver.cpp(parser vocabulary)
 
 
 
@@ -196,6 +195,17 @@ int64_t ObTriggerInfo::get_convert_size() const
 
 
 
+
+
+int ObTriggerInfo::fill_compound_declare_body(const char *body_fmt,
+                                              const common::ObString &body_declare,
+                                              char *buf, int64_t buf_len, int64_t &pos)
+{
+  int ret = OB_SUCCESS;
+  OV (OB_NOT_NULL(body_fmt) && OB_NOT_NULL(buf));
+  OZ (BUF_PRINTF(body_fmt, body_declare.length(), body_declare.ptr()));
+  return ret;
+}
 
 
 
@@ -216,12 +226,18 @@ void ObTriggerInfo::TriggerContext::dispatch_decalare_execute(const ObTriggerInf
                                                               ObString *&simple_execute,
                                                               ObString *&tg_body)
 {
-  if (trigger_info.has_before_row_point()) {
+  if (trigger_info.has_before_stmt_point() || trigger_info.is_system_type()) {
+    simple_declare = &before_stmt_declare_;
+    simple_execute = &before_stmt_execute_;
+  } else if (trigger_info.has_before_row_point()) {
     simple_declare = &before_row_declare_;
     simple_execute = &before_row_execute_;
   } else if (trigger_info.has_after_row_point()) {
     simple_declare = &after_row_declare_;
     simple_execute = &after_row_execute_;
+  } else if (trigger_info.has_after_stmt_point()) {
+    simple_declare = &after_stmt_declare_;
+    simple_execute = &after_stmt_execute_;
   }
   tg_body = &trigger_body_;
 }

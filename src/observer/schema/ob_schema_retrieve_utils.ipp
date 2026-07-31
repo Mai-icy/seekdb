@@ -322,7 +322,20 @@ template<typename TABLE_SCHEMA>
 int ObSchemaRetrieveHelperBase<TABLE_SCHEMA, ObPartition>::add_schema(TABLE_SCHEMA &table_schema, ObPartition &p)
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL(table_schema.add_partition(p))) {
+  if (OB_SUCC(ret) && table_schema.is_interval_part()) {
+    const ObRowkey &transition_point = table_schema.get_transition_point();
+    const ObRowkey &high_bound_val = p.get_high_bound_val();
+    if (high_bound_val > transition_point) {
+      const ObRowkey &interval_range = table_schema.get_interval_range();
+      if (OB_FAIL(ObPartitionUtils::set_low_bound_val_by_interval_range_by_innersql(
+          p, interval_range))) {
+        SHARE_SCHEMA_LOG(WARN, "fail to set_low_bound_val_by_interval_range", K(interval_range),
+            K(p), K(ret));
+      }
+    }
+  }
+
+  if (OB_SUCC(ret) && OB_FAIL(table_schema.add_partition(p))) {
     SHARE_SCHEMA_LOG(WARN, "fail to add_partition", K(table_schema), K(p));
   }
   return ret;
@@ -989,6 +1002,24 @@ int ObSchemaRetrieveUtils::fill_table_schema(const bool check_deleted,
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, max_dependency_version,
     table_schema, int64_t, true, ignore_column_error, common::OB_INVALID_VERSION);
 
+    if (OB_SUCC(ret) && table_schema.is_interval_part()) {
+      ObString btransition_point;
+      ObString binterval_range;
+      ObString tmp_str("");
+      EXTRACT_VARCHAR_FIELD_MYSQL_WITH_DEFAULT_VALUE(
+        result, "b_transition_point", btransition_point, true, ignore_column_error, tmp_str);
+
+      EXTRACT_VARCHAR_FIELD_MYSQL_WITH_DEFAULT_VALUE(
+        result, "b_interval_range", binterval_range, true, ignore_column_error, tmp_str);
+
+      if (OB_FAIL(ret)) {
+      } else if (OB_FAIL(table_schema.set_transition_point_with_hex_str(btransition_point))) {
+        SHARE_SCHEMA_LOG(WARN, "Failed to set transition point to partition", K(ret));
+      } else if (OB_FAIL(table_schema.set_interval_range_with_hex_str(binterval_range))) {
+        SHARE_SCHEMA_LOG(WARN, "Failed to set interval range to partition", K(ret));
+      }
+    }
+
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, tablet_id, table_schema, uint64_t,
         true, ignore_column_error, ObTabletID::INVALID_TABLET_ID);
     ignore_column_error = true;
@@ -1252,6 +1283,21 @@ int ObSchemaRetrieveUtils::fill_user_schema(T &result,
           default_last_changed, tz_info_wrap.get_time_zone_info());
     user_info.set_password_last_changed(password_last_changed);
 
+    if (OB_SUCC(ret)) {
+       int64_t int_value = 0;
+       if (OB_SUCCESS == (ret = result.get_int("priv_create_synonym", int_value))) {
+       } else if (OB_ERR_NULL_VALUE == ret) {
+         ret = OB_SUCCESS;
+       }
+       if (OB_SUCC(ret)) {
+         if (int_value) {
+            user_info.set_priv(OB_PRIV_CREATE_SYNONYM);
+         }
+         SQL_LOG(DEBUG, "succ to fill user schema", K(user_info));
+       } else {
+         SQL_LOG(WARN, "fail to retrieve priv_create_synonym", K(ret));
+       }
+    }
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(
         result, max_connections, user_info, uint64_t, true,
         false, 0);
@@ -2128,6 +2174,8 @@ int ObSchemaRetrieveUtils::retrieve_routine_param_schema(T &result,
   return ret;
 }
 
+RETRIEVE_SCHEMA_FUNC_DEFINE(synonym);
+
 template<typename T, typename S>
 int ObSchemaRetrieveUtils::retrieve_db_priv_schema(T &result,
     ObIArray<S> &db_priv_array)
@@ -2661,6 +2709,23 @@ int ObSchemaRetrieveUtils::fill_table_schema(const bool check_deleted,
       table_schema, int64_t, true, ignore_column_error, common::OB_INVALID_VERSION);
     }
 
+    if (OB_SUCC(ret) && table_schema.is_interval_part()) {
+      ObString btransition_point;
+      ObString binterval_range;
+      ObString tmp_str("");
+      EXTRACT_VARCHAR_FIELD_MYSQL_WITH_DEFAULT_VALUE(
+        result, "b_transition_point", btransition_point, true, ignore_column_error, tmp_str);
+
+      EXTRACT_VARCHAR_FIELD_MYSQL_WITH_DEFAULT_VALUE(
+        result, "b_interval_range", binterval_range, true, ignore_column_error, tmp_str);
+
+      if (OB_FAIL(ret)) {
+      } else if (OB_FAIL(table_schema.set_transition_point_with_hex_str(btransition_point))) {
+        SHARE_SCHEMA_LOG(WARN, "Failed to set transition point to partition", K(ret));
+      } else if (OB_FAIL(table_schema.set_interval_range_with_hex_str(binterval_range))) {
+        SHARE_SCHEMA_LOG(WARN, "Failed to set interval range to partition", K(ret));
+      }
+    }
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, tablet_id, table_schema, uint64_t, true, ignore_column_error, 0);
     ignore_column_error = true;
     EXTRACT_INT_FIELD_TO_CLASS_MYSQL_WITH_DEFAULT_VALUE(result, object_status, table_schema, int64_t, true, ignore_column_error, ObObjectStatus::VALID);
@@ -2984,6 +3049,7 @@ int ObSchemaRetrieveUtils::retrieve_aux_tables(T &result,
     EXTRACT_INT_FIELD_MYSQL(result, "table_type", table_type, ObTableType);
 
     if (USER_INDEX == table_type
+        || AUX_VERTIAL_PARTITION_TABLE == table_type
         || AUX_LOB_META == table_type
         || AUX_LOB_PIECE == table_type) {
 

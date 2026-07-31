@@ -31,6 +31,10 @@
 #include "pl/pl_cache/ob_pl_cache_mgr.h"
 #include "sql/plan_cache/ob_ps_cache.h"
 
+#include "sql/engine/cmd/ob_timezone_importer.h"
+#include "sql/engine/cmd/ob_srs_importer.h"
+#include "share/ob_internal_table_change_notifier.h"
+
 namespace oceanbase
 {
 using namespace common;

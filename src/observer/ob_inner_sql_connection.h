@@ -176,6 +176,7 @@ public:
 
   virtual int set_ddl_info(const void *ddl_info);
   virtual int set_tz_info_wrap(const ObTimeZoneInfoWrap &tz_info_wrap);
+  virtual void set_nls_formats(const ObString *nls_formats);
   virtual void set_is_load_data_exec(bool v);
   virtual void set_ob_enable_pl_cache(bool v) override;
   bool is_nested_conn();
@@ -295,6 +296,7 @@ private:
                   bool is_prepare_protocol = false,
                   bool is_prepare_stage = false,
                   bool is_dynamic_sql = false,
+                  bool is_dbms_sql = false,
                   bool is_cursor = false);
   int process_retry(ObInnerSQLResult &res,
                     int do_ret,

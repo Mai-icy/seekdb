@@ -375,6 +375,8 @@ if(WIN32)
   # oblib_add_extra_objects creates separate .lib files not merged into oblib.lib on Windows
   target_link_libraries(seekdb PRIVATE
     ${CMAKE_BINARY_DIR}/deps/oblib/src/lib/compress/zstd_1_3_8/zstd_1_3_8_objs.lib)
+  # Itanium ABI _Unwind_* stubs (Windows uses SEH; PL unwinding non-functional)
+  target_sources(seekdb PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32_unwind_stubs.c)
 endif()
 target_link_libraries(seekdb
   PRIVATE

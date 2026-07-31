@@ -78,7 +78,7 @@ public:
   bool is_last_exec_succ() const { return stat_.is_last_exec_succ_; }
   const ObString &get_constructed_sql() const { return stat_.constructed_sql_; }
   bool with_rows() const
-  { return ObStmt::is_select_stmt(stmt_type_) || need_drive_dml_query_; }
+  { return ObStmt::is_select_stmt(stmt_type_) || is_returning() || need_drive_dml_query_; }
   //user var
   bool is_contains_assignment() const {return is_contains_assignment_;}
   void set_contains_assignment(bool v) {is_contains_assignment_ = v;}
@@ -190,6 +190,11 @@ public:
   {
     return param_columns_;
   }
+  int set_returning_param_fields(const common::ParamsFieldArray &fields);
+  inline const common::ParamsFieldArray &get_returning_param_fields() const
+  {
+    return returning_param_columns_;
+  }
   void set_literal_stmt_type(stmt::StmtType literal_stmt_type) { literal_stmt_type_ = literal_stmt_type; }
   stmt::StmtType get_literal_stmt_type() const { return literal_stmt_type_; }
   int set_autoinc_params(const common::ObIArray<share::AutoincParam> &autoinc_params);
@@ -228,6 +233,9 @@ public:
   void set_session_id(uint64_t v) { session_id_ = v; }
   uint64_t get_session_id() const { return session_id_; }
   bool contains_temp_table() const {return 0 != session_id_; }
+  void set_returning(bool is_returning) { is_returning_ = is_returning; }
+  bool is_returning() const { return is_returning_; }
+
   bool use_das() const { return !das_table_locations_.empty(); }
   int set_table_locations(const ObIArray<ObTablePartitionInfo *> &info,
                           share::schema::ObSchemaGetterGuard &schema_guard);
@@ -256,6 +264,8 @@ public:
   inline const PhyRowParamMap &get_row_param_map() const { return row_param_map_; }
   inline PhyRowParamMap &get_row_param_map() { return row_param_map_; }
   int init_params_info_str();
+  inline void set_first_array_index(int64_t first_array_index) { first_array_index_ = first_array_index; }
+  inline int64_t get_first_array_index() const { return first_array_index_; }
   inline void set_is_batched_multi_stmt(bool is_batched_multi_stmt) {
     is_batched_multi_stmt_ = is_batched_multi_stmt;}
   inline bool get_is_batched_multi_stmt() const { return is_batched_multi_stmt_; }
@@ -277,6 +287,8 @@ public:
   inline int64_t get_ddl_execution_id() const { return ddl_execution_id_; }
   inline void set_ddl_task_id(const int64_t ddl_task_id) { ddl_task_id_ = ddl_task_id; }
   inline int64_t get_ddl_task_id() const { return ddl_task_id_; }
+  inline void set_use_rich_format(const bool v) { use_rich_format_ = v; }
+  inline bool get_use_rich_format() const { return use_rich_format_; }
   void set_record_plan_info(bool v) { need_record_plan_info_ = v; }
   bool need_record_plan_info() const { return need_record_plan_info_; }
   bool try_record_plan_info();
@@ -350,6 +362,8 @@ public:
   bool contain_pl_udf_or_trigger() const { return contain_pl_udf_or_trigger_; }
   void set_is_packed(const bool is_packed) { is_packed_ = is_packed; }
   bool is_packed() const { return is_packed_; }
+  void set_has_instead_of_trigger(bool v) { has_instead_of_trigger_ = v;}
+  bool has_instead_of_trigger() const { return has_instead_of_trigger_; }
   virtual int update_cache_obj_stat(ObILibCacheCtx &ctx);
   void calc_whether_need_trans();
   inline bool is_disable_auto_memory_mgr() const { return disable_auto_memory_mgr_; }
@@ -410,6 +424,7 @@ private:
   //for fill_result_set
   common::ColumnsFieldArray field_columns_;
   common::ParamsFieldArray param_columns_;
+  common::ParamsFieldArray returning_param_columns_;
   common::ObFixedArray<share::AutoincParam, common::ObIAllocator> autoinc_params_; //auto-increment param
   share::ObTabletAutoincParam tablet_autoinc_param_;
   // for privilege check
@@ -482,6 +497,7 @@ public:
   ExprFixedArray var_init_exprs_;
   sql::ObExecutedSqlStatRecord sql_stat_record_value_;
 private:
+  bool is_returning_; // whether returning is set
   // Mark whether the plan is a late materialization plan
   bool is_late_materialized_;
   // Whether this is INSERT INTO ... VALUES (...).
@@ -489,6 +505,7 @@ private:
   // column field array has parameterized column
   // If there are parameterized columns, ob_result_set must deep copy column_fields_ each time, and construct the column using a template
   bool contain_paramed_column_field_;
+  int64_t first_array_index_;
   bool need_consistent_snapshot_;
   bool is_batched_multi_stmt_;
 #ifndef NDEBUG
@@ -510,9 +527,11 @@ public:
   int64_t ddl_task_id_;
   //parallel encoding of output_expr in advance to speed up packet response
   bool is_packed_;
-  bool reserved_advanced_trigger_;
+  bool has_instead_of_trigger_; // mask if has instead of trigger on view
   bool need_record_plan_info_;
   ObLogicalPlanRawData logical_plan_;
+  // for detector manager
+  bool use_rich_format_;
   ObSubSchemaCtx subschema_ctx_;
   int64_t das_dop_;
   bool disable_auto_memory_mgr_;

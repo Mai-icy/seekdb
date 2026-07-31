@@ -45,6 +45,7 @@ namespace common
 #define CM_ZERO_FILL                     (1ULL << 4)
 #define CM_FORMAT_NUMBER_WITH_LIMIT      (1ULL << 5)
 #define CM_CHARSET_CONVERT_IGNORE_ERR    (1ULL << 6)
+#define CM_FORCE_USE_STANDARD_NLS_FORMAT (1ULL << 7)
 #define CM_STRICT_MODE                   (1ULL << 8)
 #define CM_SET_MIN_IF_OVERFLOW           (1ULL << 9)
 #define CM_ERROR_ON_SCALE_OVER           (1ULL << 10)
@@ -118,6 +119,8 @@ typedef uint64_t ObCastMode;
   ((CM_FORMAT_NUMBER_WITH_LIMIT & (mode)) != 0)
 #define CM_IS_IGNORE_CHARSET_CONVERT_ERR(mode)    \
   ((CM_CHARSET_CONVERT_IGNORE_ERR & (mode)) != 0)
+#define CM_IS_FORCE_USE_STANDARD_NLS_FORMAT(mode) \
+  ((CM_FORCE_USE_STANDARD_NLS_FORMAT & (mode)) != 0)
 #define CM_IS_SET_MIN_IF_OVERFLOW(mode)       ((CM_SET_MIN_IF_OVERFLOW & (mode)) != 0)
 #define CM_IS_ERROR_ON_SCALE_OVER(mode)       ((CM_ERROR_ON_SCALE_OVER & (mode)) != 0)
 #define CM_IS_STRICT_JSON(mode)               ((CM_STRICT_JSON & (mode)) != 0)

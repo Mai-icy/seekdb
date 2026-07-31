@@ -672,6 +672,7 @@ bool ObOptParamHint::is_param_val_valid(const OptParamType param_type, const ObO
     case USE_PART_SORT_MGB:
     case USE_DEFAULT_OPT_STAT:
     case ENABLE_IN_RANGE_OPTIMIZATION:
+    case ENABLE_RICH_VECTOR_FORMAT:
     case _ENABLE_STORAGE_CARDINALITY_ESTIMATION:
     case PRESERVE_ORDER_FOR_PAGINATION:
     case ENABLE_DAS_KEEP_ORDER:
@@ -2886,6 +2887,9 @@ void ObTableInHint::set_table(const TableItem& table)
   db_name_.reset(); // for alias table or generated table, db_name_ should be empty
   if (!table.alias_name_.empty()) {
     table_name_.assign_ptr(table.alias_name_.ptr(), table.alias_name_.length());
+  } else if (table.is_synonym()) {
+    table_name_.assign_ptr(table.synonym_name_.ptr(), table.synonym_name_.length());
+    db_name_.assign_ptr(table.synonym_db_name_.ptr(), table.synonym_db_name_.length());
   } else {
     table_name_.assign_ptr(table.table_name_.ptr(), table.table_name_.length());
     if (table.is_basic_table()) {

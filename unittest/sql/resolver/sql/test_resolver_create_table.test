@@ -392,6 +392,10 @@ create table t_bit_1(c1 bit);
 create table t_bit_2(c1 bit(1));
 create table t_bit_3(c1 bit(63));
 
+####################### test for synonym ###############################
+create synonym stbit for t_bit_1;
+drop synonym stbit;
+
 #constraint for primary key and unique key
 create table wang_01(c1 int, c2 varchar(30), primary key(c2));
 create table wang_02(c1 int, c2 varchar(30), constraint primary key(c2));

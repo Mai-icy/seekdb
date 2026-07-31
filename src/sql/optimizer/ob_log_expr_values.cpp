@@ -428,6 +428,31 @@ int ObLogExprValues::construct_array_binding_values()
   return ret;
 }
 
+int ObLogExprValues::extract_err_log_info()
+{
+  int ret = OB_SUCCESS;
+  if (OB_ISNULL(get_stmt())) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("get unexpected null", K(ret));
+  } else if (!get_stmt()->is_insert_stmt()) {
+    // do nothing
+  } else if (OB_FAIL(ObLogDelUpd::generate_errlog_info(
+                       static_cast<const ObDelUpdStmt&>(*get_stmt()),
+                       get_err_log_define())))  {
+    LOG_WARN("failed to generate errlog info", K(ret));
+  }
+  for (int64_t i = 0; OB_SUCC(ret) && i < get_err_log_define().err_log_value_exprs_.count(); ++i) {
+    ObRawExpr *&expr = get_err_log_define().err_log_value_exprs_.at(i);
+    if (OB_ISNULL(expr)) {
+      ret = OB_ERR_UNEXPECTED;
+      LOG_WARN("expr is null", K(ret));
+    } else if (expr->get_expr_type() == T_FUN_COLUMN_CONV) {
+      expr = expr->get_param_expr(ObExprColumnConv::VALUE_EXPR);
+    }
+  }
+  return ret;
+}
+
 int ObLogExprValues::get_plan_item_info(PlanText &plan_text, 
                                         ObSqlPlanItem &plan_item)
 {

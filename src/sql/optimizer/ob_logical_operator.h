@@ -471,6 +471,7 @@ struct ObExchangeInfo
     is_wf_hybrid_(false),
     wf_hybrid_aggr_status_expr_(NULL),
     wf_hybrid_pby_exprs_cnt_array_(),
+    may_add_interval_part_(MayAddIntervalPart::NO),
     sample_type_(NOT_INIT_SAMPLE_TYPE),
     parallel_(ObGlobalHint::UNSET_PARALLEL)
   {
@@ -527,6 +528,7 @@ struct ObExchangeInfo
   ObRawExpr *wf_hybrid_aggr_status_expr_;
   // pby exprs cnt of every wf for wf hybrid dist
   common::ObSEArray<int64_t, 4> wf_hybrid_pby_exprs_cnt_array_;
+  MayAddIntervalPart may_add_interval_part_;
   // sample type for range distribution or partition range distribution
   ObPxSampleType sample_type_;
   int64_t parallel_;
@@ -550,6 +552,7 @@ struct ObExchangeInfo
                K_(need_null_aware_shuffle),
                K_(is_wf_hybrid),
                K_(wf_hybrid_pby_exprs_cnt_array),
+               K_(may_add_interval_part),
                K_(sample_type),
                K_(parallel));
 private:
@@ -737,6 +740,27 @@ struct ObBatchExecParamCtx
   };
   common::ObSEArray<int64_t, 8, common::ModulePageAllocator, true> params_idx_;
   common::ObSEArray<ExecParam, 8, common::ModulePageAllocator, true> exec_params_;
+};
+
+struct ObErrLogDefine
+{
+  ObErrLogDefine() :
+    is_err_log_(false),
+    err_log_database_name_(),
+    err_log_table_name_(),
+    reject_limit_(0),
+    err_log_value_exprs_(),
+    err_log_column_names_()
+  {
+  }
+  bool is_err_log_;
+  ObString err_log_database_name_;
+  ObString err_log_table_name_; // now not support insert all
+  uint64_t reject_limit_;
+  // error logging the value expr of the column to be inserted
+  ObSEArray<ObRawExpr*, 4, common::ModulePageAllocator, true> err_log_value_exprs_;
+  //  the name of error logging table column which will be inserted
+  ObSEArray<ObString, 4, common::ModulePageAllocator, true> err_log_column_names_;
 };
 
 class Path;

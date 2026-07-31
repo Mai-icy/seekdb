@@ -28,6 +28,7 @@ ob_set_subtarget(ob_rootserver common
   ob_tablet_drop.cpp
   ob_table_creator.cpp
   ob_thread_idling.cpp
+  ob_vertical_partition_builder.cpp
   ob_server_thread_helper.cpp
   ob_system_admin_util.cpp
   ob_lob_piece_builder.cpp

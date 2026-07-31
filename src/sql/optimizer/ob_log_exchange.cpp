@@ -1014,6 +1014,18 @@ int ObLogExchange::is_my_fixed_expr(const ObRawExpr *expr, bool &is_fixed)
   return OB_SUCCESS;
 }
 
+bool ObLogExchange::support_rich_format_vectorize() const {
+  bool res = !(dist_method_ == ObPQDistributeMethod::SM_BROADCAST);
+  int tmp_ret = abs(OB_E(EventTable::EN_OFS_IO_SUBMIT) OB_SUCCESS);
+  if (tmp_ret & (1 << dist_method_)) {
+    res = false;
+  }
+  // ordered: 16
+  // ms: 17
+  LOG_TRACE("[VEC2.0 PX] support_rich_format_vectorize", K(res), K(dist_method_), K(tmp_ret));
+  return res;
+}
+
 int ObLogExchange::open_px_resource_analyze(OPEN_PX_RESOURCE_ANALYZE_DECLARE_ARG)
 {
   int ret = OB_SUCCESS;

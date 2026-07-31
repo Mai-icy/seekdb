@@ -552,6 +552,12 @@ enum OpParallelRule
 
 typedef common::ObDmlEventType ObDmlEventType;
 
+enum MayAddIntervalPart {
+  NO, // do nothing, just set part id to 0
+  YES, // add an interval partition, and set err code to force retry
+  PART_CHANGE_ERR, // set err code, make query stop and report and error msg to client
+};
+
 enum ObIDPAbortType
 {
   IDP_DEFAULT_ABORT = -1,

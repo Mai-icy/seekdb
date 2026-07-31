@@ -1747,9 +1747,13 @@ int ObShowResolver::resolve_show_from_table(const ParseNode *from_table_node,
         ret = OB_ERR_NO_DB_SELECTED;
         LOG_WARN("no database selected");
       } else {      // get from table clause in database
+        ObString synonym_name;
+        ObString synonym_db_name;
         if (OB_FAIL(resolve_table_relation_factor_normal(from_table_node,
                                                          show_database_id,
                                                          show_table_name,
+                                                         synonym_name,
+                                                         synonym_db_name,
                                                          show_database_name))) {
           if (OB_TABLE_NOT_EXIST == ret) {
             if (is_information_schema_database_id(show_database_id)) {
@@ -1988,7 +1992,7 @@ int ObShowResolver::resolve_show_from_trigger(const ParseNode *from_tg_node,
         real_id, show_database_name, show_tg_name);
     OV (OB_NOT_NULL(tg_info), OB_ERR_TRIGGER_NOT_EXIST);
     OX (show_tg_id = tg_info->get_trigger_id());
-    if (OB_SUCC(ret)) {
+    if (OB_SUCC(ret) && !tg_info->is_system_type()) {
       OZ (schema_checker_->get_table_schema( tg_info->get_base_object_id(), table));
       CK (OB_NOT_NULL(table));
       OX (show_table_name = table->get_table_name());

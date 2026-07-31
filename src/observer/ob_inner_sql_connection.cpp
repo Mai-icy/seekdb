@@ -292,6 +292,11 @@ int ObInnerSQLConnection::set_ddl_info(const void *ddl_info)
   return ret;
 }
 
+void ObInnerSQLConnection::set_nls_formats(const ObString *nls_formats)
+{
+  get_session().set_nls_formats(nls_formats);
+}
+
 int ObInnerSQLConnection::set_tz_info_wrap(const ObTimeZoneInfoWrap &tz_info_wrap)
 {
   int ret = OB_SUCCESS;
@@ -364,6 +369,7 @@ int ObInnerSQLConnection::init_session_info(
             //TODO shengle ?
             session->get_ddl_info().set_is_ddl(is_ddl);
             session->reset_timezone();
+            session->init_use_rich_format();
           }
         }
       }
@@ -419,6 +425,7 @@ int ObInnerSQLConnection::init_result(ObInnerSQLResult &res,
                                       bool is_prepare_protocol,
                                       bool is_prepare_stage,
                                       bool is_dynamic_sql,
+                                      bool is_dbms_sql,
                                       bool is_cursor)
 {
   int ret = OB_SUCCESS;
@@ -435,6 +442,7 @@ int ObInnerSQLConnection::init_result(ObInnerSQLResult &res,
   res.sql_ctx().is_prepare_protocol_ = is_prepare_protocol;
   res.sql_ctx().is_prepare_stage_ = is_prepare_stage;
   res.sql_ctx().is_dynamic_sql_ = is_dynamic_sql;
+  res.sql_ctx().is_dbms_sql_ = is_dbms_sql;
   res.sql_ctx().is_cursor_ = is_cursor;
   res.sql_ctx().schema_guard_ = &schema_guard;
   if (OB_FAIL(res.result_set().init())) {

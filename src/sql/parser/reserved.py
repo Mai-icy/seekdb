@@ -531,6 +531,7 @@ class SqlKeywords:
           MODIFIES
           MODULE
           MONTH
+          MULTISET
           NATIONAL
           NATURAL
           NCHAR
@@ -604,6 +605,7 @@ class SqlKeywords:
           SQLWARNING
           START
           STATIC
+          SUBMULTISET
           SYMMETRIC
           SYSTEM
           SYSTEM_USER

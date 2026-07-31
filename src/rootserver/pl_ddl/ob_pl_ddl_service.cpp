@@ -1117,10 +1117,17 @@ int ObPLDDLService::adjust_trigger_action_order(share::schema::ObSchemaGetterGua
 
   common::ObSArray<uint64_t> trg_list;
   if (OB_SUCC(ret)) {
-    const ObTableSchema *table_schema = NULL;
-    OZ (schema_guard.get_table_schema( trigger_info.get_base_object_id(), table_schema));
-    OV (OB_NOT_NULL(table_schema));
-    OZ (trg_list.assign(table_schema->get_trigger_list()));
+    if (trigger_info.is_dml_type()) {
+      const ObTableSchema *table_schema = NULL;
+      OZ (schema_guard.get_table_schema( trigger_info.get_base_object_id(), table_schema));
+      OV (OB_NOT_NULL(table_schema));
+      OZ (trg_list.assign(table_schema->get_trigger_list()));
+    } else if (trigger_info.is_system_type()) {
+      const ObUserInfo *user_info = NULL;
+      OZ (schema_guard.get_user_info(trigger_info.get_base_object_id(), user_info));
+      OV (OB_NOT_NULL(user_info));
+      OZ (trg_list.assign(user_info->get_trigger_list()));
+    }
   }
   if (OB_SUCC(ret)) {
     const ObTriggerInfo *old_trg_info = NULL;

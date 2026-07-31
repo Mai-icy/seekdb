@@ -3570,7 +3570,7 @@ struct ParamFlag
                 need_to_check_bool_value_(false),
                 expected_bool_value_(false),
                 need_to_check_extend_type_(true),
-                reserved_legacy_bit_(false),
+                is_ref_cursor_type_(false),
                 is_pl_mock_default_param_(false),
                 is_boolean_(false),
                 is_batch_parameter_(0),
@@ -3592,7 +3592,7 @@ struct ParamFlag
       uint8_t need_to_check_bool_value_ : 1;//TRUE if the bool value need to be checked by plan cache, FALSE otherwise
       uint8_t expected_bool_value_ : 1;//bool value, effective only when need_to_check_bool_value_ is true
       uint8_t need_to_check_extend_type_ : 1; // True if the extended type needs to be checked
-      uint8_t reserved_legacy_bit_ : 1;
+      uint8_t is_ref_cursor_type_ : 1; // in pl/sql context, this will be true if the local var is a ref cursor
       uint8_t is_pl_mock_default_param_ : 1; // TRUE if ObObjParam is pl default param
       uint8_t is_boolean_ : 1; // to distinguish T_BOOL and T_TINYINT
       uint8_t is_batch_parameter_ : 1; // indicates it is a batch parameter
@@ -3660,6 +3660,8 @@ public:
   OB_INLINE void set_expected_bool_value(bool b_value) { flag_.expected_bool_value_ = b_value; }
   OB_INLINE bool expected_bool_value() const { return flag_.expected_bool_value_; }
 
+  OB_INLINE void set_is_ref_cursor_type(bool flag) { flag_.is_ref_cursor_type_ = flag; }
+  OB_INLINE bool is_ref_cursor_type() const { return flag_.is_ref_cursor_type_; }
   OB_INLINE void set_is_pl_mock_default_param(bool flag) { flag_.is_pl_mock_default_param_= flag; }
   OB_INLINE bool is_pl_mock_default_param() const { return flag_.is_pl_mock_default_param_; }
   OB_INLINE void set_is_boolean(bool flag) { flag_.is_boolean_ = flag; }

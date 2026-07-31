@@ -169,7 +169,8 @@ int ObPLParser::parse_procedure(const ObString &stmt_block,
 
 int ObPLParser::parse_routine_body(const ObString &routine_body,
                                    ObStmtNodeTree *&routine_stmt,
-                                   bool is_for_trigger)
+                                   bool is_for_trigger,
+                                   bool need_unwrap)
 {
   int ret = OB_SUCCESS;
   int32_t prefix_len = 0;
@@ -217,7 +218,8 @@ int ObPLParser::parse_package(const ObString &package,
                               const ObDataTypeCastParams &dtc_params,
                               share::schema::ObSchemaGetterGuard *schema_guard,
                               bool is_for_trigger,
-                              const ObTriggerInfo *trg_info)
+                              const ObTriggerInfo *trg_info,
+                              bool need_unwrap)
 {
   int ret = OB_SUCCESS;
   ObParseCtx parse_ctx;

@@ -199,6 +199,7 @@ public:
                               const ObString &routine_name,
                               const share::schema::ObRoutineType routine_type,
                               common::ObIArray<const share::schema::ObIRoutineInfo *> &routines,
+                              uint64_t udt_id = OB_INVALID_ID,
                               const pl::ObPLResolveCtx *resolve_ctx = NULL);
   static int check_routine_exists(const ObSQLSessionInfo *session_info,
                                   ObSchemaChecker *schema_checker,
@@ -208,14 +209,16 @@ public:
                                   const ObString &routine_name,
                                   const share::schema::ObRoutineType routine_type,
                                   bool &exists,
-                                  pl::ObProcType &proc_type);
+                                  pl::ObProcType &proc_type,
+                                  uint64_t udt_id = OB_INVALID_ID);
   static int check_routine_exists(ObSchemaChecker &schema_checker,
                                   const ObSQLSessionInfo &session_info,
                                   const ObString &db_name,
                                   const ObString &package_name,
                                   const ObString &routine_name,
                                   const share::schema::ObRoutineType routine_type,
-                                  bool &exists);
+                                  bool &exists,
+                                  uint64_t udt_id = OB_INVALID_ID);
   static int match_best_routine(const common::ObIArray<const share::schema::ObRoutineInfo *> &routines,
                                 const common::ObIArray<ObRawExpr *> &expr_params,
                                 const share::schema::ObRoutineInfo *&routine);
@@ -454,7 +457,7 @@ public:
                                                 const common::ObString &part_name,
                                                 const share::schema::ObPartitionFuncType part_type,
                                                 ObRawExpr *&part_value_expr,
-                                                const bool &in_tablegroup = false);
+                                                const bool interval_check = false);
   static int resolve_columns_for_partition_expr(ObResolverParams &params,
                                                 ObRawExpr *&expr,
                                                 common::ObIArray<ObQualifiedName> &columns,
@@ -548,7 +551,7 @@ public:
   static int check_partition_value_expr_for_range(const common::ObString &part_name,
                                                   ObRawExpr &part_value_expr,
                                                   const share::schema::ObPartitionFuncType part_type,
-                                                  const bool &in_tablegroup = false);
+                                                  const bool interval_check = false);
   static int check_column_valid_for_partition(const ObRawExpr &part_expr,
                                               const share::schema::ObPartitionFuncType part_func_type,
                                               const share::schema::ObTableSchema &tbl_schema);
@@ -561,6 +564,9 @@ public:
                                              const bool is_check_value,
                                              const bool is_string_lob = false);
   static bool is_partition_range_column_type(const common::ObObjType type);
+  static bool is_valid_interval_data_type(
+      const common::ObObjType type,
+      ObItemType &item_type);
   static bool is_restore_user(ObSQLSessionInfo &session_info);
   static bool is_drc_user(ObSQLSessionInfo &session_info);
   static int resolve_udf_name_by_parse_node(

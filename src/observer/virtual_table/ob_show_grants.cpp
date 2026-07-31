@@ -557,6 +557,9 @@ int ObShowGrants::print_privs_to_buff(
       if ((priv_set & OB_PRIV_BOOTSTRAP) && OB_SUCCESS == ret) {
         ret = BUF_PRINTF(" BOOTSTRAP,");
       }
+      if ((priv_set & OB_PRIV_CREATE_SYNONYM) && OB_SUCCESS == ret) {
+        ret = BUF_PRINTF(" CREATE_SYNONYM,");
+      }
       if ((priv_set & OB_PRIV_AUDIT) && OB_SUCCESS == ret) {
         ret = BUF_PRINTF(" AUDIT,");
       }
