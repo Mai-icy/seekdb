@@ -1193,7 +1193,7 @@ int ObMPStmtExecute::do_process(ObSQLSessionInfo &session,
       }
       result.set_has_more_result(has_more_result);
       result.set_ps_protocol();
-      ObTaskExecutorCtx *task_ctx = result.get_exec_context().get_task_executor_ctx();
+      ObSqlExecutorCtx *task_ctx = result.get_exec_context().get_sql_executor_ctx();
       if (OB_ISNULL(task_ctx)) {
         ret = OB_ERR_UNEXPECTED;
         LOG_ERROR("task executor ctx can not be NULL", K(task_ctx), K(ret));
