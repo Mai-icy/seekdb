@@ -278,7 +278,6 @@ ob_set_subtarget(ob_server virtual_table
   virtual_table/ob_virtual_show_trace.cpp
   virtual_table/ob_all_virtual_sql_plan.cpp
   virtual_table/ob_all_virtual_opt_stat_gather_monitor.cpp
-  virtual_table/ob_all_virtual_thread.cpp
   virtual_table/ob_all_virtual_resource_limit.cpp
   virtual_table/ob_all_virtual_resource_limit_detail.cpp
   virtual_table/ob_all_virtual_activity_metrics.cpp
@@ -310,6 +309,7 @@ if (OB_SO_CACHE)
     IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/liboceanbase.so")
   target_link_libraries(oceanbase
     INTERFACE ob_base
+    sql_nio
     ${STDC_SHARED_LIB})
 else()
   add_library(oceanbase
@@ -328,6 +328,7 @@ else()
     ob_storage_static
     ob_share_static
     $<$<NOT:$<PLATFORM_ID:Darwin>>:-Wl,--no-whole-archive>
+    sql_nio
     $<$<PLATFORM_ID:Linux>:-static-libgcc>
     $<$<PLATFORM_ID:Linux>:-static-libstdc++>)
 endif()
@@ -382,6 +383,7 @@ target_link_libraries(seekdb
   ob_sql_static
   ob_storage_static
   ob_share_static
+  sql_nio
   $<$<PLATFORM_ID:Windows>:ob_malloc>
   $<$<PLATFORM_ID:Windows>:synchronization>
   $<$<AND:$<NOT:$<PLATFORM_ID:Darwin>>,$<NOT:$<PLATFORM_ID:Windows>>>:-Wl,--end-group>
