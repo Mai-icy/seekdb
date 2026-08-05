@@ -18,7 +18,6 @@
 
 
 #include "ob_tx_data_allocator.h"
-#include "lib/alloc/alloc_func.h"
 #include "share/rc/ob_server_runtime.h"
 #include "storage/allocator/ob_shared_memory_allocator_mgr.h"
 #include "storage/tx_storage/ob_ls_service.h"
@@ -42,18 +41,11 @@ int64_t ObTxDataAllocator::resource_unit_size()
   return TX_DATA_RESOURCE_UNIT_SIZE;
 }
 
-int64_t ObTxDataAllocator::get_memory_limit()
-{
-  static constexpr int64_t TX_DATA_MEMORY_PERCENTAGE = 40;
-  return lib::get_memory_by_percentage(
-      lib::get_memory_budget(), TX_DATA_MEMORY_PERCENTAGE);
-}
-
 void ObTxDataAllocator::init_throttle_config(int64_t &resource_limit,
                                                    int64_t &trigger_percentage,
                                                    int64_t &max_duration)
 {
-  resource_limit = get_memory_limit();
+  resource_limit = lib::get_tx_data_memory_limit();
   trigger_percentage = GCONF.writing_throttling_trigger_percentage;
   max_duration = GCONF.writing_throttling_maximum_duration;
 }
@@ -102,6 +94,7 @@ int ObTxDataOpAllocator::init()
     ret = OB_ERR_UNEXPECTED;
     SHARE_LOG(WARN, "throttle tool is unexpected null", KP(throttle_tool_), KP(share_mem_alloc_mgr));
   } else if (OB_FAIL(allocator_.init(OB_MALLOC_NORMAL_BLOCK_SIZE, block_alloc_, mem_attr))) {
+    MDS_LOG(WARN, "init vslice allocator failed", K(ret), K(OB_MALLOC_NORMAL_BLOCK_SIZE), KP(this), K(mem_attr));
   } else {
     allocator_.set_nway(MDS_ALLOC_CONCURRENCY);
     is_inited_ = true;

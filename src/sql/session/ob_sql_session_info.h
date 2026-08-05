@@ -244,6 +244,7 @@ public:
         int ret = OB_SUCCESS;
         if (OB_FAIL(ROOT_CONTEXT->CREATE_CONTEXT(mem_context_,
             lib::ContextParam().set_mem_attr(ObModIds::OB_PL)))) {
+          SQL_ENG_LOG(WARN, "create memory entity failed");
         } else if (OB_ISNULL(mem_context_)) {
           ret = OB_ERR_UNEXPECTED;
           SQL_ENG_LOG(WARN, "null memory entity returned");
@@ -289,6 +290,7 @@ public:
               break;
             }
           } else if (OB_FAIL(session.close_cursor(cursor->get_id()))) {
+            SQL_ENG_LOG(WARN, "failed to close session cursor", K(ret), K(cursor->get_id()));
           } else {
             SQL_ENG_LOG(INFO, "clsoe session cursor implicit successed!", K(cursor->get_id()));
           }
@@ -828,6 +830,7 @@ public:
     if (OB_UNLIKELY(!ps_session_info_map_.created())) {
       // do nothing
     } else if (OB_FAIL(ps_session_info_map_.foreach_refactored(fn))) {
+      SQL_ENG_LOG(WARN, "failed to read each ps session info", K(ret));
     }
     return ret;
   }
