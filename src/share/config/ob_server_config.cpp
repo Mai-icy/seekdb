@@ -158,7 +158,6 @@ double ObServerConfig::get_server_default_max_cpu()
 }
 
 ObServerMemoryConfig::ObServerMemoryConfig()
-  : memory_limit_(0), hard_memory_limit_(INT64_MAX)
 {}
 
 ObServerMemoryConfig &ObServerMemoryConfig::get_instance()
@@ -170,19 +169,32 @@ ObServerMemoryConfig &ObServerMemoryConfig::get_instance()
 int ObServerMemoryConfig::reload_config(const ObServerConfig& server_config)
 {
   int ret = OB_SUCCESS;
-  int64_t memory_limit = server_config.memory_limit;
-  int64_t hard_memory_limit = server_config.memory_hard_limit;
-  int64_t phy_mem_size = get_phy_mem_size();
-  if (0 == memory_limit) {
-    memory_limit = phy_mem_size * server_config.memory_limit_percentage / 100;
+  static constexpr int64_t AUTO_MEMORY_BUDGET_PERCENTAGE = 40;
+  const int64_t configured_memory_budget = server_config.memory_budget;
+  const int64_t legacy_memory_limit = server_config.memory_limit;
+  const bool use_legacy_memory_limit = legacy_memory_limit > 0;
+  int64_t memory_budget = use_legacy_memory_limit
+      ? legacy_memory_limit / 2
+      : configured_memory_budget;
+  int64_t physical_memory = 0;
+  int64_t automatic_memory_budget = 0;
+  if (0 == memory_budget) {
+    physical_memory = get_phy_mem_size();
+    automatic_memory_budget = physical_memory / 100 * AUTO_MEMORY_BUDGET_PERCENTAGE
+        + physical_memory % 100 * AUTO_MEMORY_BUDGET_PERCENTAGE / 100;
+    memory_budget = MAX(lib::DEFAULT_MEMORY_BUDGET, automatic_memory_budget);
   }
-  if (0 == hard_memory_limit) {
-    hard_memory_limit = phy_mem_size * MAX_PHY_MEM_PERCENTAGE / 100;
-  }
-  hard_memory_limit_ = hard_memory_limit;
-  memory_limit_ = MIN(memory_limit, hard_memory_limit_);
-  LOG_INFO("update observer memory config", K_(memory_limit), K_(hard_memory_limit));
+  lib::set_memory_budget(memory_budget);
+  LOG_INFO("update observer memory config", K(memory_budget),
+           K(configured_memory_budget), K(legacy_memory_limit),
+           K(use_legacy_memory_limit), K(physical_memory),
+           K(automatic_memory_budget));
   return ret;
+}
+
+int64_t ObServerMemoryConfig::get_server_memory_budget() const
+{
+  return lib::get_memory_budget();
 }
 
 void ObServerMemoryConfig::check_limit()

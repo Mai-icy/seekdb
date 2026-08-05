@@ -27,6 +27,7 @@ using common::ObPsStmtId;
 using namespace share::schema;
 namespace sql
 {
+class ObPsCache;
 class ObCallProcedureStmt;
 
 // prepared statement stmt key
@@ -93,6 +94,9 @@ public:
   bool *get_is_expired_evicted_ptr() { return &is_expired_evicted_; }
 
   ObIAllocator *get_external_allocator() { return external_allocator_; }
+  void set_memory_account(ObPsCache *owner, const int64_t accounted_size);
+  void release_memory_account();
+  int64_t get_accounted_size() const { return ATOMIC_LOAD(&accounted_size_); }
 
   TO_STRING_KV(K_(ref_count), K_(ps_key), K_(stmt_id), K_(is_expired_evicted));
 
@@ -105,6 +109,8 @@ private:
   common::ObIAllocator *allocator_;
   // Point to inner_allocator_ in ObPsPlancache, used for releasing the memory of the entire ObPsStmtItem
   common::ObIAllocator *external_allocator_;
+  ObPsCache *memory_owner_;
+  int64_t accounted_size_;
 };
 
 struct ObPsSqlMeta
@@ -195,6 +201,9 @@ public:
     ps_key_ = ps_stmt_item.get_sql_key();
   }
   ObIAllocator *get_external_allocator() { return external_allocator_; }
+  void set_memory_account(ObPsCache *owner, const int64_t accounted_size);
+  void release_memory_account();
+  int64_t get_accounted_size() const { return ATOMIC_LOAD(&accounted_size_); }
   void set_inner_allocator(common::ObIAllocator *allocator)
   {
     allocator_ = allocator;
@@ -255,6 +264,8 @@ private:
   ObFixedArray<ObPCParam *, common::ObIAllocator> raw_params_;
   ObFixedArray<int64_t, common::ObIAllocator> raw_params_idx_;
   stmt::StmtType literal_stmt_type_;
+  ObPsCache *memory_owner_;
+  int64_t accounted_size_;
 };
 
 struct TypeInfo {

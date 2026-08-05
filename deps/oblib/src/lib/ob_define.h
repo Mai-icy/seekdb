@@ -829,7 +829,7 @@ const int64_t MAX_PHY_MEM_PERCENTAGE = 90;
 
 // mem factor
 const double SQL_AUDIT_MEM_FACTOR = 0.1;
-const double MONITOR_MEM_FACTOR = 0.01;
+const double MONITOR_MEM_FACTOR = 0.02;
 const double KVCACHE_FACTOR = SERVER_RESERVE_MEM_RATIO;
 
 const double OB_DTL_CPU = 5.;

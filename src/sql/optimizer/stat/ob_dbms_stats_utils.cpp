@@ -1959,12 +1959,9 @@ int ObDbmsStatsUtils::get_max_work_area_size(int64_t &max_wa_memory_size)
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("unexpected null", K(ret));
   } else {
-    int64_t worker_cnt = std::max(static_cast<const omt::ObServerRuntime *>(runtime)->min_worker_cnt(), static_cast<int64_t>(4L));
-    max_wa_memory_size = lib::get_allocator_memory_limit() / worker_cnt;
-    if (lib::ObMallocAllocator::get_instance() != NULL) {
-      ObCtxAllocatorGuard ta = lib::ObMallocAllocator::get_instance()->get_ctx_allocator(common::ObCtxIds::WORK_AREA);
-      max_wa_memory_size = ta->get_limit() / worker_cnt;
-    }
+    int64_t worker_cnt = std::max(static_cast<const omt::ObServerRuntime *>(runtime)->min_worker_cnt(),
+                                  static_cast<int64_t>(4L));
+    max_wa_memory_size = lib::get_memory_budget() / worker_cnt * 2;
     max_wa_memory_size = std::max(MIN_GATHER_WORK_ARANA_SIZE, max_wa_memory_size);
   }
   return ret;
