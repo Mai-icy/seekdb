@@ -25,6 +25,7 @@
 #endif
 #include <thread>
 #include "observer/ob_server.h"
+#include "share/ob_autoincrement_service.h"
 #include "storage/lob/ob_lob_manager.h"
 #include "storage/compaction/ob_freeze_info_mgr.h"
 #include "share/ob_freeze_info_proxy.h"
@@ -956,6 +957,7 @@ bool ObServer::is_stopped()
 
 void ObServer::set_stop()
 {
+  net_frame_.sql_nio_stop();
   stop_ = true;
   ob_service_.set_stop();
   gctx_.status_ = SS_STOPPING;
@@ -1115,6 +1117,7 @@ int ObServer::wait_no_client()
                  LOCKFILE_EXCLUSIVE_LOCK,
                  0, MAXDWORD, MAXDWORD, &ov)) {
     FLOG_INFO("no clients remaining, exiting");
+    net_frame_.sql_nio_stop();
     _Exit(0);
   } else {
     ret = OB_ERROR;
@@ -1123,6 +1126,7 @@ int ObServer::wait_no_client()
 #else
   if (flock(clients_fd_, LOCK_EX) == 0) {
     FLOG_INFO("no clients remaining, exiting");
+    net_frame_.sql_nio_stop();
     _Exit(0);
   } else {
     ret = OB_ERROR;
