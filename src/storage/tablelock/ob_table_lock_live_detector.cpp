@@ -69,7 +69,7 @@ int ObTableLockDetectFuncList::do_session_alive_detect(common::ObISQLClient &sql
       } else if (!session_alive) {
         LOG_INFO(
           "find session is not alive, we will clean all recodrs of it later", K(ret), K(session_id), K(owner_id));
-        ObTableLockDetector::remove_lock_by_owner_id(owner_id);
+        ObTableLockDetector::remove_obj_lock_by_owner_id(owner_id);
       }
     }
   }
@@ -227,17 +227,23 @@ int ObTableLockDetector::do_detect_and_clear(common::ObISQLClient &sql_client)
   return ret;
 }
 
-int ObTableLockDetector::remove_lock_by_owner_id(const ObTableLockOwnerID &owner_id)
+int ObTableLockDetector::remove_named_lock_by_owner_id(const ObTableLockOwnerID &owner_id)
 {
-  int tmp_ret = OB_SUCCESS;
+  int ret = OB_SUCCESS;
   int64_t release_count = 0;
   ObTableLockService *service =
       share::server_service<ObTableLockService>();
-  if (OB_NOT_NULL(service)
-      && OB_TMP_FAIL(service->get_named_lock_manager().release_all(
-             owner_id, release_count))) {
-    LOG_WARN("remove named locks for dead owner failed", K(tmp_ret), K(owner_id));
+  if (OB_ISNULL(service)) {
+    ret = OB_NOT_INIT;
+  } else if (OB_FAIL(service->get_named_lock_manager().release_all(
+                 owner_id, release_count))) {
+    LOG_WARN("remove named locks for dead owner failed", K(ret), K(owner_id));
   }
+  return ret;
+}
+
+int ObTableLockDetector::remove_obj_lock_by_owner_id(const ObTableLockOwnerID &owner_id)
+{
   int ret = query::release_locks_for_dead_owner(owner_id.type(), owner_id.id());
   if (OB_FAIL(ret)) {
   }
@@ -319,30 +325,6 @@ int ObTableLockDetector::check_lock_exist_in_inner_table(share::ObILockMetadataS
                                            obj_id))) {
   } else if (OB_FAIL(check_lock_exist_(session_io, where_cond, lock_req.owner_id_, exist))) {
   }
-
-  return ret;
-}
-
-int ObTableLockDetector::get_lock_owner_by_lock_id(common::ObISQLClient &sql_client,
-                                                   const uint64_t &lock_id,
-                                                   ObTableLockOwnerID &lock_owner)
-{
-  int ret = OB_SUCCESS;
-  ObSqlString where_cond;
-  
-  char table_name[OB_MAX_TABLE_NAME_BUF_LENGTH] = {0};
-  int64_t owner_id = 0;
-  int64_t owner_type = 0;
-
-  OZ (where_cond.assign_fmt("WHERE obj_type = '%d' AND"
-                            " obj_id = %ld AND lock_mode = %d",
-                            static_cast<int>(ObLockOBJType::OBJ_TYPE_MYSQL_LOCK_FUNC),
-                            lock_id,
-                            static_cast<int>(EXCLUSIVE)));
-  OZ (get_table_name(table_name));
-  OZ (ObTableAccessHelper::read_single_row(
-      sql_client, {"owner_id", "owner_type"}, table_name, where_cond.string(), owner_id, owner_type));
-  OX (lock_owner.convert_from_value(static_cast<ObLockOwnerType>(owner_type), owner_id));
 
   return ret;
 }

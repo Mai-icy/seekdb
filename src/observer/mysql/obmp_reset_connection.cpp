@@ -169,11 +169,8 @@ int ObMPResetConnection::process()
     if (OB_SUCC(ret)) {
       const data_plane::ObSessionLockOwner owner(
           session->get_sid(), session->get_sess_create_time());
-      data_plane::ObPersistedLockOwner persisted_owner;
-      if (OB_FAIL(data_plane::persist_session_lock_owner(owner,
-                                                         persisted_owner))) {
-      } else if (OB_FAIL(query::release_locks_for_dead_owner(
-                     persisted_owner.owner_type_, persisted_owner.owner_id_))) {
+      int64_t release_count = 0;
+      if (OB_FAIL(data_plane::release_all_named_locks(owner, release_count))) {
       }
     }
 
