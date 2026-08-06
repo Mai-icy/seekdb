@@ -97,7 +97,6 @@ public:
                                                  int64_t &cnt);
   static int do_detect_and_clear(common::ObISQLClient &sql_client);
   static int remove_lock_by_owner_id(const ObTableLockOwnerID &owner_id);
-  static int remove_expired_lock_id(common::ObISQLClient &sql_client);
 
   static int check_lock_id_exist_in_inner_table(share::ObILockMetadataSession &session_io,
                                                 const uint64_t &obj_id,

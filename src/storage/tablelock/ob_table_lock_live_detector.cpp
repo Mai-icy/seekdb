@@ -223,48 +223,24 @@ int ObTableLockDetector::do_detect_and_clear(common::ObISQLClient &sql_client)
   int ret = OB_SUCCESS;
   if (OB_FAIL(func1.call_function_directly(sql_client))) {
   }
-  remove_expired_lock_id(sql_client);
 
   return ret;
 }
 
 int ObTableLockDetector::remove_lock_by_owner_id(const ObTableLockOwnerID &owner_id)
 {
+  int tmp_ret = OB_SUCCESS;
+  int64_t release_count = 0;
+  ObTableLockService *service =
+      share::server_service<ObTableLockService>();
+  if (OB_NOT_NULL(service)
+      && OB_TMP_FAIL(service->get_named_lock_manager().release_all(
+             owner_id, release_count))) {
+    LOG_WARN("remove named locks for dead owner failed", K(tmp_ret), K(owner_id));
+  }
   int ret = query::release_locks_for_dead_owner(owner_id.type(), owner_id.id());
   if (OB_FAIL(ret)) {
   }
-  return ret;
-}
-
-int ObTableLockDetector::remove_expired_lock_id(common::ObISQLClient &sql_client)
-{
-  int ret =OB_SUCCESS;
-  char dbms_lock_table_name[OB_MAX_TABLE_NAME_BUF_LENGTH] = {0};
-  char new_table_name[OB_MAX_TABLE_NAME_BUF_LENGTH] = {0};
-  ObSqlString where_cond;
-  ObSqlString detect_table_cond;
-  ObSqlString obj_type_cond;
-  const int64_t now = ObTimeUtility::current_time();
-  // delete 10 rows each time, to avoid causing abnormal delays due to deleting too many rows
-  const int delete_limit = 10;
-
-  OZ (databuff_printf(dbms_lock_table_name, OB_MAX_TABLE_NAME_BUF_LENGTH,
-                      "%s.%s", OB_SYS_DATABASE_NAME, OB_ALL_DBMS_LOCK_ALLOCATED_TNAME));
-  OZ (get_table_name(new_table_name));
-  OZ (obj_type_cond.assign_fmt(" WHERE obj_type = %d or obj_type = %d",
-                               static_cast<int>(ObLockOBJType::OBJ_TYPE_MYSQL_LOCK_FUNC),
-                               static_cast<int>(ObLockOBJType::OBJ_TYPE_DBMS_LOCK)));
-
-  OZ (detect_table_cond.assign_fmt("SELECT obj_id FROM %s", new_table_name));
-  OZ (detect_table_cond.append(obj_type_cond.ptr(), obj_type_cond.length()));
-  OZ (where_cond.assign_fmt("expiration <= usec_to_time(%" PRId64 ")"
-                            "AND lockid NOT IN"
-                            "( %s )"
-                            " LIMIT %d",
-                            now,
-                            detect_table_cond.ptr(),
-                            delete_limit));
-  OZ (ObTableAccessHelper::delete_row(sql_client, dbms_lock_table_name, where_cond.string()));
   return ret;
 }
 
