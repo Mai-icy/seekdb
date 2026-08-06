@@ -1734,9 +1734,7 @@ int ObSQLSessionInfo::on_user_disconnect()
   if (OB_TMP_FAIL(data_plane::release_all_named_locks(owner, release_count))) {
     LOG_WARN("failed to release named locks on disconnect", K(tmp_ret), K(get_server_sid()));
   }
-  if (OB_SUCC(ret) && OB_SUCCESS != tmp_ret) {
-    ret = tmp_ret;
-  }
+  ret = COVER_SUCC(tmp_ret);
   return ret;
 }
 
