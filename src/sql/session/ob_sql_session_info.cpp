@@ -1727,17 +1727,15 @@ int ObSQLSessionInfo::on_user_disconnect()
     LOG_WARN("connect resource mgr is null", K(ret));
   } else if (OB_FAIL(conn_res_mgr_->on_user_disconnect(*this))) {
   }
-  if (is_lock_session()) {
-    const data_plane::ObSessionLockOwner owner(
-        get_server_sid(), get_sess_create_time());
-    if (OB_TMP_FAIL(data_plane::release_all_named_locks(owner, release_count))) {
-      LOG_WARN("failed to release named locks on disconnect", K(tmp_ret), K(get_server_sid()));
-    } else {
-      set_is_lock_session(false);
-    }
-    if (OB_SUCC(ret) && OB_SUCCESS != tmp_ret) {
-      ret = tmp_ret;
-    }
+  // is_lock_session() is shared with LOCK TABLES and may already be cleared
+  // while this session still owns a named lock.
+  const data_plane::ObSessionLockOwner owner(
+      get_server_sid(), get_sess_create_time());
+  if (OB_TMP_FAIL(data_plane::release_all_named_locks(owner, release_count))) {
+    LOG_WARN("failed to release named locks on disconnect", K(tmp_ret), K(get_server_sid()));
+  }
+  if (OB_SUCC(ret) && OB_SUCCESS != tmp_ret) {
+    ret = tmp_ret;
   }
   return ret;
 }
