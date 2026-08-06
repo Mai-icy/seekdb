@@ -311,7 +311,7 @@ static int parse_redo_record(ObCSRedoRecord &redo,
     cs_row.old_row_        = mut_row.old_row_;
     cs_row.seq_no_         = mut_row.seq_no_;
     cs_row.column_cnt_     = mut_row.get_column_cnt();
-    int64_t slice_id = cs_row.heap_pk_ % slice_count;
+    int64_t slice_id = (cs_row.heap_pk_ % slice_count + slice_count) % slice_count;
     if (OB_FAIL(exec_ctx.sub_tasks_.at(slice_id).add_row(cs_row))) {
       LOG_WARN("parse_redo_record: add_row failed", K(ret));
       break;
