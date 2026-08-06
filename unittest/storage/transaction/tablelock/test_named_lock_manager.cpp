@@ -285,3 +285,9 @@ TEST_F(NamedLockManagerTest, memory_quota_preserves_lock_indexes)
 
 } // namespace unittest
 } // namespace oceanbase
+
+int main(int argc, char **argv)
+{
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
