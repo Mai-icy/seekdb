@@ -43,8 +43,6 @@ ObMemstoreFreezer::ObMemstoreFreezer()
     is_freezing_tx_data_(false),
     freeze_trigger_timer_(),
     freeze_trigger_timer_task_(*this),
-    freeze_thread_pool_(),
-    freeze_thread_pool_lock_(common::ObLatchIds::FREEZE_THREAD_POOL_LOCK),
     freezer_stat_(),
     freezer_history_(),
     throttle_is_skipping_cache_(),
@@ -61,7 +59,6 @@ ObMemstoreFreezer::~ObMemstoreFreezer()
 void ObMemstoreFreezer::destroy()
 {
   freeze_trigger_timer_.destroy();
-  freeze_thread_pool_.thread_pool_.reset();
   is_freezing_tx_data_ = false;
   self_.reset();
   freezer_stat_.reset();
@@ -87,8 +84,6 @@ int ObMemstoreFreezer::init()
              OB_ISNULL(GCTX.net_frame_)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("[MemstoreFreezer] invalid argument", KR(ret), K(GCONF.self_addr_));
-  } else if (OB_FAIL(freeze_thread_pool_.init_and_start(FREEZE_THREAD_NUM, 10, "FrzAsync"))) {
-    LOG_WARN("[MemstoreFreezer] fail to initialize freeze thread pool", KR(ret));
   } else if (OB_FAIL(freeze_trigger_timer_.init("MemstoreFreezer", ObMemAttr("MemstoreFreezer")))) {
     LOG_WARN("[MemstoreFreezer] fail to init MemstoreFreezer timer", K(ret));
   } else {
@@ -132,10 +127,6 @@ int ObMemstoreFreezer::stop()
     LOG_WARN("[MemstoreFreezer] memstore freezer not inited", KR(ret));
   } else {
     freeze_trigger_timer_.stop();
-    if (freeze_thread_pool_.thread_pool_.is_valid()) {
-      freeze_thread_pool_.thread_pool_->stop();
-    }
-    // task_list_.stop_all();
     LOG_INFO("[MemstoreFreezer] ObMemstoreFreezer stoped done", K_(memstore_info));
   }
   return ret;
@@ -144,10 +135,6 @@ int ObMemstoreFreezer::stop()
 void ObMemstoreFreezer::wait()
 {
   freeze_trigger_timer_.wait();
-  if (freeze_thread_pool_.thread_pool_.is_valid()) {
-    freeze_thread_pool_.thread_pool_->wait();
-  }
-  // task_list_.wait_all();
   LOG_INFO("[MemstoreFreezer] ObMemstoreFreezer wait done", K_(memstore_info));
 }
 
