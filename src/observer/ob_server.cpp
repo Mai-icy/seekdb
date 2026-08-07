@@ -45,6 +45,7 @@ int ObServer::get_lower_bound_freeze_info(const int64_t snapshot_version, share:
 #include "lib/task/ob_timer_service.h" // ObTimerService
 #include "observer/ob_server_utils.h"
 #include "observer/ob_server_options.h"
+#include "observer/ob_standby_observer_hooks.h"
 #include "share/ob_timezone_mgr.h"
 #include "share/ob_standby_source_util.h"
 #include "logservice/ob_log_allocator_mgr.h"
@@ -89,6 +90,7 @@ int ObServer::get_lower_bound_freeze_info(const int64_t snapshot_version, share:
 #include "data_plane/fts/ob_fts_parser_helper.h"
 #include "rpc/ob_request.h"
 #include "storage/blocksstable/ob_block_sstable_struct.h"
+#include "standby/ob_standby_service.h"
 
 using namespace oceanbase::lib;
 using namespace oceanbase::common;
@@ -97,6 +99,20 @@ namespace oceanbase
 {
 namespace observer
 {
+namespace
+{
+void stop_server_for_standby()
+{
+  ObServer::get_instance().set_stop();
+}
+
+void reset_max_id_cache_for_standby()
+{
+  ObServer::get_instance().get_local_management_service().get_max_id_cache_mgr().reset();
+  LOG_INFO("reset max id cache after switching to primary");
+}
+} // namespace
+
 sql::ObSQLSessionMgr *get_observer_sql_session_mgr()
 {
   return &ObServer::get_instance().get_sql_session_mgr();
@@ -1099,6 +1115,10 @@ int ObServer::start()
     } else {
       FLOG_INFO("success to start oceanbase service");
     }
+    if (OB_SUCC(ret)
+        && FAILEDx(standby::ObStandbyService::start_role_services(gctx_.is_embedded_mode()))) {
+      LOG_ERROR("fail to start standby role services", KR(ret));
+    }
 
     if (FAILEDx(config_mgr_.reload_config())) {
       LOG_ERROR("fail to reload configuration", KR(ret));
@@ -1166,6 +1186,12 @@ int ObServer::start()
       LOG_ERROR("fail to start net frame", KR(ret));
     } else {
       FLOG_INFO("success to start net frame");
+    }
+
+    const int32_t standby_rpc_port = static_cast<int32_t>(config_.rpc_port);
+    if (OB_SUCC(ret) && !gctx_.is_embedded_mode()
+        && FAILEDx(standby::ObStandbyService::start_rpc_service(standby_rpc_port))) {
+      LOG_ERROR("fail to start standby gRPC service", KR(ret), K(standby_rpc_port));
     }
 
   int64_t start_service_time = ObTimeUtility::current_time();
@@ -1257,6 +1283,10 @@ int ObServer::wait_for_server_runtime()
       ob_usleep(10 * 1000);
     }
   }
+  if (OB_SUCC(ret) && !stop_
+      && OB_FAIL(standby::ObStandbyService::wait_startup_ready(gctx_.is_embedded_mode()))) {
+    LOG_WARN("standby startup replay did not become ready", KR(ret));
+  }
   FLOG_INFO("wait for server runtime", KR(ret), K(stop_), K(synced), K(timestamp_ready));
   if (!stop_ && synced && timestamp_ready) {
     LOG_DBA_INFO_V2(OB_SERVER_WAIT_RUNTIME_READY_SUCCESS,
@@ -1281,6 +1311,10 @@ int ObServer::check_if_schema_ready()
   LOG_DBA_INFO_V2(OB_SERVER_WAIT_SCHEMA_READY_BEGIN,
                   DBA_STEP_INC_INFO(server_start),
                   "wait schema ready begin.");
+  if (!standby::ObStandbyService::startup_profile(gctx_.is_embedded_mode()).wait_schema_ready_) {
+    schema_ready = true;
+    FLOG_INFO("skip schema ready wait for standby server", K(GCTX.server_role_));
+  }
   while (!stop_ && !schema_ready) {
     ret = OB_SUCCESS;
     if (OB_FAIL(schema_service_.get_baseline_schema_version(true/*auto_update*/, baseline_schema_version))) {
@@ -1316,6 +1350,10 @@ int ObServer::check_if_timezone_usable()
 {
   int ret = OB_SUCCESS;
   bool timezone_usable = false;
+  if (!standby::ObStandbyService::startup_profile(gctx_.is_embedded_mode()).wait_timezone_usable_) {
+    timezone_usable = true;
+    FLOG_INFO("skip timezone wait for standby server", K(GCTX.server_role_));
+  }
   while (OB_SUCC(ret) && !stop_ && !timezone_usable) {
     timezone_usable = timezone_mgr_.is_usable();
     if (!timezone_usable) {
@@ -2157,7 +2195,10 @@ int ObServer::init_global_kvcache()
 int ObServer::init_ob_service(bool need_bootstrap)
 {
   int ret = OB_SUCCESS;
-  if (OB_FAIL(ob_service_.init(sql_proxy_, need_bootstrap))) {
+  if (OB_FAIL(register_standby_observer_hooks(
+      stop_server_for_standby, reset_max_id_cache_for_standby))) {
+    LOG_ERROR("register standby observer hooks failed", KR(ret));
+  } else if (OB_FAIL(ob_service_.init(sql_proxy_, need_bootstrap))) {
     LOG_ERROR("oceanbase service init failed", KR(ret));
   }
   return ret;
@@ -2532,6 +2573,12 @@ int ObServer::reload_config()
 
   if (OB_FAIL(OB_STORE_CACHE.set_bf_cache_miss_count_threshold(GCONF.bf_cache_miss_count_threshold))) {
     LOG_WARN("set bf_cache_miss_count_threshold fail", KR(ret));
+  }
+
+  const int32_t standby_rpc_port = static_cast<int32_t>(config_.rpc_port);
+  if (OB_SUCC(ret) && !gctx_.is_embedded_mode()
+      && OB_FAIL(standby::ObStandbyService::start_rpc_service(standby_rpc_port))) {
+    LOG_WARN("failed to start standby gRPC service after config reload", KR(ret), K(standby_rpc_port));
   }
 
   return ret;

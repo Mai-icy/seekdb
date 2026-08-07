@@ -135,7 +135,8 @@ public:
   ObLS();
   virtual ~ObLS();
   int init(const ObRestoreStatus &restore_status,
-           const share::SCN &create_scn);
+           const share::SCN &create_scn,
+           const palf::LSN &clog_base_lsn);
   // I am ready to work now.
   int stop();
   void wait();
@@ -144,6 +145,7 @@ public:
   int offline();
   int online();
   int online_without_lock();
+  int online_for_physical_restore_without_lock();
   bool is_offline() const
   { return running_state_.is_offline(); }
   bool is_stopped() const
@@ -198,6 +200,7 @@ public:
   // update the ls meta of ls.
   // @param[in] ls_meta, which is used to update the ls's meta.
   int set_ls_meta(const ObLSMeta &ls_meta);
+  int update_meta_for_physical_restore(const ObLSMeta &source_meta);
 
   int64_t get_ls_epoch() const { return ls_epoch_; }
   int set_ls_epoch(const int64_t ls_epoch);
@@ -223,6 +226,7 @@ public:
   TO_STRING_KV(K_(running_state), K_(ls_meta), K_(switch_epoch), K_(log_handler) ,K_(is_inited),
     K_(tablet_gc_handler));
 private:
+  friend class ObLSService;
   void update_state_seq_();
   int stop_();
   void wait_();
@@ -232,8 +236,12 @@ private:
   int online_compaction_();
   int offline_tx_(const int64_t start_ts);
   int online_tx_();
+  int online_without_lock_(const bool start_in_append_mode);
   int start_local_log_();
-  int stop_local_log_();
+  int start_local_replay_();
+  int stop_local_log_(const bool keep_import_callbacks);
+  int switch_to_local_append_mode_();
+  int switch_to_local_replay_mode_();
   int update_tablet_table_store_without_lock_(
       const ObTabletID &tablet_id,
       const ObUpdateTableStoreParam &param,
@@ -281,6 +289,10 @@ public:
     return ls_meta_.set_tablet_change_checkpoint_scn(ls_epoch_, tablet_change_checkpoint_scn);
   }
   int set_restore_status(const ObRestoreStatus &restore_status);
+  int get_physical_restore_checkpoint_scn(share::SCN &checkpoint_scn) const
+  {
+    return checkpoint_executor_.get_physical_restore_checkpoint_scn(checkpoint_scn);
+  }
   // get restore status
   // @param [out] restore status.
   // int get_restore_status(share::ObRestoreStatus &status);
@@ -686,6 +698,7 @@ private:
   // protected by lock_, and change while running/disk state changed
   int64_t state_seq_;
   uint64_t switch_epoch_;// started from 0, odd means online, even means offline
+  bool is_local_append_mode_;
   ObLSMeta ls_meta_;
   int64_t ls_epoch_;
   ObLSLock lock_;

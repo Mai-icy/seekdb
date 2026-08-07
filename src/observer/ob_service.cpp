@@ -59,6 +59,7 @@
 #include "sql/pl/ob_pl_package_manager.h"
 #include "share/ob_rpc_struct.h"  // ObCreateLSArg
 #include "share/schema/ob_multi_version_schema_service.h"  // hook registration
+#include "standby/ob_standby_service.h"
 
 namespace oceanbase
 {
@@ -73,6 +74,22 @@ using namespace palf;
 
 namespace observer
 {
+
+namespace
+{
+int submit_standby_schema_refresh_task(const int64_t schema_version)
+{
+  int ret = OB_SUCCESS;
+  ObService *ob_service = share::server_service<ObService>();
+  if (OB_ISNULL(ob_service)) {
+    ret = OB_NOT_INIT;
+    LOG_WARN("ob service is not ready for standby schema refresh", KR(ret), K(schema_version));
+  } else if (OB_FAIL(ob_service->submit_async_refresh_schema_task(schema_version))) {
+    LOG_WARN("failed to submit standby schema refresh task", KR(ret), K(schema_version));
+  }
+  return ret;
+}
+} // namespace
 
 
 ObSchemaReleaseTimeTask::ObSchemaReleaseTimeTask()
@@ -213,6 +230,8 @@ int ObService::init(common::ObMySQLProxy &sql_proxy,
     FLOG_WARN("init tsc timestamp failed", KR(ret));
   } else if (OB_FAIL(schema_release_task_.init(schema_updater_))) {
     FLOG_WARN("init schema release task failed", KR(ret));
+  } else if (OB_FAIL(standby::ObStandbyService::init(submit_standby_schema_refresh_task))) {
+    FLOG_WARN("init standby service failed", KR(ret));
   } else {
     need_bootstrap_ = need_bootstrap;
     inited_ = true;
@@ -232,13 +251,14 @@ int ObService::start()
     ret = OB_NOT_INIT;
     FLOG_WARN("ob_service is not inited", KR(ret), K_(inited));
   } else if (need_bootstrap_) {
-    if (GCTX.is_standby_server()) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_ERROR("standby role is not supported by the local runtime", KR(ret));
-    } else if (OB_FAIL(share::ObServerInfoProxy::init_server_info_from_role(
+    if (OB_FAIL(share::ObServerInfoProxy::init_server_info_from_role(
         GCTX.config_mgr_,
         GCTX.server_role_))) {
       LOG_ERROR("failed to initialize server role state before bootstrap", KR(ret), K(GCTX.server_role_));
+    } else if (standby::ObStandbyService::startup_profile(GCTX.is_embedded_mode()).bootstrap_from_source_) {
+      if (OB_FAIL(standby::ObStandbyService::bootstrap())) {
+        LOG_ERROR("standby bootstrap failed", KR(ret));
+      }
     } else if (OB_FAIL(bootstrap())) {
       LOG_ERROR("bootstrap failed", KR(ret));
     }
@@ -257,21 +277,22 @@ int ObService::start()
       LOG_ERROR("failed to load server role state on restart",
                KR(ret));
     } else {
-      // SeekDB only supports primary-role data directories.
       if (server_info.is_primary()) {
         GCTX.server_role_ = share::ObServerRole::PRIMARY_ROLE;
       } else if (server_info.is_standby()) {
-        ret = OB_NOT_SUPPORTED;
-        LOG_ERROR("persisted standby role is not supported by the local runtime",
-            KR(ret), K(server_info));
+        GCTX.server_role_ = share::ObServerRole::STANDBY_ROLE;
       } else {
         ret = OB_ERR_UNEXPECTED;
         LOG_ERROR("invalid persisted server role", KR(ret), K(server_info));
       }
       if (OB_SUCC(ret)) {
+        share::set_server_role(GCTX.server_role_);
         LOG_INFO("restored server role state", K(server_info), K(GCTX.server_role_));
       }
     }
+  }
+  if (OB_SUCC(ret) && OB_FAIL(standby::ObStandbyService::activate_current_role())) {
+    LOG_ERROR("failed to activate current server role", KR(ret), K(GCTX.server_role_));
   }
   FLOG_INFO("[OBSERVICE_NOTICE] start ob_service end", KR(ret));
   if (OB_FAIL(ret)) {
@@ -305,6 +326,8 @@ void ObService::stop()
     schema_updater_.stop();
     FLOG_INFO("schema updater stopped");
 
+    (void)standby::ObStandbyService::stop();
+
   }
   FLOG_INFO("[OBSERVICE_NOTICE] observice finish stop", K_(stopped));
 }
@@ -321,6 +344,8 @@ void ObService::wait()
     FLOG_INFO("begin to wait schema updater");
     schema_updater_.wait();
     FLOG_INFO("wait schema updater success");
+
+    (void)standby::ObStandbyService::wait();
 
   }
   FLOG_INFO("[OBSERVICE_NOTICE] wait ob_service end");
@@ -341,7 +366,7 @@ int ObService::destroy()
     schema_updater_.destroy();
     FLOG_INFO("schema updater destroyed");
 
-    // restore_net_driver_ is now managed by ObLogRestoreService, no need to destroy here
+    standby::ObStandbyService::destroy();
   }
   FLOG_INFO("[OBSERVICE_NOTICE] destroy ob_service end", KR(ret));
   return ret;

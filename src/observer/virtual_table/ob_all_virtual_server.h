@@ -52,6 +52,7 @@ class ObAllVirtualServer : public common::ObVirtualTableScannerIterator
     CREATE_TIME,
     ROLE,
     SWITCHOVER_STATUS,
+    LOG_RESTORE_SOURCE,
     SYNC_SCN,
     READABLE_SCN
   };
@@ -68,6 +69,7 @@ private:
   common::ObServerConfig *config_;
   char role_buf_[64];
   char switchover_status_buf_[128];
+  char log_restore_source_buf_[1024];
 
 private:
   DISALLOW_COPY_AND_ASSIGN(ObAllVirtualServer);

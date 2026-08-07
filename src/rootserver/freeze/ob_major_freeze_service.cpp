@@ -18,6 +18,7 @@
 
 #include "rootserver/freeze/ob_major_freeze_service.h"
 #include "rootserver/freeze/ob_local_major_freeze.h"
+#include "share/ob_server_struct.h"
 
 namespace oceanbase
 {
@@ -49,20 +50,8 @@ int ObMajorFreezeService::activate()
   int64_t start_time_us = ObTimeUtility::current_time();
   int ret = OB_SUCCESS;
   if (OB_FAIL(check_inner_stat())) {
-  } else {
-    if (OB_ISNULL(local_major_freeze_)) {
-      SpinWLockGuard w_guard(rw_lock_);
-      if (OB_FAIL(alloc_local_major_freeze())) {
-      }
-    } else {
-      SpinRLockGuard r_guard(rw_lock_);
-      local_major_freeze_->resume();
-    }
+  } else if (OB_FAIL(start_or_resume_local_major_freeze())) {
   }
-  // The log-service role router owns database-role decisions. In the standby-capable
-  // implementation APPEND activates ObPrimaryMajorFreezeService, while RAW_WRITE
-  // activates ObRestoreMajorFreezeService. Do not infer the database role here from
-  // LS online state or GCTX: tenant-role recovery may finish after LS startup.
   if (OB_SUCC(ret) && ObMajorFreezeServiceType::SERVICE_TYPE_PRIMARY == get_service_type()) {
     SpinRLockGuard r_guard(rw_lock_);
     if (OB_ISNULL(local_major_freeze_)) {
@@ -91,14 +80,38 @@ void ObMajorFreezeService::deactivate()
 int ObMajorFreezeService::inner_switch_to_follower()
 {
   ObRecursiveMutexGuard switch_guard(switch_lock_);
-  SpinRLockGuard r_guard(rw_lock_);
   const int64_t start_time_us = ObTimeUtility::current_time();
   int ret = OB_SUCCESS;
-  if (OB_NOT_NULL(local_major_freeze_)) {
-    local_major_freeze_->pause();
+  if (ObMajorFreezeServiceType::SERVICE_TYPE_PRIMARY == get_service_type()
+      && GCTX.is_standby_server()) {
+    // A standby replays freeze-info writes but schedules its own local compaction.
+    // Keep the primary freeze runtime alive even though local log append is disabled.
+    if (OB_FAIL(start_or_resume_local_major_freeze())) {
+      LOG_WARN("fail to keep local major freeze running for standby", KR(ret));
+    }
+  } else {
+    SpinRLockGuard r_guard(rw_lock_);
+    if (OB_NOT_NULL(local_major_freeze_)) {
+      local_major_freeze_->pause();
+    }
   }
   const int64_t cost_us = ObTimeUtility::current_time() - start_time_us;
   FLOG_INFO("major_freeze: switch_to_follower", KR(ret), K(cost_us), KP_(local_major_freeze));
+  return ret;
+}
+
+int ObMajorFreezeService::start_or_resume_local_major_freeze()
+{
+  int ret = OB_SUCCESS;
+  if (OB_ISNULL(local_major_freeze_)) {
+    SpinWLockGuard w_guard(rw_lock_);
+    if (OB_FAIL(alloc_local_major_freeze())) {
+      LOG_WARN("fail to alloc local_major_freeze", KR(ret));
+    }
+  } else {
+    SpinRLockGuard r_guard(rw_lock_);
+    local_major_freeze_->resume();
+  }
   return ret;
 }
 

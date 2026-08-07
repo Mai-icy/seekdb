@@ -100,6 +100,7 @@ protected:
   }
 
 private:
+  int start_or_resume_local_major_freeze();
   int alloc_local_major_freeze();
   int delete_local_major_freeze();
   int inner_switch_to_follower();

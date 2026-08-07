@@ -1,0 +1,172 @@
+# CASE_OWNER:
+#    @nijia.nj
+# CASE_DESC:
+#    Basic test cases for primary-standby cluster switchover and failover
+#    Note: This case tests unidirectional synchronization:
+#          After primary cluster switches to standby, the old primary will NOT continue
+#          to synchronize from the new primary (its sync_scn will not advance).
+#    Test cases:
+#    1. Primary cluster switchover to standby (with verify)
+#    2. Standby cluster switchover to primary (with verify)
+#    3. Standby cluster failover to primary (with verify)
+
+--disable_all_result_log
+db_p=OBI(cluster=1,proxy_num=0,role=primary);
+db_p.reboot;
+
+db_s=OBI(cluster=1,proxy_num=0,primary=db_p);
+db_s.reboot;
+
+# 等待集群初始化完成
+sleep 5;
+--enable_all_result_log
+
+#################################################################################################
+#########################   Case 1: Primary Switchover to Standby  ##########################
+#################################################################################################
+--echo ========== Case 1: Primary Cluster Switchover to Standby ==========
+
+# 验证主库集群当前状态为 PRIMARY
+db_p.check_until_timeout select count(*) from oceanbase.__all_virtual_server_stat where role = 'PRIMARY', 1, 30;
+
+# 验证主库可以执行 DDL 和 INSERT
+ob_connect(conn_sys_p, db_p.z1.obs0, root@sys, , oceanbase, , USE_MYSQL_CONNECTOR);
+connection conn_sys_p;
+create table if not exists test_table_primary(a int primary key, b int);
+insert into test_table_primary values(1, 1);
+
+# 使用 VERIFY 选项检查是否可以切换（不实际切换）
+ALTER SYSTEM SWITCHOVER TO STANDBY VERIFY;
+
+# 验证角色未改变（VERIFY 不会实际切换）
+db_p.mysql_p select role from oceanbase.__all_virtual_server_stat;
+# PRIMARY
+
+# 执行主库集群切换为备库（实际切换）
+ALTER SYSTEM SWITCHOVER TO STANDBY;
+
+# 验证主库集群已切换为备库
+db_p.check_until_timeout select count(*) from oceanbase.__all_virtual_server_stat where role = 'STANDBY', 1, 60;
+db_p.mysql_p select role from oceanbase.__all_virtual_server_stat;
+# STANDBY
+
+# 主库切换为备库后，获取最终的 sync_scn 位点
+let $db_p_final_scn = deploy_get_value(db_p.select select sync_scn from oceanbase.__all_virtual_server_stat where role = 'STANDBY', sync_scn, 1);
+
+# 验证单向同步：主库切换为备库后，旧主库不会从新主库继续同步（点位不再推进）
+sleep 5;
+db_p.mysql_p select count(*) from oceanbase.__all_virtual_server_stat where role = 'STANDBY' and sync_scn = $db_p_final_scn;
+# 1
+
+# 验证备库不能执行 DDL 和 INSERT
+--error 4688
+create table test_table_standby(a int);
+--error 4688
+insert into test_table_primary values(2, 2);
+
+--echo Case 1 completed: Primary cluster successfully switched to standby
+
+#################################################################################################
+#########################   Case 2: Standby Switchover to Primary  ##########################
+#################################################################################################
+--echo ========== Case 2: Standby Cluster Switchover to Primary ==========
+
+# 等待备库集群状态稳定
+sleep 5;
+
+# 检查备库（db_s）能否同步到原主库切换为备库后的最终位点（使用 Case 1 中的 $db_p_final_scn）
+db_s.check_until_timeout select count(*) from oceanbase.__all_virtual_server_stat where role = 'STANDBY' and sync_scn >= $db_p_final_scn, 1, 60;
+
+# 验证备库不能执行 DDL 和 INSERT
+ob_connect(conn_sys_s, db_s.z1.obs0, root@sys, , oceanbase, , USE_MYSQL_CONNECTOR);
+connection conn_sys_s;
+--error 4688
+create table test_table_standby_s(a int);
+--error 4688
+insert into test_table_primary values(3, 3);
+
+# 使用 VERIFY 选项检查是否可以切换（不实际切换）
+ALTER SYSTEM SWITCHOVER TO PRIMARY VERIFY;
+
+# 验证角色未改变（VERIFY 不会实际切换）
+db_s.mysql_p select role from oceanbase.__all_virtual_server_stat;
+# STANDBY
+
+# 执行备库集群切换为主库（实际切换）
+ALTER SYSTEM SWITCHOVER TO PRIMARY;
+
+# 验证备库集群已切换为主库
+db_s.check_until_timeout select count(*) from oceanbase.__all_virtual_server_stat where role = 'PRIMARY', 1, 60;
+db_s.mysql_p select role from oceanbase.__all_virtual_server_stat;
+# PRIMARY
+
+# 验证新主库可以执行 DDL 和 INSERT
+create table if not exists test_table_new_primary(a int primary key, b int);
+insert into test_table_new_primary values(1, 1);
+
+--echo Case 2 completed: Standby cluster successfully switched to primary
+
+#################################################################################################
+#########################   Case 3: Standby Failover to Primary  ##############################
+#################################################################################################
+--echo ========== Case 3: Standby Cluster Failover to Primary ==========
+
+# Case 2 结束时，db_p 已经是 STANDBY，可以直接测试 failover
+# 注意：Case 1 已验证 db_p 切换为备库后不会继续同步（单向同步），
+#       所以这里不需要检查 db_p 与 db_s 的同步位点
+# 等待状态稳定
+sleep 5;
+
+# 验证原主库（现在是备库）状态
+db_p.check_until_timeout select count(*) from oceanbase.__all_virtual_server_stat where role = 'STANDBY', 1, 30;
+db_p.mysql_p select role from oceanbase.__all_virtual_server_stat;
+# STANDBY
+
+# 验证备库不能执行 DDL 和 INSERT
+# 注意：使用 Case 1 中已存在的表 test_table_primary（db_p 切换为备库前就存在），
+#       因为 db_p 停止同步后看不到 Case 2 中 db_s 创建的新表
+connection conn_sys_p;
+--error 4688
+create table test_table_standby_failover(a int);
+--error 4688
+insert into test_table_primary values(3, 3);
+
+# 使用 VERIFY 选项检查是否可以 failover（不实际切换）
+ALTER SYSTEM ACTIVATE STANDBY VERIFY;
+
+# 验证角色未改变（VERIFY 不会实际切换）
+db_p.mysql_p select role from oceanbase.__all_virtual_server_stat;
+# STANDBY
+
+# 执行备库 failover（激活为主库）
+ALTER SYSTEM ACTIVATE STANDBY;
+
+# 验证备库已 failover 为主库
+db_p.check_until_timeout select count(*) from oceanbase.__all_virtual_server_stat where role = 'PRIMARY', 1, 60;
+db_p.mysql_p select role from oceanbase.__all_virtual_server_stat;
+# PRIMARY
+
+# 验证新主库（failover 后）可以执行 DDL 和 INSERT
+create table if not exists test_table_failover_primary(a int primary key, b int);
+insert into test_table_failover_primary values(1, 1);
+
+# 验证原主库状态（failover 后应该还是 PRIMARY）
+db_s.check_until_timeout select count(*) from oceanbase.__all_virtual_server_stat where role = 'PRIMARY', 1, 30;
+db_s.mysql_p select role from oceanbase.__all_virtual_server_stat;
+# PRIMARY
+
+# 验证原主库可以执行 DDL 和 INSERT
+connection conn_sys_s;
+create table if not exists test_table_original_primary(a int primary key, b int);
+insert into test_table_original_primary values(1, 1);
+
+--echo Case 3 completed: Standby cluster successfully failed over to primary
+
+#################################################################################################
+#########################   Summary  ###########################################################
+#################################################################################################
+--echo ========== Test Summary ==========
+--echo All test cases completed successfully:
+--echo   1. Primary cluster switchover to standby (with verify): PASSED
+--echo   2. Standby cluster switchover to primary (with verify): PASSED
+--echo   3. Standby cluster failover to primary (with verify): PASSED

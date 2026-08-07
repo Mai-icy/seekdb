@@ -60,6 +60,7 @@ ObLS::ObLS()
     running_state_(),
     state_seq_(-1),
     switch_epoch_(0),
+    is_local_append_mode_(false),
     ls_meta_(),
     ls_epoch_(0)
 {}
@@ -70,7 +71,8 @@ ObLS::~ObLS()
 }
 
 int ObLS::init(const ObRestoreStatus &restore_status,
-               const SCN &create_scn)
+               const SCN &create_scn,
+               const palf::LSN &clog_base_lsn)
 {
   int ret = OB_SUCCESS;
   int tmp_ret = OB_SUCCESS;
@@ -80,7 +82,7 @@ int ObLS::init(const ObRestoreStatus &restore_status,
   if (IS_INIT) {
     ret = OB_INIT_TWICE;
     LOG_WARN("ls is already initialized", K(ret), K_(ls_meta));
-  } else if (OB_FAIL(ls_meta_.init(restore_status, create_scn))) {
+  } else if (OB_FAIL(ls_meta_.init(restore_status, create_scn, clog_base_lsn))) {
   } else if (OB_FAIL(ls_freezer_.init(this))) {
   } else {
     ObTxPalfParam tx_palf_param(get_log_handler());
@@ -441,9 +443,17 @@ int ObLS::start_local_log_()
       ob_usleep(50 * 1000);
     }
   }
-  if (OB_SUCC(ret) && OB_FAIL(apply_service->start_local_append())) {
-    LOG_WARN("start local apply failed", K(ret));
-  } else if (OB_SUCC(ret) && OB_FAIL(replay_service->disable_local_replay())) {
+  if (OB_SUCC(ret)) {
+    int tmp_ret = apply_service->start_local_append();
+    if (OB_STATE_NOT_MATCH == tmp_ret) {
+      tmp_ret = OB_SUCCESS;
+    }
+    if (OB_SUCCESS != tmp_ret) {
+      ret = tmp_ret;
+      LOG_WARN("start local apply failed", K(ret));
+    }
+  }
+  if (OB_SUCC(ret) && OB_FAIL(replay_service->disable_local_replay())) {
     LOG_WARN("stop local replay failed", K(ret));
   }
   while (OB_SUCC(ret) && !is_clear) {
@@ -453,19 +463,55 @@ int ObLS::start_local_log_()
     }
   }
   if (OB_SUCC(ret)) {
+    log_handler_.set_local_append_enabled(true);
     if (OB_FAIL(local_log_handler_set_.activate())) {
+      log_handler_.set_local_append_enabled(false);
+    } else {
+      is_local_append_mode_ = true;
     }
   }
   return ret;
 }
 
-int ObLS::stop_local_log_()
+int ObLS::start_local_replay_()
+{
+  int ret = OB_SUCCESS;
+  palf::LSN end_lsn;
+  share::SCN end_scn;
+  logservice::ObLogService *log_service =
+      ::oceanbase::share::server_service<::oceanbase::logservice::ObLogService>();
+  if (OB_ISNULL(log_service)) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("log service is null", K(ret));
+  } else if (OB_FAIL(log_handler_.get_end_lsn(end_lsn))) {
+    LOG_WARN("get local log end failed", K(ret));
+  } else if (OB_FAIL(log_handler_.get_end_scn(end_scn))) {
+    LOG_WARN("get local log end scn failed", K(ret), K(end_lsn));
+  } else {
+    log_handler_.set_local_append_enabled(false);
+    local_log_handler_set_.deactivate();
+    if (OB_FAIL(log_service->get_log_apply_service()->start_local_append())) {
+      LOG_WARN("start standby import callbacks failed", K(ret));
+    } else if (OB_FAIL(log_service->get_log_replay_service()->enable_local_replay(
+        end_lsn, share::SCN::scn_inc(end_scn)))) {
+      LOG_WARN("start local replay failed", K(ret), K(end_lsn), K(end_scn));
+    } else {
+      is_local_append_mode_ = false;
+    }
+  }
+  return ret;
+}
+
+int ObLS::stop_local_log_(const bool keep_import_callbacks)
 {
   int ret = OB_SUCCESS;
   bool is_done = false;
   palf::LSN end_lsn;
+  share::SCN end_scn;
   logservice::ObLogApplyService *apply_service = ::oceanbase::share::server_service<::oceanbase::logservice::ObLogService>()->get_log_apply_service();
   logservice::ObLogReplayService *replay_service = ::oceanbase::share::server_service<::oceanbase::logservice::ObLogService>()->get_log_replay_service();
+  log_handler_.set_local_append_enabled(false);
+  local_log_handler_set_.deactivate();
   if (OB_FAIL(apply_service->wait_append_sync())) {
   } else if (OB_FAIL(apply_service->stop_local_append())) {
   }
@@ -476,9 +522,35 @@ int ObLS::stop_local_log_()
     }
   }
   if (OB_SUCC(ret)) {
-    local_log_handler_set_.deactivate();
-    if (OB_FAIL(replay_service->enable_local_replay(end_lsn))) {
+    if (OB_FAIL(log_handler_.get_end_scn(end_scn))) {
+    } else if (OB_FAIL(replay_service->enable_local_replay(
+        end_lsn, share::SCN::scn_inc(end_scn)))) {
+    } else if (keep_import_callbacks && OB_FAIL(apply_service->start_local_append())) {
+    } else {
+      is_local_append_mode_ = false;
     }
+  }
+  return ret;
+}
+
+int ObLS::switch_to_local_append_mode_()
+{
+  int ret = OB_SUCCESS;
+  if (is_local_append_mode_) {
+    LOG_INFO("local log is already in append mode", K_(ls_meta));
+  } else if (OB_FAIL(start_local_log_())) {
+    LOG_WARN("failed to switch local log to append mode", K(ret), K_(ls_meta));
+  }
+  return ret;
+}
+
+int ObLS::switch_to_local_replay_mode_()
+{
+  int ret = OB_SUCCESS;
+  if (!is_local_append_mode_) {
+    LOG_INFO("local log is already in replay mode", K_(ls_meta));
+  } else if (OB_FAIL(stop_local_log_(true))) {
+    LOG_WARN("failed to switch local log to replay mode", K(ret), K_(ls_meta));
   }
   return ret;
 }
@@ -497,7 +569,7 @@ int ObLS::offline_(const int64_t start_ts)
   } else if (OB_FAIL(offline_advance_epoch_())) {
   } else if (FALSE_IT(checkpoint_executor_.offline())) {
     LOG_WARN("checkpoint executor offline failed", K(ret), K(ls_meta_));
-  } else if (OB_FAIL(stop_local_log_())) {
+  } else if (is_local_append_mode_ && OB_FAIL(stop_local_log_(false))) {
   } else if (OB_FAIL(log_handler_.offline())) {
   } else if (OB_FAIL(ls_tablet_svr_.set_frozen_for_all_memtables())) {
   }
@@ -815,6 +887,16 @@ int ObLS::online()
 
 int ObLS::online_without_lock()
 {
+  return online_without_lock_(true);
+}
+
+int ObLS::online_for_physical_restore_without_lock()
+{
+  return online_without_lock_(false);
+}
+
+int ObLS::online_without_lock_(const bool start_in_append_mode)
+{
   int ret = OB_SUCCESS;
   if (IS_NOT_INIT) {
     ret = OB_NOT_INIT;
@@ -824,12 +906,14 @@ int ObLS::online_without_lock()
   } else if (OB_FAIL(ls_tablet_svr_.online())) {
   } else if (OB_FAIL(lock_table_.online())) {
   } else if (OB_FAIL(online_tx_())) {
+  } else if (!start_in_append_mode && OB_FAIL(ls_tx_svr_.block_tx())) {
   } else if (OB_FAIL(ls_ddl_log_handler_.online())) {
   } else if (OB_FAIL(log_handler_.online(ls_meta_.get_clog_base_lsn(),
                                          ls_meta_.get_clog_checkpoint_scn()))) {
-  } else if (OB_FAIL(start_local_log_())) {
   } else if (OB_FAIL(ls_wrs_handler_.online())) {
   } else if (OB_FAIL(online_compaction_())) {
+  } else if (start_in_append_mode && OB_FAIL(start_local_log_())) {
+  } else if (!start_in_append_mode && OB_FAIL(start_local_replay_())) {
   } else if (FALSE_IT(checkpoint_executor_.online())) {
   } else if (FALSE_IT(tablet_gc_handler_.online())) {
   } else if (FALSE_IT(tablet_empty_shell_handler_.online())) {
@@ -855,6 +939,23 @@ int ObLS::set_ls_meta(const ObLSMeta &ls_meta)
     if (OB_FAIL(ls_meta_.get_all_id_meta(all_id_meta))) {
     } else if (OB_FAIL(ObIDService::update_id_service(all_id_meta))) {
     }
+  }
+  return ret;
+}
+
+int ObLS::update_meta_for_physical_restore(const ObLSMeta &source_meta)
+{
+  int ret = OB_SUCCESS;
+  ObAllIDMeta all_id_meta;
+  if (IS_NOT_INIT) {
+    ret = OB_NOT_INIT;
+    LOG_WARN("ls is not inited", K(ret));
+  } else if (OB_FAIL(ls_meta_.update_for_physical_restore(ls_epoch_, source_meta))) {
+    LOG_WARN("failed to update ls meta for physical restore", K(ret), K(source_meta));
+  } else if (OB_FAIL(ls_meta_.get_all_id_meta(all_id_meta))) {
+    LOG_WARN("failed to get restored id meta", K(ret), K_(ls_meta));
+  } else if (OB_FAIL(ObIDService::update_id_service(all_id_meta))) {
+    LOG_WARN("failed to update id services after physical restore", K(ret), K(all_id_meta));
   }
   return ret;
 }

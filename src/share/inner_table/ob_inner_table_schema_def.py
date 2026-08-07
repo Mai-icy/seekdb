@@ -5189,6 +5189,7 @@ def_table_schema(
       ('create_time', 'int'),
       ('role', 'varchar:64'),
       ('switchover_status', 'varchar:100'),
+      ('log_restore_source', 'varchar:1024'),
       ('sync_scn', 'uint'),
       ('readable_scn', 'uint')
                      ],  vtable_route_policy = 'local'

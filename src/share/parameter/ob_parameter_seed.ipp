@@ -1142,6 +1142,10 @@ DEF_PARAM(server_create_time, INT, OB_CLUSTER_PARAMETER, "0", "[1,)",
         "default: 0 (invalid timestamp), Range: [1,)",
         ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::READONLY));
 
+DEF_PARAM(log_restore_source, STR, OB_CLUSTER_PARAMETER, "",
+        "standby log source in ip:rpc_port form",
+        ObParameterAttr(Section::OBSERVER, Source::DEFAULT, EditLevel::DYNAMIC_EFFECTIVE));
+
 // Persisted server role and switchover state.
 // format: "server_role:switchover_status"
 // example: "PRIMARY:NORMAL" or "STANDBY:SWITCHING TO PRIMARY"

@@ -18,6 +18,7 @@ MODULE_ROOTS = {
     "query": "src/query",
     "rootserver": "src/rootserver",
     "share": "src/share",
+    "standby": "src/standby",
     "sql": "src/sql",
     "storage": "src/storage",
 }
@@ -48,6 +49,7 @@ ALLOWED_MODULE_DEPS = {
         "share",
         "sql",
         "storage",
+        "standby",
     ],
     "pl": [
         "data_plane",
@@ -86,6 +88,13 @@ ALLOWED_MODULE_DEPS = {
         "oblib",
         "query",
         "share",
+    ],
+    "standby": [
+        "data_plane",
+        "logservice",
+        "oblib",
+        "share",
+        "storage",
     ],
 }
 

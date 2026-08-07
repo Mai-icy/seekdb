@@ -25,6 +25,7 @@
 #include "rootserver/ob_root_utils.h"
 #include "share/ob_global_merge_table_operator.h"
 #include "share/ob_global_stat_proxy.h"
+#include "share/ob_server_struct.h"
 #include "rootserver/ob_thread_idling.h"
 #include "storage/tx_storage/ob_ls_service.h"
 #include "share/rc/ob_server_runtime.h"
@@ -118,7 +119,8 @@ void ObMajorMergeInfoDetector::runTimerTask()
           if (OB_ISNULL(snapshot_gc_scn_renewer_)) {
             ret = OB_ERR_UNEXPECTED;
             LOG_WARN("snapshot gc scn renewer is null", KR(ret));
-          } else if (OB_FAIL(snapshot_gc_scn_renewer_->try_renew())) {
+          } else if (!GCTX.is_standby_server()
+                     && OB_FAIL(snapshot_gc_scn_renewer_->try_renew())) {
             if (REACH_TIME_INTERVAL(60 * 1000 * 1000L)) {
               LOG_WARN("fail to renew gc snapshot", KR(ret), K_(is_primary_service));
             }
@@ -282,7 +284,7 @@ int ObMajorMergeInfoDetector::destroy()
 int ObMajorMergeInfoDetector::try_reload_freeze_info()
 {
   int ret = OB_SUCCESS;
-  if (!is_primary_service()) {
+  if (!is_primary_service() || GCTX.is_standby_server()) {
     if (OB_ISNULL(major_merge_info_mgr_)) {
       ret = OB_ERR_UNEXPECTED;
       LOG_WARN("fail to try reload freeze info, freeze info manager is null", KR(ret),

@@ -68,6 +68,8 @@ struct ObServerInfo
   bool is_switching_to_standby_status() const { return switchover_status_.is_switching_to_standby_status(); }
   bool is_prepare_switching_to_standby_status() const { return switchover_status_.is_prepare_switching_to_standby_status(); }
   bool is_prepare_switching_to_primary_status() const { return switchover_status_.is_prepare_switching_to_primary_status(); }
+  bool is_prepare_flashback_for_failover_to_primary_status() const { return switchover_status_.is_prepare_flashback_for_failover_to_primary_status(); }
+  bool is_flashback_status() const { return switchover_status_.is_flashback_status(); }
 
   TO_STRING_KV(K_(server_role), K_(switchover_status));
 
@@ -88,6 +90,10 @@ public:
   static int init_server_info_from_role(
       common::ObConfigManager *config_mgr,
       const ObServerRole::Role server_role);
+
+  static int update_server_info(
+      common::ObConfigManager *config_mgr,
+      const ObServerInfo &server_info);
 
 };
 
