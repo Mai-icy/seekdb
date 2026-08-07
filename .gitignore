@@ -62,14 +62,12 @@ autom4te.cache/
 build
 build/
 build_*/
-build_debug
-build_errsim
-build_release
 build_version.c
 build_version.cpp
 compile
 !test/compile/
 !test/compile/**
+/bazel-*
 config.guess
 config.log
 config.status
@@ -106,8 +104,6 @@ compile_commands.json
 .claude
 ## Intellij files
 .idea
-cmake-build-debug
-cmake-build-release
 *.iml
 ## OSX dir files
 .DS_Store
@@ -344,9 +340,9 @@ unittest/clog/deploy/post_msg_main
 unittest/clog/fake_ilog_dir*
 unittest/common/kv_storecache
 unittest/common/small_allocator
-unittest/lib/*.log*
-unittest/lib/hash.data
-unittest/lib/observer.pfda
+unittest/oblib/*.log*
+unittest/oblib/hash.data
+unittest/oblib/observer.pfda
 unittest/obproxy/*checker
 unittest/obproxy/.conf/
 unittest/obproxy/etc/
@@ -386,10 +382,10 @@ tools/windows/seekdbConfigurator/obj/
 tools/windows/seekdbConfigurator/publish/
 
 ############# deps #############
-deps/oblib/src/common/storage/ob_io_selector.h
-deps/oblib/src/grpc/*.pb.h
-deps/oblib/src/grpc/*.pb.cc
-deps/oblib/src/grpc/*.pb.cpp
+src/oblib/common/storage/ob_io_selector.h
+src/oblib/grpc/*.pb.h
+src/oblib/grpc/*.pb.cc
+src/oblib/grpc/*.pb.cpp
 deps/3rd
 deps/3rd_party
 deps/usr

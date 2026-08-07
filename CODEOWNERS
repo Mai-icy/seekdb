@@ -1,0 +1,153 @@
+* @wangyunlai.wyl @nijia.nj @xianlin.lh
+/**/* @wangyunlai.wyl @nijia.nj @xianlin.lh
+/.secignore* @dingzengxian.dzx @dingyixuan.dyx @hengtang.zj @jiyu.hyx
+/docs/**/* @rongfeng.frf @wangyunlai.wyl @nijia.nj
+/images/**/* @rongfeng.frf @wangyunlai.wyl @nijia.nj
+/package/**/* @wangzelin.wzl @rongfeng.frf @nijia.nj @wangyunlai.wyl
+/.4_ce @wangzelin.wzl @rongfeng.frf @nijia.nj @wangyunlai.wyl
+/.akfarm @niyuhang.nyh @gy389672 @nijia.nj @wangyunlai.wyl
+/.gitlab_test.yaml @dingyixuan.dyx @hengtang.zj @niyuhang.nyh @zhimingzhang.zzm
+/CLOSE_SOURCES @rongfeng.frf @wangzelin.wzl @nijia.nj @wangyunlai.wyl
+/CODEOWNERS @jiyu.hyx @dingyixuan.dyx @hengtang.zj @xianlin.lh @nijia.nj
+/CONTRIBUTING.md @rongfeng.frf @nijia.nj @wangyunlai.wyl
+/README*.md @rongfeng.frf @wangyunlai.wyl @nijia.nj
+/build.ps1 @wangzelin.wzl @wangyunlai.wyl @nijia.nj
+/test/static/license_scan.py @dingyixuan.dyx @jiyu.hyx @niyuhang.nyh @wangyunlai.wyl @nijia.nj
+/tools/import_srs_data.py @wangyunlai.wyl @nijia.nj @xianlin.lh
+/dep_cache/**/* @wangyunlai.wyl @nijia.nj
+/.github/**/* @wangyunlai.wyl @wangzelin.wzl
+/src/share/parameter/ob_parameter_seed.ipp @wangyunlai.wyl @nijia.nj @xianlin.lh
+/src/share/inner_table/ob_inner_table_schema_def.py @wangyunlai.wyl @nijia.nj @xianlin.lh
+/tools/deploy/mysql_test/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/array/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/expr/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/fork_database/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/fts_index/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/geometry/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/json/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/lob/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/map/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/pl/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/static_engine/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/vector_index/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/Shared_HJ_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/alter/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/alter_routine_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/array2_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/array3_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/array3_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/array_func2_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/ascii_tis620_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/benchmark_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/bit_type/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/bitmap3_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/bitmap4_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/cast_character_set_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/cast_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/character_pl_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/characterset_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/charset/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/charset_asian/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/check_table_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/collation_non_strict_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/collation_stric_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/column_store/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/create_table/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/database/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/day_function_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/ddl/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/ddl_add_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/ddl_alter_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/ddl_drop_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/decimal_int/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/digest_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/encrypt_function_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/enum_and_set/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/find_in_set_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/float_double_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/fork_table/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/funcs/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/gather_index_stats_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/gb18030_2022_collation_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/gb18030_2022_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/gb2312_cp932_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/gbk_obmysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/generated_columns_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/get_format_utc_time_date_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/gis_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/groupby/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/histogram/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/hkscs_utf16le_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/information_schema/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/information_schema_table_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/join/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/jp/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/json_mulitivalue2_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/latin1_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/likebetween_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/load_data/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/map1_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/meta_info/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/minus_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/multivalue/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/mysql57_t/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/mysql8_t_1/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/mysql8_t_2/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/mysql_n_constant_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/mysql_strcmp_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/name_const_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/ob_all_charset_specific_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/object_name_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/online_ddl/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/online_opt_stat_gather/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/optimizer/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/optimizer_dynamic_sampling/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/organization_heap_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/parser/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/partition/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/partition_sec_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/plan_cache/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/prepare_text_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/ps_text/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/px/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/random_bytes_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/reference_role_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/rename_column_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/resolver/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/round_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/select/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/selectivity/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/set_variate_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/show_create_table_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/sort/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/sparsevector_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/split_part_keyvalue_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/sql_boundary_charset/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/stmt_printer/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/string_type/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/subquery/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/sys_vars/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/table_redefinition/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/time_function_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/to_char_decode_percentile_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/transformer/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/trigger_ddl_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/trim_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/type_date/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/type_demotion/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/union/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/update/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/upper_lower_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/uservariable_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/utf8mb4_mysqlnew_collation_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/validate_password_strength_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/vector_array_ddl/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/vector_async/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/vector_function_mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/vector_index_second_mysql/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/vectorize/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/virtual_column_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/weight_string_4mysql_sqlqa/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/window_function_mysql/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/xml/**/* @wangyunlai.wyl @nijia.nj
+/tools/deploy/mysql_test/test_suite/yonyou_test/**/* @wangyunlai.wyl @nijia.nj
