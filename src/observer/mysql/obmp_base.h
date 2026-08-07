@@ -158,7 +158,7 @@ public:
     //ensuring consistency with the endianness of the target machine.
     int64_t label_high64 = - EVENT_CODE(EventTable::EN_SQL_MEMORY_LABEL_HIGH64);
     if (OB_UNLIKELY(lib::ObLabel("SqlDtlBuf") == attr.label_
-                    || ObCtxIds::MEMSTORE_CTX_ID == attr.ctx_id_)) {
+                    || lib::ObLabel(ObNewModIds::OB_MEMSTORE) == attr.label_)) {
       // do nothing
     } else if (label_high64 != 0) {
       int64_t label_low64 = - EVENT_CODE(EventTable::EN_SQL_MEMORY_LABEL_LOW64);

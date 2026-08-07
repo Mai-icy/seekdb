@@ -105,10 +105,7 @@ int ObServerReloadConfig::operator()()
   int64_t cache_size = GCONF.memory_chunk_cache_size;
   bool use_large_chunk_cache = false;
   if (0 == cache_size || 1 == cache_size) {
-    cache_size = GMEMCONF.get_server_memory_limit();
-    if (cache_size >= (32L<<30)) {
-      cache_size -= (4L<<30);
-    }
+    cache_size = lib::AChunkMgr::get_default_max_chunk_cache_size();
   }
   lib::AChunkMgr::instance().set_max_chunk_cache_size(cache_size, use_large_chunk_cache);
 

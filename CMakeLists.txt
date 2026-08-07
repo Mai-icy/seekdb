@@ -67,6 +67,8 @@ endif()
 # Disable Boost header deprecation warnings (clang uses -Wno-#pragma-messages)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-#pragma-messages")
 
+include(cmake/Jemalloc.cmake)
+
 # Only resolve path if it exists (on macOS, this directory may not exist)
 if(EXISTS "${STDC_SHARED_LIB_SYMLINK}")
   file(REAL_PATH ${STDC_SHARED_LIB_SYMLINK} STDC_SHARED_LIB)
