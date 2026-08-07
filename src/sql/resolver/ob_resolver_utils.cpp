@@ -1856,6 +1856,9 @@ stmt::StmtType ObResolverUtils::get_stmt_type_by_item_type(const ObItemType item
       SET_STMT_TYPE(T_REVOKE);
       SET_STMT_TYPE(T_SYSTEM_REVOKE);
       SET_STMT_TYPE(T_REVOKE_ROLE);
+      SET_STMT_TYPE(T_SWITCHOVER_TO_STANDBY);
+      SET_STMT_TYPE(T_SWITCHOVER_TO_PRIMARY);
+      SET_STMT_TYPE(T_ACTIVATE_STANDBY);
       SET_STMT_TYPE(T_SHOW_CREATE_USER);
 #undef SET_STMT_TYPE
       case T_ROLLBACK:

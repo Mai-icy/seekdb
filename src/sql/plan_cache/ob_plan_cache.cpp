@@ -21,6 +21,7 @@
 #include "sql/pl/pl_cache/ob_pl_cache_mgr.h"
 #include "sql/plan_cache/ob_values_table_compression.h"
 #include "query/plan_cache/ob_plan_cache_access_service.h"
+#include "share/rc/ob_server_runtime.h"
 
 using namespace oceanbase::common;
 using namespace oceanbase::common::hash;
@@ -475,14 +476,17 @@ int ObPlanCache::get_plan(common::ObIAllocator &allocator,
         MEMCPY(pc_ctx.sql_ctx_.format_sql_id_,
                plan->stat_.format_sql_id_.ptr(),
                plan->stat_.format_sql_id_.length());
-        if (GCONF.enable_perf_event) {
-          
-          bool read_only = false;
-          if (pc_ctx.sql_ctx_.session_info_->is_inner() && !pc_ctx.sql_ctx_.session_info_->is_user_session()) {
-            // do nothing
-          } else if (OB_FAIL(pc_ctx.sql_ctx_.schema_guard_->get_runtime_read_only(read_only))) {
-          } else if (OB_FAIL(pc_ctx.sql_ctx_.session_info_->check_read_only_privilege(
-                       read_only, pc_ctx.sql_traits_))) {
+        if (pc_ctx.sql_ctx_.session_info_->is_inner()
+            && !pc_ctx.sql_ctx_.session_info_->is_user_session()) {
+          // Internal maintenance follows its own role checks.
+        } else if (!share::server_is_primary() && !pc_ctx.sql_traits_.is_readonly_stmt_) {
+          ret = OB_STANDBY_DATABASE_READ_ONLY;
+          LOG_WARN("standby server is read only", KR(ret), K(pc_ctx.sql_traits_));
+         } else if (GCONF.enable_perf_event) {
+           bool read_only = false;
+           if (OB_FAIL(pc_ctx.sql_ctx_.schema_guard_->get_runtime_read_only(read_only))) {
+           } else if (OB_FAIL(pc_ctx.sql_ctx_.session_info_->check_read_only_privilege(
+                        read_only, pc_ctx.sql_traits_))) {
           }
         }
       }

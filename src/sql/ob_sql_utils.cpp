@@ -1097,6 +1097,12 @@ bool ObSQLUtils::is_readonly_stmt(ParseResult &result)
                || T_VARIABLE_SET == type
                || T_SET_NAMES == type //read only not restrict it
                || T_SET_CHARSET == type  //read only not restrict it
+               || T_SWITCHOVER_TO_STANDBY == type
+               || T_SWITCHOVER_TO_PRIMARY == type
+               || T_ACTIVATE_STANDBY == type
+               || T_ALTER_SYSTEM_SET_PARAMETER == type
+               || T_ALTER_SYSTEM_RESET_PARAMETER == type
+               || T_ALTER_SYSTEM_SETTP == type
                || T_SET_ROLE == type) {
       ret = true;
     }

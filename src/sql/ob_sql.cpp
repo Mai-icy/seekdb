@@ -36,6 +36,7 @@
 #include "lib/utility/ob_smart_call.h"
 #include "sql/monitor/show_trace/ob_show_trace.h"
 #include "sql/optimizer/ob_optimizer.h"
+#include "share/rc/ob_server_runtime.h"
 
 namespace oceanbase
 {
@@ -1789,6 +1790,11 @@ int ObSql::check_read_only_privilege(ParseResult &parse_result,
   if (OB_ISNULL(pctx) || OB_ISNULL(session)) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret));
+  } else if (!(session->is_inner() && !session->is_user_session())
+             && !share::server_is_primary()
+             && !sql_traits.is_readonly_stmt_) {
+    ret = OB_STANDBY_DATABASE_READ_ONLY;
+    LOG_WARN("standby server is read only", KR(ret), K(sql_traits));
   } else if (OB_FAIL(schema_guard.get_runtime_read_only(read_only))) {
   } else if (OB_FAIL(session->check_read_only_privilege(read_only,
                                                         sql_traits))) {

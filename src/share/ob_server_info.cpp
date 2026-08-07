@@ -243,5 +243,12 @@ int ObServerInfoProxy::init_server_info_from_role(
   return ret;
 }
 
+int ObServerInfoProxy::update_server_info(
+    common::ObConfigManager *config_mgr,
+    const ObServerInfo &server_info)
+{
+  return update_server_info_config(config_mgr, server_info);
+}
+
 } // namespace share
 } // namespace oceanbase
