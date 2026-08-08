@@ -548,9 +548,9 @@ public:
   ObConfigCapacityItem &operator = (int64_t value);
   virtual bool check_unit(const char *str) const
   {
-    bool is_valid = false;
+    bool is_valid;
     IGNORE_RETURN ObConfigCapacityParser::get(str, is_valid);
-    return is_valid || (NULL != str && 0 == STRCMP("0", str));
+    return is_valid;
   }
 
   virtual ObConfigItemType get_config_item_type() const {

@@ -73,7 +73,9 @@ int ObSqlMemMgrProcessor::init(
       profile_.set_expect_size(OB_INVALID_ID);
       if (OB_FAIL(ret)) {
       } else if (OB_FAIL(sql_mem_mgr_->register_work_area_profile(profile_))) {
+        LOG_WARN("failed to register workarea profile", K(ret));
       } else if (OB_FAIL(sql_mem_mgr_->get_work_area_size(allocator, profile_))) {
+        LOG_WARN("failed to get available mem size", K(ret));
       } else {
         is_auto_mgr_ = profile_.get_auto_policy();
         LOG_DEBUG("trace enable sql memory manager", K(ret), K(profile_.get_cache_size()),
@@ -83,6 +85,7 @@ int ObSqlMemMgrProcessor::init(
       profile_.init(cache_size, OB_MALLOC_MIDDLE_BLOCK_SIZE);
       profile_.set_expect_size(OB_INVALID_ID);
       if (OB_FAIL(sql_mem_mgr_->register_work_area_profile(profile_))) {
+        LOG_WARN("failed to register workarea profile", K(ret));
       }
       // If switching from AUTO->MANUAL, do we need to clean up some data
       LOG_TRACE("trace only register sql memory manager", K(ret), K(profile_.get_cache_size()),
@@ -95,6 +98,7 @@ int ObSqlMemMgrProcessor::init(
   if (OB_FAIL(ret)) {
   } else if (OB_FAIL(ObSqlWorkareaUtil::get_workarea_size(
       profile_.get_work_area_type(), exec_info, max_mem_size))) {
+    LOG_WARN("failed to get workarea size", K(ret), K(max_mem_size));
   }
   if (!profile_.get_auto_policy()) {
     profile_.set_max_bound(max_mem_size);
@@ -118,6 +122,7 @@ int ObSqlMemMgrProcessor::get_max_available_mem_size(ObIAllocator *allocator)
   if (OB_UNLIKELY(!is_auto_mgr())) {
   } else if (OB_NOT_NULL(sql_mem_mgr_)) {
     if (OB_FAIL(sql_mem_mgr_->get_work_area_size(allocator, profile_))) {
+      LOG_WARN("failed to get work area size", K(ret));
     } else {
       LOG_TRACE("trace get max available mem size",
         K(profile_.get_cache_size()), K(profile_.get_expect_size()));
@@ -135,6 +140,7 @@ int ObSqlMemMgrProcessor::update_max_available_mem_size_periodically(
   updated = false;
   if (predicate(periodic_cnt_)) {
     if (OB_FAIL(get_max_available_mem_size(allocator))) {
+      LOG_WARN("failed to get available memory size", K(ret));
     } else {
       updated = true;
       periodic_cnt_ <<= 1;
@@ -156,10 +162,12 @@ int ObSqlMemMgrProcessor::update_cache_size(ObIAllocator *allocator, int64_t cac
   } else if (OB_NOT_NULL(sql_mem_mgr_)) {
     int64_t pre_size = profile_.get_cache_size();
     if (!profile_.get_auto_policy()) {
+      LOG_TRACE("unexpected status: profile need register", K(ret));
     } else if (cache_size != pre_size) {
       profile_.init(cache_size, OB_MALLOC_MIDDLE_BLOCK_SIZE);
       if (OB_FAIL(sql_mem_mgr_->update_work_area_profile(
                   allocator, profile_, cache_size - pre_size))) {
+        LOG_WARN("failed update work area profile", K(ret), K(cache_size));
       } else {
         LOG_TRACE("trace update cache size", K(profile_.get_cache_size()),
           K(profile_.get_expect_size()), K(cache_size), K(pre_size));
@@ -198,15 +206,20 @@ int ObSqlMemMgrProcessor::try_upgrade_auto_mgr(ObIAllocator *allocator, int64_t 
     if (sql_mem_mgr_->enable_auto_memory_mgr()
         && sql_mem_mgr_->get_global_bound_size() < max_area_size) {
     } else if (OB_FAIL(update_used_mem_size(0))) {
+      LOG_WARN("failed to update used mem size", K(ret));
     } else if (OB_FAIL(init(allocator,
                             max_area_size * (EXTEND_RATIO + 100) /100,
                             profile_.get_operator_type(),
                             profile_.get_operator_id(), profile_.get_exec_info()))) {
+      LOG_WARN("failed to upgrade sql memory manager", K(ret));
     } else if (is_auto_mgr()) {
       // Since it was not registered before, the memory statistics will not reflect in the sql mem manager, but now that it is registered, we need to update the memory values again
       if (OB_FAIL(update_used_mem_size(mem_used))) {
+        LOG_WARN("failed to update used mem_size", K(ret));
       }
+      LOG_TRACE("trace upgrade auto manager", K(profile_), K(mem_used), K(max_area_size));
     } else if (OB_FAIL(update_used_mem_size(mem_used))) {
+      LOG_WARN("failed to update used mem_size", K(ret));
     }
   }
   return ret;
@@ -223,10 +236,12 @@ int ObSqlMemMgrProcessor::extend_max_memory_size(
   int ret = OB_SUCCESS;
   need_dump = true;
   if (OB_FAIL(try_upgrade_auto_mgr(allocator, mem_used))) {
+    LOG_WARN("failed to try upgrade auto manager", K(ret));
   } else if (OB_UNLIKELY(!is_auto_mgr())) {
     /* do nothing */
   } else if (OB_NOT_NULL(sql_mem_mgr_)) {
     if (OB_FAIL(get_max_available_mem_size(allocator))) {
+      LOG_WARN("failed to get max available memory size", K(ret));
     }
     int64_t times = 0;
     while ((need_dump = dump_fun(profile_.get_expect_size())) && OB_SUCC(ret)) {
@@ -237,15 +252,22 @@ int ObSqlMemMgrProcessor::extend_max_memory_size(
         // Strategy: Get the current maximum available memory, if it is less than cache_size, exit, indicating that the memory management module can only provide this much
         //      otherwise, continue to determine whether to dump, proceed with the true memory expansion logic
         if (OB_FAIL(get_max_available_mem_size(allocator))) {
+          LOG_WARN("failed to get max available memory size", K(pre_cache_size),
+            K(pre_expect_size), K(ret));
         } else if (profile_.get_cache_size() > profile_.get_expect_size()) {
+          LOG_TRACE("trace extend max memory size", K(pre_cache_size), K(pre_expect_size));
           break;
         }
       } else {
         int64_t new_cache_size = profile_.get_cache_size() * (EXTEND_RATIO + 100) / 100;
         if (OB_FAIL(update_cache_size(allocator, new_cache_size))) {
+          LOG_WARN("failed to upadte cache size", K(ret), K(new_cache_size));
         } else if (OB_FAIL(get_max_available_mem_size(allocator))) {
+          LOG_WARN("failed to get max available memory size", K(new_cache_size),
+            K(pre_cache_size), K(pre_expect_size), K(ret));
         } else if (profile_.get_cache_size() > profile_.get_expect_size()) {
           if (OB_FAIL(update_cache_size(allocator, pre_cache_size))) {
+            LOG_WARN("failed to get max memory size", K(ret), K(pre_cache_size));
           }
           LOG_TRACE("trace extend max memory size", K(pre_cache_size), K(pre_expect_size),
             K(profile_.get_cache_size()), K(profile_.get_expect_size()));
@@ -258,6 +280,7 @@ int ObSqlMemMgrProcessor::extend_max_memory_size(
           K(profile_.get_cache_size()));
       }
       if (max_times <= times) {
+        LOG_TRACE("extend memory size too more times", K(times));
         break;
       }
     }
@@ -271,6 +294,7 @@ void ObSqlMemMgrProcessor::unregister_profile()
   if (OB_NOT_NULL(sql_mem_mgr_)) {
     if (OB_SUCCESS == sql_mem_mgr_->unregister_work_area_profile(profile_)) {
       sql_mem_mgr_ = nullptr;
+      LOG_DEBUG("trace unregister work area profile", K(profile_));
     }
   }
   if (OB_NOT_NULL(dummy_ptr_)) {
@@ -285,6 +309,7 @@ int ObSqlMemMgrProcessor::alloc_dir_id(int64_t &dir_id)
   int ret = OB_SUCCESS;
   if (0 == dir_id_) {
     if (OB_FAIL(ObChunkStoreUtil::alloc_dir_id(dir_id_))) {
+      LOG_WARN("failed to alloc dir id", K(ret));
     }
   }
   dir_id = dir_id_;
@@ -298,8 +323,10 @@ int ObSqlWorkareaUtil::get_workarea_size(const ObSqlWorkAreaType wa_type,
   int ret = OB_SUCCESS;
   if (OB_ISNULL(exec_ctx)) {
     if (OB_FAIL(get_workarea_size(wa_type, value, nullptr))) {
+      LOG_WARN("Fail to get workarea size", K(ret));
     }
   } else if (OB_FAIL(get_workarea_size(wa_type, value, exec_ctx->get_my_session()))) {
+    LOG_WARN("Fail to get workarea size", K(ret));
   }
   return ret;
 }
@@ -310,6 +337,7 @@ int ObSqlWorkareaUtil::get_workarea_size(const ObSqlWorkAreaType wa_type,
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(get_workarea_size(wa_type, value, exec_info.get_my_session()))) {
+    LOG_WARN("Fail to get workarea size", K(ret));
   }
   return ret;
 }

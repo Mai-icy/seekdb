@@ -418,7 +418,7 @@ int ObVectorAllocator::init()
     .set_ablock_size(lib::INTACT_MIDDLE_AOBJECT_SIZE);
   ObSharedMemAllocMgr *share_mem_alloc_mgr =
       ::oceanbase::share::server_service<::oceanbase::share::ObSharedMemAllocMgr>();
-  throttle_tool_ = &(share_mem_alloc_mgr->share_resource_throttle_tool());
+  throttle_tool_ = &(share_mem_alloc_mgr->vector_throttle_tool());
   MDS_TG(10_ms);
   if (IS_INIT){
     ret = OB_INIT_TWICE;
@@ -427,7 +427,9 @@ int ObVectorAllocator::init()
     ret = OB_ERR_UNEXPECTED;
     SHARE_LOG(WARN, "throttle tool is unexpected null", KP(throttle_tool_), KP(share_mem_alloc_mgr));
   } else if (OB_FAIL(ROOT_CONTEXT->CREATE_CONTEXT(memory_context_, param))) {
+    SHARE_LOG(WARN, "create memory entity failed", K(ret));
   } else if (OB_FAIL(ObVectorMemContext::init(memory_context_, throttle_tool_))) {
+    SHARE_LOG(WARN, "vector mem context init failed", K(ret));
   } else {
     is_inited_ = true;
   }

@@ -47,6 +47,7 @@ class ObIMemstoreRuntime
 {
 public:
   virtual ~ObIMemstoreRuntime() = default;
+  virtual int get_memstore_limit_percentage(int64_t &limit_percent) = 0;
   virtual int set_memstore_threshold() = 0;
 };
 

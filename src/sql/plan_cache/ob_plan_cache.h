@@ -82,8 +82,10 @@ struct ObKVEntryTraverseOp
       PL_CACHE_LOG(WARN, "invalid argument",
       K(key_value_list_), K(entry.first), K(entry.second), K(ret));
     } else if (OB_FAIL(check_entry_match(entry, is_match))) {
+      PL_CACHE_LOG(WARN, "failed to check entry match", K(ret));
     } else if (is_match) {
       if (OB_FAIL(key_value_list_->push_back(ObLCKeyValue(entry.first, entry.second)))) {
+        PL_CACHE_LOG(WARN, "fail to push back key", K(ret));
       } else {
         entry.second->inc_ref_count();
         total_mem_used_ += entry.second->get_mem_size();
@@ -336,7 +338,7 @@ public:
   void account_cache_object(ObILibCacheObject &cache_obj);
   void refresh_cache_node(ObILibCacheNode &cache_node);
   void release_cache_object(ObILibCacheObject &cache_obj);
-  void release_cache_node_memory_account(ObILibCacheNode &cache_node);
+  void release_cache_node(ObILibCacheNode &cache_node);
 
   int64_t get_mem_used() const { return get_managed_used(); }
   int64_t get_mem_hold() const;
@@ -487,6 +489,7 @@ int ObPlanCache::foreach_cache_obj(_callback &callback) const
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(co_mgr_.foreach_cache_obj(callback))) {
+    _OB_LOG(WARN, "fail to traverse cache obj map");
   }
   return ret;
 }
@@ -496,6 +499,7 @@ int ObPlanCache::foreach_alloc_cache_obj(_callback &callback) const
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(co_mgr_.foreach_alloc_cache_obj(callback))) {
+    _OB_LOG(WARN, "fail to traverse alloc cache obj map");
   }
   return ret;
 }

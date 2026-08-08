@@ -47,12 +47,20 @@ public:
   {
     int ret = OB_SUCCESS;
     if (OB_FAIL(tx_data_allocator_.init("TX_DATA_SLICE"))) {
+      SHARE_LOG(ERROR, "init tx data allocator failed", KR(ret));
     } else if (OB_FAIL(memstore_allocator_.init())) {
+      SHARE_LOG(ERROR, "init memstore allocator failed", KR(ret));
     } else if (OB_FAIL(mds_allocator_.init())) {
+      SHARE_LOG(ERROR, "init mds allocator failed", KR(ret));
     } else if (OB_FAIL(tx_data_op_allocator_.init())) {
+      SHARE_LOG(ERROR, "init tx data op allocator failed", KR(ret));
     } else if (OB_FAIL(vector_allocator_.init())) {
-    } else if (OB_FAIL(share_resource_throttle_tool_.init(
-                   &memstore_allocator_, &tx_data_allocator_, &mds_allocator_, &vector_allocator_))) {
+      SHARE_LOG(ERROR, "init vector allocator failed", KR(ret));
+    } else if (OB_FAIL(
+                   share_resource_throttle_tool_.init(&memstore_allocator_, &tx_data_allocator_, &mds_allocator_))) {
+      SHARE_LOG(ERROR, "init share resource throttle tool failed", KR(ret));
+    } else if (OB_FAIL(vector_throttle_tool_.init(&vector_allocator_))) {
+      SHARE_LOG(ERROR, "init vector throttle tool failed", KR(ret));
     } else {
       SHARE_LOG(INFO, "finish init runtime shared memory allocator mgr", KP(this));
     }
@@ -69,6 +77,7 @@ public:
   ObTxDataAllocator &tx_data_allocator() { return tx_data_allocator_; }
   ObMdsAllocator &mds_allocator() { return mds_allocator_; }
   TxShareThrottleTool &share_resource_throttle_tool() { return share_resource_throttle_tool_; }
+  VectorThrottleTool &vector_throttle_tool() { return vector_throttle_tool_; }
   ObTxDataOpAllocator &tx_data_op_allocator() { return tx_data_op_allocator_; }
   ObVectorAllocator &vector_allocator() { return vector_allocator_; }
   common::MemoryUsageTracker &tx_data_memtable_tracker()
@@ -93,6 +102,7 @@ private:
 private:
   
   TxShareThrottleTool share_resource_throttle_tool_;
+  VectorThrottleTool vector_throttle_tool_;
   ObMemstoreAllocator memstore_allocator_;
   ObTxDataAllocator tx_data_allocator_;
   ObMdsAllocator mds_allocator_;
