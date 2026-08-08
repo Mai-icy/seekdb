@@ -163,11 +163,33 @@ int ObTabletAutoincMgr::fetch_new_range(const ObTabletAutoincParam &param,
   } else {
     ObTabletAutoincInterval interval;
     const uint64_t range_size = MAX(cache_size_, param.auto_increment_cache_size_);
-    if (OB_FAIL(storage::ObTabletAutoincSeqService::get_instance().fetch_tablet_autoinc_seq_cache(
-        tablet_id, range_size, interval))) {
-      LOG_WARN("fail to fetch local autoinc cache for tablet",
-          K(ret), K(tablet_id), K(range_size));
-    } else {
+    bool finish = false;
+    for (int64_t retry_times = 0; OB_SUCC(ret) && !finish; retry_times++) {
+      const int64_t timeout = THIS_WORKER.is_timeout_ts_valid()
+          ? THIS_WORKER.get_timeout_remain() : OB_DEFAULT_RPC_TIMEOUT;
+      if (OB_FAIL(storage::ObTabletAutoincSeqService::get_instance().fetch_tablet_autoinc_seq_cache(
+          tablet_id, range_size, interval))) {
+        LOG_WARN("fail to fetch local autoinc cache for tablet",
+            K(ret), K(tablet_id), K(range_size), K(retry_times), K(timeout));
+      } else {
+        finish = true;
+      }
+      if (OB_FAIL(ret) && is_retryable(ret)) {
+        // Overwrite a retryable error when the request is still runnable so that
+        // the next loop can retry the local log submission.
+        if (OB_UNLIKELY(timeout <= 0)) {
+          ret = OB_TIMEOUT;
+          LOG_WARN("timeout while fetching local autoinc cache", K(ret), K(timeout));
+        } else if (OB_FAIL(THIS_WORKER.check_status())) {
+          LOG_WARN("failed to check status", K(ret));
+        } else {
+          interval.reset();
+          ob_usleep<common::ObWaitEventIds::STORAGE_AUTOINC_FETCH_RETRY_SLEEP>(RETRY_INTERVAL);
+        }
+      }
+    }
+
+    if (OB_SUCC(ret)) {
       node.cache_start_ = interval.start_;
       node.cache_end_ = interval.end_;
       if (node.cache_end_ == 0) {
