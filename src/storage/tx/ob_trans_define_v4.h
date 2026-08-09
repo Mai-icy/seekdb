@@ -400,9 +400,18 @@ public:
     return is_RR_or_SERIAL_isolevel() && snapshot_version_.is_valid();
   }
   const ObTransID &tid() const { return tx_id_; }
-  bool is_valid() const { return !is_in_tx() || tx_id_.is_valid(); }
+  bool is_valid() const
+  {
+    return !is_in_tx()
+        || tx_id_.is_valid()
+        || access_mode_ == ObTxAccessMode::FENCED_RD_ONLY;
+  }
   ObTxAccessMode get_tx_access_mode() const { return access_mode_; }
-  bool is_rdonly() const { return access_mode_ == ObTxAccessMode::RD_ONLY; }
+  bool is_rdonly() const
+  {
+    return access_mode_ == ObTxAccessMode::RD_ONLY
+        || access_mode_ == ObTxAccessMode::FENCED_RD_ONLY;
+  }
   bool is_clean() const { return !has_write_state_; }
   bool is_shadow() const  { return flags_.SHADOW_; }
   bool is_explicit() const { return flags_.EXPLICIT_; }
