@@ -403,6 +403,7 @@ OBLIB_HEADER_TARGETS = {
         ":oblib_foundation_integration",
         ":oblib_foundation_services",
         ":oblib_foundation_support",
+        ":oblib_mysql_client_runtime",
         "@seekdb_3rd_headers//:rapidjson_headers",
     ],
     },
