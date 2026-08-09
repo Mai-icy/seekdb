@@ -339,6 +339,8 @@ int ObServerRuntime::init(const ObServerRuntimeMeta &meta)
     } else {
       runtime_meta_ = meta;
       set_role(GCTX.server_role_);
+      // Carry the boot-time write capability from the bootstrap runtime.
+      set_write_enabled(share::server_is_write_enabled());
       set_min_cpu(meta.runtime_config_.resource_config_.min_cpu());
       set_max_cpu(meta.runtime_config_.resource_config_.max_cpu());
       const int64_t memory_size = static_cast<double>(runtime_meta_.runtime_config_.resource_config_.memory_size());

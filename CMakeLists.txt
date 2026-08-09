@@ -12,6 +12,8 @@ project("OceanBase"
   HOMEPAGE_URL "https://www.oceanbase.ai"
   LANGUAGES CXX C ASM)
 
+option(OB_ENABLE_STANDBY "Build physical standby support" ON)
+
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(SEEKDB_GENERATED_ROOT "${CMAKE_BINARY_DIR}/generated")
 set(SEEKDB_INNER_TABLE_GENERATOR

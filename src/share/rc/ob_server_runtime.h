@@ -80,8 +80,14 @@ public:
 
   void set_role(const ObServerRole::Role role);
   ObServerRole::Role role() const { return ATOMIC_LOAD(&role_); }
-  bool is_primary() const { return share::is_primary_role(role()); }
-  bool role_is_invalid() const { return share::is_invalid_role(role()); }
+
+  // Write admission is a process capability, not a second server role. It
+  // may be fenced while the boot profile remains PRIMARY.
+  void set_write_enabled(const bool enabled)
+  {
+    ATOMIC_STORE(&write_enabled_, enabled ? 1 : 0);
+  }
+  bool is_write_enabled() const { return 0 != ATOMIC_LOAD(&write_enabled_); }
 
   void set_switchover_epoch(const int64_t switchover_epoch);
   int64_t switchover_epoch() const { return ATOMIC_LOAD(&switchover_epoch_); }
@@ -92,6 +98,7 @@ protected:
   bool inited_;
   ObServerModuleInitCtx *module_init_ctx_;
   ObServerRole::Role role_;
+  int64_t write_enabled_;
   double max_cpu_;
   double min_cpu_;
   int64_t memory_size_;
@@ -179,14 +186,14 @@ inline void set_server_role(const ObServerRole::Role role)
   g_server_runtime->set_role(role);
 }
 
-inline bool server_is_primary()
+inline void set_server_write_enabled(const bool enabled)
 {
-  return g_server_runtime->is_primary();
+  g_server_runtime->set_write_enabled(enabled);
 }
 
-inline bool server_role_is_invalid()
+inline bool server_is_write_enabled()
 {
-  return g_server_runtime->role_is_invalid();
+  return g_server_runtime->is_write_enabled();
 }
 
 inline int64_t server_switchover_epoch()

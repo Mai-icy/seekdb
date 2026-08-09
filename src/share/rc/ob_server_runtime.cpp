@@ -48,6 +48,7 @@ ObServerRuntimeState::ObServerRuntimeState()
     : inited_(false),
     module_init_ctx_(nullptr),
     role_(share::ObServerRole::Role::INVALID_ROLE),
+    write_enabled_(1),
     max_cpu_(0),
     min_cpu_(0),
     memory_size_(0),

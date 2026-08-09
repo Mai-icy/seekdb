@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef OCEANBASE_SHARE_OB_STANDBY_SOURCE_UTIL_H_
-#define OCEANBASE_SHARE_OB_STANDBY_SOURCE_UTIL_H_
+#ifndef OCEANBASE_STANDBY_OB_STANDBY_SOURCE_UTIL_H_
+#define OCEANBASE_STANDBY_OB_STANDBY_SOURCE_UTIL_H_
 
 #include "lib/net/ob_addr.h"
 #include "lib/string/ob_string.h"
 
 namespace oceanbase
 {
-namespace share
+namespace standby
 {
 
-class ObStandbySourceUtil
+class StandbySourceParser final
 {
 public:
   // Physical standby accepts either:
@@ -36,7 +36,7 @@ public:
       common::ObAddr &addr);
 };
 
-} // namespace share
+} // namespace standby
 } // namespace oceanbase
 
-#endif /* OCEANBASE_SHARE_OB_STANDBY_SOURCE_UTIL_H_ */
+#endif // OCEANBASE_STANDBY_OB_STANDBY_SOURCE_UTIL_H_

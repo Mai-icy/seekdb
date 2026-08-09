@@ -156,71 +156,6 @@ int ObShareUtil::get_ora_rowscn(
   return ret;
 }
 
-int ObShareUtil::get_server_role(ObServerRole::Role &server_role)
-{
-  int ret = OB_SUCCESS;
-  server_role = share::server_role();
-  if (OB_SUCC(ret) && OB_UNLIKELY(is_invalid_role(server_role))) {
-    ret = OB_NEED_WAIT;
-    LOG_WARN("server role is not ready, need wait", KR(ret), K(server_role));
-  }
-  return ret;
-}
-
-int ObShareUtil::check_if_server_role_is_primary(bool &is_primary)
-{
-  int ret = OB_SUCCESS;
-  is_primary = false;
-  ObServerRole::Role server_role;
-  if (OB_FAIL(get_server_role(server_role))) {
-  } else if (is_primary_role(server_role)) {
-    is_primary = true;
-  }
-  return ret;
-}
-
-int ObShareUtil::check_if_server_role_is_standby(bool &is_standby)
-{
-  int ret = OB_SUCCESS;
-  is_standby = false;
-  ObServerRole::Role server_role;
-  if (OB_FAIL(get_server_role(server_role))) {
-  } else if (is_standby_role(server_role)) {
-    is_standby = true;
-  }
-  return ret;
-}
-int ObShareUtil::get_server_role_state(ObServerRole &server_role)
-{
-  int ret = OB_SUCCESS;
-  server_role.reset();
-  server_role = share::server_role();
-  return ret;
-}
-
-int ObShareUtil::check_if_server_role_state_is_primary(bool &is_primary)
-{
-  int ret = OB_SUCCESS;
-  share::ObServerRole server_role;
-  is_primary = false;
-  if (OB_FAIL(get_server_role_state(server_role))) {
-  } else if (server_role.is_primary()) {
-    is_primary = true;
-  }
-  return ret;
-}
-int ObShareUtil::check_if_server_role_state_is_standby(bool &is_standby)
-{
-  int ret = OB_SUCCESS;
-  share::ObServerRole server_role;
-  is_standby = false;
-  if (OB_FAIL(get_server_role_state(server_role))) {
-  } else if (server_role.is_standby()) {
-    is_standby = true;
-  }
-  return ret;
-}
-
 int ObShareUtil::gen_default_server_runtime_schema(
     common::ObISQLClient &sql_client,
     schema::ObServerRuntimeSchema &runtime_schema)
@@ -246,11 +181,10 @@ int ObShareUtil::gen_default_server_runtime_schema(
   return ret;
 }
 
-int ObShareUtil::is_primary_server(bool &is_primary)
+int ObShareUtil::is_server_write_enabled(bool &enabled)
 {
-  int ret = OB_SUCCESS;
-  is_primary = share::server_is_primary();
-  return ret;
+  enabled = share::server_is_write_enabled();
+  return OB_SUCCESS;
 }
 
 } //end namespace share

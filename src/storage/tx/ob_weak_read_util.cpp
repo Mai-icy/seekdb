@@ -60,7 +60,7 @@ int ObWeakReadUtil::generate_min_weak_read_version(SCN &scn)
                    static_cast<int64_t>(DEFAULT_REPLICA_KEEPALIVE_INTERVAL)),
           static_cast<int64_t>(DEFAULT_MAX_STALE_BUFFER_TIME));
 
-  if (share::server_is_primary()) {
+  if (share::server_is_write_enabled()) {
     max_stale_time = GCONF.max_stale_time_for_weak_consistency - buffer_time;
   } else {
   //standby, restore, invalid

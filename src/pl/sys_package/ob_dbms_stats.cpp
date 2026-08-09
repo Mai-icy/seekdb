@@ -4840,12 +4840,12 @@ int ObDbmsStats::check_statistic_table_writeable(sql::ObExecContext &ctx)
 {
   int ret = OB_SUCCESS;
   
-  bool is_primary = true;
+  bool write_enabled = false;
   if (OB_ISNULL(ctx.get_my_session())) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get unexpected null", KR(ret), KP(ctx.get_my_session()));
-  } else if (OB_FAIL(share::ObShareUtil::check_if_server_role_is_primary(is_primary))) {
-  } else if (OB_UNLIKELY(!is_primary)) {
+  } else if (OB_FAIL(share::ObShareUtil::is_server_write_enabled(write_enabled))) {
+  } else if (OB_UNLIKELY(!write_enabled)) {
     ret = OB_NOT_SUPPORTED;
     LOG_USER_ERROR(OB_NOT_SUPPORTED, "use dbms_stats on a standby database");
   }

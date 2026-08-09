@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "share/ob_standby_source_util.h"
+#include "standby/ob_standby_source_util.h"
 #include <gtest/gtest.h>
 
 namespace oceanbase
 {
-namespace share
+namespace standby
 {
 
 using namespace common;
@@ -29,11 +29,11 @@ TEST(TestStandbySourceUtil, parse_supported_service_sources)
   ObAddr addr;
   const ObAddr first(ObAddr::IPV4, "127.0.0.1", 2882);
 
-  ASSERT_EQ(OB_SUCCESS, ObStandbySourceUtil::get_first_service_addr(
+  ASSERT_EQ(OB_SUCCESS, StandbySourceParser::get_first_service_addr(
       ObString::make_string("127.0.0.1:2882"), addr));
   ASSERT_EQ(first, addr);
 
-  ASSERT_EQ(OB_SUCCESS, ObStandbySourceUtil::get_first_service_addr(
+  ASSERT_EQ(OB_SUCCESS, StandbySourceParser::get_first_service_addr(
       ObString::make_string(
           " service=127.0.0.1:2882;127.0.0.2:2882 USER=standby PASSWORD=secret "),
       addr));
@@ -44,15 +44,15 @@ TEST(TestStandbySourceUtil, reject_non_service_sources)
 {
   ObAddr addr;
 
-  ASSERT_EQ(OB_ENTRY_NOT_EXIST, ObStandbySourceUtil::get_first_service_addr(
+  ASSERT_EQ(OB_ENTRY_NOT_EXIST, StandbySourceParser::get_first_service_addr(
       ObString::make_string("  "), addr));
-  ASSERT_NE(OB_SUCCESS, ObStandbySourceUtil::get_first_service_addr(
+  ASSERT_NE(OB_SUCCESS, StandbySourceParser::get_first_service_addr(
       ObString::make_string("LOCATION=file:///data/archive"), addr));
-  ASSERT_NE(OB_SUCCESS, ObStandbySourceUtil::get_first_service_addr(
+  ASSERT_NE(OB_SUCCESS, StandbySourceParser::get_first_service_addr(
       ObString::make_string("RAWPATH=/data/archive"), addr));
-  ASSERT_NE(OB_SUCCESS, ObStandbySourceUtil::get_first_service_addr(
+  ASSERT_NE(OB_SUCCESS, StandbySourceParser::get_first_service_addr(
       ObString::make_string("s3://bucket/archive"), addr));
 }
 
-} // namespace share
+} // namespace standby
 } // namespace oceanbase

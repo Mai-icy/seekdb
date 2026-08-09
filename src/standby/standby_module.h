@@ -14,28 +14,40 @@
  * limitations under the License.
  */
 
-#ifndef OCEANBASE_STANDBY_GRPC_SERVICE_H_
-#define OCEANBASE_STANDBY_GRPC_SERVICE_H_
+#ifndef OCEANBASE_STANDBY_STANDBY_MODULE_H_
+#define OCEANBASE_STANDBY_STANDBY_MODULE_H_
+
+#include <stdint.h>
+#include <functional>
+#include "standby/standby_host.h"
 
 namespace oceanbase
 {
-namespace obgrpc
-{
-class ObGrpcServer;
-}
 namespace standby
 {
 
-struct StandbyConfig;
-class StandbyGrpcService;
+class StandbyModule final
+{
+public:
+  StandbyModule();
+  ~StandbyModule();
+  int init(const StandbyConfig &config, IStandbyHost &host);
+  int stop();
+  int wait();
+  void destroy();
+  int prepare_storage_replay();
+  int prepare_service_start(const bool need_bootstrap);
+  int start();
+  int wait_replay_ready(const std::function<bool()> &is_stopping);
+  int wait_metadata_ready();
+  int start_listener();
 
-int create_and_register_standby_grpc_service(
-    obgrpc::ObGrpcServer &grpc_server,
-    const StandbyConfig &config,
-    StandbyGrpcService *&service);
-void destroy_standby_grpc_service(StandbyGrpcService *&service);
+private:
+  class Impl;
+  Impl *impl_;
+};
 
 } // namespace standby
 } // namespace oceanbase
 
-#endif // OCEANBASE_STANDBY_GRPC_SERVICE_H_
+#endif /* OCEANBASE_STANDBY_STANDBY_MODULE_H_ */
