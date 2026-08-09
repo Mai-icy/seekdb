@@ -213,4 +213,10 @@ int ObServerConfig::publish_special_config_after_dump()
 
 
 } // end of namespace common
+namespace obgrpc {
+bool ob_grpc_is_rpc_tls_enabled()
+{
+  return GCONF.enable_rpc_tls;
+}
+} // end of namespace obgrpc
 } // end of namespace oceanbase

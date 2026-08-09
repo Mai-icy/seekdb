@@ -88,6 +88,7 @@ class ObPLDDLService;
 class ObDDLService : public query::ObIAuxIndexSchemaChecker
 {
 public:
+  friend class ObStandbyClusterSchemaProcessor;
   friend class ObPLDDLService;
   ObDDLService();
   virtual ~ObDDLService() {}
