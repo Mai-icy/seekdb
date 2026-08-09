@@ -27,8 +27,9 @@ bool ObRuntimeStatusCache::should_skip_merge() const
 {
   bool bret = true;
   if (IS_INIT) {
-    const share::ObServerRole::Role role = share::server_role();
-    bret = during_restore_ && is_standby_role(role);
+    // Compaction only needs the replay-only capability here. The active role
+    // is fixed for the process and must not be polled by this hot path.
+    bret = during_restore_ && !share::server_is_write_enabled();
   }
   return bret;
 }

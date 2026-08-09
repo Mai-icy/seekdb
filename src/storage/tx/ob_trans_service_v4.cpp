@@ -992,7 +992,7 @@ OB_NOINLINE int ObTransService::acquire_local_snapshot_(SCN &snapshot)
   int ret = OB_SUCCESS;
   SCN snapshot0;
   SCN snapshot1;
-  const bool can_elr = share::server_is_primary();
+  const bool can_elr = share::server_is_write_enabled();
   if (FALSE_IT(snapshot0 = tx_version_mgr_.get_max_commit_ts(can_elr))) {
   } else if (!snapshot0.is_valid_and_not_min()) {
     ret = OB_EAGAIN;
