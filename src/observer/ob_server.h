@@ -214,6 +214,7 @@ class ObMediumChecker;
 }
 namespace memtable { class ObLockWaitMgr; }
 namespace concurrency_control { class ObMultiVersionGarbageCollector; }
+namespace standby { class StandbyModule; }
 namespace observer
 {
 
@@ -399,6 +400,8 @@ public:
 public:
   volatile bool need_ctas_cleanup_; //true: ObCTASCleanUpTask should traverse all table schemas to find the one need be dropped
 private:
+  class StandbyHostAdapter;
+
   ObSignalHandle signal_handle_;
   // gctx, aka global context, stores pointers to objects or services
   // which should share with all, or in part, of classes using in
@@ -411,6 +414,7 @@ private:
   common::ObAddr self_addr_;
   bool prepare_stop_;
   bool stop_;
+  bool need_bootstrap_;
   volatile bool has_stopped_;
   bool has_destroy_;
   int clients_fd_ = -1;
@@ -460,6 +464,8 @@ private:
 
   // Process-local schema, DDL, job, freeze and recycle-bin management.
   rootserver::ObLocalManagementService local_management_service_;
+  StandbyHostAdapter *standby_host_;
+  standby::StandbyModule *standby_module_;
   // All operations and processing logic relating to ob server is
   // defined in oceanbase_service_.
   ObService ob_service_;

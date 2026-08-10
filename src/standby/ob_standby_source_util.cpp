@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-#define USING_LOG_PREFIX SHARE
+#define USING_LOG_PREFIX SERVER
 
-#include "share/ob_standby_source_util.h"
+#include "standby/ob_standby_source_util.h"
 #include "lib/ob_errno.h"
 #include "lib/oblog/ob_log.h"
 
 namespace oceanbase
 {
-namespace share
+namespace standby
 {
 
-int ObStandbySourceUtil::get_first_service_addr(
+int StandbySourceParser::get_first_service_addr(
     const common::ObString &log_restore_source,
     common::ObAddr &addr)
 {
@@ -80,5 +80,5 @@ int ObStandbySourceUtil::get_first_service_addr(
   return ret;
 }
 
-} // namespace share
+} // namespace standby
 } // namespace oceanbase

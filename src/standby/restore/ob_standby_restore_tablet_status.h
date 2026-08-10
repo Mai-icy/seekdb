@@ -14,29 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef OCEANBASE_SHARE_OB_STANDBY_SOURCE_UTIL_H_
-#define OCEANBASE_SHARE_OB_STANDBY_SOURCE_UTIL_H_
+#ifndef OCEANBASE_STORAGE_STANDBY_RESTORE_TABLET_STATUS_WRAPPER_
+#define OCEANBASE_STORAGE_STANDBY_RESTORE_TABLET_STATUS_WRAPPER_
 
-#include "lib/net/ob_addr.h"
-#include "lib/string/ob_string.h"
+#include "storage/ob_tablet_local_status.h"
 
-namespace oceanbase
-{
-namespace share
-{
-
-class ObStandbySourceUtil
-{
-public:
-  // Physical standby accepts either:
-  //   ip:rpc_port
-  //   SERVICE=ip:rpc_port[;ip:rpc_port...] [USER=...] [PASSWORD=...]
-  static int get_first_service_addr(
-      const common::ObString &log_restore_source,
-      common::ObAddr &addr);
-};
-
-} // namespace share
-} // namespace oceanbase
-
-#endif /* OCEANBASE_SHARE_OB_STANDBY_SOURCE_UTIL_H_ */
+#endif // OCEANBASE_STORAGE_STANDBY_RESTORE_TABLET_STATUS_WRAPPER_

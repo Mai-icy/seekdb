@@ -331,6 +331,64 @@ int ObTablet::init_for_first_time_creation(
   return ret;
 }
 
+int ObTablet::init_for_physical_restore(
+    common::ObArenaAllocator &allocator,
+    const ObTabletMeta &tablet_meta,
+    const ObStorageSchema &storage_schema)
+{
+  int ret = OB_SUCCESS;
+  allocator_ = &allocator;
+  if (OB_UNLIKELY(is_inited_)) {
+    ret = OB_INIT_TWICE;
+    LOG_WARN("init twice", K(ret), K_(is_inited));
+  } else if (OB_UNLIKELY(!tablet_meta.is_valid() || !storage_schema.is_valid()
+      || tablet_meta.is_empty_shell_)) {
+    ret = OB_INVALID_ARGUMENT;
+    LOG_WARN("invalid physical restore tablet metadata", K(ret), K(tablet_meta), K(storage_schema));
+  } else if (OB_UNLIKELY(!pointer_hdl_.is_valid()) || OB_ISNULL(log_handler_)) {
+    ret = OB_ERR_UNEXPECTED;
+    LOG_WARN("tablet pointer handle is invalid", K(ret), K_(pointer_hdl), K_(log_handler));
+  } else if (OB_FAIL(init_shared_params(tablet_meta.tablet_id_))) {
+    LOG_WARN("failed to init shared tablet parameters", K(ret), K(tablet_meta));
+  } else if (OB_FAIL(tablet_meta_.assign(tablet_meta))) {
+    LOG_WARN("failed to copy physical restore tablet metadata", K(ret), K(tablet_meta));
+  } else if (OB_FAIL(pull_memtables(allocator))) {
+    LOG_WARN("failed to pull tablet memtables", K(ret), K(tablet_meta));
+  } else {
+    ALLOC_AND_INIT(allocator, table_store_addr_, (*this), static_cast<ObSSTable *>(nullptr));
+    if (OB_FAIL(ret)) {
+      LOG_WARN("failed to init empty restore table store", K(ret), K(tablet_meta));
+    } else {
+      ALLOC_AND_INIT(allocator, storage_schema_addr_, storage_schema);
+    }
+  }
+
+  if (OB_FAIL(ret)) {
+  } else if (OB_FAIL(table_store_cache_.init(table_store_addr_.get_ptr()->get_major_sstables(),
+                                             table_store_addr_.get_ptr()->get_minor_sstables()))) {
+    LOG_WARN("failed to init restore table store cache", K(ret), K(tablet_meta));
+  } else if (OB_FAIL(try_update_start_scn())) {
+    LOG_WARN("failed to update restored tablet start scn", K(ret), K(tablet_meta));
+  } else if (OB_FAIL(build_read_info(allocator, nullptr))) {
+    LOG_WARN("failed to build restored tablet read info", K(ret), K(tablet_meta));
+  } else if (OB_FAIL(init_aggregated_info(allocator, nullptr))) {
+    LOG_WARN("failed to init restored tablet aggregated info", K(ret), K(tablet_meta));
+  } else if (FALSE_IT(set_initial_addr())) {
+  } else if (OB_FAIL(check_table_store_flag_match_with_table_store_(table_store_addr_.get_ptr()))) {
+    LOG_WARN("restore tablet table store flag mismatch", K(ret), K(tablet_meta));
+  } else if (OB_FAIL(inner_inc_macro_ref_cnt())) {
+    LOG_WARN("failed to increase restored tablet macro ref count", K(ret), K(tablet_meta));
+  } else {
+    is_inited_ = true;
+    LOG_INFO("initialized tablet for physical restore", K(tablet_meta));
+  }
+
+  if (OB_UNLIKELY(!is_inited_)) {
+    reset();
+  }
+  return ret;
+}
+
 #ifdef ERRSIM
 void record_truncate_flag(
   const ObTabletID &tablet_id,

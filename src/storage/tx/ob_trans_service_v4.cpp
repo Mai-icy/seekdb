@@ -706,7 +706,10 @@ int ObTransService::get_write_store_ctx(ObTxDesc &tx,
   bool ctx_exist = false;
   ObTxTable *tx_table = nullptr;
 
-  if (tx.access_mode_ == ObTxAccessMode::RD_ONLY) {
+  if (!share::server_is_write_enabled()) {
+    ret = OB_STANDBY_DATABASE_READ_ONLY;
+    TRANS_LOG(WARN, "server write gate is closed", K(ret), K(tx), KPC(this));
+  } else if (tx.is_rdonly()) {
     ret = OB_ERR_READ_ONLY_TRANSACTION;
     TRANS_LOG(WARN, "tx is readonly", K(ret), K(tx), KPC(this));
   } else if (OB_UNLIKELY(!snapshot.valid_)) {
@@ -992,7 +995,7 @@ OB_NOINLINE int ObTransService::acquire_local_snapshot_(SCN &snapshot)
   int ret = OB_SUCCESS;
   SCN snapshot0;
   SCN snapshot1;
-  const bool can_elr = share::server_is_primary();
+  const bool can_elr = share::server_is_write_enabled();
   if (FALSE_IT(snapshot0 = tx_version_mgr_.get_max_commit_ts(can_elr))) {
   } else if (!snapshot0.is_valid_and_not_min()) {
     ret = OB_EAGAIN;

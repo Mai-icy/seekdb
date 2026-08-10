@@ -77,6 +77,7 @@ log_disk_throttling_maximum_duration
 log_disk_throttling_percentage
 log_disk_utilization_limit_threshold
 log_disk_utilization_threshold
+log_restore_source
 log_storage_warning_tolerance_time
 major_compact_trigger
 major_freeze_duty_time

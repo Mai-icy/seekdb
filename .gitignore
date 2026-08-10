@@ -386,6 +386,10 @@ src/oblib/common/storage/ob_io_selector.h
 src/oblib/grpc/*.pb.h
 src/oblib/grpc/*.pb.cc
 src/oblib/grpc/*.pb.cpp
+!src/oblib/grpc/standbyservice.pb.h
+!src/oblib/grpc/standbyservice.pb.cc
+!src/oblib/grpc/standbyservice.grpc.pb.h
+!src/oblib/grpc/standbyservice.grpc.pb.cc
 deps/3rd
 deps/3rd_party
 deps/usr
