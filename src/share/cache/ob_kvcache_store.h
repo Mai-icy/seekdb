@@ -69,8 +69,11 @@ public:
   static constexpr int64_t MAX_CACHE_SIZE = MAX_KVCACHE_MEMORY_SIZE;
   ObKVCacheStore();
   virtual ~ObKVCacheStore();
-  int init(const int64_t max_cache_size, const int64_t block_size);
+  int init(const int64_t max_cache_size,
+           const int64_t block_size,
+           const int64_t cache_memory_limit);
   void destroy();
+  int set_cache_memory_limit(const int64_t cache_memory_limit);
   int refresh_score();
   bool wash();
 
@@ -231,6 +234,8 @@ private:
   //data structures for store
   int64_t cur_mb_num_;
   int64_t max_mb_num_;
+  int64_t max_cache_size_;
+  int64_t cache_memory_limit_;
   int64_t block_size_;
   int64_t block_payload_size_;
   ObKVMemBlockHandle *mb_handles_;

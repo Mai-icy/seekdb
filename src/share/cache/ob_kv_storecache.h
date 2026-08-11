@@ -93,15 +93,22 @@ class ObKVCacheHandle;
 struct ObKVCacheRuntimeOptions
 {
   static const int64_t DEFAULT_WASH_INTERVAL_US = 200 * 1000;
+  static const int64_t USE_MAX_CACHE_SIZE = 0;
 
   explicit ObKVCacheRuntimeOptions(
-      const int64_t wash_interval_us = DEFAULT_WASH_INTERVAL_US)
-      : wash_interval_us_(wash_interval_us)
+      const int64_t wash_interval_us = DEFAULT_WASH_INTERVAL_US,
+      const int64_t cache_memory_limit = USE_MAX_CACHE_SIZE)
+      : wash_interval_us_(wash_interval_us),
+        cache_memory_limit_(cache_memory_limit)
   {}
 
-  bool is_valid() const { return wash_interval_us_ > 0; }
+  bool is_valid() const
+  {
+    return wash_interval_us_ > 0 && cache_memory_limit_ >= USE_MAX_CACHE_SIZE;
+  }
 
   int64_t wash_interval_us_;
+  int64_t cache_memory_limit_;
 };
 
 class ObKVGlobalCache : public lib::ObICacheWasher
@@ -120,7 +127,8 @@ public:
   void wait();
   void destroy();
   int reload_config(const ObKVCacheRuntimeOptions &runtime_options);
-  int get_suitable_bucket_num(int64_t &bucket_num);
+  int get_suitable_bucket_num(const int64_t cache_memory_limit,
+                              int64_t &bucket_num);
   int get_cache_inst_info(ObIArray<ObKVCacheInstHandle> &inst_handles);
   int get_memblock_info(ObIArray<ObKVCacheStoreMemblockInfo> &memblock_infos);
   void print_all_cache_info();

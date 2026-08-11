@@ -18,15 +18,10 @@
 #include "ob_config_helper.h"
 
 #include "common/ob_store_format.h"
-#include "lib/alloc/alloc_func.h"
 #include "lib/ob_running_mode.h"
 #include "share/cache/ob_kvcache_struct.h"
 #include "share/config/ob_parallel_ddl_control_mode.h"
 #include "share/config/ob_server_config.h"
-#include "share/schema/ob_schema_struct.h"
-#include "share/schema/ob_schema_utils.h"
-#include "share/ob_ddl_common.h"
-#include "share/ob_rpc_struct.h"
 
 namespace oceanbase
 {

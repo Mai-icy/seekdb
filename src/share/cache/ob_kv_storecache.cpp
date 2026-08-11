@@ -18,7 +18,6 @@
 #define USING_LOG_PREFIX COMMON
 
 #include "share/cache/ob_kv_storecache.h"
-#include "share/config/ob_server_config.h"
 #include "share/ob_task_define.h"
 #include "share/ob_debug_sync.h"             // DEBUG_SYNC
 
@@ -165,9 +164,10 @@ int ObKVGlobalCache::calculate_suitable_bucket_num(
   return ret;
 }
 
-int ObKVGlobalCache::get_suitable_bucket_num(int64_t& bucket_num)
+int ObKVGlobalCache::get_suitable_bucket_num(
+    const int64_t cache_memory_limit,
+    int64_t& bucket_num)
 {
-  const int64_t cache_memory_limit = GMEMCONF.get_kvcache_memory_limit();
   int ret = calculate_suitable_bucket_num(cache_memory_limit, bucket_num);
   if (OB_FAIL(ret)) {
     COMMON_LOG(ERROR, "failed to calculate suitable bucket num", K(ret),
@@ -189,6 +189,10 @@ int ObKVGlobalCache::init(
     const ObKVCacheRuntimeOptions &runtime_options)
 {
   int ret = OB_SUCCESS;
+  const int64_t cache_memory_limit =
+      ObKVCacheRuntimeOptions::USE_MAX_CACHE_SIZE == runtime_options.cache_memory_limit_
+          ? max_cache_size
+          : runtime_options.cache_memory_limit_;
   if (OB_UNLIKELY(inited_)) {
     ret = OB_INIT_TWICE;
     COMMON_LOG(WARN, "The ObKVGlobalCache has been inited, ", K(ret));
@@ -197,12 +201,14 @@ int ObKVGlobalCache::init(
              max_cache_size > MAX_CACHE_SIZE ||
              block_size <= 0 ||
              cache_wash_interval < 0 ||
-             !runtime_options.is_valid()) {
+             !runtime_options.is_valid() ||
+             cache_memory_limit <= 0 ||
+             cache_memory_limit > max_cache_size) {
     ret = OB_INVALID_ARGUMENT;
     COMMON_LOG(WARN, "Invalid argument, ", K(ret), K(bucket_num),
                K(max_cache_size), K(block_size), K(cache_wash_interval));
   } else if (OB_FAIL(hazard_domain_.init(ObKVCacheStore::compute_mb_handle_num(max_cache_size, block_size)))) {
-  } else if (OB_FAIL(store_.init(max_cache_size, block_size))) {
+  } else if (OB_FAIL(store_.init(max_cache_size, block_size, cache_memory_limit))) {
   } else if (OB_FAIL(map_.init(hash::cal_next_prime(bucket_num), &store_))) {
   } else if (OB_FAIL(insts_.init(MAX_CACHE_NUM, configs_, map_.get_node_allocator()))) {
   } else if (OB_FAIL(wash_timer_.init("KVCacheWash", ObMemAttr("KVCacheWash")))) {
@@ -561,7 +567,14 @@ int ObKVGlobalCache::reload_config(const ObKVCacheRuntimeOptions &runtime_option
   if (!runtime_options.is_valid()) {
     ret = OB_INVALID_ARGUMENT;
     COMMON_LOG(WARN, "invalid cache runtime options", K(ret),
-               K(runtime_options.wash_interval_us_));
+               K(runtime_options.wash_interval_us_),
+               K(runtime_options.cache_memory_limit_));
+  } else if (ObKVCacheRuntimeOptions::USE_MAX_CACHE_SIZE
+                 != runtime_options.cache_memory_limit_
+             && OB_FAIL(store_.set_cache_memory_limit(
+                 runtime_options.cache_memory_limit_))) {
+    COMMON_LOG(WARN, "failed to reload cache memory limit", K(ret),
+               K(runtime_options.cache_memory_limit_));
   } else if (0 == cache_wash_interval_) {
     const int64_t wash_interval = runtime_options.wash_interval_us_;
     bool is_exist = wash_timer_.task_exist(wash_task_);
