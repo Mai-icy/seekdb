@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 OceanBase.
+ * Copyright (c) 2026 OceanBase.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef OCEANBASE_DATA_PLANE_API_OB_I_MEMORY_PRESSURE_SERVICE_H_
-#define OCEANBASE_DATA_PLANE_API_OB_I_MEMORY_PRESSURE_SERVICE_H_
+#ifndef OCEANBASE_STORAGE_META_MEMORY_LIMIT_H_
+#define OCEANBASE_STORAGE_META_MEMORY_LIMIT_H_
 
-#include <stdint.h>
+#include "lib/alloc/alloc_func.h"
+#include "lib/utility/ob_mod_define.h"
 
 namespace oceanbase
 {
-namespace data_plane
+namespace storage
 {
 
-class ObIMemoryPressureService
+inline int set_meta_obj_memory_limit(const int64_t percentage)
 {
-public:
-  virtual ~ObIMemoryPressureService() {}
-  virtual int get_memstore_condition(
-      int64_t &active_memstore_used,
-      int64_t &total_memstore_used,
-      int64_t &memstore_freeze_trigger,
-      int64_t &memstore_limit,
-      int64_t &freeze_count) = 0;
-};
+  const int64_t memory_budget = lib::get_memory_budget();
+  const int64_t memory_limit = 0 == percentage
+      ? memory_budget
+      : memory_budget / 100 * percentage;
+  return lib::set_ctx_limit(common::ObCtxIds::META_OBJ_CTX_ID, memory_limit);
+}
 
-} // namespace data_plane
+} // namespace storage
 } // namespace oceanbase
 
-#endif // OCEANBASE_DATA_PLANE_API_OB_I_MEMORY_PRESSURE_SERVICE_H_
+#endif // OCEANBASE_STORAGE_META_MEMORY_LIMIT_H_

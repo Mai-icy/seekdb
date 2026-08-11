@@ -18,6 +18,7 @@
 #define USING_LOG_PREFIX COMMON
 
 #include "share/cache/ob_kv_storecache.h"
+#include "share/config/ob_server_config.h"
 #include "share/ob_task_define.h"
 #include "share/ob_debug_sync.h"             // DEBUG_SYNC
 
@@ -140,30 +141,41 @@ ObKVGlobalCache &ObKVGlobalCache::get_instance()
   return instance_;
 }
 
-int ObKVGlobalCache::get_suitable_bucket_num(
-    int64_t &bucket_num,
-    const int64_t memory_limit,
-    const int64_t reserved_memory)
+int ObKVGlobalCache::calculate_suitable_bucket_num(
+    const int64_t cache_memory_limit,
+    int64_t &bucket_num)
 {
   INIT_SUCC(ret);
-  int64_t server_memory_factor = upper_align(memory_limit, BASE_SERVER_MEMORY_FACTOR) / BASE_SERVER_MEMORY_FACTOR;
   bucket_num = -1;
-  for (int64_t bucket_level = MAX_BUCKET_NUM_LEVEL -1; bucket_level >= 0; bucket_level--) {
-    if ((1 << bucket_level) > server_memory_factor) {
-      // pass
-    } else {
-      if (bucket_num_array_[bucket_level] * static_cast<int64_t>(sizeof(void *)) <= reserved_memory * MAX_RESERVED_MEMORY_RATIO) {
-        bucket_num = bucket_num_array_[bucket_level];
-        break;
-      }
-    }
-  }
-  if (-1 == bucket_num) {
+  if (cache_memory_limit <= 0) {
     ret = OB_ERR_UNEXPECTED;
-    COMMON_LOG(ERROR, "reserved memory is not enough!", K(memory_limit), K(server_memory_factor), K(reserved_memory));
+  } else {
+    const int64_t bounded_limit = MIN(cache_memory_limit, MAX_CACHE_SIZE);
+    const int64_t required_bucket_num =
+        upper_align(bounded_limit, KVCACHE_BYTES_PER_BUCKET)
+        / KVCACHE_BYTES_PER_BUCKET;
+    int64_t bucket_level = 0;
+    while (bucket_level < MAX_BUCKET_NUM_LEVEL - 1
+           && bucket_num_array_[bucket_level] < required_bucket_num) {
+      ++bucket_level;
+    }
+    bucket_num = bucket_num_array_[bucket_level];
+  }
+
+  return ret;
+}
+
+int ObKVGlobalCache::get_suitable_bucket_num(int64_t& bucket_num)
+{
+  const int64_t cache_memory_limit = GMEMCONF.get_kvcache_memory_limit();
+  int ret = calculate_suitable_bucket_num(cache_memory_limit, bucket_num);
+  if (OB_FAIL(ret)) {
+    COMMON_LOG(ERROR, "failed to calculate suitable bucket num", K(ret),
+               K(cache_memory_limit));
   } else {
     share::ObTaskController::get().allow_next_syslog();
-    COMMON_LOG(INFO, "The ObKVGlobalCache set suitable kvcache buckets", K(bucket_num), K(server_memory_factor), K(reserved_memory));
+    COMMON_LOG(INFO, "The ObKVGlobalCache set suitable kvcache buckets", K(bucket_num),
+               K(cache_memory_limit));
   }
 
   return ret;
@@ -182,6 +194,7 @@ int ObKVGlobalCache::init(
     COMMON_LOG(WARN, "The ObKVGlobalCache has been inited, ", K(ret));
   } else if (bucket_num <= 0 ||
              max_cache_size <= 0 ||
+             max_cache_size > MAX_CACHE_SIZE ||
              block_size <= 0 ||
              cache_wash_interval < 0 ||
              !runtime_options.is_valid()) {
@@ -252,7 +265,6 @@ void ObKVGlobalCache::destroy()
       configs_[i].reset();
     }
     cache_num_ = 0;
-
     inited_ = false;
     COMMON_LOG(INFO, "The ObKVGlobalCache has been destroyed!");
   }

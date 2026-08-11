@@ -43,6 +43,7 @@ int ObServer::get_lower_bound_freeze_info(const int64_t snapshot_version, share:
 #include "lib/ob_running_mode.h"
 #include "lib/task/ob_timer_monitor.h"
 #include "lib/task/ob_timer_service.h" // ObTimerService
+#include "lib/utility/utility.h"
 #include "observer/ob_server_utils.h"
 #include "observer/ob_server_options.h"
 #include "share/ob_timezone_mgr.h"
@@ -254,11 +255,6 @@ data_plane::ObIDmlService *ObServer::dml_service()
 query::ObIVectorIndexService *ObServer::vector_index_service()
 {
   return mods_plugin_vector_index_service_;
-}
-
-int64_t ObServer::memstore_limit_percentage() const
-{
-  return storage::ObMemstoreFreezer::get_memstore_limit_percentage();
 }
 
 int ObServer::get_memstore_condition(
@@ -2230,14 +2226,12 @@ int ObServer::init_global_kvcache()
 {
   int ret = OB_SUCCESS;
   int64_t bucket_num;
-  const int64_t memory_budget = GMEMCONF.get_server_memory_budget();
-  const int64_t reserved_memory = GMEMCONF.get_reserved_server_memory();
-  const int64_t max_cache_size =
-      MIN(memory_budget, ObKVGlobalCache::default_max_cache_size());
+  // The capacity is fixed to twice the initial limit by the memory config.
+  // The handle pool should support dynamic expansion in the future.
+  const int64_t max_cache_size = GMEMCONF.get_kvcache_memory_capacity();
   const ObKVCacheRuntimeOptions runtime_options(
       GCONF._cache_wash_interval);
-  if (OB_FAIL(ObKVGlobalCache::get_instance().get_suitable_bucket_num(
-          bucket_num, memory_budget, reserved_memory))) {
+  if (OB_FAIL(ObKVGlobalCache::get_instance().get_suitable_bucket_num(bucket_num))) {
     LOG_WARN("Failed to get suitable bucket num");
   } else if (OB_FAIL(ObKVGlobalCache::get_instance().init(bucket_num,
                                                    max_cache_size,
