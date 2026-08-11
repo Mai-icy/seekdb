@@ -79,6 +79,7 @@ int ObInnerSQLResult::init()
     .set_page_size(OB_MALLOC_MIDDLE_BLOCK_SIZE)
     .set_ablock_size(lib::INTACT_MIDDLE_AOBJECT_SIZE);
   if (OB_FAIL(CURRENT_CONTEXT->CREATE_CONTEXT(mem_context_, param))) {
+    LOG_WARN("create memory entity failed", K(ret));
   } else if (OB_FAIL(::oceanbase::share::server_service<::oceanbase::omt::ObServerRuntimeController>()->lock_runtime(runtime_))) {
     if (OB_IN_STOP_STATE == ret) {
       ret = OB_SERVER_RUNTIME_NOT_READY;
@@ -166,6 +167,7 @@ int ObInnerSQLResult::close()
   if (opened_) {
     // opened=true imply is_inited=true
     if (OB_FAIL(inner_close())) {
+      LOG_WARN("result set close failed", K(ret));
     }
   }
   column_map_.clear();
@@ -177,6 +179,7 @@ int ObInnerSQLResult::force_close()
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(inner_close())) {
+    LOG_WARN("result set close failed", K(ret));
   }
   column_map_.clear();
   column_indexed_ = false;
@@ -241,6 +244,7 @@ int ObInnerSQLResult::build_column_map() const
   } else if (!column_map_created_) {
     if (OB_FAIL(column_map_.create(COLUMN_MAP_BUCKET_NUM,
         ObModIds::OB_HASH_BUCKET_SQL_COLUMN_MAP, ObModIds::OB_HASH_NODE_SQL_COLUMN_MAP))) {
+      LOG_WARN("create hash table failed", K(ret), LITERAL_K(COLUMN_MAP_BUCKET_NUM));
     } else {
       column_map_created_ = true;
     }
@@ -289,6 +293,7 @@ int ObInnerSQLResult::find_idx(const char *col_name, int64_t &idx) const
   } else {
     if (OB_UNLIKELY(!column_indexed_)) {
       if (OB_FAIL(build_column_map())) {
+        LOG_WARN("build column map failed", K(ret));
       }
     }
     if (OB_SUCC(ret)) {
@@ -368,6 +373,7 @@ int ObInnerSQLResult::get_timestamp(const int64_t col_idx, const common::ObTimeZ
     } else {
       const ObObj &obj = row_->cells_[idx];
       if (OB_FAIL(check_extend_value(obj))) {
+        LOG_DEBUG("check extend value failed", K(ret));
       } else {
         val = obj.get_timestamp();
       }
@@ -387,6 +393,7 @@ int ObInnerSQLResult::get_bool(const int64_t col_idx, bool &bool_val) const
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(col_idx));
   } else if (OB_FAIL(get_int(col_idx, v))) {
+    LOG_WARN("get int value failed", K(ret), K(col_idx));
   } else {
     bool_val = v;
   }
@@ -402,6 +409,7 @@ int ObInnerSQLResult::get_int(const int64_t col_idx, int64_t &int_val) const
   int ret = OB_SUCCESS;
   const ObObj *obj = NULL;
   if (OB_FAIL(get_obj(col_idx, obj))) {
+    LOG_WARN("get obj error", K(ret));
   } else if (OB_ISNULL(obj)) {
     ret = OB_ERR_UNEXPECTED;
     LOG_WARN("get a invalud obj", K(col_idx), K(obj), K(ret));
@@ -434,11 +442,14 @@ int ObInnerSQLResult::get_number_impl(const int64_t col_idx, number::ObNumber &r
     } else {
       const ObObj &obj = row_->cells_[idx];
       if (OB_FAIL(check_extend_value(obj))) {
+        LOG_DEBUG("check extend value failed", K(ret));
       } else if (obj.is_decimal_int()) {
         if (OB_FAIL(wide::to_number(obj.get_decimal_int(), obj.get_int_bytes(), obj.get_scale(),
                                     mem_context_->get_arena_allocator(), ret_nmb))) {
+          LOG_WARN("to_number failed", K(ret));
         }
       } else if (OB_FAIL(obj.get_number(ret_nmb))) {
+        LOG_WARN("get number failed", K(ret));
       }
     }
   }
@@ -597,6 +608,7 @@ int ObInnerSQLResult::get_number(const int64_t col_idx,
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(col_idx));
   } else if (OB_FAIL(get_number_impl(col_idx, nmb_val))) {
+    LOG_WARN("get number impl failed", K(ret), K(col_idx));
   }
   return ret;
 }
@@ -611,6 +623,7 @@ int ObInnerSQLResult::get_number(const char *col_name, common::number::ObNumber 
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), KP(col_name));
   } else if (OB_FAIL(get_number_impl(col_name, nmb_val))) {
+    LOG_WARN("get number impl failed", K(ret), K(col_name));
   }
   return ret;
 }
@@ -627,6 +640,7 @@ int ObInnerSQLResult::inner_get_number(const int64_t col_idx, number::ObNumber &
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), K(col_idx));
   } else if (OB_FAIL(get_number_impl(col_idx, nmb_val))) {
+    LOG_WARN("get number impl failed", K(ret), K(col_idx));
   }
   return ret;
 }
@@ -643,6 +657,7 @@ int ObInnerSQLResult::inner_get_number(const char *col_name, number::ObNumber &n
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("invalid argument", K(ret), KP(col_name));
   } else if (OB_FAIL(get_number_impl(col_name, nmb_val))) {
+    LOG_WARN("get number impl failed", K(ret), K(col_name));
   }
   return ret;
 }
@@ -668,6 +683,7 @@ int ObInnerSQLResult::get_obj(const int64_t col_idx, const common::ObObj *&resul
     } else {
       const ObObj &obj = row_->cells_[idx];
       if (OB_FAIL(check_extend_value(obj))) {
+        LOG_DEBUG("check extend value failed", K(ret));
       } else {
         result = &obj;
       }
