@@ -16,10 +16,17 @@
 #define USING_LOG_PREFIX SHARE
 
 #include "ob_config_helper.h"
+
 #include "common/ob_store_format.h"
+#include "lib/alloc/alloc_func.h"
 #include "lib/ob_running_mode.h"
+#include "share/cache/ob_kvcache_struct.h"
 #include "share/config/ob_parallel_ddl_control_mode.h"
 #include "share/config/ob_server_config.h"
+#include "share/schema/ob_schema_struct.h"
+#include "share/schema/ob_schema_utils.h"
+#include "share/ob_ddl_common.h"
+#include "share/ob_rpc_struct.h"
 
 namespace oceanbase
 {
@@ -457,6 +464,20 @@ bool MemoryBudgetConfigChecker::check(const ObConfigItem &t) const
   int64_t value = ObConfigCapacityParser::get(t.str(), is_valid, false);
   if (is_valid) {
     is_valid = 0 == value || value >= lib::DEFAULT_MEMORY_BUDGET;
+  }
+  return is_valid;
+}
+
+bool KVCacheMemoryLimitConfigChecker::check(const ObConfigItem &t) const
+{
+  bool is_valid = false;
+  const int64_t value = ObConfigCapacityParser::get(t.str(), is_valid, false);
+  if (is_valid) {
+    const int64_t initialized_capacity = GMEMCONF.get_kvcache_memory_capacity();
+    const int64_t maximum_value = initialized_capacity > 0
+        ? initialized_capacity
+        : MAX_KVCACHE_MEMORY_SIZE;
+    is_valid = 0 == value || (value > 0 && value <= maximum_value);
   }
   return is_valid;
 }
