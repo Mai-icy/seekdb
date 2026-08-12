@@ -85,7 +85,6 @@ public:
   static int record_detect_info_to_inner_table(share::ObILockMetadataSession &session_io,
                                                const ObTableLockTaskType &task_type,
                                                const ObLockRequest &lock_req,
-                                               const bool for_dbms_lock,
                                                bool &need_record_to_lock_table);
   static int remove_detect_info_from_inner_table(share::ObILockMetadataSession &session_io,
                                                  const ObTableLockTaskType &task_type,
@@ -107,10 +106,6 @@ public:
                                                    const uint32_t session_id,
                                                    const uint64_t session_create_ts,
                                                    bool &exist);
-  static int check_lock_exist_in_inner_table(share::ObILockMetadataSession &session_io,
-                                             const ObTableLockTaskType &task_type,
-                                             const ObLockRequest &lock_req,
-                                             bool &exist);
   static int get_table_name(char *table_name);
   static int get_unlock_request_list(share::ObILockMetadataSession &session_io,
                                      const ObTableLockOwnerID &owner_id,

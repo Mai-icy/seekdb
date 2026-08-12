@@ -129,7 +129,7 @@ int acquire_mysql_table_lock(share::ObILockMetadataSession &session_io,
                  transaction::tablelock::ObTableLockDetector::
                      record_detect_info_to_inner_table(
                          session_io, transaction::tablelock::LOCK_TABLE,
-                         request, false, need_lock))) {
+                         request, need_lock))) {
   } else if (need_lock && OB_FAIL(service->lock(tx, tx_param, request))) {
     LOG_WARN("acquire MySQL table lock failed", KR(ret), K(target));
   }

@@ -132,11 +132,9 @@ const char *ObTableLockDetector::detect_columns[8] = {
 int ObTableLockDetector::record_detect_info_to_inner_table(share::ObILockMetadataSession &session_io,
                                                            const ObTableLockTaskType &task_type,
                                                            const ObLockRequest &lock_req,
-                                                           const bool for_dbms_lock,
                                                            bool &need_record_to_lock_table)
 {
   int ret = OB_SUCCESS;
-  bool is_existed = false;
 
   need_record_to_lock_table = true;
   if (!(LOCK_OBJECT == task_type || LOCK_TABLE == task_type)) {
@@ -145,14 +143,9 @@ int ObTableLockDetector::record_detect_info_to_inner_table(share::ObILockMetadat
   } else if (OB_UNLIKELY(!session_io.is_valid())) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("session inner SQL is invalid", K(ret), K(session_io.server_session_id()));
-  } else if (for_dbms_lock
-             && OB_FAIL(check_lock_exist_in_inner_table(session_io, task_type, lock_req, is_existed))) {
-    LOG_WARN("check dbms_lock record exist failed", K(ret), K(task_type), K(lock_req));
   }
 
   if (OB_FAIL(ret)) {
-  } else if (for_dbms_lock && is_existed) {
-    need_record_to_lock_table = false;
   } else if (OB_FAIL(record_detect_info_to_inner_table_(
                session_io, task_type, lock_req, need_record_to_lock_table))) {
   }
@@ -288,44 +281,6 @@ int ObTableLockDetector::check_lock_owner_exist_in_inner_table(
     OZ (lock_owner.convert_from_session_id(session_id, session_create_ts));
     OZ (check_lock_exist_(session_io, where_cond, lock_owner, exist));
   }
-  return ret;
-}
-
-int ObTableLockDetector::check_lock_exist_in_inner_table(share::ObILockMetadataSession &session_io,
-                                                         const ObTableLockTaskType &task_type,
-                                                         const ObLockRequest &lock_req,
-                                                         bool &exist)
-{
-  int ret = OB_SUCCESS;
-  ObSqlString where_cond;
-  uint64_t obj_type = static_cast<uint64_t>(ObLockOBJType::OBJ_TYPE_INVALID);
-  uint64_t obj_id = OB_INVALID_ID;
-
-  if (OB_UNLIKELY(!session_io.is_valid())) {
-    ret = OB_INVALID_ARGUMENT;
-  } else if (LOCK_OBJECT != task_type) {
-    ret = OB_ERR_UNEXPECTED;
-    LOG_WARN("the task_type for DBMS_LOCK should be LOCK_OBJECT", K(ret), K(task_type), K(lock_req));
-  } else {
-    const ObLockObjsRequest &arg = static_cast<const ObLockObjsRequest &>(lock_req);
-    if (arg.objs_.count() > 1) {
-      ret = OB_NOT_SUPPORTED;
-      LOG_WARN("do not support detect batch lock obj request right now", K(arg));
-    } else {
-      obj_type = static_cast<uint64_t>(arg.objs_[0].obj_type_);
-      obj_id = arg.objs_[0].obj_id_;
-    }
-  }
-
-  if (OB_FAIL(ret)) {
-  // to ensure subsequent SQL queries, we do not check the owner_type column
-  } else if (OB_FAIL(where_cond.assign_fmt("task_type = %d AND obj_type = %" PRIu64 " AND obj_id = %" PRIu64,
-                                           static_cast<int>(task_type),
-                                           obj_type,
-                                           obj_id))) {
-  } else if (OB_FAIL(check_lock_exist_(session_io, where_cond, lock_req.owner_id_, exist))) {
-  }
-
   return ret;
 }
 
@@ -808,10 +763,8 @@ int ObTableLockDetector::parse_unlock_request_(common::sqlclient::ObMySQLResult 
       }
       case LOCK_OBJECT: {
         ObUnLockObjsRequest *unlock_arg = NULL;
-        bool is_dbms_lock = static_cast<int64_t>(ObLockOBJType::OBJ_TYPE_DBMS_LOCK) == obj_type;
-        if (!is_dbms_lock
-            && !(static_cast<int64_t>(ObLockOBJType::OBJ_TYPE_MYSQL_LOCK_FUNC) == obj_type
-                 && static_cast<int64_t>(EXCLUSIVE) == lock_mode)) {
+        if (!(static_cast<int64_t>(ObLockOBJType::OBJ_TYPE_MYSQL_LOCK_FUNC) == obj_type
+              && static_cast<int64_t>(EXCLUSIVE) == lock_mode)) {
           ret = OB_ERR_UNEXPECTED;
           LOG_WARN("invalid object type and lock mode", K(ret), K(obj_type), K(lock_mode));
         } else if (OB_ISNULL(ptr = allocator.alloc(sizeof(ObUnLockObjsRequest)))) {

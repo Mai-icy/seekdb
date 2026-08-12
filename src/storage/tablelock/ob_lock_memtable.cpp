@@ -148,11 +148,6 @@ int ObLockMemtable::lock_(
                                                      lock_exist,
                                                      lock_mode_cnt_in_same_trans))) {
         } else if (lock_exist) {
-          // if the lock is DBMS_LOCK, we should return error code
-          // to notify PL to return the actual execution result.
-          if (lock_op.lock_id_.obj_type_ == ObLockOBJType::OBJ_TYPE_DBMS_LOCK) {
-            ret = OB_OBJ_LOCK_EXIST;
-          }
         } else if (OB_FAIL(obj_lock_map_.lock(param, ctx, lock_op, lock_mode_cnt_in_same_trans, conflict_tx_set))) {
           if (ret != OB_TRY_LOCK_ROW_CONFLICT &&
               ret != OB_OBJ_LOCK_EXIST) {
@@ -228,8 +223,8 @@ int ObLockMemtable::lock_(
     if (OB_TMP_FAIL(unregister_from_deadlock_detector_(lock_op))) {
     }
   }
-  // return success if lock twice, except for DBMS_LOCK.
-  if (ret == OB_OBJ_LOCK_EXIST && lock_op.lock_id_.obj_type_ != ObLockOBJType::OBJ_TYPE_DBMS_LOCK) {
+  // Repeated object locking by the same transaction is idempotent.
+  if (ret == OB_OBJ_LOCK_EXIST) {
     ret = OB_SUCCESS;
   }
   if (OB_TRY_LOCK_ROW_CONFLICT == ret &&
@@ -531,18 +526,13 @@ int ObLockMemtable::check_lock_conflict(const ObMemtableCtx *mem_ctx,
                                                lock_exist,
                                                lock_mode_cnt_in_same_trans))) {
   } else if (lock_exist) {
-    // if the lock is DBMS_LOCK, we should return error code
-    // to notify PL to return the actual execution result.
-    if (lock_op.lock_id_.obj_type_ == ObLockOBJType::OBJ_TYPE_DBMS_LOCK) {
-      ret = OB_OBJ_LOCK_EXIST;
-    }
   } else if (OB_FAIL(obj_lock_map_.check_allow_lock(lock_op,
                                                     lock_mode_cnt_in_same_trans,
                                                     conflict_tx_set,
                                                     include_finish_tx,
                                                     only_check_dml_lock))) {
-    // return success if lock twice, except for DBMS_LOCK.
-    if (OB_OBJ_LOCK_EXIST == ret && lock_op.lock_id_.obj_type_ != ObLockOBJType::OBJ_TYPE_DBMS_LOCK) {
+    // Repeated object locking by the same transaction is idempotent.
+    if (OB_OBJ_LOCK_EXIST == ret) {
       ret = OB_SUCCESS;
     } else if (OB_TRY_LOCK_ROW_CONFLICT == ret) {
     } else {

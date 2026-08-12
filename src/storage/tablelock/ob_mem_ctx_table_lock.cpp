@@ -395,8 +395,7 @@ int ObLockMemCtx::check_lock_exist( //TODO(lihongqin):check it
         if (curr->lock_op_.owner_id_ == owner_id &&
             curr->lock_op_.op_type_ == op_type && /* different op type may lock twice */
             curr->lock_op_.lock_op_status_ == LOCK_OP_DOING) {
-          // dbms_lock can only have one obj lock, no matter what lock_mode
-          is_exist = lock_id.obj_type_ == ObLockOBJType::OBJ_TYPE_DBMS_LOCK ? true : curr->lock_op_.lock_mode_ == mode;
+          is_exist = curr->lock_op_.lock_mode_ == mode;
           if (is_exist) break;
         }
       }

@@ -1079,7 +1079,7 @@ int ObOBJLock::check_op_allow_lock_(const ObTableLockOp &lock_op)
   // there is no unlock op, else return OB_TRY_LOCK_ROW_CONFLICT.
   // 2. IN_TRANS lock:
   // 1) if the lock status is LOCK_OP_DOING, return OB_OBJ_LOCK_EXIST to prevent
-  // lock twice (except obj_type is DBMS_LOCK).
+  // lock twice.
   int map_index = 0;
   ObTableLockOpList *op_list = NULL;
 
@@ -1582,9 +1582,7 @@ int ObOBJLock::check_op_allow_lock_from_list_(
       if (curr->lock_op_.create_trans_id_ == lock_op.create_trans_id_
           && (curr->lock_op_.op_type_ == IN_TRANS_DML_LOCK
               || curr->lock_op_.op_type_ == IN_TRANS_COMMON_LOCK)) {
-        if (curr->lock_op_.lock_id_.obj_type_ == ObLockOBJType::OBJ_TYPE_DBMS_LOCK) {
-          ret = OB_OBJ_LOCK_EXIST;
-        } else if (curr->lock_op_.lock_op_status_ != LOCK_OP_DOING) {
+        if (curr->lock_op_.lock_op_status_ != LOCK_OP_DOING) {
           // should never be here.
           ret = OB_ERR_UNEXPECTED;
           need_break = true;
