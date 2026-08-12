@@ -278,7 +278,16 @@ void ObBaseLogWriter::flush_log()
   }
 }
 
-void ObBaseLogWriter::do_flush_log()
+void ObBaseLogWriter::flush_log_once()
+{
+  pthread_mutex_lock(&thread_mutex_);
+  if (!has_stopped_ && need_flush()) {
+    do_flush_log(false /* drain_all */);
+  }
+  pthread_mutex_unlock(&thread_mutex_);
+}
+
+void ObBaseLogWriter::do_flush_log(const bool drain_all)
 {
   int64_t process_item_cnt = 0;
   int64_t item_cnt = 0;
@@ -310,6 +319,9 @@ void ObBaseLogWriter::do_flush_log()
         IGNORE_RETURN ATOMIC_FAA(&log_item_pop_idx_, item_cnt);
         log_write_cond_->signal(UINT32_MAX);
       }
+    }
+    if (!drain_all) {
+      break;
     }
   }
 }
