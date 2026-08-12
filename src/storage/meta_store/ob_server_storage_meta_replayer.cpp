@@ -121,7 +121,6 @@ int ObServerStorageMetaReplayer::handle_runtime_creating_()
 {
   int ret = OB_SUCCESS;
   if (OB_FAIL(persister_->clear_runtime_log_dirs())) {
-  } else if (OB_FAIL(persister_->abort_create_runtime())) {
   }
   return ret;
 }
@@ -131,7 +130,7 @@ int ObServerStorageMetaReplayer::handle_runtime_create_commit_(const ObServerRun
   int ret = OB_SUCCESS;
   
 
-  if (OB_FAIL(server_runtime_->create_runtime(runtime_meta, false/* write_slog */))) {
+  if (OB_FAIL(server_runtime_->create_runtime(runtime_meta))) {
   }
 
 

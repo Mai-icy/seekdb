@@ -54,39 +54,6 @@ void ObServerStorageMetaPersister::destroy()
   is_inited_ = false;
 }
 
-int ObServerStorageMetaPersister::prepare_create_runtime(const ObServerRuntimeMeta &meta)
-{
-  int ret = OB_SUCCESS;
-  if (IS_NOT_INIT) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("not init", K(ret));
-  } else if (OB_FAIL(write_prepare_create_runtime_slog_(meta))) {
-  }
-  return ret;
-}
-
-int ObServerStorageMetaPersister::commit_create_runtime()
-{
-  int ret = OB_SUCCESS;
-  if (IS_NOT_INIT) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("not init", K(ret));
-  } else if (OB_FAIL(write_commit_create_runtime_slog_())) {
-  }
-  return ret;
-}
-
-int ObServerStorageMetaPersister::abort_create_runtime()
-{
-  int ret = OB_SUCCESS;
-  if (IS_NOT_INIT) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("not init", K(ret));
-  } else if (OB_FAIL(write_abort_create_runtime_slog_())) {
-  }
-  return ret;
-}
-
 // ObServerRuntimeController serializes updates, so this path needs no extra lock.
 int ObServerStorageMetaPersister::update_runtime_super_block(
     const ObServerRuntimeSuperBlock &super_block)
@@ -144,49 +111,6 @@ int ObServerStorageMetaPersister::clear_runtime_log_dirs()
     } else if (exist && OB_FAIL(common::FileDirectoryUtils::delete_directory_rec(slog_dir))) {
       LOG_WARN("fail to delete slog dir", K(ret), K(slog_dir));
     }
-  }
-  return ret;
-}
-
-int ObServerStorageMetaPersister::write_prepare_create_runtime_slog_(
-    const ObServerRuntimeMeta &meta)
-{
-  int ret = OB_SUCCESS;
-  ObStorageLogParam log_param;
-  int32_t cmd = ObIRedoModule::gen_cmd(ObRedoLogMainType::OB_REDO_LOG_SERVER_RUNTIME,
-      ObRedoLogSubType::OB_REDO_LOG_CREATE_RUNTIME_PREPARE);
-  ObCreateRuntimePrepareLog log_entry(*const_cast<ObServerRuntimeMeta*>(&meta));
-  log_param.data_ = &log_entry;
-  log_param.cmd_ = cmd;
-  if (OB_FAIL(server_slogger_->write_log(log_param))) {
-  }
-  return ret;
-}
-
-int ObServerStorageMetaPersister::write_commit_create_runtime_slog_()
-{
-  int ret = OB_SUCCESS;
-  ObStorageLogParam log_param;
-  int32_t cmd = ObIRedoModule::gen_cmd(ObRedoLogMainType::OB_REDO_LOG_SERVER_RUNTIME,
-      ObRedoLogSubType::OB_REDO_LOG_CREATE_RUNTIME_COMMIT);
-  ObCreateRuntimeCommitLog log_entry;
-  log_param.data_ = &log_entry;
-  log_param.cmd_ = cmd;
-  if (OB_FAIL(server_slogger_->write_log(log_param))) {
-  }
-  return ret;
-}
-
-int ObServerStorageMetaPersister::write_abort_create_runtime_slog_()
-{
-  int ret = OB_SUCCESS;
-  ObStorageLogParam log_param;
-  int32_t cmd = ObIRedoModule::gen_cmd(ObRedoLogMainType::OB_REDO_LOG_SERVER_RUNTIME,
-      ObRedoLogSubType::OB_REDO_LOG_CREATE_RUNTIME_ABORT);
-  ObCreateRuntimeAbortLog log_entry;
-  log_param.data_ = &log_entry;
-  log_param.cmd_ = cmd;
-  if (OB_FAIL(server_slogger_->write_log(log_param))) {
   }
   return ret;
 }

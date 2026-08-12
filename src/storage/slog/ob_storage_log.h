@@ -112,23 +112,6 @@ private:
   ObLSMeta ls_meta_;
 };
 
-struct ObLSMarkerLog : public ObIBaseStorageLogEntry
-{
-public:
-  ObLSMarkerLog() = default;
-  virtual ~ObLSMarkerLog() = default;
-  virtual bool is_valid() const override { return true; }
-
-  DECLARE_TO_STRING;
-  OB_UNIS_VERSION_V(1);
-
-};
-
-using ObCreateLSPrepareSlog = ObLSMetaLog;
-using ObCreateLSAbortSLog = ObLSMarkerLog;
-using ObCreateLSCommitSLog = ObLSMarkerLog;
-using ObDeleteLSLog = ObLSMarkerLog;
-
 struct ObDeleteTabletLog : public ObIBaseStorageLogEntry
 {
 public:

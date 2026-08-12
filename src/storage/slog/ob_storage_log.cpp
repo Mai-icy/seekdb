@@ -102,16 +102,6 @@ DEF_TO_STRING(ObLSMetaLog)
 
 OB_SERIALIZE_MEMBER(ObLSMetaLog, ls_meta_);
 
-DEF_TO_STRING(ObLSMarkerLog)
-{
-  int64_t pos = 0;
-  J_OBJ_START();
-  J_OBJ_END();
-  return pos;
-}
-
-OB_SERIALIZE_MEMBER(ObLSMarkerLog);
-
 ObDeleteTabletLog::ObDeleteTabletLog()
   : tablet_id_()
 {
