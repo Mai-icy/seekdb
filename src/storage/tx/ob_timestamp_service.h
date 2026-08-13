@@ -36,17 +36,17 @@ public:
   void wait() {}
   void destroy()
   {
+    ATOMIC_STORE(&is_ready_, false);
     reset();
   }
   // nano second
-  static const int64_t TIMESTAMP_PREALLOCATED_RANGE = 10LL * 1000L * 1000L * 1000L;
-  static const int64_t TIMESTAMP_RECOVERY_SAFETY_RANGE = 2 * TIMESTAMP_PREALLOCATED_RANGE;
+  static const int64_t TIMESTAMP_RECOVERY_SAFETY_RANGE = 20L * 1000L * 1000L * 1000L;
   int get_timestamp(int64_t &gts);
-  int64_t get_limited_id() const { return limited_id_; }
-  static SCN get_sts_start_scn(const SCN &max_ls_scn)
-  { return SCN::plus(max_ls_scn, TIMESTAMP_RECOVERY_SAFETY_RANGE); };
+  int recover(const share::SCN &max_ls_scn);
   void get_virtual_info(int64_t &ts_value);
 private:
+  int allocate_timestamp_(const int64_t range, const int64_t base_id, int64_t &gts);
+
   // last timestamp retrieved from the local timestamp service, in nanoseconds
   int64_t last_gts_;
   // the time of last request, updated periodically, nanosecond 
@@ -54,6 +54,7 @@ private:
   // the lock of checking the gts service's advancing speed, used in get_timestamp to avoid 
   // concurrent threads all pushing the gts ahead
   int64_t check_gts_speed_lock_;
+  bool is_ready_;
 };
 
 }
