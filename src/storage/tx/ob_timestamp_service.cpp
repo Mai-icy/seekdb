@@ -15,6 +15,7 @@
  */
 
 #include "ob_timestamp_service.h"
+#include "lib/time/ob_time_utility.h"
 
 namespace oceanbase
 {
@@ -30,6 +31,7 @@ int ObTimestampService::init()
   ATOMIC_STORE(&last_gts_, 0);
   ATOMIC_STORE(&last_request_ts_, 0);
   ATOMIC_STORE(&check_gts_speed_lock_, 0);
+  ATOMIC_STORE(&durable_timestamp_, 0);
   ATOMIC_STORE(&is_ready_, false);
   return OB_SUCCESS;
 }
@@ -78,6 +80,7 @@ int ObTimestampService::recover(const SCN &max_ls_scn)
       const int64_t current_time = ObClockGenerator::getClock() * 1000;
       const int64_t log_floor = static_cast<int64_t>(durable_gts) + 1;
       (void)inc_update(&last_id_, max(current_time, log_floor));
+      (void)inc_update(&durable_timestamp_, static_cast<int64_t>(durable_gts));
       ATOMIC_STORE(&is_ready_, true);
       TRANS_LOG(INFO, "timestamp service recovered from durable log frontier",
           K(max_ls_scn), K(log_floor), K_(last_id));
@@ -141,10 +144,89 @@ int ObTimestampService::get_timestamp(int64_t &gts)
   return ret;
 }
 
-void ObTimestampService::get_virtual_info(int64_t &ts_value)
+int ObTimestampService::persist_timestamp_(const int64_t timestamp)
 {
-  ts_value = ATOMIC_LOAD(&last_id_);
-  TRANS_LOG(INFO, "gts get virtual info", K_(last_id), K(ts_value));
+  int ret = OB_SUCCESS;
+  const int64_t expire_ts = ObTimeUtility::current_time() + 10 * 1000 * 1000;
+  while (OB_SUCC(ret) && ATOMIC_LOAD(&durable_timestamp_) < timestamp) {
+    const int submit_ret = submit_timestamp_fence_(timestamp);
+    if (OB_SUCCESS != submit_ret && OB_EAGAIN != submit_ret) {
+      ret = submit_ret;
+    } else if (ObTimeUtility::current_time() >= expire_ts) {
+      ret = OB_TIMEOUT;
+    } else {
+      ob_usleep(100);
+    }
+  }
+  return ret;
+}
+
+int ObTimestampService::submit_timestamp_fence_(const int64_t timestamp)
+{
+  int ret = OB_SUCCESS;
+  bool locked = false;
+  if (timestamp < 0) {
+    ret = OB_INVALID_ARGUMENT;
+  } else if (OB_UNLIKELY(!(locked = rwlock_.try_wrlock()))) {
+    ret = OB_EAGAIN;
+  } else if (is_logging_) {
+    ret = OB_EAGAIN;
+  } else if (OB_FAIL(append_id_log_(timestamp, timestamp))) {
+    if (OB_EAGAIN != ret && REACH_TIME_INTERVAL(100 * 1000)) {
+      TRANS_LOG(WARN, "failed to submit timestamp persistence fence", KR(ret), K(timestamp));
+    }
+  } else {
+    TRANS_LOG(INFO, "submitted timestamp persistence fence", K(timestamp));
+  }
+  if (locked) {
+    rwlock_.unlock();
+  }
+  return ret;
+}
+
+int ObTimestampService::get_virtual_info(int64_t &ts_value)
+{
+  int ret = OB_SUCCESS;
+  if (!ATOMIC_LOAD(&is_ready_)) {
+    ret = OB_EAGAIN;
+  } else {
+    ts_value = ATOMIC_LOAD(&last_id_);
+    if (OB_FAIL(persist_timestamp_(ts_value))) {
+      TRANS_LOG(WARN, "failed to persist timestamp for virtual table", KR(ret), K(ts_value));
+    } else {
+      TRANS_LOG(INFO, "persisted gts for virtual table", K(ts_value), K_(durable_timestamp));
+    }
+  }
+  return ret;
+}
+
+int ObTimestampService::handle_persist_callback(const bool success,
+                                                 const int64_t persisted_timestamp,
+                                                 const SCN log_scn)
+{
+  int ret = OB_SUCCESS;
+  WLockGuard guard(rwlock_);
+  if (success) {
+    (void)inc_update(&durable_timestamp_, persisted_timestamp);
+    latest_log_ts_.atomic_set(log_scn);
+  }
+  is_logging_ = false;
+  submit_log_ts_ = OB_INVALID_TIMESTAMP;
+  cb_.reset();
+  TRANS_LOG(INFO, "timestamp persistence callback", K(success), K(persisted_timestamp),
+      K(log_scn), K_(durable_timestamp));
+  return ret;
+}
+
+int ObTimestampService::replay(const void *buffer,
+                               const int64_t nbytes,
+                               const palf::LSN &lsn,
+                               const SCN &scn)
+{
+  UNUSEDx(buffer, nbytes, lsn);
+  // Recovery uses the durable LS frontier as its timestamp floor. Timestamp
+  // log contents are deliberately not restored into the old allocation model.
+  return scn.is_valid() ? OB_SUCCESS : OB_INVALID_ARGUMENT;
 }
 
 }

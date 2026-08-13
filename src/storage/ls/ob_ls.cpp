@@ -713,6 +713,11 @@ int ObLS::register_common_service()
   REGISTER_TO_LOGSERVICE(RESERVED_SNAPSHOT_LOG_BASE_TYPE, &reserved_snapshot_clog_handler_);
   REGISTER_TO_LOGSERVICE(MEDIUM_COMPACTION_LOG_BASE_TYPE, &medium_compaction_clog_handler_);
 
+  if (OB_SUCC(ret) && OB_FAIL(replay_handler_.register_handler(
+      TIMESTAMP_LOG_BASE_TYPE,
+      ::oceanbase::share::server_service<::oceanbase::transaction::ObTimestampService>()))) {
+    LOG_WARN("timestamp replay handler register failed", K(ret));
+  }
   REGISTER_REPLAY_CHECKPOINT_HANDLER(TRANS_ID_LOG_BASE_TYPE, ::oceanbase::share::server_service<::oceanbase::transaction::ObTransIDService>());
   if (OB_SUCC(ret) &&
       OB_FAIL(register_composition_log_handler_(MAJOR_FREEZE_LOG_BASE_TYPE))) {
@@ -833,6 +838,7 @@ void ObLS::unregister_common_service_()
   UNREGISTER_FROM_LOGSERVICE(DDL_LOG_BASE_TYPE, &ls_ddl_log_handler_);
   UNREGISTER_FROM_LOGSERVICE(RESERVED_SNAPSHOT_LOG_BASE_TYPE, &reserved_snapshot_clog_handler_);
   UNREGISTER_FROM_LOGSERVICE(MEDIUM_COMPACTION_LOG_BASE_TYPE, &medium_compaction_clog_handler_);
+  (void)replay_handler_.unregister_handler(TIMESTAMP_LOG_BASE_TYPE);
   UNREGISTER_REPLAY_CHECKPOINT_HANDLER(TRANS_ID_LOG_BASE_TYPE);
   unregister_composition_log_handler_(MAJOR_FREEZE_LOG_BASE_TYPE);
 }
