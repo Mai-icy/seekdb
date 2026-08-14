@@ -17,8 +17,6 @@
 #define USING_LOG_PREFIX TABLELOCK
 #include "sql/tablelock/ob_lock_executor.h"
 #include "query/session/ob_inner_sql_connection_access.h"
-#include "query/session/ob_session_inner_sql.h"
-#include "query/tablelock/ob_table_lock_runtime.h"
 #include "data_plane/transaction/ob_deadlock.h"
 #include "share/ob_dml_sql_splicer.h"
 
@@ -302,25 +300,6 @@ int ObLockContext::execute_read(const ObSqlString &sql,
   return ret;
 }
 
-int ObLockExecutor::clear_lock_session_if_no_lock_(ObLockContext &ctx,
-                                                   const uint32_t session_id,
-                                                   const uint64_t session_create_ts)
-{
-  int ret = OB_SUCCESS;
-  bool owner_exist = false;
-  ObSQLSessionInfo *session = nullptr;
-
-  OV (OB_NOT_NULL(ctx.my_exec_ctx_), OB_INVALID_ARGUMENT);
-  OV (OB_NOT_NULL(session = ctx.my_exec_ctx_->get_my_session()), OB_INVALID_ARGUMENT);
-  query::ObSessionInnerSql session_io(session);
-  const data_plane::ObSessionLockOwner owner(session_id, session_create_ts);
-  OZ (data_plane::session_has_locks(session_io, owner, owner_exist));
-  if (OB_SUCC(ret) && !owner_exist) {
-    OX (mark_lock_session_(session, false));
-  }
-  return ret;
-}
-
 int ObLockExecutor::clear_lock_session_if_no_lock_(ObExecContext &ctx,
                                                    const uint32_t session_id,
                                                    const uint64_t session_create_ts)
@@ -351,173 +330,6 @@ void ObLockExecutor::mark_lock_session_(sql::ObSQLSessionInfo *session,
   }
 }
 
-int ObUnLockExecutor::execute(ObExecContext &ctx,
-                              const ReleaseType release_type,
-                              int64_t &release_cnt)
-{
-  int ret = OB_SUCCESS;
-  int tmp_ret = OB_SUCCESS;
-  uint32_t session_id = 0;
-  uint64_t session_create_ts = 0;
-  bool is_rollback = false;
-  OZ (ObLockContext::valid_execute_context(ctx));
-  OX (session_id = ctx.get_my_session()->get_server_sid());
-  OX (session_create_ts = ctx.get_my_session()->get_sess_create_time());
-  OZ (execute_(ctx,
-               session_id,
-               session_create_ts,
-               release_type,
-               release_cnt));
-  return ret;
-}
-
-int ObUnLockExecutor::execute(uint8_t owner_type, int64_t owner_id)
-{
-  int ret = OB_SUCCESS;
-  int64_t release_cnt = 0;
-  const data_plane::ObPersistedLockOwner owner(owner_type, owner_id);
-  ObArenaAllocator allocator(ObModIds::OB_SQL_EXPR);
-  SMART_VAR(sql::ObSQLSessionInfo, session) {
-    SMART_VAR(sql::ObExecContext, exec_ctx, allocator) {
-      ObSqlCtx sql_ctx;
-      
-      ObSchemaGetterGuard guard;
-      const ObServerRuntimeSchema *runtime_schema = nullptr;
-      LinkExecCtxGuard link_guard(session, exec_ctx);
-      sql::ObPhysicalPlanCtx phy_plan_ctx(allocator);
-      OZ (session.init(0 /*default session id*/, &allocator));
-      OX (session.set_inner_session());
-      OZ (GCTX.schema_service_->get_runtime_schema_guard(guard));
-      OZ (guard.get_server_runtime_info(runtime_schema));
-      OZ (session.init_runtime(runtime_schema->get_runtime_name_str()));
-      OZ (session.load_all_sys_vars(guard));
-      OZ (session.load_default_configs_in_pc());
-      OX (sql_ctx.schema_guard_ = &guard);
-      OX (exec_ctx.set_my_session(&session));
-      OX (exec_ctx.set_sql_ctx(&sql_ctx));
-      OX (exec_ctx.set_physical_plan_ctx(&phy_plan_ctx));
-
-      OZ (ObLockContext::valid_execute_context(exec_ctx));
-      OZ (execute_(exec_ctx, owner, release_cnt));
-      OX (exec_ctx.set_physical_plan_ctx(nullptr));  // avoid core during release exec_ctx
-    }
-  }
-  return ret;
-}
-
-int ObUnLockExecutor::execute_(ObExecContext &ctx,
-                               const uint32_t session_id,
-                               const uint64_t session_create_ts,
-                               const ReleaseType release_type,
-                               int64_t &release_cnt)
-{
-  int ret = OB_SUCCESS;
-  int tmp_ret = OB_SUCCESS;
-  bool is_rollback = false;
-  release_cnt = INVALID_RELEASE_CNT;  // means not release successfully
-  OZ (ObLockContext::valid_execute_context(ctx));
-  if (OB_SUCC(ret)) {
-    SMART_VAR(ObLockContext, stack_ctx) {
-      OZ (stack_ctx.init(ctx));
-      if (OB_SUCC(ret)) {
-        ObSQLSessionInfo *session = GET_MY_SESSION(ctx);
-        ObTxParam tx_param;
-        query::ObSessionInnerSql session_io(session);
-        const data_plane::ObSessionLockOwner owner(
-            session_id, session_create_ts);
-        OZ (ObSqlTransControl::build_tx_param(session, tx_param));
-        CK (OB_NOT_NULL(session->get_tx_desc()));
-        OZ (data_plane::release_session_locks(
-                session_io,
-                *session->get_tx_desc(),
-                tx_param,
-                owner,
-                to_scope_(release_type),
-                release_cnt));
-        OZ (clear_lock_session_if_no_lock_(stack_ctx, session_id,
-                                           session_create_ts));
-      }
-      is_rollback = (OB_SUCCESS != ret);
-      if (OB_TMP_FAIL(stack_ctx.destroy(ctx, is_rollback))) {
-        LOG_WARN("stack ctx destroy failed", K(tmp_ret));
-        COVER_SUCC(tmp_ret);
-      }
-    }
-  }
-  // if release_cnt is valid, means we have tried to release,
-  // and have not encountered any failures before
-  if (INVALID_RELEASE_CNT != release_cnt) {
-    ret = OB_SUCCESS;
-  }
-  return ret;
-}
-
-int ObUnLockExecutor::execute_(ObExecContext &ctx,
-                               const data_plane::ObPersistedLockOwner &owner,
-                               int64_t &release_cnt)
-{
-  int ret = OB_SUCCESS;
-  int tmp_ret = OB_SUCCESS;
-  bool is_rollback = false;
-
-  OZ (ObLockContext::valid_execute_context(ctx));
-  if (OB_SUCC(ret)) {
-    SMART_VAR(ObLockContext, stack_ctx) {
-      OZ (stack_ctx.init(ctx));
-      if (OB_SUCC(ret)) {
-        ObSQLSessionInfo *session = GET_MY_SESSION(ctx);
-        ObTxParam tx_param;
-        query::ObSessionInnerSql session_io(session);
-        OZ (ObSqlTransControl::build_tx_param(session, tx_param));
-        CK (OB_NOT_NULL(session->get_tx_desc()));
-        OZ (data_plane::release_persisted_locks(
-                session_io,
-                *session->get_tx_desc(),
-                tx_param,
-                owner,
-                data_plane::ObSessionLockScope::ALL_LOCKS,
-                release_cnt));
-      }
-      is_rollback = (OB_SUCCESS != ret);
-      if (OB_TMP_FAIL(stack_ctx.destroy(ctx, is_rollback))) {
-        LOG_WARN("stack ctx destroy failed", K(tmp_ret));
-        COVER_SUCC(tmp_ret);
-      }
-    }
-  }
-  return ret;
-}
-
-data_plane::ObSessionLockScope ObUnLockExecutor::to_scope_(ReleaseType release_type)
-{
-  data_plane::ObSessionLockScope scope = data_plane::ObSessionLockScope::ALL_LOCKS;
-  switch (release_type) {
-  case RELEASE_OBJ_LOCK: {
-    scope = data_plane::ObSessionLockScope::NAMED_LOCK;
-    break;
-  }
-  case RELEASE_TABLE_LOCK: {
-    scope = data_plane::ObSessionLockScope::TABLE_LOCK;
-    break;
-  }
-  default: {
-    scope = data_plane::ObSessionLockScope::ALL_LOCKS;
-  }
-  }
-  return scope;
-}
-
 } // tablelock
 } // transaction
-
-namespace query
-{
-
-int release_locks_for_dead_owner(uint8_t owner_type, int64_t owner_id)
-{
-  transaction::tablelock::ObUnLockExecutor executor;
-  return executor.execute(owner_type, owner_id);
-}
-
-} // namespace query
 } // oceanbase

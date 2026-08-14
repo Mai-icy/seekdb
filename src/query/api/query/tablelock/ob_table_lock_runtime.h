@@ -28,11 +28,6 @@ namespace query
 int release_table_locks_for_session(uint32_t session_id,
                                     uint64_t session_create_ts);
 
-// Query-owned autonomous cleanup for session-scoped locks.  The data plane
-// supplies only the persisted owner identity; transaction/session setup stays
-// behind this semantic interface.
-int release_locks_for_dead_owner(uint8_t owner_type, int64_t owner_id);
-
 } // namespace query
 } // namespace oceanbase
 

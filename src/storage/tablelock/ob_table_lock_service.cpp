@@ -23,7 +23,6 @@
 #include "storage/tx/ob_trans_service.h"
 #include "storage/tablelock/ob_lock_utils.h" // ObInnerTableLockUtil
 #include "storage/tx_storage/ob_ls_service.h"
-#include "storage/tablelock/ob_table_lock_live_detector.h"
 
 namespace oceanbase
 {
@@ -218,119 +217,6 @@ int ObTableLockService::ObReplaceTableLockCtx::get_lock_param(const ObLockID &lo
   return ret;
 }
 
-int64_t ObTableLockService::ObOBJLockGarbageCollector::GARBAGE_COLLECT_EXEC_INTERVAL = 10_s;
-int64_t ObTableLockService::ObOBJLockGarbageCollector::GARBAGE_COLLECT_TIMEOUT = 10_min;
-
-ObTableLockService::ObOBJLockGarbageCollector::ObOBJLockGarbageCollector()
-  : timer_(),
-    timer_task_(*this),
-    last_success_timestamp_(0),
-    sql_proxy_(nullptr) {}
-ObTableLockService::ObOBJLockGarbageCollector::~ObOBJLockGarbageCollector() {}
-
-int ObTableLockService::ObOBJLockGarbageCollector::init(common::ObMySQLProxy &sql_proxy)
-{
-  int ret = OB_SUCCESS;
-  if (OB_NOT_NULL(sql_proxy_)) {
-    ret = OB_INIT_TWICE;
-    LOG_WARN("object lock garbage collector init twice", K(ret));
-  } else {
-    sql_proxy_ = &sql_proxy;
-  }
-  return ret;
-}
-
-int ObTableLockService::ObOBJLockGarbageCollector::start()
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(timer_.init("OBJLockGC", common::ObMemAttr("OBJLockGC")))) {
-  } else if (OB_FAIL(timer_.schedule(timer_task_,
-                                 GARBAGE_COLLECT_EXEC_INTERVAL,
-                                 true /* repeat */,
-                                 false /* immediate */))) {
-  } else {
-    LOG_INFO("ObTableLockService::ObOBJLockGarbageCollector starts successfully", K(ret),
-             KPC(this));
-  }
-  return ret;
-}
-
-void ObTableLockService::ObOBJLockGarbageCollector::stop()
-{
-  if (timer_.inited()) {
-    timer_.stop();
-  }
-  LOG_INFO("ObTableLockService::ObOBJLockGarbageCollector stops successfully", KPC(this));
-}
-
-void ObTableLockService::ObOBJLockGarbageCollector::wait()
-{
-  if (timer_.inited()) {
-    timer_.wait();
-  }
-  LOG_INFO("ObTableLockService::ObOBJLockGarbageCollector waits successfully", KPC(this));
-}
-
-void ObTableLockService::ObOBJLockGarbageCollector::destroy()
-{
-  timer_.destroy();
-  sql_proxy_ = nullptr;
-  LOG_INFO("ObTableLockService::ObOBJLockGarbageCollector destroys successfully", KPC(this));
-}
-
-int ObTableLockService::ObOBJLockGarbageCollector::garbage_collect_right_now()
-{
-  int ret = OB_SUCCESS;
-  if (!timer_.inited()) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("timer of ObTableLockService::ObOBJLockGarbageCollector is not running", K(ret));
-  } else {
-    run_gc_once_();
-  }
-  return ret;
-}
-
-void ObTableLockService::ObOBJLockGarbageCollector::run_gc_once_()
-{
-  int ret = OB_SUCCESS;
-  if (OB_FAIL(garbage_collect_())) {
-    check_and_report_timeout_();
-    LOG_WARN("check and clear obj lock failed, will retry later",
-             K(ret), K(last_success_timestamp_), KPC(this));
-  } else {
-    last_success_timestamp_ = ObClockGenerator::getClock();
-  }
-}
-
-int ObTableLockService::ObOBJLockGarbageCollector::garbage_collect_()
-{
-  int ret = OB_SUCCESS;
-  if (!timer_.inited()) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("timer of ObTableLockService::ObOBJLockGarbageCollector is not running", K(ret));
-  } else if (OB_ISNULL(sql_proxy_)) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("sql proxy is not installed", K(ret));
-  } else if (OB_FAIL(ObTableLockDetector::do_detect_and_clear(*sql_proxy_))) {
-  }
-  return ret;
-}
-
-void ObTableLockService::ObOBJLockGarbageCollector::check_and_report_timeout_()
-{
-  int ret = OB_SUCCESS;
-  int64_t current_timestamp = ObClockGenerator::getClock();
-  if (last_success_timestamp_ > current_timestamp) {
-    LOG_ERROR("last success timestamp is not correct", K(current_timestamp),
-              K(last_success_timestamp_), KPC(this));
-  } else if (current_timestamp - last_success_timestamp_ >
-                 GARBAGE_COLLECT_TIMEOUT &&
-             last_success_timestamp_ != 0) {
-    LOG_ERROR("task failed too many times", K(current_timestamp),
-              K(last_success_timestamp_), KPC(this));
-  }
-}
-
 int ObTableLockService::ObTableLockCtx::set_tablet_id(const common::ObIArray<common::ObTabletID> &tablet_ids)
 {
   int ret = OB_SUCCESS;
@@ -426,11 +312,8 @@ int ObTableLockService::init(
     LOG_WARN("failed to init session table lock manager", K(ret));
   } else {
     sql_proxy_ = GCTX.sql_proxy_;
-    if (OB_FAIL(obj_lock_garbage_collector_.init(*sql_proxy_))) {
-    } else {
-      session_service_ = &session_service;
-      is_inited_ = true;
-    }
+    session_service_ = &session_service;
+    is_inited_ = true;
   }
 
   if (OB_FAIL(ret)) {
@@ -442,23 +325,19 @@ int ObTableLockService::init(
 
 int ObTableLockService::start()
 {
-  obj_lock_garbage_collector_.start();
   return OB_SUCCESS;
 }
 
 void ObTableLockService::stop()
 {
-  obj_lock_garbage_collector_.stop();
 }
 
 void ObTableLockService::wait()
 {
-  obj_lock_garbage_collector_.wait();
 }
 
 void ObTableLockService::destroy()
 {
-  obj_lock_garbage_collector_.destroy();
   session_table_lock_manager_.destroy();
   named_lock_manager_.destroy();
   sql_proxy_ = nullptr;
@@ -787,29 +666,6 @@ int ObTableLockService::replace_lock(ObTxDesc &tx_desc,
   return ret;
 }
 
-int ObTableLockService::garbage_collect_right_now()
-{
-  int ret = OB_SUCCESS;
-  if (IS_NOT_INIT) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("ObTableLockService is not be inited", K(ret));
-  } else if (OB_FAIL(obj_lock_garbage_collector_.garbage_collect_right_now())) {
-  } else {
-  }
-  return ret;
-}
-
-int ObTableLockService::get_obj_lock_garbage_collector(ObOBJLockGarbageCollector *&obj_lock_garbage_collector)
-{
-  int ret = OB_SUCCESS;
-  if (IS_NOT_INIT) {
-    ret = OB_NOT_INIT;
-    LOG_WARN("ObTableLockService is not be inited", K(ret));
-  } else {
-    obj_lock_garbage_collector = &obj_lock_garbage_collector_;
-  }
-  return ret;
-}
 int ObTableLockService::process_lock_task_(ObTableLockCtx &ctx)
 {
   int ret = OB_SUCCESS;

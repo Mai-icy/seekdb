@@ -66,14 +66,10 @@ OB_SERIALIZE_MEMBER_INHERIT(ObLockObjRequest, ObLockRequest,
                             obj_id_);
 
 OB_SERIALIZE_MEMBER_INHERIT(ObLockObjsRequest, ObLockRequest,
-                            objs_,
-                            detect_func_no_,
-                            detect_param_);
+                            objs_);
 
 OB_SERIALIZE_MEMBER_INHERIT(ObLockTableRequest, ObLockRequest,
-                            table_id_,
-                            detect_func_no_,
-                            detect_param_);
+                            table_id_);
 
 OB_SERIALIZE_MEMBER_INHERIT(ObLockPartitionRequest, ObLockTableRequest,
                             part_object_id_,
@@ -476,8 +472,6 @@ void ObLockObjsRequest::reset()
 {
   ObLockRequest::reset();
   objs_.reset();
-  detect_func_no_ = INVALID_DETECT_TYPE;
-  detect_param_.reset();
 }
 
 bool ObLockObjsRequest::is_valid() const
@@ -528,8 +522,6 @@ void ObLockTableRequest::reset()
 {
   ObLockRequest::reset();
   table_id_ = 0;
-  detect_func_no_ = INVALID_DETECT_TYPE;
-  detect_param_.reset();
 }
 
 bool ObLockTableRequest::is_valid() const

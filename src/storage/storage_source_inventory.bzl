@@ -743,7 +743,6 @@ STORAGE_UNITY_GROUPS = [
             "src/storage/tablelock/ob_table_lock_rpc_struct.cpp",
             "src/storage/tablelock/ob_table_lock_service.cpp",
             "src/storage/tablelock/ob_table_lock_local_executor.cpp",
-            "src/storage/tablelock/ob_table_lock_live_detector.cpp",
             "src/storage/tablelock/ob_session_table_lock.cpp",
         ],
         generated_srcs = [],

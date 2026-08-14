@@ -20,7 +20,6 @@
 #include <stdint.h>
 
 #include "common/ob_tablet_id.h"
-#include "lib/task/ob_timer.h"
 #include "storage/tablelock/ob_table_lock_common.h"
 #include "storage/tablelock/ob_table_lock_rpc_struct.h"
 #include "storage/tablelock/ob_table_lock_local_executor.h"
@@ -195,49 +194,9 @@ private:
 	    ObLockIDArray retry_lock_ids_;           // the lock id need to be retry.
 	  };
 public:
-  class ObOBJLockGarbageCollector
-  {
-  public:
-    ObOBJLockGarbageCollector();
-    ~ObOBJLockGarbageCollector();
-  public:
-    int init(common::ObMySQLProxy &sql_proxy);
-    int start();
-    void stop();
-    void wait();
-    void destroy();
-    int garbage_collect_right_now();
-
-    TO_STRING_KV(KP(this),
-                 K_(last_success_timestamp));
-  private:
-    class TimerTask : public common::ObTimerTask
-    {
-    public:
-      explicit TimerTask(ObOBJLockGarbageCollector &collector) : collector_(collector) {}
-      virtual ~TimerTask() = default;
-      void runTimerTask() override { collector_.run_gc_once_(); }
-    private:
-      ObOBJLockGarbageCollector &collector_;
-    };
-  private:
-    void run_gc_once_();
-    int garbage_collect_();
-    void check_and_report_timeout_();
-  public:
-    static int64_t GARBAGE_COLLECT_EXEC_INTERVAL;
-    static int64_t GARBAGE_COLLECT_TIMEOUT;
-  private:
-    common::ObTimer timer_;
-    TimerTask timer_task_;
-    int64_t last_success_timestamp_;
-    common::ObMySQLProxy *sql_proxy_;
-  };
-
   ObTableLockService()
     : sql_proxy_(nullptr),
       session_service_(nullptr),
-      obj_lock_garbage_collector_(),
       named_lock_manager_(),
       session_table_lock_manager_(),
       is_inited_(false) {}
@@ -313,8 +272,6 @@ public:
   int replace_lock(ObTxDesc &tx_desc,
                    const ObTxParam &tx_param,
                    const ObReplaceAllLocksRequest &replace_req);
-  int garbage_collect_right_now();
-  int get_obj_lock_garbage_collector(ObOBJLockGarbageCollector *&obj_lock_garbage_collector);
   NamedLockManager &get_named_lock_manager() { return named_lock_manager_; }
   SessionTableLockManager &get_session_table_lock_manager()
   { return session_table_lock_manager_; }
@@ -468,7 +425,6 @@ private:
 
   common::ObMySQLProxy *sql_proxy_;
   query::ObIDeadlockSessionService *session_service_;
-  ObOBJLockGarbageCollector obj_lock_garbage_collector_;
   NamedLockManager named_lock_manager_;
   SessionTableLockManager session_table_lock_manager_;
   bool is_inited_;

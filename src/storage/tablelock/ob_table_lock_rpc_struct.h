@@ -21,7 +21,6 @@
 
 #include "common/ob_tablet_id.h"
 #include "storage/tablelock/ob_table_lock_common.h"
-#include "storage/tablelock/ob_table_lock_live_detect_func.h"
 #include "storage/tx/ob_trans_define.h"
 #include "storage/tx/ob_trans_define_v4.h"
 
@@ -266,22 +265,17 @@ struct ObLockObjsRequest : public ObLockRequest
 public:
   ObLockObjsRequest()
     : ObLockRequest(),
-      objs_(),
-      detect_func_no_(INVALID_DETECT_TYPE),
-      detect_param_()
+      objs_()
   { type_ = ObLockMsgType::LOCK_OBJ_REQ; }
   virtual ~ObLockObjsRequest() { reset(); }
   virtual void reset();
   virtual bool is_valid() const;
   virtual ObTableLockTaskType get_task_type() const { return LOCK_OBJECT; }
   int assign(const ObLockObjRequest &arg);
-  INHERIT_TO_STRING_KV("ObLockRequest", ObLockRequest,
-                       K_(objs), K_(detect_func_no), K_(detect_param));
+  INHERIT_TO_STRING_KV("ObLockRequest", ObLockRequest, K_(objs));
 public:
   // which objects should we lock
   common::ObSEArray<ObLockID, 2> objs_;
-  ObTableLockDetectType detect_func_no_;
-  ObString detect_param_;
 };
 
 struct ObUnLockObjsRequest : public ObLockObjsRequest
@@ -299,21 +293,16 @@ struct ObLockTableRequest : public ObLockRequest
 public:
   ObLockTableRequest()
     : ObLockRequest(),
-      table_id_(0),
-      detect_func_no_(INVALID_DETECT_TYPE),
-      detect_param_()
+      table_id_(0)
   { type_ = ObLockMsgType::LOCK_TABLE_REQ; }
   virtual ~ObLockTableRequest() { reset(); }
   virtual void reset();
   virtual bool is_valid() const;
   virtual ObTableLockTaskType get_task_type() const { return LOCK_TABLE; }
-  INHERIT_TO_STRING_KV("ObLockRequest", ObLockRequest,
-                       K_(table_id), K_(detect_func_no), K_(detect_param));
+  INHERIT_TO_STRING_KV("ObLockRequest", ObLockRequest, K_(table_id));
 public:
   // which table should we lock
   uint64_t table_id_;
-  ObTableLockDetectType detect_func_no_;
-  ObString detect_param_;
 };
 
 struct ObUnLockTableRequest : public ObLockTableRequest
