@@ -23,6 +23,7 @@
 #include "lib/stat/ob_diagnostic_info_guard.h"
 #include "query/command/ob_root_command_service.h"
 #include "query/session/ob_session_access.h"
+#include "query/tablelock/ob_table_lock_runtime.h"
 #include "ob_sql_session_info.h"
 #include "share/object/ob_obj_cast.h"
 #include "share/ob_rpc_struct.h"
@@ -1731,6 +1732,11 @@ int ObSQLSessionInfo::on_user_disconnect()
   // while this session still owns a named lock.
   const data_plane::ObSessionLockOwner owner(
       get_server_sid(), get_sess_create_time());
+  if (OB_TMP_FAIL(query::release_table_locks_for_session(
+          get_server_sid(), get_sess_create_time()))) {
+    LOG_WARN("failed to release table locks on disconnect", K(tmp_ret), K(get_server_sid()));
+  }
+  ret = COVER_SUCC(tmp_ret);
   if (OB_TMP_FAIL(data_plane::release_all_named_locks(owner, release_count))) {
     LOG_WARN("failed to release named locks on disconnect", K(tmp_ret), K(get_server_sid()));
   }

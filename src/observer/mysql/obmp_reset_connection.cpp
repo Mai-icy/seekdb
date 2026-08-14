@@ -165,13 +165,23 @@ int ObMPResetConnection::process()
       }
     }
 
-    // 9. Releases locks acquired with GET_LOCK().
+    // 9. Releases session-scoped locks acquired with LOCK TABLES/GET_LOCK().
     if (OB_SUCC(ret)) {
       const data_plane::ObSessionLockOwner owner(
-          session->get_sid(), session->get_sess_create_time());
+          session->get_server_sid(), session->get_sess_create_time());
       int64_t release_count = 0;
-      if (OB_FAIL(data_plane::release_all_named_locks(owner, release_count))) {
+      int tmp_ret = OB_SUCCESS;
+      if (OB_TMP_FAIL(query::release_table_locks_for_session(
+              session->get_server_sid(), session->get_sess_create_time()))) {
+        LOG_WARN("failed to release table locks on reset connection",
+                 K(tmp_ret), K(session->get_server_sid()));
       }
+      ret = COVER_SUCC(tmp_ret);
+      if (OB_TMP_FAIL(data_plane::release_all_named_locks(owner, release_count))) {
+        LOG_WARN("failed to release named locks on reset connection",
+                 K(tmp_ret), K(session->get_server_sid()));
+      }
+      ret = COVER_SUCC(tmp_ret);
     }
 
     // 10. OB unique design

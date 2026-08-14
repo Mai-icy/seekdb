@@ -24,6 +24,10 @@ namespace oceanbase
 namespace query
 {
 
+// Query-owned autonomous cleanup for runtime-only MySQL table locks.
+int release_table_locks_for_session(uint32_t session_id,
+                                    uint64_t session_create_ts);
+
 // Query-owned autonomous cleanup for session-scoped locks.  The data plane
 // supplies only the persisted owner identity; transaction/session setup stays
 // behind this semantic interface.

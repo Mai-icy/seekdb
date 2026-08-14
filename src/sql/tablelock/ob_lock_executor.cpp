@@ -321,6 +321,23 @@ int ObLockExecutor::clear_lock_session_if_no_lock_(ObLockContext &ctx,
   return ret;
 }
 
+int ObLockExecutor::clear_lock_session_if_no_lock_(ObExecContext &ctx,
+                                                   const uint32_t session_id,
+                                                   const uint64_t session_create_ts)
+{
+  int ret = OB_SUCCESS;
+  bool owner_exist = false;
+  ObSQLSessionInfo *session = nullptr;
+
+  OV (OB_NOT_NULL(session = ctx.get_my_session()), OB_INVALID_ARGUMENT);
+  const data_plane::ObSessionLockOwner owner(session_id, session_create_ts);
+  OZ (data_plane::session_has_locks(owner, owner_exist));
+  if (OB_SUCC(ret) && !owner_exist) {
+    OX (mark_lock_session_(session, false));
+  }
+  return ret;
+}
+
 void ObLockExecutor::mark_lock_session_(sql::ObSQLSessionInfo *session,
                                         const bool is_lock_session)
 {
