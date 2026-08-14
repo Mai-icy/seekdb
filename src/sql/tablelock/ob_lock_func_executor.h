@@ -40,7 +40,7 @@ public:
               const int64_t timeout_us);
 };
 
-class ObReleaseLockExecutor : public ObUnLockExecutor
+class ObReleaseLockExecutor : public ObLockExecutor
 {
 public:
   int execute(sql::ObExecContext &ctx,
@@ -48,7 +48,7 @@ public:
               int64_t &release_cnt);
 };
 
-class ObReleaseAllLockExecutor : public ObUnLockExecutor
+class ObReleaseAllLockExecutor : public ObLockExecutor
 {
 public:
   int execute(sql::ObExecContext &ctx,

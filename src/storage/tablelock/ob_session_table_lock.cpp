@@ -136,6 +136,51 @@ int acquire_mysql_table_lock(share::ObILockMetadataSession &session_io,
   return ret;
 }
 
+int acquire_mysql_table_lock(transaction::ObTxDesc &tx,
+                             const transaction::ObTxParam &tx_param,
+                             const ObSessionLockOwner &owner,
+                             const ObTableLockTarget &target,
+                             int64_t timeout_us)
+{
+  int ret = common::OB_SUCCESS;
+  bool need_lock = true;
+  ObLockTableRequest request;
+  ObTableLockService *service =
+      ::oceanbase::share::server_service<ObTableLockService>();
+  request.table_id_ = target.table_id_;
+  request.lock_mode_ = target.lock_mode_;
+  request.op_type_ = SESSION_LOCK;
+  request.timeout_us_ = timeout_us;
+  request.is_from_sql_ = true;
+  if (OB_ISNULL(service)) {
+    ret = common::OB_NOT_INIT;
+  } else if (OB_UNLIKELY(NO_LOCK == target.lock_mode_)) {
+    ret = common::OB_INVALID_ARGUMENT;
+  } else if (OB_FAIL(make_owner(owner, request.owner_id_))) {
+  } else if (OB_FAIL(service->get_session_table_lock_manager().acquire(
+                 request.owner_id_, target.table_id_, target.lock_mode_, need_lock))) {
+  } else if (need_lock && OB_FAIL(service->lock(tx, tx_param, request))) {
+    LOG_WARN("acquire MySQL table lock failed", KR(ret), K(target));
+  }
+  return ret;
+}
+
+int rollback_mysql_table_lock(const ObSessionLockOwner &owner,
+                              const ObTableLockTarget &target)
+{
+  int ret = common::OB_SUCCESS;
+  ObTableLockOwnerID lock_owner;
+  ObTableLockService *service =
+      ::oceanbase::share::server_service<ObTableLockService>();
+  if (OB_ISNULL(service)) {
+    ret = common::OB_NOT_INIT;
+  } else if (OB_FAIL(make_owner(owner, lock_owner))) {
+  } else if (OB_FAIL(service->get_session_table_lock_manager().rollback_acquire(
+                 lock_owner, target.table_id_, target.lock_mode_))) {
+  }
+  return ret;
+}
+
 int release_named_lock(const common::ObString &lock_name,
                        const ObSessionLockOwner &owner,
                        int64_t &release_count)
@@ -276,6 +321,90 @@ int release_persisted_locks(share::ObILockMetadataSession &session_io,
   }
   if (OB_FAIL(ret)) {
     release_count = -2;
+  }
+  return ret;
+}
+
+int unlock_all_mysql_table_locks(transaction::ObTxDesc &tx,
+                                 const transaction::ObTxParam &tx_param,
+                                 const ObSessionLockOwner &owner,
+                                 int64_t &release_count)
+{
+  int ret = common::OB_SUCCESS;
+  ObTableLockOwnerID lock_owner;
+  ObTableLockService *service =
+      ::oceanbase::share::server_service<ObTableLockService>();
+  common::ObSEArray<SessionTableLockManager::LockSnapshot, 4> locks;
+  release_count = 0;
+  if (OB_ISNULL(service)) {
+    ret = common::OB_NOT_INIT;
+  } else if (OB_FAIL(make_owner(owner, lock_owner))) {
+  } else if (OB_FAIL(service->get_session_table_lock_manager().get_locks(
+                 lock_owner, locks))) {
+  } else {
+    for (int64_t i = 0; OB_SUCC(ret) && i < locks.count(); ++i) {
+      const SessionTableLockManager::LockSnapshot &lock = locks.at(i);
+      ObUnLockTableRequest request;
+      request.table_id_ = lock.table_id_;
+      request.lock_mode_ = lock.lock_mode_;
+      request.owner_id_ = lock_owner;
+      request.op_type_ = SESSION_UNLOCK;
+      request.timeout_us_ = 0;
+      request.is_from_sql_ = true;
+      const int unlock_ret = service->unlock(tx, tx_param, request);
+      if (common::OB_OBJ_LOCK_NOT_EXIST == unlock_ret) {
+        // Reconcile an in-memory reverse index retained after an ambiguous
+        // transaction-end error: the actual LS lock is already gone.
+        LOG_INFO("session table lock is already absent", K(request));
+      } else if (common::OB_SUCCESS != unlock_ret) {
+        ret = unlock_ret;
+        LOG_WARN("unlock MySQL session table lock failed", KR(ret), K(request));
+      }
+      if (OB_SUCC(ret)) {
+        release_count += lock.ref_count_;
+      }
+    }
+  }
+  if (OB_FAIL(ret)) {
+    release_count = -2;
+  }
+  return ret;
+}
+
+int finish_unlock_all_mysql_table_locks(const ObSessionLockOwner &owner,
+                                        int64_t &release_count)
+{
+  int ret = common::OB_SUCCESS;
+  ObTableLockOwnerID lock_owner;
+  ObTableLockService *service =
+      ::oceanbase::share::server_service<ObTableLockService>();
+  if (OB_ISNULL(service)) {
+    ret = common::OB_NOT_INIT;
+  } else if (OB_FAIL(make_owner(owner, lock_owner))) {
+  } else if (OB_FAIL(service->get_session_table_lock_manager().release_all(
+                 lock_owner, release_count))) {
+  }
+  return ret;
+}
+
+int session_has_locks(const ObSessionLockOwner &owner, bool &has_locks)
+{
+  int ret = common::OB_SUCCESS;
+  bool has_named_locks = false;
+  bool has_table_locks = false;
+  ObTableLockOwnerID lock_owner;
+  ObTableLockService *service =
+      ::oceanbase::share::server_service<ObTableLockService>();
+  has_locks = false;
+  if (OB_ISNULL(service)) {
+    ret = common::OB_NOT_INIT;
+  } else if (OB_FAIL(make_owner(owner, lock_owner))) {
+  } else if (OB_FAIL(service->get_named_lock_manager().has_lock(
+                 lock_owner, has_named_locks))) {
+  } else if (OB_FAIL(service->get_session_table_lock_manager().has_lock(
+                 lock_owner, has_table_locks))) {
+  } else {
+    has_locks = has_named_locks || has_table_locks;
   }
   return ret;
 }

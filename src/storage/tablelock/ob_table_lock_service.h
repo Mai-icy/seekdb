@@ -25,6 +25,7 @@
 #include "storage/tablelock/ob_table_lock_rpc_struct.h"
 #include "storage/tablelock/ob_table_lock_local_executor.h"
 #include "storage/tablelock/ob_named_lock_manager.h"
+#include "storage/tablelock/ob_session_table_lock_manager.h"
 
 namespace oceanbase
 {
@@ -238,6 +239,7 @@ public:
       session_service_(nullptr),
       obj_lock_garbage_collector_(),
       named_lock_manager_(),
+      session_table_lock_manager_(),
       is_inited_(false) {}
   ~ObTableLockService() {}
   int init(query::ObIDeadlockSessionService &session_service);
@@ -314,6 +316,8 @@ public:
   int garbage_collect_right_now();
   int get_obj_lock_garbage_collector(ObOBJLockGarbageCollector *&obj_lock_garbage_collector);
   NamedLockManager &get_named_lock_manager() { return named_lock_manager_; }
+  SessionTableLockManager &get_session_table_lock_manager()
+  { return session_table_lock_manager_; }
 
 private:
   bool need_retry_trans_(const ObTableLockCtx &ctx,
@@ -466,6 +470,7 @@ private:
   query::ObIDeadlockSessionService *session_service_;
   ObOBJLockGarbageCollector obj_lock_garbage_collector_;
   NamedLockManager named_lock_manager_;
+  SessionTableLockManager session_table_lock_manager_;
   bool is_inited_;
 };
 }

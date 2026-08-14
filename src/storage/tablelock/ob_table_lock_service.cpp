@@ -177,8 +177,8 @@ int ObTableLockService::ObTableLockCtx::set_by_lock_req_common_part(const ObLock
   if (INVALID_LOCK_TASK_TYPE == task_type_) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("not set task_type before fill ctx", K(ret), K(arg));
-  } else if (((is_unlock_task() || is_replace_task()) && OUT_TRANS_UNLOCK != arg.op_type_)
-             || (!is_unlock_task() && !is_replace_task() && OUT_TRANS_UNLOCK == arg.op_type_)) {
+  } else if (((is_unlock_task() || is_replace_task()) && !is_out_trans_unlock_op_type(arg.op_type_))
+             || (!is_unlock_task() && !is_replace_task() && is_out_trans_unlock_op_type(arg.op_type_))) {
     ret = OB_INVALID_ARGUMENT;
     LOG_WARN("lock task_type is not match with lock op_type", K(ret), K(arg), KPC(this));
   } else {
@@ -422,6 +422,8 @@ int ObTableLockService::init(
              KP(GCTX.sql_proxy_));
   } else if (OB_FAIL(named_lock_manager_.init())) {
     LOG_WARN("failed to init named lock manager", K(ret));
+  } else if (OB_FAIL(session_table_lock_manager_.init())) {
+    LOG_WARN("failed to init session table lock manager", K(ret));
   } else {
     sql_proxy_ = GCTX.sql_proxy_;
     if (OB_FAIL(obj_lock_garbage_collector_.init(*sql_proxy_))) {
@@ -457,6 +459,7 @@ void ObTableLockService::wait()
 void ObTableLockService::destroy()
 {
   obj_lock_garbage_collector_.destroy();
+  session_table_lock_manager_.destroy();
   named_lock_manager_.destroy();
   sql_proxy_ = nullptr;
   session_service_ = nullptr;
