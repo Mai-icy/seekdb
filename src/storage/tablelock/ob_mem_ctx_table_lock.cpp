@@ -126,7 +126,7 @@ int ObLockMemCtx::rollback_table_lock_(const ObTxSEQ to_seq_no, const ObTxSEQ fr
                  curr->lock_op_.lock_seq_no_.get_branch() != to_seq_no.get_branch()) {
         // branch missmatch
       } else {
-        if (curr->lock_op_.op_type_ == OUT_TRANS_LOCK || curr->lock_op_.op_type_ == OUT_TRANS_UNLOCK) {
+        if (is_out_trans_op_type(curr->lock_op_.op_type_)) {
           ret = OB_TRANS_NEED_ROLLBACK;
           LOG_INFO("rollback trans because has OUT_TRANS_LOCK", KR(ret), K(to_seq_no), K(from_seq_no), K(lock_list_));
           break;
@@ -189,7 +189,9 @@ int ObLockMemCtx::commit_table_lock_(const SCN &commit_version, const SCN &commi
         break;
       }
       case OUT_TRANS_LOCK:
-      case OUT_TRANS_UNLOCK: {
+      case OUT_TRANS_UNLOCK:
+      case SESSION_LOCK:
+      case SESSION_UNLOCK: {
         // update lock op status to LOCK_OP_COMPLETE
         if (OB_FAIL(memtable->
                     update_lock_status(curr->lock_op_,
@@ -247,6 +249,8 @@ int ObLockMemCtx::get_table_lock_store_info(ObTableLockInfo &table_lock_info)
     if (OB_UNLIKELY(!curr->is_valid())) {
       // no need dump to avoid been restored even if rollback
       LOG_WARN("the table lock op no should not dump", K(curr->lock_op_));
+    } else if (is_session_lock_op_type(curr->lock_op_.op_type_)) {
+      // Session locks are process-local and must not be restored with tx ctx.
     } else if (OB_FAIL(table_lock_info.table_lock_ops_.push_back(curr->lock_op_))) {
       LOG_WARN("fail to push back table_lock store info", K(ret));
       break;
@@ -388,7 +392,7 @@ int ObLockMemCtx::check_lock_exist( //TODO(lihongqin):check it
       const ObTableLockOp &lock_op = curr->lock_op_;
       if (lock_op.lock_id_ == lock_id) {
         // BE CAREFUL: get all the lock mode curr trans has got.
-        if (curr->lock_op_.op_type_ != OUT_TRANS_UNLOCK) {
+        if (!is_out_trans_unlock_op_type(curr->lock_op_.op_type_)) {
           lock_mode_cnt_in_same_trans[get_index_by_lock_mode(curr->lock_op_.lock_mode_)]++;
         }
         // check exist.

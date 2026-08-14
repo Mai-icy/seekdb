@@ -48,13 +48,13 @@ static const int64_t DEFAULT_RWLOCK_TIMEOUT_US = 24LL * 3600 * 1000 * 1000;  // 
 
 bool ObTableLockOpLinkNode::is_complete_outtrans_lock() const
 {
-  return (lock_op_.op_type_ == OUT_TRANS_LOCK &&
+  return (is_out_trans_lock_op_type(lock_op_.op_type_) &&
           lock_op_.lock_op_status_ == LOCK_OP_COMPLETE);
 }
 
 bool ObTableLockOpLinkNode::is_complete_outtrans_unlock() const
 {
-  return (lock_op_.op_type_ == OUT_TRANS_UNLOCK &&
+  return (is_out_trans_unlock_op_type(lock_op_.op_type_) &&
           lock_op_.lock_op_status_ == LOCK_OP_COMPLETE);
 }
 
@@ -415,7 +415,7 @@ int ObOBJLock::update_lock_status(const ObTableLockOp &lock_op,
     }
     // compact the lock op
     if (OB_SUCC(ret) &&
-        lock_op.op_type_ == OUT_TRANS_UNLOCK &&
+        is_out_trans_unlock_op_type(lock_op.op_type_) &&
         status == LOCK_OP_COMPLETE) {
       // WRLockGuard guard(rwlock_);
       int64_t abs_timeout_us = ObTimeUtility::current_time() + DEFAULT_RWLOCK_TIMEOUT_US;
@@ -435,7 +435,7 @@ int ObOBJLock::update_lock_status(const ObTableLockOp &lock_op,
       }
     }
     if (OB_SUCC(ret) &&
-        lock_op.op_type_ == OUT_TRANS_UNLOCK &&
+        is_out_trans_unlock_op_type(lock_op.op_type_) &&
         status == LOCK_OP_COMPLETE) {
       wakeup_waiters_(lock_op);
     }
@@ -778,7 +778,8 @@ int ObOBJLock::get_table_lock_store_info(
       if (op_list != NULL) {
         DLIST_FOREACH(curr, *op_list) {
           if (curr->lock_op_.commit_scn_ <= freeze_scn &&
-              (curr->is_complete_outtrans_lock() || curr->is_complete_outtrans_unlock())) {
+              is_persistent_out_trans_op_type(curr->lock_op_.op_type_) &&
+              curr->lock_op_.lock_op_status_ == LOCK_OP_COMPLETE) {
             ObTableLockOp store_info;
             if(OB_FAIL(curr->get_table_lock_store_info(store_info))) {
             } else if (OB_FAIL(store_arr.push_back(store_info))) {
@@ -1526,17 +1527,17 @@ int ObOBJLock::check_op_allow_unlock_from_list_(
 {
   int ret = OB_SUCCESS;
   bool lock_exist = false;
-  if (OUT_TRANS_UNLOCK != lock_op.op_type_) {
+  if (!is_out_trans_unlock_op_type(lock_op.op_type_)) {
     ret = OB_ERR_UNEXPECTED;
   } else {
     DLIST_FOREACH(curr, *op_list) {
       if (curr->lock_op_.owner_id_ == lock_op.owner_id_) {
         lock_exist = true;
         if (curr->lock_op_.lock_op_status_ == LOCK_OP_DOING) {
-          if (curr->lock_op_.op_type_ == OUT_TRANS_LOCK ||
+          if (is_out_trans_lock_op_type(curr->lock_op_.op_type_) ||
               curr->lock_op_.op_type_ == IN_TRANS_COMMON_LOCK) {
             ret = OB_OBJ_LOCK_NOT_COMPLETED;
-          } else if (curr->lock_op_.op_type_ == OUT_TRANS_UNLOCK) {
+          } else if (is_out_trans_unlock_op_type(curr->lock_op_.op_type_)) {
             ret = OB_OBJ_UNLOCK_CONFLICT;
           } else {
             ret = OB_ERR_UNEXPECTED;
@@ -1547,9 +1548,9 @@ int ObOBJLock::check_op_allow_unlock_from_list_(
           // i.e. there's an unlcok op replay and commit before the
           // lock op. So we return this error code to avoid continuing
           // the unlocking operation.
-          if (curr->lock_op_.op_type_ == OUT_TRANS_UNLOCK) {
+          if (is_out_trans_unlock_op_type(curr->lock_op_.op_type_)) {
             ret = OB_OBJ_LOCK_NOT_EXIST;
-          } else if (curr->lock_op_.op_type_ == OUT_TRANS_LOCK) {
+          } else if (is_out_trans_lock_op_type(curr->lock_op_.op_type_)) {
             // do nothing
           } else {
             ret = OB_ERR_UNEXPECTED;
@@ -1591,9 +1592,10 @@ int ObOBJLock::check_op_allow_lock_from_list_(
       }
       break;
     }
-    case OUT_TRANS_LOCK: {
+    case OUT_TRANS_LOCK:
+    case SESSION_LOCK: {
       if (curr->lock_op_.owner_id_ == lock_op.owner_id_) {
-        if (curr->lock_op_.op_type_ == OUT_TRANS_LOCK) {
+        if (is_out_trans_lock_op_type(curr->lock_op_.op_type_)) {
           if (curr->lock_op_.lock_op_status_ == LOCK_OP_DOING) {
             // out trans lock conflict with itself.
             // can not lock with the same lock mode twice.
@@ -1613,7 +1615,7 @@ int ObOBJLock::check_op_allow_lock_from_list_(
             need_break = true;
             LOG_ERROR("unexpected lock op status.", K(ret), K(curr->lock_op_));
           }
-        } else if (curr->lock_op_.op_type_ == OUT_TRANS_UNLOCK) {
+        } else if (is_out_trans_unlock_op_type(curr->lock_op_.op_type_)) {
           // you are unlocking, cannot lock again now.
           ret = OB_TRY_LOCK_ROW_CONFLICT;
           has_unlock_op = true;
@@ -1646,6 +1648,7 @@ int ObOBJLock::check_op_allow_lock_from_list_(
       break;
     }
     case OUT_TRANS_UNLOCK:
+    case SESSION_UNLOCK:
     default: {
       ret = OB_ERR_UNEXPECTED;
       need_break = true;
@@ -1680,10 +1683,12 @@ int ObOBJLock::check_allow_replace_from_list_(ObTableLockOpList *op_list, const 
         if (OB_ISNULL(lock_op)) {
           if (OB_FAIL(lock_op_map.set_refactored(owner_id, curr->lock_op_))) {
           }
-        } else if ((OUT_TRANS_LOCK == lock_op->op_type_ && OUT_TRANS_UNLOCK == curr->lock_op_.op_type_
+        } else if ((is_out_trans_lock_op_type(lock_op->op_type_)
+                    && is_out_trans_unlock_op_type(curr->lock_op_.op_type_)
                     && LOCK_OP_COMPLETE == lock_op->lock_op_status_ && LOCK_OP_DOING == curr->lock_op_.lock_op_status_
                     && trans_id == curr->lock_op_.create_trans_id_)
-                   || (OUT_TRANS_UNLOCK == lock_op->op_type_ && OUT_TRANS_LOCK == curr->lock_op_.op_type_
+                   || (is_out_trans_unlock_op_type(lock_op->op_type_)
+                       && is_out_trans_lock_op_type(curr->lock_op_.op_type_)
                        && LOCK_OP_DOING == lock_op->lock_op_status_
                        && LOCK_OP_COMPLETE == curr->lock_op_.lock_op_status_
                        && trans_id == lock_op->create_trans_id_)) {
