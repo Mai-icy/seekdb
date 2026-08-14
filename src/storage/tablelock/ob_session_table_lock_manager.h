@@ -42,6 +42,8 @@ public:
     LockSnapshot(uint64_t table_id, ObTableLockMode lock_mode, int64_t ref_count)
       : table_id_(table_id), lock_mode_(lock_mode), ref_count_(ref_count) {}
 
+    TO_STRING_KV(K_(table_id), K_(lock_mode), K_(ref_count));
+
     uint64_t table_id_;
     ObTableLockMode lock_mode_;
     int64_t ref_count_;
@@ -72,6 +74,8 @@ private:
     LockEntry() : table_id_(OB_INVALID_ID), lock_mode_(NO_LOCK), ref_count_(0) {}
     LockEntry(uint64_t table_id, ObTableLockMode lock_mode, int64_t ref_count)
       : table_id_(table_id), lock_mode_(lock_mode), ref_count_(ref_count) {}
+
+    TO_STRING_KV(K_(table_id), K_(lock_mode), K_(ref_count));
 
     uint64_t table_id_;
     ObTableLockMode lock_mode_;

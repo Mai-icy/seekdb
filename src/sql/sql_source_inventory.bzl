@@ -1628,7 +1628,6 @@ SQL_UNITY_GROUPS = [
             "src/sql/session/ob_local_session_var.cpp",
             "src/sql/session/ob_system_variable.cpp",
             "src/sql/session/ob_system_variable_factory.cpp",
-            "src/sql/session/ob_session_inner_sql.cpp",
         ],
         generated_srcs = [],
         external_srcs = [],

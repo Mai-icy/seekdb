@@ -97,7 +97,6 @@ QUERY_API_INTERFACE_HEADERS = [
     "api/query/session/ob_inner_sql_connection_access.h",
     "api/query/session/ob_local_session_var.h",
     "api/query/session/ob_session_access.h",
-    "api/query/session/ob_session_inner_sql.h",
     "api/query/tablelock/ob_table_lock_runtime.h",
 ]
 

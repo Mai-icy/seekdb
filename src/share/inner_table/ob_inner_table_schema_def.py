@@ -2404,28 +2404,7 @@ def_table_schema(**gen_history_table_def(1108, all_column_privilege_def))
 
 
 
-def_table_schema(
-  owner = 'yangyifei.yyf',
-  table_name = '__all_detect_lock_info_v2',
-  table_id = '1111',
-  table_type = 'SYSTEM_TABLE',
-  gm_columns = ['gmt_create', 'gmt_modified'],
-  rowkey_columns = [
-    ('task_type', 'int'),
-    ('obj_type', 'int'),
-    ('obj_id', 'int'),
-    ('lock_mode', 'int'),
-    ('owner_type', 'int'),
-    ('owner_id', 'int')
-  ],
-  is_cluster_private = False,
-  meta_record_in_sys = False,
-  normal_columns = [
-    ('cnt', 'int'),
-    ('detect_func_no', 'int'),
-    ('detect_func_param', 'varbinary:MAX_LOCK_DETECT_PARAM_LENGTH', 'true', '')
-  ]
-  )
+# 1111: __all_detect_lock_info_v2 (removed; session lock metadata is runtime-only)
 
 # 522 : __all_pkg_type
 # 523 : __all_pkg_type_attr

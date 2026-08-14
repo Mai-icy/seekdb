@@ -18,11 +18,9 @@
 #include "sql/tablelock/ob_lock_executor.h"
 #include "query/session/ob_inner_sql_connection_access.h"
 #include "data_plane/transaction/ob_deadlock.h"
-#include "share/ob_dml_sql_splicer.h"
 
 #include "common/mysqlclient/ob_mysql_proxy.h"
 #include "common/mysqlclient/ob_mysql_result.h"
-#include "lib/utility/alloc_assist.h"
 #include "sql/engine/ob_exec_context.h"
 #include "sql/ob_sql_trans_control.h"
 #include "sql/session/ob_sql_session_info.h"
