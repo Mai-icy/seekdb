@@ -115,9 +115,6 @@ public:
   static constexpr int64_t LOCK_NOT_OWN_RELEASE_CNT = 0;
 
 public:
-  int clear_lock_session_if_no_lock_(ObLockContext &ctx,
-                                     const uint32_t session_id,
-                                     const uint64_t session_create_ts);
   int clear_lock_session_if_no_lock_(sql::ObExecContext &ctx,
                                      const uint32_t session_id,
                                      const uint64_t session_create_ts);
@@ -127,32 +124,6 @@ protected:
                           const bool is_lock_session);
 };
 
-class ObUnLockExecutor : public ObLockExecutor
-{
-public:
-  // new one
-  enum ReleaseType
-  {
-    RELEASE_OBJ_LOCK,
-    RELEASE_TABLE_LOCK,
-    RELEASE_ALL_LOCKS,
-  };
-  int execute(sql::ObExecContext &ctx,
-              const ReleaseType release_type,
-              int64_t &release_cnt);
-  // used internal, release all the lock that required by the session.
-  int execute(uint8_t owner_type, int64_t owner_id);
-private:
-  int execute_(sql::ObExecContext &ctx,
-               const data_plane::ObPersistedLockOwner &owner,
-               int64_t &release_cnt);
-  int execute_(sql::ObExecContext &ctx,
-               const uint32_t session_id,
-               const uint64_t session_create_ts,
-               const ReleaseType release_type,
-               int64_t &release_cnt);
-  static data_plane::ObSessionLockScope to_scope_(ReleaseType release_type);
-};
 } // tablelock
 } // transaction
 } // oceanbase
