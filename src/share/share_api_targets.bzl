@@ -663,7 +663,6 @@ _SHARE_SEMANTIC_HEADER_TARGETS = {
         hdrs = [
             "ob_core_table_proxy.h",
             "ob_dml_sql_splicer.h",
-            "ob_lock_metadata_session.h",
             "ob_sql_client_decorator.h",
         ],
         deps = [

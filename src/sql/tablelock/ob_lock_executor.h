@@ -111,8 +111,6 @@ class ObLockExecutor
 {
 public:
   static constexpr int64_t INVALID_RELEASE_CNT = -2;
-  static constexpr int64_t LOCK_NOT_EXIST_RELEASE_CNT = -1;
-  static constexpr int64_t LOCK_NOT_OWN_RELEASE_CNT = 0;
 
 public:
   int clear_lock_session_if_no_lock_(sql::ObExecContext &ctx,

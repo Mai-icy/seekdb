@@ -130,7 +130,6 @@ SHARE_PUBLIC_HEADER_ROOTS = [
     "ob_light_hashmap.h",
     "ob_lob_access_utils.h",
     "ob_local_device.h",
-    "ob_lock_metadata_session.h",
     "ob_lonely_table_clean_rpc_struct.h",
     "ob_ls_id.h",
     "ob_max_id_cache.h",

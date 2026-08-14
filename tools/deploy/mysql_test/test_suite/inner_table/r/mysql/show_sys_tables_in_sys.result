@@ -1726,20 +1726,6 @@ id	field	type	length	precision	nullable
 23	table_name	22	1024	-1	1
 24	column_name	22	1024	-1	1
 25	all_priv	5	0	20	1
-table oceanbase.__all_detect_lock_info_v2 column_count 11 table_id 1111
-select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=1111 order by column_id;
-id	field	type	length	precision	nullable
-16	gmt_create	18	0	25	1
-17	gmt_modified	18	0	25	1
-18	task_type	5	0	20	0
-19	obj_type	5	0	20	0
-20	obj_id	5	0	20	0
-21	lock_mode	5	0	20	0
-22	owner_type	5	0	20	0
-23	owner_id	5	0	20	0
-24	cnt	5	0	20	0
-25	detect_func_no	5	0	20	0
-26	detect_func_param	22	512	-1	1
 table oceanbase.__ft_dict_ik_utf8 column_count 1 table_id 1116
 select column_id id, column_name field, data_type type, data_length length, data_precision `precision`, nullable from __all_column where table_id=1116 order by column_id;
 id	field	type	length	precision	nullable
