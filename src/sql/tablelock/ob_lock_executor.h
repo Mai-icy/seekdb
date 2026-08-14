@@ -118,6 +118,9 @@ public:
   int clear_lock_session_if_no_lock_(ObLockContext &ctx,
                                      const uint32_t session_id,
                                      const uint64_t session_create_ts);
+  int clear_lock_session_if_no_lock_(sql::ObExecContext &ctx,
+                                     const uint32_t session_id,
+                                     const uint64_t session_create_ts);
 
 protected:
   void mark_lock_session_(sql::ObSQLSessionInfo *session,

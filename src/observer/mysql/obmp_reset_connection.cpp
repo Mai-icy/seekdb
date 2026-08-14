@@ -164,33 +164,23 @@ int ObMPResetConnection::process()
       }
     }
 
-    // 2. Releases session-level LOCK TABLES locks.
-    // 9. Releases locks acquired with GET_LOCK().
+    // 9. Releases session-scoped locks acquired with LOCK TABLES/GET_LOCK().
     if (OB_SUCC(ret)) {
       const data_plane::ObSessionLockOwner owner(
-          session->get_sid(), session->get_sess_create_time());
-      data_plane::ObPersistedLockOwner persisted_owner;
-      int persisted_lock_ret =
-          data_plane::persist_session_lock_owner(owner, persisted_owner);
-      if (OB_SUCCESS == persisted_lock_ret) {
-        persisted_lock_ret = query::release_locks_for_dead_owner(
-            persisted_owner.owner_type_, persisted_owner.owner_id_);
-      }
-      if (OB_SUCCESS != persisted_lock_ret) {
-        LOG_WARN(
-            "failed to release persisted session locks on connection reset",
-            K(persisted_lock_ret), K(session->get_server_sid()));
-      }
-
+          session->get_server_sid(), session->get_sess_create_time());
       int64_t release_count = 0;
-      const int named_lock_ret =
-          data_plane::release_all_named_locks(owner, release_count);
-      if (OB_SUCCESS != named_lock_ret) {
-        LOG_WARN("failed to release named locks on connection reset",
-                 K(named_lock_ret), K(session->get_server_sid()));
+      int tmp_ret = OB_SUCCESS;
+      if (OB_TMP_FAIL(query::release_table_locks_for_session(
+              session->get_server_sid(), session->get_sess_create_time()))) {
+        LOG_WARN("failed to release table locks on reset connection",
+                 K(tmp_ret), K(session->get_server_sid()));
       }
-      ret = COVER_SUCC(persisted_lock_ret);
-      ret = COVER_SUCC(named_lock_ret);
+      ret = COVER_SUCC(tmp_ret);
+      if (OB_TMP_FAIL(data_plane::release_all_named_locks(owner, release_count))) {
+        LOG_WARN("failed to release named locks on reset connection",
+                 K(tmp_ret), K(session->get_server_sid()));
+      }
+      ret = COVER_SUCC(tmp_ret);
     }
 
     // 10. OB unique design
