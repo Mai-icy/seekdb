@@ -79,6 +79,15 @@ int acquire_mysql_table_lock(share::ObILockMetadataSession &session_io,
                              const ObTableLockTarget &target,
                              int64_t timeout_us);
 
+int acquire_mysql_table_lock(transaction::ObTxDesc &tx,
+                             const transaction::ObTxParam &tx_param,
+                             const ObSessionLockOwner &owner,
+                             const ObTableLockTarget &target,
+                             int64_t timeout_us);
+
+int rollback_mysql_table_lock(const ObSessionLockOwner &owner,
+                              const ObTableLockTarget &target);
+
 // release_count follows MySQL named-lock semantics: -1 means the lock does
 // not exist, 0 means it exists but belongs to another owner, and a positive
 // value is the number of released records.
@@ -112,9 +121,19 @@ int release_persisted_locks(share::ObILockMetadataSession &session_io,
                             ObSessionLockScope scope,
                             int64_t &release_count);
 
+int unlock_all_mysql_table_locks(transaction::ObTxDesc &tx,
+                                 const transaction::ObTxParam &tx_param,
+                                 const ObSessionLockOwner &owner,
+                                 int64_t &release_count);
+
+int finish_unlock_all_mysql_table_locks(const ObSessionLockOwner &owner,
+                                        int64_t &release_count);
+
 int session_has_locks(share::ObILockMetadataSession &session_io,
                       const ObSessionLockOwner &owner,
                       bool &has_locks);
+
+int session_has_locks(const ObSessionLockOwner &owner, bool &has_locks);
 
 int session_lock_owners_equal(const ObSessionLockOwner &left,
                               const ObSessionLockOwner &right,

@@ -66,7 +66,7 @@ int ObReleaseLockExecutor::execute(ObExecContext &ctx,
     const data_plane::ObSessionLockOwner owner(
         sess->get_server_sid(), sess->get_sess_create_time());
     OZ (data_plane::release_named_lock(lock_name, owner, release_cnt));
-    OZ (data_plane::session_has_named_locks(owner, has_lock));
+    OZ (data_plane::session_has_locks(owner, has_lock));
     if (OB_SUCC(ret) && !has_lock) {
       mark_lock_session_(sess, false);
     }
@@ -78,6 +78,7 @@ int ObReleaseAllLockExecutor::execute(ObExecContext &ctx,
                                       int64_t &release_cnt)
 {
   int ret = OB_SUCCESS;
+  bool has_lock = false;
   ObSQLSessionInfo *sess = ctx.get_my_session();
 
   OZ (ObLockContext::valid_execute_context(ctx));
@@ -86,7 +87,8 @@ int ObReleaseAllLockExecutor::execute(ObExecContext &ctx,
     const data_plane::ObSessionLockOwner owner(
         sess->get_server_sid(), sess->get_sess_create_time());
     OZ (data_plane::release_all_named_locks(owner, release_cnt));
-    if (OB_SUCC(ret)) {
+    OZ (data_plane::session_has_locks(owner, has_lock));
+    if (OB_SUCC(ret) && !has_lock) {
       mark_lock_session_(sess, false);
     }
   }
