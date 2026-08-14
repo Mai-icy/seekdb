@@ -230,7 +230,33 @@ static inline
 bool is_out_trans_op_type(const ObTableLockOpType type)
 {
   return (type == OUT_TRANS_LOCK ||
-          type == OUT_TRANS_UNLOCK);
+          type == OUT_TRANS_UNLOCK ||
+          type == SESSION_LOCK ||
+          type == SESSION_UNLOCK);
+}
+
+static inline
+bool is_persistent_out_trans_op_type(const ObTableLockOpType type)
+{
+  return (type == OUT_TRANS_LOCK || type == OUT_TRANS_UNLOCK);
+}
+
+static inline
+bool is_out_trans_lock_op_type(const ObTableLockOpType type)
+{
+  return (type == OUT_TRANS_LOCK || type == SESSION_LOCK);
+}
+
+static inline
+bool is_out_trans_unlock_op_type(const ObTableLockOpType type)
+{
+  return (type == OUT_TRANS_UNLOCK || type == SESSION_UNLOCK);
+}
+
+static inline
+bool is_session_lock_op_type(const ObTableLockOpType type)
+{
+  return (type == SESSION_LOCK || type == SESSION_UNLOCK);
 }
 
 static inline
@@ -452,7 +478,7 @@ public:
   bool need_register_callback() const
   { return !is_out_trans_op_type(op_type_); }
   bool need_multi_source_data() const
-  { return is_out_trans_op_type(op_type_); }
+  { return is_persistent_out_trans_op_type(op_type_); }
   bool need_record_lock_op() const
   {
     return (is_out_trans_op_type(op_type_) ||

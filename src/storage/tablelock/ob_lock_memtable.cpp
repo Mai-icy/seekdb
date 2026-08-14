@@ -617,7 +617,7 @@ int ObLockMemtable::update_lock_status(
   } else if (OB_UNLIKELY(!op_info.is_valid()) ||
              OB_UNLIKELY(!is_op_status_valid(status))) {
     ret = OB_INVALID_ARGUMENT;
-  } else if (op_info.is_out_trans_lock_op() && commit_scn <= flushed_scn_) {
+  } else if (is_persistent_out_trans_op_type(op_info.op_type_) && commit_scn <= flushed_scn_) {
     LOG_INFO("commit skip because of lock memtable dumped", K(flushed_scn_),
              K(commit_scn), K(op_info));
   } else if (OB_FAIL(obj_lock_map_.update_lock_status(op_info,
