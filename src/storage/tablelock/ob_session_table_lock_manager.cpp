@@ -29,7 +29,7 @@ namespace tablelock
 static const int64_t SESSION_TABLE_LOCK_BUCKET_COUNT = 64;
 
 SessionTableLockManager::SessionTableLockManager()
-  : cond_(), owner_lock_map_(), is_inited_(false)
+  : cond_(), owner_lock_map_(), pending_cleanups_(), is_inited_(false)
 {
 }
 
@@ -61,6 +61,7 @@ void SessionTableLockManager::destroy()
   if (is_inited_) {
     {
       ObThreadCondGuard guard(cond_);
+      pending_cleanups_.reset();
       owner_lock_map_.destroy();
       is_inited_ = false;
     }
@@ -185,11 +186,74 @@ int SessionTableLockManager::release_all(const ObTableLockOwnerID &owner_id,
   } else {
     ObThreadCondGuard guard(cond_);
     const LockList *locks = owner_lock_map_.get(owner_id);
-    if (OB_NOT_NULL(locks)) {
+    if (OB_ISNULL(locks)) {
+    } else {
       for (int64_t i = 0; i < locks->count(); ++i) {
         release_count += locks->at(i).ref_count_;
       }
       ret = owner_lock_map_.erase_refactored(owner_id);
+    }
+    OX (remove_pending_cleanup_(owner_id));
+  }
+  return ret;
+}
+
+int SessionTableLockManager::schedule_cleanup(
+    const ObTableLockOwnerID &owner_id,
+    const uint32_t session_id,
+    const uint64_t session_create_ts)
+{
+  int ret = OB_SUCCESS;
+  if (OB_UNLIKELY(!is_inited_)) {
+    ret = OB_NOT_INIT;
+  } else if (OB_UNLIKELY(!owner_id.is_valid()
+                         || INVALID_SESSID == session_id
+                         || 0 == session_create_ts)) {
+    ret = OB_INVALID_ARGUMENT;
+  } else {
+    ObThreadCondGuard guard(cond_);
+    if (OB_ISNULL(owner_lock_map_.get(owner_id))) {
+      // The synchronous cleanup may have completed before this retry was queued.
+    } else {
+      bool found = false;
+      for (int64_t i = 0; !found && i < pending_cleanups_.count(); ++i) {
+        found = pending_cleanups_.at(i).owner_id_ == owner_id;
+      }
+      if (!found && OB_FAIL(pending_cleanups_.push_back(
+              CleanupOwner(owner_id, session_id, session_create_ts)))) {
+        LOG_WARN("failed to schedule session table lock cleanup", K(ret), K(owner_id));
+      }
+    }
+  }
+  return ret;
+}
+
+int SessionTableLockManager::get_pending_cleanups(
+    ObIArray<CleanupOwner> &owners)
+{
+  int ret = OB_SUCCESS;
+  owners.reset();
+  if (OB_UNLIKELY(!is_inited_)) {
+    ret = OB_NOT_INIT;
+  } else {
+    ObThreadCondGuard guard(cond_);
+    for (int64_t i = 0; OB_SUCC(ret) && i < pending_cleanups_.count(); ++i) {
+      if (OB_FAIL(owners.push_back(pending_cleanups_.at(i)))) {
+        LOG_WARN("failed to copy pending session lock cleanup", K(ret));
+      }
+    }
+  }
+  return ret;
+}
+
+int SessionTableLockManager::remove_pending_cleanup_(
+    const ObTableLockOwnerID &owner_id)
+{
+  int ret = OB_SUCCESS;
+  for (int64_t i = 0; i < pending_cleanups_.count(); ++i) {
+    if (pending_cleanups_.at(i).owner_id_ == owner_id) {
+      pending_cleanups_.remove(i);
+      break;
     }
   }
   return ret;

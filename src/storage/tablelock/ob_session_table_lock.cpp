@@ -225,6 +225,21 @@ int finish_unlock_all_mysql_table_locks(const ObSessionLockOwner &owner,
   return ret;
 }
 
+int schedule_mysql_table_lock_cleanup(const ObSessionLockOwner &owner)
+{
+  int ret = common::OB_SUCCESS;
+  ObTableLockOwnerID lock_owner;
+  ObTableLockService *service =
+      ::oceanbase::share::server_service<ObTableLockService>();
+  if (OB_ISNULL(service)) {
+    ret = common::OB_NOT_INIT;
+  } else if (OB_FAIL(make_owner(owner, lock_owner))) {
+  } else if (OB_FAIL(service->get_session_table_lock_manager().schedule_cleanup(
+                 lock_owner, owner.session_id_, owner.session_create_ts_))) {
+  }
+  return ret;
+}
+
 int session_has_locks(const ObSessionLockOwner &owner, bool &has_locks)
 {
   int ret = common::OB_SUCCESS;

@@ -16,6 +16,7 @@
 
 #define USING_LOG_PREFIX TABLELOCK
 #include "sql/tablelock/ob_mysql_lock_table_executor.h"
+#include "common/ob_timeout_ctx.h"
 #include "data_plane/tablelock/ob_session_table_lock.h"
 #include "query/session/ob_inner_sql_connection_access.h"
 #include "query/tablelock/ob_table_lock_runtime.h"
@@ -35,6 +36,29 @@ namespace transaction
 {
 namespace tablelock
 {
+
+namespace
+{
+
+class ObSessionCleanupDeadlineGuard final
+{
+public:
+  explicit ObSessionCleanupDeadlineGuard(int64_t cleanup_timeout_ts)
+    : saved_timeout_ts_(THIS_WORKER.get_timeout_ts())
+  {
+    THIS_WORKER.set_timeout_ts(cleanup_timeout_ts);
+  }
+
+  ~ObSessionCleanupDeadlineGuard()
+  {
+    THIS_WORKER.set_timeout_ts(saved_timeout_ts_);
+  }
+
+private:
+  int64_t saved_timeout_ts_;
+};
+
+} // namespace
 
 int ObMySQLLockTableExecutor::execute(ObExecContext &ctx,
                                       const ObIArray<data_plane::ObTableLockTarget> &lock_targets)
@@ -106,15 +130,28 @@ int ObMySQLUnlockTableExecutor::execute(sql::ObExecContext &ctx)
 }
 
 int ObMySQLUnlockTableExecutor::execute(uint32_t session_id,
-                                        uint64_t session_create_ts)
+                                        uint64_t session_create_ts,
+                                        int64_t cleanup_timeout_ts)
 {
   int ret = OB_SUCCESS;
   int64_t release_cnt = 0;
+  const int64_t cleanup_start_ts = ObTimeUtility::current_time();
+  const int64_t cleanup_timeout_us = cleanup_timeout_ts - cleanup_start_ts;
+  ObSessionCleanupDeadlineGuard deadline_guard(cleanup_timeout_ts);
   ObArenaAllocator allocator(ObModIds::OB_SQL_EXPR);
+  ObTimeoutCtx timeout_ctx;
+  if (OB_UNLIKELY(cleanup_timeout_us <= 0)) {
+    ret = OB_TIMEOUT;
+    LOG_WARN("session lock cleanup deadline has expired", K(ret), K(cleanup_timeout_ts));
+  }
+  OZ (timeout_ctx.set_abs_timeout(cleanup_timeout_ts));
+  OZ (timeout_ctx.set_trx_timeout_us(cleanup_timeout_us));
   SMART_VAR(sql::ObSQLSessionInfo, session) {
     SMART_VAR(sql::ObExecContext, exec_ctx, allocator) {
       ObSqlCtx sql_ctx;
       ObSchemaGetterGuard guard;
+      ObObj cleanup_timeout;
+      cleanup_timeout.set_int(cleanup_timeout_us);
       const ObServerRuntimeSchema *runtime_schema = nullptr;
       LinkExecCtxGuard link_guard(session, exec_ctx);
       sql::ObPhysicalPlanCtx phy_plan_ctx(allocator);
@@ -125,10 +162,16 @@ int ObMySQLUnlockTableExecutor::execute(uint32_t session_id,
       OZ (session.init_runtime(runtime_schema->get_runtime_name_str()));
       OZ (session.load_all_sys_vars(guard));
       OZ (session.load_default_configs_in_pc());
+      OX (session.set_query_start_time(cleanup_start_ts));
+      OZ (session.update_sys_variable(
+              share::SYS_VAR_OB_QUERY_TIMEOUT, cleanup_timeout));
+      OZ (session.update_sys_variable(
+              share::SYS_VAR_OB_TRX_TIMEOUT, cleanup_timeout));
       OX (sql_ctx.schema_guard_ = &guard);
       OX (exec_ctx.set_my_session(&session));
       OX (exec_ctx.set_sql_ctx(&sql_ctx));
       OX (exec_ctx.set_physical_plan_ctx(&phy_plan_ctx));
+      OX (phy_plan_ctx.set_timeout_timestamp(cleanup_timeout_ts));
 
       OZ (ObLockContext::valid_execute_context(exec_ctx));
       OZ (execute_(exec_ctx, session_id, session_create_ts, release_cnt));
@@ -184,10 +227,11 @@ namespace query
 {
 
 int release_table_locks_for_session(uint32_t session_id,
-                                    uint64_t session_create_ts)
+                                    uint64_t session_create_ts,
+                                    int64_t cleanup_timeout_ts)
 {
   transaction::tablelock::ObMySQLUnlockTableExecutor executor;
-  return executor.execute(session_id, session_create_ts);
+  return executor.execute(session_id, session_create_ts, cleanup_timeout_ts);
 }
 
 } // namespace query

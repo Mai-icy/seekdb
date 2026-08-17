@@ -16,6 +16,7 @@
 
 #define USING_LOG_PREFIX TABLELOCK
 #include "data_plane/tablelock/ob_table_lock.h"
+#include "query/tablelock/ob_table_lock_runtime.h"
 #include "storage/tablelock/ob_table_lock_service.h"
 #include "share/rc/ob_server_runtime.h"
 #include "storage/tablelock/ob_table_lock_local_executor.h"
@@ -36,6 +37,9 @@ namespace transaction
 
 namespace tablelock
 {
+
+static const int64_t SESSION_LOCK_CLEANUP_RETRY_INTERVAL_US = 10_s;
+
 ObTableLockService::ObTableLockCtx::ObTableLockCtx() :
   task_type_(INVALID_LOCK_TASK_TYPE),
   is_in_trans_(false),
@@ -325,24 +329,62 @@ int ObTableLockService::init(
 
 int ObTableLockService::start()
 {
-  return OB_SUCCESS;
+  int ret = OB_SUCCESS;
+  if (OB_FAIL(session_cleanup_timer_.init(
+          "SessLockCleanup", common::ObMemAttr("SessLockCleanup")))) {
+    LOG_WARN("failed to init session lock cleanup timer", K(ret));
+  } else if (OB_FAIL(session_cleanup_timer_.schedule(
+                 session_cleanup_task_,
+                 SESSION_LOCK_CLEANUP_RETRY_INTERVAL_US,
+                 true /* repeat */,
+                 false /* immediate */))) {
+    LOG_WARN("failed to schedule session lock cleanup task", K(ret));
+  }
+  return ret;
 }
 
 void ObTableLockService::stop()
 {
+  if (session_cleanup_timer_.inited()) {
+    session_cleanup_timer_.stop();
+  }
 }
 
 void ObTableLockService::wait()
 {
+  if (session_cleanup_timer_.inited()) {
+    session_cleanup_timer_.wait();
+  }
 }
 
 void ObTableLockService::destroy()
 {
+  session_cleanup_timer_.destroy();
   session_table_lock_manager_.destroy();
   named_lock_manager_.destroy();
   sql_proxy_ = nullptr;
   session_service_ = nullptr;
   is_inited_ = false;
+}
+
+void ObTableLockService::retry_session_lock_cleanup_()
+{
+  int ret = OB_SUCCESS;
+  common::ObSEArray<SessionTableLockManager::CleanupOwner, 4> owners;
+  if (OB_FAIL(session_table_lock_manager_.get_pending_cleanups(owners))) {
+    LOG_WARN("failed to get pending session lock cleanups", K(ret));
+  }
+  for (int64_t i = 0; i < owners.count(); ++i) {
+    const SessionTableLockManager::CleanupOwner &owner = owners.at(i);
+    const int64_t cleanup_timeout_ts =
+        ObTimeUtility::current_time() + GCONF.internal_sql_execute_timeout;
+    int tmp_ret = query::release_table_locks_for_session(
+        owner.session_id_, owner.session_create_ts_, cleanup_timeout_ts);
+    if (OB_SUCCESS != tmp_ret) {
+      LOG_WARN("failed to retry session table lock cleanup",
+               K(tmp_ret), K(owner));
+    }
+  }
 }
 
 

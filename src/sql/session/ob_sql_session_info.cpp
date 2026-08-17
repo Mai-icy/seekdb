@@ -1730,11 +1730,19 @@ int ObSQLSessionInfo::on_user_disconnect()
   }
   // is_lock_session() is shared with LOCK TABLES and may already be cleared
   // while this session still owns a named lock.
+  const int64_t cleanup_timeout_ts =
+      ObTimeUtility::current_time() + GCONF.internal_sql_execute_timeout;
   const data_plane::ObSessionLockOwner owner(
       get_server_sid(), get_sess_create_time());
   if (OB_TMP_FAIL(query::release_table_locks_for_session(
-          get_server_sid(), get_sess_create_time()))) {
+          get_server_sid(), get_sess_create_time(), cleanup_timeout_ts))) {
     LOG_WARN("failed to release table locks on disconnect", K(tmp_ret), K(get_server_sid()));
+    const int schedule_ret =
+        data_plane::schedule_mysql_table_lock_cleanup(owner);
+    if (OB_SUCCESS != schedule_ret) {
+      LOG_WARN("failed to schedule table lock cleanup retry",
+               K(schedule_ret), K(get_server_sid()));
+    }
   }
   ret = COVER_SUCC(tmp_ret);
   if (OB_TMP_FAIL(data_plane::release_all_named_locks(owner, release_count))) {

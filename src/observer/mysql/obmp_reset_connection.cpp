@@ -171,8 +171,9 @@ int ObMPResetConnection::process()
           session->get_server_sid(), session->get_sess_create_time());
       int64_t release_count = 0;
       int tmp_ret = OB_SUCCESS;
+      const int64_t cleanup_timeout_ts = THIS_WORKER.get_timeout_ts();
       if (OB_TMP_FAIL(query::release_table_locks_for_session(
-              session->get_server_sid(), session->get_sess_create_time()))) {
+              session->get_server_sid(), session->get_sess_create_time(), cleanup_timeout_ts))) {
         LOG_WARN("failed to release table locks on reset connection",
                  K(tmp_ret), K(session->get_server_sid()));
       }
