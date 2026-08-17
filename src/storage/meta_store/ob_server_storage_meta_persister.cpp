@@ -79,42 +79,6 @@ int ObServerStorageMetaPersister::update_server_resources(
   return ret;
 }
 
-int ObServerStorageMetaPersister::clear_runtime_log_dirs()
-{
-  int ret = OB_SUCCESS;
-  char clog_dir[MAX_PATH_SIZE] = {0};
-  char slog_dir[MAX_PATH_SIZE] = {0};
-  bool exist = true;
-
-  if (OB_FAIL(OB_FILE_SYSTEM_ROUTER.get_server_clog_dir(clog_dir))) {
-  } else if (OB_FAIL(common::FileDirectoryUtils::is_exists(clog_dir, exist))) {
-  } else if (exist) {
-    int tmp_ret = OB_SUCCESS;
-    bool directory_empty = true;
-    if (OB_TMP_FAIL(common::FileDirectoryUtils::is_empty_directory(clog_dir, directory_empty))) {
-    }
-    if (!directory_empty) {
-      LOG_DBA_ERROR(OB_ERR_UNEXPECTED, "msg",
-          "clog directory must be empty before rollback cleanup", K(clog_dir));
-    }
-    if (OB_FAIL(common::FileDirectoryUtils::delete_directory_rec(clog_dir))) {
-    }
-  }
-
-  if (OB_SUCC(ret)) {
-    const int pret = snprintf(slog_dir, MAX_PATH_SIZE, "%s/sys",
-        OB_FILE_SYSTEM_ROUTER.get_slog_dir());
-    if (pret < 0 || pret >= MAX_PATH_SIZE) {
-      ret = OB_BUF_NOT_ENOUGH;
-      LOG_WARN("failed to construct server slog path", K(ret));
-    } else if (OB_FAIL(common::FileDirectoryUtils::is_exists(slog_dir, exist))) {
-    } else if (exist && OB_FAIL(common::FileDirectoryUtils::delete_directory_rec(slog_dir))) {
-      LOG_WARN("fail to delete slog dir", K(ret), K(slog_dir));
-    }
-  }
-  return ret;
-}
-
 int ObServerStorageMetaPersister::write_update_runtime_super_block_slog_(
     const ObServerRuntimeSuperBlock &super_block)
 {

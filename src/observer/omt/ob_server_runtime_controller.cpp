@@ -414,7 +414,6 @@ int ObServerRuntimeController::create_runtime(const ObServerRuntimeMeta &meta)
     }
   }
   if (OB_SUCC(ret)) {
-    runtime_->set_create_status(ObServerRuntimeCreateStatus::CREATED);
     create_step = ObRuntimeCreateStep::STEP_FINISH; // step6
   }
 

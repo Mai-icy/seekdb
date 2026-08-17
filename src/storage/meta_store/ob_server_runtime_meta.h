@@ -30,8 +30,7 @@ struct ObServerRuntimeMeta final
 public:
   ObServerRuntimeMeta()
     : runtime_config_(),
-      super_block_(),
-      create_status_(storage::ObServerRuntimeCreateStatus::CREATING) {}
+      super_block_() {}
   ObServerRuntimeMeta(const ObServerRuntimeMeta &) = default;
   ObServerRuntimeMeta &operator=(const ObServerRuntimeMeta &) = default;
 
@@ -45,14 +44,13 @@ public:
   int build(const share::ObServerRuntimeConfig &runtime_config,
             const storage::ObServerRuntimeSuperBlock &super_block);
 
-  TO_STRING_KV(K_(runtime_config), K_(super_block), K_(create_status));
+  TO_STRING_KV(K_(runtime_config), K_(super_block));
 
-  OB_UNIS_VERSION_V(1);
+  OB_UNIS_VERSION_V(2);
 
 public:
   share::ObServerRuntimeConfig runtime_config_;
   storage::ObServerRuntimeSuperBlock super_block_;
-  storage::ObServerRuntimeCreateStatus create_status_;
 };
 
 }  // end namespace omt

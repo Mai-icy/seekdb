@@ -45,7 +45,6 @@ public:
   void destroy();
   int update_runtime_super_block(const ObServerRuntimeSuperBlock &super_block);
   int update_server_resources(const share::ObServerRuntimeConfig &runtime_config);
-  int clear_runtime_log_dirs();
 
 private:
   int write_update_runtime_super_block_slog_(const ObServerRuntimeSuperBlock &super_block);

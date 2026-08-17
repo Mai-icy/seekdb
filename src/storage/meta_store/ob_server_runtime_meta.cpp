@@ -23,7 +23,7 @@ namespace oceanbase
 namespace omt
 {
 
-OB_SERIALIZE_MEMBER(ObServerRuntimeMeta, runtime_config_, super_block_, create_status_);
+OB_SERIALIZE_MEMBER(ObServerRuntimeMeta, runtime_config_, super_block_);
 
 int ObServerRuntimeMeta::build(const share::ObServerRuntimeConfig &runtime_config,
                         const storage::ObServerRuntimeSuperBlock &super_block)
@@ -36,7 +36,6 @@ int ObServerRuntimeMeta::build(const share::ObServerRuntimeConfig &runtime_confi
   } else {
     runtime_config_ = runtime_config;
     super_block_ = super_block;
-    create_status_ = storage::ObServerRuntimeCreateStatus::CREATING;
   }
 
   return ret;
