@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "common/ob_tablet_id.h"
+#include "lib/task/ob_timer.h"
 #include "storage/tablelock/ob_table_lock_common.h"
 #include "storage/tablelock/ob_table_lock_rpc_struct.h"
 #include "storage/tablelock/ob_table_lock_local_executor.h"
@@ -193,12 +194,27 @@ private:
 	    bool task_prepared_;
 	    ObLockIDArray retry_lock_ids_;           // the lock id need to be retry.
 	  };
+private:
+  class SessionLockCleanupRetryTask final : public common::ObTimerTask
+  {
+  public:
+    explicit SessionLockCleanupRetryTask(ObTableLockService &service)
+      : service_(service) {}
+    void runTimerTask() override { service_.retry_session_lock_cleanup_(); }
+  private:
+    ObTableLockService &service_;
+  };
+
+  void retry_session_lock_cleanup_();
+
 public:
   ObTableLockService()
     : sql_proxy_(nullptr),
       session_service_(nullptr),
       named_lock_manager_(),
       session_table_lock_manager_(),
+      session_cleanup_timer_(),
+      session_cleanup_task_(*this),
       is_inited_(false) {}
   ~ObTableLockService() {}
   int init(query::ObIDeadlockSessionService &session_service);
@@ -427,6 +443,8 @@ private:
   query::ObIDeadlockSessionService *session_service_;
   NamedLockManager named_lock_manager_;
   SessionTableLockManager session_table_lock_manager_;
+  common::ObTimer session_cleanup_timer_;
+  SessionLockCleanupRetryTask session_cleanup_task_;
   bool is_inited_;
 };
 }

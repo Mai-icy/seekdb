@@ -83,6 +83,8 @@ int unlock_all_mysql_table_locks(transaction::ObTxDesc &tx,
 int finish_unlock_all_mysql_table_locks(const ObSessionLockOwner &owner,
                                         int64_t &release_count);
 
+int schedule_mysql_table_lock_cleanup(const ObSessionLockOwner &owner);
+
 int session_has_locks(const ObSessionLockOwner &owner, bool &has_locks);
 
 int session_lock_owners_equal(const ObSessionLockOwner &left,

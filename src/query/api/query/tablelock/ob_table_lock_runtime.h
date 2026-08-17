@@ -25,8 +25,10 @@ namespace query
 {
 
 // Query-owned autonomous cleanup for runtime-only MySQL table locks.
+// cleanup_timeout_ts is an absolute deadline selected by the lifecycle owner.
 int release_table_locks_for_session(uint32_t session_id,
-                                    uint64_t session_create_ts);
+                                    uint64_t session_create_ts,
+                                    int64_t cleanup_timeout_ts);
 
 } // namespace query
 } // namespace oceanbase

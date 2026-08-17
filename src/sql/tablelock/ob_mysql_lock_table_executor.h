@@ -50,7 +50,9 @@ public:
   int execute(sql::ObExecContext &ctx);
   // Used by disconnect/reset paths when the original execution context is no
   // longer suitable for starting the autonomous unlock transaction.
-  int execute(uint32_t session_id, uint64_t session_create_ts);
+  int execute(uint32_t session_id,
+              uint64_t session_create_ts,
+              int64_t cleanup_timeout_ts);
 private:
   int execute_(sql::ObExecContext &ctx,
                const uint32_t session_id,
