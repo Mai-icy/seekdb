@@ -602,6 +602,7 @@ int ObLocalStorageCheckpointSlogHandler::write_checkpoint(bool is_force)
                    && ckpt_cursor_.newer_than(last_super_block.replay_start_point_)
                    &&(ckpt_cursor_.log_id_ - last_super_block.replay_start_point_.log_id_ >= ObWriteCheckpointTask::MIN_WRITE_CHECKPOINT_LOG_CNT))) {
       DEBUG_SYNC(AFTER_CHECKPOINT_GET_CURSOR);
+      super_block = last_super_block;
       super_block.replay_start_point_ = ckpt_cursor_;
       if (OB_FAIL(local_storage_ckpt_writer.init(ObLocalStorageMetaType::CKPT, this))) {
       } else if (OB_FAIL(local_storage_ckpt_writer.record_meta(super_block.ls_meta_entry_))) {
