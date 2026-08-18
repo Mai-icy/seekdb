@@ -20,7 +20,6 @@
 
 #include "share/cache/ob_kvcache_store.h"
 #include "share/cache/ob_kvcache_hazard_domain.h"
-#include "share/config/ob_server_config.h"
 #include "lib/stat/ob_diagnose_info.h"
 #include "lib/stat/ob_diagnostic_info_guard.h"
 #include "lib/statistic_event/ob_stat_event.h"
@@ -82,6 +81,8 @@ ObKVCacheStore::ObKVCacheStore()
     : inited_(false),
       cur_mb_num_(0),
       max_mb_num_(0),
+      max_cache_size_(0),
+      cache_memory_limit_(0),
       block_size_(0),
       block_payload_size_(0),
       mb_handles_(NULL),
@@ -100,7 +101,9 @@ ObKVCacheStore::~ObKVCacheStore()
   destroy();
 }
 
-int ObKVCacheStore::init(const int64_t max_cache_size, const int64_t block_size)
+int ObKVCacheStore::init(const int64_t max_cache_size,
+                         const int64_t block_size,
+                         const int64_t cache_memory_limit)
 {
   int ret = OB_SUCCESS;
   void *buf = NULL;
@@ -109,11 +112,15 @@ int ObKVCacheStore::init(const int64_t max_cache_size, const int64_t block_size)
     COMMON_LOG(WARN, "The ObKVCacheStore has been inited, ", K(ret));
   } else if (OB_UNLIKELY(max_cache_size <= block_size * 3)
       || OB_UNLIKELY(max_cache_size > MAX_CACHE_SIZE)
+      || OB_UNLIKELY(cache_memory_limit <= 0)
+      || OB_UNLIKELY(cache_memory_limit > max_cache_size)
       || OB_UNLIKELY(block_size <= (int64_t)(sizeof(ObKVStoreMemBlock)))) {
     ret = OB_INVALID_ARGUMENT;
     COMMON_LOG(WARN, "Invalid arguments, ", K(max_cache_size),
-      K(block_size), K(ret));
+      K(block_size), K(cache_memory_limit), K(ret));
   } else {
+    max_cache_size_ = max_cache_size;
+    ATOMIC_STORE(&cache_memory_limit_, cache_memory_limit);
     max_mb_num_ = compute_mb_handle_num(max_cache_size, block_size);
     if (NULL == (mb_handles_ = static_cast<ObKVMemBlockHandle*>(
                             buf = ob_malloc((sizeof(ObKVMemBlockHandle) + sizeof(ObKVMemBlockHandle*)) * max_mb_num_,
@@ -138,7 +145,8 @@ int ObKVCacheStore::init(const int64_t max_cache_size, const int64_t block_size)
 
   if (OB_SUCC(ret)) {
     inited_ = true;
-    COMMON_LOG(INFO, "ObKVCacheStore init success", K(max_cache_size), K(block_size));
+    COMMON_LOG(INFO, "ObKVCacheStore init success", K(max_cache_size), K(block_size),
+               K(cache_memory_limit));
   }
   if (!inited_) {
     destroy();
@@ -169,6 +177,8 @@ void ObKVCacheStore::destroy()
   }
 
   mb_handles_pool_.destroy();
+  max_cache_size_ = 0;
+  ATOMIC_STORE(&cache_memory_limit_, 0);
   block_size_ = 0;
   block_payload_size_ = 0;
 
@@ -176,6 +186,23 @@ void ObKVCacheStore::destroy()
   cur_mb_num_ = 0;
   global_status_.reset();
   inited_ = false;
+}
+
+int ObKVCacheStore::set_cache_memory_limit(const int64_t cache_memory_limit)
+{
+  int ret = OB_SUCCESS;
+  if (OB_UNLIKELY(!inited_)) {
+    ret = OB_NOT_INIT;
+    COMMON_LOG(WARN, "The ObKVCacheStore has not been inited", K(ret));
+  } else if (OB_UNLIKELY(cache_memory_limit <= 0)
+             || OB_UNLIKELY(cache_memory_limit > max_cache_size_)) {
+    ret = OB_INVALID_ARGUMENT;
+    COMMON_LOG(WARN, "Invalid cache memory limit", K(ret), K(cache_memory_limit),
+               K_(max_cache_size));
+  } else {
+    ATOMIC_STORE(&cache_memory_limit_, cache_memory_limit);
+  }
+  return ret;
 }
 
 
@@ -892,7 +919,7 @@ int ObKVCacheStore::alloc_mbhandle(
 int ObKVCacheStore::reserve_store_size(const int64_t block_size)
 {
   int ret = OB_SUCCESS;
-  const int64_t cache_memory_limit = GMEMCONF.get_kvcache_memory_limit();
+  const int64_t cache_memory_limit = ATOMIC_LOAD(&cache_memory_limit_);
   const int64_t cache_limit = compute_fixed_cache_limit(cache_memory_limit, block_size_);
 
   if (block_size <= 0 || cache_limit <= 0 || block_size > cache_limit) {
@@ -1011,7 +1038,7 @@ int ObKVCacheStore::pop_mb_handle_with_recovery(
 
 void ObKVCacheStore::compute_wash_size(int64_t &wash_size)
 {
-  const int64_t cache_memory_limit = GMEMCONF.get_kvcache_memory_limit();
+  const int64_t cache_memory_limit = ATOMIC_LOAD(&cache_memory_limit_);
   const int64_t cache_size = ATOMIC_LOAD(&global_status_.store_size_);
   const int64_t aligned_cache_limit =
       compute_fixed_cache_limit(cache_memory_limit, block_size_);

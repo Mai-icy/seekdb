@@ -61,6 +61,7 @@ enable_record_trace_id
 enable_record_trace_log
 enable_rich_error_msg
 enable_rpc_authentication_bypass
+enable_rpc_service
 enable_rpc_tls
 enable_sql_operator_dump
 enable_sys_table_ddl
