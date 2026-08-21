@@ -42,16 +42,16 @@ Supported compatibility build:
   Windows x64 uses build.ps1.
 
 Examples:
-  source ~/.bashrc && ./build.sh release --init
+  ./build.sh release --init
   cd build_release && make -j80
-  source ~/.bashrc && ./build.sh release --make -j80
-  source ~/.bashrc && ./build.sh rpm --init
+  ./build.sh release --make -j80
+  ./build.sh rpm --init
   cd build_rpm && make -j80
-  source ~/.bashrc && ./build.sh rpm --make -j80 rpm
+  ./build.sh rpm --make -j80 rpm
   ./build.sh release --android --init --make -j16
 
-Bazel remains the authoritative modular build graph. Use ./bazel.py directly
-for Bazel builds, tests, architecture checks, and non-release options.
+On Linux, CMake also provides module unit-test targets and the pretest aggregate.
+See docs/developer-guide/en/unittest.md for build and test commands.
 EOF
 }
 
