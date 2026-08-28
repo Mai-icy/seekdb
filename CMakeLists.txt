@@ -74,8 +74,12 @@ set(SEEKDB_CMAKE_INVENTORY_INPUTS
   "${CMAKE_SOURCE_DIR}/src/observer/observer_source_inventory.bzl")
 foreach(SEEKDB_PRETEST_MODULE
     oblib share storage sql rootserver observer logservice pl query data_plane)
-  list(APPEND SEEKDB_CMAKE_INVENTORY_INPUTS
+  set(SEEKDB_PRETEST_BUILD_FILE
     "${CMAKE_SOURCE_DIR}/unittest/${SEEKDB_PRETEST_MODULE}/BUILD.bazel")
+  if(EXISTS "${SEEKDB_PRETEST_BUILD_FILE}")
+    list(APPEND SEEKDB_CMAKE_INVENTORY_INPUTS
+      "${SEEKDB_PRETEST_BUILD_FILE}")
+  endif()
 endforeach()
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
   "${CMAKE_SOURCE_DIR}/tools/cmake/emit_bazel_source_inventory.py"
@@ -102,7 +106,7 @@ endif()
 set(SEEKDB_CMAKE_PACKAGE_BUILD OFF)
 set(SEEKDB_CMAKE_PACKAGE_FORMAT "")
 set(SEEKDB_CMAKE_PACKAGE_FORMAT_COUNT 0)
-foreach(SEEKDB_CMAKE_FORMAT RPM DEB TGZ)
+foreach(SEEKDB_CMAKE_FORMAT RPM DEB TGZ WIX)
   if(CMAKE_BUILD_${SEEKDB_CMAKE_FORMAT})
     message(DEPRECATION
       "CMAKE_BUILD_${SEEKDB_CMAKE_FORMAT} is deprecated; "
@@ -110,7 +114,7 @@ foreach(SEEKDB_CMAKE_FORMAT RPM DEB TGZ)
     set(OB_BUILD_${SEEKDB_CMAKE_FORMAT} ON)
   endif()
 endforeach()
-foreach(SEEKDB_CMAKE_FORMAT RPM DEB TGZ)
+foreach(SEEKDB_CMAKE_FORMAT RPM DEB TGZ WIX)
   if(OB_BUILD_${SEEKDB_CMAKE_FORMAT})
     math(EXPR SEEKDB_CMAKE_PACKAGE_FORMAT_COUNT
       "${SEEKDB_CMAKE_PACKAGE_FORMAT_COUNT} + 1")
@@ -118,7 +122,7 @@ foreach(SEEKDB_CMAKE_FORMAT RPM DEB TGZ)
   endif()
 endforeach()
 if(SEEKDB_CMAKE_PACKAGE_FORMAT_COUNT GREATER 1)
-  message(FATAL_ERROR "Select only one package format: RPM, DEB, or TGZ")
+  message(FATAL_ERROR "Select only one package format: RPM, DEB, TGZ, or WIX")
 elseif(SEEKDB_CMAKE_PACKAGE_FORMAT_COUNT EQUAL 1)
   if(NOT OB_BUILD_PACKAGE)
     message(FATAL_ERROR
@@ -129,6 +133,9 @@ elseif(SEEKDB_CMAKE_PACKAGE_FORMAT_COUNT EQUAL 1)
      NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(FATAL_ERROR
       "The CMake ${SEEKDB_CMAKE_PACKAGE_FORMAT} compatibility build supports Linux only")
+  endif()
+  if(SEEKDB_CMAKE_PACKAGE_FORMAT STREQUAL "WIX" AND NOT WIN32)
+    message(FATAL_ERROR "The CMake WIX compatibility build supports Windows only")
   endif()
   if(ANDROID)
     message(FATAL_ERROR "CMake packaging is not supported for Android")
@@ -147,7 +154,7 @@ if((ENABLE_AUTO_FDO OR ENABLE_THIN_LTO OR ENABLE_HOTFUNC OR
 endif()
 if(OB_BUILD_PACKAGE AND NOT SEEKDB_CMAKE_PACKAGE_BUILD)
   message(FATAL_ERROR
-    "OB_BUILD_PACKAGE requires one package format: RPM, DEB, or TGZ")
+    "OB_BUILD_PACKAGE requires one package format: RPM, DEB, TGZ, or WIX")
 endif()
 
 string(TOLOWER "${ARCHITECTURE}" SEEKDB_HOST_ARCHITECTURE)
@@ -231,7 +238,8 @@ endif()
 
 # The farm pretest contract remains available during the CMake transition.
 # Other unit-test workflows and their architecture rules stay Bazel-owned.
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
+   AND EXISTS "${CMAKE_SOURCE_DIR}/unittest/CMakeLists.txt")
   enable_testing()
   add_subdirectory(unittest EXCLUDE_FROM_ALL)
   foreach(SEEKDB_PRETEST_MODULE IN LISTS SEEKDB_PRETEST_MODULES)
@@ -251,4 +259,6 @@ elseif(SEEKDB_CMAKE_PACKAGE_FORMAT STREQUAL "DEB")
   include(cmake/DEB.cmake)
 elseif(SEEKDB_CMAKE_PACKAGE_FORMAT STREQUAL "TGZ")
   include(cmake/TGZ.cmake)
+elseif(SEEKDB_CMAKE_PACKAGE_FORMAT STREQUAL "WIX")
+  include(cmake/WIX.cmake)
 endif()
