@@ -1,0 +1,5 @@
+source include/cluster_init.test;
+
+#ob32.reboot_proxy;
+ob22.reboot_proxy;
+ob31.reboot_proxy;

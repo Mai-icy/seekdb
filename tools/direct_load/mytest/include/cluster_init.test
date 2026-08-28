@@ -1,0 +1,1 @@
+obm=OBI(cluster=1:1:1,proxy_num=1,ct_num=1,locality=SZ:SZ:SZ,version=master);

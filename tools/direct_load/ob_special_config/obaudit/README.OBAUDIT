@@ -1,0 +1,27 @@
+OB 223 上线oracle mode的审计功能（该版本OBAUDIT用户无默认密码）。
+OB 225 上线mysql mode的审计功能（本版本开始OBAUDIT用户需要密码登录）。
+
+审计为租户级功能.
+开启方法：
+sh open_audit.sh [svr_ip] [svr_port] [tenant_name]
+关闭方法：
+sh close_audit.sh [svr_ip] [svr_port] [tenant_name]
+
+
+附：open_audit.sh脚本内部操作如下。
+1，租户系统用户登录，执行
+alter system set audit_sys_operations=1;
+ALTER USER ORAAUDITOR ACCOUNT UNLOCK; 
+ALTER SYSTEM set audit_trail = 'DB,EXTENDED'; --脚本默认审计信息入DB保存。其他可配参数如：'NONE'——关闭审计；'OS'——审计记录写入本地磁盘文件；'DB'——记录写入内部表
+alter system set _audit_mode = 'oracle'; --只在mysql租户下执行
+
+2，租户ORAAUDITOR用户登录，执行
+AUDIT all statements;
+
+3，租户任一用户登录查询审计日志。
+-- oracle租户：
+select EXTENDED_TIMESTAMP,username ,owner, obj_name,action,sql_text from DBA_AUDIT_TRAIL order by 1;
+-- mysql租户：
+select gmt_modified,user_name ,obj_owner_name, obj_name,action_id,sql_text from oceanBase.__all_tenant_security_audit_record order by 1;
+
+更详细的内容，可查阅：https://icms.alibaba-inc.com/content/oceanbase-database/security-white-paper-1?l=1&m=69020&n=2997164

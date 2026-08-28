@@ -1,0 +1,40 @@
+source include/cluster_init.test;
+
+let $cpu=2;
+let $mem=4294967296;
+let $unit=1;
+
+ob_connect(conn32, obm.proxy0, root@sys#obm.$USER,,oceanbase, USE_OB_CONNECTOR);
+--error 0,5157
+drop tenant mysql_tenant force;
+#alter resource unit sys_unit_config memory_size='2G';
+#drop tenant obproxy force;
+#drop resource unit if exists proxyunit;
+#drop resource pool if exists proxypool;
+
+sleep 20;
+
+--error 0,4649
+eval create resource unit mysql_box max_cpu $cpu, memory_size $mem, min_iops 200000, max_iops 200000;
+--error 0,4656,4651
+eval create resource pool mysql_pool unit = 'mysql_box', unit_num = $unit, zone_list = ('z1','z2','z3');
+eval create tenant mysql_tenant resource_pool_list=('mysql_pool'), primary_zone='RANDOM',locality = 'F@z1,F@z2,F@z3' SET VARIABLES ob_compatibility_mode='mysql', ob_tcp_invited_nodes='%',secure_file_priv = "";
+
+#let $locality=query_get_value(select locality from tenant_status where name='mysql_tenant',locality,1);
+#let $locality='3F'
+
+
+sleep 10;
+ob_connect (conn1, obm.proxy0, root@mysql_tenant#obm.$USER,,test, USE_OB_CONNECTOR);
+connection conn1;
+source sql/mysql_tenant_config.sql;
+
+sleep 10;
+ob_connect (conn1, obm.proxy0, root@mysql_tenant#obm.$USER,,test, USE_OB_CONNECTOR);
+ob_connect(conn32, obm.proxy0, root@sys#obm.$USER,,oceanbase, USE_OB_CONNECTOR);
+alter system set ob_enable_batched_multi_statement='true';
+  set global autocommit=ON;
+  set global ob_query_timeout = 36000000000;
+#source sql/observer_config.sql;
+#source sql/obproxy_config.sql;
+#source ../ob_special_config/master/sys/config.sql;

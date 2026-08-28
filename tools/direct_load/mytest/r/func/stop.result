@@ -1,0 +1,5 @@
+obm=OBI(cluster=1:1:1,proxy_num=1,ct_num=1,locality=SZ:SZ:SZ,version=master);
+obm.z1.obs0.rm_workdir;
+obm.z2.obs0.rm_workdir;
+obm.z3.obs0.rm_workdir;
+obm.force_stop;

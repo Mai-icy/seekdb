@@ -1,0 +1,25 @@
+source include/cluster_init.test;
+
+while(1)
+{
+  ob_connect(conn32, obm.proxy0, root@sys#obm.$USER,,oceanbase, USE_OB_CONNECTOR);
+  let $p=query_get_value(select zone as p from CDB_OB_LS_LOCATIONS where role='LEADER' and tenant_id = 1, p,1);
+  eval select "tenant_id=1 primary_zone=$p";
+  let $p=query_get_value(select group_concat(zone) as p from CDB_OB_LS_LOCATIONS where ls_id > 1 and role='LEADER' and tenant_id = 1004, p,1);
+  eval select "tenant_id=1004 primary_zone=$p";
+  sleep 600;
+  let $p=query_get_value(select group_concat(zone) as p from CDB_OB_LS_LOCATIONS where ls_id > 1 and role='LEADER' and tenant_id = 1004, p,1);
+  eval select "tenant_id=1004 primary_zone=$p";
+  let $b=query_get_value(select FLOOR(2 + RAND() * 2) as b, b, 1);
+  eval alter system stop zone 'z$b';
+  sleep 600;
+  obm.z$b.obs0.kill -9;
+  sleep 30;
+  let $p=query_get_value(select group_concat(zone) as p from CDB_OB_LS_LOCATIONS where ls_id > 1 and role='LEADER' and tenant_id = 1004, p,1);
+  eval select "tenant_id=1004 current primary_zone=$p";
+  obm.z$b.obs0.nstart;
+  sleep 600;
+  eval alter system start zone 'z$b';
+  sleep 600;
+}
+

@@ -1,0 +1,6 @@
+source include/cluster_init.test;
+
+
+ob_connect(conn32, obm.proxy0, root@sys#obm.$USER,,oceanbase, USE_OB_CONNECTOR);
+alter system set enable_syslog_recycle=false;
+alter system set  max_syslog_file_count=100000;

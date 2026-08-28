@@ -1,0 +1,5 @@
+针对旁路导入写的oracle和mysql模式下的测试case
+根据自己环境，更改runmysql.sh/runoracle的 host, -directory（导入文件目录)等参数
+mysql执行方法：sh runmysql.sh
+oracle执行方法：sh runoracle.sh
+查看结果方法：除了null、列多、列少，测试case预期都是通过的，关注ERROR报错

@@ -1,0 +1,36 @@
+source include/cluster_init.test;
+
+#let $ip=deploy_get_value(obdocker.proxy0.ip);
+#let $port=deploy_get_value(obdocker.proxy0.port);
+
+ob_connect(conn32, obm.proxy0, root@sys,,oceanbase, USE_OB_CONNECTOR);
+--error 0,5157
+drop tenant if exists oracle_tenant force;
+drop resource pool if exists oracle_pool;
+drop resource unit if exists oracle_box;
+drop tenant if exists mysql_tenant force;
+drop resource pool if exists mysql_pool;
+drop resource unit if exists mysql_box;
+sleep 120;
+#ob_connect(conn0, obdocker.proxy0, root@sys,,oceanbase, USE_OB_CONNECTOR);
+
+let $cpu=2;
+let $mem=4294967296;
+
+eval create resource unit oracle_box max_cpu $cpu, memory_size $mem, max_iops 254000000,  MIN_CPU=$cpu, MIN_IOPS=200000;
+create resource pool oracle_pool unit = 'oracle_box', unit_num = 1, zone_list = ('z1','z2','z3');
+create tenant oracle_tenant resource_pool_list=('oracle_pool'), primary_zone='RANDOM',locality = 'F@z1,F@z2,F@z3' SET VARIABLES ob_compatibility_mode='oracle', ob_tcp_invited_nodes='%',secure_file_priv = "";
+
+sleep 10;
+ob_connect (conn1, obm.proxy0, sys@oracle_tenant,,sys, USE_OB_CONNECTOR);
+connection conn1;
+create user test IDENTIFIED BY "test";
+grant all on *.* to test WITH GRANT OPTION;
+grant dba to test;
+   alter system set ob_enable_batched_multi_statement='true';
+ #alter system set enable_clog_persistence_compress = 'true';
+#alter system set clog_persistence_compress_func = 'zstd_1.0';
+  set global autocommit=ON;
+  set global ob_query_timeout = 36000000000;
+
+#source sql/oracle_tenant_config.sql;

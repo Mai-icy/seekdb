@@ -1,0 +1,19 @@
+source include/cluster_init.test;
+
+
+
+
+obm.z1.obs0.rm_workdir;
+
+obm.z2.obs0.rm_workdir;
+
+obm.z3.obs0.rm_workdir;
+
+# 起来 3个副本的机器
+
+
+
+
+
+
+obm.force_stop;

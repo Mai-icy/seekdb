@@ -1,0 +1,14 @@
+source include/cluster_init.test;
+
+obm.proxy0.set extra_config=enable_strict_kernel_release=false,work_thread_num=128,automatic_match_work_thread=false,enable_prometheus=false;
+
+obm.reboot;
+sleep 30;
+
+ob_connect(conn32, obm.proxy0, root@sys#obm.$USER,,oceanbase, USE_OB_CONNECTOR);
+source sql/observer_config.sql;
+source sql/obproxy_config.sql;
+source ../ob_special_config/master/sys/config.sql;
+
+create table tenant_status(name varchar(100) primary key,locality varchar(100));
+insert into tenant_status(name,locality) values('mysql_tenant','1F');

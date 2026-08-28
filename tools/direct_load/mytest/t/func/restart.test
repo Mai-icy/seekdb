@@ -1,0 +1,4 @@
+source include/cluster_init.test;
+
+obm.restart;
+

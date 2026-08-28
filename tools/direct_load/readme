@@ -1,0 +1,19 @@
+需要磁盘容量大概：100g
+cpu:24c,memory:32g
+启动前先配置机器免密登陆本机ip
+proxy默认设定端口2828，需确定端口未被占用
+
+需更改的参数：
+hard=0/1,更改start.sh中的是否选择hard模式（hard加上locality变更）
+work_dir="/data/0/obm"
+clog_path="/data/1/obm"
+data_path="/data/1/obm"
+dev_name="eth0"#确认下自己机器网卡
+
+使用master版本observer直接执行sh start.sh,使用其他版本，sh start.sh observer链接
+
+查看报错方法：
+遇到报错会停止运行,mysql租户出错查看tenant_mysql.log，搜索ERROR查看具体报错sql
+tenant租户出错查看tenant_tenant.log,搜索ERROR查看具体报错sql
+
+结束后删除集群，sh stop_observer.sh 

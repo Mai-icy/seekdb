@@ -1,0 +1,32 @@
+obm=OBI(cluster=1:1:1,proxy_num=1,ct_num=1,locality=SZ:SZ:SZ,version=master);
+drop tenant mysql_tenant force;
+create resource unit mysql_box max_cpu 2, memory_size 4294967296, min_iops 200000, max_iops 200000;
+create resource pool mysql_pool unit = 'mysql_box', unit_num = 1, zone_list = ('z1','z2','z3');
+create tenant mysql_tenant resource_pool_list=('mysql_pool'), primary_zone='RANDOM',locality = 'F@z1,F@z2,F@z3' SET VARIABLES ob_compatibility_mode='mysql', ob_tcp_invited_nodes='%',secure_file_priv = '';
+set global binlog_row_image='MINIMAL';
+alter system set writing_throttling_trigger_percentage=60;
+alter system set writing_throttling_maximum_duration='2h';
+set global ob_trx_idle_timeout=1200000000;
+set global ob_query_timeout= 1000000000000;
+set global ob_trx_timeout= 1000000000000;
+set global recyclebin='OFF';
+set global parallel_servers_target=100;
+CREATE TABLEGROUP tg;
+alter system set tde_method='internal';
+select sleep(3);
+sleep(3)
+0
+ALTER INSTANCE ROTATE INNODB MASTER KEY;
+select sleep(9);
+sleep(9)
+0
+select sleep(9);
+sleep(9)
+0
+select sleep(9);
+sleep(9)
+0
+create tablespace ts encryption = 'y';
+alter system set ob_enable_batched_multi_statement='true';
+set global autocommit=ON;
+set global ob_query_timeout = 36000000000;

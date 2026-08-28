@@ -1,0 +1,9 @@
+load_file/
+mytest/log/
+*.log
+*.log.*
+*.swp
+.DS_Store
+nohup.out
+run/*.pid
+

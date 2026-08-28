@@ -1,0 +1,41 @@
+# configure.ini
+
+# mytest代码: http://gitlab.alibaba-inc.com/obqa/mytest
+
+# observer ip，允许一台机器上启动多个observer
+1.obs_hosts  = 127.0.0.1
+2.obs_hosts  = 127.0.0.1
+3.obs_hosts  = 127.0.0.1
+# client ip:client 可能是  sysbench、tpcc、tpch、obtrade 等等，但需要这些工具按照mytest的要求提供appserver [start|stop|status] 等脚本. 目前大部分工具未加入mytest的角色管理，只有obstress、obmonster接入了。后续开源工具不打算接入
+# proxy ip
+1.proxy_hosts = 127.0.0.1
+1.ct_hosts = 127.0.0.1
+
+
+# observer存放log和数据的目录
+workdir=YOUR_WORKDIR
+clog_path=YOUR_CLOG_PATH
+data_path = YOUR_DATA_PATH
+slog_path = YOUR_DATA_PATH
+# sstable size used  by observer，不可以“超卖”
+disk_avail_space=200G
+# cpu count used by observer, 可以“超卖”
+node_cpu_count=8
+# memory size used by observer,不可以“超卖”,不能低于30G（500租户mytest hardcode 15G）
+memory_size_limit=16G
+log_disk_size=40G
+
+# mytest工具的一些配置
+check_error=0
+save_log=0
+cleanup =0
+save_core=0
+# 如果使用了默认的url启动方式，app_name建议修改为自定义名称
+app_name=obm
+# 公共的configserver，一般不需要修改
+obconfig=http://11.166.86.153:8080/oceanbase_configer/v2/
+configServer=http://11.166.86.153:8080/diamond/cgi/a.py
+# 指定proxy端口方便操作，如果不指定会随机分配一个端口
+proxy_port=2828
+dev = YOUR_DEV
+# 其他配置项请参考mytest源码DeployConfig.java

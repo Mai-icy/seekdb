@@ -1,0 +1,12 @@
+alias rebootob='./mytest t/func/reboot_master.test'
+alias stopob='./mytest t/func/stop.test'
+alias nstartob='./mytest t/func/restart.test'
+alias create_oracle_tenant='./mytest t/func//create_oracle_tenant.test'
+alias create_mysql_tenant='./mytest t/func//create_mysql_tenant_obm.test'
+alias switch_mysql_tenant='./mytest t/func/change_mysql_tenant_primary_zone.test'
+#alias obgo_slave='obclient -S /data/0/obdocker_home/obslave.z1.obs0/run/mysql.sock -uroot@sys -Doceanbase -A'
+alias run_locality='java -jar locality.jar -mode locality'
+alias obgo='func() { obclient -h 127.0.0.1 -P2828 -uroot@sys#$1.$USER -Doceanbase -A -c;}; func'
+alias obgom='func() { obclient -h 127.0.0.1 -P2828 -uroot@mysql_tenant#$1.$USER -Dtest -A -c;}; func'
+alias obgoo='func() { obclient -h 127.0.0.1 -P2828 -uSYS@oracle_tenant#$1.$USER -DSYS -A -c;}; func'
+

@@ -1,0 +1,20 @@
+set global binlog_row_image='MINIMAL';
+alter system set writing_throttling_trigger_percentage=60;
+alter system set writing_throttling_maximum_duration='2h';
+#alter system set _storage_meta_memory_limit_percentage=1;
+set global ob_trx_idle_timeout=1200000000;
+set global ob_query_timeout= 1000000000000;
+set global ob_trx_timeout= 1000000000000;
+set global recyclebin='OFF';
+#set global undo_retention=3600;
+#set global secure_file_priv='';
+set global parallel_servers_target=100;
+CREATE TABLEGROUP tg;
+## tde config, and tablespace required if tde enabled
+alter system set tde_method='internal'; 
+select sleep(3);
+ALTER INSTANCE ROTATE INNODB MASTER KEY;
+select sleep(9);
+select sleep(9);
+select sleep(9);
+create tablespace ts encryption = 'y';

@@ -1,0 +1,12 @@
+source include/cluster_init.test;
+
+obdocker.force_stop;
+#obdocker.force_stop_proxy;
+
+obdocker.rsync;
+#obdocker.rsync_proxy;
+
+sleep 30;
+
+obdocker.nstart;
+#obdocker.nstart_proxy;
