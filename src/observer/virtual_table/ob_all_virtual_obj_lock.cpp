@@ -483,7 +483,9 @@ int ObAllVirtualObjLock::inner_get_next_row(ObNewRow *&row)
           if (OB_ISNULL(named_lock)) {
             cur_row_.cells_[i].set_null();
           } else {
-            cur_row_.cells_[i].set_varchar(named_lock->lock_name_.c_str());
+            cur_row_.cells_[i].set_varchar(
+                named_lock->lock_name_.data(),
+                static_cast<ObString::obstr_size_t>(named_lock->lock_name_.size()));
             cur_row_.cells_[i].set_collation_type(
                 ObCharset::get_default_collation(ObCharset::get_default_charset()));
           }
