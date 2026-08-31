@@ -18,10 +18,13 @@
 #define OCEANBASE_STORAGE_TABLELOCK_OB_NAMED_LOCK_MANAGER_H_
 
 #include <map>
+#include <new>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <vector>
 
+#include "lib/allocator/ob_malloc.h"
 #include "lib/charset/ob_charset.h"
 #include "lib/lock/ob_thread_cond.h"
 #include "storage/tablelock/ob_table_lock_owner_id.h"
@@ -67,6 +70,7 @@ public:
   // Keep the boundary of the former __all_dbms_lock_allocated.name
   // VARCHAR(128) column. The legacy implementation had no lock-count limit.
   static constexpr int64_t MAX_LOCK_NAME_LENGTH = 128;
+  static constexpr int64_t DEFAULT_MEMORY_LIMIT = 64L * 1024L * 1024L;
   static constexpr int64_t LOCK_NOT_EXIST_RELEASE_RESULT = -1;
   static constexpr int64_t LOCK_NOT_OWN_RELEASE_RESULT = 0;
   static constexpr int64_t LOCK_RELEASED_RESULT = 1;
@@ -74,7 +78,7 @@ public:
   NamedLockManager();
   ~NamedLockManager();
 
-  int init();
+  int init(const int64_t memory_limit = DEFAULT_MEMORY_LIMIT);
   void destroy();
 
   int acquire(const common::ObString &lock_name,
@@ -93,16 +97,123 @@ public:
   int get_lock_snapshot(std::vector<LockSnapshot> &snapshot);
 
 private:
+  // Allocate every STL node independently so erasing a lock immediately
+  // returns its memory to the OceanBase allocator. The limit is checked
+  // against actual live allocation bytes, including allocator rounding.
+  class QuotaAllocator
+  {
+  public:
+    QuotaAllocator()
+      : allocator_(common::ObMemAttr("NamedLockMgr")), limit_(0)
+    {}
+
+    void set_limit(const int64_t limit) { limit_ = limit; }
+    void reset() { limit_ = 0; }
+
+    void *alloc(const int64_t size)
+    {
+      void *ptr = NULL;
+      const int64_t used = allocator_.used();
+      if (size > 0 && used <= limit_ && size <= limit_ - used) {
+        ptr = allocator_.alloc(size);
+        if (OB_NOT_NULL(ptr) && allocator_.used() > limit_) {
+          allocator_.free(ptr);
+          ptr = NULL;
+        }
+      }
+      return ptr;
+    }
+
+    void free(void *ptr) { allocator_.free(ptr); }
+    int64_t used() const { return allocator_.used(); }
+
+  private:
+    common::MemoryContextMalloc allocator_;
+    int64_t limit_;
+  };
+
+  template <typename T>
+  class StlAllocator
+  {
+  public:
+    typedef T value_type;
+    typedef std::true_type propagate_on_container_move_assignment;
+    typedef std::false_type is_always_equal;
+    template <typename U> struct rebind { typedef StlAllocator<U> other; };
+
+    StlAllocator() noexcept : allocator_(NULL) {}
+    explicit StlAllocator(QuotaAllocator &allocator) noexcept
+      : allocator_(&allocator)
+    {}
+    template <typename U>
+    StlAllocator(const StlAllocator<U> &other) noexcept
+      : allocator_(other.allocator_)
+    {}
+
+    T *allocate(const std::size_t count)
+    {
+      T *ptr = NULL;
+      if (OB_ISNULL(allocator_)
+          || count > static_cast<std::size_t>(INT64_MAX) / sizeof(T)
+          || OB_ISNULL(ptr = static_cast<T *>(allocator_->alloc(count * sizeof(T))))) {
+        throw std::bad_alloc();
+      }
+      return ptr;
+    }
+
+    void deallocate(T *ptr, const std::size_t) noexcept
+    {
+      if (OB_NOT_NULL(allocator_)) {
+        allocator_->free(ptr);
+      }
+    }
+
+    template <typename U>
+    bool operator==(const StlAllocator<U> &other) const noexcept
+    {
+      return allocator_ == other.allocator_;
+    }
+    template <typename U>
+    bool operator!=(const StlAllocator<U> &other) const noexcept
+    {
+      return !(*this == other);
+    }
+
+  private:
+    template <typename U> friend class StlAllocator;
+    QuotaAllocator *allocator_;
+  };
+
+  typedef StlAllocator<char> LockCharAllocator;
+  typedef std::basic_string<char, std::char_traits<char>, LockCharAllocator> LockName;
+
   struct LockNameLess
   {
-    bool operator()(const std::string &lhs, const std::string &rhs) const
+    typedef void is_transparent;
+
+    bool operator()(const LockName &lhs, const LockName &rhs) const
+    {
+      return less(lhs.data(), lhs.length(), rhs.data(), rhs.length());
+    }
+    bool operator()(const LockName &lhs, const common::ObString &rhs) const
+    {
+      return less(lhs.data(), lhs.length(), rhs.ptr(), rhs.length());
+    }
+    bool operator()(const common::ObString &lhs, const LockName &rhs) const
+    {
+      return less(lhs.ptr(), lhs.length(), rhs.data(), rhs.length());
+    }
+
+  private:
+    static bool less(const char *lhs, const int64_t lhs_length,
+                     const char *rhs, const int64_t rhs_length)
     {
       const common::ObCharsetType charset_type = common::ObCharset::get_default_charset();
       const common::ObCollationType collation_type =
           common::ObCharset::get_default_collation(charset_type);
       return common::ObCharset::strcmpsp(collation_type,
-                                         lhs.data(), lhs.length(),
-                                         rhs.data(), rhs.length(),
+                                         lhs, lhs_length,
+                                         rhs, rhs_length,
                                          false /* cmp_endspace */) < 0;
     }
   };
@@ -132,21 +243,33 @@ private:
       : blocker_id_(), lock_name_(), create_timestamp_(0)
     {}
     WaitInfo(const ObTableLockOwnerID &blocker_id,
-             const std::string &lock_name,
+             const LockName &lock_name,
              const int64_t create_timestamp)
       : blocker_id_(blocker_id), lock_name_(lock_name), create_timestamp_(create_timestamp)
     {}
 
     ObTableLockOwnerID blocker_id_;
-    std::string lock_name_;
+    LockName lock_name_;
     int64_t create_timestamp_;
   };
 
-  typedef std::map<std::string, LockInfo, LockNameLess> LockMap;
-  typedef std::set<std::string, LockNameLess> LockNameSet;
-  typedef std::map<ObTableLockOwnerID, LockNameSet> OwnerLockMap;
-  typedef std::map<ObTableLockOwnerID, WaitInfo> WaitForMap;
+  typedef StlAllocator<std::pair<const LockName, LockInfo> > LockMapAllocator;
+  typedef StlAllocator<LockName> LockNameSetAllocator;
+  typedef std::set<LockName, LockNameLess, LockNameSetAllocator> LockNameSet;
+  typedef StlAllocator<std::pair<const ObTableLockOwnerID, LockNameSet> > OwnerLockMapAllocator;
+  typedef StlAllocator<std::pair<const ObTableLockOwnerID, WaitInfo> > WaitForMapAllocator;
+  typedef std::map<LockName, LockInfo, LockNameLess, LockMapAllocator> LockMap;
+  typedef std::map<ObTableLockOwnerID, LockNameSet,
+                   std::less<ObTableLockOwnerID>, OwnerLockMapAllocator> OwnerLockMap;
+  typedef std::map<ObTableLockOwnerID, WaitInfo,
+                   std::less<ObTableLockOwnerID>, WaitForMapAllocator> WaitForMap;
 
+  int create_lock_(const common::ObString &lock_name,
+                   const ObTableLockOwnerID &owner_id);
+  int set_waiter_(const ObTableLockOwnerID &owner_id,
+                  const ObTableLockOwnerID &blocker_id,
+                  const LockName &lock_name,
+                  const int64_t create_timestamp);
   bool would_deadlock_(const ObTableLockOwnerID &waiter,
                        const ObTableLockOwnerID &blocker) const;
   void remove_waiter_(const ObTableLockOwnerID &owner_id);
@@ -155,6 +278,7 @@ private:
   static constexpr int64_t WAIT_SLICE_US = 100 * 1000L;
 
   common::ObThreadCond cond_;
+  QuotaAllocator allocator_;
   LockMap lock_map_;
   OwnerLockMap owner_lock_map_;
   WaitForMap wait_for_map_;
