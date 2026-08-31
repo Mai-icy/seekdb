@@ -82,8 +82,9 @@ void NamedLockManager::destroy()
     }
     cond_.destroy();
     if (OB_UNLIKELY(allocator_.used() != 0)) {
-      LOG_ERROR("named lock allocator still owns memory after clearing locks",
-                "used", allocator_.used());
+      LOG_ERROR_RET(OB_ERR_UNEXPECTED,
+                    "named lock allocator still owns memory after clearing locks",
+                    "used", allocator_.used());
     }
     allocator_.reset();
   }
