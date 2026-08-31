@@ -78,7 +78,7 @@ int ObTimestampService::recover(const SCN &max_ls_scn)
           K(durable_gts));
     } else {
       const int64_t current_time = ObClockGenerator::getClock() * 1000;
-      const int64_t log_floor = static_cast<int64_t>(durable_gts) + 1;
+      const int64_t log_floor = static_cast<int64_t>(durable_gts) + TIMESTAMP_RECOVERY_SAFETY_RANGE;
       (void)inc_update(&last_id_, max(current_time, log_floor));
       (void)inc_update(&durable_timestamp_, static_cast<int64_t>(durable_gts));
       ATOMIC_STORE(&is_ready_, true);
