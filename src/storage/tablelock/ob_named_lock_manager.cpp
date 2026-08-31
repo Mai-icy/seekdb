@@ -431,8 +431,14 @@ bool NamedLockManager::would_deadlock_(const ObTableLockOwnerID &waiter,
     if (it == wait_for_map_.end()) {
       break;
     } else {
-      current = it->second.blocker_id_;
-      deadlock = current == waiter;
+      LockMap::const_iterator lock_it = lock_map_.find(it->second.lock_name_);
+      if (lock_it == lock_map_.end()
+          || lock_it->second.owner_id_ != it->second.blocker_id_) {
+        break;
+      } else {
+        current = it->second.blocker_id_;
+        deadlock = current == waiter;
+      }
     }
   }
   return deadlock;
