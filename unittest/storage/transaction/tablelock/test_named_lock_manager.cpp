@@ -15,6 +15,7 @@
  */
 
 #include <chrono>
+#include <cstdio>
 #include <thread>
 #include <vector>
 
@@ -242,6 +243,39 @@ TEST_F(NamedLockManagerTest, owner_cleanup_releases_all_locks)
   ASSERT_EQ(OB_SUCCESS, manager_.is_free(name, is_free));
   ASSERT_TRUE(is_free);
   ASSERT_EQ(OB_SUCCESS, manager_.acquire(name, owner2_, 0));
+}
+
+TEST_F(NamedLockManagerTest, memory_quota_preserves_lock_indexes)
+{
+  static constexpr int64_t TEST_MEMORY_LIMIT = 1024L * 1024L;
+  NamedLockManager quota_manager;
+  int ret = OB_SUCCESS;
+  int64_t success_count = 0;
+  int64_t lock_count = 0;
+  int64_t waiter_count = 0;
+  int64_t release_count = 0;
+  char name_buf[NamedLockManager::MAX_LOCK_NAME_LENGTH + 1];
+
+  ASSERT_EQ(OB_SUCCESS, quota_manager.init(TEST_MEMORY_LIMIT));
+  while (OB_SUCC(ret) && success_count < 100000) {
+    const int name_length = snprintf(name_buf, sizeof(name_buf),
+                                     "quota-lock-%ld", success_count);
+    ASSERT_GT(name_length, 0);
+    ret = quota_manager.acquire(ObString(name_length, name_buf), owner1_, 0);
+    if (OB_SUCC(ret)) {
+      ++success_count;
+    }
+  }
+
+  ASSERT_EQ(OB_ALLOCATE_MEMORY_FAILED, ret);
+  ASSERT_EQ(OB_SUCCESS, quota_manager.get_counts(lock_count, waiter_count));
+  EXPECT_EQ(success_count, lock_count);
+  EXPECT_EQ(0, waiter_count);
+  ASSERT_EQ(OB_SUCCESS, quota_manager.release_all(owner1_, release_count));
+  EXPECT_EQ(success_count, release_count);
+  EXPECT_EQ(OB_SUCCESS,
+            quota_manager.acquire(ObString::make_string("after-release"), owner1_, 0));
+  quota_manager.destroy();
 }
 
 } // namespace unittest
