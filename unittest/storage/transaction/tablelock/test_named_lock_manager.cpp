@@ -208,8 +208,16 @@ TEST_F(NamedLockManagerTest, snapshot_contains_holders_and_waiters)
   std::thread waiter([&]() {
     waiter_ret = manager_.acquire(name, owner2_, 2 * 1000 * 1000L);
   });
-  ASSERT_TRUE(wait_for_waiter_count(1));
-  ASSERT_EQ(OB_SUCCESS, manager_.get_lock_snapshot(snapshot));
+  const bool waiter_registered = wait_for_waiter_count(1);
+  const int snapshot_ret = manager_.get_lock_snapshot(snapshot);
+  const int first_release_ret = manager_.release(name, owner1_, release_result);
+  const int second_release_ret = manager_.release(name, owner1_, release_result);
+  waiter.join();
+
+  ASSERT_TRUE(waiter_registered);
+  ASSERT_EQ(OB_SUCCESS, snapshot_ret);
+  ASSERT_EQ(OB_SUCCESS, first_release_ret);
+  ASSERT_EQ(OB_SUCCESS, second_release_ret);
   ASSERT_EQ(2, snapshot.size());
   EXPECT_EQ("snapshot-lock", snapshot.at(0).lock_name_);
   EXPECT_EQ(owner1_, snapshot.at(0).owner_id_);
@@ -222,9 +230,6 @@ TEST_F(NamedLockManagerTest, snapshot_contains_holders_and_waiters)
   EXPECT_TRUE(snapshot.at(1).is_waiter_);
   EXPECT_EQ(snapshot.at(0).lock_id_, snapshot.at(1).lock_id_);
 
-  ASSERT_EQ(OB_SUCCESS, manager_.release(name, owner1_, release_result));
-  ASSERT_EQ(OB_SUCCESS, manager_.release(name, owner1_, release_result));
-  waiter.join();
   ASSERT_EQ(OB_SUCCESS, waiter_ret);
   ASSERT_EQ(OB_SUCCESS, manager_.release(name, owner2_, release_result));
   ASSERT_EQ(OB_SUCCESS, manager_.get_lock_snapshot(snapshot));
