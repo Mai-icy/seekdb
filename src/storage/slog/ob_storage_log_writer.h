@@ -17,6 +17,8 @@
 #ifndef OCEANBASE_STORAGE_OB_STORAGE_LOG_WRITER_H_
 #define OCEANBASE_STORAGE_OB_STORAGE_LOG_WRITER_H_
 
+#include <mutex>
+
 #include "lib/oblog/ob_base_log_writer.h"
 #include "lib/lock/ob_mutex.h"
 #include "lib/queue/ob_fixed_queue.h"
@@ -134,13 +136,14 @@ private:
     int64_t next_writer_idx_;
     bool is_inited_;
     bool is_started_;
-    pthread_mutex_t writer_mutex_;
+    std::mutex writer_mutex_;
     common::SimpleCond wakeup_cond_;
   };
 
   void flush_log_once() { ObBaseLogWriter::flush_log_once(); }
 
 private:
+  bool is_registered_;
   bool is_inited_;
   int64_t flush_seq_;
   int64_t write_align_size_;

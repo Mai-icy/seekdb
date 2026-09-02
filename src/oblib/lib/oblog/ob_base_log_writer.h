@@ -16,7 +16,7 @@
 
 #ifndef OB_BASE_LOG_WRITER_H_
 #define OB_BASE_LOG_WRITER_H_
-#include <pthread.h>
+#include <mutex>
 #include <stdint.h>
 #include <stdlib.h>
 #ifdef __linux__
@@ -125,7 +125,7 @@ protected:
   int64_t log_item_push_idx_ CACHE_ALIGNED;
   int64_t log_item_pop_idx_ CACHE_ALIGNED;
 
-  pthread_mutex_t thread_mutex_;
+  std::mutex thread_mutex_;
 
   SimpleCond* log_write_cond_;
   SimpleCond* log_flush_cond_;
