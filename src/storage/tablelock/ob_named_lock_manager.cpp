@@ -36,7 +36,6 @@ NamedLockManager::NamedLockManager()
     allocator_(),
     lock_map_(LockNameLess(), LockMapAllocator(allocator_)),
     owner_lock_map_(std::less<ObTableLockOwnerID>(), OwnerLockMapAllocator(allocator_)),
-    wait_for_map_(std::less<ObTableLockOwnerID>(), WaitForMapAllocator(allocator_)),
     next_lock_id_(1),
     is_inited_(false)
 {
@@ -75,7 +74,6 @@ void NamedLockManager::destroy()
       ObThreadCondGuard guard(cond_);
       lock_map_.clear();
       owner_lock_map_.clear();
-      wait_for_map_.clear();
       next_lock_id_ = 1;
       cond_.broadcast();
       is_inited_ = false;
@@ -155,31 +153,6 @@ int NamedLockManager::create_lock_(const ObString &lock_name,
   return ret;
 }
 
-int NamedLockManager::set_waiter_(const ObTableLockOwnerID &owner_id,
-                                  const ObTableLockOwnerID &blocker_id,
-                                  const LockName &lock_name,
-                                  const int64_t create_timestamp)
-{
-  int ret = OB_SUCCESS;
-  try {
-    WaitForMap::iterator wait_it = wait_for_map_.find(owner_id);
-    if (wait_it == wait_for_map_.end()) {
-      const std::pair<WaitForMap::iterator, bool> result = wait_for_map_.emplace(
-          owner_id, WaitInfo(blocker_id, lock_name, create_timestamp));
-      if (!result.second) {
-        ret = OB_ERR_UNEXPECTED;
-        LOG_WARN("failed to insert named lock waiter", K(ret), K(owner_id));
-      }
-    } else {
-      wait_it->second.blocker_id_ = blocker_id;
-    }
-  } catch (const std::bad_alloc &) {
-    ret = OB_ALLOCATE_MEMORY_FAILED;
-    LOG_WARN("named lock waiter memory quota is exhausted", K(ret), K(owner_id));
-  }
-  return ret;
-}
-
 int NamedLockManager::acquire(const ObString &lock_name,
                               const ObTableLockOwnerID &owner_id,
                               const int64_t timeout_us)
@@ -205,43 +178,26 @@ int NamedLockManager::acquire(const ObString &lock_name,
       if (lock_it == lock_map_.end()) {
         if (OB_FAIL(create_lock_(lock_name, owner_id))) {
           LOG_WARN("failed to create named lock", K(ret), K(lock_name), K(owner_id));
-          remove_waiter_(owner_id);
         } else {
-          remove_waiter_(owner_id);
           finished = true;
         }
       } else if (lock_it->second.owner_id_ == owner_id) {
         ++lock_it->second.ref_count_;
-        remove_waiter_(owner_id);
         finished = true;
-      } else if (would_deadlock_(owner_id, lock_it->second.owner_id_)) {
-        ret = OB_DEAD_LOCK;
-        remove_waiter_(owner_id);
-        LOG_WARN("named lock deadlock detected", K(ret), K(lock_name), K(owner_id),
-                 "blocker", lock_it->second.owner_id_);
       } else {
         const int64_t now = ObTimeUtility::current_time();
         if (timeout_us == 0 || now >= deadline_ts) {
           ret = OB_ERR_EXCLUSIVE_LOCK_CONFLICT;
-          remove_waiter_(owner_id);
-        } else if (OB_FAIL(set_waiter_(owner_id,
-                                       lock_it->second.owner_id_,
-                                       lock_it->first,
-                                       start_ts))) {
-          LOG_WARN("failed to record named lock waiter", K(ret), K(lock_name), K(owner_id));
-          remove_waiter_(owner_id);
         } else {
           const int64_t wait_us = MIN(WAIT_SLICE_US, deadline_ts - now);
           const int wait_ret = cond_.wait_us(wait_us);
           if (OB_SUCCESS != wait_ret && OB_TIMEOUT != wait_ret) {
             ret = wait_ret;
-            remove_waiter_(owner_id);
             LOG_WARN("failed to wait for named lock", K(ret), K(lock_name), K(owner_id));
           } else {
             const int status_ret = THIS_WORKER.check_status();
             if (OB_SUCCESS != status_ret && OB_TIMEOUT != status_ret) {
               ret = status_ret;
-              remove_waiter_(owner_id);
             }
           }
         }
@@ -310,7 +266,6 @@ int NamedLockManager::release_all(const ObTableLockOwnerID &owner_id,
       owner_lock_map_.erase(owner_it);
       cond_.broadcast();
     }
-    remove_waiter_(owner_id);
   }
   return ret;
 }
@@ -365,21 +320,6 @@ int NamedLockManager::has_lock(const ObTableLockOwnerID &owner_id, bool &has_loc
   return ret;
 }
 
-int NamedLockManager::get_counts(int64_t &lock_count, int64_t &waiter_count)
-{
-  int ret = OB_SUCCESS;
-  lock_count = 0;
-  waiter_count = 0;
-  if (OB_UNLIKELY(!is_inited_)) {
-    ret = OB_NOT_INIT;
-  } else {
-    ObThreadCondGuard guard(cond_);
-    lock_count = lock_map_.size();
-    waiter_count = wait_for_map_.size();
-  }
-  return ret;
-}
-
 int NamedLockManager::get_lock_snapshot(std::vector<LockSnapshot> &snapshot)
 {
   int ret = OB_SUCCESS;
@@ -389,7 +329,7 @@ int NamedLockManager::get_lock_snapshot(std::vector<LockSnapshot> &snapshot)
   } else {
     ObThreadCondGuard guard(cond_);
     try {
-      snapshot.reserve(lock_map_.size() + wait_for_map_.size());
+      snapshot.reserve(lock_map_.size());
       for (LockMap::const_iterator lock_it = lock_map_.begin();
            lock_it != lock_map_.end(); ++lock_it) {
         snapshot.push_back(LockSnapshot(
@@ -397,21 +337,7 @@ int NamedLockManager::get_lock_snapshot(std::vector<LockSnapshot> &snapshot)
             lock_it->second.lock_id_,
             lock_it->second.owner_id_,
             lock_it->second.ref_count_,
-            lock_it->second.create_timestamp_,
-            false));
-      }
-      for (WaitForMap::const_iterator wait_it = wait_for_map_.begin();
-           wait_it != wait_for_map_.end(); ++wait_it) {
-        LockMap::const_iterator lock_it = lock_map_.find(wait_it->second.lock_name_);
-        if (lock_it != lock_map_.end()) {
-          snapshot.push_back(LockSnapshot(
-              std::string(lock_it->first.data(), lock_it->first.length()),
-              lock_it->second.lock_id_,
-              wait_it->first,
-              0,
-              wait_it->second.create_timestamp_,
-              true));
-        }
+            lock_it->second.create_timestamp_));
       }
     } catch (const std::bad_alloc &) {
       ret = OB_ALLOCATE_MEMORY_FAILED;
@@ -420,34 +346,6 @@ int NamedLockManager::get_lock_snapshot(std::vector<LockSnapshot> &snapshot)
     }
   }
   return ret;
-}
-
-bool NamedLockManager::would_deadlock_(const ObTableLockOwnerID &waiter,
-                                       const ObTableLockOwnerID &blocker) const
-{
-  bool deadlock = blocker == waiter;
-  ObTableLockOwnerID current = blocker;
-  for (int64_t depth = 0; !deadlock && depth <= static_cast<int64_t>(wait_for_map_.size()); ++depth) {
-    WaitForMap::const_iterator it = wait_for_map_.find(current);
-    if (it == wait_for_map_.end()) {
-      break;
-    } else {
-      LockMap::const_iterator lock_it = lock_map_.find(it->second.lock_name_);
-      if (lock_it == lock_map_.end()
-          || lock_it->second.owner_id_ != it->second.blocker_id_) {
-        break;
-      } else {
-        current = it->second.blocker_id_;
-        deadlock = current == waiter;
-      }
-    }
-  }
-  return deadlock;
-}
-
-void NamedLockManager::remove_waiter_(const ObTableLockOwnerID &owner_id)
-{
-  wait_for_map_.erase(owner_id);
 }
 
 } // namespace tablelock
