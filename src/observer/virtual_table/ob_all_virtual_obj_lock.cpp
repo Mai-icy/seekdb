@@ -295,9 +295,7 @@ int ObAllVirtualObjLock::get_next_named_lock_op(
       lock_op.lock_mode_ = transaction::tablelock::EXCLUSIVE;
       lock_op.owner_id_ = snapshot->owner_id_;
       lock_op.op_type_ = transaction::tablelock::OUT_TRANS_LOCK;
-      lock_op.lock_op_status_ = snapshot->is_waiter_
-          ? transaction::tablelock::LOCK_OP_DOING
-          : transaction::tablelock::LOCK_OP_COMPLETE;
+      lock_op.lock_op_status_ = transaction::tablelock::LOCK_OP_COMPLETE;
       lock_op.create_timestamp_ = snapshot->create_timestamp_;
       lock_op.create_schema_version_ = -1;
       priority = transaction::tablelock::ObTableLockPriority::NORMAL;
@@ -470,8 +468,8 @@ int ObAllVirtualObjLock::inner_get_next_row(ObNewRow *&row)
           break;
         }
         case WAIT_SEQ: {
-          if (OB_NOT_NULL(named_lock) && named_lock->is_waiter_) {
-            cur_row_.cells_[i].set_int(named_lock->create_timestamp_);
+          if (OB_NOT_NULL(named_lock)) {
+            cur_row_.cells_[i].set_int(0);
           } else if (is_iter_priority_list_ && is_iter_tx_) {
             cur_row_.cells_[i].set_int(lock_op.create_timestamp_);
           } else {
