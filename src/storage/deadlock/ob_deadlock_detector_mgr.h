@@ -22,7 +22,7 @@
 #include "ob_deadlock_parameters.h"
 #include "lib/hash/ob_link_hashmap.h"
 #include "lib/thread/ob_simple_thread_pool.h"
-#include "share/ob_time_wheel.h"
+#include "lib/task/ob_timer.h"
 #include "lib/utility/utility.h"
 #include "lib/allocator/ob_malloc.h"
 #include "ob_deadlock_arg_checker.h"
@@ -110,7 +110,6 @@ private:
 class ObDeadLockDetectorMgr
 {
   friend class DetectorRefGuard;
-  friend class ActivateFn;
   friend class ObLCLNode;
   friend class ObDeadLockLocalTaskQueue;
 public:
@@ -175,8 +174,26 @@ public:
   int activate_all(const T1 &src_key);
 
 private:
-  // exposed to local detector scheduling only
-  common::ObTimeWheel& get_time_wheel() { return time_wheel_; }
+  class PeriodicTask final : public common::ObTimerTask
+  {
+  public:
+    explicit PeriodicTask(ObDeadLockDetectorMgr &mgr) : mgr_(mgr) {}
+    void runTimerTask() override;
+  private:
+    ObDeadLockDetectorMgr &mgr_;
+  };
+
+  class ProcessPeriodicFn
+  {
+  public:
+    explicit ProcessPeriodicFn(const int64_t current_ts) : current_ts_(current_ts) {}
+    bool operator()(const UserBinaryKey &key, ObIDeadLockDetector *detector);
+  private:
+    int64_t current_ts_;
+  };
+
+  int schedule_periodic_task_();
+  void run_periodic_task_();
   int post_lcl_state_(const UserBinaryKey &dest_key,
                       const int64_t lclv,
                       const ObLCLLabel &label,
@@ -237,18 +254,12 @@ private:
     ObIDeadLockDetector* p_detector_;
   };
 
-  class ActivateFn
-  {
-  public:
-    bool operator()(const UserBinaryKey &key, ObIDeadLockDetector *p_detector);
-  };
-
   int get_detector_(const UserBinaryKey &user_key, DetectorRefGuard &detector_guard);
 
   bool is_inited_;// marked ObDeadLockDetectorMgr hash been inited or not
   int64_t stop_ts_;// nonzero after stop() begins
-  // one timer per manager for periodic detector propagation
-  common::ObTimeWheel time_wheel_;
+  common::ObTimer timer_;
+  PeriodicTask periodic_task_;
   ObDeadLockLocalTaskQueue local_task_queue_;
   common::ObLinkHashMap<UserBinaryKey,
                         ObIDeadLockDetector,
@@ -312,13 +323,6 @@ int ObDeadLockDetectorMgr::register_key(const KeyType &key,
       inner_alloc_handle_.inner_factory_.release(p_detector);
     } else if (is_stopping_()) {
       ret = common::OB_IN_STOP_STATE;
-      (void)detector_map_.del(binary_key);
-      detector_map_.revert(p_detector);
-    } else if (OB_FAIL(p_detector->register_timer_task())) {
-      if (common::OB_ENTRY_NOT_EXIST == ret) {
-        ret = common::OB_EAGAIN;// telling user there is a concurrent problem, need retry
-      }
-      DETECT_LOG(WARN, "start timer task failed", PRINT_WRAPPER, KP(p_detector));
       (void)detector_map_.del(binary_key);
       detector_map_.revert(p_detector);
     } else {

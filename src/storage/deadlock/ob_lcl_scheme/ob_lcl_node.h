@@ -19,7 +19,6 @@
 
 #include "storage/deadlock/ob_deadlock_detector_common_define.h"
 #include "ob_lcl_parameters.h"
-#include "share/ob_time_wheel.h"
 #include "lib/lock/ob_spin_rwlock.h"
 #include "lib/atomic/ob_atomic.h"
 #include "ob_lcl_utils.h"
@@ -88,7 +87,6 @@ class ObLCLNode : public ObIDeadLockDetector
   typedef common::ObArray<ObDependencyResource> BlockList;
   typedef common::ObSEArray<ObDependencyResource, 1> ParentList;
   typedef common::ObSEArray<BlockCallBack, COMMON_BLOCK_SIZE> CallBackList;
-  friend class PushStateTask;
 public:
   ObLCLNode(const UserBinaryKey &user_key,
             const uint64_t resource_id,
@@ -102,8 +100,8 @@ public:
 public:
   int add_parent(const ObDependencyResource &parent) override;
   void set_timeout(const uint64_t timeout) override;
-  int register_timer_task() override;
-  void unregister_timer_task() override;
+  void run_periodic_task(const int64_t current_ts) override;
+  void stop_periodic_task() override;
   void dec_count_down_allow_detect() override;
   bool is_successfully_constructed() const { return successfully_constructed_; }
   const ObDetectorPriority &get_priority() const override;// return detector's priority
@@ -125,21 +123,9 @@ public:
   TO_STRING_KV(KP(this), K_(self_key), KTIME_(timeout_ts), K_(lclv), K_(private_label),
                K_(public_label), K_(detect_callback),
                K_(auto_activate_when_detected), KTIME_(created_time), KTIME_(allow_detect_time),
-               K_(is_timer_task_canceled), K_(is_timer_task_running), K_(block_list), K_(parent_list),
+               K_(is_periodic_task_canceled), K_(block_list), K_(parent_list),
                K_(lcl_period), K_(last_send_cycle_info_period), K(block_callback_list_.count()),
                K(ATOMIC_LOAD(&count_down_allow_detect_)))
-private:
-  class PushStateTask : public common::ObTimeWheelTask
-  {
-  public:
-    PushStateTask(ObLCLNode &node);
-    void runTimerTask() override;
-    uint64_t hash() const override;
-    int64_t expected_executed_ts;
-    TO_STRING_KV(K_(lcl_node), K(expected_executed_ts));
-  private:
-    ObLCLNode& lcl_node_;
-  } push_state_task_;
 private:
   int block_(const ObDependencyResource &);
   int activate_(const ObDependencyResource &);
@@ -151,10 +137,7 @@ private:
   void get_state_snapshot_(BlockList &, int64_t &, ObLCLLabel &);
   int get_resource_from_callback_list_(BlockList &, common::ObIArray<bool> &);
   int remove_unuseful_callback_(common::ObIArray<bool> &);
-  int register_timer_with_necessary_retry_with_lock_();
   int push_state_to_downstreams_with_lock_();
-  int add_self_ref_count_();
-  void revert_self_ref_count_();
   int check_and_process_complete_cycle_(
       const common::ObIArray<ObDetectorInnerReportInfo> &);
   int generate_event_id_with_lock_(const common::ObIArray<ObDetectorInnerReportInfo> &,
@@ -179,8 +162,7 @@ private:
   bool auto_activate_when_detected_;
   int64_t created_time_;
   int64_t allow_detect_time_;
-  bool is_timer_task_canceled_;
-  bool is_timer_task_running_;
+  bool is_periodic_task_canceled_;
   BlockList block_list_;
   ParentList parent_list_;
   CallBackList block_callback_list_;

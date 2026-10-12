@@ -267,7 +267,8 @@ void ObDeadLockLocalTaskQueue::destroy_task_(Task *task)
 
 ObDeadLockDetectorMgr::ObDeadLockDetectorMgr()
 : is_inited_(false),
-stop_ts_(0) {}
+stop_ts_(0),
+periodic_task_(*this) {}
 
 /* * * * * * definition of ObDeadLockDetectorMgr::InnerAllocHandle * * * * */
 
@@ -384,8 +385,6 @@ int ObDeadLockDetectorMgr::init()
 {
   #define PRINT_WRAPPER KR(ret)
   int ret = OB_SUCCESS;
-  bool time_wheel_inited = false;
-  bool detector_map_inited = false;
   
   if (is_inited_) {
     ret = OB_INIT_TWICE;
@@ -393,12 +392,9 @@ int ObDeadLockDetectorMgr::init()
   } else if (OB_FAIL(ObDeadLockInnerTableService::init())) {
   } else {
     ObMemAttr attr(MEMORY_LABEL);
-    if (OB_FAIL(time_wheel_.init(TIME_WHEEL_PRECISION_US,
-                                 TIMER_THREAD_COUNT,
-                                 DETECTOR_TIMER_NAME))) {
-    } else if (OB_FAIL(detector_map_.init(attr))) {
-    } else if (FALSE_IT(detector_map_inited = true)) {
+    if (OB_FAIL(detector_map_.init(attr))) {
     } else if (OB_FAIL(local_task_queue_.init(this))) {
+    } else if (OB_FAIL(timer_.init(DETECTOR_TIMER_NAME))) {
     } else {
       ATOMIC_STORE(&stop_ts_, 0);
       is_inited_ = true;
@@ -420,20 +416,66 @@ int ObDeadLockDetectorMgr::start()
   } else if (is_stopping_()) {
     ret = OB_IN_STOP_STATE;
   } else if (OB_FAIL(local_task_queue_.start())) {
-  } else if (OB_FAIL(time_wheel_.start())) {
-    DETECT_LOG(WARN, "time wheel start failed");
+  } else if (OB_FAIL(timer_.start())) {
+    DETECT_LOG(WARN, "deadlock detector timer start failed", KR(ret));
+    local_task_queue_.stop();
+    local_task_queue_.wait();
+  } else if (OB_FAIL(schedule_periodic_task_())) {
+    DETECT_LOG(WARN, "schedule deadlock detector task failed", KR(ret));
+    timer_.stop();
     local_task_queue_.stop();
     local_task_queue_.wait();
   }
   return ret;
 }
 
-bool ObDeadLockDetectorMgr::ActivateFn::operator()(const UserBinaryKey &key,
-                                                   ObIDeadLockDetector *p_detector)
+void ObDeadLockDetectorMgr::PeriodicTask::runTimerTask()
+{
+  mgr_.run_periodic_task_();
+}
+
+bool ObDeadLockDetectorMgr::ProcessPeriodicFn::operator()(
+    const UserBinaryKey &key,
+    ObIDeadLockDetector *detector)
 {
   UNUSED(key);
-  p_detector->unregister_timer_task();
+  detector->run_periodic_task(current_ts_);
   return true;
+}
+
+int ObDeadLockDetectorMgr::schedule_periodic_task_()
+{
+  int ret = OB_SUCCESS;
+  const int64_t configured_interval = ::oceanbase::config::_lcl_op_interval();
+  const int64_t interval = configured_interval > 0
+      ? configured_interval
+      : DETECTOR_TIMER_IDLE_INTERVAL_US;
+  const int64_t current_ts = ObClockGenerator::getRealClock();
+  const int64_t next_expected_ts = ((current_ts / interval) + 1) * interval;
+  const int64_t delay = MAX(next_expected_ts - current_ts, DETECTOR_TIMER_MIN_DELAY_US);
+  if (OB_FAIL(timer_.schedule(periodic_task_, delay, false))) {
+    DETECT_LOG(WARN, "schedule periodic deadlock detector task failed",
+               KR(ret), K(delay), K(configured_interval));
+  }
+  return ret;
+}
+
+void ObDeadLockDetectorMgr::run_periodic_task_()
+{
+  int ret = OB_SUCCESS;
+  if (!is_stopping_()) {
+    const int64_t current_ts = ObClockGenerator::getRealClock();
+    const int64_t configured_interval = ::oceanbase::config::_lcl_op_interval();
+    if (configured_interval > 0) {
+      ProcessPeriodicFn fn(current_ts);
+      if (OB_FAIL(detector_map_.for_each(fn))) {
+        DETECT_LOG(WARN, "process periodic deadlock detector task failed", KR(ret));
+      }
+    }
+    if (!is_stopping_() && OB_FAIL(schedule_periodic_task_())) {
+      DETECT_LOG(ERROR, "reschedule periodic deadlock detector task failed", KR(ret));
+    }
+  }
 }
 
 void ObDeadLockDetectorMgr::stop()
@@ -444,11 +486,7 @@ void ObDeadLockDetectorMgr::stop()
   } else if (!is_stopping_()) {
     const int64_t stop_ts = ObClockGenerator::getRealClock();
     ATOMIC_STORE(&stop_ts_, stop_ts > 0 ? stop_ts : 1);
-    ActivateFn fn;
-    detector_map_.for_each(fn);
-    if (time_wheel_.is_running() && OB_FAIL(time_wheel_.stop())) {
-      DETECT_LOG(WARN, "ObDeadLockDetectorMgr stop time wheel failed", KR(ret));
-    }
+    timer_.stop();
     local_task_queue_.stop();
   }
 }
@@ -458,9 +496,10 @@ void ObDeadLockDetectorMgr::wait()
   int ret = OB_SUCCESS;
   if (!is_inited_) {
     DETECT_LOG(WARN, "deadlock detector manager is not initialized");
-  } else if (OB_FAIL(time_wheel_.wait())) {
+  } else {
+    timer_.wait();
+    local_task_queue_.wait();
   }
-  local_task_queue_.wait();
 }
 
 // ObDeadLockDetectorMgr destroy process, all related role should be destroyed within this
@@ -476,7 +515,7 @@ void ObDeadLockDetectorMgr::destroy()
     wait();
     local_task_queue_.destroy();
     detector_map_.destroy();
-    time_wheel_.destroy();
+    timer_.destroy();
     is_inited_ = false;
     DETECT_LOG(INFO, "ObDeadLockDetectorMgr destroy success");
   }
@@ -510,7 +549,7 @@ int ObDeadLockDetectorMgr::unregister_key_(const UserBinaryKey &key)
   if (OB_FAIL(get_detector_(key, ref_guard))) {
     // DETECT_LOG(WARN, "get_detector failed", PRINT_WRAPPER);
   } else {
-    ref_guard.get_detector()->unregister_timer_task();
+    ref_guard.get_detector()->stop_periodic_task();
     if (OB_FAIL(detector_map_.del(key))) {
     } else {
     }
@@ -655,17 +694,10 @@ int ObDeadLockDetectorMgr::process_parent_notification_(const UserBinaryKey &par
       (void)detector_map_.del(binary_key);
       detector_map_.revert(p_detector);
     } else if (FALSE_IT(p_detector->set_timeout(10 * 1000 * 1000))) {
-    } else if (OB_FAIL(p_detector->register_timer_task())) {
-      if (common::OB_ENTRY_NOT_EXIST == ret) {
-        ret = common::OB_EAGAIN;// telling user there is a concurrent problem, need retry
-      }
-      DETECT_LOG(WARN, "start timer task failed", PRINT_WRAPPER);
-      (void)detector_map_.del(binary_key);
-      detector_map_.revert(p_detector);
     } else {
       if (OB_FAIL(p_detector->block(resource))) {
         DETECT_LOG(WARN, "block child failed", PRINT_WRAPPER);
-        p_detector->unregister_timer_task();
+        p_detector->stop_periodic_task();
         (void)detector_map_.del(binary_key);
       } else {
         DETECT_LOG(INFO, "register parent key success", PRINT_WRAPPER);

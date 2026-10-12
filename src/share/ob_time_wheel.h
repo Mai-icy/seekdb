@@ -108,7 +108,11 @@ private:
   int schedule_(ObTimeWheelTask *task, const int64_t run_ticket);
   int scan();
 private:
-  static const int64_t MAX_BUCKET = 10000;
+  // Transaction timeout tasks are scheduled at 100ms precision. Their initial
+  // check is within 10s and regular retries are capped at 3s. 256 buckets cover
+  // 25.6s while avoiding the fixed memory cost of the former 10,000-bucket
+  // array. Absolute run tickets keep longer delays correct across rotations.
+  static const int64_t MAX_BUCKET = 256;
   // scaner max sleep 1000000us
   static const int64_t MAX_SCAN_SLEEP = 1000000;
   static const int64_t MAX_TIMER_NAME_LEN = 16;

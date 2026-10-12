@@ -30,10 +30,11 @@ constexpr const int64_t BUFFER_LIMIT_SIZE = 128;
 // special value indicate invalid value within deadlock module
 constexpr const int64_t INVALID_VALUE = INT64_MAX;
 // used within ObDeadLockDetectorMgr
-// timeWheel polling granularity, set to 10ms
-constexpr const int64_t TIME_WHEEL_PRECISION_US = 10 * 1000;
-constexpr const int TIMER_THREAD_COUNT = 1;// timeWheel thread number
-constexpr const char *DETECTOR_TIMER_NAME = "DetectorTimer";// timeWheel thread name
+constexpr const char *DETECTOR_TIMER_NAME = "DetectorTimer";
+constexpr const int64_t DETECTOR_TIMER_MIN_DELAY_US = 1LL * 1000LL;
+// Keep disabled-state polling cheap while allowing runtime re-enable to take
+// effect promptly. The old per-node scheduling path reacted on registration.
+constexpr const int64_t DETECTOR_TIMER_IDLE_INTERVAL_US = 100LL * 1000LL;
 // used within ObDetectUserReportInfo
 // 3 extra columns in inner table that user could describe more things
 constexpr const int64_t EXTRA_INFO_COLUMNS = 3;

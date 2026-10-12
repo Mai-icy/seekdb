@@ -39,8 +39,7 @@ ObLCLNode::ObLCLNode(const UserBinaryKey &user_key,
                      const uint64_t start_delay,
                      const uint32_t count_down_allow_detect,
                      const bool auto_activate_when_detected)
-  :push_state_task_(*this),
-  self_key_(user_key),
+  :self_key_(user_key),
   timeout_ts_(0),
   lclv_(0),
   private_label_(resource_id, priority),
@@ -48,8 +47,7 @@ ObLCLNode::ObLCLNode(const UserBinaryKey &user_key,
   detect_callback_(on_detect_operation),
   collect_callback_(on_collect_operation),
   auto_activate_when_detected_(auto_activate_when_detected),
-  is_timer_task_canceled_(false),
-  is_timer_task_running_(false),
+  is_periodic_task_canceled_(false),
   lcl_period_(0),
   last_report_waiting_for_period_(0),
   last_send_cycle_info_period_(0),
@@ -105,52 +103,10 @@ void ObLCLNode::set_timeout(const uint64_t timeout)
   timeout_ts_ = ObClockGenerator::getRealClock() + timeout;
 }
 
-int ObLCLNode::register_timer_task()
+void ObLCLNode::stop_periodic_task()
 {
-  int ret = OB_SUCCESS;
-
-  DETECT_TIME_GUARD(100_ms);
-  if (CLICK() && OB_FAIL(add_self_ref_count_())) {
-    DETECT_LOG_(WARN, "add self ref count failed, interrupt register process", K(*this));
-  } else if (CLICK() && OB_FAIL(register_timer_with_necessary_retry_with_lock_())) {
-    // just register next timer task, do not execute tranmist action
-    DETECT_LOG_(ERROR, "fail to register timer task", K(*this));
-    CLICK();
-    revert_self_ref_count_();
-  } else {
-    DETECT_LOG_(TRACE, "register first timer task successfully", K(*this));
-  }
-
-  return ret;
-}
-
-void ObLCLNode::unregister_timer_task()
-{
-  int ret = OB_SUCCESS;
-  int tmp_ret = OB_SUCCESS;
-  bool need_revert_self_ref = false;
-  bool wait_running_task = false;
-  {
-    LockGuard lock_guard(lock_);
-    if (!ATOMIC_LOAD(&is_timer_task_canceled_)) {
-      ATOMIC_STORE(&is_timer_task_canceled_, true);
-      ObTimeWheel &time_wheel = ::oceanbase::share::server_service<::oceanbase::share::detector::ObDeadLockDetectorMgr>()->get_time_wheel();
-      if (OB_SUCCESS == (tmp_ret = time_wheel.cancel(&push_state_task_))) {
-        need_revert_self_ref = true;
-        wait_running_task = ATOMIC_LOAD(&is_timer_task_running_);
-      } else if (OB_TIMER_TASK_HAS_NOT_SCHEDULED != tmp_ret) {
-        DETECT_LOG_(WARN, "cancel detector timer task failed", K(tmp_ret), K(*this));
-      }
-    }
-  }
-  while (wait_running_task && ATOMIC_LOAD(&is_timer_task_running_)) {
-    ob_usleep(1000);
-  }
-  if (need_revert_self_ref) {
-    // The recurring timer owns one detector-map reference. Releasing it must be
-    // the last action because this node may be destroyed here.
-    revert_self_ref_count_();
-  }
+  LockGuard lock_guard(lock_);
+  is_periodic_task_canceled_ = true;
 }
 
 void ObLCLNode::dec_count_down_allow_detect()
@@ -163,80 +119,6 @@ void ObLCLNode::dec_count_down_allow_detect()
       cas_failed = (ATOMIC_CAS(&count_down_allow_detect_, cnt, cnt - 1) != cnt);
     }
   } while (cnt > 0 && cas_failed);
-}
-
-int ObLCLNode::register_timer_with_necessary_retry_with_lock_()
-{
-  int ret = OB_SUCCESS;
-  int64_t delay = 0;
-  ObTimeWheel &time_wheel = ::oceanbase::share::server_service<::oceanbase::share::detector::ObDeadLockDetectorMgr>()->get_time_wheel();
-
-  DETECT_TIME_GUARD(100_ms);
-  // timewheel execute timer task without lock's protection
-  // need add ref count for detector here, otherwise may cause task called after detector destroyed
-  LockGuard lock_guard(lock_);// for protecting task_.expected_executed_ts
-  int64_t next_expect_ts = push_state_task_.expected_executed_ts;// last executed ts value, actually
-
-  if (ATOMIC_LOAD(&is_timer_task_canceled_)) {
-    ret = OB_CANCELED;
-  }
-  while (OB_SUCC(ret)) {
-    int64_t cur_ts = ObClockGenerator::getRealClock();
-    int64_t baseline_ts = cur_ts > allow_detect_time_ ? cur_ts : allow_detect_time_;
-    int64_t lcl_op_interval = ::oceanbase::config::_lcl_op_interval();
-    if (lcl_op_interval == 0) {
-      ret = OB_NOT_RUNNING;
-      break;
-    }
-    next_expect_ts = ((baseline_ts / lcl_op_interval) + 1) * lcl_op_interval;
-    delay = next_expect_ts - ObClockGenerator::getRealClock();
-    if (delay < TIMER_SCHEDULE_RESERVE_TIME) {
-      delay = TIMER_SCHEDULE_RESERVE_TIME;
-    }
-    DETECT_LOG_(DEBUG, "delay value is", K(delay), K(*this));
-    ret = time_wheel.schedule(&push_state_task_, delay);
-    // The only condition that could retry; otherwise this would loop forever.
-    if (!(CLICK() && OB_INVALID_ARGUMENT == ret && delay < 0)) {
-      break;
-    }
-  }
-
-  if (OB_SUCCESS != ret) {
-    DETECT_LOG_(WARN, "register next task failed", KR(ret), K(*this));
-  } else {
-    push_state_task_.expected_executed_ts = next_expect_ts;
-  }
-
-  return ret;
-}
-
-int ObLCLNode::add_self_ref_count_()
-{
-  int ret = OB_SUCCESS;
-  ObIDeadLockDetector *p_detector = nullptr;
-
-  DETECT_TIME_GUARD(100_ms);
-  if (CLICK() && OB_FAIL(::oceanbase::share::server_service<::oceanbase::share::detector::ObDeadLockDetectorMgr>()->detector_map_.get(self_key_, p_detector))) {
-    // this may happen when register process not done, but user call unregister
-    DETECT_LOG_(WARN, "get detector from map failed, which not expected", K(*this));
-  } else if (p_detector != this) {
-    // this may happen when register process not done,
-    // but user call unregister and then call register again
-    DETECT_LOG_(WARN, "get detector from map use self_key_, but obj not myself",
-                      K(*this), KP(p_detector));
-    CLICK();
-    ::oceanbase::share::server_service<::oceanbase::share::detector::ObDeadLockDetectorMgr>()->detector_map_.revert(p_detector);
-  } else {
-    // do nothing
-  }
-
-  return ret;
-}
-
-void ObLCLNode::revert_self_ref_count_()
-{
-  DETECT_TIME_GUARD(100_ms);
-  ::oceanbase::share::server_service<::oceanbase::share::detector::ObDeadLockDetectorMgr>()->detector_map_.revert(this);
 }
 
 int ObLCLNode::add_resource_to_list_(const ObDependencyResource &resource,
@@ -905,58 +787,34 @@ bool ObLCLNode::if_phase_match_(const int64_t ts,
   return ret;
 }
 
-ObLCLNode::PushStateTask::PushStateTask(ObLCLNode &node) : expected_executed_ts(0), lcl_node_(node) {}
-
-void ObLCLNode::PushStateTask::runTimerTask()
+void ObLCLNode::run_periodic_task(const int64_t current_ts)
 {
   int ret = OB_SUCCESS;
   int tmp_ret = OB_SUCCESS;
-  bool need_revert_self_ref = false;
-  const int64_t current_ts = ObClockGenerator::getRealClock();
-  ATOMIC_STORE(&lcl_node_.is_timer_task_running_, true);
+  bool should_run = false;
+
+  {
+    LockGuard lock_guard(lock_);
+    if (!is_periodic_task_canceled_ && current_ts >= allow_detect_time_) {
+      should_run = true;
+    }
+  }
 
   DETECT_TIME_GUARD(100_ms);
-  int64_t warn_threshold_ts = lcl_node_.timeout_ts_ ?
-                              lcl_node_.timeout_ts_ + 10_min :
-                              lcl_node_.created_time_ + 1_hour;
-  if (current_ts > warn_threshold_ts) {
-    DETECT_LOG(WARN, "long lived lcl node, maybe leaked", K(*this));
-  }
-  if (false == ATOMIC_LOAD(&lcl_node_.is_timer_task_canceled_)) {
-    if (expected_executed_ts > current_ts) {
-      DETECT_LOG(WARN, "schedule error", K(current_ts), K(expected_executed_ts));
-    } else if (current_ts - expected_executed_ts > 100 * 1000) {// 100ms
-      if (REACH_TIME_INTERVAL(100 * 1000)) {// 100ms
-        DETECT_LOG(WARN, "task scheduled out of range", K(current_ts), K(expected_executed_ts));
-      }
+  if (should_run) {
+    int64_t warn_threshold_ts = timeout_ts_ ? timeout_ts_ + 10_min : created_time_ + 1_hour;
+    if (current_ts > warn_threshold_ts) {
+      DETECT_LOG(WARN, "long lived lcl node, maybe leaked", K(*this));
     }
-    
+
     CLICK();
-    (void)lcl_node_.update_lcl_period_if_necessary_with_lock_();
+    (void)update_lcl_period_if_necessary_with_lock_();
 
-    if (CLICK() && OB_TMP_FAIL(lcl_node_.push_state_to_downstreams_with_lock_())) {
+    if (CLICK() && OB_TMP_FAIL(push_state_to_downstreams_with_lock_())) {
       DETECT_LOG(WARN, "push state to downstreams failed",
-                     K(tmp_ret), K(current_ts), K(expected_executed_ts), K(*this));
+                 K(tmp_ret), K(current_ts), K(*this));
     }
-
-    if (CLICK() && OB_TMP_FAIL(lcl_node_.register_timer_with_necessary_retry_with_lock_())) {
-      DETECT_LOG(ERROR, "register timer task with retry failed", K(tmp_ret), K(*this));
-      need_revert_self_ref = !is_scheduled();
-    } else {}
-  } else {
-    need_revert_self_ref = true;
   }
-  ATOMIC_STORE(&lcl_node_.is_timer_task_running_, false);
-  if (need_revert_self_ref) {
-    // May destroy lcl_node_; keep this as the last action of the callback.
-    lcl_node_.revert_self_ref_count_();
-  }
-}
-
-uint64_t ObLCLNode::PushStateTask::hash() const
-{
-  uint64_t id = lcl_node_.private_label_.get_id();
-  return murmurhash(&id, sizeof(id), 0);
 }
 
 }
