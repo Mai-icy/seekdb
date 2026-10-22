@@ -129,6 +129,7 @@
 #include "sql/engine/expr/ob_expr_func_ceil.h"
 #include "sql/engine/expr/ob_expr_func_dump.h"
 #include "sql/engine/expr/ob_expr_func_sleep.h"
+#include "sql/engine/expr/ob_expr_sirius.h"
 #include "sql/engine/expr/ob_expr_repeat.h"
 #include "sql/engine/expr/ob_expr_export_set.h"
 #include "sql/engine/expr/ob_expr_replace.h"
@@ -592,6 +593,7 @@ void ObExprOperatorFactory::register_expr_operators()
     REG_OP(ObExprRegexpReplace);
     REG_OP(ObExprRegexpLike);
     REG_OP(ObExprSleep);
+    REG_OP(ExprSiriusSubstrait);
     REG_OP(ObExprStrcmp);
     REG_OP(ObExprSubstr);
     REG_OP(ObExprMid);
