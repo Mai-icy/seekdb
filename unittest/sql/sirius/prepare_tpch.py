@@ -6,7 +6,9 @@ import fcntl
 import json
 import os
 from pathlib import Path
+import resource
 import shutil
+import signal
 import sys
 import threading
 import time
@@ -219,6 +221,13 @@ if __name__ == '__main__':
     args = p.parse_args()
     if not 0 <= args.key_span <= 1000000 or args.reserve_gib < 1 or args.growth_gib < 8 or args.max_chunks < 0:
         p.error('Invalid chunk/disk limits')
+    # Enforce the per-file ceiling while DuckDB COPY writes, not only after it
+    # returns. This also bounds an accidentally oversized --key-span. Ignoring
+    # SIGXFSZ turns the limit into EFBIG so the worker's finally removes its CSV.
+    soft, hard = resource.getrlimit(resource.RLIMIT_FSIZE)
+    limits = [128 * 2**20] + [limit for limit in (soft, hard) if limit != resource.RLIM_INFINITY]
+    resource.setrlimit(resource.RLIMIT_FSIZE, (min(limits), hard))
+    signal.signal(signal.SIGXFSZ, signal.SIG_IGN)
     root = Path(args.directory).resolve()
     root.mkdir(parents=True, exist_ok=True)
     with (root / 'import.lock').open('a') as lock_file:

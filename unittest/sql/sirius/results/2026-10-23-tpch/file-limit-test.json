@@ -1,0 +1,1 @@
+{"passed": true, "limit_bytes": 131072, "child_exit_code": 1, "staging_files_remaining": 0, "target_rows": 0, "failure": "_duckdb.IOException: IO Error: Could not write file \"/tmp/tpch-file-limit-vep0d4iq/job/region-chunk-000000000000.csv\": File too large"}

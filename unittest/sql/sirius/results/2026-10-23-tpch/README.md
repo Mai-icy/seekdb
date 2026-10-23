@@ -14,6 +14,8 @@ interpretation and limitations. Full SF500 import/query results are pending.
 - `native-integration-frame*.json`: 16 SQL/transaction checks per frame size.
 - `cpp-tests.txt`, `chunk-tests.txt`, `protocol-tests.txt`: focused transport and
   operator tests. These files contain no full dataset or binary artifacts.
+- `file-limit-test.json`: oversized-export failure/cleanup check, with a lowered
+  128 KiB child limit. The ordinary importer uses 128 MiB per file.
 - `smoke/`: complete SF0.01 import/compaction/analyze/query-pipeline result.
   All 22 queries match the DuckDB oracle in both modes. None uses a native GPU
   aggregate. Smoke timings are not SF500 timings.

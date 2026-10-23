@@ -77,7 +77,9 @@ It uses seekdb's normal LOAD DATA path; no DuckDB data copy or persistent Parque
 export is created. Sparse order keys use key ranges rather than OFFSET scans.
 
 Each staging CSV is limited to 128 MiB; at 16 workers at most 2 GiB is staged per
-round (4 GiB at the optional 32 workers). Files are removed after each range. Manifests record source path, size,
+round (4 GiB at the optional 32 workers). The importer also applies a process
+file-size limit so an oversized range fails during COPY, with cleanup in the
+worker's `finally` block. Files are removed after each range. Manifests record source path, size,
 mtime, target identity and completed ranges. Resume retries only unrecorded
 ranges in manifest-owned tables and refuses to adopt an existing unowned table.
 Validation checks affected rows, warnings, range counts and row samples, then
@@ -129,6 +131,9 @@ identical memory settings.
 
 - Complete seekdb, bridge and owned Sirius Arrow-overlay builds succeeded.
 - 21 C++ tests, 11 native chunk tests and 9 sidecar transport tests passed.
+- An importer integration test lowers its child file limit to 128 KiB and
+  verifies an oversized export raises EFBIG, removes its CSV and inserts zero
+  target rows. The regular importer ceiling is 128 MiB.
 - 16 SQL/transaction checks passed for each frame setting: 16, 64 and 128 MiB.
 - The complete SF0.01 import/compaction/analyze/TPC-H22 pipeline passed in both
   modes. All 22 queries used CPU fallback; no full-suite GPU speedup is claimed.
