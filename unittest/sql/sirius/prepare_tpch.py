@@ -57,7 +57,7 @@ def main(args):
     def configure(cursor):
         cursor.execute('SET ob_query_timeout=1800000000')
         cursor.execute('SET ob_trx_timeout=1800000000')
-    with source_connection() as db, connect() as conn, conn.cursor() as cur:
+    with source_connection() as db, connect(read_timeout=1860) as conn, conn.cursor() as cur:
         configure(cur)
         cur.execute(f'CREATE DATABASE IF NOT EXISTS {identifier(args.database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_bin')
         with ThreadPoolExecutor(max_workers=args.workers) as pool:
@@ -121,7 +121,7 @@ def main(args):
                         if size > 128 * 2**20:
                             raise RuntimeError('CSV exceeds 128 MiB; choose a smaller key span in a fresh import')
                         started = time.perf_counter()
-                        with connect(local_infile=True) as writer, writer.cursor() as cursor:
+                        with connect(local_infile=True, read_timeout=1860) as writer, writer.cursor() as cursor:
                             configure(cursor)
                             # Only an unrecorded range in this manifest-owned target is retried.
                             cursor.execute(f'DELETE FROM {target} WHERE {identifier(key)}>=%s AND {identifier(key)}<%s', (start, end))

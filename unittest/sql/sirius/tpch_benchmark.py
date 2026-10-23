@@ -75,6 +75,16 @@ def main(args):
         cursor.execute(f'USE {identifier(args.database)}')
         cursor.execute('SET ob_query_timeout=%s', (args.query_timeout * 1000000,))
         cursor.execute('SET ob_trx_timeout=%s', (args.query_timeout * 1000000,))
+        settings = {}
+        for name in ('memory_budget', 'memstore_memory_limit', 'kvcache_memory_limit', 'datafile_maxsize', 'log_disk_size'):
+            cursor.execute('SHOW PARAMETERS LIKE %s', (name,))
+            settings[name] = cursor.fetchone()[3]
+        cursor.execute('SHOW GLOBAL VARIABLES LIKE %s', ('ob_sql_work_area_percentage',))
+        settings['ob_sql_work_area_percentage'] = cursor.fetchone()[1]
+        if 'seekdb_settings' in summary and summary['seekdb_settings'] != settings:
+            raise ValueError('Resume runtime settings mismatch; use a new result directory')
+        summary['seekdb_settings'] = settings
+        save()
         for number in args.queries:
             old = next((q for q in summary['queries'] if q['query'] == number), None)
             sql = (Path(__file__).with_name('tpch_queries') / f'q{number:02d}.sql').read_text().strip().rstrip(';')

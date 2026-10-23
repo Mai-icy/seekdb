@@ -126,12 +126,43 @@ python unittest/sql/sirius/tpch_pipeline.py \
 
 The launcher must configure matching bridge/overlay paths, private socket and
 GPU limits. The seekdb instance for this stage explicitly uses
-`memory_budget=64G`, `memstore_memory_limit=16G`, `kvcache_memory_limit=16G`,
-`datafile_maxsize=384G` and `datafile_next=10G`. This fork accepts the deprecated
+`memory_budget=64G`, `memstore_memory_limit=32G`, `kvcache_memory_limit=16G`,
+`datafile_maxsize=384G`, `datafile_next=10G` and `log_disk_size=64G`. This fork accepts the deprecated
 `memory_limit` option but ignores it; earlier command lines using `--memory_limit`
 did not impose that budget. Pin comparisons above share the same effective
 64 GiB budget, but cross-stage historical runs should not be treated as having
 identical memory settings.
+
+Import initially used a 16 GiB memstore limit. At about 1.296 billion lineitem
+rows, all 32 LOAD DATA statements waited: total quota use exceeded the loader's
+wait threshold while active memtable use remained below the automatic freeze
+trigger. An explicit `ALTER SYSTEM MINOR FREEZE` allowed that round to complete
+and validate. The memstore limit was then raised to 32 GiB, retaining the 64 GiB
+logical memory budget, and that setting is used for both full-suite modes.
+The pin microbenchmarks used 16 GiB memstore throughout. Limits for memstore,
+cache and SQL work areas are subsystem budgets, not a single enforced RSS cap;
+the full-suite query phase runs after compaction with no concurrent imports.
+
+A later stall at 1.472 billion completed lineitem rows exposed a second limit:
+GDB captured the log I/O worker in `LogWritingThrottle::throttling`, a loader in
+`wait_local_memory`, and a freezer waiting for redo submission. The initial
+10 GiB log allowance had approximately 8.2 GiB between its beginning and ending
+LSNs. Raising this isolated instance's log allowance to 64 GiB released the
+pending retry DELETEs; an additional minor freeze was requested to release the
+loader's remaining memstore wait. The retry round then completed and validated
+7,999,579 rows, advancing the completed total to 1,480,405,553 lineitem rows.
+Log throttling thresholds remain enabled.
+The importer now uses a 1,860-second socket timeout to cover its existing
+1,800-second SQL timeout, and resumed with 16 workers after the earlier
+600-second client timeout. These are import recovery changes, not GPU results.
+
+For full SF500 queries, `SET GLOBAL ob_sql_work_area_percentage=50` increases
+the shared sort/hash work-area budget from its default 5% (about 3.2 GiB) to
+about 32 GiB. Both CPU8 and native-enabled CPU1 use that same setting. This
+reduces avoidable spill pressure for large joins; it does not enlarge the pin
+buffer. Pin microbenchmarks above and the earlier smoke run used the default
+5%. The query runner records effective settings and rejects a resumed result
+directory if those settings changed.
 
 ## Validation and provenance
 

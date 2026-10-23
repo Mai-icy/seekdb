@@ -1,0 +1,7 @@
+{
+  "changed_utc": "2026-10-23T09:26:55.154710+00:00",
+  "parameter": "memstore_memory_limit",
+  "before": "16G",
+  "after": "32G",
+  "reason": "LOAD DATA wait threshold exceeded while active memtable was below automatic freeze trigger; manual minor freeze resumed the stalled round."
+}

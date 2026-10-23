@@ -1,0 +1,88 @@
+{
+  "utc": "2026-10-23T09:53:41.275294+00:00",
+  "reason": "GDB IOWorker in LogWritingThrottle::throttling, LOAD in wait_local_memory; 10 GiB redo allocation",
+  "free_bytes": 639299457024,
+  "before_log": [
+    {
+      "access_mode": "APPEND",
+      "base_lsn": 565760299008,
+      "begin_lsn": 565693194240,
+      "begin_scn": 1792747858519359913,
+      "end_lsn": 574507501485,
+      "end_scn": 1792749214019700000,
+      "max_lsn": 574511431708,
+      "max_scn": 1792749219023314002
+    }
+  ],
+  "before_memory": [
+    {
+      "active_span": 2044459128,
+      "freeze_trigger": 6905224716,
+      "freeze_cnt": 229,
+      "memstore_used": 21068536080,
+      "memstore_limit": 34359738368
+    }
+  ],
+  "before_config": [
+    {
+      "svr_type": "observer",
+      "name": "log_disk_size",
+      "data_type": "CAPACITY",
+      "value": "10G",
+      "info": "the size of disk space used by the log files. Range: [0, +\u221e)",
+      "section": "LOGSERVICE",
+      "scope": "CLUSTER",
+      "source": "DEFAULT",
+      "edit_level": "DYNAMIC_EFFECTIVE",
+      "default_value": "0M",
+      "isdefault": 0
+    }
+  ],
+  "after_config": [
+    {
+      "svr_type": "observer",
+      "name": "log_disk_size",
+      "data_type": "CAPACITY",
+      "value": "64G",
+      "info": "the size of disk space used by the log files. Range: [0, +\u221e)",
+      "section": "LOGSERVICE",
+      "scope": "CLUSTER",
+      "source": "DEFAULT",
+      "edit_level": "DYNAMIC_EFFECTIVE",
+      "default_value": "0M",
+      "isdefault": 0
+    }
+  ],
+  "recovered_memory": [
+    {
+      "active_span": 823607136,
+      "freeze_trigger": 6905224716,
+      "freeze_cnt": 231,
+      "memstore_used": 8148719088,
+      "memstore_limit": 34359738368
+    }
+  ],
+  "recovered_log": [
+    {
+      "access_mode": "APPEND",
+      "base_lsn": 575490490368,
+      "begin_lsn": 575423385600,
+      "begin_scn": 1792749219023314484,
+      "end_lsn": 580053231457,
+      "end_scn": 1792749306566125079,
+      "max_lsn": 580053269641,
+      "max_scn": 1792749306566125272
+    }
+  ],
+  "recovered_utc": "2026-10-23T09:55:06.573191+00:00",
+  "recovered_progress": {
+    "table": "lineitem",
+    "loaded_rows": 1488405929,
+    "source_rows": 3000028242,
+    "round_rows": 8000376,
+    "round_seconds": 20.521629966329783,
+    "workers": 16,
+    "free_bytes": 644958867456
+  },
+  "additional_action": "ALTER SYSTEM MINOR FREEZE after log allowance increase"
+}

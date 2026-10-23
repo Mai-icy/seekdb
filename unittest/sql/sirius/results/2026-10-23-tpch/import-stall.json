@@ -1,0 +1,73 @@
+{
+  "tablet_memstore": {
+    "columns": [
+      "tablet_id",
+      "is_active",
+      "logging_blocked",
+      "mem_used",
+      "write_ref_count",
+      "freeze_state"
+    ],
+    "rows": [
+      [
+        210245,
+        "YES",
+        "NO",
+        2310675576,
+        0,
+        "ACTIVE"
+      ],
+      [
+        1,
+        "YES",
+        "NO",
+        0,
+        0,
+        "ACTIVE"
+      ]
+    ]
+  },
+  "compaction": {
+    "columns": [
+      "FROZEN_SCN",
+      "FROZEN_TIME",
+      "GLOBAL_BROADCAST_SCN",
+      "LAST_SCN",
+      "LAST_FINISH_TIME",
+      "START_TIME",
+      "STATUS",
+      "IS_ERROR",
+      "IS_SUSPENDED",
+      "INFO"
+    ],
+    "rows": [
+      [
+        1792739519927336006,
+        "2026-10-23 15:11:59.927336",
+        1792739519927336006,
+        1792739519927336006,
+        "2026-10-23 15:12:08.289782",
+        "2026-10-23 15:12:00.838476",
+        "IDLE",
+        "NO",
+        "NO",
+        ""
+      ]
+    ]
+  },
+  "memstore_condition": {
+    "active_span": 2343952632,
+    "freeze_trigger": 3469250876,
+    "freeze_cnt": 217,
+    "memstore_used": 10326286440,
+    "memstore_limit": 17179869184
+  },
+  "after_minor_freeze": {
+    "active_span": 2343952632,
+    "freeze_trigger": 3469250876,
+    "freeze_cnt": 218,
+    "memstore_used": 10326286440,
+    "memstore_limit": 17179869184
+  },
+  "minor_freeze_utc": "2026-10-23T09:23:41.700432+00:00"
+}

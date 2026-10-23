@@ -1,0 +1,8 @@
+{
+  "changed_utc": "2026-10-23T08:36:26.129768+00:00",
+  "parameter": "ob_sql_work_area_percentage",
+  "before": "5",
+  "after": "50",
+  "memory_budget": "64G",
+  "reason": "Bound SF500 query work areas at about 32 GiB to reduce hash/sort spill; same setting for both modes."
+}
