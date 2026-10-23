@@ -94,17 +94,27 @@ fails while the sidecar is absent, so its GPU timing cannot silently be CPU timi
 
 ## Batching, bounds and cancellation
 
-The adapter merges seekdb's small batches into up to **262,144 rows**. Wide inputs
+By default the adapter merges seekdb's small batches into up to **262,144 rows**. Wide inputs
 use fewer rows to keep a frame under 16 MiB. Input uses column validity bitmaps
 and little-endian 64-bit values; skipped scan rows are excluded. Each batch is
 acknowledged only after its GPU copy completes. The input buffer belongs to the
 query allocator and is reused on rescan; the native result buffer is 1 MiB.
 
+For larger pinned transfers, set `SEEKDB_SIRIUS_FRAME_MIB=64` or `128` before
+starting seekdb and use a matching or larger `--host-pin-mib` on the sidecar.
+The larger protocol negotiates the frame bound before reading the scan, admits
+up to 8,388,608 rows subject to the byte cap, and requires the updated Arrow
+overlay (the older overlay rejected batches above 1,048,576 rows). Default
+16 MiB framing remains protocol-version-1 compatible. Pin allocation failure
+still permits bounded pageable input; an allocated pin buffer smaller than the
+negotiated frame is rejected before acknowledgment. Input size arithmetic is
+64-bit before enforcing the frame cap.
+
 The existing Fragment implementation runs after input closes. By default total
 decoded input remains limited to 512 MiB per query. With `--native-chunk-mib 128`
 (also accepts 64 or 256), the sidecar closes each fragment at the target boundary,
 runs its GPU aggregate, and merges its small grouped SUM/COUNT results on CPU.
-The target can be exceeded by one frame, at most 16 MiB. Each fragment retains
+The target can be exceeded by one frame, at most the configured 16/64/128 MiB. Each fragment retains
 the 512 MiB guard; the complete query can exceed that size. NULL sums and keys
 are preserved, grouping-only outputs are deduplicated, and non-finite partial or
 merged sums fail the query. Floating-point summation order can change further.
@@ -124,13 +134,21 @@ executing GPU kernel is not interrupted by closing the socket.
 
 ## Host pin and startup behavior
 
-`--host-pin-mib 16` allocates one 16 MiB buffer with `cudaHostAlloc`. The socket
+`--host-pin-mib 16` (also accepts 64 or 128) allocates one bounded buffer with `cudaHostAlloc`. The socket
 receives native input directly into this buffer, and Arrow borrows its slices.
 It is reused after the synchronized GPU copy, retained across queries and freed
 with `cudaFreeHost` on orderly shutdown. This avoids per-batch allocation/pinning
 and an extra staging copy in the adapter. It is a fixed additional host budget,
 outside Sirius's configured host pool. On allocation/library failure the sidecar
 logs a warning and uses pageable input. The default is `--host-pin-mib 0`.
+
+Increasing only the allocation does not enlarge incoming frames. Match the
+server frame setting when evaluating larger transfers, and require actual
+GPU runtime evidence. Storage-level aggregate pushdown can change a qualifying
+plan into a CPU partial/final aggregate. The microbenchmark's
+`--disable-storage-aggregation --sidecar-log /path/to/log` applies the same
+`pushdown_storage_level=2` hint to CPU/GPU modes and rejects measurements with no
+observed native GPU execution. Default CPU plans should also be reported.
 
 This follows NVIDIA's guidance to use pinned memory for transfers while keeping
 pinning operations infrequent and bounded; pinning itself is relatively costly.

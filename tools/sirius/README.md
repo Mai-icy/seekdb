@@ -17,6 +17,8 @@ Follow-up profiling, packing optimization and shuffled scan-batch experiments
 are in [NATIVE_PERFORMANCE.md](NATIVE_PERFORMANCE.md).
 Bounded preparation from the existing SF500 DuckDB database and GPU partial
 aggregation of the full 75-million-row customer projection are in [SF500.md](SF500.md).
+Larger pinned-frame measurements and the full-table TPC-H runner are documented
+in [TPCH500.md](TPCH500.md), including actual GPU coverage and CPU fallback.
 
 The first working integration uses **explicit Parquet snapshots**:
 
@@ -91,7 +93,7 @@ export LD_LIBRARY_PATH=/absolute/path/to/sirius/.pixi/envs/default/lib${LD_LIBRA
 build/bin/src/observer/seekdb \
   --base-dir /absolute/path/to/new-seekdb-instance --port 2886 \
   --log-level WARN \
-  --parameter memory_limit=16G \
+  --parameter memory_budget=16G \
   --parameter datafile_size=10G --parameter datafile_maxsize=30G \
   --parameter log_disk_size=10G
 ```
@@ -99,6 +101,11 @@ build/bin/src/observer/seekdb \
 No runtime is loaded unless the function is called. Without
 `SEEKDB_SIRIUS_LIBRARY`, calls fail with an explanatory SQL error. The loader
 reads this setting once; restarting seekdb is required to change the library.
+
+This branch's `memory_limit` is a deprecated, ignored compatibility parameter.
+Use `memory_budget` to size caches/buffers and inspect `memstore_memory_limit`
+and `kvcache_memory_limit` when explicit module bounds are needed. Historical
+commands using `memory_limit=16G` did not establish a 16 GiB runtime limit.
 
 ## Export, plan and execute
 

@@ -26,14 +26,14 @@ class Api(ct.Structure):
 
 class PinnedInput:
     """One process-lifetime CUDA host allocation, reused only after GPU copy ACK."""
-    def __init__(self):
+    def __init__(self, mib=16):
         self.runtime = ct.CDLL("libcudart.so")
         self.runtime.cudaHostAlloc.argtypes = [ct.POINTER(ct.c_void_p), ct.c_size_t, ct.c_uint]
         self.runtime.cudaHostAlloc.restype = ct.c_int
         self.runtime.cudaFreeHost.argtypes = [ct.c_void_p]
         self.runtime.cudaFreeHost.restype = ct.c_int
         self.pointer = ct.c_void_p()
-        self.size = 16 * 1024 * 1024
+        self.size = mib * 1024 * 1024
         status = self.runtime.cudaHostAlloc(ct.byref(self.pointer), self.size, 0)
         if status:
             raise RuntimeError(f"cudaHostAlloc failed with status {status}")
@@ -95,10 +95,18 @@ class Backend:
 
 
 def native_aggregate(sock, backend, descriptor):
-    if len(descriptor) != 4:
+    if len(descriptor) not in (4, 5):
         raise ValueError("Invalid native aggregate descriptor")
-    version, groups, sums, count = descriptor
-    if version != 1 or not 1 <= groups <= 8 or groups + sums > 64 or count not in (0, 1):
+    version, groups, sums, count = descriptor[:4]
+    if version == 1 and len(descriptor) == 4:
+        frame_limit, row_limit = 16 * 1024**2, 262144
+    elif version == 2 and len(descriptor) == 5 and descriptor[4] in (64, 128):
+        frame_limit, row_limit = descriptor[4] * 1024**2, 8 * 1024**2
+    else:
+        raise ValueError("Unsupported native aggregate protocol version/frame bound")
+    if backend.input_buffer is not None and len(backend.input_buffer) < frame_limit:
+        raise ValueError("Pinned receive buffer is smaller than the requested native frame bound")
+    if not 1 <= groups <= 8 or groups + sums > 64 or count not in (0, 1):
         raise ValueError("Unsupported native aggregate shape")
     names = [f"g{i}" for i in range(groups)] + [f"s{i}" for i in range(sums)]
     schema = pa.schema([(name, pa.int64() if i < groups else pa.float64())
@@ -106,14 +114,15 @@ def native_aggregate(sock, backend, descriptor):
     plan = make_plan_for_schema(schema, names[:groups], names[groups:], bool(count))
     send(sock, b"A")
     total_rows = 0
+    max_batch_bytes = 0
     ended = False
     chunk_limit = backend.native_chunk_bytes
     columns = groups + sums + count
     def batches():
-        nonlocal total_rows, ended
+        nonlocal total_rows, ended, max_batch_bytes
         total = 0
         while True:
-            kind, payload = receive(sock, storage=backend.input_buffer)
+            kind, payload = receive(sock, limit=frame_limit, storage=backend.input_buffer)
             if kind == b"E" and not payload:
                 ended = True
                 return
@@ -123,8 +132,9 @@ def native_aggregate(sock, backend, descriptor):
             mask = (rows + 7) // 8
             size = mask + rows * 8
             total += size * len(schema)
-            if not 0 < rows <= 262144 or len(payload) != 4 + size * len(schema) or total > 512 * 1024 * 1024:
+            if not 0 < rows <= row_limit or len(payload) != 4 + size * len(schema) or total > 512 * 1024 * 1024:
                 raise ValueError("Native aggregate input size/budget exceeded")
+            max_batch_bytes = max(max_batch_bytes, len(payload))
             # The owned frame buffer backs Arrow directly; no Python row decode.
             view = memoryview(payload)
             arrays = [pa.Array.from_buffers(field.type, rows,
@@ -177,8 +187,9 @@ def native_aggregate(sock, backend, descriptor):
                                   value is not None, value if value is not None else 0)
     if len(output) > 1024 * 1024:
         raise ValueError("Native aggregate result exceeds 1 MiB")
+    print(f"native aggregate: rows={total_rows} groups={len(result_rows)} chunks={chunks} "
+          f"frame_mib={frame_limit // 1024**2} max_batch_bytes={max_batch_bytes}", flush=True)
     send(sock, b"R", output)
-    print(f"native aggregate: rows={total_rows} groups={len(result_rows)} chunks={chunks}", flush=True)
 
 
 def handle(sock, backend):
@@ -248,7 +259,7 @@ def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib
     pinned = None
     if host_pin_mib:
         try:
-            pinned = PinnedInput()
+            pinned = PinnedInput(host_pin_mib)
             backend.input_buffer = pinned.view
         except (OSError, RuntimeError) as error:
             print(f"warning: host pin unavailable, using pageable input: {error}", flush=True)
@@ -270,7 +281,7 @@ def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib
         os.chmod(path, 0o600)
         listener.listen(8)
         listener.settimeout(0.5)
-        print(f"ready: {path} host_pin_mib={16 if pinned else 0} warmup={warmup} native_chunk_mib={native_chunk_mib} "
+        print(f"ready: {path} host_pin_mib={host_pin_mib if pinned else 0} warmup={warmup} native_chunk_mib={native_chunk_mib} "
               f"startup_seconds={time.perf_counter()-started:.6f}", flush=True)
         try:
             while not stopping:
@@ -286,6 +297,7 @@ def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib
                     try:
                         handle(peer, backend)
                     except Exception as error:
+                        print(f"request failed: {str(error)[:4096]}", flush=True)
                         try:
                             send(peer, b"X", str(error).encode("utf-8", errors="replace")[:4096])
                         except OSError:
@@ -302,8 +314,8 @@ if __name__ == "__main__":
     p.add_argument("--socket", required=True)
     p.add_argument("--library", required=True)
     p.add_argument("--io-timeout", type=float, default=60)
-    p.add_argument("--host-pin-mib", type=int, choices=(0, 16), default=0,
-                   help="Reuse 16 MiB CUDA-pinned memory for native input; fall back if unavailable")
+    p.add_argument("--host-pin-mib", type=int, choices=(0, 16, 64, 128), default=0,
+                   help="Reuse bounded CUDA-pinned memory for native input; fall back if unavailable")
     p.add_argument("--warmup", action="store_true", help="Initialize GPU operators before accepting queries")
     p.add_argument("--native-chunk-mib", type=int, choices=(0, 64, 128, 256), default=0,
                    help="Bound each native GPU fragment and merge SUM/COUNT/groups; 0 keeps the 512 MiB query limit")

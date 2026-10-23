@@ -105,8 +105,8 @@ int ObHashGroupByOp::init_sirius() {
   s.sums = shape.sums;
   s.count = shape.count;
   s.output_count = shape.output_count;
-  s.batch_limit = std::min<size_t>(SiriusAggregateClient::BATCH_ROWS,
-                                  (16 * 1024 * 1024 - 4) / ((s.groups + s.sums) * 9));
+  s.batch_limit = std::min<size_t>(SiriusAggregateClient::batch_row_limit(),
+                                  (SiriusAggregateClient::input_frame_bytes() - 4) / ((s.groups + s.sums) * 9));
   s.mask_bytes = (s.batch_limit + 7) / 8;
   s.column_bytes = s.mask_bytes + s.batch_limit * 8;
   std::memcpy(s.inputs, shape.inputs, sizeof(s.inputs));

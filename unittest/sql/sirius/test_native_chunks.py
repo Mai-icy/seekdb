@@ -16,7 +16,7 @@ from wire import receive, send
 class FakeBackend:
     def __init__(self, partials, chunk_bytes):
         self.native_chunk_bytes = chunk_bytes
-        self.input_buffer = memoryview(bytearray(1024))
+        self.input_buffer = memoryview(bytearray(16 * 1024**2))
         self.partials = iter(partials)
         self.input_rows = []
 
@@ -40,8 +40,11 @@ def frame(rows, sums):
 
 
 class NativeChunks(unittest.TestCase):
-    def run_stream(self, batches, partials, sums=1, count=True, chunk_bytes=1):
+    def run_stream(self, batches, partials, sums=1, count=True, chunk_bytes=1, frame_mib=16):
         backend = FakeBackend(partials, chunk_bytes)
+        if frame_mib != 16:
+            backend.input_buffer = None
+        descriptor = bytes((1, 1, sums, int(count))) if frame_mib == 16 else bytes((2, 1, sums, int(count), frame_mib))
         left, right = socket.socketpair()
         errors = []
         left.settimeout(3)
@@ -49,7 +52,7 @@ class NativeChunks(unittest.TestCase):
         def serve():
             with right:
                 try:
-                    native_aggregate(right, backend, bytes((1, 1, sums, int(count))))
+                    native_aggregate(right, backend, descriptor)
                 except Exception as error:
                     errors.append(error)
                     send(right, b"X", str(error).encode())
@@ -132,6 +135,22 @@ class NativeChunks(unittest.TestCase):
                                            [[[1, 1e308, 1]], [[1, 1e308, 1]]])
         self.assertIsNone(result)
         self.assertIn("Non-finite native merged SUM", error)
+
+    def test_version_two_64_mib_negotiation(self):
+        result, _, error = self.run_stream([[(1, 2.)]], [[[1, 2., 1]], []], frame_mib=64)
+        self.assertIsNone(error)
+        self.assertEqual(result, [[1, 2., 1]])
+
+    def test_small_pin_rejects_large_frame_before_ack(self):
+        backend = FakeBackend([], 1)
+        with self.assertRaisesRegex(ValueError, 'Pinned receive buffer'):
+            native_aggregate(None, backend, bytes((2, 1, 1, 1, 128)))
+
+    def test_invalid_protocol_frame_bound(self):
+        backend = FakeBackend([], 1)
+        for descriptor in (bytes((2, 1, 1, 1, 255)), bytes((1, 1, 1, 1, 64)), bytes((2, 1, 1, 1))):
+            with self.assertRaisesRegex(ValueError, 'protocol version'):
+                native_aggregate(None, backend, descriptor)
 
 
 if __name__ == "__main__":

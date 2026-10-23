@@ -94,13 +94,13 @@ public:
         }
         input_us += clock_us() - input_start;
         if (!batch.release) break;
-        if (batch.length < 0 || batch.length > 1048576) {
+        if (batch.length < 0 || batch.length > 8 * 1024 * 1024) {
           throw std::invalid_argument("Arrow input batch row limit exceeded");
         }
         const size_t bytes = (static_cast<size_t>(batch.length) * 8 + (batch.length + 7) / 8)
                              * schema.n_children;
-        if (bytes > 16 * 1024 * 1024 || input_bytes > 512 * 1024 * 1024 - bytes) {
-          throw std::invalid_argument("Live input exceeds 16 MiB per batch or 512 MiB per query");
+        if (bytes > 128 * 1024 * 1024 || input_bytes > 512 * 1024 * 1024 - bytes) {
+          throw std::invalid_argument("Live input exceeds 128 MiB per batch or 512 MiB per fragment");
         }
         input_bytes += bytes;
         const int64_t copy_start = clock_us();

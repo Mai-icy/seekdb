@@ -1,0 +1,14 @@
+test_backend_error_and_recovery (__main__.Transport.test_backend_error_and_recovery) ... ok
+test_binary_plan_and_fragmented_response (__main__.Transport.test_binary_plan_and_fragmented_response) ... ok
+test_capacity (__main__.Transport.test_capacity) ... ok
+test_deadline (__main__.Transport.test_deadline) ... ok
+test_frame_limit_before_body (__main__.Transport.test_frame_limit_before_body) ... ok
+test_receive_buffer_bound (__main__.Transport.test_receive_buffer_bound) ... ok
+test_receive_into_reusable_buffer (__main__.Transport.test_receive_into_reusable_buffer) ... ok
+test_short_response (__main__.Transport.test_short_response) ... ok
+test_untrusted_length (__main__.Transport.test_untrusted_length) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.155s
+
+OK

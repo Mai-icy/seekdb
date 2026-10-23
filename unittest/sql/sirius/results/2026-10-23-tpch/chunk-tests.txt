@@ -1,0 +1,12 @@
+native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=13
+.native aggregate: rows=2 groups=1 chunks=1 frame_mib=16 max_batch_bytes=22
+.native aggregate: rows=0 groups=0 chunks=1 frame_mib=16 max_batch_bytes=0
+.native aggregate: rows=3 groups=2 chunks=3 frame_mib=16 max_batch_bytes=21
+...native aggregate: rows=5 groups=3 chunks=4 frame_mib=16 max_batch_bytes=38
+...native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=22
+.native aggregate: rows=1 groups=1 chunks=2 frame_mib=64 max_batch_bytes=22
+.
+----------------------------------------------------------------------
+Ran 11 tests in 0.079s
+
+OK

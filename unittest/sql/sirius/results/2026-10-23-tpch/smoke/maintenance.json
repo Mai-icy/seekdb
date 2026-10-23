@@ -1,0 +1,82 @@
+{
+  "compaction": [
+    {
+      "FROZEN_SCN": 1792738376350993015,
+      "FROZEN_TIME": "2026-10-23 14:52:56.350993",
+      "GLOBAL_BROADCAST_SCN": 1792738376350993015,
+      "LAST_SCN": 1792738376350993015,
+      "LAST_FINISH_TIME": "2026-10-23 14:53:45.897998",
+      "START_TIME": "2026-10-23 14:52:57.078625",
+      "STATUS": "IDLE",
+      "IS_ERROR": "NO",
+      "IS_SUSPENDED": "NO",
+      "INFO": ""
+    },
+    {
+      "FROZEN_SCN": 1792739519927336006,
+      "FROZEN_TIME": "2026-10-23 15:11:59.927336",
+      "GLOBAL_BROADCAST_SCN": 1792739519927336006,
+      "LAST_SCN": 1792738376350993015,
+      "LAST_FINISH_TIME": "2026-10-23 14:53:45.897998",
+      "START_TIME": "2026-10-23 15:12:00.838476",
+      "STATUS": "COMPACTING",
+      "IS_ERROR": "NO",
+      "IS_SUSPENDED": "NO",
+      "INFO": ""
+    },
+    {
+      "FROZEN_SCN": 1792739519927336006,
+      "FROZEN_TIME": "2026-10-23 15:11:59.927336",
+      "GLOBAL_BROADCAST_SCN": 1792739519927336006,
+      "LAST_SCN": 1792739519927336006,
+      "LAST_FINISH_TIME": "2026-10-23 15:12:08.289782",
+      "START_TIME": "2026-10-23 15:12:00.838476",
+      "STATUS": "IDLE",
+      "IS_ERROR": "NO",
+      "IS_SUSPENDED": "NO",
+      "INFO": ""
+    }
+  ],
+  "analyze": [
+    {
+      "table": "region",
+      "seconds": 0.0688701868057251,
+      "result": []
+    },
+    {
+      "table": "nation",
+      "seconds": 0.02441729186102748,
+      "result": []
+    },
+    {
+      "table": "supplier",
+      "seconds": 0.025605241768062115,
+      "result": []
+    },
+    {
+      "table": "customer",
+      "seconds": 0.021463192999362946,
+      "result": []
+    },
+    {
+      "table": "part",
+      "seconds": 0.03373683663085103,
+      "result": []
+    },
+    {
+      "table": "partsupp",
+      "seconds": 0.02576089696958661,
+      "result": []
+    },
+    {
+      "table": "orders",
+      "seconds": 0.03522085910663009,
+      "result": []
+    },
+    {
+      "table": "lineitem",
+      "seconds": 0.11371505772694945,
+      "result": []
+    }
+  ]
+}

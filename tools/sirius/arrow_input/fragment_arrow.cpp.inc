@@ -12,9 +12,14 @@ void Fragment::push_arrow(std::uint64_t stream_id, std::uintptr_t schema_addr,
       || schema->n_children <= 0 || schema->n_children > 64
       || schema->n_children != static_cast<int64_t>(it->second.names.size())
       || array->n_children != schema->n_children || !schema->children || !array->children
-      || array->length < 0 || array->length > 1048576 || array->offset != 0
+      || array->length < 0 || array->length > 8 * 1024 * 1024 || array->offset != 0
       || array->null_count != 0) {
     throw std::invalid_argument("push_arrow: invalid flat record batch/schema");
+  }
+  const auto decoded_bytes = (static_cast<std::uint64_t>(array->length) * 8
+                              + (array->length + 7) / 8) * schema->n_children;
+  if (decoded_bytes > 128 * 1024 * 1024) {
+    throw std::invalid_argument("push_arrow: input batch exceeds 128 MiB");
   }
   for (int64_t i = 0; i < schema->n_children; ++i) {
     const auto *column = schema->children[i];

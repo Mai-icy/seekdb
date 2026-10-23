@@ -1,6 +1,19 @@
 // Copyright (c) 2026 OceanBase.
 // SPDX-License-Identifier: Apache-2.0
 #include "sirius_aggregate_client.h"
+#include <cstdlib>
+#include <cstring>
+namespace oceanbase { namespace sql {
+size_t SiriusAggregateClient::input_frame_bytes() {
+  const char *value = std::getenv("SEEKDB_SIRIUS_FRAME_MIB");
+  const size_t mib = value && !std::strcmp(value, "64") ? 64
+                   : value && !std::strcmp(value, "128") ? 128 : 16;
+  return mib * 1024 * 1024;
+}
+size_t SiriusAggregateClient::batch_row_limit() {
+  return input_frame_bytes() == 16 * 1024 * 1024 ? BATCH_ROWS : MAX_BATCH_ROWS;
+}
+} }
 #if defined(__linux__)
 #include <arpa/inet.h>
 #include <poll.h>
@@ -84,6 +97,7 @@ bool SiriusAggregateClient::open(uint8_t groups, uint8_t sums, bool count,
     return fail("Unsupported native Sirius schema or byte order");
   }
   columns_ = columns;
+  frame_limit_ = input_frame_bytes();
   const char *path = std::getenv("SEEKDB_SIRIUS_SOCKET");
   sockaddr_un address{};
   address.sun_family = AF_UNIX;
@@ -103,18 +117,24 @@ bool SiriusAggregateClient::open(uint8_t groups, uint8_t sums, bool count,
   if (getsockopt(fd_, SOL_SOCKET, SO_PEERCRED, &peer, &peer_size) || peer.uid != geteuid()) {
     return fail("Sirius aggregate sidecar must have the same OS UID");
   }
-  uint8_t descriptor[4] = {1, groups, sums, static_cast<uint8_t>(count)};
+  // Version 2 advertises the larger frame bound before consuming scan input.
+  // Old sidecars reject it at open; default version 1 remains byte-compatible.
+  const bool large = frame_limit_ > 16 * 1024 * 1024;
+  uint8_t descriptor[5] = {static_cast<uint8_t>(large ? 2 : 1), groups, sums,
+                         static_cast<uint8_t>(count), static_cast<uint8_t>(frame_limit_ / (1024 * 1024))};
+  const size_t descriptor_size = large ? 5 : 4;
   size_t ignored = 0;
-  return frame('N', 4) && transfer(descriptor, 4, true) && response('A', nullptr, 0, ignored);
+  return frame('N', descriptor_size) && transfer(descriptor, descriptor_size, true) && response('A', nullptr, 0, ignored);
 }
 bool SiriusAggregateClient::batch(const char *columns, uint32_t rows, uint32_t capacity_rows) {
-  if (!rows || rows > capacity_rows || capacity_rows > BATCH_ROWS) return fail("Invalid native Sirius input batch size");
+  const size_t row_limit = frame_limit_ == 16 * 1024 * 1024 ? BATCH_ROWS : MAX_BATCH_ROWS;
+  if (!rows || rows > capacity_rows || capacity_rows > row_limit) return fail("Invalid native Sirius input batch size");
   const uint32_t masks = (rows + 7) / 8;
   const size_t mask_capacity = (capacity_rows + 7) / 8;
   const size_t stride = mask_capacity + capacity_rows * 8;
-  uint32_t length = 4 + columns_ * (masks + rows * 8);
-  if (length > 16 * 1024 * 1024) return fail("Native Sirius input frame exceeds 16 MiB");
-  if (!frame('B', length) || !transfer(&rows, 4, true)) return false;
+  const uint64_t length = 4 + static_cast<uint64_t>(columns_) * (masks + static_cast<uint64_t>(rows) * 8);
+  if (length > frame_limit_) return fail("Native Sirius input frame exceeds negotiated bound");
+  if (!frame('B', static_cast<uint32_t>(length)) || !transfer(&rows, 4, true)) return false;
   for (uint8_t i = 0; i < columns_; ++i) {
     const char *column = columns + i * stride;
     if (!transfer(const_cast<char *>(column), masks, true)

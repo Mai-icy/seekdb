@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "started_utc": "2026-10-23T07:11:59.720725+00:00",
+  "stage": "complete",
+  "updated_utc": "2026-10-23T07:12:12.054524+00:00",
+  "tables": {
+    "region": 5,
+    "nation": 25,
+    "supplier": 100,
+    "customer": 1500,
+    "part": 2000,
+    "partsupp": 8000,
+    "orders": 15000,
+    "lineitem": 60175
+  },
+  "current_table": "lineitem",
+  "free_bytes": 715369922560
+}

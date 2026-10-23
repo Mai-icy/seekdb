@@ -1,0 +1,47 @@
+Test project /data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build-sirius-arrow
+      Start  1: SiriusArrow.IntegersNullsAndOwnership
+ 1/21 Test  #1: SiriusArrow.IntegersNullsAndOwnership ................................   Passed    0.00 sec
+      Start  2: SiriusArrow.ParentAndChildOffsets
+ 2/21 Test  #2: SiriusArrow.ParentAndChildOffsets ....................................   Passed    0.00 sec
+      Start  3: SiriusArrow.StringEscaping
+ 3/21 Test  #3: SiriusArrow.StringEscaping ...........................................   Passed    0.00 sec
+      Start  4: SiriusArrow.DecimalPrecision
+ 4/21 Test  #4: SiriusArrow.DecimalPrecision .........................................   Passed    0.00 sec
+      Start  5: SiriusArrow.UnsignedIntegerRetainsAllDigits
+ 5/21 Test  #5: SiriusArrow.UnsignedIntegerRetainsAllDigits ..........................   Passed    0.00 sec
+      Start  6: SiriusArrow.EmptyResultPreservesSchema
+ 6/21 Test  #6: SiriusArrow.EmptyResultPreservesSchema ...............................   Passed    0.00 sec
+      Start  7: SiriusArrow.RejectsUnsupportedEmptySchema
+ 7/21 Test  #7: SiriusArrow.RejectsUnsupportedEmptySchema ............................   Passed    0.00 sec
+      Start  8: SiriusArrow.ResultLimitReleasesBatch
+ 8/21 Test  #8: SiriusArrow.ResultLimitReleasesBatch .................................   Passed    0.00 sec
+      Start  9: SiriusArrow.StreamFailureReleasesResources
+ 9/21 Test  #9: SiriusArrow.StreamFailureReleasesResources ...........................   Passed    0.00 sec
+      Start 10: SiriusArrow.RejectsNonFiniteFloat
+10/21 Test #10: SiriusArrow.RejectsNonFiniteFloat ....................................   Passed    0.00 sec
+      Start 11: SiriusLoader.DisabledByDefault
+11/21 Test #11: SiriusLoader.DisabledByDefault .......................................   Passed    0.00 sec
+      Start 12: SiriusLoader.RejectsRelativeLibraryPath
+12/21 Test #12: SiriusLoader.RejectsRelativeLibraryPath ..............................   Passed    0.00 sec
+      Start 13: SiriusLoader.RejectsWrongAbi
+13/21 Test #13: SiriusLoader.RejectsWrongAbi .........................................   Passed    0.00 sec
+      Start 14: SiriusLoader.BinaryPlanAndConcurrentCalls
+14/21 Test #14: SiriusLoader.BinaryPlanAndConcurrentCalls ............................   Passed    0.00 sec
+      Start 15: SiriusLoader.ForwardsBackendFailure
+15/21 Test #15: SiriusLoader.ForwardsBackendFailure ..................................   Passed    0.00 sec
+      Start 16: SiriusNativeTransport.TypedBatchAndResult
+16/21 Test #16: SiriusNativeTransport.TypedBatchAndResult ............................   Passed    0.00 sec
+      Start 17: SiriusNativeTransport.RejectsUntrustedResultLength
+17/21 Test #17: SiriusNativeTransport.RejectsUntrustedResultLength ...................   Passed    0.00 sec
+      Start 18: SiriusNativeTransport.QueryCancellationClosesRequest
+18/21 Test #18: SiriusNativeTransport.QueryCancellationClosesRequest .................   Passed    0.00 sec
+      Start 19: SiriusNativeTransport.BrokenPeerDoesNotRaiseSigpipe
+19/21 Test #19: SiriusNativeTransport.BrokenPeerDoesNotRaiseSigpipe ..................   Passed    0.00 sec
+      Start 20: SiriusNativeTransport.RejectsSchemaOverflowAndOversizedBatch
+20/21 Test #20: SiriusNativeTransport.RejectsSchemaOverflowAndOversizedBatch .........   Passed    0.00 sec
+      Start 21: SiriusNativeTransport.NegotiatesLargeFrameAndRejectsLengthOverflow
+21/21 Test #21: SiriusNativeTransport.NegotiatesLargeFrameAndRejectsLengthOverflow ...   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 21
+
+Total Test time (real) =   0.05 sec

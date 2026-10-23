@@ -23,8 +23,11 @@ additional.
   without CPU affinity or clock locking.
 - seekdb base: `835320078f1944a6dadb3ed1bcc22dd4b3a9bd2e`, built from source with
   this branch's native expression/loader. Default `RelWithDebInfo` build,
-  `memory_limit=16G`, SQL `PARALLEL(1)` and `PARALLEL(8)` hints; EXPLAIN confirmed
+  the historical `memory_limit=16G` command, SQL `PARALLEL(1)` and `PARALLEL(8)` hints; EXPLAIN confirmed
   `dop=8`. No column groups or extra indexes were added.
+  Later inspection established that this branch ignores `memory_limit`; this
+  command did not enforce a 16 GiB runtime budget. The newer experiments use
+  `memory_budget` and explicit cache/memstore limits instead.
 - Reused an existing Sirius shared-library build on the host with its matching
   public header and Pixi dependencies. The adjacent clean Sirius checkout was
   `3fcff6a0488516db09ddc7e993564eb9a98b72d3`; Sirius was **not rebuilt** during

@@ -1,0 +1,263 @@
+{
+  "table": "sirius_sf500_customer",
+  "group_column": "grp",
+  "sum_columns": [
+    "amount"
+  ],
+  "scan_batch_rows": 1024,
+  "repeats": 5,
+  "disable_storage_aggregation": true,
+  "gpu_execution_verified": true,
+  "timing": "SQL roundtrip, scan, transfer, GPU aggregation and SQL result",
+  "cases": [
+    {
+      "name": "group_sum_count",
+      "groups": 25,
+      "first_seconds": {
+        "cpu1": 2.7123257382772863,
+        "cpu8": 0.39760718401521444,
+        "gpu": 1.2688559079542756
+      },
+      "seconds": {
+        "cpu1": [
+          2.2080664820969105,
+          2.4801384229213,
+          2.1327679893001914,
+          2.1702789389528334,
+          2.2609203420579433
+        ],
+        "cpu8": [
+          0.37556730303913355,
+          0.3835782641544938,
+          0.3943342622369528,
+          0.38729084422811866,
+          0.3745640995912254
+        ],
+        "gpu": [
+          1.1212843349203467,
+          1.2598257823847234,
+          1.1778191761113703,
+          1.2571710334159434,
+          1.3405491998419166
+        ]
+      },
+      "medians": {
+        "cpu1": 2.2080664820969105,
+        "cpu8": 0.3835782641544938,
+        "gpu": 1.2571710334159434
+      },
+      "cpu1_speedup": 1.7563771542661348,
+      "cpu8_speedup": 0.30511223529566034,
+      "explain": {
+        "cpu1": [
+          "('==================================================================',)",
+          "('|ID|OPERATOR         |NAME                 |EST.ROWS|EST.TIME(us)|',)",
+          "('------------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                     |25      |12269238    |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_sf500_customer|75000000|3669704     |',)",
+          "('==================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), filter(nil), rowset=1024',)",
+          "('      access([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true',)"
+        ],
+        "cpu8": [
+          "('==================================================================================',)",
+          "('|ID|OPERATOR                         |NAME                 |EST.ROWS|EST.TIME(us)|',)",
+          "('----------------------------------------------------------------------------------',)",
+          "('|0 |PX COORDINATOR                   |                     |25      |1533723     |',)",
+          "('|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001             |25      |1533710     |',)",
+          "('|2 |  \u2514\u2500HASH GROUP BY                |                     |25      |1533706     |',)",
+          "('|3 |    \u2514\u2500EXCHANGE IN DISTR          |                     |200     |1533703     |',)",
+          "('|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000             |200     |1533690     |',)",
+          "('|5 |        \u2514\u2500HASH GROUP BY          |                     |200     |1533660     |',)",
+          "('|6 |          \u2514\u2500PX BLOCK ITERATOR    |                     |75000000|458713      |',)",
+          "('|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_sf500_customer|75000000|458713      |',)",
+          "('==================================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount)), T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=1024',)",
+          "('  1 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount)), T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=1024',)",
+          "('      dop=8',)",
+          "('  2 - output([sirius_sf500_customer.grp], [T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=1024',)",
+          "('      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))])',)",
+          "('  3 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('  4 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('      (#keys=1, [sirius_sf500_customer.grp]), dop=8',)",
+          "('  5 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)])',)",
+          "('  6 - output([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), filter(nil), rowset=1024',)",
+          "('  7 - output([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), filter(nil), rowset=1024',)",
+          "('      access([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true',)"
+        ],
+        "gpu": [
+          "('==================================================================',)",
+          "('|ID|OPERATOR         |NAME                 |EST.ROWS|EST.TIME(us)|',)",
+          "('------------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                     |25      |12269238    |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_sf500_customer|75000000|3669704     |',)",
+          "('==================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), filter(nil), rowset=1024',)",
+          "('      access([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true',)"
+        ]
+      },
+      "native_gpu_events": [
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=9 frame_mib=16 max_batch_bytes=4259844"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=9 frame_mib=16 max_batch_bytes=4259844"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=9 frame_mib=16 max_batch_bytes=4259844"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=9 frame_mib=16 max_batch_bytes=4259844"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=9 frame_mib=16 max_batch_bytes=4259844"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=9 frame_mib=16 max_batch_bytes=4259844"
+        ]
+      ]
+    },
+    {
+      "name": "group_count",
+      "groups": 25,
+      "first_seconds": {
+        "cpu1": 1.9296728451736271,
+        "cpu8": 0.3690754920244217,
+        "gpu": 0.9139188560657203
+      },
+      "seconds": {
+        "cpu1": [
+          1.8997525973245502,
+          2.046319054905325,
+          1.933589772786945,
+          2.514780619647354,
+          1.99066560016945
+        ],
+        "cpu8": [
+          0.33769171917811036,
+          0.34794208593666553,
+          0.34243454365059733,
+          0.34039559587836266,
+          0.3244143151678145
+        ],
+        "gpu": [
+          0.933829294051975,
+          0.7656310359016061,
+          0.8796146363019943,
+          0.8310282439924777,
+          0.8237564899027348
+        ]
+      },
+      "medians": {
+        "cpu1": 1.99066560016945,
+        "cpu8": 0.34039559587836266,
+        "gpu": 0.8310282439924777
+      },
+      "cpu1_speedup": 2.3954247217949782,
+      "cpu8_speedup": 0.4096077339598146,
+      "explain": {
+        "cpu1": [
+          "('==================================================================',)",
+          "('|ID|OPERATOR         |NAME                 |EST.ROWS|EST.TIME(us)|',)",
+          "('------------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                     |25      |9372863     |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_sf500_customer|75000000|1934113     |',)",
+          "('==================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_sf500_customer.grp]), filter(nil), rowset=1024',)",
+          "('      access([sirius_sf500_customer.grp]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true',)"
+        ],
+        "cpu8": [
+          "('==================================================================================',)",
+          "('|ID|OPERATOR                         |NAME                 |EST.ROWS|EST.TIME(us)|',)",
+          "('----------------------------------------------------------------------------------',)",
+          "('|0 |PX COORDINATOR                   |                     |25      |1171654     |',)",
+          "('|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001             |25      |1171645     |',)",
+          "('|2 |  \u2514\u2500HASH GROUP BY                |                     |25      |1171643     |',)",
+          "('|3 |    \u2514\u2500EXCHANGE IN DISTR          |                     |200     |1171640     |',)",
+          "('|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000             |200     |1171631     |',)",
+          "('|5 |        \u2514\u2500HASH GROUP BY          |                     |200     |1171612     |',)",
+          "('|6 |          \u2514\u2500PX BLOCK ITERATOR    |                     |75000000|241765      |',)",
+          "('|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_sf500_customer|75000000|241765      |',)",
+          "('==================================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=1024',)",
+          "('  1 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=1024',)",
+          "('      dop=8',)",
+          "('  2 - output([sirius_sf500_customer.grp], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=1024',)",
+          "('      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT_SUM(T_FUN_COUNT(*))])',)",
+          "('  3 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('  4 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('      (#keys=1, [sirius_sf500_customer.grp]), dop=8',)",
+          "('  5 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT(*)])',)",
+          "('  6 - output([sirius_sf500_customer.grp]), filter(nil), rowset=1024',)",
+          "('  7 - output([sirius_sf500_customer.grp]), filter(nil), rowset=1024',)",
+          "('      access([sirius_sf500_customer.grp]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true',)"
+        ],
+        "gpu": [
+          "('==================================================================',)",
+          "('|ID|OPERATOR         |NAME                 |EST.ROWS|EST.TIME(us)|',)",
+          "('------------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                     |25      |9372863     |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_sf500_customer|75000000|1934113     |',)",
+          "('==================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024',)",
+          "('      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_sf500_customer.grp]), filter(nil), rowset=1024',)",
+          "('      access([sirius_sf500_customer.grp]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true',)"
+        ]
+      },
+      "native_gpu_events": [
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=5 frame_mib=16 max_batch_bytes=2129924"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=5 frame_mib=16 max_batch_bytes=2129924"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=5 frame_mib=16 max_batch_bytes=2129924"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=5 frame_mib=16 max_batch_bytes=2129924"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=5 frame_mib=16 max_batch_bytes=2129924"
+        ],
+        [
+          "native aggregate: rows=75000000 groups=25 chunks=5 frame_mib=16 max_batch_bytes=2129924"
+        ]
+      ]
+    }
+  ],
+  "rows": 75000000
+}

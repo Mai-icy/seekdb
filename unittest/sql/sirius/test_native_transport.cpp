@@ -141,5 +141,36 @@ TEST(SiriusNativeTransport, RejectsSchemaOverflowAndOversizedBatch) {
   SiriusAggregateClient client;
   ASSERT_TRUE(client.open(8, 56, false, nullptr, nullptr));
   EXPECT_FALSE(client.batch(nullptr, SiriusAggregateClient::BATCH_ROWS));
-  EXPECT_NE(nullptr, std::strstr(client.error(), "16 MiB"));
+  EXPECT_NE(nullptr, std::strstr(client.error(), "negotiated bound"));
+}
+
+TEST(SiriusNativeTransport, NegotiatesLargeFrameAndRejectsLengthOverflow) {
+  struct RestoreEnv {
+    std::string previous;
+    bool present;
+    RestoreEnv() : present(std::getenv("SEEKDB_SIRIUS_FRAME_MIB") != nullptr) {
+      if (present) previous = std::getenv("SEEKDB_SIRIUS_FRAME_MIB");
+      setenv("SEEKDB_SIRIUS_FRAME_MIB", "128", 1);
+    }
+    ~RestoreEnv() {
+      if (present) setenv("SEEKDB_SIRIUS_FRAME_MIB", previous.c_str(), 1);
+      else unsetenv("SEEKDB_SIRIUS_FRAME_MIB");
+    }
+  } restore;
+  Server server([](int fd) {
+    const auto descriptor = read_frame(fd, 'N');
+    ASSERT_EQ(5, descriptor.size());
+    EXPECT_EQ(2, descriptor[0]);
+    EXPECT_EQ(128, static_cast<unsigned char>(descriptor[4]));
+    reply(fd, 'A');
+    char byte;
+    EXPECT_EQ(0, recv(fd, &byte, 1, 0));
+  });
+  SiriusAggregateClient client;
+  ASSERT_TRUE(client.open(8, 56, false, nullptr, nullptr));
+  // 64 columns * 8M rows wraps uint32 length to a value below 128 MiB.
+  // Reject using wide arithmetic before dereferencing the intentionally null buffer.
+  EXPECT_FALSE(client.batch(nullptr, SiriusAggregateClient::MAX_BATCH_ROWS,
+                            SiriusAggregateClient::MAX_BATCH_ROWS));
+  EXPECT_NE(nullptr, std::strstr(client.error(), "negotiated bound"));
 }
