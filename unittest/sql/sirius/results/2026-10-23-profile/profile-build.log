@@ -1,0 +1,17 @@
+INFO: Invocation ID: ff423195-7db1-4547-b655-c7847d982f6b
+Computing main repo mapping:
+Loading:
+Loading: 0 packages loaded
+Analyzing: target //:seekdb (0 packages loaded, 0 targets configured)
+Analyzing: target //:seekdb (0 packages loaded, 0 targets configured)
+
+INFO: Analyzed target //:seekdb (0 packages loaded, 0 targets configured).
+[4 / 8] Compiling src/sql/sql_runtime_sql_runtime_standalone_3.unity.cpp; 1s disk-cache, linux-sandbox
+[5 / 8] [Prepa] Linking src/sql/lib_sql_runtime_sql_runtime_standalone_3_objects.a
+[6 / 8] Linking seekdb executable src/observer/seekdb; 1s disk-cache, linux-sandbox
+INFO: Found 1 target...
+Target //src/observer:_executable_link up-to-date:
+  /data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build/bin/src/observer/seekdb
+INFO: Elapsed time: 9.178s, Critical Path: 8.86s
+INFO: 5 processes: 1 action cache hit, 2 internal, 3 linux-sandbox.
+INFO: Build completed successfully, 5 total actions

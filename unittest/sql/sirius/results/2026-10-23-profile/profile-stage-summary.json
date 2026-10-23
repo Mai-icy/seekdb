@@ -1,0 +1,34 @@
+{
+  "before_baseline": {
+    "1": {
+      "scan_us": 53213,
+      "pack_us": 16632,
+      "send_us": 10436,
+      "finish_us": 7975,
+      "total_us": 90406
+    },
+    "2": {
+      "scan_us": 109806,
+      "pack_us": 32470,
+      "send_us": 25804,
+      "finish_us": 9666,
+      "total_us": 179479
+    }
+  },
+  "after_baseline": {
+    "1": {
+      "scan_us": 43227,
+      "pack_us": 8361,
+      "send_us": 10456,
+      "finish_us": 8057,
+      "total_us": 71528
+    },
+    "2": {
+      "scan_us": 107596,
+      "pack_us": 18527,
+      "send_us": 22586,
+      "finish_us": 8874,
+      "total_us": 160387
+    }
+  }
+}

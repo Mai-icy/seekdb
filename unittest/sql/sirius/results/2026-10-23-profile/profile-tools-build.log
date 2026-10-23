@@ -1,0 +1,14 @@
+Consolidate compiler generated dependencies of target sirius_aggregate_client
+[ 10%] Built target sirius_aggregate_client
+[ 20%] Built target wrong_sirius_bridge
+[ 30%] Built target sirius_client
+[ 40%] Built target fake_sirius_bridge
+[ 50%] Built target sirius_arrow_json
+[ 60%] Built target seekdb_sirius_proxy
+Consolidate compiler generated dependencies of target test_sirius_native_transport
+[ 70%] Built target test_sirius_bridge
+[ 80%] Built target sirius_execute_plan
+[ 85%] Building CXX object CMakeFiles/seekdb_sirius_bridge.dir/bridge.cpp.o
+[ 95%] Built target test_sirius_native_transport
+[100%] Linking CXX shared library libseekdb_sirius_bridge.so
+[100%] Built target seekdb_sirius_bridge

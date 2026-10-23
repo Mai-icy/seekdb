@@ -1,5 +1,9 @@
 # Native seekdb hash aggregation with Sirius
 
+Follow-up: [NATIVE_PERFORMANCE.md](NATIVE_PERFORMANCE.md) records input profiling,
+packing optimization and later measurements with scan-batch hints. The original
+stage's measurements below remain as its historical baseline.
+
 The third prototype integrates GPU execution into `ObHashGroupByOp`'s batch
 execution path. Users run ordinary SQL; no external SELECT, Parquet export or
 manual Substrait plan is needed for supported aggregates.

@@ -7,6 +7,8 @@
 #include "sql/session/ob_sql_session_info.h"
 #include <cstdlib>
 #include <cstring>
+#include <chrono>
+#include <cstdio>
 
 namespace oceanbase { namespace sql {
 using namespace common;
@@ -130,6 +132,14 @@ int ObHashGroupByOp::sirius_get_next_batch(int64_t max_row_cnt) {
   const int columns = s.groups + s.sums;
   const int result_columns = columns + (s.count ? 1 : 0);
   if (!s.loaded) {
+    const char *profile_env = std::getenv("SEEKDB_SIRIUS_PROFILE");
+    const bool profile = profile_env && std::strcmp(profile_env, "1") == 0;
+    auto clock_us = [profile]() -> int64_t {
+      return profile ? std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now().time_since_epoch()).count() : 0;
+    };
+    const int64_t started_us = clock_us();
+    int64_t scan_us = 0, pack_us = 0, send_us = 0, batches = 0;
     auto cancelled = [](void *context) {
       auto *state = static_cast<SiriusAggregateState *>(context);
       state->cancel_ret = THIS_WORKER.check_status();
@@ -138,14 +148,19 @@ int ObHashGroupByOp::sirius_get_next_batch(int64_t max_row_cnt) {
     if (!s.client.open(s.groups, s.sums, s.count, cancelled, &s)) {
       ret = OB_ERR_UNEXPECTED;
     }
+    const int64_t open_us = clock_us() - started_us;
     bool ended = false;
     while (OB_SUCC(ret) && !ended) {
       const ObBatchRows *batch = nullptr;
       clear_evaluated_flag();
+      const int64_t scan_start = clock_us();
       if (OB_FAIL(THIS_WORKER.check_status())) {
       } else if (OB_FAIL(child_->get_next_batch(spec.max_batch_size_, batch))) {
       } else {
+        scan_us += clock_us() - scan_start;
+        const int64_t pack_start = clock_us(), send_before = send_us;
         ended = batch->end_;
+        const bool all_active = batch->skip_->is_all_false(batch->size_);
         for (int c = 0; OB_SUCC(ret) && c < columns; ++c) {
           if (OB_FAIL(s.inputs[c]->eval_batch(eval_ctx_, *batch->skip_, batch->size_))) {}
         }
@@ -158,17 +173,13 @@ int ObHashGroupByOp::sirius_get_next_batch(int64_t max_row_cnt) {
             char *values = mask + s.mask_bytes;
             const auto datums = s.inputs[c]->locate_expr_datumvector(eval_ctx_);
             for (int64_t i = start; i < stop; ++i) {
-              if (batch->skip_->at(i)) continue;
+              if (!all_active && batch->skip_->at(i)) continue;
               const auto *datum = datums.at(i);
               uint64_t value = 0;
               if (datum->is_null()) mask[position / 8] &= ~(1u << (position % 8));
-              else if (c < s.groups) {
-                const int64_t number = datum->get_int();
-                std::memcpy(&value, &number, 8);
-              } else {
-                const double number = datum->get_double();
-                std::memcpy(&value, &number, 8);
-              }
+              // Eligibility guarantees an 8-byte BIGINT or DOUBLE payload.
+              // Preserve its bits without a per-row type branch/conversion.
+              else std::memcpy(&value, datum->ptr_, 8);
               std::memcpy(values + position * 8, &value, 8);
               ++position;
             }
@@ -176,17 +187,35 @@ int ObHashGroupByOp::sirius_get_next_batch(int64_t max_row_cnt) {
           s.input_rows += position - s.buffered;
           s.buffered = position;
           if (s.buffered == s.batch_limit) {
+            const int64_t send_start = clock_us();
             if (!s.client.batch(s.input, s.buffered, s.batch_limit)) ret = OB_ERR_UNEXPECTED;
+            send_us += clock_us() - send_start;
+            ++batches;
             s.clear_masks();
           }
           start = stop;
         }
+        pack_us += clock_us() - pack_start - (send_us - send_before);
       }
     }
     size_t bytes = 0;
-    if (OB_SUCC(ret) && s.buffered && !s.client.batch(s.input, s.buffered, s.batch_limit)) ret = OB_ERR_UNEXPECTED;
+    if (OB_SUCC(ret) && s.buffered) {
+      const int64_t send_start = clock_us();
+      if (!s.client.batch(s.input, s.buffered, s.batch_limit)) ret = OB_ERR_UNEXPECTED;
+      send_us += clock_us() - send_start;
+      ++batches;
+    }
+    const int64_t finish_start = clock_us();
     if (OB_SUCC(ret) && !s.client.finish(s.result, SiriusAggregateClient::RESULT_BYTES, bytes)) ret = OB_ERR_UNEXPECTED;
+    const int64_t finish_us = clock_us() - finish_start;
     s.client.close();
+    if (profile) {
+      const int64_t total_us = clock_us() - started_us;
+      std::fprintf(stderr, "seekdb Sirius profile: ret=%d rows=%llu columns=%d batches=%lld open_us=%lld scan_us=%lld pack_us=%lld send_us=%lld finish_us=%lld total_us=%lld\n",
+          ret, static_cast<unsigned long long>(s.input_rows), columns, static_cast<long long>(batches),
+          static_cast<long long>(open_us), static_cast<long long>(scan_us), static_cast<long long>(pack_us),
+          static_cast<long long>(send_us), static_cast<long long>(finish_us), static_cast<long long>(total_us));
+    }
     if (OB_SUCC(ret)) {
       if (bytes < 4) ret = OB_ERR_UNEXPECTED;
       else {

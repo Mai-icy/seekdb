@@ -13,6 +13,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <chrono>
 
 namespace {
 // Own the engine on a dedicated thread. Its Rust telemetry uses thread-local
@@ -48,6 +49,14 @@ public:
   size_t execute_stream(const uint8_t *plan, size_t plan_size, ArrowArrayStream &input,
                         char *output, size_t capacity) {
     return submit([&](auto &context) {
+      const char *profile_env = std::getenv("SEEKDB_SIRIUS_PROFILE");
+      const bool profile = profile_env && std::string(profile_env) == "1";
+      auto clock_us = [profile]() -> int64_t {
+        return profile ? std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count() : 0;
+      };
+      const int64_t started_us = clock_us();
+      int64_t input_us = 0, copy_us = 0, rows = 0, batches = 0;
       struct StreamGuard { ArrowArrayStream &s; ~StreamGuard() { if (s.release) s.release(&s); } } guard{input};
       if (!input.release || !input.get_schema || !input.get_next) {
         throw std::invalid_argument("Invalid input Arrow stream");
@@ -72,15 +81,18 @@ public:
         fragment->declare_input_column(0, column->name, format == "l" ? "BIGINT" : "DOUBLE");
       }
       fragment->build(std::string(reinterpret_cast<const char *>(plan), plan_size));
+      const int64_t build_us = clock_us() - started_us;
       size_t input_bytes = 0;
       bool received = false;
       for (;;) {
         ArrowArray batch{};
         struct BatchGuard { ArrowArray &a; ~BatchGuard() { if (a.release) a.release(&a); } } bg{batch};
+        const int64_t input_start = clock_us();
         if (input.get_next(&input, &batch)) {
           const char *error = input.get_last_error ? input.get_last_error(&input) : nullptr;
           throw std::runtime_error(error ? error : "Arrow input producer failed");
         }
+        input_us += clock_us() - input_start;
         if (!batch.release) break;
         if (batch.length < 0 || batch.length > 1048576) {
           throw std::invalid_argument("Arrow input batch row limit exceeded");
@@ -91,7 +103,11 @@ public:
           throw std::invalid_argument("Live input exceeds 16 MiB per batch or 512 MiB per query");
         }
         input_bytes += bytes;
+        const int64_t copy_start = clock_us();
         fragment->push_arrow(0, reinterpret_cast<uintptr_t>(&schema), reinterpret_cast<uintptr_t>(&batch));
+        copy_us += clock_us() - copy_start;
+        rows += batch.length;
+        ++batches;
         received = true;
       }
       // A typed empty batch gives the aggregate pipeline a task, so global
@@ -113,11 +129,21 @@ public:
         fragment->push_arrow(0, reinterpret_cast<uintptr_t>(&schema), reinterpret_cast<uintptr_t>(&empty));
       }
       fragment->close_input(0, 0);
+      const int64_t run_start = clock_us();
       fragment->run();
+      const int64_t run_us = clock_us() - run_start;
       ArrowArrayStream result{};
       try {
         fragment->result_to_arrow(reinterpret_cast<uintptr_t>(&result));
-        return seekdb_sirius::arrow_to_json(result, output, capacity);
+        const size_t size = seekdb_sirius::arrow_to_json(result, output, capacity);
+        if (profile) {
+          const int64_t total_us = clock_us() - started_us;
+          std::fprintf(stderr, "sirius stream profile: rows=%lld batches=%lld build_us=%lld input_us=%lld copy_us=%lld run_us=%lld result_us=%lld total_us=%lld\n",
+              static_cast<long long>(rows), static_cast<long long>(batches), static_cast<long long>(build_us),
+              static_cast<long long>(input_us), static_cast<long long>(copy_us), static_cast<long long>(run_us),
+              static_cast<long long>(clock_us() - run_start - run_us), static_cast<long long>(total_us));
+        }
+        return size;
       } catch (...) {
         if (result.release) result.release(&result);
         throw;

@@ -1,0 +1,233 @@
+{
+  "table": "sirius_benchmark",
+  "group_column": "grp",
+  "sum_columns": [
+    "amount"
+  ],
+  "scan_batch_rows": 0,
+  "repeats": 7,
+  "timing": "SQL roundtrip, scan, transfer, GPU aggregation and SQL result",
+  "cases": [
+    {
+      "name": "group_sum_count",
+      "groups": 100,
+      "first_seconds": {
+        "cpu1": 0.35356029123067856,
+        "cpu8": 0.08961995178833604,
+        "gpu": 0.16263597598299384
+      },
+      "seconds": {
+        "cpu1": [
+          0.3100051349028945,
+          0.4340328210964799,
+          0.4389969571493566,
+          0.4387854626402259,
+          0.3044441449455917,
+          0.3287098165601492,
+          0.3216613498516381
+        ],
+        "cpu8": [
+          0.05365697480738163,
+          0.05202640313655138,
+          0.05492985062301159,
+          0.05397382890805602,
+          0.048011803068220615,
+          0.04851315915584564,
+          0.05342131992802024
+        ],
+        "gpu": [
+          0.15560493199154735,
+          0.1652756896801293,
+          0.1614398341625929,
+          0.1637754812836647,
+          0.17224888503551483,
+          0.14769284799695015,
+          0.11513876309618354
+        ]
+      },
+      "medians": {
+        "cpu1": 0.3287098165601492,
+        "cpu8": 0.05342131992802024,
+        "gpu": 0.1614398341625929
+      },
+      "cpu1_speedup": 2.0361134429133,
+      "cpu8_speedup": 0.33090544353642837,
+      "explain": {
+        "cpu1": [
+          "('=============================================================',)",
+          "('|ID|OPERATOR         |NAME            |EST.ROWS|EST.TIME(us)|',)",
+          "('-------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                |50000   |827777      |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_benchmark|5000000 |244649      |',)",
+          "('=============================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_benchmark.grp], [T_FUN_SUM(sirius_benchmark.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_benchmark.grp]), agg_func([T_FUN_SUM(sirius_benchmark.amount)], [T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_benchmark.grp], [sirius_benchmark.amount]), filter(nil), rowset=256',)",
+          "('      access([sirius_benchmark.grp], [sirius_benchmark.amount]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_benchmark.id]), range(MIN ; MAX)always true',)"
+        ],
+        "cpu8": [
+          "('=============================================================================',)",
+          "('|ID|OPERATOR                         |NAME            |EST.ROWS|EST.TIME(us)|',)",
+          "('-----------------------------------------------------------------------------',)",
+          "('|0 |PX COORDINATOR                   |                |50000   |231068      |',)",
+          "('|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001        |50000   |206355      |',)",
+          "('|2 |  \u2514\u2500HASH GROUP BY                |                |50000   |199421      |',)",
+          "('|3 |    \u2514\u2500EXCHANGE IN DISTR          |                |400000  |192260      |',)",
+          "('|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000        |400000  |167547      |',)",
+          "('|5 |        \u2514\u2500HASH GROUP BY          |                |400000  |112070      |',)",
+          "('|6 |          \u2514\u2500PX BLOCK ITERATOR    |                |5000000 |30582       |',)",
+          "('|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_benchmark|5000000 |30582       |',)",
+          "('=============================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([INTERNAL_FUNCTION(sirius_benchmark.grp, T_FUN_SUM(T_FUN_SUM(sirius_benchmark.amount)), T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256',)",
+          "('  1 - output([INTERNAL_FUNCTION(sirius_benchmark.grp, T_FUN_SUM(T_FUN_SUM(sirius_benchmark.amount)), T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256',)",
+          "('      dop=8',)",
+          "('  2 - output([sirius_benchmark.grp], [T_FUN_SUM(T_FUN_SUM(sirius_benchmark.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256',)",
+          "('      group([sirius_benchmark.grp]), agg_func([T_FUN_SUM(T_FUN_SUM(sirius_benchmark.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))])',)",
+          "('  3 - output([sirius_benchmark.grp], [T_FUN_SUM(sirius_benchmark.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('  4 - output([sirius_benchmark.grp], [T_FUN_SUM(sirius_benchmark.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      (#keys=1, [sirius_benchmark.grp]), dop=8',)",
+          "('  5 - output([sirius_benchmark.grp], [T_FUN_SUM(sirius_benchmark.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_benchmark.grp]), agg_func([T_FUN_SUM(sirius_benchmark.amount)], [T_FUN_COUNT(*)])',)",
+          "('  6 - output([sirius_benchmark.grp], [sirius_benchmark.amount]), filter(nil), rowset=256',)",
+          "('  7 - output([sirius_benchmark.grp], [sirius_benchmark.amount]), filter(nil), rowset=256',)",
+          "('      access([sirius_benchmark.grp], [sirius_benchmark.amount]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_benchmark.id]), range(MIN ; MAX)always true',)"
+        ],
+        "gpu": [
+          "('=============================================================',)",
+          "('|ID|OPERATOR         |NAME            |EST.ROWS|EST.TIME(us)|',)",
+          "('-------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                |50000   |827777      |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_benchmark|5000000 |244649      |',)",
+          "('=============================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_benchmark.grp], [T_FUN_SUM(sirius_benchmark.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_benchmark.grp]), agg_func([T_FUN_SUM(sirius_benchmark.amount)], [T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_benchmark.grp], [sirius_benchmark.amount]), filter(nil), rowset=256',)",
+          "('      access([sirius_benchmark.grp], [sirius_benchmark.amount]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_benchmark.id]), range(MIN ; MAX)always true',)"
+        ]
+      }
+    },
+    {
+      "name": "group_count",
+      "groups": 100,
+      "first_seconds": {
+        "cpu1": 0.2303178310394287,
+        "cpu8": 0.04069039225578308,
+        "gpu": 0.07620091876015067
+      },
+      "seconds": {
+        "cpu1": [
+          0.256517366040498,
+          0.3276874548755586,
+          0.3123259488493204,
+          0.2923939130268991,
+          0.23117052903398871,
+          0.2516177040524781,
+          0.24209039891138673
+        ],
+        "cpu8": [
+          0.03863003617152572,
+          0.037664749193936586,
+          0.03862128918990493,
+          0.03965385816991329,
+          0.036812747828662395,
+          0.03912087669596076,
+          0.03789951000362635
+        ],
+        "gpu": [
+          0.07294865511357784,
+          0.08214549999684095,
+          0.08203581115230918,
+          0.068813047837466,
+          0.07464836724102497,
+          0.06387410219758749,
+          0.06692257476970553
+        ]
+      },
+      "medians": {
+        "cpu1": 0.256517366040498,
+        "cpu8": 0.03862128918990493,
+        "gpu": 0.07294865511357784
+      },
+      "cpu1_speedup": 3.516409804143912,
+      "cpu8_speedup": 0.5294311338539865,
+      "explain": {
+        "cpu1": [
+          "('=============================================================',)",
+          "('|ID|OPERATOR         |NAME            |EST.ROWS|EST.TIME(us)|',)",
+          "('-------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                |50000   |632691      |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_benchmark|5000000 |128943      |',)",
+          "('=============================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_benchmark.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_benchmark.grp]), agg_func([T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_benchmark.grp]), filter(nil), rowset=256',)",
+          "('      access([sirius_benchmark.grp]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_benchmark.id]), range(MIN ; MAX)always true',)"
+        ],
+        "cpu8": [
+          "('=============================================================================',)",
+          "('|ID|OPERATOR                         |NAME            |EST.ROWS|EST.TIME(us)|',)",
+          "('-----------------------------------------------------------------------------',)",
+          "('|0 |PX COORDINATOR                   |                |50000   |161059      |',)",
+          "('|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001        |50000   |145800      |',)",
+          "('|2 |  \u2514\u2500HASH GROUP BY                |                |50000   |141526      |',)",
+          "('|3 |    \u2514\u2500EXCHANGE IN DISTR          |                |400000  |135389      |',)",
+          "('|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000        |400000  |120130      |',)",
+          "('|5 |        \u2514\u2500HASH GROUP BY          |                |400000  |85940       |',)",
+          "('|6 |          \u2514\u2500PX BLOCK ITERATOR    |                |5000000 |16118       |',)",
+          "('|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_benchmark|5000000 |16118       |',)",
+          "('=============================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([INTERNAL_FUNCTION(sirius_benchmark.grp, T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256',)",
+          "('  1 - output([INTERNAL_FUNCTION(sirius_benchmark.grp, T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256',)",
+          "('      dop=8',)",
+          "('  2 - output([sirius_benchmark.grp], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256',)",
+          "('      group([sirius_benchmark.grp]), agg_func([T_FUN_COUNT_SUM(T_FUN_COUNT(*))])',)",
+          "('  3 - output([sirius_benchmark.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('  4 - output([sirius_benchmark.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      (#keys=1, [sirius_benchmark.grp]), dop=8',)",
+          "('  5 - output([sirius_benchmark.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_benchmark.grp]), agg_func([T_FUN_COUNT(*)])',)",
+          "('  6 - output([sirius_benchmark.grp]), filter(nil), rowset=256',)",
+          "('  7 - output([sirius_benchmark.grp]), filter(nil), rowset=256',)",
+          "('      access([sirius_benchmark.grp]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_benchmark.id]), range(MIN ; MAX)always true',)"
+        ],
+        "gpu": [
+          "('=============================================================',)",
+          "('|ID|OPERATOR         |NAME            |EST.ROWS|EST.TIME(us)|',)",
+          "('-------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                |50000   |632691      |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_benchmark|5000000 |128943      |',)",
+          "('=============================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_benchmark.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_benchmark.grp]), agg_func([T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_benchmark.grp]), filter(nil), rowset=256',)",
+          "('      access([sirius_benchmark.grp]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_benchmark.id]), range(MIN ; MAX)always true',)"
+        ]
+      }
+    }
+  ],
+  "rows": 5000000
+}
