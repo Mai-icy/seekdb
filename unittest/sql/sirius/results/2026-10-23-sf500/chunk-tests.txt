@@ -1,0 +1,11 @@
+native aggregate: rows=2 groups=1 chunks=3
+.native aggregate: rows=2 groups=1 chunks=1
+.native aggregate: rows=0 groups=0 chunks=1
+.native aggregate: rows=3 groups=2 chunks=3
+..native aggregate: rows=5 groups=3 chunks=4
+..native aggregate: rows=2 groups=1 chunks=3
+.
+----------------------------------------------------------------------
+Ran 8 tests in 0.068s
+
+OK

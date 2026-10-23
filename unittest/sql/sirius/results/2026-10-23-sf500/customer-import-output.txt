@@ -1,0 +1,114 @@
+{"start": 1, "end": 1000001, "rows": 1000000, "csv_bytes": 16377919, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.06088650692254305, "load_seconds": 12.10506964288652, "free_bytes": 725671305216}
+{"start": 1000001, "end": 2000001, "rows": 1000000, "csv_bytes": 17487704, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.07135562738403678, "load_seconds": 12.746910250280052, "free_bytes": 725560881152}
+{"start": 2000001, "end": 3000001, "rows": 1000000, "csv_bytes": 17488933, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.07564763305708766, "load_seconds": 12.8575369422324, "free_bytes": 725493755904}
+{"start": 3000001, "end": 4000001, "rows": 1000000, "csv_bytes": 17488205, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.06432881997898221, "load_seconds": 12.182381399907172, "free_bytes": 725351178240}
+{"start": 4000001, "end": 5000001, "rows": 1000000, "csv_bytes": 17487799, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.0644789719954133, "load_seconds": 11.98859936511144, "free_bytes": 725216960512}
+{"start": 5000001, "end": 6000001, "rows": 1000000, "csv_bytes": 17488147, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.07238794304430485, "load_seconds": 12.37144282180816, "free_bytes": 725149790208}
+{"start": 6000001, "end": 7000001, "rows": 1000000, "csv_bytes": 17488524, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.07909511867910624, "load_seconds": 12.329440825153142, "free_bytes": 725015519232}
+{"start": 7000001, "end": 8000001, "rows": 1000000, "csv_bytes": 17490015, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.06732750125229359, "load_seconds": 12.202852002810687, "free_bytes": 724931686400}
+{"start": 8000001, "end": 9000001, "rows": 1000000, "csv_bytes": 17489731, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.05718005774542689, "load_seconds": 12.300583345349878, "free_bytes": 724797460480}
+{"start": 9000001, "end": 10000001, "rows": 1000000, "csv_bytes": 17488910, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.07477886416018009, "load_seconds": 12.13934083422646, "free_bytes": 724796194816}
+{"start": 10000001, "end": 11000001, "rows": 1000000, "csv_bytes": 18488175, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.05808637384325266, "load_seconds": 12.816971328109503, "free_bytes": 724593917952}
+{"start": 11000001, "end": 12000001, "rows": 1000000, "csv_bytes": 18487984, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.06122849881649017, "load_seconds": 12.409033685922623, "free_bytes": 724526796800}
+{"start": 12000001, "end": 13000001, "rows": 1000000, "csv_bytes": 18487511, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.06064800685271621, "load_seconds": 12.87435984890908, "free_bytes": 724392480768}
+{"start": 13000001, "end": 14000001, "rows": 1000000, "csv_bytes": 18489385, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.058389192912727594, "load_seconds": 13.26023354101926, "free_bytes": 724325347328}
+{"start": 14000001, "end": 15000001, "rows": 1000000, "csv_bytes": 18487743, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.059469375759363174, "load_seconds": 12.660836323164403, "free_bytes": 724191121408}
+{"start": 15000001, "end": 16000001, "rows": 1000000, "csv_bytes": 18487459, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.07547318190336227, "load_seconds": 11.862823487259448, "free_bytes": 724124000256}
+{"start": 16000001, "end": 17000001, "rows": 1000000, "csv_bytes": 18490370, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.060031735338270664, "load_seconds": 12.822732392698526, "free_bytes": 723989286912}
+{"start": 17000001, "end": 18000001, "rows": 1000000, "csv_bytes": 18488979, "load_hint": "direct(true,0,'inc')", "export_seconds": 0.06525816023349762, "load_seconds": 12.294837259687483, "free_bytes": 723855060992}
+Traceback (most recent call last):
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/unittest/sql/sirius/prepare_sf500.py", line 132, in <module>
+    main(args)
+    ~~~~^^^^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/unittest/sql/sirius/prepare_sf500.py", line 50, in main
+    with duckdb.connect(str(source), read_only=True,
+         ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        config={"threads": 4, "memory_limit": "2GB", "max_temp_directory_size": "0B"}) as db:
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/unittest/sql/sirius/prepare_sf500.py", line 88, in main
+    cursor.execute(f"LOAD DATA /*+ PARALLEL(8) {load_hint} */ LOCAL INFILE %s INTO TABLE {target} "
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                   "FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n' (id,grp,amount)", (str(csv),))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/venv/lib/python3.14/site-packages/pymysql/cursors.py", line 170, in execute
+    result = self._query(query)
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/venv/lib/python3.14/site-packages/pymysql/cursors.py", line 335, in _query
+    conn.query(q)
+    ~~~~~~~~~~^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/venv/lib/python3.14/site-packages/pymysql/connections.py", line 581, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/venv/lib/python3.14/site-packages/pymysql/connections.py", line 857, in _read_query_result
+    result.read()
+    ~~~~~~~~~~~^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/venv/lib/python3.14/site-packages/pymysql/connections.py", line 1295, in read
+    self._read_load_local_packet(first_packet)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/venv/lib/python3.14/site-packages/pymysql/connections.py", line 1347, in _read_load_local_packet
+    ok_packet = conn._read_packet()
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/venv/lib/python3.14/site-packages/pymysql/connections.py", line 779, in _read_packet
+    packet_header = self._read_bytes(4)
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/venv/lib/python3.14/site-packages/pymysql/connections.py", line 818, in _read_bytes
+    data = self._rfile.read(num_bytes)
+  File "/data/wuhao.xwh/duckdb-sirius-upstream/sirius/.pixi/envs/default/lib/python3.14/socket.py", line 729, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+KeyboardInterrupt
+{"start": 19000001, "end": 20000001, "rows": 1000000, "csv_bytes": 18489266, "load_hint": "NO_DIRECT", "export_seconds": 0.16316984733566642, "load_seconds": 15.165716775227338, "free_bytes": 725743505408}
+{"start": 21000001, "end": 22000001, "rows": 1000000, "csv_bytes": 18488553, "load_hint": "NO_DIRECT", "export_seconds": 0.19987887796014547, "load_seconds": 15.334806079044938, "free_bytes": 725761974272}
+{"start": 20000001, "end": 21000001, "rows": 1000000, "csv_bytes": 18489811, "load_hint": "NO_DIRECT", "export_seconds": 0.15710547612980008, "load_seconds": 15.747681413777173, "free_bytes": 725780463616}
+{"start": 18000001, "end": 19000001, "rows": 1000000, "csv_bytes": 18488540, "load_hint": "NO_DIRECT", "export_seconds": 0.15426761796697974, "load_seconds": 19.070044863037765, "free_bytes": 725798322176}
+{"start": 25000001, "end": 26000001, "rows": 1000000, "csv_bytes": 18487578, "load_hint": "NO_DIRECT", "export_seconds": 0.15691345371305943, "load_seconds": 14.11737323878333, "free_bytes": 725340282880}
+{"start": 24000001, "end": 25000001, "rows": 1000000, "csv_bytes": 18489800, "load_hint": "NO_DIRECT", "export_seconds": 0.16123922308906913, "load_seconds": 14.374099444132298, "free_bytes": 725358751744}
+{"start": 22000001, "end": 23000001, "rows": 1000000, "csv_bytes": 18488753, "load_hint": "NO_DIRECT", "export_seconds": 0.18601449392735958, "load_seconds": 14.932904560118914, "free_bytes": 725377241088}
+{"start": 23000001, "end": 24000001, "rows": 1000000, "csv_bytes": 18489085, "load_hint": "NO_DIRECT", "export_seconds": 0.15312000922858715, "load_seconds": 15.134669527877122, "free_bytes": 725395730432}
+{"start": 27000001, "end": 28000001, "rows": 1000000, "csv_bytes": 18488841, "load_hint": "NO_DIRECT", "export_seconds": 0.15410218201577663, "load_seconds": 13.83146865433082, "free_bytes": 724937224192}
+{"start": 29000001, "end": 30000001, "rows": 1000000, "csv_bytes": 18491111, "load_hint": "NO_DIRECT", "export_seconds": 0.14849032228812575, "load_seconds": 14.215195246040821, "free_bytes": 724955803648}
+{"start": 26000001, "end": 27000001, "rows": 1000000, "csv_bytes": 18488084, "load_hint": "NO_DIRECT", "export_seconds": 0.18030694406479597, "load_seconds": 14.878631621133536, "free_bytes": 724907278336}
+{"start": 28000001, "end": 29000001, "rows": 1000000, "csv_bytes": 18489802, "load_hint": "NO_DIRECT", "export_seconds": 0.13847930496558547, "load_seconds": 15.157580762170255, "free_bytes": 724925857792}
+{"start": 33000001, "end": 34000001, "rows": 1000000, "csv_bytes": 18488635, "load_hint": "NO_DIRECT", "export_seconds": 0.14679882815107703, "load_seconds": 13.92675048392266, "free_bytes": 724468486144}
+{"start": 31000001, "end": 32000001, "rows": 1000000, "csv_bytes": 18489245, "load_hint": "NO_DIRECT", "export_seconds": 0.14911217475309968, "load_seconds": 14.354603226762265, "free_bytes": 724486922240}
+{"start": 32000001, "end": 33000001, "rows": 1000000, "csv_bytes": 18488903, "load_hint": "NO_DIRECT", "export_seconds": 0.1391572803258896, "load_seconds": 15.371962289325893, "free_bytes": 724505444352}
+{"start": 30000001, "end": 31000001, "rows": 1000000, "csv_bytes": 18489030, "load_hint": "NO_DIRECT", "export_seconds": 0.18077343795448542, "load_seconds": 15.405102017335594, "free_bytes": 724523933696}
+{"start": 34000001, "end": 35000001, "rows": 1000000, "csv_bytes": 18488927, "load_hint": "NO_DIRECT", "export_seconds": 0.1486004777252674, "load_seconds": 14.285173509735614, "free_bytes": 724065353728}
+{"start": 36000001, "end": 37000001, "rows": 1000000, "csv_bytes": 18488242, "load_hint": "NO_DIRECT", "export_seconds": 0.1468714475631714, "load_seconds": 14.641881426330656, "free_bytes": 724083822592}
+{"start": 35000001, "end": 36000001, "rows": 1000000, "csv_bytes": 18489138, "load_hint": "NO_DIRECT", "export_seconds": 0.14652586495503783, "load_seconds": 15.282627262175083, "free_bytes": 724102311936}
+{"start": 37000001, "end": 38000001, "rows": 1000000, "csv_bytes": 18488775, "load_hint": "NO_DIRECT", "export_seconds": 0.1711400169879198, "load_seconds": 15.258158238139004, "free_bytes": 724102279168}
+{"start": 41000001, "end": 42000001, "rows": 1000000, "csv_bytes": 18488794, "load_hint": "NO_DIRECT", "export_seconds": 0.14467496471479535, "load_seconds": 14.205568301025778, "free_bytes": 723662381056}
+{"start": 40000001, "end": 41000001, "rows": 1000000, "csv_bytes": 18488462, "load_hint": "NO_DIRECT", "export_seconds": 0.1456298199482262, "load_seconds": 14.265394329093397, "free_bytes": 723680956416}
+{"start": 38000001, "end": 39000001, "rows": 1000000, "csv_bytes": 18488305, "load_hint": "NO_DIRECT", "export_seconds": 0.12901412323117256, "load_seconds": 15.323319520801306, "free_bytes": 723699535872}
+{"start": 39000001, "end": 40000001, "rows": 1000000, "csv_bytes": 18490516, "load_hint": "NO_DIRECT", "export_seconds": 0.1699284240603447, "load_seconds": 15.313866773154587, "free_bytes": 723718115328}
+{"start": 43000001, "end": 44000001, "rows": 1000000, "csv_bytes": 18488800, "load_hint": "NO_DIRECT", "export_seconds": 0.1412006770260632, "load_seconds": 14.352398904971778, "free_bytes": 723260088320}
+{"start": 42000001, "end": 43000001, "rows": 1000000, "csv_bytes": 18489713, "load_hint": "NO_DIRECT", "export_seconds": 0.1570065040141344, "load_seconds": 14.38852205267176, "free_bytes": 723278557184}
+{"start": 45000001, "end": 46000001, "rows": 1000000, "csv_bytes": 18489495, "load_hint": "NO_DIRECT", "export_seconds": 0.14442215207964182, "load_seconds": 14.87813871121034, "free_bytes": 723297050624}
+{"start": 44000001, "end": 45000001, "rows": 1000000, "csv_bytes": 18487826, "load_hint": "NO_DIRECT", "export_seconds": 0.17832631524652243, "load_seconds": 15.125507950317115, "free_bytes": 723315523584}
+{"start": 49000001, "end": 50000001, "rows": 1000000, "csv_bytes": 18487445, "load_hint": "NO_DIRECT", "export_seconds": 0.15091251907870173, "load_seconds": 14.072697420604527, "free_bytes": 722856292352}
+{"start": 48000001, "end": 49000001, "rows": 1000000, "csv_bytes": 18489656, "load_hint": "NO_DIRECT", "export_seconds": 0.1533130849711597, "load_seconds": 14.785686788149178, "free_bytes": 722875183104}
+{"start": 46000001, "end": 47000001, "rows": 1000000, "csv_bytes": 18489482, "load_hint": "NO_DIRECT", "export_seconds": 0.13609199691563845, "load_seconds": 15.8595165531151, "free_bytes": 722893656064}
+{"start": 47000001, "end": 48000001, "rows": 1000000, "csv_bytes": 18488701, "load_hint": "NO_DIRECT", "export_seconds": 0.17448870418593287, "load_seconds": 15.95220642304048, "free_bytes": 722912149504}
+{"start": 52000001, "end": 53000001, "rows": 1000000, "csv_bytes": 18488998, "load_hint": "NO_DIRECT", "export_seconds": 0.13767059706151485, "load_seconds": 15.421603263821453, "free_bytes": 722453647360}
+{"start": 50000001, "end": 51000001, "rows": 1000000, "csv_bytes": 18487795, "load_hint": "NO_DIRECT", "export_seconds": 0.14421252813190222, "load_seconds": 15.595925596076995, "free_bytes": 722472226816}
+{"start": 51000001, "end": 52000001, "rows": 1000000, "csv_bytes": 18489129, "load_hint": "NO_DIRECT", "export_seconds": 0.18127497239038348, "load_seconds": 15.8613529833965, "free_bytes": 722490806272}
+{"start": 53000001, "end": 54000001, "rows": 1000000, "csv_bytes": 18490260, "load_hint": "NO_DIRECT", "export_seconds": 0.16073222178965807, "load_seconds": 16.084512202069163, "free_bytes": 722509385728}
+{"start": 55000001, "end": 56000001, "rows": 1000000, "csv_bytes": 18488606, "load_hint": "NO_DIRECT", "export_seconds": 0.14625733997672796, "load_seconds": 15.50390617735684, "free_bytes": 725205450752}
+{"start": 57000001, "end": 58000001, "rows": 1000000, "csv_bytes": 18488574, "load_hint": "NO_DIRECT", "export_seconds": 0.15082315588369966, "load_seconds": 15.550205625128001, "free_bytes": 725223915520}
+{"start": 54000001, "end": 55000001, "rows": 1000000, "csv_bytes": 18489057, "load_hint": "NO_DIRECT", "export_seconds": 0.16046291589736938, "load_seconds": 15.620092099066824, "free_bytes": 725242404864}
+{"start": 56000001, "end": 57000001, "rows": 1000000, "csv_bytes": 18488300, "load_hint": "NO_DIRECT", "export_seconds": 0.206362574826926, "load_seconds": 15.729186804965138, "free_bytes": 725260894208}
+{"start": 61000001, "end": 62000001, "rows": 1000000, "csv_bytes": 18488609, "load_hint": "NO_DIRECT", "export_seconds": 0.17970333201810718, "load_seconds": 15.254844238050282, "free_bytes": 724802777088}
+{"start": 58000001, "end": 59000001, "rows": 1000000, "csv_bytes": 18489286, "load_hint": "NO_DIRECT", "export_seconds": 0.16372653422877192, "load_seconds": 15.363418907858431, "free_bytes": 724821245952}
+{"start": 59000001, "end": 60000001, "rows": 1000000, "csv_bytes": 18489531, "load_hint": "NO_DIRECT", "export_seconds": 0.15725601697340608, "load_seconds": 15.507218054961413, "free_bytes": 724839735296}
+{"start": 60000001, "end": 61000001, "rows": 1000000, "csv_bytes": 18488682, "load_hint": "NO_DIRECT", "export_seconds": 0.15520109096542, "load_seconds": 15.633413285017014, "free_bytes": 724858228736}
+{"start": 63000001, "end": 64000001, "rows": 1000000, "csv_bytes": 18488506, "load_hint": "NO_DIRECT", "export_seconds": 0.15345518477261066, "load_seconds": 14.870383949019015, "free_bytes": 724400283648}
+{"start": 62000001, "end": 63000001, "rows": 1000000, "csv_bytes": 18489278, "load_hint": "NO_DIRECT", "export_seconds": 0.141525415237993, "load_seconds": 15.054806528612971, "free_bytes": 724418752512}
+{"start": 65000001, "end": 66000001, "rows": 1000000, "csv_bytes": 18488496, "load_hint": "NO_DIRECT", "export_seconds": 0.1740570249967277, "load_seconds": 16.739218164235353, "free_bytes": 724437327872}
+{"start": 64000001, "end": 65000001, "rows": 1000000, "csv_bytes": 18488052, "load_hint": "NO_DIRECT", "export_seconds": 0.14983848435804248, "load_seconds": 16.821795538067818, "free_bytes": 724455817216}
+{"start": 66000001, "end": 67000001, "rows": 1000000, "csv_bytes": 18489430, "load_hint": "NO_DIRECT", "export_seconds": 0.1448318180628121, "load_seconds": 15.034185064025223, "free_bytes": 723997270016}
+{"start": 67000001, "end": 68000001, "rows": 1000000, "csv_bytes": 18489121, "load_hint": "NO_DIRECT", "export_seconds": 0.13340628473088145, "load_seconds": 15.133319274988025, "free_bytes": 724015853568}
+{"start": 68000001, "end": 69000001, "rows": 1000000, "csv_bytes": 18489361, "load_hint": "NO_DIRECT", "export_seconds": 0.1407376299612224, "load_seconds": 16.748856380116194, "free_bytes": 724034453504}
+{"start": 69000001, "end": 70000001, "rows": 1000000, "csv_bytes": 18488758, "load_hint": "NO_DIRECT", "export_seconds": 0.16645051492378116, "load_seconds": 16.910963826812804, "free_bytes": 724053037056}
+{"start": 73000001, "end": 74000001, "rows": 1000000, "csv_bytes": 18488733, "load_hint": "NO_DIRECT", "export_seconds": 0.14109964901581407, "load_seconds": 15.050874973181635, "free_bytes": 723595124736}
+{"start": 70000001, "end": 71000001, "rows": 1000000, "csv_bytes": 18489317, "load_hint": "NO_DIRECT", "export_seconds": 0.1335866916924715, "load_seconds": 15.338970144744962, "free_bytes": 723613593600}
+{"start": 72000001, "end": 73000001, "rows": 1000000, "csv_bytes": 18488575, "load_hint": "NO_DIRECT", "export_seconds": 0.1778670777566731, "load_seconds": 16.83639721898362, "free_bytes": 723632070656}
+{"start": 71000001, "end": 72000001, "rows": 1000000, "csv_bytes": 18489467, "load_hint": "NO_DIRECT", "export_seconds": 0.13310361607000232, "load_seconds": 16.915237091016024, "free_bytes": 723650560000}
+{"start": 74000001, "end": 75000001, "rows": 1000000, "csv_bytes": 18487403, "load_hint": "NO_DIRECT", "export_seconds": 0.10594655713066459, "load_seconds": 12.991983751766384, "free_bytes": 723516366848}
+verified sirius_sf500_customer 75000000

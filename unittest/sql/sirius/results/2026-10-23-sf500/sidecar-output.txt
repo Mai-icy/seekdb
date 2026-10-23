@@ -1,0 +1,79 @@
+ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=True native_chunk_mib=128 startup_seconds=0.690146
+Traceback (most recent call last):
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/sidecar.py", line 313, in <module>
+    serve(args.socket, args.library, args.io_timeout, args.host_pin_mib, args.warmup, args.native_chunk_mib)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/sidecar.py", line 245, in serve
+    raise ValueError("Sidecar already running")
+ValueError: Sidecar already running
+ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=True native_chunk_mib=128 startup_seconds=0.650237
+native aggregate: rows=5 groups=3 chunks=1
+native aggregate: rows=5 groups=3 chunks=1
+native aggregate: rows=4 groups=3 chunks=1
+native aggregate: rows=0 groups=0 chunks=1
+native aggregate: rows=5 groups=3 chunks=1
+native aggregate: rows=5 groups=3 chunks=1
+native aggregate: rows=5 groups=3 chunks=1
+native aggregate: rows=5 groups=3 chunks=1
+native aggregate: rows=5 groups=3 chunks=1
+native aggregate: rows=5 groups=3 chunks=1
+native aggregate: rows=5 groups=3 chunks=1
+native aggregate: rows=4 groups=2 chunks=1
+native aggregate: rows=5000000 groups=1000 chunks=2
+native aggregate: rows=5000000 groups=1000 chunks=2
+native aggregate: rows=5000000 groups=1000 chunks=2
+native aggregate: rows=5000000 groups=1000 chunks=2
+native aggregate: rows=5000000 groups=1000 chunks=1
+native aggregate: rows=5000000 groups=1000 chunks=1
+native aggregate: rows=5000000 groups=1000 chunks=1
+native aggregate: rows=5000000 groups=1000 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=5000000 groups=25 chunks=1
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=True native_chunk_mib=64 startup_seconds=0.628931
+native aggregate: rows=75000000 groups=25 chunks=18
+native aggregate: rows=75000000 groups=25 chunks=18
+native aggregate: rows=75000000 groups=25 chunks=18
+native aggregate: rows=75000000 groups=25 chunks=18
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+native aggregate: rows=75000000 groups=25 chunks=9
+ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=True native_chunk_mib=256 startup_seconds=0.669359
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=5
+native aggregate: rows=75000000 groups=25 chunks=3
+native aggregate: rows=75000000 groups=25 chunks=3
+native aggregate: rows=75000000 groups=25 chunks=3
+native aggregate: rows=75000000 groups=25 chunks=3

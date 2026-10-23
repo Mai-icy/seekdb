@@ -3,6 +3,7 @@
 import argparse
 import ctypes as ct
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -64,6 +65,7 @@ class Backend:
                                ct.c_size_t, ct.POINTER(ct.c_size_t), ct.c_void_p, ct.c_size_t]
         self.stream.restype = ct.c_int
         self.input_buffer = None
+        self.native_chunk_bytes = 0
 
     def warmup(self):
         schema = pa.schema([("g", pa.int64()), ("a", pa.float64())])
@@ -104,12 +106,16 @@ def native_aggregate(sock, backend, descriptor):
     plan = make_plan_for_schema(schema, names[:groups], names[groups:], bool(count))
     send(sock, b"A")
     total_rows = 0
+    ended = False
+    chunk_limit = backend.native_chunk_bytes
+    columns = groups + sums + count
     def batches():
-        nonlocal total_rows
+        nonlocal total_rows, ended
         total = 0
         while True:
             kind, payload = receive(sock, storage=backend.input_buffer)
             if kind == b"E" and not payload:
+                ended = True
                 return
             if kind != b"B" or len(payload) < 4:
                 raise ValueError("Expected native aggregate batch")
@@ -128,11 +134,42 @@ def native_aggregate(sock, backend, descriptor):
             total_rows += rows
             yield pa.RecordBatch.from_arrays(arrays, schema=schema)
             send(sock, b"A")
-    with pa.RecordBatchReader.from_batches(schema, batches()) as reader:
-        result = json.loads(backend.execute(plan, reader))
-    columns = groups + sums + count
-    output = bytearray(struct.pack("<I", len(result["rows"])))
-    for row in result["rows"]:
+            if chunk_limit and total >= chunk_limit:
+                return
+    merged = {}
+    chunks = 0
+    while not ended:
+        with pa.RecordBatchReader.from_batches(schema, batches()) as reader:
+            result = json.loads(backend.execute(plan, reader))
+        chunks += 1
+        if not chunk_limit:
+            result_rows = result["rows"]
+            break
+        for row in result["rows"]:
+            if len(row) != columns:
+                raise ValueError("Native aggregate result schema mismatch")
+            for i in range(groups, groups + sums):
+                if row[i] is not None:
+                    row[i] = float(row[i])
+                    if not math.isfinite(row[i]):
+                        raise ValueError("Non-finite native partial SUM")
+            key = tuple(row[:groups])
+            if key not in merged:
+                if 4 + (len(merged) + 1) * columns * 9 > 1024 * 1024:
+                    raise ValueError("Native aggregate merged result exceeds 1 MiB")
+                merged[key] = list(row)
+            else:
+                prior = merged[key]
+                for i in range(groups, groups + sums):
+                    if row[i] is not None:
+                        prior[i] = row[i] if prior[i] is None else prior[i] + row[i]
+                        if not math.isfinite(prior[i]):
+                            raise ValueError("Non-finite native merged SUM")
+                if count:
+                    prior[-1] += row[-1]
+        result_rows = merged.values()
+    output = bytearray(struct.pack("<I", len(result_rows)))
+    for row in result_rows:
         if len(row) != columns:
             raise ValueError("Native aggregate result schema mismatch")
         for i, value in enumerate(row):
@@ -141,7 +178,7 @@ def native_aggregate(sock, backend, descriptor):
     if len(output) > 1024 * 1024:
         raise ValueError("Native aggregate result exceeds 1 MiB")
     send(sock, b"R", output)
-    print(f"native aggregate: rows={total_rows} groups={len(result['rows'])}", flush=True)
+    print(f"native aggregate: rows={total_rows} groups={len(result_rows)} chunks={chunks}", flush=True)
 
 
 def handle(sock, backend):
@@ -187,7 +224,7 @@ def handle(sock, backend):
         send(sock, b"J", backend.execute(plan, reader))
 
 
-def serve(path, library, timeout, host_pin_mib=0, warmup=False):
+def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib=0):
     started = time.perf_counter()
     path = Path(path).absolute()
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -207,6 +244,7 @@ def serve(path, library, timeout, host_pin_mib=0, warmup=False):
             else:
                 raise ValueError("Sidecar already running")
     backend = Backend(library)
+    backend.native_chunk_bytes = native_chunk_mib * 1024 * 1024
     pinned = None
     if host_pin_mib:
         try:
@@ -232,7 +270,7 @@ def serve(path, library, timeout, host_pin_mib=0, warmup=False):
         os.chmod(path, 0o600)
         listener.listen(8)
         listener.settimeout(0.5)
-        print(f"ready: {path} host_pin_mib={16 if pinned else 0} warmup={warmup} "
+        print(f"ready: {path} host_pin_mib={16 if pinned else 0} warmup={warmup} native_chunk_mib={native_chunk_mib} "
               f"startup_seconds={time.perf_counter()-started:.6f}", flush=True)
         try:
             while not stopping:
@@ -267,7 +305,9 @@ if __name__ == "__main__":
     p.add_argument("--host-pin-mib", type=int, choices=(0, 16), default=0,
                    help="Reuse 16 MiB CUDA-pinned memory for native input; fall back if unavailable")
     p.add_argument("--warmup", action="store_true", help="Initialize GPU operators before accepting queries")
+    p.add_argument("--native-chunk-mib", type=int, choices=(0, 64, 128, 256), default=0,
+                   help="Bound each native GPU fragment and merge SUM/COUNT/groups; 0 keeps the 512 MiB query limit")
     args = p.parse_args()
     if not 0 < args.io_timeout <= 600:
         p.error("I/O timeout must be in (0,600] seconds")
-    serve(args.socket, args.library, args.io_timeout, args.host_pin_mib, args.warmup)
+    serve(args.socket, args.library, args.io_timeout, args.host_pin_mib, args.warmup, args.native_chunk_mib)

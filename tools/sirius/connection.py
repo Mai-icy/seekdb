@@ -3,7 +3,7 @@ import os
 import pymysql
 
 
-def connect(stream=False):
+def connect(stream=False, local_infile=False):
     return pymysql.connect(
         host=os.environ.get("SEEKDB_HOST", "127.0.0.1"),
         port=int(os.environ.get("SEEKDB_PORT", "2881")),
@@ -13,6 +13,7 @@ def connect(stream=False):
         charset="utf8mb4", autocommit=True,
         cursorclass=pymysql.cursors.SSCursor if stream else pymysql.cursors.Cursor,
         read_timeout=600, write_timeout=600,
+        local_infile=local_infile,
     )
 
 

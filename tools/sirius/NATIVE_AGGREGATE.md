@@ -100,10 +100,22 @@ and little-endian 64-bit values; skipped scan rows are excluded. Each batch is
 acknowledged only after its GPU copy completes. The input buffer belongs to the
 query allocator and is reused on rescan; the native result buffer is 1 MiB.
 
-The existing Fragment implementation runs after input closes. Total decoded
-input remains limited to 512 MiB per query, and JSON/binary output each remains
-limited to 1 MiB. GPU intermediates can exceed input size. This is not yet a fully
-pipelined scan/compute engine or an arbitrary-size streaming result interface.
+The existing Fragment implementation runs after input closes. By default total
+decoded input remains limited to 512 MiB per query. With `--native-chunk-mib 128`
+(also accepts 64 or 256), the sidecar closes each fragment at the target boundary,
+runs its GPU aggregate, and merges its small grouped SUM/COUNT results on CPU.
+The target can be exceeded by one frame, at most 16 MiB. Each fragment retains
+the 512 MiB guard; the complete query can exceed that size. NULL sums and keys
+are preserved, grouping-only outputs are deduplicated, and non-finite partial or
+merged sums fail the query. Floating-point summation order can change further.
+
+JSON per fragment and final binary output remain limited to 1 MiB; the merge
+checks that limit before adding groups. Python merge objects have additional
+bounded overhead beyond their binary representation. GPU intermediates can
+exceed input size. Scan/transfer and fragment execution remain sequential, with
+socket backpressure. This is not yet a fully overlapped scan/compute engine or
+an arbitrary-size streaming result interface. See [SF500.md](SF500.md) for the
+full 75-million-row customer projection experiment.
 
 The native transport has a 60-second total deadline and polls for query
 cancellation at intervals of at most 100 ms while waiting on I/O. Disconnects and

@@ -1,0 +1,15 @@
+{
+  "source_bytes": 140138786816,
+  "source_mtime_ns": 1791462173336194573,
+  "source_fingerprint_unchanged": true,
+  "free_bytes": 726189731840,
+  "import_initial_free_bytes": 726287683584,
+  "min_sampled_free_bytes": 722453647360,
+  "staging_csv_files": [],
+  "seekdb_block_file_bytes": 10737418240,
+  "seekdb_block_file_allocated_bytes": 10737446912,
+  "original_seekdb_block_file_bytes": 10737418240,
+  "gpu_memory": "0, 2 MiB, 49140 MiB\n1, 2 MiB, 49140 MiB\n",
+  "task_seekdb_pid_present": false,
+  "task_sidecar_pid_present": false
+}

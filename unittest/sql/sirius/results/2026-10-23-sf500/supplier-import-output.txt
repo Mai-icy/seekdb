@@ -1,0 +1,6 @@
+{"start": 1, "end": 1000001, "rows": 1000000, "csv_bytes": 16376685, "export_seconds": 0.06471225572749972, "load_seconds": 12.27380852587521, "free_bytes": 726137090048}
+{"start": 1000001, "end": 2000001, "rows": 1000000, "csv_bytes": 17489117, "export_seconds": 0.06803518021479249, "load_seconds": 11.811224785633385, "free_bytes": 726068723712}
+{"start": 2000001, "end": 3000001, "rows": 1000000, "csv_bytes": 17488014, "export_seconds": 0.07275763340294361, "load_seconds": 12.240171700250357, "free_bytes": 725934571520}
+{"start": 3000001, "end": 4000001, "rows": 1000000, "csv_bytes": 17487589, "export_seconds": 0.06438759993761778, "load_seconds": 11.945434716064483, "free_bytes": 725867483136}
+{"start": 4000001, "end": 5000001, "rows": 1000000, "csv_bytes": 17488680, "export_seconds": 0.06272885715588927, "load_seconds": 12.089344379026443, "free_bytes": 725733253120}
+verified sirius_sf500_supplier 5000000

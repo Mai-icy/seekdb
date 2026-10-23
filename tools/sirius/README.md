@@ -15,6 +15,8 @@ opt-in hash aggregate implementation consuming seekdb scan batches directly,
 bounded pinned host input, startup warmup and CPU/GPU performance measurements.
 Follow-up profiling, packing optimization and shuffled scan-batch experiments
 are in [NATIVE_PERFORMANCE.md](NATIVE_PERFORMANCE.md).
+Bounded preparation from the existing SF500 DuckDB database and GPU partial
+aggregation of the full 75-million-row customer projection are in [SF500.md](SF500.md).
 
 The first working integration uses **explicit Parquet snapshots**:
 

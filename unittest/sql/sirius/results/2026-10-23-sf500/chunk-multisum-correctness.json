@@ -1,0 +1,224 @@
+{
+  "table": "sirius_shapes_20261023",
+  "group_column": "g1000",
+  "sum_columns": [
+    "a",
+    "b",
+    "c",
+    "d"
+  ],
+  "scan_batch_rows": 0,
+  "repeats": 3,
+  "timing": "SQL roundtrip, scan, transfer, GPU aggregation and SQL result",
+  "cases": [
+    {
+      "name": "group_sum_count",
+      "groups": 1000,
+      "first_seconds": {
+        "cpu1": 0.8898119297809899,
+        "cpu8": 0.16006131377071142,
+        "gpu": 0.495169379748404
+      },
+      "seconds": {
+        "cpu1": [
+          0.8471178309991956,
+          0.8736134953796864,
+          0.8465278367511928
+        ],
+        "cpu8": [
+          0.14576878305524588,
+          0.1417845287360251,
+          0.14459573570638895
+        ],
+        "gpu": [
+          0.469116676133126,
+          0.49680295307189226,
+          0.42231675097718835
+        ]
+      },
+      "medians": {
+        "cpu1": 0.8471178309991956,
+        "cpu8": 0.14459573570638895,
+        "gpu": 0.469116676133126
+      },
+      "cpu1_speedup": 1.80577215455628,
+      "cpu8_speedup": 0.30822979242237714,
+      "explain": {
+        "cpu1": [
+          "('===================================================================',)",
+          "('|ID|OPERATOR         |NAME                  |EST.ROWS|EST.TIME(us)|',)",
+          "('-------------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                      |50000   |1413035     |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_shapes_20261023|5000000 |591768      |',)",
+          "('===================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_shapes_20261023.g1000], [T_FUN_SUM(sirius_shapes_20261023.a)], [T_FUN_SUM(sirius_shapes_20261023.b)], [T_FUN_SUM(sirius_shapes_20261023.c)],',)",
+          "('       [T_FUN_SUM(sirius_shapes_20261023.d)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_shapes_20261023.g1000]), agg_func([T_FUN_SUM(sirius_shapes_20261023.a)], [T_FUN_SUM(sirius_shapes_20261023.b)], [T_FUN_SUM(sirius_shapes_20261023.c)],',)",
+          "('       [T_FUN_SUM(sirius_shapes_20261023.d)], [T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_shapes_20261023.g1000], [sirius_shapes_20261023.a], [sirius_shapes_20261023.b], [sirius_shapes_20261023.c], [sirius_shapes_20261023.d]), filter(nil), rowset=256',)",
+          "('      access([sirius_shapes_20261023.g1000], [sirius_shapes_20261023.a], [sirius_shapes_20261023.b], [sirius_shapes_20261023.c], [sirius_shapes_20261023.d]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_shapes_20261023.id]), range(MIN ; MAX)always true',)"
+        ],
+        "cpu8": [
+          "('===================================================================================',)",
+          "('|ID|OPERATOR                         |NAME                  |EST.ROWS|EST.TIME(us)|',)",
+          "('-----------------------------------------------------------------------------------',)",
+          "('|0 |PX COORDINATOR                   |                      |50000   |441094      |',)",
+          "('|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001              |50000   |388020      |',)",
+          "('|2 |  \u2514\u2500HASH GROUP BY                |                      |50000   |373103      |',)",
+          "('|3 |    \u2514\u2500EXCHANGE IN DISTR          |                      |400000  |362873      |',)",
+          "('|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000              |400000  |309798      |',)",
+          "('|5 |        \u2514\u2500HASH GROUP BY          |                      |400000  |190462      |',)",
+          "('|6 |          \u2514\u2500PX BLOCK ITERATOR    |                      |5000000 |73971       |',)",
+          "('|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_shapes_20261023|5000000 |73971       |',)",
+          "('===================================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([INTERNAL_FUNCTION(sirius_shapes_20261023.g1000, T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.a)), T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.b)),',)",
+          "('       T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.c)), T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.d)), T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256',)",
+          "('  1 - output([INTERNAL_FUNCTION(sirius_shapes_20261023.g1000, T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.a)), T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.b)),',)",
+          "('       T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.c)), T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.d)), T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256',)",
+          "('      dop=8',)",
+          "('  2 - output([sirius_shapes_20261023.g1000], [T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.a))], [T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.b))], [T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.c))],',)",
+          "('       [T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.d))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256',)",
+          "('      group([sirius_shapes_20261023.g1000]), agg_func([T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.a))], [T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.b))],',)",
+          "('       [T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.c))], [T_FUN_SUM(T_FUN_SUM(sirius_shapes_20261023.d))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))])',)",
+          "('  3 - output([sirius_shapes_20261023.g1000], [T_FUN_SUM(sirius_shapes_20261023.a)], [T_FUN_SUM(sirius_shapes_20261023.b)], [T_FUN_SUM(sirius_shapes_20261023.c)],',)",
+          "('       [T_FUN_SUM(sirius_shapes_20261023.d)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('  4 - output([sirius_shapes_20261023.g1000], [T_FUN_SUM(sirius_shapes_20261023.a)], [T_FUN_SUM(sirius_shapes_20261023.b)], [T_FUN_SUM(sirius_shapes_20261023.c)],',)",
+          "('       [T_FUN_SUM(sirius_shapes_20261023.d)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      (#keys=1, [sirius_shapes_20261023.g1000]), dop=8',)",
+          "('  5 - output([sirius_shapes_20261023.g1000], [T_FUN_SUM(sirius_shapes_20261023.a)], [T_FUN_SUM(sirius_shapes_20261023.b)], [T_FUN_SUM(sirius_shapes_20261023.c)],',)",
+          "('       [T_FUN_SUM(sirius_shapes_20261023.d)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_shapes_20261023.g1000]), agg_func([T_FUN_SUM(sirius_shapes_20261023.a)], [T_FUN_SUM(sirius_shapes_20261023.b)], [T_FUN_SUM(sirius_shapes_20261023.c)],',)",
+          "('       [T_FUN_SUM(sirius_shapes_20261023.d)], [T_FUN_COUNT(*)])',)",
+          "('  6 - output([sirius_shapes_20261023.g1000], [sirius_shapes_20261023.a], [sirius_shapes_20261023.b], [sirius_shapes_20261023.c], [sirius_shapes_20261023.d]), filter(nil), rowset=256',)",
+          "('  7 - output([sirius_shapes_20261023.g1000], [sirius_shapes_20261023.a], [sirius_shapes_20261023.b], [sirius_shapes_20261023.c], [sirius_shapes_20261023.d]), filter(nil), rowset=256',)",
+          "('      access([sirius_shapes_20261023.g1000], [sirius_shapes_20261023.a], [sirius_shapes_20261023.b], [sirius_shapes_20261023.c], [sirius_shapes_20261023.d]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_shapes_20261023.id]), range(MIN ; MAX)always true',)"
+        ],
+        "gpu": [
+          "('===================================================================',)",
+          "('|ID|OPERATOR         |NAME                  |EST.ROWS|EST.TIME(us)|',)",
+          "('-------------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                      |50000   |1413035     |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_shapes_20261023|5000000 |591768      |',)",
+          "('===================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_shapes_20261023.g1000], [T_FUN_SUM(sirius_shapes_20261023.a)], [T_FUN_SUM(sirius_shapes_20261023.b)], [T_FUN_SUM(sirius_shapes_20261023.c)],',)",
+          "('       [T_FUN_SUM(sirius_shapes_20261023.d)], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_shapes_20261023.g1000]), agg_func([T_FUN_SUM(sirius_shapes_20261023.a)], [T_FUN_SUM(sirius_shapes_20261023.b)], [T_FUN_SUM(sirius_shapes_20261023.c)],',)",
+          "('       [T_FUN_SUM(sirius_shapes_20261023.d)], [T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_shapes_20261023.g1000], [sirius_shapes_20261023.a], [sirius_shapes_20261023.b], [sirius_shapes_20261023.c], [sirius_shapes_20261023.d]), filter(nil), rowset=256',)",
+          "('      access([sirius_shapes_20261023.g1000], [sirius_shapes_20261023.a], [sirius_shapes_20261023.b], [sirius_shapes_20261023.c], [sirius_shapes_20261023.d]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_shapes_20261023.id]), range(MIN ; MAX)always true',)"
+        ]
+      }
+    },
+    {
+      "name": "group_count",
+      "groups": 1000,
+      "first_seconds": {
+        "cpu1": 0.29950609616935253,
+        "cpu8": 0.05437459098175168,
+        "gpu": 0.09582927823066711
+      },
+      "seconds": {
+        "cpu1": [
+          0.29344676015898585,
+          0.27868185518309474,
+          0.2894066986627877
+        ],
+        "cpu8": [
+          0.050113003235310316,
+          0.05635213106870651,
+          0.04754851898178458
+        ],
+        "gpu": [
+          0.07895351760089397,
+          0.07167617697268724,
+          0.0920965732075274
+        ]
+      },
+      "medians": {
+        "cpu1": 0.2894066986627877,
+        "cpu8": 0.050113003235310316,
+        "gpu": 0.07895351760089397
+      },
+      "cpu1_speedup": 3.665532676146538,
+      "cpu8_speedup": 0.6347152699215887,
+      "explain": {
+        "cpu1": [
+          "('===================================================================',)",
+          "('|ID|OPERATOR         |NAME                  |EST.ROWS|EST.TIME(us)|',)",
+          "('-------------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                      |50000   |632691      |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_shapes_20261023|5000000 |128943      |',)",
+          "('===================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_shapes_20261023.g1000], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_shapes_20261023.g1000]), agg_func([T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_shapes_20261023.g1000]), filter(nil), rowset=256',)",
+          "('      access([sirius_shapes_20261023.g1000]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_shapes_20261023.id]), range(MIN ; MAX)always true',)"
+        ],
+        "cpu8": [
+          "('===================================================================================',)",
+          "('|ID|OPERATOR                         |NAME                  |EST.ROWS|EST.TIME(us)|',)",
+          "('-----------------------------------------------------------------------------------',)",
+          "('|0 |PX COORDINATOR                   |                      |50000   |161059      |',)",
+          "('|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001              |50000   |145800      |',)",
+          "('|2 |  \u2514\u2500HASH GROUP BY                |                      |50000   |141526      |',)",
+          "('|3 |    \u2514\u2500EXCHANGE IN DISTR          |                      |400000  |135389      |',)",
+          "('|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000              |400000  |120130      |',)",
+          "('|5 |        \u2514\u2500HASH GROUP BY          |                      |400000  |85940       |',)",
+          "('|6 |          \u2514\u2500PX BLOCK ITERATOR    |                      |5000000 |16118       |',)",
+          "('|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_shapes_20261023|5000000 |16118       |',)",
+          "('===================================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([INTERNAL_FUNCTION(sirius_shapes_20261023.g1000, T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256',)",
+          "('  1 - output([INTERNAL_FUNCTION(sirius_shapes_20261023.g1000, T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256',)",
+          "('      dop=8',)",
+          "('  2 - output([sirius_shapes_20261023.g1000], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256',)",
+          "('      group([sirius_shapes_20261023.g1000]), agg_func([T_FUN_COUNT_SUM(T_FUN_COUNT(*))])',)",
+          "('  3 - output([sirius_shapes_20261023.g1000], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('  4 - output([sirius_shapes_20261023.g1000], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      (#keys=1, [sirius_shapes_20261023.g1000]), dop=8',)",
+          "('  5 - output([sirius_shapes_20261023.g1000], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_shapes_20261023.g1000]), agg_func([T_FUN_COUNT(*)])',)",
+          "('  6 - output([sirius_shapes_20261023.g1000]), filter(nil), rowset=256',)",
+          "('  7 - output([sirius_shapes_20261023.g1000]), filter(nil), rowset=256',)",
+          "('      access([sirius_shapes_20261023.g1000]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_shapes_20261023.id]), range(MIN ; MAX)always true',)"
+        ],
+        "gpu": [
+          "('===================================================================',)",
+          "('|ID|OPERATOR         |NAME                  |EST.ROWS|EST.TIME(us)|',)",
+          "('-------------------------------------------------------------------',)",
+          "('|0 |HASH GROUP BY    |                      |50000   |632691      |',)",
+          "('|1 |\u2514\u2500TABLE FULL SCAN|sirius_shapes_20261023|5000000 |128943      |',)",
+          "('===================================================================',)",
+          "('Outputs & filters:',)",
+          "('-------------------------------------',)",
+          "('  0 - output([sirius_shapes_20261023.g1000], [T_FUN_COUNT(*)]), filter(nil), rowset=256',)",
+          "('      group([sirius_shapes_20261023.g1000]), agg_func([T_FUN_COUNT(*)])',)",
+          "('  1 - output([sirius_shapes_20261023.g1000]), filter(nil), rowset=256',)",
+          "('      access([sirius_shapes_20261023.g1000]), partitions(p0)',)",
+          "('      is_index_back=false, is_global_index=false, ',)",
+          "('      range_key([sirius_shapes_20261023.id]), range(MIN ; MAX)always true',)"
+        ]
+      }
+    }
+  ],
+  "rows": 5000000
+}

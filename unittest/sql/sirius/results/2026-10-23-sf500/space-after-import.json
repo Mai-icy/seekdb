@@ -1,0 +1,91 @@
+{
+  "free_bytes": 726237356032,
+  "table_columns": [
+    "TABLE_NAME",
+    "TABLE_ROWS",
+    "DATA_LENGTH",
+    "INDEX_LENGTH"
+  ],
+  "tables": [
+    [
+      "sirius_sf500_customer",
+      13495185,
+      0,
+      0
+    ],
+    [
+      "sirius_sf500_supplier",
+      5000000,
+      0,
+      0
+    ]
+  ],
+  "staging_csv_files": [],
+  "sstable_columns": [
+    "table_name",
+    "TABLE_TYPE",
+    "SIZE"
+  ],
+  "sstables": [
+    [
+      "sirius_sf500_supplier",
+      "MAJOR",
+      0
+    ],
+    [
+      "sirius_sf500_supplier",
+      "MAJOR",
+      30115479
+    ],
+    [
+      "sirius_sf500_supplier",
+      "MAJOR",
+      30115479
+    ],
+    [
+      "sirius_sf500_supplier",
+      "MINI",
+      49927575
+    ],
+    [
+      "sirius_sf500_supplier",
+      "MDS_MINI",
+      670
+    ],
+    [
+      "sirius_sf500_customer",
+      "MAJOR",
+      0
+    ],
+    [
+      "sirius_sf500_customer",
+      "MAJOR",
+      113032938
+    ],
+    [
+      "sirius_sf500_customer",
+      "MAJOR",
+      452161243
+    ],
+    [
+      "sirius_sf500_customer",
+      "MINI",
+      187253147
+    ],
+    [
+      "sirius_sf500_customer",
+      "MINI",
+      315997399
+    ],
+    [
+      "sirius_sf500_customer",
+      "MINI",
+      262601765
+    ],
+    [
+      "sirius_sf500_customer",
+      "MDS_MINI",
+      670
+    ]
+  ]
+}
