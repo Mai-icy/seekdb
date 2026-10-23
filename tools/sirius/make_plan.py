@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a small Substrait Parquet scan/filter/aggregate plan for Sirius."""
+"""Build a small Substrait scan/filter/aggregate plan for Sirius."""
 import argparse
 from pathlib import Path
 
@@ -18,9 +18,13 @@ def field(index):
 def make_plan(parquet, groups=(), sums=(), count=False, minimum=None):
     parquet = Path(parquet).resolve(strict=True)
     schema = pq.read_schema(parquet)
+    return make_plan_for_schema(schema, groups, sums, count, minimum, parquet)
+
+
+def make_plan_for_schema(schema, groups=(), sums=(), count=False, minimum=None, parquet=None):
     names = schema.names
     if len(set(names)) != len(names):
-        raise ValueError("Duplicate Parquet column names are unsupported")
+        raise ValueError("Duplicate input column names are unsupported")
     plan = plan_pb2.Plan()
     plan.version.minor_number = 85
     plan.version.producer = "seekdb-sirius-prototype"
@@ -32,9 +36,12 @@ def make_plan(parquet, groups=(), sums=(), count=False, minimum=None):
         return ext.function_anchor
 
     rel = alg.Rel()
-    item = rel.read.local_files.items.add()
-    item.uri_file = str(parquet)
-    item.parquet.SetInParent()
+    if parquet is None:
+        rel.read.named_table.names.append("sirius_stream_0")
+    else:
+        item = rel.read.local_files.items.add()
+        item.uri_file = str(parquet)
+        item.parquet.SetInParent()
     if minimum:
         name, value = minimum.split("=", 1)
         filtered = alg.Rel()

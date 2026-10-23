@@ -5,6 +5,11 @@ loads an optional bridge, executes a binary Substrait plan with Sirius's public
 C++ FFI, and returns its Arrow results as JSON. Normal seekdb builds require no
 CUDA, Sirius, Arrow, or Protobuf dependency.
 
+**Next prototype:** [SIDECAR.md](SIDECAR.md) adds an isolated GPU process and
+direct Arrow input from a live seekdb statement, without a Parquet intermediate.
+It includes build instructions, transaction checks, failure recovery and honest
+end-to-end measurements. The original snapshot path below remains available.
+
 The first working integration uses **explicit Parquet snapshots**:
 
 ```text
@@ -189,6 +194,7 @@ freshly inserted data. The published results include both states.
   restart to change the engine configuration. GPU/host allocations are outside
   seekdb's tenant memory accounting. The standalone seekdb server's existing
   shutdown path uses `_Exit`; in that case the OS reclaims process resources.
-- The adapter runs Sirius in-process. It is an experimental integration, without
+- The original bridge described above runs Sirius in-process. It is an experimental integration, without
   fault isolation from native engine failures. It has not been validated for
-  production multi-tenant operation.
+  production multi-tenant operation. The optional sidecar proxy isolates that
+  process; see [SIDECAR.md](SIDECAR.md) for its remaining limits.

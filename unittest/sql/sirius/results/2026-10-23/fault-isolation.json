@@ -1,0 +1,1 @@
+{"status": "passed", "killed_child_pid": 2904926, "recovered_child_pid": 2905163, "seekdb_pid": 2893730, "checks": ["native_sql", "cpu_process_has_no_cuda", "gpu_process_kill", "sql_error_on_unavailable", "cpu_sql_survives", "restart_recovery"]}

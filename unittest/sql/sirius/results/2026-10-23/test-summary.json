@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-23",
+  "status": "passed",
+  "source_base": "a30601ca5397a0fa28ed22e752630f3429025f6d",
+  "sirius_revision": "3fcff6a0488516db09ddc7e993564eb9a98b72d3",
+  "original_library_sha256": "cf5c490ac32f3cf7169bea8011688eedaefb634ee53741a3f475b7d729bd78ae",
+  "overlay_library_sha256": "9f4163457e7f1786884bd324782a0bd9a3ee4bff49e9923635a1be94fd736744",
+  "original_sirius_worktree_clean_after_build": true,
+  "cpp_tests": 15,
+  "transport_tests": [
+    "backend_error_and_recovery",
+    "binary_plan_and_fragmented_response",
+    "capacity",
+    "deadline",
+    "frame_limit_before_body",
+    "short_response",
+    "untrusted_length"
+  ],
+  "live_checks": [
+    "sum_count_null", "empty_global", "zero_length_batch", "scan", "empty_scan",
+    "empty_group", "decimal_sum", "filter_all_rows", "all_null_sum",
+    "multiple_batches_and_offsets", "invalid_plan_schema_recovery",
+    "malformed_batch_disconnect_recovery", "live_empty", "live_insert",
+    "uncommitted_invisible", "committed_update", "delete_visible",
+    "statement_snapshot_across_batches"
+  ],
+  "native_sql_through_proxy_checks": [
+    "null", "invalid_plans", "snapshot", "repeat_calls", "aggregate", "decimal",
+    "filter_group_null", "concurrent_calls", "result_limit", "super_privilege", "recovery"
+  ],
+  "proxy_cli_lifecycle": true,
+  "direct_arrow_backend_exit_code": 0,
+  "sidecar_sigterm_exit_code": 0,
+  "proxy_dependencies": ["libstdc++", "libgcc_s", "libc", "libm", "ld-linux"]
+}

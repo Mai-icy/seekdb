@@ -7,10 +7,12 @@
 #include <cstdlib>
 #include <condition_variable>
 #include <future>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace {
 // Own the engine on a dedicated thread. Its Rust telemetry uses thread-local
@@ -30,10 +32,7 @@ public:
     worker_.join();
   }
   size_t execute(const uint8_t *plan, size_t plan_size, char *output, size_t capacity) {
-    // One context/connection and one outstanding request. The calling SQL
-    // worker owns all buffers and waits until the GPU worker releases Arrow.
-    std::lock_guard<std::mutex> caller(callers_);
-    std::packaged_task<size_t(sirius::ffi::Context &)> task([&](auto &context) {
+    return submit([&](auto &context) {
       ArrowArrayStream stream{};
       try {
         context.execute_substrait(std::string(reinterpret_cast<const char *>(plan), plan_size),
@@ -44,12 +43,99 @@ public:
         throw;
       }
     });
+  }
+#ifdef SEEKDB_SIRIUS_ARROW_INPUT
+  size_t execute_stream(const uint8_t *plan, size_t plan_size, ArrowArrayStream &input,
+                        char *output, size_t capacity) {
+    return submit([&](auto &context) {
+      struct StreamGuard { ArrowArrayStream &s; ~StreamGuard() { if (s.release) s.release(&s); } } guard{input};
+      if (!input.release || !input.get_schema || !input.get_next) {
+        throw std::invalid_argument("Invalid input Arrow stream");
+      }
+      ArrowSchema schema{};
+      struct SchemaGuard { ArrowSchema &s; ~SchemaGuard() { if (s.release) s.release(&s); } } sg{schema};
+      if (input.get_schema(&input, &schema) || !schema.release || !schema.format
+          || std::string(schema.format) != "+s" || schema.n_children < 1
+          || schema.n_children > 64 || !schema.children || schema.dictionary) {
+        throw std::invalid_argument("Expected a flat Arrow schema with 1..64 columns");
+      }
+      auto fragment = sirius::ffi::make_fragment(context);
+      for (int64_t i = 0; i < schema.n_children; ++i) {
+        auto *column = schema.children[i];
+        if (!column || !column->format || !column->name || column->dictionary || column->n_children) {
+          throw std::invalid_argument("Invalid Arrow input column");
+        }
+        const std::string format(column->format);
+        if (format != "l" && format != "g") {
+          throw std::invalid_argument("Live input currently supports int64 and float64 only");
+        }
+        fragment->declare_input_column(0, column->name, format == "l" ? "BIGINT" : "DOUBLE");
+      }
+      fragment->build(std::string(reinterpret_cast<const char *>(plan), plan_size));
+      size_t input_bytes = 0;
+      bool received = false;
+      for (;;) {
+        ArrowArray batch{};
+        struct BatchGuard { ArrowArray &a; ~BatchGuard() { if (a.release) a.release(&a); } } bg{batch};
+        if (input.get_next(&input, &batch)) {
+          const char *error = input.get_last_error ? input.get_last_error(&input) : nullptr;
+          throw std::runtime_error(error ? error : "Arrow input producer failed");
+        }
+        if (!batch.release) break;
+        if (batch.length < 0 || batch.length > 1048576) {
+          throw std::invalid_argument("Arrow input batch row limit exceeded");
+        }
+        const size_t bytes = (static_cast<size_t>(batch.length) * 8 + (batch.length + 7) / 8)
+                             * schema.n_children;
+        if (bytes > 16 * 1024 * 1024 || input_bytes > 512 * 1024 * 1024 - bytes) {
+          throw std::invalid_argument("Live input exceeds 16 MiB per batch or 512 MiB per query");
+        }
+        input_bytes += bytes;
+        fragment->push_arrow(0, reinterpret_cast<uintptr_t>(&schema), reinterpret_cast<uintptr_t>(&batch));
+        received = true;
+      }
+      // A typed empty batch gives the aggregate pipeline a task, so global
+      // aggregates over no rows can produce SQL's single (NULL, 0) result row.
+      if (!received) {
+        const void *buffers[2] = {nullptr, nullptr};
+        std::vector<ArrowArray> children(schema.n_children);
+        std::vector<ArrowArray *> pointers;
+        for (auto &child : children) {
+          child.n_buffers = 2;
+          child.buffers = buffers;
+          pointers.push_back(&child);
+        }
+        ArrowArray empty{};
+        empty.n_buffers = 1;
+        empty.buffers = buffers;
+        empty.n_children = schema.n_children;
+        empty.children = pointers.data();
+        fragment->push_arrow(0, reinterpret_cast<uintptr_t>(&schema), reinterpret_cast<uintptr_t>(&empty));
+      }
+      fragment->close_input(0, 0);
+      fragment->run();
+      ArrowArrayStream result{};
+      try {
+        fragment->result_to_arrow(reinterpret_cast<uintptr_t>(&result));
+        return seekdb_sirius::arrow_to_json(result, output, capacity);
+      } catch (...) {
+        if (result.release) result.release(&result);
+        throw;
+      }
+    });
+  }
+#endif
+private:
+  size_t submit(std::function<size_t(sirius::ffi::Context &)> operation) {
+    // One context/connection and one outstanding request. The calling SQL
+    // worker owns all buffers and waits until the GPU worker releases Arrow.
+    std::lock_guard<std::mutex> caller(callers_);
+    std::packaged_task<size_t(sirius::ffi::Context &)> task(std::move(operation));
     auto result = task.get_future();
     { std::lock_guard<std::mutex> lock(mutex_); task_ = std::move(task); }
     wake_.notify_one();
     return result.get();
   }
-private:
   void run() {
     std::unique_ptr<sirius::ffi::Context> context;
     try {
@@ -81,6 +167,8 @@ private:
   std::thread worker_;
 };
 
+Runtime &runtime() { static Runtime instance; return instance; }
+
 int execute(const uint8_t *plan, size_t plan_size,
             char *output, size_t capacity, size_t *output_size,
             char *error, size_t error_capacity) noexcept
@@ -90,8 +178,7 @@ int execute(const uint8_t *plan, size_t plan_size,
   if (!plan || !plan_size || plan_size > 1024 * 1024 || !output || !capacity || !output_size
       || !error || !error_capacity) { return SEEKDB_SIRIUS_INVALID_ARGUMENT; }
   try {
-    static Runtime runtime;
-    *output_size = runtime.execute(plan, plan_size, output, capacity);
+    *output_size = runtime().execute(plan, plan_size, output, capacity);
     return SEEKDB_SIRIUS_OK;
   } catch (const seekdb_sirius::ResultTooLarge &e) {
     std::snprintf(error, error_capacity, "%s", e.what());
@@ -108,3 +195,27 @@ const SeekdbSiriusApiV1 api{1, sizeof(SeekdbSiriusApiV1), execute};
 
 extern "C" __attribute__((visibility("default")))
 const SeekdbSiriusApiV1 *seekdb_sirius_get_api_v1() noexcept { return &api; }
+
+#ifdef SEEKDB_SIRIUS_ARROW_INPUT
+// Optional sidecar-only API. Takes ownership of an exported Arrow C stream,
+// including on errors after argument validation. No pointers cross processes.
+extern "C" __attribute__((visibility("default")))
+int seekdb_sirius_execute_stream_v1(const uint8_t *plan, size_t plan_size, uintptr_t input,
+    char *output, size_t capacity, size_t *output_size, char *error, size_t error_capacity) noexcept {
+  if (output_size) *output_size = 0;
+  if (!plan || !plan_size || plan_size > 1024 * 1024 || !input || !output || !capacity
+      || !output_size || !error || !error_capacity) return SEEKDB_SIRIUS_INVALID_ARGUMENT;
+  error[0] = '\0';
+  auto &stream = *reinterpret_cast<ArrowArrayStream *>(input);
+  try {
+    *output_size = runtime().execute_stream(plan, plan_size, stream, output, capacity);
+    return SEEKDB_SIRIUS_OK;
+  } catch (const std::exception &e) {
+    std::snprintf(error, error_capacity, "%s", e.what());
+  } catch (...) {
+    std::snprintf(error, error_capacity, "Unknown live-input error");
+  }
+  if (stream.release) stream.release(&stream);
+  return SEEKDB_SIRIUS_EXECUTION_ERROR;
+}
+#endif
