@@ -1,0 +1,233 @@
+{
+  "semantics": "fresh sidecar processes; seekdb storage remains warm; every result checked",
+  "trials": [
+    {
+      "trial": 0,
+      "host_pin_mib": 0,
+      "warmup": false,
+      "startup_seconds": 0.187090870924294,
+      "first_query_seconds": 0.7298232880420983,
+      "startup_plus_first_seconds": 0.9169141589663923,
+      "warm_seconds": [
+        0.15006840229034424,
+        0.14726242423057556,
+        0.18930648267269135,
+        0.1453387555666268,
+        0.14249974070116878
+      ],
+      "warm_median_seconds": 0.14726242423057556,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=0 warmup=False startup_seconds=0.085094\n"
+      ]
+    },
+    {
+      "trial": 0,
+      "host_pin_mib": 16,
+      "warmup": false,
+      "startup_seconds": 0.49635005183517933,
+      "first_query_seconds": 0.6469452176243067,
+      "startup_plus_first_seconds": 1.143295269459486,
+      "warm_seconds": [
+        0.14653350366279483,
+        0.15194428898394108,
+        0.1327831633388996,
+        0.1587498588487506,
+        0.15677702892571688
+      ],
+      "warm_median_seconds": 0.15194428898394108,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=False startup_seconds=0.384786\n"
+      ]
+    },
+    {
+      "trial": 0,
+      "host_pin_mib": 0,
+      "warmup": true,
+      "startup_seconds": 0.7914327080361545,
+      "first_query_seconds": 0.19958080258220434,
+      "startup_plus_first_seconds": 0.9910135106183589,
+      "warm_seconds": [
+        0.1500916089862585,
+        0.1442279196344316,
+        0.15106377424672246,
+        0.1710623619146645,
+        0.18875708896666765
+      ],
+      "warm_median_seconds": 0.15106377424672246,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=0 warmup=True startup_seconds=0.693218\n"
+      ]
+    },
+    {
+      "trial": 0,
+      "host_pin_mib": 16,
+      "warmup": true,
+      "startup_seconds": 0.7429011538624763,
+      "first_query_seconds": 0.1944329272955656,
+      "startup_plus_first_seconds": 0.937334081158042,
+      "warm_seconds": [
+        0.17987260408699512,
+        0.14730213629081845,
+        0.13348022289574146,
+        0.13284631678834558,
+        0.13216228317469358
+      ],
+      "warm_median_seconds": 0.13348022289574146,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=True startup_seconds=0.655619\n"
+      ]
+    },
+    {
+      "trial": 1,
+      "host_pin_mib": 16,
+      "warmup": false,
+      "startup_seconds": 0.350328141823411,
+      "first_query_seconds": 0.569877163041383,
+      "startup_plus_first_seconds": 0.920205304864794,
+      "warm_seconds": [
+        0.1315504969097674,
+        0.12428445089608431,
+        0.1544031542725861,
+        0.1664226809516549,
+        0.1270877430215478
+      ],
+      "warm_median_seconds": 0.1315504969097674,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=False startup_seconds=0.241492\n"
+      ]
+    },
+    {
+      "trial": 1,
+      "host_pin_mib": 0,
+      "warmup": true,
+      "startup_seconds": 0.817095432896167,
+      "first_query_seconds": 0.1703958478756249,
+      "startup_plus_first_seconds": 0.9874912807717919,
+      "warm_seconds": [
+        0.16582453530281782,
+        0.19956046296283603,
+        0.17426114017143846,
+        0.18623042572289705,
+        0.1796978241764009
+      ],
+      "warm_median_seconds": 0.1796978241764009,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=0 warmup=True startup_seconds=0.705552\n"
+      ]
+    },
+    {
+      "trial": 1,
+      "host_pin_mib": 16,
+      "warmup": true,
+      "startup_seconds": 0.760548654012382,
+      "first_query_seconds": 0.18213648116216063,
+      "startup_plus_first_seconds": 0.9426851351745427,
+      "warm_seconds": [
+        0.14854211593046784,
+        0.144775431137532,
+        0.1323482128791511,
+        0.1314967218786478,
+        0.13180475821718574
+      ],
+      "warm_median_seconds": 0.1323482128791511,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=True startup_seconds=0.646828\n"
+      ]
+    },
+    {
+      "trial": 1,
+      "host_pin_mib": 0,
+      "warmup": false,
+      "startup_seconds": 0.20162268029525876,
+      "first_query_seconds": 0.6902196719311178,
+      "startup_plus_first_seconds": 0.8918423522263765,
+      "warm_seconds": [
+        0.16197955096140504,
+        0.1526206280104816,
+        0.16117185028269887,
+        0.14459955226629972,
+        0.16265736613422632
+      ],
+      "warm_median_seconds": 0.16117185028269887,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=0 warmup=False startup_seconds=0.086776\n"
+      ]
+    },
+    {
+      "trial": 2,
+      "host_pin_mib": 0,
+      "warmup": true,
+      "startup_seconds": 0.7761416868306696,
+      "first_query_seconds": 0.17408416606485844,
+      "startup_plus_first_seconds": 0.9502258528955281,
+      "warm_seconds": [
+        0.16612894320860505,
+        0.17308523040264845,
+        0.200129765085876,
+        0.19239164097234607,
+        0.14441119506955147
+      ],
+      "warm_median_seconds": 0.17308523040264845,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=0 warmup=True startup_seconds=0.685184\n"
+      ]
+    },
+    {
+      "trial": 2,
+      "host_pin_mib": 16,
+      "warmup": true,
+      "startup_seconds": 0.7774659679271281,
+      "first_query_seconds": 0.1699490798637271,
+      "startup_plus_first_seconds": 0.9474150477908552,
+      "warm_seconds": [
+        0.13109730184078217,
+        0.13394881878048182,
+        0.13392098434269428,
+        0.12942960765212774,
+        0.14651860715821385
+      ],
+      "warm_median_seconds": 0.13392098434269428,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=True startup_seconds=0.668523\n"
+      ]
+    },
+    {
+      "trial": 2,
+      "host_pin_mib": 0,
+      "warmup": false,
+      "startup_seconds": 0.20261443592607975,
+      "first_query_seconds": 0.7238218314014375,
+      "startup_plus_first_seconds": 0.9264362673275173,
+      "warm_seconds": [
+        0.170958093367517,
+        0.19074788689613342,
+        0.18418056378141046,
+        0.1776000428944826,
+        0.18803188391029835
+      ],
+      "warm_median_seconds": 0.18418056378141046,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=0 warmup=False startup_seconds=0.091330\n"
+      ]
+    },
+    {
+      "trial": 2,
+      "host_pin_mib": 16,
+      "warmup": false,
+      "startup_seconds": 0.3771852529607713,
+      "first_query_seconds": 0.6140489750541747,
+      "startup_plus_first_seconds": 0.991234228014946,
+      "warm_seconds": [
+        0.1850095302797854,
+        0.18851775815710425,
+        0.17511947359889746,
+        0.1442852751351893,
+        0.14148633368313313
+      ],
+      "warm_median_seconds": 0.17511947359889746,
+      "startup_log": [
+        "ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=16 warmup=False startup_seconds=0.265042\n"
+      ]
+    }
+  ]
+}

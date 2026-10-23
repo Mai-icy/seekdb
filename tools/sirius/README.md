@@ -10,6 +10,10 @@ direct Arrow input from a live seekdb statement, without a Parquet intermediate.
 It includes build instructions, transaction checks, failure recovery and honest
 end-to-end measurements. The original snapshot path below remains available.
 
+**Native SQL aggregate:** [NATIVE_AGGREGATE.md](NATIVE_AGGREGATE.md) describes the
+opt-in hash aggregate implementation consuming seekdb scan batches directly,
+bounded pinned host input, startup warmup and CPU/GPU performance measurements.
+
 The first working integration uses **explicit Parquet snapshots**:
 
 ```text

@@ -2,15 +2,18 @@
 """Single-worker local Sirius process with bounded Arrow IPC input."""
 import argparse
 import ctypes as ct
+import json
 import os
 from pathlib import Path
 import signal
 import socket
 import stat
 import struct
+import time
 
 import pyarrow as pa
 from wire import receive, send
+from make_plan import make_plan_for_schema
 
 EXECUTE = ct.CFUNCTYPE(ct.c_int, ct.c_void_p, ct.c_size_t, ct.c_void_p, ct.c_size_t,
                       ct.POINTER(ct.c_size_t), ct.c_void_p, ct.c_size_t)
@@ -18,6 +21,32 @@ EXECUTE = ct.CFUNCTYPE(ct.c_int, ct.c_void_p, ct.c_size_t, ct.c_void_p, ct.c_siz
 
 class Api(ct.Structure):
     _fields_ = [("version", ct.c_uint32), ("size", ct.c_uint32), ("execute", EXECUTE)]
+
+
+class PinnedInput:
+    """One process-lifetime CUDA host allocation, reused only after GPU copy ACK."""
+    def __init__(self):
+        self.runtime = ct.CDLL("libcudart.so")
+        self.runtime.cudaHostAlloc.argtypes = [ct.POINTER(ct.c_void_p), ct.c_size_t, ct.c_uint]
+        self.runtime.cudaHostAlloc.restype = ct.c_int
+        self.runtime.cudaFreeHost.argtypes = [ct.c_void_p]
+        self.runtime.cudaFreeHost.restype = ct.c_int
+        self.pointer = ct.c_void_p()
+        self.size = 16 * 1024 * 1024
+        status = self.runtime.cudaHostAlloc(ct.byref(self.pointer), self.size, 0)
+        if status:
+            raise RuntimeError(f"cudaHostAlloc failed with status {status}")
+        self.array = (ct.c_ubyte * self.size).from_address(self.pointer.value)
+        self.view = memoryview(self.array).cast("B")
+
+    def close(self):
+        if self.pointer.value:
+            # serve() has completed and all per-query Arrow streams were released.
+            self.view.release()
+            status = self.runtime.cudaFreeHost(self.pointer)
+            self.pointer.value = None
+            if status:
+                print(f"warning: cudaFreeHost status={status}", flush=True)
 
 
 class Backend:
@@ -34,6 +63,16 @@ class Backend:
         self.stream.argtypes = [ct.c_void_p, ct.c_size_t, ct.c_size_t, ct.c_void_p,
                                ct.c_size_t, ct.POINTER(ct.c_size_t), ct.c_void_p, ct.c_size_t]
         self.stream.restype = ct.c_int
+        self.input_buffer = None
+
+    def warmup(self):
+        schema = pa.schema([("g", pa.int64()), ("a", pa.float64())])
+        batch = pa.record_batch([[0], [0.]], schema=schema)
+        with pa.RecordBatchReader.from_batches(schema, [batch]) as reader:
+            plan = make_plan_for_schema(schema, ["g"], ["a"], True)
+            result = json.loads(self.execute(plan, reader))
+            if result["rows"] != [[0, 0, 1]]:
+                raise RuntimeError("Sirius startup warmup result mismatch")
 
     def execute(self, plan, reader=None):
         output, error, length = ct.create_string_buffer(1024 * 1024), ct.create_string_buffer(1024), ct.c_size_t()
@@ -53,8 +92,63 @@ class Backend:
         return output.raw[:length.value]
 
 
+def native_aggregate(sock, backend, descriptor):
+    if len(descriptor) != 4:
+        raise ValueError("Invalid native aggregate descriptor")
+    version, groups, sums, count = descriptor
+    if version != 1 or not 1 <= groups <= 8 or groups + sums > 64 or count not in (0, 1):
+        raise ValueError("Unsupported native aggregate shape")
+    names = [f"g{i}" for i in range(groups)] + [f"s{i}" for i in range(sums)]
+    schema = pa.schema([(name, pa.int64() if i < groups else pa.float64())
+                        for i, name in enumerate(names)])
+    plan = make_plan_for_schema(schema, names[:groups], names[groups:], bool(count))
+    send(sock, b"A")
+    total_rows = 0
+    def batches():
+        nonlocal total_rows
+        total = 0
+        while True:
+            kind, payload = receive(sock, storage=backend.input_buffer)
+            if kind == b"E" and not payload:
+                return
+            if kind != b"B" or len(payload) < 4:
+                raise ValueError("Expected native aggregate batch")
+            rows = struct.unpack_from("<I", payload)[0]
+            mask = (rows + 7) // 8
+            size = mask + rows * 8
+            total += size * len(schema)
+            if not 0 < rows <= 262144 or len(payload) != 4 + size * len(schema) or total > 512 * 1024 * 1024:
+                raise ValueError("Native aggregate input size/budget exceeded")
+            # The owned frame buffer backs Arrow directly; no Python row decode.
+            view = memoryview(payload)
+            arrays = [pa.Array.from_buffers(field.type, rows,
+                      [pa.py_buffer(view[4+i*size:4+i*size+mask]),
+                       pa.py_buffer(view[4+i*size+mask:4+(i+1)*size])])
+                      for i, field in enumerate(schema)]
+            total_rows += rows
+            yield pa.RecordBatch.from_arrays(arrays, schema=schema)
+            send(sock, b"A")
+    with pa.RecordBatchReader.from_batches(schema, batches()) as reader:
+        result = json.loads(backend.execute(plan, reader))
+    columns = groups + sums + count
+    output = bytearray(struct.pack("<I", len(result["rows"])))
+    for row in result["rows"]:
+        if len(row) != columns:
+            raise ValueError("Native aggregate result schema mismatch")
+        for i, value in enumerate(row):
+            output += struct.pack("<Bd" if groups <= i < groups+sums else "<Bq",
+                                  value is not None, value if value is not None else 0)
+    if len(output) > 1024 * 1024:
+        raise ValueError("Native aggregate result exceeds 1 MiB")
+    send(sock, b"R", output)
+    print(f"native aggregate: rows={total_rows} groups={len(result['rows'])}", flush=True)
+
+
 def handle(sock, backend):
     kind, plan = receive(sock, 1024 * 1024)
+    if kind == b"N":
+        native_aggregate(sock, backend, plan)
+        return
     if not plan or kind not in (b"P", b"Q"):
         raise ValueError("Expected P(plan) or Q(plan) request")
     if kind == b"P":
@@ -93,7 +187,8 @@ def handle(sock, backend):
         send(sock, b"J", backend.execute(plan, reader))
 
 
-def serve(path, library, timeout):
+def serve(path, library, timeout, host_pin_mib=0, warmup=False):
+    started = time.perf_counter()
     path = Path(path).absolute()
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     info = path.parent.stat()
@@ -112,6 +207,20 @@ def serve(path, library, timeout):
             else:
                 raise ValueError("Sidecar already running")
     backend = Backend(library)
+    pinned = None
+    if host_pin_mib:
+        try:
+            pinned = PinnedInput()
+            backend.input_buffer = pinned.view
+        except (OSError, RuntimeError) as error:
+            print(f"warning: host pin unavailable, using pageable input: {error}", flush=True)
+    try:
+        if warmup:
+            backend.warmup()
+    except BaseException:
+        if pinned:
+            pinned.close()
+        raise
     stopping = False
     def stop(_signum, _frame):
         nonlocal stopping
@@ -123,7 +232,8 @@ def serve(path, library, timeout):
         os.chmod(path, 0o600)
         listener.listen(8)
         listener.settimeout(0.5)
-        print(f"ready: {path}", flush=True)
+        print(f"ready: {path} host_pin_mib={16 if pinned else 0} warmup={warmup} "
+              f"startup_seconds={time.perf_counter()-started:.6f}", flush=True)
         try:
             while not stopping:
                 try:
@@ -144,6 +254,9 @@ def serve(path, library, timeout):
                             pass
         finally:
             path.unlink(missing_ok=True)
+            backend.input_buffer = None
+            if pinned:
+                pinned.close()
 
 
 if __name__ == "__main__":
@@ -151,7 +264,10 @@ if __name__ == "__main__":
     p.add_argument("--socket", required=True)
     p.add_argument("--library", required=True)
     p.add_argument("--io-timeout", type=float, default=60)
+    p.add_argument("--host-pin-mib", type=int, choices=(0, 16), default=0,
+                   help="Reuse 16 MiB CUDA-pinned memory for native input; fall back if unavailable")
+    p.add_argument("--warmup", action="store_true", help="Initialize GPU operators before accepting queries")
     args = p.parse_args()
     if not 0 < args.io_timeout <= 600:
         p.error("I/O timeout must be in (0,600] seconds")
-    serve(args.socket, args.library, args.io_timeout)
+    serve(args.socket, args.library, args.io_timeout, args.host_pin_mib, args.warmup)

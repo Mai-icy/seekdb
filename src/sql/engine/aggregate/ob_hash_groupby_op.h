@@ -221,6 +221,7 @@ OB_INLINE void ObGroupRowHashTable::prefetch(const ObBatchRows &brs, uint64_t *h
   }
 }
 // Input data has already been sorted by the groupby column
+struct SiriusAggregateState;
 class ObHashGroupByOp : public ObGroupByOp
 {
 public:
@@ -348,6 +349,16 @@ public:
   int rollup_and_calc_results(const int64_t group_id);
 
   int64_t get_hash_groupby_row_count() const { return local_group_rows_.size(); }
+
+private:
+  int init_sirius();
+  int sirius_get_next_batch(int64_t max_row_cnt);
+  void reset_sirius();
+  void destroy_sirius();
+  SiriusAggregateState *sirius_ = nullptr;
+  bool sirius_checked_ = false;
+  bool sirius_active_ = false;
+public:
 
   OB_INLINE int64_t get_aggr_used_size() const
   { return aggr_processor_.get_aggr_used_size(); }

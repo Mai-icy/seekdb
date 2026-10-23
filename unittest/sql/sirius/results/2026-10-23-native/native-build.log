@@ -1,0 +1,19 @@
+INFO: Invocation ID: 39782746-1c4a-44e7-9fdd-9e6465e8781c
+Computing main repo mapping: 
+Loading: 
+Loading: 0 packages loaded
+Analyzing: target //:seekdb (0 packages loaded, 0 targets configured)
+Analyzing: target //:seekdb (0 packages loaded, 0 targets configured)
+
+INFO: Analyzed target //:seekdb (0 packages loaded, 0 targets configured).
+[6 / 8] Linking seekdb executable src/observer/seekdb; 1s disk-cache, linux-sandbox
+[7 / 8] [Prepa] runfiles for //src/observer:_executable_link
+INFO: Found 1 target...
+Target //src/observer:_executable_link up-to-date:
+  /data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build/bin/src/observer/seekdb
+INFO: Elapsed time: 3.573s, Critical Path: 3.27s
+INFO: 5 processes: 1 action cache hit, 2 internal, 3 linux-sandbox.
+INFO: Build completed successfully, 5 total actions
+INFO: 
+INFO: 
+INFO: 

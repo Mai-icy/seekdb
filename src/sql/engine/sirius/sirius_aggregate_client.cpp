@@ -1,0 +1,137 @@
+// Copyright (c) 2026 OceanBase.
+// SPDX-License-Identifier: Apache-2.0
+#include "sirius_aggregate_client.h"
+#if defined(__linux__)
+#include <arpa/inet.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <cerrno>
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+namespace oceanbase { namespace sql {
+namespace {
+int64_t now_ms() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+}
+bool SiriusAggregateClient::fail(const char *message) {
+  std::snprintf(error_, sizeof(error_), "%s", message);
+  return false;
+}
+void SiriusAggregateClient::close() {
+  if (fd_ >= 0) ::close(fd_);
+  fd_ = -1;
+}
+bool SiriusAggregateClient::transfer(void *data, size_t size, bool write) {
+  auto *p = static_cast<char *>(data);
+  while (size) {
+    if (cancel_ && cancel_(context_)) return fail("Sirius aggregate query cancelled");
+    const int64_t left = deadline_ms_ - now_ms();
+    if (left <= 0) return fail("Sirius aggregate request timed out");
+    pollfd item{fd_, static_cast<short>(write ? POLLOUT : POLLIN), 0};
+    const int ready = poll(&item, 1, static_cast<int>(left < 100 ? left : 100));
+    if (ready == 0 || (ready < 0 && errno == EINTR)) continue;
+    if (ready < 0) return fail("Sirius aggregate poll failed");
+    const ssize_t n = write ? send(fd_, p, size, MSG_NOSIGNAL) : recv(fd_, p, size, 0);
+    if (n > 0) { p += n; size -= n; }
+    else if (n == 0) return fail("Sirius aggregate peer disconnected");
+    else if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+      return fail("Sirius aggregate socket I/O failed");
+    }
+  }
+  return true;
+}
+bool SiriusAggregateClient::frame(char kind, uint32_t size) {
+  char header[5];
+  header[0] = kind;
+  size = htonl(size);
+  std::memcpy(header + 1, &size, 4);
+  return transfer(header, 5, true);
+}
+bool SiriusAggregateClient::response(char expected, char *data, size_t capacity, size_t &size) {
+  char header[5];
+  uint32_t length;
+  size = 0;
+  if (!transfer(header, 5, false)) return false;
+  std::memcpy(&length, header + 1, 4);
+  length = ntohl(length);
+  if (header[0] == 'X') {
+    if (length > 4096) return fail("Invalid Sirius aggregate error frame");
+    char message[4097] = {};
+    if (!transfer(message, length, false)) return false;
+    return fail(message);
+  }
+  if (header[0] != expected || length > capacity) return fail("Invalid Sirius aggregate response");
+  if (!transfer(data, length, false)) return false;
+  size = length;
+  return true;
+}
+bool SiriusAggregateClient::open(uint8_t groups, uint8_t sums, bool count,
+                                 bool (*cancel)(void *), void *context) {
+  close();
+  cancel_ = cancel;
+  context_ = context;
+  error_[0] = 0;
+  const unsigned columns = static_cast<unsigned>(groups) + sums;
+  const uint16_t endian = 1;
+  if (*reinterpret_cast<const uint8_t *>(&endian) != 1 || groups < 1 || groups > 8 || columns > 64) {
+    return fail("Unsupported native Sirius schema or byte order");
+  }
+  columns_ = columns;
+  const char *path = std::getenv("SEEKDB_SIRIUS_SOCKET");
+  sockaddr_un address{};
+  address.sun_family = AF_UNIX;
+  if (!path || path[0] != '/' || std::strlen(path) >= sizeof(address.sun_path)) {
+    return fail("Set SEEKDB_SIRIUS_SOCKET to a valid absolute Unix socket path");
+  }
+  std::strcpy(address.sun_path, path);
+  deadline_ms_ = now_ms() + 60000;
+  fd_ = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+  if (fd_ < 0) return fail("Cannot create Sirius aggregate socket");
+  // AF_UNIX connects synchronously; EAGAIN (full backlog) fails without consuming input.
+  if (connect(fd_, reinterpret_cast<sockaddr *>(&address), sizeof(address))) {
+    return fail("Cannot connect to Sirius aggregate sidecar");
+  }
+  ucred peer{};
+  socklen_t peer_size = sizeof(peer);
+  if (getsockopt(fd_, SOL_SOCKET, SO_PEERCRED, &peer, &peer_size) || peer.uid != geteuid()) {
+    return fail("Sirius aggregate sidecar must have the same OS UID");
+  }
+  uint8_t descriptor[4] = {1, groups, sums, static_cast<uint8_t>(count)};
+  size_t ignored = 0;
+  return frame('N', 4) && transfer(descriptor, 4, true) && response('A', nullptr, 0, ignored);
+}
+bool SiriusAggregateClient::batch(const char *columns, uint32_t rows, uint32_t capacity_rows) {
+  if (!rows || rows > capacity_rows || capacity_rows > BATCH_ROWS) return fail("Invalid native Sirius input batch size");
+  const uint32_t masks = (rows + 7) / 8;
+  const size_t mask_capacity = (capacity_rows + 7) / 8;
+  const size_t stride = mask_capacity + capacity_rows * 8;
+  uint32_t length = 4 + columns_ * (masks + rows * 8);
+  if (length > 16 * 1024 * 1024) return fail("Native Sirius input frame exceeds 16 MiB");
+  if (!frame('B', length) || !transfer(&rows, 4, true)) return false;
+  for (uint8_t i = 0; i < columns_; ++i) {
+    const char *column = columns + i * stride;
+    if (!transfer(const_cast<char *>(column), masks, true)
+        || !transfer(const_cast<char *>(column + mask_capacity), rows * 8, true)) return false;
+  }
+  size_t ignored = 0;
+  return response('A', nullptr, 0, ignored);
+}
+bool SiriusAggregateClient::finish(char *result, size_t capacity, size_t &size) {
+  return frame('E', 0) && response('R', result, capacity, size);
+}
+} }
+#else
+namespace oceanbase { namespace sql {
+bool SiriusAggregateClient::open(uint8_t, uint8_t, bool, bool (*)(void *), void *) { return false; }
+bool SiriusAggregateClient::batch(const char *, uint32_t, uint32_t) { return false; }
+bool SiriusAggregateClient::finish(char *, size_t, size_t &) { return false; }
+void SiriusAggregateClient::close() {}
+} }
+#endif

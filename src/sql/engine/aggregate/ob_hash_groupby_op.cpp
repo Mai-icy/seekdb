@@ -163,6 +163,7 @@ int ObGroupRowHashTable::likely_equal(
 
 void ObHashGroupByOp::reset()
 {
+  reset_sirius();
   curr_group_id_ = common::OB_INVALID_INDEX;
   cur_group_item_idx_ = 0;
   cur_group_item_buf_ = nullptr;
@@ -395,6 +396,7 @@ int ObHashGroupByOp::init_group_store()
 
 int ObHashGroupByOp::inner_close()
 {
+  reset_sirius();
   sql_mem_processor_.unregister_profile();
   distinct_sql_mem_processor_.unregister_profile();
   curr_group_id_ = common::OB_INVALID_INDEX;
@@ -416,6 +418,7 @@ int ObHashGroupByOp::init_mem_context()
 
 void ObHashGroupByOp::destroy()
 {
+  destroy_sirius();
   sql_mem_processor_.unregister_profile_if_necessary();
   distinct_sql_mem_processor_.unregister_profile_if_necessary();
   dup_groupby_exprs_.reset();
@@ -1436,6 +1439,11 @@ int ObHashGroupByOp::restore_groupby_datum()
 int ObHashGroupByOp::inner_get_next_batch(const int64_t max_row_cnt)
 {
   int ret = OB_SUCCESS;
+  if (!sirius_checked_) {
+    sirius_checked_ = true;
+    if (OB_FAIL(init_sirius())) { return ret; }
+  }
+  if (sirius_active_) { return sirius_get_next_batch(max_row_cnt); }
   bool force_by_pass = false;
   LOG_DEBUG("before inner_get_next_batch",
             K(get_aggr_used_size()), K(get_aggr_used_size()),

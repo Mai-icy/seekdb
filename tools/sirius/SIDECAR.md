@@ -1,5 +1,9 @@
 # Sirius sidecar and live Arrow input
 
+This document records the second prototype. The subsequent
+[native aggregate integration](NATIVE_AGGREGATE.md) removes Python/MySQL row
+extraction and adds optional pinned socket input and GPU startup warmup.
+
 This second prototype adds two independently usable paths:
 
 ```text

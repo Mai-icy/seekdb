@@ -1,0 +1,33 @@
+// Copyright (c) 2026 OceanBase.
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+#include <cstddef>
+#include <cstdint>
+
+namespace oceanbase { namespace sql {
+// Bounded, CPU-only transport. Buffers belong to the query allocator.
+class SiriusAggregateClient {
+public:
+  static constexpr size_t BATCH_ROWS = 262144;
+  static constexpr size_t MASK_BYTES = BATCH_ROWS / 8;
+  static constexpr size_t COLUMN_BYTES = MASK_BYTES + BATCH_ROWS * 8;
+  static constexpr size_t RESULT_BYTES = 1024 * 1024;
+  ~SiriusAggregateClient() { close(); }
+  bool open(uint8_t groups, uint8_t sums, bool count, bool (*cancel)(void *), void *context);
+  bool batch(const char *columns, uint32_t rows, uint32_t capacity_rows = BATCH_ROWS);
+  bool finish(char *result, size_t capacity, size_t &size);
+  void close();
+  const char *error() const { return error_; }
+private:
+  bool transfer(void *data, size_t size, bool write);
+  bool frame(char kind, uint32_t size);
+  bool response(char expected, char *data, size_t capacity, size_t &size);
+  bool fail(const char *message);
+  int fd_ = -1;
+  uint8_t columns_ = 0;
+  int64_t deadline_ms_ = 0;
+  bool (*cancel_)(void *) = nullptr;
+  void *context_ = nullptr;
+  char error_[256] = {};
+};
+} }

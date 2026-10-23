@@ -87,6 +87,23 @@ class Transport(unittest.TestCase):
             with self.assertRaises(ValueError):
                 receive(right)
 
+    def test_receive_into_reusable_buffer(self):
+        left, right = socket.socketpair()
+        storage = bytearray(64)
+        with left, right:
+            for value in (b"first", b"second"):
+                send(left, b"B", value)
+                kind, payload = receive(right, storage=memoryview(storage))
+                self.assertEqual((kind, bytes(payload)), (b"B", value))
+                self.assertEqual(storage[:len(value)], value)
+
+    def test_receive_buffer_bound(self):
+        left, right = socket.socketpair()
+        with left, right:
+            left.sendall(b"B" + struct.pack("!I", 65))
+            with self.assertRaises(ValueError):
+                receive(right, storage=memoryview(bytearray(64)))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)

@@ -14,6 +14,8 @@ target_include_directories(sirius_arrow_json PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}
 add_executable(sirius_execute_plan execute_plan.cpp)
 target_link_libraries(sirius_execute_plan PRIVATE sirius_client)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  add_library(sirius_aggregate_client STATIC "${SEEKDB_SIRIUS_API_DIR}/sirius_aggregate_client.cpp")
+  target_include_directories(sirius_aggregate_client PUBLIC "${SEEKDB_SIRIUS_API_DIR}")
   add_library(seekdb_sirius_proxy SHARED proxy.cpp)
   target_include_directories(seekdb_sirius_proxy PRIVATE "${SEEKDB_SIRIUS_API_DIR}")
   set_target_properties(seekdb_sirius_proxy PROPERTIES CXX_VISIBILITY_PRESET hidden)

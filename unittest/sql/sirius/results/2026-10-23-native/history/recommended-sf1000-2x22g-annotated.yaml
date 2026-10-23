@@ -1,0 +1,80 @@
+sirius:
+  topology:
+    # 使用两张可见 GPU；一条查询默认使用全部两张卡。
+    num_gpus: 2
+
+  memory:
+    gpu:
+      # 每张卡交给 Sirius 22GiB。当前每张 48GiB 卡另有约 20.8GiB 外部常驻占用。
+      usage_limit_bytes: 22GiB
+      # pipeline task 的 reservation 总和最多达到上述容量的 100%。
+      reservation_limit_fraction: 1.0
+      # 每卡占用达到 19.36GiB 时开始 GPU -> host downgrade。
+      downgrade_trigger_fraction: 0.88
+      # 降到 15.84GiB 时停止，回差用于避免反复启停。
+      downgrade_stop_fraction: 0.72
+
+    host:
+      # 每个 NUMA 节点的 pinned-host capacity。
+      capacity_bytes: 360GiB
+      reservation_limit_fraction: 0.95
+      # host 压力达到/降到这两个水位时，向 disk spill 或停止 spill。
+      downgrade_trigger_fraction: 0.88
+      downgrade_stop_fraction: 0.72
+      # 初始 pinned footprint = 64 pools * 8 blocks * 64MiB = 32GiB/NUMA。
+      initial_number_pools: 64
+      pool_size: 8
+      block_size: 64MiB
+
+    disk:
+      disk_id: 0
+      capacity_bytes: 500GiB
+      # 非空目录意味着 host -> disk spill 已启用。
+      downgrade_root_dirs: /data/wuhao.xwh/duckdb-sirius-upstream/spill-official-hotpin
+
+  executor:
+    scan_manager:
+      # CPU 侧 scan/split/I/O 调度线程，不是 GPU kernel 数。
+      num_threads: 8
+      # 多 GPU 必须使用 Sirius I/O backend。
+      backend: sirius
+      # 本地文件 io_uring reactor 数。
+      uring_n_reactors: 4
+      memory_prefetcher:
+        # 当前 prefetcher 仅支持单 GPU，双 GPU 下明确关闭。
+        enable: false
+        num_threads: 3
+      cache:
+        # benchmark 使用显式 host pin；scan-manager read cache 关闭。
+        mode: none
+        eviction: lru
+
+    pipeline:
+      # 每张 GPU 8 个 worker/CUDA stream，双卡最多共 16 个。
+      num_threads: 8
+    task_creator:
+      # CPU 侧创建 task、计算优先级与 preferred GPU。
+      num_threads: 4
+    downgrade:
+      # 每个 downgrade executor 的并行搬运 worker 数。
+      num_threads: 2
+      # 每 10ms 检查一次显存/host pressure。
+      monitor_period: 10ms
+
+  operator_params:
+    # scan 输入 batch 的目标大小；也影响 host pin chunk 和 GPU round-robin 放置。
+    scan_task_batch_size: 512MiB
+    # 单个 sort partition 的最大大小。
+    max_sort_partition_bytes: 2GiB
+    # hash join/group-by 的目标 partition 大小。
+    hash_partition_bytes: 1GiB
+    # CONCAT materialization 的目标输出 batch 大小。
+    concat_batch_bytes: 512MiB
+    # BUILD_PROBE hash join 的 build-side 算法选择门槛。
+    max_build_hash_table_bytes: 2GiB
+    # 每张卡允许 multi-partition dynamic filter 使用的 Bloom 上限。
+    max_dynamic_filter_bloom_bytes_per_gpu: 128MiB
+
+  telemetry:
+    # 正式计时关闭 Quent；需要 task/batch 事件分析时再单独开启。
+    enable_quent: false

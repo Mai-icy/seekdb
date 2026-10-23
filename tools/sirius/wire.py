@@ -5,8 +5,10 @@ import struct
 MAX_FRAME = 16 * 1024 * 1024
 
 
-def receive_exact(sock, size):
-    data = bytearray(size)
+def receive_exact(sock, size, storage=None):
+    if storage is not None and size > len(storage):
+        raise ValueError("Receive buffer capacity exceeded")
+    data = bytearray(size) if storage is None else storage[:size]
     view = memoryview(data)
     offset = 0
     while offset < size:
@@ -17,12 +19,12 @@ def receive_exact(sock, size):
     return data
 
 
-def receive(sock, limit=MAX_FRAME):
+def receive(sock, limit=MAX_FRAME, storage=None):
     header = receive_exact(sock, 5)
     size = struct.unpack("!I", header[1:])[0]
     if size > limit:
         raise ValueError("Sidecar frame exceeds limit")
-    return bytes(header[:1]), receive_exact(sock, size)
+    return bytes(header[:1]), receive_exact(sock, size, storage)
 
 
 def send(sock, kind, data=b""):

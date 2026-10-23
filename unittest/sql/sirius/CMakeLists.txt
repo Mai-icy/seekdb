@@ -12,3 +12,8 @@ target_compile_definitions(test_sirius_bridge PRIVATE
 add_dependencies(test_sirius_bridge fake_sirius_bridge wrong_sirius_bridge)
 include(GoogleTest)
 gtest_discover_tests(test_sirius_bridge)
+if(TARGET sirius_aggregate_client)
+  add_executable(test_sirius_native_transport test_native_transport.cpp)
+  target_link_libraries(test_sirius_native_transport PRIVATE sirius_aggregate_client GTest::gtest_main Threads::Threads)
+  gtest_discover_tests(test_sirius_native_transport)
+endif()
