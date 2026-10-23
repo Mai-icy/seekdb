@@ -86,6 +86,12 @@ Validation checks affected rows, warnings, range counts and row samples, then
 full-table counts, per-column numeric/date sums or string lengths, non-NULL
 counts, and boundary samples. These fingerprints are not a cryptographic proof
 of every imported value; query-result comparisons provide additional validation.
+Boundary samples use the source's first/last keys to bound the seekdb range.
+An unbounded `orders ORDER BY o_orderkey LIMIT 16` sample stalled during SF500
+validation and was cancelled; its EXPLAIN already pushed LIMIT into TABLE FULL
+SCAN, with no separate SORT. The bounded range returned 16 rows in 2.6 ms.
+This is an importer workaround, not a diagnosed storage fix or a completed
+unbounded-query timing. Original TPC-H query templates are unchanged.
 
 The default free-space reserve is 180 GiB. A growth guard and the isolated
 seekdb datafile maximum provide additional bounds. Creating `PAUSE` in the job

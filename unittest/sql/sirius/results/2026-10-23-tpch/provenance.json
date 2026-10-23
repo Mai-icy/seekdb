@@ -1,0 +1,50 @@
+{
+  "captured_utc": "2026-10-23T07:50:17.624940+00:00",
+  "seekdb_code_commit": "5b8243d71cfe3d198ec6547c43346ac0ae47d12b",
+  "seekdb_binary_note": "Built before commit from cd54c2fa plus the larger-frame source changes now in a59548fa; embedded version still cd54c2fa.",
+  "sirius_source_commit": "3fcff6a0488516db09ddc7e993564eb9a98b72d3",
+  "sirius_source_status": "",
+  "libraries": [
+    {
+      "path": "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build/bin/src/observer/seekdb",
+      "bytes": 1302088536,
+      "sha256": "05081cf160909593d3985a4eaccc77aa6bdb1d9ee1ef454186b5536d60360756"
+    },
+    {
+      "path": "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build-sirius-arrow/libseekdb_sirius_proxy.so",
+      "bytes": 100200,
+      "sha256": "76716bb6a07811cf0f09b1d8454afc41fecd7527a983c3f997964f87767a8e2b"
+    },
+    {
+      "path": "/data/wuhao.xwh/seekdb-sirius-20261023/sirius-arrow/libsirius.so",
+      "bytes": 183164280,
+      "sha256": "50315164bf8469d811af60ffe5fabc6e2eac7ef40f96ce612d3853677fe1db10"
+    },
+    {
+      "path": "/data/wuhao.xwh/duckdb-sirius-upstream/sirius/build/release/extension/sirius/libsirius.so",
+      "bytes": 183155472,
+      "sha256": "cf5c490ac32f3cf7169bea8011688eedaefb634ee53741a3f475b7d729bd78ae"
+    },
+    {
+      "path": "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build-sirius-arrow/libseekdb_sirius_bridge.so",
+      "bytes": 950960,
+      "sha256": "6271cf2a1ec83e80f6287de45df8df7691cb7102607878701dbacefa3e6ea714"
+    }
+  ],
+  "source": {
+    "path": "/data/wuhao.xwh/duckdb-sirius-data/tpch_sf500.duckdb",
+    "bytes": 140138786816,
+    "mtime_ns": 1791462173336194573
+  },
+  "seekdb_parameters": {
+    "memory_budget": "64G",
+    "memstore_memory_limit": "16G",
+    "kvcache_memory_limit": "16G",
+    "datafile_maxsize": "384G",
+    "datafile_next": "10G"
+  },
+  "gpu_hardware": "0, NVIDIA RTX 5880 Ada Generation, 49140 MiB, 580.173.02\n1, NVIDIA RTX 5880 Ada Generation, 49140 MiB, 580.173.02",
+  "kernel": "5.15.0-191-generic",
+  "sirius_config": "sirius:\n  topology:\n    num_gpus: 1\n  memory:\n    gpu:\n      usage_limit_fraction: 0.15\n      reservation_limit_fraction: 1.0\n    host:\n      capacity_bytes: 8000000000\n      initial_number_pools: 4\n      pool_size: 128\n      block_size: 1048576\n    disk:\n      capacity_bytes: 20000000000\n      downgrade_root_dirs: \"/data/wuhao.xwh/seekdb-sirius-20261022/spill\"\n  executor:\n    pipeline:\n      num_threads: 4\n    task_creator:\n      num_threads: 2\n    downgrade:\n      num_threads: 1\n      monitor_period: 10ms\n  operator_params:\n    scan_task_batch_size: 1000000\n    max_sort_partition_bytes: 268435456\n    hash_partition_bytes: 134217728\n    concat_batch_bytes: 134217728\n    max_build_hash_table_bytes: 134217728\n",
+  "free_bytes_at_capture": 655489769472
+}

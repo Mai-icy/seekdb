@@ -16,6 +16,9 @@ interpretation and limitations. Full SF500 import/query results are pending.
   operator tests. These files contain no full dataset or binary artifacts.
 - `file-limit-test.json`: oversized-export failure/cleanup check, with a lowered
   128 KiB child limit. The ordinary importer uses 128 MiB per file.
+- `boundary-sample-plans.json`: full/range scan plans for the importer sample,
+  and bounded-sample timing. The unbounded query was cancelled, not timed to completion.
+- `provenance.json`: effective memory settings, source identity and library hashes.
 - `smoke/`: complete SF0.01 import/compaction/analyze/query-pipeline result.
   All 22 queries match the DuckDB oracle in both modes. None uses a native GPU
   aggregate. Smoke timings are not SF500 timings.

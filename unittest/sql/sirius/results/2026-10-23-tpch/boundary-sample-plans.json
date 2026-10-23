@@ -1,0 +1,35 @@
+{
+  "unbounded": [
+    "=================================================",
+    "|ID|OPERATOR       |NAME  |EST.ROWS|EST.TIME(us)|",
+    "-------------------------------------------------",
+    "|0 |TABLE FULL SCAN|orders|16      |5           |",
+    "=================================================",
+    "Outputs & filters:",
+    "-------------------------------------",
+    "  0 - output([orders.o_orderkey], [orders.o_custkey], [orders.o_orderstatus], [orders.o_totalprice], [orders.o_orderdate], [orders.o_orderpriority], [orders.o_clerk],",
+    "       [orders.o_shippriority], [orders.o_comment]), filter(nil), rowset=256",
+    "      access([orders.o_orderkey], [orders.o_custkey], [orders.o_orderstatus], [orders.o_totalprice], [orders.o_orderdate], [orders.o_orderpriority], [orders.o_clerk],",
+    "       [orders.o_shippriority], [orders.o_comment]), partitions(p0)",
+    "      limit(16), offset(nil), is_index_back=false, is_global_index=false, ",
+    "      range_key([orders.o_orderkey]), range(MIN ; MAX)always true"
+  ],
+  "bounded": [
+    "==================================================",
+    "|ID|OPERATOR        |NAME  |EST.ROWS|EST.TIME(us)|",
+    "--------------------------------------------------",
+    "|0 |TABLE RANGE SCAN|orders|16      |5           |",
+    "==================================================",
+    "Outputs & filters:",
+    "-------------------------------------",
+    "  0 - output([orders.o_orderkey], [orders.o_custkey], [orders.o_orderstatus], [orders.o_totalprice], [orders.o_orderdate], [orders.o_orderpriority], [orders.o_clerk],",
+    "       [orders.o_shippriority], [orders.o_comment]), filter(nil), rowset=256",
+    "      access([orders.o_orderkey], [orders.o_custkey], [orders.o_orderstatus], [orders.o_totalprice], [orders.o_orderdate], [orders.o_orderpriority], [orders.o_clerk],",
+    "       [orders.o_shippriority], [orders.o_comment]), partitions(p0)",
+    "      limit(16), offset(nil), is_index_back=false, is_global_index=false, ",
+    "      range_key([orders.o_orderkey]), range[1 ; 64], ",
+    "      range_cond([orders.o_orderkey >= 1], [orders.o_orderkey <= 64])"
+  ],
+  "bounded_seconds": 0.0026310388930141926,
+  "bounded_rows": 16
+}

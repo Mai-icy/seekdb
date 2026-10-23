@@ -193,7 +193,11 @@ def main(args):
                 for direction in ('ASC', 'DESC'):
                     order = ','.join(f'{c} {direction}' for c in KEYS[table])
                     expected_rows = db.execute(f'SELECT * FROM {table} ORDER BY {order} LIMIT 16').fetchall()
-                    cur.execute(f'SELECT * FROM {target} ORDER BY {order} LIMIT 16')
+                    key_index = next(i for i, (name, _) in enumerate(columns) if name == key)
+                    first_keys = [row[key_index] for row in expected_rows]
+                    cur.execute(f'SELECT * FROM {target} WHERE {identifier(key)}>=%s '
+                                f'AND {identifier(key)}<=%s ORDER BY {order} LIMIT 16',
+                                (min(first_keys), max(first_keys)))
                     if expected_rows != list(cur.fetchall()):
                         raise RuntimeError(f'Boundary row mismatch: {table}, {direction}')
                 final = source.stat()

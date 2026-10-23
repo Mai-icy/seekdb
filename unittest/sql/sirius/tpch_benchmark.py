@@ -85,6 +85,7 @@ def main(args):
             item = {'query': number, 'sql_sha256': sql_hash, 'modes': {}, 'passed': False}
             summary['queries'] = [q for q in summary['queries'] if q['query'] != number] + [item]
             try:
+                print(json.dumps({'query': number, 'stage': 'oracle', 'status': 'running'}), flush=True)
                 started = time.perf_counter()
                 expected = db.execute(sql).fetchall()
                 item['oracle_seconds'] = time.perf_counter() - started
@@ -97,6 +98,7 @@ def main(args):
                     plan = [str(row) for row in cursor.fetchall()]
                     log = Path(args.sidecar_log)
                     offset = log.stat().st_size if log.exists() else 0
+                    print(json.dumps({'query': number, 'mode': mode, 'status': 'running'}), flush=True)
                     started = time.perf_counter()
                     cursor.execute(query)
                     actual = cursor.fetchall()
