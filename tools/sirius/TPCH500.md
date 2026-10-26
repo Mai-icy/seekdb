@@ -1,7 +1,8 @@
 # Larger pinned frames and full TPC-H validation
 
 This extends the [SF500 projection experiment](SF500.md). Larger native frames
-are implemented and tested; full SF500 TPC-H import/validation is in progress.
+are implemented and tested. Full SF500 import and validation completed on
+October 26. Major compaction is running; the 22-query run is pending.
 The 22-query smoke run passes, but **none of its queries executes a GPU aggregate**.
 The supported native operator still requires a serial direct scan, BIGINT group
 keys and DOUBLE SUM / COUNT. Increasing pinned memory does not add JOIN, DECIMAL,
@@ -126,11 +127,12 @@ python unittest/sql/sirius/tpch_pipeline.py \
 
 The launcher must configure matching bridge/overlay paths, private socket and
 GPU limits. The seekdb instance for this stage explicitly uses
-`memory_budget=64G`, `memstore_memory_limit=32G`, `kvcache_memory_limit=16G`,
+`memory_budget=96G`, `memstore_memory_limit=64G`, `kvcache_memory_limit=16G`,
 `datafile_maxsize=384G`, `datafile_next=10G` and `log_disk_size=64G`. This fork accepts the deprecated
 `memory_limit` option but ignores it; earlier command lines using `--memory_limit`
-did not impose that budget. Pin comparisons above share the same effective
-64 GiB budget, but cross-stage historical runs should not be treated as having
+did not impose that budget. Pin comparisons above shared a 64 GiB budget;
+the full import initially used 64 GiB and was increased during October 26
+recovery. Cross-stage historical runs should not be treated as having
 identical memory settings.
 
 Import initially used a 16 GiB memstore limit. At about 1.296 billion lineitem
@@ -138,7 +140,7 @@ rows, all 32 LOAD DATA statements waited: total quota use exceeded the loader's
 wait threshold while active memtable use remained below the automatic freeze
 trigger. An explicit `ALTER SYSTEM MINOR FREEZE` allowed that round to complete
 and validate. The memstore limit was then raised to 32 GiB, retaining the 64 GiB
-logical memory budget, and that setting is used for both full-suite modes.
+logical memory budget, before the later October 26 adjustment described below.
 The pin microbenchmarks used 16 GiB memstore throughout. Limits for memstore,
 cache and SQL work areas are subsystem budgets, not a single enforced RSS cap;
 the full-suite query phase runs after compaction with no concurrent imports.
@@ -158,7 +160,8 @@ The importer now uses a 1,860-second socket timeout to cover its existing
 
 For full SF500 queries, `SET GLOBAL ob_sql_work_area_percentage=50` increases
 the shared sort/hash work-area budget from its default 5% (about 3.2 GiB) to
-about 32 GiB. Both CPU8 and native-enabled CPU1 use that same setting. This
+about 32 GiB at the initial 64 GiB budget (48 GiB after the October 26 increase).
+Both CPU8 and native-enabled CPU1 use the same effective setting. This
 reduces avoidable spill pressure for large joins; it does not enlarge the pin
 buffer. Pin microbenchmarks above and the earlier smoke run used the default
 5%. The query runner records effective settings and rejects a resumed result
@@ -184,7 +187,34 @@ Four focused C++ tests cover an empty shared tail, shared occupied sizes,
 shared-only iteration and data-only iteration. Three fail on the original
 implementation; all four pass after the fix. The seekdb binary was rebuilt,
 and the owned instance was gracefully stopped and restarted to apply it.
-Import recovery and final full-suite results are still pending verification.
+The previously blocked MINI_MERGE completed at 10:43:55 CST, flushing
+50,602,101 rows in 124 seconds and reducing memstore use from about 19.6 GiB
+to 4 MiB. No new DAG warnings were present. Import resumed at 16 workers;
+the first retry round validated another 7,999,748 rows in 21.6 seconds.
+At 2.792 billion rows, the separate LOAD DATA memory wait recurred despite
+successful flushes and no DAG warnings: only the active memtable remained,
+using 6.62 GB, below the 6.91 GB freeze trigger, while allocator quota use was
+20.63 GB. An explicit minor freeze was requested, and this instance's
+`freeze_trigger_percentage` was reduced from 20 to 10 to freeze earlier.
+Flushes succeeded, but quota remained held while all LOAD statements waited.
+With over 440 GiB of host memory available, the owned instance was adjusted to
+`memory_budget=96G`, `memstore_memory_limit=64G` and
+`freeze_trigger_percentage=5`, retaining a roughly 3.4 GB absolute freeze
+trigger. Waiting LOAD statements immediately resumed and held quota dropped.
+This is an operational headroom adjustment, not a proven fix to the loader's
+memory-wait lifecycle. The query runner records all effective settings.
+At 11:03:40 CST, all eight manifests were verified: **4,330,028,272 rows**,
+including **3,000,028,242 lineitem rows**. Every recorded range passed its count
+and sample checks, and all tables passed full-column aggregate fingerprints
+and boundary samples against the read-only source. The source size and mtime
+remain unchanged. No staging CSVs remain.
+
+At 11:05 CST the filesystem had 545.6 GiB free. The instance's block file was
+220 GiB, with about 149.2 GiB used according to the virtual disk view; those
+figures include earlier projection tables, not just the full TPC-H database.
+The pipeline is running major compaction, followed by statistics collection
+and TPC-H22. Full-suite query results are still pending; import completion
+does not establish GPU query coverage or a speedup.
 
 Evidence: [October 26 results](../../unittest/sql/sirius/results/2026-10-26-tpch/).
 
@@ -198,7 +228,8 @@ Evidence: [October 26 results](../../unittest/sql/sirius/results/2026-10-26-tpch
 - 16 SQL/transaction checks passed for each frame setting: 16, 64 and 128 MiB.
 - The complete SF0.01 import/compaction/analyze/TPC-H22 pipeline passed in both
   modes. All 22 queries used CPU fallback; no full-suite GPU speedup is claimed.
-- Full SF500 preparation and query validation are still running.
+- Full SF500 preparation and all eight table validations passed. Major
+  compaction is running; full-suite query validation is pending.
 - Borrowed Sirius checkout `3fcff6a0488516db09ddc7e993564eb9a98b72d3`
   remains unmodified. Its original library SHA-256 is
   `cf5c490ac32f3cf7169bea8011688eedaefb634ee53741a3f475b7d729bd78ae`.

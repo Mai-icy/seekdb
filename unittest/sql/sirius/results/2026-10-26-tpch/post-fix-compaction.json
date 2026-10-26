@@ -1,0 +1,47 @@
+{
+  "utc": "2026-10-26T02:44:31.788373+00:00",
+  "memory": [
+    {
+      "active_span": 4159632,
+      "freeze_trigger": 6905224716,
+      "freeze_cnt": 0,
+      "memstore_used": 4159632,
+      "memstore_limit": 34359738368
+    }
+  ],
+  "history": [
+    {
+      "TABLET_ID": 210245,
+      "TYPE": "MINI_MERGE",
+      "COMPACTION_SCN": 1792982301024104001,
+      "START_TIME": "2026-10-26 10:41:51.316220",
+      "FINISH_TIME": "2026-10-26 10:43:55.366894",
+      "TASK_ID": "YB427F000001-00065EB5436BA962-0-0",
+      "OCCUPY_SIZE": 2397956725,
+      "MACRO_BLOCK_COUNT": 1163,
+      "MULTIPLEXED_MACRO_BLOCK_COUNT": 0,
+      "NEW_MICRO_COUNT_IN_NEW_MACRO": 146687,
+      "MULTIPLEXED_MICRO_COUNT_IN_NEW_MACRO": 0,
+      "TOTAL_ROW_COUNT": 50602101,
+      "INCREMENTAL_ROW_COUNT": 50602101,
+      "COMPRESSION_RATIO": 0.35,
+      "NEW_FLUSH_DATA_RATE": 18819,
+      "PROGRESSIVE_COMPACTION_ROUND": 0,
+      "PROGRESSIVE_COMPACTION_NUM": 0,
+      "PARALLEL_DEGREE": 1,
+      "PARALLEL_INFO": "-",
+      "PARTICIPANT_TABLE": "table_cnt=1,start_scn=1792754319078278680,end_scn=1792982301024104001;",
+      "MACRO_ID_LIST": "",
+      "COMMENTS": "comment=\"cost_mb=7;\";",
+      "KEPT_SNAPSHOT": "{type:\"MULTI_VERSION_START_ON_TABLET\", snapshot:1792752618576846001}",
+      "MERGE_LEVEL": "MACRO_BLOCK_LEVEL",
+      "IS_FULL_MERGE": "FALSE",
+      "IO_COST_TIME_PERCENTAGE": 1,
+      "MERGE_REASON": "",
+      "BASE_MAJOR_STATUS": "",
+      "MDS_FILTER_INFO": "",
+      "EXECUTE_TIME": 123929780
+    }
+  ],
+  "warnings": []
+}

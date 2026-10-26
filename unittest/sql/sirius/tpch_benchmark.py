@@ -76,7 +76,8 @@ def main(args):
         cursor.execute('SET ob_query_timeout=%s', (args.query_timeout * 1000000,))
         cursor.execute('SET ob_trx_timeout=%s', (args.query_timeout * 1000000,))
         settings = {}
-        for name in ('memory_budget', 'memstore_memory_limit', 'kvcache_memory_limit', 'datafile_maxsize', 'log_disk_size'):
+        for name in ('memory_budget', 'memstore_memory_limit', 'kvcache_memory_limit',
+                     'datafile_maxsize', 'log_disk_size', 'freeze_trigger_percentage'):
             cursor.execute('SHOW PARAMETERS LIKE %s', (name,))
             settings[name] = cursor.fetchone()[3]
         cursor.execute('SHOW GLOBAL VARIABLES LIKE %s', ('ob_sql_work_area_percentage',))

@@ -1,0 +1,29 @@
+{
+  "utc": "2026-10-26T02:49:03.473929+00:00",
+  "reason": "LOAD paused at total quota threshold while only active memtable remains and its use is below automatic freeze trigger",
+  "action": "minor freeze, then freeze_trigger_percentage 20 -> 10",
+  "memory": [
+    {
+      "active_span": 6239448,
+      "freeze_trigger": 3469250886,
+      "freeze_cnt": 3,
+      "memstore_used": 20633854536,
+      "memstore_limit": 34359738368
+    }
+  ],
+  "setting": [
+    {
+      "svr_type": "observer",
+      "name": "freeze_trigger_percentage",
+      "data_type": "INT",
+      "value": "10",
+      "info": "the threshold of the size of the mem store when freeze will be triggered. Rang:(0,100)",
+      "section": "RUNTIME",
+      "scope": "CLUSTER",
+      "source": "DEFAULT",
+      "edit_level": "DYNAMIC_EFFECTIVE",
+      "default_value": "20",
+      "isdefault": 0
+    }
+  ]
+}

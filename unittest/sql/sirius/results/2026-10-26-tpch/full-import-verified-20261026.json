@@ -1,0 +1,762 @@
+{
+  "captured_utc": "2026-10-26T03:05:00.167579+00:00",
+  "tables": {
+    "customer": {
+      "identity": {
+        "source": "/data/wuhao.xwh/duckdb-sirius-data/tpch_sf500.duckdb",
+        "source_bytes": 140138786816,
+        "source_mtime_ns": 1791462173336194573,
+        "target_database": "tpch500_sirius",
+        "host": "127.0.0.1",
+        "port": 2886
+      },
+      "table": "customer",
+      "columns": [
+        [
+          "c_custkey",
+          "BIGINT"
+        ],
+        [
+          "c_name",
+          "VARCHAR"
+        ],
+        [
+          "c_address",
+          "VARCHAR"
+        ],
+        [
+          "c_nationkey",
+          "INTEGER"
+        ],
+        [
+          "c_phone",
+          "VARCHAR"
+        ],
+        [
+          "c_acctbal",
+          "DECIMAL(15,2)"
+        ],
+        [
+          "c_mktsegment",
+          "VARCHAR"
+        ],
+        [
+          "c_comment",
+          "VARCHAR"
+        ]
+      ],
+      "key_span": 200000,
+      "source_rows": 75000000,
+      "created": true,
+      "verified": true,
+      "fingerprint_expressions": [
+        "COUNT(*)",
+        "SUM(c_custkey)",
+        "COUNT(c_custkey)",
+        "SUM(LENGTH(c_name))",
+        "COUNT(c_name)",
+        "SUM(LENGTH(c_address))",
+        "COUNT(c_address)",
+        "SUM(c_nationkey)",
+        "COUNT(c_nationkey)",
+        "SUM(LENGTH(c_phone))",
+        "COUNT(c_phone)",
+        "SUM(c_acctbal)",
+        "COUNT(c_acctbal)",
+        "SUM(LENGTH(c_mktsegment))",
+        "COUNT(c_mktsegment)",
+        "SUM(LENGTH(c_comment))",
+        "COUNT(c_comment)"
+      ],
+      "source_fingerprint": [
+        75000000,
+        2812500037500000,
+        75000000,
+        1350000000,
+        75000000,
+        1874942285,
+        75000000,
+        900035684,
+        75000000,
+        1125000000,
+        75000000,
+        "337512368255.74",
+        75000000,
+        675003306,
+        75000000,
+        5437489893,
+        75000000
+      ],
+      "final_free_bytes": 722756427776,
+      "recorded_rows": 75000000,
+      "chunk_count": 375,
+      "manifest_sha256": "0728c54e87267cb7a53308ca9f4ccbdbbe5fbf977246ef4b1371dc5e71b126fe"
+    },
+    "lineitem": {
+      "identity": {
+        "source": "/data/wuhao.xwh/duckdb-sirius-data/tpch_sf500.duckdb",
+        "source_bytes": 140138786816,
+        "source_mtime_ns": 1791462173336194573,
+        "target_database": "tpch500_sirius",
+        "host": "127.0.0.1",
+        "port": 2886
+      },
+      "table": "lineitem",
+      "columns": [
+        [
+          "l_orderkey",
+          "BIGINT"
+        ],
+        [
+          "l_partkey",
+          "BIGINT"
+        ],
+        [
+          "l_suppkey",
+          "BIGINT"
+        ],
+        [
+          "l_linenumber",
+          "BIGINT"
+        ],
+        [
+          "l_quantity",
+          "DECIMAL(15,2)"
+        ],
+        [
+          "l_extendedprice",
+          "DECIMAL(15,2)"
+        ],
+        [
+          "l_discount",
+          "DECIMAL(15,2)"
+        ],
+        [
+          "l_tax",
+          "DECIMAL(15,2)"
+        ],
+        [
+          "l_returnflag",
+          "VARCHAR"
+        ],
+        [
+          "l_linestatus",
+          "VARCHAR"
+        ],
+        [
+          "l_shipdate",
+          "DATE"
+        ],
+        [
+          "l_commitdate",
+          "DATE"
+        ],
+        [
+          "l_receiptdate",
+          "DATE"
+        ],
+        [
+          "l_shipinstruct",
+          "VARCHAR"
+        ],
+        [
+          "l_shipmode",
+          "VARCHAR"
+        ],
+        [
+          "l_comment",
+          "VARCHAR"
+        ]
+      ],
+      "key_span": 100000,
+      "source_rows": 3000028242,
+      "created": true,
+      "verified": true,
+      "fingerprint_expressions": [
+        "COUNT(*)",
+        "SUM(l_orderkey)",
+        "COUNT(l_orderkey)",
+        "SUM(l_partkey)",
+        "COUNT(l_partkey)",
+        "SUM(l_suppkey)",
+        "COUNT(l_suppkey)",
+        "SUM(l_linenumber)",
+        "COUNT(l_linenumber)",
+        "SUM(l_quantity)",
+        "COUNT(l_quantity)",
+        "SUM(l_extendedprice)",
+        "COUNT(l_extendedprice)",
+        "SUM(l_discount)",
+        "COUNT(l_discount)",
+        "SUM(l_tax)",
+        "COUNT(l_tax)",
+        "SUM(LENGTH(l_returnflag))",
+        "COUNT(l_returnflag)",
+        "SUM(LENGTH(l_linestatus))",
+        "COUNT(l_linestatus)",
+        "SUM(EXTRACT(YEAR FROM l_shipdate)*10000+EXTRACT(MONTH FROM l_shipdate)*100+EXTRACT(DAY FROM l_shipdate))",
+        "COUNT(l_shipdate)",
+        "SUM(EXTRACT(YEAR FROM l_commitdate)*10000+EXTRACT(MONTH FROM l_commitdate)*100+EXTRACT(DAY FROM l_commitdate))",
+        "COUNT(l_commitdate)",
+        "SUM(EXTRACT(YEAR FROM l_receiptdate)*10000+EXTRACT(MONTH FROM l_receiptdate)*100+EXTRACT(DAY FROM l_receiptdate))",
+        "COUNT(l_receiptdate)",
+        "SUM(LENGTH(l_shipinstruct))",
+        "COUNT(l_shipinstruct)",
+        "SUM(LENGTH(l_shipmode))",
+        "COUNT(l_shipmode)",
+        "SUM(LENGTH(l_comment))",
+        "COUNT(l_comment)"
+      ],
+      "source_fingerprint": [
+        3000028242,
+        4500041228896135373,
+        3000028242,
+        150001132224243358,
+        3000028242,
+        7500101785769711,
+        3000028242,
+        9000126385,
+        3000028242,
+        "76500908501.00",
+        3000028242,
+        "114712907138804.96",
+        3000028242,
+        "150000730.92",
+        3000028242,
+        "120001986.92",
+        3000028242,
+        3000028242,
+        3000028242,
+        3000028242,
+        3000028242,
+        59851446951972396,
+        3000028242,
+        59851371410174613,
+        3000028242,
+        59852620117586115,
+        3000028242,
+        36000252230,
+        3000028242,
+        12857245319,
+        3000028242,
+        79499855090,
+        3000028242
+      ],
+      "final_free_bytes": 585791086592,
+      "recorded_rows": 3000028242,
+      "chunk_count": 6004,
+      "manifest_sha256": "16e96ce6d3cc78a2bebefc6c84b2322e83628e43123c8eed7330e06caa7d1e5b"
+    },
+    "nation": {
+      "identity": {
+        "source": "/data/wuhao.xwh/duckdb-sirius-data/tpch_sf500.duckdb",
+        "source_bytes": 140138786816,
+        "source_mtime_ns": 1791462173336194573,
+        "target_database": "tpch500_sirius",
+        "host": "127.0.0.1",
+        "port": 2886
+      },
+      "table": "nation",
+      "columns": [
+        [
+          "n_nationkey",
+          "INTEGER"
+        ],
+        [
+          "n_name",
+          "VARCHAR"
+        ],
+        [
+          "n_regionkey",
+          "INTEGER"
+        ],
+        [
+          "n_comment",
+          "VARCHAR"
+        ]
+      ],
+      "key_span": 100000,
+      "source_rows": 25,
+      "created": true,
+      "verified": true,
+      "fingerprint_expressions": [
+        "COUNT(*)",
+        "SUM(n_nationkey)",
+        "COUNT(n_nationkey)",
+        "SUM(LENGTH(n_name))",
+        "COUNT(n_name)",
+        "SUM(n_regionkey)",
+        "COUNT(n_regionkey)",
+        "SUM(LENGTH(n_comment))",
+        "COUNT(n_comment)"
+      ],
+      "source_fingerprint": [
+        25,
+        300,
+        25,
+        177,
+        25,
+        50,
+        25,
+        1857,
+        25
+      ],
+      "final_free_bytes": 725969080320,
+      "recorded_rows": 25,
+      "chunk_count": 1,
+      "manifest_sha256": "5e7902acf4a9345fb80c84025a1ae54aea593991a79be7376b2098d7680e8b59"
+    },
+    "orders": {
+      "identity": {
+        "source": "/data/wuhao.xwh/duckdb-sirius-data/tpch_sf500.duckdb",
+        "source_bytes": 140138786816,
+        "source_mtime_ns": 1791462173336194573,
+        "target_database": "tpch500_sirius",
+        "host": "127.0.0.1",
+        "port": 2886
+      },
+      "table": "orders",
+      "columns": [
+        [
+          "o_orderkey",
+          "BIGINT"
+        ],
+        [
+          "o_custkey",
+          "BIGINT"
+        ],
+        [
+          "o_orderstatus",
+          "VARCHAR"
+        ],
+        [
+          "o_totalprice",
+          "DECIMAL(15,2)"
+        ],
+        [
+          "o_orderdate",
+          "DATE"
+        ],
+        [
+          "o_orderpriority",
+          "VARCHAR"
+        ],
+        [
+          "o_clerk",
+          "VARCHAR"
+        ],
+        [
+          "o_shippriority",
+          "INTEGER"
+        ],
+        [
+          "o_comment",
+          "VARCHAR"
+        ]
+      ],
+      "key_span": 1000000,
+      "source_rows": 750000000,
+      "created": true,
+      "verified": true,
+      "fingerprint_expressions": [
+        "COUNT(*)",
+        "SUM(o_orderkey)",
+        "COUNT(o_orderkey)",
+        "SUM(o_custkey)",
+        "COUNT(o_custkey)",
+        "SUM(LENGTH(o_orderstatus))",
+        "COUNT(o_orderstatus)",
+        "SUM(o_totalprice)",
+        "COUNT(o_totalprice)",
+        "SUM(EXTRACT(YEAR FROM o_orderdate)*10000+EXTRACT(MONTH FROM o_orderdate)*100+EXTRACT(DAY FROM o_orderdate))",
+        "COUNT(o_orderdate)",
+        "SUM(LENGTH(o_orderpriority))",
+        "COUNT(o_orderpriority)",
+        "SUM(LENGTH(o_clerk))",
+        "COUNT(o_clerk)",
+        "SUM(o_shippriority)",
+        "COUNT(o_shippriority)",
+        "SUM(LENGTH(o_comment))",
+        "COUNT(o_comment)"
+      ],
+      "source_fingerprint": [
+        750000000,
+        1124999993625000000,
+        750000000,
+        28125335774400559,
+        750000000,
+        750000000,
+        750000000,
+        "113336373163925.53",
+        750000000,
+        14961566511072275,
+        750000000,
+        6299944704,
+        750000000,
+        11250000000,
+        750000000,
+        0,
+        750000000,
+        36374573643,
+        750000000
+      ],
+      "final_free_bytes": 618742595584,
+      "recorded_rows": 750000000,
+      "chunk_count": 3000,
+      "manifest_sha256": "08081a0d57900f2a2e8549a86d1faf43a5ff27e66ca0e9fcc414d0fe60c0c79e"
+    },
+    "part": {
+      "identity": {
+        "source": "/data/wuhao.xwh/duckdb-sirius-data/tpch_sf500.duckdb",
+        "source_bytes": 140138786816,
+        "source_mtime_ns": 1791462173336194573,
+        "target_database": "tpch500_sirius",
+        "host": "127.0.0.1",
+        "port": 2886
+      },
+      "table": "part",
+      "columns": [
+        [
+          "p_partkey",
+          "BIGINT"
+        ],
+        [
+          "p_name",
+          "VARCHAR"
+        ],
+        [
+          "p_mfgr",
+          "VARCHAR"
+        ],
+        [
+          "p_brand",
+          "VARCHAR"
+        ],
+        [
+          "p_type",
+          "VARCHAR"
+        ],
+        [
+          "p_size",
+          "INTEGER"
+        ],
+        [
+          "p_container",
+          "VARCHAR"
+        ],
+        [
+          "p_retailprice",
+          "DECIMAL(15,2)"
+        ],
+        [
+          "p_comment",
+          "VARCHAR"
+        ]
+      ],
+      "key_span": 250000,
+      "source_rows": 100000000,
+      "created": true,
+      "verified": true,
+      "fingerprint_expressions": [
+        "COUNT(*)",
+        "SUM(p_partkey)",
+        "COUNT(p_partkey)",
+        "SUM(LENGTH(p_name))",
+        "COUNT(p_name)",
+        "SUM(LENGTH(p_mfgr))",
+        "COUNT(p_mfgr)",
+        "SUM(LENGTH(p_brand))",
+        "COUNT(p_brand)",
+        "SUM(LENGTH(p_type))",
+        "COUNT(p_type)",
+        "SUM(p_size)",
+        "COUNT(p_size)",
+        "SUM(LENGTH(p_container))",
+        "COUNT(p_container)",
+        "SUM(p_retailprice)",
+        "COUNT(p_retailprice)",
+        "SUM(LENGTH(p_comment))",
+        "COUNT(p_comment)"
+      ],
+      "source_fingerprint": [
+        100000000,
+        5000000050000000,
+        100000000,
+        3274978408,
+        100000000,
+        1400000000,
+        100000000,
+        800000000,
+        100000000,
+        2059985233,
+        100000000,
+        2550141153,
+        100000000,
+        757507399,
+        100000000,
+        "149949512670.01",
+        100000000,
+        1350008532,
+        100000000
+      ],
+      "final_free_bytes": 712079888384,
+      "recorded_rows": 100000000,
+      "chunk_count": 400,
+      "manifest_sha256": "4eed7582deb356d3b2c2e5a1eacc51beddccf42e345ea6d4ba64846db237b6c8"
+    },
+    "partsupp": {
+      "identity": {
+        "source": "/data/wuhao.xwh/duckdb-sirius-data/tpch_sf500.duckdb",
+        "source_bytes": 140138786816,
+        "source_mtime_ns": 1791462173336194573,
+        "target_database": "tpch500_sirius",
+        "host": "127.0.0.1",
+        "port": 2886
+      },
+      "table": "partsupp",
+      "columns": [
+        [
+          "ps_partkey",
+          "BIGINT"
+        ],
+        [
+          "ps_suppkey",
+          "BIGINT"
+        ],
+        [
+          "ps_availqty",
+          "BIGINT"
+        ],
+        [
+          "ps_supplycost",
+          "DECIMAL(15,2)"
+        ],
+        [
+          "ps_comment",
+          "VARCHAR"
+        ]
+      ],
+      "key_span": 100000,
+      "source_rows": 400000000,
+      "created": true,
+      "verified": true,
+      "fingerprint_expressions": [
+        "COUNT(*)",
+        "SUM(ps_partkey)",
+        "COUNT(ps_partkey)",
+        "SUM(ps_suppkey)",
+        "COUNT(ps_suppkey)",
+        "SUM(ps_availqty)",
+        "COUNT(ps_availqty)",
+        "SUM(ps_supplycost)",
+        "COUNT(ps_supplycost)",
+        "SUM(LENGTH(ps_comment))",
+        "COUNT(ps_comment)"
+      ],
+      "source_fingerprint": [
+        400000000,
+        20000000200000000,
+        400000000,
+        1000000200000000,
+        400000000,
+        2000029628180,
+        400000000,
+        "200192602868.03",
+        400000000,
+        49400147007,
+        400000000
+      ],
+      "final_free_bytes": 690527498240,
+      "recorded_rows": 400000000,
+      "chunk_count": 1000,
+      "manifest_sha256": "244e2dd078cfbbe18ddc5adc1b5e784d3bfe9dc1d787c32402c7094e1ad5527d"
+    },
+    "region": {
+      "identity": {
+        "source": "/data/wuhao.xwh/duckdb-sirius-data/tpch_sf500.duckdb",
+        "source_bytes": 140138786816,
+        "source_mtime_ns": 1791462173336194573,
+        "target_database": "tpch500_sirius",
+        "host": "127.0.0.1",
+        "port": 2886
+      },
+      "table": "region",
+      "columns": [
+        [
+          "r_regionkey",
+          "INTEGER"
+        ],
+        [
+          "r_name",
+          "VARCHAR"
+        ],
+        [
+          "r_comment",
+          "VARCHAR"
+        ]
+      ],
+      "key_span": 100000,
+      "source_rows": 5,
+      "created": true,
+      "verified": true,
+      "fingerprint_expressions": [
+        "COUNT(*)",
+        "SUM(r_regionkey)",
+        "COUNT(r_regionkey)",
+        "SUM(LENGTH(r_name))",
+        "COUNT(r_name)",
+        "SUM(LENGTH(r_comment))",
+        "COUNT(r_comment)"
+      ],
+      "source_fingerprint": [
+        5,
+        10,
+        5,
+        34,
+        5,
+        330,
+        5
+      ],
+      "final_free_bytes": 725969104896,
+      "recorded_rows": 5,
+      "chunk_count": 1,
+      "manifest_sha256": "9d29358fa7156f94de9f7b2f9d15fca0718e02bd117e83a2af40a7572fb503eb"
+    },
+    "supplier": {
+      "identity": {
+        "source": "/data/wuhao.xwh/duckdb-sirius-data/tpch_sf500.duckdb",
+        "source_bytes": 140138786816,
+        "source_mtime_ns": 1791462173336194573,
+        "target_database": "tpch500_sirius",
+        "host": "127.0.0.1",
+        "port": 2886
+      },
+      "table": "supplier",
+      "columns": [
+        [
+          "s_suppkey",
+          "BIGINT"
+        ],
+        [
+          "s_name",
+          "VARCHAR"
+        ],
+        [
+          "s_address",
+          "VARCHAR"
+        ],
+        [
+          "s_nationkey",
+          "INTEGER"
+        ],
+        [
+          "s_phone",
+          "VARCHAR"
+        ],
+        [
+          "s_acctbal",
+          "DECIMAL(15,2)"
+        ],
+        [
+          "s_comment",
+          "VARCHAR"
+        ]
+      ],
+      "key_span": 100000,
+      "source_rows": 5000000,
+      "created": true,
+      "verified": true,
+      "fingerprint_expressions": [
+        "COUNT(*)",
+        "SUM(s_suppkey)",
+        "COUNT(s_suppkey)",
+        "SUM(LENGTH(s_name))",
+        "COUNT(s_name)",
+        "SUM(LENGTH(s_address))",
+        "COUNT(s_address)",
+        "SUM(s_nationkey)",
+        "COUNT(s_nationkey)",
+        "SUM(LENGTH(s_phone))",
+        "COUNT(s_phone)",
+        "SUM(s_acctbal)",
+        "COUNT(s_acctbal)",
+        "SUM(LENGTH(s_comment))",
+        "COUNT(s_comment)"
+      ],
+      "source_fingerprint": [
+        5000000,
+        12500002500000,
+        5000000,
+        90000000,
+        5000000,
+        125005756,
+        5000000,
+        59985796,
+        5000000,
+        75000000,
+        5000000,
+        "22494453196.26",
+        5000000,
+        312469467,
+        5000000
+      ],
+      "final_free_bytes": 724777893888,
+      "recorded_rows": 5000000,
+      "chunk_count": 16,
+      "manifest_sha256": "597c6072b0b94a277e97b7ece5ed56a49ece50872cfefe106dc849abd9d29a36"
+    }
+  },
+  "total_rows": 4330028272,
+  "staging_files": 0,
+  "free_bytes": 585791004672,
+  "source_stat": {
+    "bytes": 140138786816,
+    "mtime_ns": 1791462173336194573
+  },
+  "instance_block_file": {
+    "bytes": 236223201280,
+    "allocated_bytes": 236227231744,
+    "scope": "All tables in this isolated instance, including earlier projections"
+  },
+  "disk_stat": [
+    {
+      "total_size": 412316860416,
+      "used_size": 160239190016,
+      "free_size": 75981914112,
+      "is_disk_valid": 1,
+      "disk_error_begin_ts": 0,
+      "allocated_size": 236223201280
+    }
+  ],
+  "major_compaction": [
+    {
+      "FROZEN_SCN": 1792983820286829028,
+      "FROZEN_TIME": "2026-10-26 11:03:40.286829",
+      "GLOBAL_BROADCAST_SCN": 1792983820286829028,
+      "LAST_SCN": 1792778400462873013,
+      "LAST_FINISH_TIME": "2026-10-26 10:52:08.550734",
+      "START_TIME": "2026-10-26 11:03:40.322113",
+      "STATUS": "COMPACTING",
+      "IS_ERROR": "NO",
+      "IS_SUSPENDED": "NO",
+      "INFO": ""
+    }
+  ],
+  "dag_warnings": [],
+  "pipeline_state": {
+    "status": "running",
+    "started_utc": "2026-10-26T02:44:54.265118+00:00",
+    "stage": "major_compaction",
+    "updated_utc": "2026-10-26T03:03:40.243449+00:00",
+    "tables": {
+      "region": 5,
+      "nation": 25,
+      "supplier": 5000000,
+      "customer": 75000000,
+      "part": 100000000,
+      "partsupp": 400000000,
+      "orders": 750000000,
+      "lineitem": 3000028242
+    }
+  }
+}

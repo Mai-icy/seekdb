@@ -1,0 +1,18 @@
+{
+  "utc": "2026-10-26T02:52:47.691292+00:00",
+  "reason": "Successful flushes but quota remains held at 20.63 GB and all LOAD statements wait; host MemAvailable over 440 GiB. Increase bounded import headroom, keep absolute freeze trigger near 3.4 GB.",
+  "changes": [
+    "ALTER SYSTEM SET memory_budget='96G'",
+    "ALTER SYSTEM SET memstore_memory_limit='64G'",
+    "ALTER SYSTEM SET freeze_trigger_percentage=5"
+  ],
+  "memory": [
+    {
+      "active_span": 3546086280,
+      "freeze_trigger": 3469250891,
+      "freeze_cnt": 4,
+      "memstore_used": 7368788088,
+      "memstore_limit": 68719476736
+    }
+  ]
+}

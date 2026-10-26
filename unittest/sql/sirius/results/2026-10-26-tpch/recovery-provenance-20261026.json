@@ -1,0 +1,8 @@
+{
+  "utc": "2026-10-26T02:45:22.215874+00:00",
+  "source_commit": "317ded18130338056e8c87148d542f706af7f664",
+  "seekdb_sha256": "dd6493ee243b89c5407af8eb325e9b61b76a7beeac1b64574686090c11c90776",
+  "seekdb_bytes": 1302089000,
+  "server_pid": 2968348,
+  "note": "Binary compiled before committing 317ded18; contains linked macro iterator fix. GPU overlay unchanged."
+}
