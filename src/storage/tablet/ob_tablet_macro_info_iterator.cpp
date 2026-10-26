@@ -239,12 +239,6 @@ int ObMacroInfoIterator::read_from_disk()
     ret = OB_ERR_UNEXPECTED;
   } else if (OB_UNLIKELY(ObTabletMacroType::LINKED_BLOCK == target_type_)) {
     ret = OB_NOT_SUPPORTED;
-  } else if (ObTabletMacroType::SHARED_DATA_BLOCK == cur_type_) {
-    ObTabletMacroInfo::ObBlockInfoArray<ObSharedBlockInfo> tmp_arr;
-    if (OB_FAIL(tmp_arr.deserialize(allocator, buf, buf_len, pos))) {
-    } else if (OB_FAIL(reuse_info_arr(tmp_arr.cnt_))) {
-    } else if (OB_FAIL(convert_to_block_info(tmp_arr))) {
-    }
   } else {
     do {
       pos = 0;
@@ -264,6 +258,15 @@ int ObMacroInfoIterator::read_from_disk()
   
   if (OB_FAIL(ret)) {
     // do nothing
+  } else if (ObTabletMacroType::SHARED_DATA_BLOCK == cur_type_) {
+    // Decode the type from the newly read item before choosing its payload
+    // format. Shared entries also carry occupy_size; the preceding item type
+    // must not prevent advancing to the next item (including end-of-stream).
+    ObTabletMacroInfo::ObBlockInfoArray<ObSharedBlockInfo> tmp_arr;
+    if (OB_FAIL(tmp_arr.deserialize(allocator, buf, buf_len, pos))) {
+    } else if (OB_FAIL(reuse_info_arr(tmp_arr.cnt_))) {
+    } else if (OB_FAIL(convert_to_block_info(tmp_arr))) {
+    }
   } else {
     ObTabletMacroInfo::ObBlockInfoArray<MacroBlockId> tmp_arr;
     if (OB_FAIL(tmp_arr.deserialize(allocator, buf, buf_len, pos))) {

@@ -164,6 +164,30 @@ buffer. Pin microbenchmarks above and the earlier smoke run used the default
 5%. The query runner records effective settings and rejects a resumed result
 directory if those settings changed.
 
+## SF500 import recovery on October 26
+
+The October 23 run stopped at 2,752,425,559 completed lineitem rows with SQL
+error 4012 (timeout). The other seven tables remained verified. On October 26,
+the instance still held three large frozen memtables in `READY_FOR_FLUSH`.
+The MINI_MERGE warning history reported repeated `OB_INVALID_ARGUMENT` failures
+while updating tablet 210245. The datafile had free space; this was a different
+failure from the earlier redo throttling.
+
+The failing path was `ObTablet::inc_ref_with_macro_iter` after macro metadata
+switched to linked storage. `ObMacroInfoIterator::read_from_disk` dispatched on
+the preceding item's type before reading the next item. After an empty shared
+block list it tried to deserialize a null buffer; nonempty shared records were
+also decoded as plain macro IDs, losing their occupied sizes. The fix reads
+and decodes each item's type before selecting the matching payload format.
+
+Four focused C++ tests cover an empty shared tail, shared occupied sizes,
+shared-only iteration and data-only iteration. Three fail on the original
+implementation; all four pass after the fix. The seekdb binary was rebuilt,
+and the owned instance was gracefully stopped and restarted to apply it.
+Import recovery and final full-suite results are still pending verification.
+
+Evidence: [October 26 results](../../unittest/sql/sirius/results/2026-10-26-tpch/).
+
 ## Validation and provenance
 
 - Complete seekdb, bridge and owned Sirius Arrow-overlay builds succeeded.

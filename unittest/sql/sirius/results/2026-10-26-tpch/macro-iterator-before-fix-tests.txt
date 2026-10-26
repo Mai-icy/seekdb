@@ -1,0 +1,53 @@
+exec ${PAGER:-/usr/bin/less} "$0" || exit 1
+Executing tests from //unittest/storage/tablet:test_tablet_macro_info_iterator
+-----------------------------------------------------------------------------
+[==========] Running 4 tests from 1 test case.
+[----------] Global test environment set-up.
+[----------] 4 tests from TestTabletMacroIterator
+[ RUN      ] TestTabletMacroIterator.empty_shared_tail_reaches_end
+unittest/storage/tablet/test_tablet_macro_info_iterator.cpp:105: Failure
+      Expected: OB_ITER_END
+      Which is: -4008
+To be equal to: iter.get_next(info)
+      Which is: -4002
+unittest/storage/tablet/test_tablet_macro_info_iterator.cpp:106: Failure
+      Expected: OB_ITER_END
+      Which is: -4008
+To be equal to: iter.get_next(info)
+      Which is: -4002
+[  FAILED  ] TestTabletMacroIterator.empty_shared_tail_reaches_end (0 ms)
+[ RUN      ] TestTabletMacroIterator.shared_payload_preserves_occupancy
+unittest/storage/tablet/test_tablet_macro_info_iterator.cpp:122: Failure
+      Expected: 12345
+To be equal to: info.occupy_size_
+      Which is: 2097152
+unittest/storage/tablet/test_tablet_macro_info_iterator.cpp:123: Failure
+      Expected: OB_ITER_END
+      Which is: -4008
+To be equal to: iter.get_next(info)
+      Which is: -4002
+[  FAILED  ] TestTabletMacroIterator.shared_payload_preserves_occupancy (0 ms)
+[ RUN      ] TestTabletMacroIterator.targeted_shared_iteration
+unittest/storage/tablet/test_tablet_macro_info_iterator.cpp:136: Failure
+      Expected: 12345
+To be equal to: info.occupy_size_
+      Which is: 2097152
+unittest/storage/tablet/test_tablet_macro_info_iterator.cpp:137: Failure
+      Expected: OB_ITER_END
+      Which is: -4008
+To be equal to: iter.get_next(info)
+      Which is: -4002
+[  FAILED  ] TestTabletMacroIterator.targeted_shared_iteration (0 ms)
+[ RUN      ] TestTabletMacroIterator.targeted_data_stops_before_shared
+[       OK ] TestTabletMacroIterator.targeted_data_stops_before_shared (0 ms)
+[----------] 4 tests from TestTabletMacroIterator (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test case ran. (0 ms total)
+[  PASSED  ] 1 test.
+[  FAILED  ] 3 tests, listed below:
+[  FAILED  ] TestTabletMacroIterator.empty_shared_tail_reaches_end
+[  FAILED  ] TestTabletMacroIterator.shared_payload_preserves_occupancy
+[  FAILED  ] TestTabletMacroIterator.targeted_shared_iteration
+
+ 3 FAILED TESTS

@@ -1,0 +1,13 @@
+[
+  {
+    "task_id": "YB427F000001-00065E7CB5ED5F6A-0-0",
+    "module": "COMPACTION",
+    "type": "MINI_MERGE",
+    "ret": "OB_INVALID_ARGUMENT",
+    "status": "RETRYED",
+    "gmt_create": "2026-10-23 19:20:48.818160",
+    "gmt_modified": "2026-10-26 10:37:32.825076",
+    "retry_cnt": 1857,
+    "warning_info": "ob_basic_tablet_merge_ctx.cpp:949(update_tablet),MINI_MERGE;tablet_id=210245;compaction_scn=0;concurrent_cnt=1"
+  }
+]
