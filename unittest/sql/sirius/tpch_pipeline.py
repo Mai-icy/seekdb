@@ -44,7 +44,7 @@ def main(args):
             tables[table] = report['source_rows']
         reserve()
         update('major_compaction', tables=tables)
-        maintenance = {'compaction': [], 'analyze': []}
+        maintenance = {'compaction': [], 'analyze': [], 'analyze_parallel': args.analyze_parallel}
         with connect(read_timeout=1860) as conn, conn.cursor() as cursor:
             cursor.execute('SET ob_query_timeout=1800000000')
             cursor.execute('SET ob_trx_timeout=1800000000')
@@ -61,6 +61,9 @@ def main(args):
                 if row['FROZEN_SCN'] > before and row['LAST_SCN'] >= row['FROZEN_SCN'] and row['STATUS'] == 'IDLE': break
                 time.sleep(5)
             else: raise TimeoutError('Compaction deadline reached')
+            # ANALYZE inherits this session's forced query DOP. Large SF500
+            # tables otherwise collect all-column statistics on one worker.
+            cursor.execute('SET _force_parallel_query_dop=%s', (args.analyze_parallel,))
             for table in KEYS:
                 update('analyze', current_table=table)
                 started = time.perf_counter()
@@ -121,5 +124,6 @@ if __name__ == '__main__':
     p.add_argument('--host-pin-mib', type=int, choices=(16, 64, 128), default=64)
     p.add_argument('--scale-factor', type=float, default=500)
     p.add_argument('--workers', type=int, choices=(4, 8, 16, 32), default=16)
+    p.add_argument('--analyze-parallel', type=int, choices=(1, 8, 16), default=8)
     p.add_argument('--reserve-gib', type=int, default=180)
     main(p.parse_args())

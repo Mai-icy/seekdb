@@ -1,0 +1,18 @@
+{
+  "status": "failed",
+  "started_utc": "2026-10-26T02:44:54.265118+00:00",
+  "stage": "analyze",
+  "updated_utc": "2026-10-26T03:55:07.290792+00:00",
+  "tables": {
+    "region": 5,
+    "nation": 25,
+    "supplier": 5000000,
+    "customer": 75000000,
+    "part": 100000000,
+    "partsupp": 400000000,
+    "orders": 750000000,
+    "lineitem": 3000028242
+  },
+  "current_table": "lineitem",
+  "error": "OperationalError(4012, 'Timeout')"
+}

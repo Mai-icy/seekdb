@@ -1,0 +1,17 @@
+{
+  "socket_restoration_sql_verified": true,
+  "helper_pid": 3295918,
+  "helper_stopped": true,
+  "removed": [
+    {
+      "name": "customer-projection.duckdb",
+      "bytes": 267137024
+    },
+    {
+      "name": "probe.duckdb",
+      "bytes": 536576
+    }
+  ],
+  "source_unchanged": true,
+  "free_bytes": 585644376064
+}

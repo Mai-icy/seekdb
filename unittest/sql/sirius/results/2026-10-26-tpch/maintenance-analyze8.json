@@ -1,0 +1,107 @@
+{
+  "compaction": [
+    {
+      "FROZEN_SCN": 1792983820286829028,
+      "FROZEN_TIME": "2026-10-26 11:03:40.286829",
+      "GLOBAL_BROADCAST_SCN": 1792983820286829028,
+      "LAST_SCN": 1792983820286829028,
+      "LAST_FINISH_TIME": "2026-10-26 11:15:43.034895",
+      "START_TIME": "2026-10-26 11:03:40.322113",
+      "STATUS": "IDLE",
+      "IS_ERROR": "NO",
+      "IS_SUSPENDED": "NO",
+      "INFO": ""
+    },
+    {
+      "FROZEN_SCN": 1792987173186583027,
+      "FROZEN_TIME": "2026-10-26 11:59:33.186583",
+      "GLOBAL_BROADCAST_SCN": 1792987173186583027,
+      "LAST_SCN": 1792983820286829028,
+      "LAST_FINISH_TIME": "2026-10-26 11:15:43.034895",
+      "START_TIME": "2026-10-26 11:59:33.508179",
+      "STATUS": "COMPACTING",
+      "IS_ERROR": "NO",
+      "IS_SUSPENDED": "NO",
+      "INFO": ""
+    },
+    {
+      "FROZEN_SCN": 1792987173186583027,
+      "FROZEN_TIME": "2026-10-26 11:59:33.186583",
+      "GLOBAL_BROADCAST_SCN": 1792987173186583027,
+      "LAST_SCN": 1792983820286829028,
+      "LAST_FINISH_TIME": "2026-10-26 11:15:43.034895",
+      "START_TIME": "2026-10-26 11:59:33.508179",
+      "STATUS": "COMPACTING",
+      "IS_ERROR": "NO",
+      "IS_SUSPENDED": "NO",
+      "INFO": ""
+    },
+    {
+      "FROZEN_SCN": 1792987173186583027,
+      "FROZEN_TIME": "2026-10-26 11:59:33.186583",
+      "GLOBAL_BROADCAST_SCN": 1792987173186583027,
+      "LAST_SCN": 1792983820286829028,
+      "LAST_FINISH_TIME": "2026-10-26 11:15:43.034895",
+      "START_TIME": "2026-10-26 11:59:33.508179",
+      "STATUS": "COMPACTING",
+      "IS_ERROR": "NO",
+      "IS_SUSPENDED": "NO",
+      "INFO": ""
+    },
+    {
+      "FROZEN_SCN": 1792987173186583027,
+      "FROZEN_TIME": "2026-10-26 11:59:33.186583",
+      "GLOBAL_BROADCAST_SCN": 1792987173186583027,
+      "LAST_SCN": 1792987173186583027,
+      "LAST_FINISH_TIME": "2026-10-26 11:59:50.301627",
+      "START_TIME": "2026-10-26 11:59:33.508179",
+      "STATUS": "IDLE",
+      "IS_ERROR": "NO",
+      "IS_SUSPENDED": "NO",
+      "INFO": ""
+    }
+  ],
+  "analyze": [
+    {
+      "table": "region",
+      "seconds": 0.06452921684831381,
+      "result": []
+    },
+    {
+      "table": "nation",
+      "seconds": 0.02735847281292081,
+      "result": []
+    },
+    {
+      "table": "supplier",
+      "seconds": 0.5775588382966816,
+      "result": []
+    },
+    {
+      "table": "customer",
+      "seconds": 8.031914267223328,
+      "result": []
+    },
+    {
+      "table": "part",
+      "seconds": 7.392924726009369,
+      "result": []
+    },
+    {
+      "table": "partsupp",
+      "seconds": 12.04457422811538,
+      "result": []
+    },
+    {
+      "table": "orders",
+      "seconds": 48.462331568822265,
+      "result": []
+    },
+    {
+      "table": "lineitem",
+      "seconds": 307.1500271181576,
+      "result": []
+    }
+  ],
+  "analyze_parallel": 8
+}

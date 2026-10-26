@@ -1,0 +1,204 @@
+{
+  "note": "Derived from raw exact-result-checked runs. Totals are estimates; startup is separate unless explicitly included.",
+  "cases": {
+    "sum_count": {
+      "native_pooled_hot_medians": {
+        "cpu1": 0.3377540938090533,
+        "cpu8": 0.05362693057395518,
+        "live_scan": 0.030825077323243022,
+        "host_pinned": 0.032289117807522416
+      },
+      "resident_speedup": {
+        "live": 11.834858927562802,
+        "cpu1": 24.026389034363795,
+        "cpu8": 3.93673161193832,
+        "cpu8_default": 5.456588869060064
+      },
+      "resident_break_even_including_allocation": {
+        "live": 2,
+        "cpu1": 1,
+        "cpu8": 7,
+        "cpu8_default": 5
+      },
+      "resident_break_even_including_allocation_and_startup": {
+        "live": 3,
+        "cpu1": 2,
+        "cpu8": 9,
+        "cpu8_default": 6
+      }
+    },
+    "count": {
+      "native_pooled_hot_medians": {
+        "cpu1": 0.17210021056234837,
+        "cpu8": 0.028077372815459967,
+        "live_scan": 0.016787616768851876,
+        "host_pinned": 0.009525022702291608
+      },
+      "resident_speedup": {
+        "live": 16.280437158172617,
+        "cpu1": 41.88101886700777,
+        "cpu8": 6.876519075178553,
+        "cpu8_default": 8.841183231004374
+      },
+      "resident_break_even_including_allocation": {
+        "live": 2,
+        "cpu1": 1,
+        "cpu8": 5,
+        "cpu8_default": 4
+      },
+      "resident_break_even_including_allocation_and_startup": {
+        "live": 3,
+        "cpu1": 2,
+        "cpu8": 7,
+        "cpu8_default": 6
+      }
+    }
+  },
+  "bridge_diagnostics": [
+    {
+      "case": "sum_count",
+      "mode": "live",
+      "totals": {
+        "rows": 75000000,
+        "batches": 21,
+        "build_us": 12265,
+        "input_us": 1001347,
+        "copy_us": 50364,
+        "run_us": 38705,
+        "result_us": 907,
+        "total_us": 1103672
+      }
+    },
+    {
+      "case": "sum_count",
+      "mode": "resident",
+      "totals": {
+        "rows": 75000000,
+        "batches": 21,
+        "build_us": 7988,
+        "input_us": 280,
+        "copy_us": 48818,
+        "run_us": 31913,
+        "result_us": 586,
+        "total_us": 89621
+      }
+    },
+    {
+      "case": "count",
+      "mode": "live",
+      "totals": {
+        "rows": 75000000,
+        "batches": 11,
+        "build_us": 5507,
+        "input_us": 661088,
+        "copy_us": 25117,
+        "run_us": 20920,
+        "result_us": 377,
+        "total_us": 713048
+      }
+    },
+    {
+      "case": "count",
+      "mode": "resident",
+      "totals": {
+        "rows": 75000000,
+        "batches": 11,
+        "build_us": 4936,
+        "input_us": 117,
+        "copy_us": 24333,
+        "run_us": 18184,
+        "result_us": 310,
+        "total_us": 47897
+      }
+    }
+  ],
+  "gpu_telemetry": {
+    "native-before": {
+      "worker_pid": 3296993,
+      "processes": {
+        "gpu0/pid1357411": {
+          "samples": 10,
+          "active_samples": 0,
+          "max_sm_percent": 0,
+          "max_fb_mib": 14708
+        },
+        "gpu1/pid1384828": {
+          "samples": 10,
+          "active_samples": 0,
+          "max_sm_percent": 0,
+          "max_fb_mib": 17278
+        },
+        "gpu1/pid3295918": {
+          "samples": 10,
+          "active_samples": 0,
+          "max_sm_percent": 0,
+          "max_fb_mib": 7644
+        },
+        "gpu0/pid3296993": {
+          "samples": 9,
+          "active_samples": 4,
+          "max_sm_percent": 33,
+          "max_fb_mib": 7644
+        }
+      }
+    },
+    "seekdb": {
+      "worker_pid": 3298386,
+      "processes": {
+        "gpu0/pid1357411": {
+          "samples": 89,
+          "active_samples": 0,
+          "max_sm_percent": 0,
+          "max_fb_mib": 14708
+        },
+        "gpu1/pid1384828": {
+          "samples": 89,
+          "active_samples": 0,
+          "max_sm_percent": 0,
+          "max_fb_mib": 17278
+        },
+        "gpu1/pid3295918": {
+          "samples": 89,
+          "active_samples": 0,
+          "max_sm_percent": 0,
+          "max_fb_mib": 7644
+        },
+        "gpu0/pid3298386": {
+          "samples": 88,
+          "active_samples": 47,
+          "max_sm_percent": 10,
+          "max_fb_mib": 7644
+        }
+      }
+    },
+    "native-after": {
+      "worker_pid": 3306887,
+      "processes": {
+        "gpu0/pid1357411": {
+          "samples": 10,
+          "active_samples": 0,
+          "max_sm_percent": 0,
+          "max_fb_mib": 14708
+        },
+        "gpu1/pid1384828": {
+          "samples": 10,
+          "active_samples": 0,
+          "max_sm_percent": 0,
+          "max_fb_mib": 17278
+        },
+        "gpu1/pid3295918": {
+          "samples": 10,
+          "active_samples": 0,
+          "max_sm_percent": 0,
+          "max_fb_mib": 7644
+        },
+        "gpu0/pid3306887": {
+          "samples": 9,
+          "active_samples": 5,
+          "max_sm_percent": 30,
+          "max_fb_mib": 7644
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "phases": [
+    {
+      "name": "prepare",
+      "wall_seconds": 1.486332769971341
+    },
+    {
+      "name": "native-before",
+      "wall_seconds": 10.529274619184434
+    },
+    {
+      "name": "seekdb",
+      "wall_seconds": 96.34721476119012
+    },
+    {
+      "name": "native-after",
+      "wall_seconds": 10.554023281205446
+    }
+  ],
+  "status": "passed",
+  "updated_utc": "2026-10-26T03:58:36.812706+00:00",
+  "phase": "native-after",
+  "tpch_pause_removed": true
+}

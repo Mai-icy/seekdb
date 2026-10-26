@@ -1,0 +1,4 @@
+{"case": "sum_count", "pinned": false, "median": 0.003910577856004238}
+{"case": "sum_count", "pinned": true, "median": 0.0034743957221508026}
+{"case": "count", "pinned": false, "median": 0.002212177962064743}
+{"case": "count", "pinned": true, "median": 0.0024786721915006638}

@@ -212,9 +212,21 @@ remain unchanged. No staging CSVs remain.
 At 11:05 CST the filesystem had 545.6 GiB free. The instance's block file was
 220 GiB, with about 149.2 GiB used according to the virtual disk view; those
 figures include earlier projection tables, not just the full TPC-H database.
-The pipeline is running major compaction, followed by statistics collection
-and TPC-H22. Full-suite query results are still pending; import completion
+Major compaction completed at 11:15:45 CST. The first lineitem statistics
+collection subsequently hit its 30-minute timeout at 11:55:07 CST. The pipeline
+was restarted at 11:59:32 CST with `--analyze-parallel 8`; this applies
+`_force_parallel_query_dop` only to the maintenance session. The benchmark
+connections retain their independently selected CPU/GPU execution settings.
+All eight statistics collections completed at 12:06:16 CST; lineitem took
+307.15 seconds with eight workers. TPC-H22 started at 12:06:17 CST. The successful
+maintenance record is saved as `maintenance-analyze8.json` in the evidence
+directory. Full-suite query results are still pending; import completion
 does not establish GPU query coverage or a speedup.
+
+The intervening controlled 75-million-row input-path comparison completed with
+292 exact result checks. It separates native Sirius, seekdb live input and an
+immutable resident benchmark snapshot, including pin/preparation costs. See
+[PATH_COMPARISON.md](PATH_COMPARISON.md); those results are not TPC-H22 results.
 
 Evidence: [October 26 results](../../unittest/sql/sirius/results/2026-10-26-tpch/).
 
@@ -228,8 +240,9 @@ Evidence: [October 26 results](../../unittest/sql/sirius/results/2026-10-26-tpch
 - 16 SQL/transaction checks passed for each frame setting: 16, 64 and 128 MiB.
 - The complete SF0.01 import/compaction/analyze/TPC-H22 pipeline passed in both
   modes. All 22 queries used CPU fallback; no full-suite GPU speedup is claimed.
-- Full SF500 preparation and all eight table validations passed. Major
-  compaction is running; full-suite query validation is pending.
+- Full SF500 import and all eight table validations passed. Major compaction
+  and eight-worker statistics collection completed. TPC-H22 is running;
+  full-suite query validation is pending.
 - Borrowed Sirius checkout `3fcff6a0488516db09ddc7e993564eb9a98b72d3`
   remains unmodified. Its original library SHA-256 is
   `cf5c490ac32f3cf7169bea8011688eedaefb634ee53741a3f475b7d729bd78ae`.

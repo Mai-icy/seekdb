@@ -87,6 +87,12 @@ def main(args):
         summary['seekdb_settings'] = settings
         save()
         for number in args.queries:
+            # Coordinate exclusive measurements on a shared test instance.
+            # Wait only between queries, outside every measured interval.
+            if (root / 'PAUSE').exists():
+                print(json.dumps({'query': number, 'status': 'paused_at_query_boundary'}), flush=True)
+                while (root / 'PAUSE').exists():
+                    time.sleep(1)
             old = next((q for q in summary['queries'] if q['query'] == number), None)
             sql = (Path(__file__).with_name('tpch_queries') / f'q{number:02d}.sql').read_text().strip().rstrip(';')
             if number == 11:

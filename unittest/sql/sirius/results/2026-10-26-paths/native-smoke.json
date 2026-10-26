@@ -1,0 +1,257 @@
+{
+  "path": "duckdb_sirius",
+  "startup_warmup_seconds": 0.6469967663288116,
+  "provenance": {
+    "started_utc": "2026-10-26T03:41:17.932464+00:00",
+    "pid": 3204178,
+    "host": "ob-ai-115",
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "cuda_visible_devices": "0",
+    "duckdb_version": "1.5.6",
+    "binaries": {
+      "extension": {
+        "path": "/data/wuhao.xwh/duckdb-sirius-upstream/sirius/build/release/extension/sirius/sirius.duckdb_extension",
+        "sha256": "0156b330e9130759915590bdea0cd7ab235fe1048eb5bcbc04befc34f9d484ba"
+      }
+    },
+    "config_path": "/data/wuhao.xwh/seekdb-sirius-compare-20261026/sirius.yaml",
+    "config": "sirius:\n  topology:\n    num_gpus: 1\n  memory:\n    gpu:\n      usage_limit_fraction: 0.15\n      reservation_limit_fraction: 1.0\n    host:\n      capacity_bytes: 8000000000\n      initial_number_pools: 4\n      pool_size: 128\n      block_size: 1048576\n    disk:\n      capacity_bytes: 20000000000\n      downgrade_root_dirs: \"/data/wuhao.xwh/seekdb-sirius-compare-20261026/spill\"\n  executor:\n    pipeline:\n      num_threads: 4\n    task_creator:\n      num_threads: 2\n    downgrade:\n      num_threads: 1\n      monitor_period: 10ms\n  operator_params:\n    scan_task_batch_size: 67108864\n    max_sort_partition_bytes: 268435456\n    hash_partition_bytes: 134217728\n    concat_batch_bytes: 134217728\n    max_build_hash_table_bytes: 134217728\n",
+    "gpu_processes_at_start": "gpu_uuid, pid, process_name, used_gpu_memory [MiB]\nGPU-bd542851-d117-1699-7a26-862e3c9fbfb1, 1357411, VLLM::EngineCore, 14708 MiB\nGPU-bd542851-d117-1699-7a26-862e3c9fbfb1, 3204178, /data/wuhao.xwh/seekdb-sirius-20261022/venv/bin/python, 7644 MiB\nGPU-ce6b26d2-06c1-38c9-71f3-ea634840bee7, 1384828, VLLM::EngineCore, 17278 MiB\n"
+  },
+  "rows": 100,
+  "gpu_execution": true,
+  "duckdb_fallback": false,
+  "pin_compression": false,
+  "threads": 8,
+  "cases": {
+    "sum_count": {
+      "cpu1": {
+        "seconds": [
+          0.00036145513877272606,
+          0.0002610958181321621,
+          0.0002387021668255329
+        ],
+        "median_seconds": 0.0002610958181321621,
+        "first_seconds": 0.001406579278409481,
+        "preparation_seconds": 0,
+        "estimated_total_seconds": {
+          "1": 0.001406579278409481,
+          "5": 0.0024509625509381294,
+          "10": 0.00375644164159894
+        },
+        "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+      },
+      "cpu8": {
+        "seconds": [
+          0.00035249022766947746,
+          0.0003230329602956772,
+          0.0003090882673859596
+        ],
+        "median_seconds": 0.0003230329602956772,
+        "first_seconds": 0.0005513150244951248,
+        "preparation_seconds": 0,
+        "estimated_total_seconds": {
+          "1": 0.0005513150244951248,
+          "5": 0.0018434468656778336,
+          "10": 0.0034586116671562195
+        },
+        "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+      },
+      "live_scan": {
+        "seconds": [
+          0.00410141097381711,
+          0.0027200188487768173,
+          0.003910577856004238
+        ],
+        "median_seconds": 0.003910577856004238,
+        "first_seconds": 0.005104804877191782,
+        "preparation_seconds": 0,
+        "estimated_total_seconds": {
+          "1": 0.005104804877191782,
+          "5": 0.020747116301208735,
+          "10": 0.040300005581229925
+        },
+        "total_note": "estimate using measured first call and hot median; engine startup reported separately",
+        "projection_prepare_seconds": 0,
+        "estimated_total_including_projection": {
+          "1": 0.005104804877191782,
+          "5": 0.020747116301208735,
+          "10": 0.040300005581229925
+        }
+      },
+      "host_pinned": {
+        "seconds": [
+          0.004555674735456705,
+          0.0034743957221508026,
+          0.0022417581640183926
+        ],
+        "median_seconds": 0.0034743957221508026,
+        "first_seconds": 0.0041222963482141495,
+        "preparation_seconds": 0.009006863925606012,
+        "estimated_total_seconds": {
+          "1": 0.013129160273820162,
+          "5": 0.027026743162423372,
+          "10": 0.044398721773177385
+        },
+        "total_note": "estimate using measured first call and hot median; engine startup reported separately",
+        "projection_prepare_seconds": 0,
+        "estimated_total_including_projection": {
+          "1": 0.013129160273820162,
+          "5": 0.027026743162423372,
+          "10": 0.044398721773177385
+        }
+      }
+    },
+    "count": {
+      "cpu1": {
+        "seconds": [
+          0.0002947780303657055,
+          0.0002584611065685749,
+          0.0002410486340522766
+        ],
+        "median_seconds": 0.0002584611065685749,
+        "first_seconds": 0.00041196681559085846,
+        "preparation_seconds": 0,
+        "estimated_total_seconds": {
+          "1": 0.00041196681559085846,
+          "5": 0.001445811241865158,
+          "10": 0.0027381167747080326
+        },
+        "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+      },
+      "cpu8": {
+        "seconds": [
+          0.000702418852597475,
+          0.0004958407953381538,
+          0.0003088228404521942
+        ],
+        "median_seconds": 0.0004958407953381538,
+        "first_seconds": 0.0005591362714767456,
+        "preparation_seconds": 0,
+        "estimated_total_seconds": {
+          "1": 0.0005591362714767456,
+          "5": 0.002542499452829361,
+          "10": 0.00502170342952013
+        },
+        "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+      },
+      "live_scan": {
+        "seconds": [
+          0.0028098169714212418,
+          0.002212177962064743,
+          0.0020677209831774235
+        ],
+        "median_seconds": 0.002212177962064743,
+        "first_seconds": 0.0025714868679642677,
+        "preparation_seconds": 0,
+        "estimated_total_seconds": {
+          "1": 0.0025714868679642677,
+          "5": 0.01142019871622324,
+          "10": 0.022481088526546955
+        },
+        "total_note": "estimate using measured first call and hot median; engine startup reported separately",
+        "projection_prepare_seconds": 0,
+        "estimated_total_including_projection": {
+          "1": 0.0025714868679642677,
+          "5": 0.01142019871622324,
+          "10": 0.022481088526546955
+        }
+      },
+      "host_pinned": {
+        "seconds": [
+          0.0024786721915006638,
+          0.002726792823523283,
+          0.001983196008950472
+        ],
+        "median_seconds": 0.0024786721915006638,
+        "first_seconds": 0.0027605476789176464,
+        "preparation_seconds": 0.0016981097869575024,
+        "estimated_total_seconds": {
+          "1": 0.004458657465875149,
+          "5": 0.014373346231877804,
+          "10": 0.026766707189381123
+        },
+        "total_note": "estimate using measured first call and hot median; engine startup reported separately",
+        "projection_prepare_seconds": 0,
+        "estimated_total_including_projection": {
+          "1": 0.004458657465875149,
+          "5": 0.014373346231877804,
+          "10": 0.026766707189381123
+        }
+      }
+    }
+  },
+  "effective_settings": {
+    "enable_duckdb_fallback": "false",
+    "memory_limit": "7.4 GiB",
+    "pin_table_compression": "false",
+    "threads": "8"
+  },
+  "timing": "DuckDB execute/fetch; result normalization excluded; warm OS caches, not cold storage",
+  "process_peak_rss_kib": 1339192
+}

@@ -1,0 +1,2262 @@
+{
+  "path": "seekdb_live_and_resident",
+  "rows": 75000000,
+  "cases": {
+    "sum_count": {
+      "modes": {
+        "cpu1": {
+          "seconds": [
+            2.270828085951507,
+            2.2657549609430134,
+            2.352531787008047,
+            2.230688917916268,
+            2.269346456974745,
+            2.2502262820489705,
+            2.222904740832746,
+            2.3206094410270452,
+            2.2529004807583988,
+            2.2496728929691017
+          ],
+          "median_seconds": 2.259327720850706,
+          "first_seconds": 2.570257775951177,
+          "preparation_seconds": 0,
+          "estimated_total_seconds": {
+            "1": 2.570257775951177,
+            "5": 11.607568659354001,
+            "10": 22.904207263607532
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+        },
+        "cpu8": {
+          "seconds": [
+            0.3619200363755226,
+            0.39663557102903724,
+            0.3698687390424311,
+            0.3786642989143729,
+            0.39379025995731354,
+            0.3875851263292134,
+            0.36430569598451257,
+            0.367103299126029,
+            0.3627230511046946,
+            0.37051441613584757
+          ],
+          "median_seconds": 0.37019157758913934,
+          "first_seconds": 0.40536715602502227,
+          "preparation_seconds": 0,
+          "estimated_total_seconds": {
+            "1": 0.40536715602502227,
+            "5": 1.8861334663815796,
+            "10": 3.7370913543272763
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+        },
+        "cpu8_default": {
+          "seconds": [
+            0.5164215709082782,
+            0.5025751078501344,
+            0.49794105999171734,
+            0.53172572189942,
+            0.5042214822024107,
+            0.5137775875627995,
+            0.5124459099024534,
+            0.5356455673463643,
+            0.5144574823789299,
+            0.50495082186535
+          ],
+          "median_seconds": 0.5131117487326264,
+          "first_seconds": 0.5218472387641668,
+          "preparation_seconds": 0,
+          "estimated_total_seconds": {
+            "1": 0.5218472387641668,
+            "5": 2.5742942336946726,
+            "10": 5.139852977357805
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+        },
+        "live": {
+          "seconds": [
+            1.2628942742012441,
+            1.1168633908964694,
+            1.0621949676424265,
+            1.1089246631599963,
+            1.0774457356892526,
+            1.150403296109289,
+            1.0662366468459368,
+            1.1462483182549477,
+            1.2339946022257209,
+            1.066205256152898
+          ],
+          "median_seconds": 1.1128940270282328,
+          "first_seconds": 1.1904541947878897,
+          "preparation_seconds": 0,
+          "estimated_total_seconds": {
+            "1": 1.1904541947878897,
+            "5": 5.642030302900821,
+            "10": 11.206500438041985
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+        },
+        "resident": {
+          "seconds": [
+            0.09457020601257682,
+            0.0955956638790667,
+            0.08894738927483559,
+            0.09073180286213756,
+            0.09343736572191119,
+            0.09158581309020519,
+            0.09456158243119717,
+            0.09736459422856569,
+            0.09350893599912524,
+            0.09499823907390237
+          ],
+          "median_seconds": 0.0940352592151612,
+          "first_seconds": 0.09685243107378483,
+          "preparation_seconds": 1.2630967469885945,
+          "estimated_total_seconds": {
+            "1": 1.3599491780623794,
+            "5": 1.7360902149230242,
+            "10": 2.20626651099883
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately",
+          "allocation_seconds": 0.5945777278393507,
+          "estimated_total_with_allocation": {
+            "1": 1.95452690590173,
+            "5": 2.330667942762375,
+            "10": 2.800844238838181
+          }
+        }
+      },
+      "resident_cached_bytes_total": 1218751232,
+      "gpu_events": [
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        }
+      ],
+      "plans": {
+        "cpu1": [
+          [
+            "=================================================================="
+          ],
+          [
+            "|ID|OPERATOR         |NAME                 |EST.ROWS|EST.TIME(us)|"
+          ],
+          [
+            "------------------------------------------------------------------"
+          ],
+          [
+            "|0 |HASH GROUP BY    |                     |25      |12269238    |"
+          ],
+          [
+            "|1 |\u2514\u2500TABLE FULL SCAN|sirius_sf500_customer|75000000|3669704     |"
+          ],
+          [
+            "=================================================================="
+          ],
+          [
+            "Outputs & filters:"
+          ],
+          [
+            "-------------------------------------"
+          ],
+          [
+            "  0 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)])"
+          ],
+          [
+            "  1 - output([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), filter(nil), rowset=1024"
+          ],
+          [
+            "      access([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), partitions(p0)"
+          ],
+          [
+            "      is_index_back=false, is_global_index=false, "
+          ],
+          [
+            "      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true"
+          ]
+        ],
+        "cpu8": [
+          [
+            "=================================================================================="
+          ],
+          [
+            "|ID|OPERATOR                         |NAME                 |EST.ROWS|EST.TIME(us)|"
+          ],
+          [
+            "----------------------------------------------------------------------------------"
+          ],
+          [
+            "|0 |PX COORDINATOR                   |                     |25      |1533723     |"
+          ],
+          [
+            "|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001             |25      |1533710     |"
+          ],
+          [
+            "|2 |  \u2514\u2500HASH GROUP BY                |                     |25      |1533706     |"
+          ],
+          [
+            "|3 |    \u2514\u2500EXCHANGE IN DISTR          |                     |200     |1533703     |"
+          ],
+          [
+            "|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000             |200     |1533690     |"
+          ],
+          [
+            "|5 |        \u2514\u2500HASH GROUP BY          |                     |200     |1533660     |"
+          ],
+          [
+            "|6 |          \u2514\u2500PX BLOCK ITERATOR    |                     |75000000|458713      |"
+          ],
+          [
+            "|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_sf500_customer|75000000|458713      |"
+          ],
+          [
+            "=================================================================================="
+          ],
+          [
+            "Outputs & filters:"
+          ],
+          [
+            "-------------------------------------"
+          ],
+          [
+            "  0 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount)), T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=1024"
+          ],
+          [
+            "  1 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount)), T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=1024"
+          ],
+          [
+            "      dop=8"
+          ],
+          [
+            "  2 - output([sirius_sf500_customer.grp], [T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=1024"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))])"
+          ],
+          [
+            "  3 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "  4 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "      (#keys=1, [sirius_sf500_customer.grp]), dop=8"
+          ],
+          [
+            "  5 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)])"
+          ],
+          [
+            "  6 - output([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), filter(nil), rowset=1024"
+          ],
+          [
+            "  7 - output([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), filter(nil), rowset=1024"
+          ],
+          [
+            "      access([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), partitions(p0)"
+          ],
+          [
+            "      is_index_back=false, is_global_index=false, "
+          ],
+          [
+            "      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true"
+          ]
+        ],
+        "cpu8_default": [
+          [
+            "=================================================================================="
+          ],
+          [
+            "|ID|OPERATOR                         |NAME                 |EST.ROWS|EST.TIME(us)|"
+          ],
+          [
+            "----------------------------------------------------------------------------------"
+          ],
+          [
+            "|0 |PX COORDINATOR                   |                     |25      |1533723     |"
+          ],
+          [
+            "|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001             |25      |1533710     |"
+          ],
+          [
+            "|2 |  \u2514\u2500HASH GROUP BY                |                     |25      |1533706     |"
+          ],
+          [
+            "|3 |    \u2514\u2500EXCHANGE IN DISTR          |                     |200     |1533703     |"
+          ],
+          [
+            "|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000             |200     |1533690     |"
+          ],
+          [
+            "|5 |        \u2514\u2500HASH GROUP BY          |                     |200     |1533660     |"
+          ],
+          [
+            "|6 |          \u2514\u2500PX BLOCK ITERATOR    |                     |75000000|458713      |"
+          ],
+          [
+            "|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_sf500_customer|75000000|458713      |"
+          ],
+          [
+            "=================================================================================="
+          ],
+          [
+            "Outputs & filters:"
+          ],
+          [
+            "-------------------------------------"
+          ],
+          [
+            "  0 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_SUM(T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))), T_FUN_COUNT_SUM(T_FUN_COUNT_SUM(T_FUN_COUNT(*))))]), filter(nil), rowset=256"
+          ],
+          [
+            "  1 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_SUM(T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))), T_FUN_COUNT_SUM(T_FUN_COUNT_SUM(T_FUN_COUNT(*))))]), filter(nil), rowset=256"
+          ],
+          [
+            "      dop=8"
+          ],
+          [
+            "  2 - output([sirius_sf500_customer.grp], [T_FUN_SUM(T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount)))], [T_FUN_COUNT_SUM(T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount)))], [T_FUN_COUNT_SUM(T_FUN_COUNT_SUM(T_FUN_COUNT(*)))])"
+          ],
+          [
+            "  3 - output([sirius_sf500_customer.grp], [T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256"
+          ],
+          [
+            "  4 - output([sirius_sf500_customer.grp], [T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256"
+          ],
+          [
+            "      (#keys=1, [sirius_sf500_customer.grp]), dop=8"
+          ],
+          [
+            "  5 - output([sirius_sf500_customer.grp], [T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(T_FUN_SUM(sirius_sf500_customer.amount))], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))])"
+          ],
+          [
+            "  6 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=256"
+          ],
+          [
+            "  7 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=256"
+          ],
+          [
+            "      access([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), partitions(p0)"
+          ],
+          [
+            "      is_index_back=false, is_global_index=false, "
+          ],
+          [
+            "      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true, "
+          ],
+          [
+            "      pushdown_groupby([sirius_sf500_customer.grp]), pushdown_aggregation([T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)])"
+          ]
+        ],
+        "live": [
+          [
+            "=================================================================="
+          ],
+          [
+            "|ID|OPERATOR         |NAME                 |EST.ROWS|EST.TIME(us)|"
+          ],
+          [
+            "------------------------------------------------------------------"
+          ],
+          [
+            "|0 |HASH GROUP BY    |                     |25      |12269238    |"
+          ],
+          [
+            "|1 |\u2514\u2500TABLE FULL SCAN|sirius_sf500_customer|75000000|3669704     |"
+          ],
+          [
+            "=================================================================="
+          ],
+          [
+            "Outputs & filters:"
+          ],
+          [
+            "-------------------------------------"
+          ],
+          [
+            "  0 - output([sirius_sf500_customer.grp], [T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_SUM(sirius_sf500_customer.amount)], [T_FUN_COUNT(*)])"
+          ],
+          [
+            "  1 - output([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), filter(nil), rowset=1024"
+          ],
+          [
+            "      access([sirius_sf500_customer.grp], [sirius_sf500_customer.amount]), partitions(p0)"
+          ],
+          [
+            "      is_index_back=false, is_global_index=false, "
+          ],
+          [
+            "      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true"
+          ]
+        ]
+      },
+      "diagnostic_seconds": {
+        "live": 1.11138812918216,
+        "resident": 0.09283220488578081
+      }
+    },
+    "count": {
+      "modes": {
+        "cpu1": {
+          "seconds": [
+            2.0629030019044876,
+            2.021963723935187,
+            2.010326385963708,
+            2.1142541780136526,
+            2.0227678790688515,
+            2.0231450386345387,
+            2.140131958760321,
+            2.004507773090154,
+            2.0868359790183604,
+            2.0839589778333902
+          ],
+          "median_seconds": 2.043024020269513,
+          "first_seconds": 2.042330414056778,
+          "preparation_seconds": 0,
+          "estimated_total_seconds": {
+            "1": 2.042330414056778,
+            "5": 10.21442649513483,
+            "10": 20.429546596482396
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+        },
+        "cpu8": {
+          "seconds": [
+            0.3467871439643204,
+            0.33553554490208626,
+            0.3434779760427773,
+            0.33289683843031526,
+            0.3353599598631263,
+            0.3365078270435333,
+            0.3347740317694843,
+            0.3353100377134979,
+            0.3526380411349237,
+            0.3302765917032957
+          ],
+          "median_seconds": 0.33544775238260627,
+          "first_seconds": 0.35032585030421615,
+          "preparation_seconds": 0,
+          "estimated_total_seconds": {
+            "1": 0.35032585030421615,
+            "5": 1.6921168598346412,
+            "10": 3.3693556217476726
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+        },
+        "cpu8_default": {
+          "seconds": [
+            0.4300593137741089,
+            0.4367697578854859,
+            0.4235317367129028,
+            0.4079085309058428,
+            0.4259826298803091,
+            0.43895656894892454,
+            0.4379054708406329,
+            0.4157534842379391,
+            0.43251519836485386,
+            0.43951178528368473
+          ],
+          "median_seconds": 0.4312872560694814,
+          "first_seconds": 0.4179889168590307,
+          "preparation_seconds": 0,
+          "estimated_total_seconds": {
+            "1": 0.4179889168590307,
+            "5": 2.143137941136956,
+            "10": 4.299574221484363
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+        },
+        "live": {
+          "seconds": [
+            0.7342835650779307,
+            0.7822151640430093,
+            0.7495593349449337,
+            0.8061570902355015,
+            0.8849224927835166,
+            0.8301409720443189,
+            0.8392814351245761,
+            0.7562233102507889,
+            0.8877303898334503,
+            0.7438653167337179
+          ],
+          "median_seconds": 0.7941861271392554,
+          "first_seconds": 0.7453126800246537,
+          "preparation_seconds": 0,
+          "estimated_total_seconds": {
+            "1": 0.7453126800246537,
+            "5": 3.9220571885816753,
+            "10": 7.892987824277952
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately"
+        },
+        "resident": {
+          "seconds": [
+            0.04698632890358567,
+            0.053156222216784954,
+            0.048884264193475246,
+            0.05237032379955053,
+            0.05031200125813484,
+            0.04744776804000139,
+            0.04954093275591731,
+            0.04786468716338277,
+            0.04770555114373565,
+            0.04867897927761078
+          ],
+          "median_seconds": 0.04878162173554301,
+          "first_seconds": 0.046139867044985294,
+          "preparation_seconds": 0.8075213320553303,
+          "estimated_total_seconds": {
+            "1": 0.8536611991003156,
+            "5": 1.0487876860424876,
+            "10": 1.2926957947202027
+          },
+          "total_note": "estimate using measured first call and hot median; engine startup reported separately",
+          "allocation_seconds": 0.5945777278393507,
+          "estimated_total_with_allocation": {
+            "1": 1.4482389269396663,
+            "5": 1.6433654138818383,
+            "10": 1.8872735225595534
+          }
+        }
+      },
+      "resident_cached_bytes_total": 1828126848,
+      "gpu_events": [
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "capture",
+              "rows": 22369620
+            },
+            {
+              "mode": "capture",
+              "rows": 22369620
+            },
+            {
+              "mode": "capture",
+              "rows": 22369620
+            },
+            {
+              "mode": "capture",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        }
+      ],
+      "plans": {
+        "cpu1": [
+          [
+            "=================================================================="
+          ],
+          [
+            "|ID|OPERATOR         |NAME                 |EST.ROWS|EST.TIME(us)|"
+          ],
+          [
+            "------------------------------------------------------------------"
+          ],
+          [
+            "|0 |HASH GROUP BY    |                     |25      |9372863     |"
+          ],
+          [
+            "|1 |\u2514\u2500TABLE FULL SCAN|sirius_sf500_customer|75000000|1934113     |"
+          ],
+          [
+            "=================================================================="
+          ],
+          [
+            "Outputs & filters:"
+          ],
+          [
+            "-------------------------------------"
+          ],
+          [
+            "  0 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT(*)])"
+          ],
+          [
+            "  1 - output([sirius_sf500_customer.grp]), filter(nil), rowset=1024"
+          ],
+          [
+            "      access([sirius_sf500_customer.grp]), partitions(p0)"
+          ],
+          [
+            "      is_index_back=false, is_global_index=false, "
+          ],
+          [
+            "      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true"
+          ]
+        ],
+        "cpu8": [
+          [
+            "=================================================================================="
+          ],
+          [
+            "|ID|OPERATOR                         |NAME                 |EST.ROWS|EST.TIME(us)|"
+          ],
+          [
+            "----------------------------------------------------------------------------------"
+          ],
+          [
+            "|0 |PX COORDINATOR                   |                     |25      |1171654     |"
+          ],
+          [
+            "|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001             |25      |1171645     |"
+          ],
+          [
+            "|2 |  \u2514\u2500HASH GROUP BY                |                     |25      |1171643     |"
+          ],
+          [
+            "|3 |    \u2514\u2500EXCHANGE IN DISTR          |                     |200     |1171640     |"
+          ],
+          [
+            "|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000             |200     |1171631     |"
+          ],
+          [
+            "|5 |        \u2514\u2500HASH GROUP BY          |                     |200     |1171612     |"
+          ],
+          [
+            "|6 |          \u2514\u2500PX BLOCK ITERATOR    |                     |75000000|241765      |"
+          ],
+          [
+            "|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_sf500_customer|75000000|241765      |"
+          ],
+          [
+            "=================================================================================="
+          ],
+          [
+            "Outputs & filters:"
+          ],
+          [
+            "-------------------------------------"
+          ],
+          [
+            "  0 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=1024"
+          ],
+          [
+            "  1 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=1024"
+          ],
+          [
+            "      dop=8"
+          ],
+          [
+            "  2 - output([sirius_sf500_customer.grp], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=1024"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT_SUM(T_FUN_COUNT(*))])"
+          ],
+          [
+            "  3 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "  4 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "      (#keys=1, [sirius_sf500_customer.grp]), dop=8"
+          ],
+          [
+            "  5 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT(*)])"
+          ],
+          [
+            "  6 - output([sirius_sf500_customer.grp]), filter(nil), rowset=1024"
+          ],
+          [
+            "  7 - output([sirius_sf500_customer.grp]), filter(nil), rowset=1024"
+          ],
+          [
+            "      access([sirius_sf500_customer.grp]), partitions(p0)"
+          ],
+          [
+            "      is_index_back=false, is_global_index=false, "
+          ],
+          [
+            "      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true"
+          ]
+        ],
+        "cpu8_default": [
+          [
+            "=================================================================================="
+          ],
+          [
+            "|ID|OPERATOR                         |NAME                 |EST.ROWS|EST.TIME(us)|"
+          ],
+          [
+            "----------------------------------------------------------------------------------"
+          ],
+          [
+            "|0 |PX COORDINATOR                   |                     |25      |1171654     |"
+          ],
+          [
+            "|1 |\u2514\u2500EXCHANGE OUT DISTR             |:EX10001             |25      |1171645     |"
+          ],
+          [
+            "|2 |  \u2514\u2500HASH GROUP BY                |                     |25      |1171643     |"
+          ],
+          [
+            "|3 |    \u2514\u2500EXCHANGE IN DISTR          |                     |200     |1171640     |"
+          ],
+          [
+            "|4 |      \u2514\u2500EXCHANGE OUT DISTR (HASH)|:EX10000             |200     |1171631     |"
+          ],
+          [
+            "|5 |        \u2514\u2500HASH GROUP BY          |                     |200     |1171612     |"
+          ],
+          [
+            "|6 |          \u2514\u2500PX BLOCK ITERATOR    |                     |75000000|241765      |"
+          ],
+          [
+            "|7 |            \u2514\u2500TABLE FULL SCAN    |sirius_sf500_customer|75000000|241765      |"
+          ],
+          [
+            "=================================================================================="
+          ],
+          [
+            "Outputs & filters:"
+          ],
+          [
+            "-------------------------------------"
+          ],
+          [
+            "  0 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_COUNT_SUM(T_FUN_COUNT_SUM(T_FUN_COUNT(*))))]), filter(nil), rowset=256"
+          ],
+          [
+            "  1 - output([INTERNAL_FUNCTION(sirius_sf500_customer.grp, T_FUN_COUNT_SUM(T_FUN_COUNT_SUM(T_FUN_COUNT(*))))]), filter(nil), rowset=256"
+          ],
+          [
+            "      dop=8"
+          ],
+          [
+            "  2 - output([sirius_sf500_customer.grp], [T_FUN_COUNT_SUM(T_FUN_COUNT_SUM(T_FUN_COUNT(*)))]), filter(nil), rowset=256"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT_SUM(T_FUN_COUNT_SUM(T_FUN_COUNT(*)))])"
+          ],
+          [
+            "  3 - output([sirius_sf500_customer.grp], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256"
+          ],
+          [
+            "  4 - output([sirius_sf500_customer.grp], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256"
+          ],
+          [
+            "      (#keys=1, [sirius_sf500_customer.grp]), dop=8"
+          ],
+          [
+            "  5 - output([sirius_sf500_customer.grp], [T_FUN_COUNT_SUM(T_FUN_COUNT(*))]), filter(nil), rowset=256"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT_SUM(T_FUN_COUNT(*))])"
+          ],
+          [
+            "  6 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=256"
+          ],
+          [
+            "  7 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=256"
+          ],
+          [
+            "      access([sirius_sf500_customer.grp]), partitions(p0)"
+          ],
+          [
+            "      is_index_back=false, is_global_index=false, "
+          ],
+          [
+            "      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true, "
+          ],
+          [
+            "      pushdown_groupby([sirius_sf500_customer.grp]), pushdown_aggregation([T_FUN_COUNT(*)])"
+          ]
+        ],
+        "live": [
+          [
+            "=================================================================="
+          ],
+          [
+            "|ID|OPERATOR         |NAME                 |EST.ROWS|EST.TIME(us)|"
+          ],
+          [
+            "------------------------------------------------------------------"
+          ],
+          [
+            "|0 |HASH GROUP BY    |                     |25      |9372863     |"
+          ],
+          [
+            "|1 |\u2514\u2500TABLE FULL SCAN|sirius_sf500_customer|75000000|1934113     |"
+          ],
+          [
+            "=================================================================="
+          ],
+          [
+            "Outputs & filters:"
+          ],
+          [
+            "-------------------------------------"
+          ],
+          [
+            "  0 - output([sirius_sf500_customer.grp], [T_FUN_COUNT(*)]), filter(nil), rowset=1024"
+          ],
+          [
+            "      group([sirius_sf500_customer.grp]), agg_func([T_FUN_COUNT(*)])"
+          ],
+          [
+            "  1 - output([sirius_sf500_customer.grp]), filter(nil), rowset=1024"
+          ],
+          [
+            "      access([sirius_sf500_customer.grp]), partitions(p0)"
+          ],
+          [
+            "      is_index_back=false, is_global_index=false, "
+          ],
+          [
+            "      range_key([sirius_sf500_customer.id]), range(MIN ; MAX)always true"
+          ]
+        ]
+      },
+      "diagnostic_seconds": {
+        "live": 0.7167572239413857,
+        "resident": 0.05018112901598215
+      }
+    }
+  },
+  "provenance": {
+    "started_utc": "2026-10-26T03:56:50.847196+00:00",
+    "pid": 3298386,
+    "host": "ob-ai-115",
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "cuda_visible_devices": "0",
+    "duckdb_version": "1.5.6",
+    "binaries": {
+      "library": {
+        "path": "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build-sirius-arrow/libseekdb_sirius_bridge.so",
+        "sha256": "6271cf2a1ec83e80f6287de45df8df7691cb7102607878701dbacefa3e6ea714"
+      }
+    },
+    "config_path": "/data/wuhao.xwh/seekdb-sirius-compare-20261026/sirius.yaml",
+    "config": "sirius:\n  topology:\n    num_gpus: 1\n  memory:\n    gpu:\n      usage_limit_fraction: 0.15\n      reservation_limit_fraction: 1.0\n    host:\n      capacity_bytes: 8000000000\n      initial_number_pools: 4\n      pool_size: 128\n      block_size: 1048576\n    disk:\n      capacity_bytes: 20000000000\n      downgrade_root_dirs: \"/data/wuhao.xwh/seekdb-sirius-compare-20261026/spill\"\n  executor:\n    pipeline:\n      num_threads: 4\n    task_creator:\n      num_threads: 2\n    downgrade:\n      num_threads: 1\n      monitor_period: 10ms\n  operator_params:\n    scan_task_batch_size: 67108864\n    max_sort_partition_bytes: 268435456\n    hash_partition_bytes: 134217728\n    concat_batch_bytes: 134217728\n    max_build_hash_table_bytes: 134217728\n",
+    "gpu_processes_at_start": "gpu_uuid, pid, process_name, used_gpu_memory [MiB]\nGPU-bd542851-d117-1699-7a26-862e3c9fbfb1, 1357411, VLLM::EngineCore, 14708 MiB\nGPU-bd542851-d117-1699-7a26-862e3c9fbfb1, 3298386, /data/wuhao.xwh/seekdb-sirius-20261022/venv/bin/python, 7644 MiB\nGPU-ce6b26d2-06c1-38c9-71f3-ea634840bee7, 1384828, VLLM::EngineCore, 17278 MiB\nGPU-ce6b26d2-06c1-38c9-71f3-ea634840bee7, 3295918, /data/wuhao.xwh/seekdb-sirius-20261022/venv/bin/python, 7644 MiB\n"
+  },
+  "seekdb_settings": {
+    "memory_budget": "96G",
+    "memstore_memory_limit": "64G",
+    "kvcache_memory_limit": "16G",
+    "datafile_maxsize": "384G",
+    "log_disk_size": "64G",
+    "freeze_trigger_percentage": "5",
+    "ob_sql_work_area_percentage": "50"
+  },
+  "startup_warmup_seconds": 0.6204686430282891,
+  "frame_mib": 64,
+  "fragment_mib": 128,
+  "resident_capacity_mib": 2048,
+  "snapshot_scope": "One completed native SQL statement per case; immutable benchmark data only",
+  "timing": "SQL execute/fetch including RPC; resident JSON decoding and normalization excluded",
+  "resident_prepare_note": "One live GPU query plus copying its input into pinned storage; includes that query execution",
+  "resident_allocation_seconds": 0.5945777278393507,
+  "process_peak_rss_kib": 3539336
+}

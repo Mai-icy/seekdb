@@ -19,6 +19,8 @@ Bounded preparation from the existing SF500 DuckDB database and GPU partial
 aggregation of the full 75-million-row customer projection are in [SF500.md](SF500.md).
 Larger pinned-frame measurements and the full-table TPC-H runner are documented
 in [TPCH500.md](TPCH500.md), including actual GPU coverage and CPU fallback.
+The controlled native-Sirius/live-seekdb/resident-input comparison is documented
+in [PATH_COMPARISON.md](PATH_COMPARISON.md), including preparation costs.
 
 The first working integration uses **explicit Parquet snapshots**:
 

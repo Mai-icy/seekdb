@@ -1,0 +1,58 @@
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+{"diagnostic_begin": "sum_count", "mode": "live"}
+sirius stream profile: rows=11184810 batches=3 build_us=3873 input_us=190112 copy_us=7532 run_us=5619 result_us=103 total_us=207252
+sirius stream profile: rows=11184810 batches=3 build_us=1254 input_us=191524 copy_us=7539 run_us=6310 result_us=242 total_us=206881
+sirius stream profile: rows=11184810 batches=3 build_us=1721 input_us=131880 copy_us=7459 run_us=5233 result_us=100 total_us=146404
+sirius stream profile: rows=11184810 batches=3 build_us=1267 input_us=137263 copy_us=7492 run_us=5672 result_us=130 total_us=151837
+sirius stream profile: rows=11184810 batches=3 build_us=1753 input_us=125130 copy_us=7483 run_us=5041 result_us=113 total_us=139533
+sirius stream profile: rows=11184810 batches=3 build_us=1325 input_us=132732 copy_us=7503 run_us=5725 result_us=100 total_us=147396
+sirius stream profile: rows=7891140 batches=3 build_us=1072 input_us=92706 copy_us=5356 run_us=5105 result_us=119 total_us=104369
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392
+{"diagnostic_end": "sum_count", "mode": "live"}
+{"diagnostic_begin": "sum_count", "mode": "resident"}
+sirius stream profile: rows=11184810 batches=3 build_us=1333 input_us=39 copy_us=7284 run_us=5803 result_us=86 total_us=14551
+sirius stream profile: rows=11184810 batches=3 build_us=1112 input_us=35 copy_us=7259 run_us=4988 result_us=88 total_us=13485
+sirius stream profile: rows=11184810 batches=3 build_us=1063 input_us=34 copy_us=7271 run_us=4460 result_us=79 total_us=12909
+sirius stream profile: rows=11184810 batches=3 build_us=1376 input_us=38 copy_us=7269 run_us=4416 result_us=91 total_us=13194
+sirius stream profile: rows=11184810 batches=3 build_us=1021 input_us=33 copy_us=7259 run_us=4487 result_us=85 total_us=12889
+sirius stream profile: rows=11184810 batches=3 build_us=1040 input_us=34 copy_us=7261 run_us=4163 result_us=88 total_us=12590
+sirius stream profile: rows=7891140 batches=3 build_us=1043 input_us=67 copy_us=5215 run_us=3596 result_us=69 total_us=10003
+{"diagnostic_end": "sum_count", "mode": "resident"}
+{"case": "sum_count", "medians": {"cpu1": 2.259327720850706, "cpu8": 0.37019157758913934, "cpu8_default": 0.5131117487326264, "live": 1.1128940270282328, "resident": 0.0940352592151612}}
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+{"diagnostic_begin": "count", "mode": "live"}
+sirius stream profile: rows=22369620 batches=3 build_us=1885 input_us=239382 copy_us=7481 run_us=5428 result_us=97 total_us=254286
+sirius stream profile: rows=22369620 batches=3 build_us=1169 input_us=184669 copy_us=7474 run_us=5639 result_us=83 total_us=199044
+sirius stream profile: rows=22369620 batches=3 build_us=1233 input_us=178637 copy_us=7464 run_us=5811 result_us=95 total_us=193251
+sirius stream profile: rows=7891140 batches=2 build_us=1220 input_us=58400 copy_us=2698 run_us=4042 result_us=102 total_us=66467
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392
+{"diagnostic_end": "count", "mode": "live"}
+{"diagnostic_begin": "count", "mode": "resident"}
+sirius stream profile: rows=22369620 batches=3 build_us=1150 input_us=26 copy_us=7232 run_us=5160 result_us=89 total_us=13661
+sirius stream profile: rows=22369620 batches=3 build_us=1278 input_us=32 copy_us=7248 run_us=5088 result_us=88 total_us=13738
+sirius stream profile: rows=22369620 batches=3 build_us=1353 input_us=29 copy_us=7237 run_us=4922 result_us=70 total_us=13615
+sirius stream profile: rows=7891140 batches=2 build_us=1155 input_us=30 copy_us=2616 run_us=3014 result_us=63 total_us=6883
+{"diagnostic_end": "count", "mode": "resident"}
+{"case": "count", "medians": {"cpu1": 2.043024020269513, "cpu8": 0.33544775238260627, "cpu8_default": 0.4312872560694814, "live": 0.7941861271392554, "resident": 0.04878162173554301}}
