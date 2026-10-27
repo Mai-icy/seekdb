@@ -41,6 +41,15 @@ class QueryBackend:
                                 ct.c_size_t, Consumer, ct.c_void_p, ct.c_void_p, ct.c_size_t]
         self.execute.restype = ct.c_int
 
+    def shutdown(self):
+        """Stop the shared runtime before interpreter teardown; terminal for all handles."""
+        fn = self.library.seekdb_sirius_shutdown_v1
+        fn.argtypes = [ct.c_void_p, ct.c_size_t]
+        fn.restype = ct.c_int
+        error = ct.create_string_buffer(4096)
+        if fn(error, len(error)):
+            raise RuntimeError(error.value.decode(errors="replace"))
+
     def pin_snapshot(self, name, path):
         fn = self.library.seekdb_sirius_pin_snapshot_v1
         fn.argtypes = [ct.c_char_p, ct.c_char_p, ct.c_void_p, ct.c_size_t]
@@ -200,6 +209,8 @@ def main():
                           "schema": str(result.schema), "rows": result.to_pylist()}, default=str))
     finally:
         connection.close()
+        result = None
+        backend.shutdown()
 
 
 if __name__ == "__main__":

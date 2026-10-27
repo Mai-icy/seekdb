@@ -13,6 +13,10 @@ struct SeekdbSiriusTableV1 {
   uint64_t estimated_rows;
 };
 using SeekdbSiriusResultV1 = int (*)(ArrowArrayStream *, void *);
+// Terminal, process-wide shutdown, after releasing result arrays and before
+// language/static teardown. Idempotent; subsequent execution calls fail. Do not
+// call from a result callback. All backend handles share this runtime.
+extern "C" int seekdb_sirius_shutdown_v1(char *error, size_t error_capacity) noexcept;
 extern "C" int seekdb_sirius_execute_query_v1(
     const char *sql, size_t sql_size, SeekdbSiriusTableV1 *tables, size_t count,
     SeekdbSiriusResultV1 consume, void *user, char *error, size_t error_capacity) noexcept;

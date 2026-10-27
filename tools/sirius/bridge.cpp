@@ -29,7 +29,10 @@ public:
     try { ready_.get_future().get(); }
     catch (...) { worker_.join(); throw; }
   }
-  ~Runtime() {
+  ~Runtime() { shutdown(); }
+  void shutdown() {
+    std::lock_guard<std::mutex> caller(callers_);
+    if (!worker_.joinable()) return;
     { std::lock_guard<std::mutex> lock(mutex_); stop_ = true; }
     wake_.notify_one();
     worker_.join();
@@ -184,7 +187,11 @@ private:
     std::lock_guard<std::mutex> caller(callers_);
     std::packaged_task<size_t(sirius::ffi::Context &)> task(std::move(operation));
     auto result = task.get_future();
-    { std::lock_guard<std::mutex> lock(mutex_); task_ = std::move(task); }
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (stop_) throw std::runtime_error("Sirius runtime has been shut down");
+      task_ = std::move(task);
+    }
     wake_.notify_one();
     return result.get();
   }
@@ -249,6 +256,16 @@ extern "C" __attribute__((visibility("default")))
 const SeekdbSiriusApiV1 *seekdb_sirius_get_api_v1() noexcept { return &api; }
 
 #ifdef SEEKDB_SIRIUS_ARROW_INPUT
+extern "C" __attribute__((visibility("default")))
+int seekdb_sirius_shutdown_v1(char *error, size_t error_capacity) noexcept {
+  if (!error || !error_capacity) return SEEKDB_SIRIUS_INVALID_ARGUMENT;
+  error[0] = '\0';
+  try { runtime().shutdown(); return SEEKDB_SIRIUS_OK; }
+  catch (const std::exception &e) { std::snprintf(error, error_capacity, "%s", e.what()); }
+  catch (...) { std::snprintf(error, error_capacity, "Unknown Sirius shutdown error"); }
+  return SEEKDB_SIRIUS_EXECUTION_ERROR;
+}
+
 extern "C" __attribute__((visibility("default")))
 int seekdb_sirius_pin_snapshot_v1(const char *name, const char *path,
     char *error, size_t error_capacity) noexcept {

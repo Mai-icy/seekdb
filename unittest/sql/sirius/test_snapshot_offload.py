@@ -3,6 +3,7 @@ from decimal import Decimal
 import os
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 
@@ -15,6 +16,39 @@ from query_offload import QueryBackend
 
 @unittest.skipUnless(os.getenv("SIRIUS_TEST_LIBRARY"), "Requires the real GPU bridge")
 class SnapshotOffloadTests(unittest.TestCase):
+    def test_multifile_pin_and_terminal_shutdown(self):
+        # A separate process is necessary: shutdown closes the shared runtime.
+        code = '''
+import os, tempfile
+from pathlib import Path
+import pyarrow as pa
+import pyarrow.parquet as pq
+from query_offload import QueryBackend
+b = QueryBackend(os.environ['SIRIUS_TEST_LIBRARY'])
+with tempfile.TemporaryDirectory() as directory:
+    for i in range(2):
+        pq.write_table(pa.table({'id': range(i*262144, (i+1)*262144)}),
+                       Path(directory) / f'part-{i}.parquet')
+    b.pin_snapshot('orders', str(Path(directory) / 'part-*.parquet'))
+    result = b.query_snapshot('SELECT count(id),sum(id) FROM orders')
+    assert result.column(0)[0].as_py() == 524288
+    assert result.column(1)[0].as_py() == 524288*524287//2
+    del result
+    b.shutdown()
+    b.shutdown()
+    try:
+        b.query_snapshot('SELECT * FROM orders')
+    except RuntimeError as error:
+        assert 'shut down' in str(error)
+    else:
+        raise AssertionError('execution after shutdown was accepted')
+'''
+        env = os.environ.copy()
+        env['PYTHONPATH'] = str(Path(__file__).resolve().parents[3] / 'tools/sirius') + os.pathsep + env.get('PYTHONPATH', '')
+        result = subprocess.run([sys.executable, '-c', code], env=env,
+                                capture_output=True, text=True, timeout=120)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_pin_repeated_reads_errors_and_typed_results(self):
         backend = QueryBackend(os.environ["SIRIUS_TEST_LIBRARY"])
         with tempfile.TemporaryDirectory() as directory:

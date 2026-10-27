@@ -78,6 +78,8 @@ def main():
             args.output.write_text(json.dumps(results, indent=2) + "\n")
     finally:
         connection.close()
+        actual = None
+        backend.shutdown()
     return 0 if all(r["passed"] for r in results) else 1
 
 

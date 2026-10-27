@@ -85,8 +85,12 @@ server-side `SELECT ... INTO OUTFILE ... FORMAT=(TYPE='CSV', COMPRESSION='GZIP',
 not implemented. The pinned seekdb ZSTD streaming exporter does not advance
 its consumed-input offset across compression calls and can duplicate data at
 output-buffer boundaries; use GZIP until that exporter is corrected. Keep
-strict CSV parsing enabled. Convert staged CSV with explicit SQL types, validate row counts
-and query results, then remove the CSV staging. Keep all table exports in one
+strict CSV parsing enabled. Convert staged CSV with explicit SQL types and
+`auto_detect=false`. Disable DuckDB's `preserve_insertion_order` for conversion:
+physical table row order is not part of the snapshot contract, and ordered COPY
+can exhaust its reorder buffer and serialize large-file conversion. Validate row
+counts before removing the CSV staging, and query results before accepting benchmark
+timings. Keep all table exports in one
 repeatable-read transaction and record source database, schema, row counts,
 snapshot time, file sizes and mtimes in a manifest. Reserve disk space for both
 conversion staging and GPU spill; stop the export/conversion before exhausting it.
@@ -97,13 +101,26 @@ backend = QueryBackend("/absolute/path/libseekdb_sirius_bridge.so")
 backend.pin_snapshot("lineitem", "/absolute/path/snapshot/lineitem.parquet")
 # Start query-only timing after pin_snapshot returns.
 result = backend.query_snapshot("SELECT sum(l_quantity) FROM lineitem")
+# Consume/release result arrays before terminal process-wide shutdown.
+del result
+backend.shutdown()
 ```
 
-Pins live until the engine process exits. A name cannot be overwritten. Keep the
+Pins live until the shared runtime is shut down. A name cannot be overwritten. Keep the
 files immutable and present throughout that lifetime. Compression requires a
 matching `compression.input_plan_dir` in the Sirius configuration; requesting
 compression alone does not guarantee every table/column is compressed. Use the
 Sirius log to verify compression and pinned-entry assignment.
+
+Large tables can use an absolute Parquet glob with bounded files (for example,
+about 1 GiB each). Validate the complete file inventory and pinned row counts,
+and pass the glob itself to `pin_snapshot`, not the last file validated. A single
+SF500 lineitem file caused a prolonged pin preparation stall in this build.
+
+Call `shutdown()` after releasing results and before interpreter/static teardown.
+It drains the serialized caller, destroys the context on its engine thread, and
+joins that thread while process globals are still alive. It is idempotent and
+terminal for every backend handle in the process; subsequent calls fail.
 
 Report seekdb export, conversion and pin times separately from query timings.
 Query timings include SQL planning, GPU execution and Arrow result collection.
