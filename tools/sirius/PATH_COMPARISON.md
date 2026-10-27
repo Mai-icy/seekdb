@@ -132,7 +132,9 @@ then the full pipeline was restarted with `--analyze-parallel 8`. This setting
 belongs only to the maintenance session; benchmark CPU/GPU settings are unchanged.
 All statistics completed at 12:06:16 CST (lineitem: 307.15 seconds), and TPC-H22
 started one second later. Full-suite results are separate from this projection
-experiment and remain pending.
+experiment. The full suite subsequently completed at 14:35:24 CST, with all 22
+queries passing in both modes and every native-enabled query using CPU fallback;
+see [TPCH500.md](TPCH500.md).
 
 Raw timing arrays, plans, GPU evidence, diagnostics, configuration, binary hashes
 and cleanup evidence are in

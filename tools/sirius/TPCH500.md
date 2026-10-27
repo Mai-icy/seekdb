@@ -2,8 +2,9 @@
 
 This extends the [SF500 projection experiment](SF500.md). Larger native frames
 are implemented and tested. Full SF500 import and validation completed on
-October 26. Major compaction is running; the 22-query run is pending.
-The 22-query smoke run passes, but **none of its queries executes a GPU aggregate**.
+October 26. Compaction, statistics and the complete SF500 TPC-H22 run passed.
+Both the smoke run and full SF500 run pass, but **none of their queries executes
+a GPU aggregate**.
 The supported native operator still requires a serial direct scan, BIGINT group
 keys and DOUBLE SUM / COUNT. Increasing pinned memory does not add JOIN, DECIMAL,
 AVG or string-group support.
@@ -16,7 +17,8 @@ the existing 16 MiB / 262,144-row behavior. Larger frames use a version-2 native
 descriptor and negotiate the capacity before consuming scan input. An allocated
 pin buffer smaller than the requested frame rejects admission. Allocation
 failure retains the existing pageable fallback. Each sidecar owns one reused
-pin buffer, not a pinned copy of a table.
+pin buffer, not a pinned copy of a table. The later optional
+[prefetch mode](PREFETCH.md) uses two bounded input buffers.
 
 Both bridge and owned Sirius Arrow overlay must be rebuilt: their input bounds
 now allow up to 8,388,608 rows **and** at most 128 MiB per batch. The fragment
@@ -220,8 +222,14 @@ connections retain their independently selected CPU/GPU execution settings.
 All eight statistics collections completed at 12:06:16 CST; lineitem took
 307.15 seconds with eight workers. TPC-H22 started at 12:06:17 CST. The successful
 maintenance record is saved as `maintenance-analyze8.json` in the evidence
-directory. Full-suite query results are still pending; import completion
-does not establish GPU query coverage or a speedup.
+directory. The full suite completed at **14:35:24 CST on October 26**. All 22
+queries passed in both CPU8 and native-enabled CPU1 modes, against the read-only
+DuckDB oracle. Every native-enabled query used CPU fallback: there were zero
+GPU aggregate events. Summed per-query times were 1,562.52 s for CPU8 and
+7,244.61 s for native-enabled CPU1; those compare two CPU configurations and
+must not be presented as CPU versus GPU performance. Final plans, results and
+completion state are in
+[2026-10-27-tpch](../../unittest/sql/sirius/results/2026-10-27-tpch/).
 
 The intervening controlled 75-million-row input-path comparison completed with
 292 exact result checks. It separates native Sirius, seekdb live input and an
@@ -241,8 +249,8 @@ Evidence: [October 26 results](../../unittest/sql/sirius/results/2026-10-26-tpch
 - The complete SF0.01 import/compaction/analyze/TPC-H22 pipeline passed in both
   modes. All 22 queries used CPU fallback; no full-suite GPU speedup is claimed.
 - Full SF500 import and all eight table validations passed. Major compaction
-  and eight-worker statistics collection completed. TPC-H22 is running;
-  full-suite query validation is pending.
+  and eight-worker statistics collection completed. All 22 full-suite queries
+  passed in both modes; every native-enabled query used CPU fallback.
 - Borrowed Sirius checkout `3fcff6a0488516db09ddc7e993564eb9a98b72d3`
   remains unmodified. Its original library SHA-256 is
   `cf5c490ac32f3cf7169bea8011688eedaefb634ee53741a3f475b7d729bd78ae`.

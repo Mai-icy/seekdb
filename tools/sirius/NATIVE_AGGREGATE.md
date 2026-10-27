@@ -3,6 +3,8 @@
 Follow-up: [NATIVE_PERFORMANCE.md](NATIVE_PERFORMANCE.md) records input profiling,
 packing optimization and later measurements with scan-batch hints. The original
 stage's measurements below remain as its historical baseline.
+Optional bounded double-buffer receive-ahead and its before/after measurements
+are documented in [PREFETCH.md](PREFETCH.md).
 
 The third prototype integrates GPU execution into `ObHashGroupByOp`'s batch
 execution path. Users run ordinary SQL; no external SELECT, Parquet export or

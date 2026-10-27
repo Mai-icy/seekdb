@@ -1,0 +1,30 @@
+{
+  "sum_count": {
+    "pooled_medians": {
+      "baseline": 1.5379083643201739,
+      "prefetch": 1.47629505652003,
+      "cpu8": 0.4129343943204731
+    },
+    "latency_reduction": 0.040063055270123216,
+    "speedup": 1.0417350905078426,
+    "paired_round_bootstrap_latency_reduction_95pct": [
+      0.02904636112868264,
+      0.04973444348716671
+    ],
+    "sample_count_per_mode": 40
+  },
+  "count": {
+    "pooled_medians": {
+      "baseline": 1.0802733052987605,
+      "prefetch": 1.0426578992046416,
+      "cpu8": 0.3782990665640682
+    },
+    "latency_reduction": 0.034820268083655015,
+    "speedup": 1.0360764600956964,
+    "paired_round_bootstrap_latency_reduction_95pct": [
+      0.016064405947288862,
+      0.05581126627119126
+    ],
+    "sample_count_per_mode": 40
+  }
+}

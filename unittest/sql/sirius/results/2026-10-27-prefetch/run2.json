@@ -1,0 +1,2841 @@
+{
+  "provenance": {
+    "started_utc": "2026-10-27T02:49:22.985660+00:00",
+    "pid": 1359680,
+    "host": "ob-ai-115",
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "cuda_visible_devices": "0",
+    "duckdb_version": "1.5.6",
+    "binaries": {
+      "library": {
+        "path": "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build-sirius-arrow/libseekdb_sirius_bridge.so",
+        "sha256": "6271cf2a1ec83e80f6287de45df8df7691cb7102607878701dbacefa3e6ea714"
+      }
+    },
+    "config_path": "/data/wuhao.xwh/seekdb-sirius-prefetch-20261027/sirius.yaml",
+    "config": "sirius:\n  topology:\n    num_gpus: 1\n  memory:\n    gpu:\n      usage_limit_fraction: 0.15\n      reservation_limit_fraction: 1.0\n    host:\n      capacity_bytes: 8000000000\n      initial_number_pools: 4\n      pool_size: 128\n      block_size: 1048576\n    disk:\n      capacity_bytes: 20000000000\n      downgrade_root_dirs: \"/data/wuhao.xwh/seekdb-sirius-prefetch-20261027/spill\"\n  executor:\n    pipeline:\n      num_threads: 4\n    task_creator:\n      num_threads: 2\n    downgrade:\n      num_threads: 1\n      monitor_period: 10ms\n  operator_params:\n    scan_task_batch_size: 67108864\n    max_sort_partition_bytes: 268435456\n    hash_partition_bytes: 134217728\n    concat_batch_bytes: 134217728\n    max_build_hash_table_bytes: 134217728\n",
+    "gpu_processes_at_start": "gpu_uuid, pid, process_name, used_gpu_memory [MiB]\nGPU-bd542851-d117-1699-7a26-862e3c9fbfb1, 1357411, VLLM::EngineCore, 14708 MiB\nGPU-ce6b26d2-06c1-38c9-71f3-ea634840bee7, 1384828, VLLM::EngineCore, 17278 MiB\nGPU-ce6b26d2-06c1-38c9-71f3-ea634840bee7, 1319077, /data/wuhao.xwh/seekdb-sirius-20261022/venv/bin/python, 7644 MiB\n"
+  },
+  "rows": 75000000,
+  "repeats": 20,
+  "seed": 20261028,
+  "cases": {
+    "sum_count": {
+      "first_seconds": {
+        "baseline": 1.9885317301377654,
+        "prefetch": 1.468061733059585,
+        "cpu8": 0.4532219530083239
+      },
+      "seconds": {
+        "baseline": [
+          1.5348257743753493,
+          1.4884630902670324,
+          1.5502965860068798,
+          1.4894933616742492,
+          1.5464708409272134,
+          1.5284366738051176,
+          1.525511764921248,
+          1.6061571147292852,
+          1.58453029114753,
+          1.5300651215948164,
+          1.5923837800510228,
+          1.5666849347762764,
+          1.5115367053076625,
+          1.5587946237064898,
+          1.5481719672679901,
+          1.5010002688504755,
+          1.5213192738592625,
+          1.5323221469298005,
+          1.541860249824822,
+          1.5694296238943934
+        ],
+        "prefetch": [
+          1.4445314118638635,
+          1.4477511658333242,
+          1.4602977498434484,
+          1.5190870533697307,
+          1.497764301020652,
+          1.473671976942569,
+          1.4431792479008436,
+          1.5109870629385114,
+          1.4694410278461874,
+          1.531761886086315,
+          1.452468235976994,
+          1.4884859970770776,
+          1.4976317849941552,
+          1.4607760640792549,
+          1.4135637837462127,
+          1.48047094931826,
+          1.4744671159423888,
+          1.4962938302196562,
+          1.4563005911186337,
+          1.4826643420383334
+        ],
+        "cpu8": [
+          0.41286221193149686,
+          0.4167101802304387,
+          0.41718963673338294,
+          0.4176538297906518,
+          0.4151492421515286,
+          0.411195978987962,
+          0.41893301205709577,
+          0.4128595250658691,
+          0.4128657579421997,
+          0.4149543079547584,
+          0.41129339300096035,
+          0.4124353863298893,
+          0.4113483880646527,
+          0.41577246971428394,
+          0.41662744898349047,
+          0.41196080995723605,
+          0.409096818882972,
+          0.4286938891746104,
+          0.4126966199837625,
+          0.41100900433957577
+        ]
+      },
+      "order": [
+        [
+          "prefetch",
+          "baseline",
+          "cpu8"
+        ],
+        [
+          "baseline",
+          "prefetch",
+          "cpu8"
+        ],
+        [
+          "cpu8",
+          "prefetch",
+          "baseline"
+        ],
+        [
+          "prefetch",
+          "cpu8",
+          "baseline"
+        ],
+        [
+          "baseline",
+          "prefetch",
+          "cpu8"
+        ],
+        [
+          "cpu8",
+          "baseline",
+          "prefetch"
+        ],
+        [
+          "baseline",
+          "cpu8",
+          "prefetch"
+        ],
+        [
+          "cpu8",
+          "baseline",
+          "prefetch"
+        ],
+        [
+          "baseline",
+          "cpu8",
+          "prefetch"
+        ],
+        [
+          "prefetch",
+          "cpu8",
+          "baseline"
+        ],
+        [
+          "prefetch",
+          "baseline",
+          "cpu8"
+        ],
+        [
+          "baseline",
+          "prefetch",
+          "cpu8"
+        ],
+        [
+          "cpu8",
+          "prefetch",
+          "baseline"
+        ],
+        [
+          "prefetch",
+          "baseline",
+          "cpu8"
+        ],
+        [
+          "baseline",
+          "cpu8",
+          "prefetch"
+        ],
+        [
+          "prefetch",
+          "cpu8",
+          "baseline"
+        ],
+        [
+          "baseline",
+          "cpu8",
+          "prefetch"
+        ],
+        [
+          "cpu8",
+          "prefetch",
+          "baseline"
+        ],
+        [
+          "baseline",
+          "prefetch",
+          "cpu8"
+        ],
+        [
+          "prefetch",
+          "baseline",
+          "cpu8"
+        ]
+      ],
+      "medians": {
+        "baseline": 1.5383430121000856,
+        "prefetch": 1.474069546442479,
+        "cpu8": 0.4128639849368483
+      },
+      "gpu_events": [
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        }
+      ],
+      "prefetch_speedup": 1.0436027362567284
+    },
+    "count": {
+      "first_seconds": {
+        "baseline": 1.083962740842253,
+        "prefetch": 1.1128661106340587,
+        "cpu8": 0.38437169324606657
+      },
+      "seconds": {
+        "baseline": [
+          1.0891428240574896,
+          1.1025564717128873,
+          1.1148722828365862,
+          1.0683072321116924,
+          1.144439720083028,
+          1.088785425759852,
+          1.0425917669199407,
+          1.078046750742942,
+          1.073319305665791,
+          1.0971219157800078,
+          1.0783369792625308,
+          1.0305219632573426,
+          1.080001711845398,
+          1.048103207256645,
+          1.1558926911093295,
+          1.0345138050615788,
+          1.0947385081090033,
+          1.0937622487545013,
+          1.0563072292134166,
+          1.1299270624294877
+        ],
+        "prefetch": [
+          1.0121721345931292,
+          1.1340576177462935,
+          1.0598702318966389,
+          1.005572876892984,
+          0.9840133441612124,
+          1.0016837161965668,
+          1.028867847751826,
+          1.0583711531944573,
+          1.0756286750547588,
+          1.0217572716064751,
+          1.103930130135268,
+          1.0100530330091715,
+          1.012645011767745,
+          1.0550944986753166,
+          1.0150732081383467,
+          1.0441338457167149,
+          1.0411819526925683,
+          1.019217539113015,
+          1.0732929119840264,
+          1.0637092744000256
+        ],
+        "cpu8": [
+          0.386061925906688,
+          0.4085368667729199,
+          0.3703078143298626,
+          0.36789624905213714,
+          0.3795531177893281,
+          0.3783161570318043,
+          0.3705052458681166,
+          0.3839897830039263,
+          0.36864524194970727,
+          0.37542722979560494,
+          0.4102233899757266,
+          0.37166088726371527,
+          0.3735416969284415,
+          0.3711865870282054,
+          0.3709698938764632,
+          0.370898752938956,
+          0.3730443399399519,
+          0.3807598170824349,
+          0.371010635048151,
+          0.37285805167630315
+        ]
+      },
+      "order": [
+        [
+          "cpu8",
+          "prefetch",
+          "baseline"
+        ],
+        [
+          "prefetch",
+          "baseline",
+          "cpu8"
+        ],
+        [
+          "prefetch",
+          "cpu8",
+          "baseline"
+        ],
+        [
+          "prefetch",
+          "cpu8",
+          "baseline"
+        ],
+        [
+          "prefetch",
+          "baseline",
+          "cpu8"
+        ],
+        [
+          "baseline",
+          "cpu8",
+          "prefetch"
+        ],
+        [
+          "prefetch",
+          "baseline",
+          "cpu8"
+        ],
+        [
+          "prefetch",
+          "cpu8",
+          "baseline"
+        ],
+        [
+          "baseline",
+          "prefetch",
+          "cpu8"
+        ],
+        [
+          "cpu8",
+          "prefetch",
+          "baseline"
+        ],
+        [
+          "cpu8",
+          "prefetch",
+          "baseline"
+        ],
+        [
+          "prefetch",
+          "cpu8",
+          "baseline"
+        ],
+        [
+          "cpu8",
+          "baseline",
+          "prefetch"
+        ],
+        [
+          "prefetch",
+          "cpu8",
+          "baseline"
+        ],
+        [
+          "prefetch",
+          "cpu8",
+          "baseline"
+        ],
+        [
+          "baseline",
+          "cpu8",
+          "prefetch"
+        ],
+        [
+          "cpu8",
+          "prefetch",
+          "baseline"
+        ],
+        [
+          "cpu8",
+          "baseline",
+          "prefetch"
+        ],
+        [
+          "cpu8",
+          "baseline",
+          "prefetch"
+        ],
+        [
+          "cpu8",
+          "prefetch",
+          "baseline"
+        ]
+      ],
+      "medians": {
+        "baseline": 1.084393568802625,
+        "prefetch": 1.0350249002221972,
+        "cpu8": 0.3729511958081275
+      },
+      "gpu_events": [
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "baseline",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "prefetch",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        }
+      ],
+      "prefetch_speedup": 1.0476980491675412
+    }
+  },
+  "frame_mib": 64,
+  "fragment_target_mib": 128,
+  "note": "Both buffers preallocated for interleaving; baseline uses one. Every GPU call rescans seekdb. No resident table cache.",
+  "sql_transaction_checks": "passed",
+  "peak_rss_kib": 1511864,
+  "status": "passed"
+}

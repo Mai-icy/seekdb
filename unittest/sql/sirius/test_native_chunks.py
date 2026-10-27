@@ -7,9 +7,11 @@ import struct
 import sys
 import threading
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools/sirius"))
 from sidecar import native_aggregate
+from native_input import NativeInput
 from wire import receive, send
 
 
@@ -40,10 +42,13 @@ def frame(rows, sums):
 
 
 class NativeChunks(unittest.TestCase):
+    prefetch = False
     def run_stream(self, batches, partials, sums=1, count=True, chunk_bytes=1, frame_mib=16):
         backend = FakeBackend(partials, chunk_bytes)
         if frame_mib != 16:
             backend.input_buffer = None
+        if self.prefetch:
+            backend.native_prefetch_buffers = tuple(memoryview(bytearray(frame_mib * 1024**2)) for _ in range(2))
         descriptor = bytes((1, 1, sums, int(count))) if frame_mib == 16 else bytes((2, 1, sums, int(count), frame_mib))
         left, right = socket.socketpair()
         errors = []
@@ -68,7 +73,13 @@ class NativeChunks(unittest.TestCase):
                 for batch in batches:
                     send(left, b"B", frame(batch, sums))
                     self.assertEqual(receive(left), (b"A", b""))
-                send(left, b"E")
+                try:
+                    send(left, b"E")
+                except BrokenPipeError:
+                    # Early ACK can let a rejected fragment shut down input
+                    # before the producer's E frame; the X reply must survive.
+                    if not self.prefetch:
+                        raise
                 kind, payload = receive(left)
                 if kind == b"X":
                     return None, backend, bytes(payload).decode()
@@ -151,6 +162,40 @@ class NativeChunks(unittest.TestCase):
         for descriptor in (bytes((2, 1, 1, 1, 255)), bytes((1, 1, 1, 1, 64)), bytes((2, 1, 1, 1))):
             with self.assertRaisesRegex(ValueError, 'protocol version'):
                 native_aggregate(None, backend, descriptor)
+
+
+class PrefetchedNativeChunks(NativeChunks):
+    prefetch = True
+
+    def test_backend_failure_does_not_recycle_borrowed_slot(self):
+        backend = FakeBackend([], 1)
+        backend.native_prefetch_buffers = tuple(memoryview(bytearray(16 * 1024**2)) for _ in range(2))
+        def fail(plan, reader):
+            next(reader)
+            raise RuntimeError('injected importer failure')
+        backend.execute = fail
+        left, right = socket.socketpair()
+        left.settimeout(2)
+        right.settimeout(2)
+        def serve():
+            with right:
+                try:
+                    native_aggregate(right, backend, bytes((1, 1, 1, 1)))
+                except RuntimeError as error:
+                    send(right, b'X', str(error).encode())
+        with patch.object(NativeInput, 'release') as release:
+            worker = threading.Thread(target=serve)
+            worker.start()
+            try:
+                with left:
+                    self.assertEqual(receive(left), (b'A', b''))
+                    send(left, b'B', frame([(1, 2.)], 1))
+                    self.assertEqual(receive(left), (b'A', b''))
+                    self.assertEqual(receive(left), (b'X', b'injected importer failure'))
+            finally:
+                worker.join(timeout=3)
+                self.assertFalse(worker.is_alive())
+            release.assert_not_called()
 
 
 if __name__ == "__main__":

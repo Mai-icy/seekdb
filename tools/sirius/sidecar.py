@@ -15,6 +15,7 @@ import time
 import pyarrow as pa
 from wire import receive, send
 from make_plan import make_plan_for_schema
+from native_input import NativeInput
 
 EXECUTE = ct.CFUNCTYPE(ct.c_int, ct.c_void_p, ct.c_size_t, ct.c_void_p, ct.c_size_t,
                       ct.POINTER(ct.c_size_t), ct.c_void_p, ct.c_size_t)
@@ -66,6 +67,7 @@ class Backend:
         self.stream.restype = ct.c_int
         self.input_buffer = None
         self.native_chunk_bytes = 0
+        self.native_prefetch_buffers = ()
 
     def warmup(self):
         schema = pa.schema([("g", pa.int64()), ("a", pa.float64())])
@@ -112,7 +114,19 @@ def native_aggregate(sock, backend, descriptor):
     schema = pa.schema([(name, pa.int64() if i < groups else pa.float64())
                         for i, name in enumerate(names)])
     plan = make_plan_for_schema(schema, names[:groups], names[groups:], bool(count))
-    send(sock, b"A")
+    frames = NativeInput(sock, frame_limit, row_limit, len(schema), backend.input_buffer,
+                         getattr(backend, 'native_prefetch_buffers', ()))
+    try:
+        send(sock, b"A")
+        frames.start()
+        _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, sums, count)
+    finally:
+        # Stop ACK writes and receive before the handler emits an error or the
+        # process releases pinned storage. GPU execution has already returned.
+        frames.close()
+
+
+def _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, sums, count):
     total_rows = 0
     max_batch_bytes = 0
     ended = False
@@ -122,17 +136,15 @@ def native_aggregate(sock, backend, descriptor):
         nonlocal total_rows, ended, max_batch_bytes
         total = 0
         while True:
-            kind, payload = receive(sock, limit=frame_limit, storage=backend.input_buffer)
+            kind, payload, slot = frames.get()
             if kind == b"E" and not payload:
                 ended = True
                 return
-            if kind != b"B" or len(payload) < 4:
-                raise ValueError("Expected native aggregate batch")
             rows = struct.unpack_from("<I", payload)[0]
             mask = (rows + 7) // 8
             size = mask + rows * 8
             total += size * len(schema)
-            if not 0 < rows <= row_limit or len(payload) != 4 + size * len(schema) or total > 512 * 1024 * 1024:
+            if total > 512 * 1024 * 1024:
                 raise ValueError("Native aggregate input size/budget exceeded")
             max_batch_bytes = max(max_batch_bytes, len(payload))
             # The owned frame buffer backs Arrow directly; no Python row decode.
@@ -143,14 +155,21 @@ def native_aggregate(sock, backend, descriptor):
                       for i, field in enumerate(schema)]
             total_rows += rows
             yield pa.RecordBatch.from_arrays(arrays, schema=schema)
-            send(sock, b"A")
+            # Only a subsequent get_next proves the importer consumed this
+            # batch. On iterator.close() after failure, keep the slot leased
+            # until frames.close() stops receive-ahead.
+            frames.release(slot)
             if chunk_limit and total >= chunk_limit:
                 return
     merged = {}
     chunks = 0
     while not ended:
-        with pa.RecordBatchReader.from_batches(schema, batches()) as reader:
-            result = json.loads(backend.execute(plan, reader))
+        iterator = batches()
+        try:
+            with pa.RecordBatchReader.from_batches(schema, iterator) as reader:
+                result = json.loads(backend.execute(plan, reader))
+        finally:
+            iterator.close()
         chunks += 1
         if not chunk_limit:
             result_rows = result["rows"]
@@ -188,7 +207,8 @@ def native_aggregate(sock, backend, descriptor):
     if len(output) > 1024 * 1024:
         raise ValueError("Native aggregate result exceeds 1 MiB")
     print(f"native aggregate: rows={total_rows} groups={len(result_rows)} chunks={chunks} "
-          f"frame_mib={frame_limit // 1024**2} max_batch_bytes={max_batch_bytes}", flush=True)
+          f"frame_mib={frame_limit // 1024**2} max_batch_bytes={max_batch_bytes} "
+          f"prefetch={bool(frames.buffers)}", flush=True)
     send(sock, b"R", output)
 
 
@@ -235,7 +255,7 @@ def handle(sock, backend):
         send(sock, b"J", backend.execute(plan, reader))
 
 
-def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib=0):
+def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib=0, native_prefetch=False):
     started = time.perf_counter()
     path = Path(path).absolute()
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -257,6 +277,9 @@ def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib
     backend = Backend(library)
     backend.native_chunk_bytes = native_chunk_mib * 1024 * 1024
     pinned = None
+    prefetch_pin = None
+    if native_prefetch and not host_pin_mib:
+        raise ValueError("Native prefetch requires pinned host input")
     if host_pin_mib:
         try:
             pinned = PinnedInput(host_pin_mib)
@@ -264,9 +287,15 @@ def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib
         except (OSError, RuntimeError) as error:
             print(f"warning: host pin unavailable, using pageable input: {error}", flush=True)
     try:
+        if native_prefetch and pinned:
+            prefetch_pin = PinnedInput(host_pin_mib)
+            backend.native_prefetch_buffers = (pinned.view, prefetch_pin.view)
         if warmup:
             backend.warmup()
     except BaseException:
+        backend.native_prefetch_buffers = ()
+        if prefetch_pin:
+            prefetch_pin.close()
         if pinned:
             pinned.close()
         raise
@@ -276,37 +305,42 @@ def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib
         stopping = True
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
-        listener.bind(str(path))
-        os.chmod(path, 0o600)
-        listener.listen(8)
-        listener.settimeout(0.5)
-        print(f"ready: {path} host_pin_mib={host_pin_mib if pinned else 0} warmup={warmup} native_chunk_mib={native_chunk_mib} "
-              f"startup_seconds={time.perf_counter()-started:.6f}", flush=True)
-        try:
-            while not stopping:
-                try:
-                    peer, _ = listener.accept()
-                except socket.timeout:
-                    continue
-                with peer:
-                    _, uid, _ = struct.unpack("3i", peer.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
-                    if uid != os.geteuid():
-                        continue
-                    peer.settimeout(timeout)
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+            listener.bind(str(path))
+            os.chmod(path, 0o600)
+            listener.listen(8)
+            listener.settimeout(0.5)
+            print(f"ready: {path} host_pin_mib={host_pin_mib if pinned else 0} warmup={warmup} native_chunk_mib={native_chunk_mib} "
+                  f"native_prefetch={bool(backend.native_prefetch_buffers)} startup_seconds={time.perf_counter()-started:.6f}", flush=True)
+            try:
+                while not stopping:
                     try:
-                        handle(peer, backend)
-                    except Exception as error:
-                        print(f"request failed: {str(error)[:4096]}", flush=True)
+                        peer, _ = listener.accept()
+                    except socket.timeout:
+                        continue
+                    with peer:
+                        _, uid, _ = struct.unpack("3i", peer.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
+                        if uid != os.geteuid():
+                            continue
+                        peer.settimeout(timeout)
                         try:
-                            send(peer, b"X", str(error).encode("utf-8", errors="replace")[:4096])
-                        except OSError:
-                            pass
-        finally:
-            path.unlink(missing_ok=True)
-            backend.input_buffer = None
-            if pinned:
-                pinned.close()
+                            handle(peer, backend)
+                        except Exception as error:
+                            print(f"request failed: {str(error)[:4096]}", flush=True)
+                            try:
+                                send(peer, b"X", str(error).encode("utf-8", errors="replace")[:4096])
+                            except OSError:
+                                pass
+            finally:
+                path.unlink(missing_ok=True)
+    finally:
+        backend.input_buffer = None
+        backend.native_prefetch_buffers = ()
+        if prefetch_pin:
+            prefetch_pin.close()
+        if pinned:
+            pinned.close()
 
 
 if __name__ == "__main__":
@@ -319,7 +353,9 @@ if __name__ == "__main__":
     p.add_argument("--warmup", action="store_true", help="Initialize GPU operators before accepting queries")
     p.add_argument("--native-chunk-mib", type=int, choices=(0, 64, 128, 256), default=0,
                    help="Bound each native GPU fragment and merge SUM/COUNT/groups; 0 keeps the 512 MiB query limit")
+    p.add_argument("--native-prefetch", action="store_true",
+                   help="Receive ahead into two bounded pinned buffers; ACK after validated reception")
     args = p.parse_args()
     if not 0 < args.io_timeout <= 600:
         p.error("I/O timeout must be in (0,600] seconds")
-    serve(args.socket, args.library, args.io_timeout, args.host_pin_mib, args.warmup, args.native_chunk_mib)
+    serve(args.socket, args.library, args.io_timeout, args.host_pin_mib, args.warmup, args.native_chunk_mib, args.native_prefetch)

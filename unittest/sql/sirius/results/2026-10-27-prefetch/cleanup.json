@@ -1,0 +1,8 @@
+{
+  "source_unchanged": true,
+  "no_data_files_created": true,
+  "socket_backup_absent": true,
+  "owned_test_sidecar_stopped": true,
+  "free_bytes": 585747259392,
+  "remaining_gpu_processes": "pid, used_gpu_memory [MiB]\n1357411, 14708 MiB\n1384828, 17278 MiB\n"
+}

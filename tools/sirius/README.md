@@ -21,6 +21,8 @@ Larger pinned-frame measurements and the full-table TPC-H runner are documented
 in [TPCH500.md](TPCH500.md), including actual GPU coverage and CPU fallback.
 The controlled native-Sirius/live-seekdb/resident-input comparison is documented
 in [PATH_COMPARISON.md](PATH_COMPARISON.md), including preparation costs.
+An optional double-buffer native receive path and its measured live-query
+improvement are documented in [PREFETCH.md](PREFETCH.md).
 
 The first working integration uses **explicit Parquet snapshots**:
 

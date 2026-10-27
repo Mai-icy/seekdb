@@ -1,0 +1,19 @@
+native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=13 prefetch=False
+.native aggregate: rows=2 groups=1 chunks=1 frame_mib=16 max_batch_bytes=22 prefetch=False
+.native aggregate: rows=0 groups=0 chunks=1 frame_mib=16 max_batch_bytes=0 prefetch=False
+.native aggregate: rows=3 groups=2 chunks=3 frame_mib=16 max_batch_bytes=21 prefetch=False
+...native aggregate: rows=5 groups=3 chunks=4 frame_mib=16 max_batch_bytes=38 prefetch=False
+...native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=22 prefetch=False
+.native aggregate: rows=1 groups=1 chunks=2 frame_mib=64 max_batch_bytes=22 prefetch=False
+..native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=13 prefetch=True
+.native aggregate: rows=2 groups=1 chunks=1 frame_mib=16 max_batch_bytes=22 prefetch=True
+.native aggregate: rows=0 groups=0 chunks=1 frame_mib=16 max_batch_bytes=0 prefetch=True
+.native aggregate: rows=3 groups=2 chunks=3 frame_mib=16 max_batch_bytes=21 prefetch=True
+...native aggregate: rows=5 groups=3 chunks=4 frame_mib=16 max_batch_bytes=38 prefetch=True
+...native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=22 prefetch=True
+.native aggregate: rows=1 groups=1 chunks=2 frame_mib=64 max_batch_bytes=22 prefetch=True
+.........
+----------------------------------------------------------------------
+Ran 31 tests in 0.938s
+
+OK

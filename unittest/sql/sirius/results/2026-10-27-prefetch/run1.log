@@ -1,0 +1,133 @@
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=168 prefetch=True
+native aggregate: rows=4 groups=3 chunks=1 frame_mib=64 max_batch_bytes=70 prefetch=True
+native aggregate: rows=0 groups=0 chunks=1 frame_mib=64 max_batch_bytes=0 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=45 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=4 groups=2 chunks=1 frame_mib=64 max_batch_bytes=70 prefetch=True
+{"status": "passed", "checks": ["nullable_group_sum_count", "two_keys_multiple_sums_reordered", "scan_filter", "empty_input", "having_order_limit", "group_only", "count_only", "unsupported_count_column_cpu", "unsupported_distinct_cpu", "unsupported_integer_sum_cpu", "scalar_aggregate_cpu", "correlated_rescan", "uncommitted_invisible", "committed_update_visible", "own_transaction_and_rollback", "delete_visible"]}
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+{"diagnostic_begin": "sum_count", "mode": "baseline"}
+sirius stream profile: rows=11184810 batches=3 build_us=1982 input_us=245974 copy_us=8077 run_us=7951 result_us=168 total_us=264180
+sirius stream profile: rows=11184810 batches=3 build_us=2016 input_us=196996 copy_us=7984 run_us=8921 result_us=188 total_us=216123
+sirius stream profile: rows=11184810 batches=3 build_us=1729 input_us=207682 copy_us=7990 run_us=8928 result_us=150 total_us=226499
+sirius stream profile: rows=11184810 batches=3 build_us=1991 input_us=197464 copy_us=7908 run_us=8201 result_us=186 total_us=215772
+sirius stream profile: rows=11184810 batches=3 build_us=1703 input_us=205555 copy_us=8019 run_us=7615 result_us=155 total_us=223073
+sirius stream profile: rows=11184810 batches=3 build_us=1680 input_us=209770 copy_us=7952 run_us=9319 result_us=189 total_us=228930
+sirius stream profile: rows=7891140 batches=3 build_us=1947 input_us=139977 copy_us=5800 run_us=7572 result_us=184 total_us=155539
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+{"diagnostic_end": "sum_count", "mode": "baseline"}
+{"diagnostic_begin": "sum_count", "mode": "prefetch"}
+sirius stream profile: rows=11184810 batches=3 build_us=1964 input_us=248549 copy_us=8138 run_us=7934 result_us=177 total_us=266794
+sirius stream profile: rows=11184810 batches=3 build_us=1605 input_us=194680 copy_us=8063 run_us=7109 result_us=162 total_us=211644
+sirius stream profile: rows=11184810 batches=3 build_us=1636 input_us=208646 copy_us=8114 run_us=6684 result_us=175 total_us=225283
+sirius stream profile: rows=11184810 batches=3 build_us=1657 input_us=207783 copy_us=8147 run_us=8110 result_us=181 total_us=225904
+sirius stream profile: rows=11184810 batches=3 build_us=1970 input_us=191844 copy_us=8025 run_us=6838 result_us=184 total_us=208888
+sirius stream profile: rows=11184810 batches=3 build_us=1743 input_us=204808 copy_us=8107 run_us=9303 result_us=174 total_us=224167
+sirius stream profile: rows=7891140 batches=3 build_us=1605 input_us=126081 copy_us=5727 run_us=7225 result_us=185 total_us=140839
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+{"diagnostic_end": "sum_count", "mode": "prefetch"}
+{"case": "sum_count", "medians": {"baseline": 1.5379083643201739, "prefetch": 1.4797982345335186, "cpu8": 0.41342970402911305}, "speedup": 1.039268954665954}
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+{"diagnostic_begin": "count", "mode": "baseline"}
+sirius stream profile: rows=22369620 batches=3 build_us=1739 input_us=330470 copy_us=7946 run_us=6886 result_us=117 total_us=347176
+sirius stream profile: rows=22369620 batches=3 build_us=1550 input_us=291997 copy_us=7881 run_us=8121 result_us=115 total_us=309682
+sirius stream profile: rows=22369620 batches=3 build_us=1758 input_us=275370 copy_us=7901 run_us=7336 result_us=174 total_us=292557
+sirius stream profile: rows=7891140 batches=2 build_us=1486 input_us=102725 copy_us=2891 run_us=7959 result_us=187 total_us=115262
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=False
+{"diagnostic_end": "count", "mode": "baseline"}
+{"diagnostic_begin": "count", "mode": "prefetch"}
+sirius stream profile: rows=22369620 batches=3 build_us=2218 input_us=316360 copy_us=8032 run_us=6480 result_us=165 total_us=333279
+sirius stream profile: rows=22369620 batches=3 build_us=1526 input_us=286645 copy_us=8089 run_us=7102 result_us=149 total_us=303534
+sirius stream profile: rows=22369620 batches=3 build_us=1480 input_us=269372 copy_us=8063 run_us=10254 result_us=254 total_us=289451
+sirius stream profile: rows=7891140 batches=2 build_us=1597 input_us=76908 copy_us=2864 run_us=7329 result_us=154 total_us=88861
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+{"diagnostic_end": "count", "mode": "prefetch"}
+{"case": "count", "medians": {"baseline": 1.0799031520728022, "prefetch": 1.0465014786459506, "cpu8": 0.37921259785071015}, "speedup": 1.031917464149281}
