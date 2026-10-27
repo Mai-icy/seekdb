@@ -1,5 +1,10 @@
 # Experimental Sirius GPU integration
 
+**Whole-query branch:** [QUERY_OFFLOAD.md](QUERY_OFFLOAD.md) describes the opt-in
+SQL-to-Sirius prototype with multi-table Arrow input from one seekdb snapshot,
+GPU CTE reuse, and typed Arrow output. It targets complete TPC-H query coverage;
+the bounded input implementation is currently for small-data correctness tests.
+
 This prototype adds `SIRIUS_EXECUTE_SUBSTRAIT(binary_plan)` to seekdb. The function
 loads an optional bridge, executes a binary Substrait plan with Sirius's public
 C++ FFI, and returns its Arrow results as JSON. Normal seekdb builds require no

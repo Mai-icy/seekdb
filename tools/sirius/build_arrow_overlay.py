@@ -2,7 +2,7 @@
 """Build a pinned Sirius Arrow-input overlay without modifying the source/build tree.
 
 Reuses an existing matching Ninja build's objects and compiler invocation; only
-sirius_ffi.cpp is recompiled and the shared library is relinked to a NEW directory.
+the edited translation units are recompiled and the shared library is relinked to a NEW directory.
 The generated overlay contains the modified sources and an auditable patch.
 """
 import argparse
@@ -34,7 +34,9 @@ def build(source, build_dir, output, patch_only=False):
     marker = "  std::size_t relay_from(Fragment& source,"
     assert original.count(marker) == 1
     edits[header] = original.replace(marker,
-        "  // Borrowed Arrow C schema/array; synchronized GPU copy, BIGINT/DOUBLE only.\n"
+        "  // Borrowed Arrow C schema/array; synchronized GPU copy, flat SQL types.\n"
+        "  void declare_input_cardinality(std::uint64_t stream_id, std::uint64_t rows);\n"
+        "  void build_sql(const std::string &sql, const std::vector<std::string> &tables);\n"
         "  void push_arrow(std::uint64_t stream_id, std::uintptr_t schema, std::uintptr_t array);\n\n" + marker)
     header = "src/exec/streaming_fragment.hpp"
     original = (source / header).read_text()
@@ -53,16 +55,37 @@ def build(source, build_dir, output, patch_only=False):
     original = (source / "src/sirius_ffi.cpp").read_text()
     includes = ('#include <arrow/c/abi.h>\n#include <cudf/interop.hpp>\n'
                 '#include <rmm/cuda_device.hpp>\n#include <cstdio>\n#include <cstdlib>\n'
-                '#include "data/data_batch_utils.hpp"\n')
+                '#include "data/data_batch_utils.hpp"\n'
+                '#include "duckdb/parser/parser.hpp"\n#include <set>\n'
+                '#include "duckdb/parser/statement/select_statement.hpp"\n'
+                '#include "duckdb/planner/operator/logical_get.hpp"\n'
+                '#include <cudf/unary.hpp>\n#include <cudf/table/table.hpp>\n'
+                '#include "seekdb_sirius/arrow_types.h"\n')
     state_marker = '  Context::Impl& ctx;'
     assert original.count(state_marker) == 1
     original = original.replace(state_marker, state_marker +
         '\n  // Per-fragment input placement; calls are serialized by the embedder.\n'
-        '  std::size_t arrow_batch_index{0};\n')
+        '  std::size_t arrow_batch_index{0};\n'
+        '  std::map<std::uint64_t, std::uint64_t> input_cardinalities;\n')
     marker = "std::size_t Fragment::relay_from("
     assert original.count(marker) == 1
     body = (Path(__file__).parent / "arrow_input/fragment_arrow.cpp.inc").read_text()
+    body += (Path(__file__).parent / "arrow_input/fragment_sql.cpp.inc").read_text()
     edits["src/sirius_ffi.cpp"] = includes + original.replace(marker, body + "\n" + marker)
+    relative = "src/exec/streaming_fragment.cpp"
+    original = (source / relative).read_text()
+    marker = "  // The collector decodes GPU output with prepared->types; a mismatch would misread it."
+    assert original.count(marker) == 1
+    original = original.replace(marker, """  // CTE.types describes its producer passthrough; the query emits its consumer.
+  auto *result_node = subtree.get();
+  while (result_node->type == op::SiriusPhysicalOperatorType::CTE) {
+    result_node = result_node->children.at(1).get();
+  }
+""" + marker)
+    original = original.replace("subtree->types.begin()", "result_node->types.begin()")
+    original = original.replace("subtree->types.end()", "result_node->types.end()")
+    original = original.replace("std::to_string(subtree->types.size())", "std::to_string(result_node->types.size())")
+    edits[relative] = original
     patch = []
     for relative, content in edits.items():
         dest = output / relative
@@ -70,6 +93,14 @@ def build(source, build_dir, output, patch_only=False):
         dest.write_text(content)
         patch.extend(difflib.unified_diff((source / relative).read_text().splitlines(True),
                      content.splitlines(True), fromfile="a/" + relative, tofile="b/" + relative))
+    for name in ("arrow_c.h", "arrow_types.h"):
+        relative = "include/seekdb_sirius/" + name
+        dest = output / relative
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        content = (Path(__file__).parent / name).read_text()
+        dest.write_text(content)
+        patch.extend(difflib.unified_diff([], content.splitlines(True),
+                     fromfile="/dev/null", tofile="b/" + relative))
     (output / "sirius-arrow-input.patch").write_text("".join(patch))
     if patch_only:
         print(output / "sirius-arrow-input.patch")
@@ -79,15 +110,20 @@ def build(source, build_dir, output, patch_only=False):
         if hashlib.file_digest(built, "sha256").hexdigest() != LIB_SHA256:
             raise ValueError("Existing Sirius library does not match the validated build; use --patch-only for a full rebuild")
     commands = json.loads((build_dir / "compile_commands.json").read_text())
-    entry = next(c for c in commands if c["file"] == str(source / "src/sirius_ffi.cpp"))
-    compile_args = shlex.split(entry["command"])
-    old_object = compile_args[compile_args.index("-o") + 1]
-    new_object = str(output / "sirius_ffi.cpp.o")
-    compile_args[compile_args.index("-o") + 1] = new_object
-    compile_args[compile_args.index(str(source / "src/sirius_ffi.cpp"))] = str(output / "src/sirius_ffi.cpp")
-    compile_args[1:1] = ["-I" + str(output / "include"), "-I" + str(output / "src")]
-    (output / "compile-command.json").write_text(json.dumps(compile_args, indent=2))
-    subprocess.run(compile_args, cwd=entry["directory"], check=True)
+    replacements = {}
+    for relative in edits:
+        if not relative.endswith(".cpp"):
+            continue
+        entry = next(c for c in commands if c["file"] == str(source / relative))
+        compile_args = shlex.split(entry["command"])
+        old_object = compile_args[compile_args.index("-o") + 1]
+        new_object = str(output / (Path(relative).name + ".o"))
+        replacements[old_object] = new_object
+        compile_args[compile_args.index("-o") + 1] = new_object
+        compile_args[compile_args.index(str(source / relative))] = str(output / relative)
+        compile_args[1:1] = ["-I" + str(output / "include"), "-I" + str(output / "src")]
+        (output / (Path(relative).name + "-compile-command.json")).write_text(json.dumps(compile_args, indent=2))
+        subprocess.run(compile_args, cwd=entry["directory"], check=True)
     target = "extension/sirius/libsirius.so.0.0.0"
     commands = subprocess.check_output(["ninja", "-t", "commands", target], cwd=build_dir, text=True)
     link = shlex.split(commands.strip().splitlines()[-1])
@@ -95,9 +131,10 @@ def build(source, build_dir, output, patch_only=False):
     if link[:2] != [":", "&&"] or link[-2:] != ["&&", ":"]:
         raise ValueError("Unrecognized link rule; refusing to run it")
     link = link[2:-2]
-    if old_object not in link:
-        raise ValueError("FFI object missing from link rule")
-    link[link.index(old_object)] = new_object
+    for old_object, new_object in replacements.items():
+        if old_object not in link:
+            raise ValueError("Edited object missing from link rule: " + old_object)
+        link[link.index(old_object)] = new_object
     link[link.index("-o") + 1] = str(output / "libsirius.so.0.0.0")
     link = ["-Wl,--dependency-file=" + str(output / "link.d")
             if arg.startswith("-Wl,--dependency-file=") else arg for arg in link]

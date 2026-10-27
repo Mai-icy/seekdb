@@ -16,23 +16,12 @@ void Fragment::push_arrow(std::uint64_t stream_id, std::uintptr_t schema_addr,
       || array->null_count != 0) {
     throw std::invalid_argument("push_arrow: invalid flat record batch/schema");
   }
-  const auto decoded_bytes = (static_cast<std::uint64_t>(array->length) * 8
-                              + (array->length + 7) / 8) * schema->n_children;
-  if (decoded_bytes > 128 * 1024 * 1024) {
-    throw std::invalid_argument("push_arrow: input batch exceeds 128 MiB");
-  }
+  const auto decoded_bytes = seekdb_sirius::arrow_batch_bytes(*schema, *array);
   for (int64_t i = 0; i < schema->n_children; ++i) {
     const auto *column = schema->children[i];
-    const auto *values = array->children[i];
-    const auto &type = it->second.type_names[i];
-    const char *format = type == "BIGINT" ? "l" : type == "DOUBLE" ? "g" : "";
-    if (!column || !values || !column->format || !*format
-        || std::string(column->format) != format || !column->name
-        || column->name != it->second.names[i] || column->dictionary || column->n_children
-        || values->dictionary || values->n_children || values->offset < 0
-        || values->length != array->length || values->n_buffers != 2 || !values->buffers
-        || (array->length && !values->buffers[1])) {
-      throw std::invalid_argument("push_arrow: input columns must match declared BIGINT/DOUBLE schema");
+    if (seekdb_sirius::arrow_type(*column).sql != it->second.type_names[i]
+        || column->name != it->second.names[i]) {
+      throw std::invalid_argument("push_arrow: columns must match declared names and SQL types");
     }
   }
   auto &manager = impl_->ctx.context->get_memory_manager();
@@ -50,6 +39,19 @@ void Fragment::push_arrow(std::uint64_t stream_id, std::uintptr_t schema_addr,
   host.device_id = -1;
   host.device_type = ARROW_DEVICE_CPU;
   auto table = cudf::from_arrow_host(schema, &host, stream);
+  auto columns = table->release();
+  for (int64_t i = 0; i < schema->n_children; ++i) {
+    const auto type = seekdb_sirius::arrow_type(*schema->children[i]);
+    if (type.precision) {
+      const auto id = type.precision <= 9 ? cudf::type_id::DECIMAL32
+                    : type.precision <= 18 ? cudf::type_id::DECIMAL64 : cudf::type_id::DECIMAL128;
+      const cudf::data_type target_type(id, -type.scale);
+      if (columns[i]->type() != target_type) {
+        columns[i] = cudf::cast(columns[i]->view(), target_type, stream);
+      }
+    }
+  }
+  table = std::make_unique<cudf::table>(std::move(columns));
   stream.sync();
   impl_->fragment->push_input_batch(stream_id, sirius::make_data_batch(std::move(table), *space, stream, {}));
   ++impl_->arrow_batch_index;
