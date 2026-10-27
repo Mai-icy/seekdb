@@ -44,7 +44,14 @@ both allocations.
 
 ## Measurement method
 
-The exact previous-version comparison gave these hot medians (seconds):
+Reporting scope: pin allocation and process startup/warmup are completed before
+timing and excluded. Each query still includes its scan, packing, transport,
+host-to-GPU copy, aggregation and SQL result delivery. These are query-execution
+timings, not process startup-to-result totals. The existing measurements already
+use this scope, so excluding pin does not change the reported improvement.
+
+The exact previous-version comparison gave these hot query medians (seconds,
+pin/setup excluded):
 
 | Query | Previous bridge | Prefetch | Latency reduction | CPU8 |
 |---|---:|---:|---:|---:|
@@ -58,7 +65,7 @@ including first calls and separate diagnostics. Each experiment contains twenty
 hot samples per query/mode; the table above uses only the exact-old-source run.
 
 This is a modest live-query improvement, not a 2× acceleration, and CPU8 remains
-faster. No snapshot preparation cost is excluded: each GPU query rescans seekdb.
+faster. This path has no prepared table snapshot: each GPU query rescans seekdb.
 Diagnostic input waiting still dominates; prefetch hides some copy/execution
 delay but cannot remove the serial producer. Parallel native scans and a bounded
 multi-producer protocol remain the larger next step; the serial eligibility

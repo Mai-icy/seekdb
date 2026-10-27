@@ -23,10 +23,14 @@ executes the GPU aggregation again; it does not reuse query results.
 
 **Removing repeated seekdb input production reduces hot SUM/COUNT from 1.113 s
 to 0.094 s and COUNT from 0.794 s to 0.049 s.** The resident path is 3.94× / 6.88×
-faster than the faster measured seekdb CPU8 configuration. Its preparation cost
-means this is a repeated-query result, not a single-query speedup over CPU8.
+faster than the faster measured seekdb CPU8 configuration, with input pinning
+and preparation completed before timing.
 
-Hot medians in milliseconds:
+**Reporting scope: query execution after preparation; pin/setup and process
+startup are excluded.** Query-time scanning, transfer and computation remain
+included where the path performs them.
+
+Hot query medians in milliseconds (pin/setup excluded):
 
 | Path | SUM + COUNT | COUNT |
 |---|---:|---:|
@@ -53,34 +57,27 @@ fragments and 21 frames, COUNT four fragments and 11 frames. Captured input
 occupied 1,218,751,232 bytes for SUM/COUNT and 609,375,616 additional bytes for
 COUNT, below the shared 2 GiB allocation.
 
-### Preparation and amortization
+### Query totals after pin preparation
 
-The 267,137,024-byte temporary DuckDB projection took **0.917 s** to create
-with warm source caches. Native host pin took 0.210–0.221 s for SUM/COUNT and
-0.0276–0.0282 s for COUNT. seekdb capture took **1.263 s / 0.808 s**, including
-one complete live GPU query and its input copy. Allocating the reusable 2 GiB
-pinned cache took **0.595 s** once per process. Resident first calls after
-capture took 0.0969 s / 0.0461 s.
+The reporting metric excludes pin allocation, table pin/capture, projection
+creation and process startup/warmup. Inputs are prepared before query timing.
+Every operation performed during a query remains included: seekdb live scans,
+packing, transport, host-to-GPU copies, aggregation and result delivery.
+Resident queries reuse their prepared input; they are not end-to-end timings
+starting from an unprepared live table. The appendix preserves setup costs
+separately; raw measurement files are unchanged.
 
-Estimated totals in seconds below include capture and the full cache allocation
-for each resident case considered independently. The allocation is shared when
-both cases run in the same process, so do not add these case totals and charge
-it twice. Engine startup is excluded from this table and reported below.
+Estimated query-only totals in seconds use `first_seconds + (N - 1) × hot median`.
+They are estimates, not separately timed multi-query workloads.
 
 | Workload | Path | 1 query | 5 queries | 10 queries |
 |---|---|---:|---:|---:|
 | SUM + COUNT | seekdb CPU8, matched hints | 0.405 | 1.886 | 3.737 |
 | SUM + COUNT | seekdb live GPU | 1.190 | 5.642 | 11.207 |
-| SUM + COUNT | resident, allocation + capture included | 1.955 | 2.331 | 2.801 |
+| SUM + COUNT | resident, pin/setup excluded | 0.097 | 0.473 | 0.943 |
 | COUNT | seekdb CPU8, matched hints | 0.350 | 1.692 | 3.369 |
 | COUNT | seekdb live GPU | 0.745 | 3.922 | 7.893 |
-| COUNT | resident, allocation + capture included | 1.448 | 1.643 | 1.887 |
-
-The estimated break-even against matched CPU8 is **7 / 5 queries** for
-SUM/COUNT and COUNT. Bridge startup/warmup additionally takes 0.620 s; charging
-that as well moves break-even to **9 / 7 queries**. Native startup/warmup was
-0.607–0.629 s. These are estimates, not independently timed multi-query totals;
-they assume unchanged captured data and comparable hot performance.
+| COUNT | resident, pin/setup excluded | 0.046 | 0.241 | 0.485 |
 
 ### Where the time goes
 
@@ -177,8 +174,9 @@ input wait combines seekdb production and transport.
 Startup/warmup, pin allocation and snapshot preparation are recorded separately.
 seekdb preparation includes an extra complete live GPU query and the copy of
 its input. Native preparation uses `pin_table`. Totals for 1, 5 and 10 queries
-are explicitly estimates from measured preparation, first call and hot median,
-not separately timed workloads. Engine startup remains separately reported.
+in the main results use only the measured first call and hot median; pin/setup
+and startup are excluded. The appendix retains separate setup-inclusive estimates
+for traceability. Neither set of totals is a separately timed workload.
 
 Native Sirius requires a file-backed DuckDB table. Preparation creates only
 the two-column projection, with a 2 GiB file limit and a 180 GiB filesystem
@@ -216,3 +214,32 @@ host-pinned queries before the full measurement.
 All five resident-input tests, including the real GPU test, passed on the
 measurement host. The complete comparison then exercised both aggregation
 shapes through the actual seekdb SQL transport.
+
+## Appendix: setup-inclusive accounting (separate from query results)
+
+The 267,137,024-byte temporary DuckDB projection took **0.917 s** to create
+with warm source caches. Native host pin took 0.210–0.221 s for SUM/COUNT and
+0.0276–0.0282 s for COUNT. seekdb capture took **1.263 s / 0.808 s**, including
+one complete live GPU query and its input copy. Allocating the reusable 2 GiB
+pinned cache took **0.595 s** once per process. Resident first calls after
+capture took 0.0969 s / 0.0461 s.
+
+Estimated totals in seconds below include capture and the full cache allocation
+for each resident case considered independently. The allocation is shared when
+both cases run in the same process, so do not add these case totals and charge
+it twice. Engine startup is excluded from this table and reported below.
+
+| Workload | Path | 1 query | 5 queries | 10 queries |
+|---|---|---:|---:|---:|
+| SUM + COUNT | seekdb CPU8, matched hints | 0.405 | 1.886 | 3.737 |
+| SUM + COUNT | seekdb live GPU | 1.190 | 5.642 | 11.207 |
+| SUM + COUNT | resident, allocation + capture included | 1.955 | 2.331 | 2.801 |
+| COUNT | seekdb CPU8, matched hints | 0.350 | 1.692 | 3.369 |
+| COUNT | seekdb live GPU | 0.745 | 3.922 | 7.893 |
+| COUNT | resident, allocation + capture included | 1.448 | 1.643 | 1.887 |
+
+The estimated break-even against matched CPU8 is **7 / 5 queries** for
+SUM/COUNT and COUNT. Bridge startup/warmup additionally takes 0.620 s; charging
+that as well moves break-even to **9 / 7 queries**. Native startup/warmup was
+0.607–0.629 s. These are estimates, not independently timed multi-query totals;
+they assume unchanged captured data and comparable hot performance.
