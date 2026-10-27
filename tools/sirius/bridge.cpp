@@ -48,6 +48,18 @@ public:
     });
   }
 #ifdef SEEKDB_SIRIUS_ARROW_INPUT
+  void pin_snapshot(const char *name, const char *path) {
+    submit([&](auto &context) -> size_t { context.pin_parquet(name, path); return 0; });
+  }
+  void query_snapshot(const char *sql, size_t size, SeekdbSiriusResultV1 consume, void *user) {
+    submit([&](auto &context) -> size_t {
+      ArrowArrayStream result{};
+      struct Guard { ArrowArrayStream &s; ~Guard() { if (s.release) s.release(&s); } } guard{result};
+      context.execute_sql(std::string(sql, size), reinterpret_cast<uintptr_t>(&result));
+      if (consume(&result, user)) throw std::runtime_error("Snapshot result consumer failed");
+      return 0;
+    });
+  }
 #include "arrow_input/query_runtime.cpp.inc"
   size_t execute_stream(const uint8_t *plan, size_t plan_size, ArrowArrayStream &input,
                         char *output, size_t capacity) {
@@ -237,6 +249,29 @@ extern "C" __attribute__((visibility("default")))
 const SeekdbSiriusApiV1 *seekdb_sirius_get_api_v1() noexcept { return &api; }
 
 #ifdef SEEKDB_SIRIUS_ARROW_INPUT
+extern "C" __attribute__((visibility("default")))
+int seekdb_sirius_pin_snapshot_v1(const char *name, const char *path,
+    char *error, size_t error_capacity) noexcept {
+  if (!name || !path || !error || !error_capacity) return SEEKDB_SIRIUS_INVALID_ARGUMENT;
+  error[0] = '\0';
+  try { runtime().pin_snapshot(name, path); return SEEKDB_SIRIUS_OK; }
+  catch (const std::exception &e) { std::snprintf(error, error_capacity, "%s", e.what()); }
+  catch (...) { std::snprintf(error, error_capacity, "Unknown snapshot pin error"); }
+  return SEEKDB_SIRIUS_EXECUTION_ERROR;
+}
+
+extern "C" __attribute__((visibility("default")))
+int seekdb_sirius_query_snapshot_v1(const char *sql, size_t size,
+    SeekdbSiriusResultV1 consume, void *user, char *error, size_t error_capacity) noexcept {
+  if (!sql || !size || size > 1024 * 1024 || !consume || !error || !error_capacity)
+    return SEEKDB_SIRIUS_INVALID_ARGUMENT;
+  error[0] = '\0';
+  try { runtime().query_snapshot(sql, size, consume, user); return SEEKDB_SIRIUS_OK; }
+  catch (const std::exception &e) { std::snprintf(error, error_capacity, "%s", e.what()); }
+  catch (...) { std::snprintf(error, error_capacity, "Unknown snapshot query error"); }
+  return SEEKDB_SIRIUS_EXECUTION_ERROR;
+}
+
 extern "C" __attribute__((visibility("default")))
 int seekdb_sirius_execute_query_v1(const char *sql, size_t sql_size,
     SeekdbSiriusTableV1 *tables, size_t count, SeekdbSiriusResultV1 consume, void *user,

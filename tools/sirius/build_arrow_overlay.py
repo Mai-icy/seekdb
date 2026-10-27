@@ -38,6 +38,11 @@ def build(source, build_dir, output, patch_only=False):
         "  void declare_input_cardinality(std::uint64_t stream_id, std::uint64_t rows);\n"
         "  void build_sql(const std::string &sql, const std::vector<std::string> &tables);\n"
         "  void push_arrow(std::uint64_t stream_id, std::uintptr_t schema, std::uintptr_t array);\n\n" + marker)
+    marker = "  void execute_substrait(const std::string& plan, std::uintptr_t out_stream_addr);"
+    assert edits[header].count(marker) == 1
+    edits[header] = edits[header].replace(marker, marker + "\n"
+        "  void pin_parquet(const std::string &name, const std::string &path);\n"
+        "  void execute_sql(const std::string &sql, std::uintptr_t out_stream_addr);\n")
     header = "src/exec/streaming_fragment.hpp"
     original = (source / header).read_text()
     marker = "  void close_input(stream_id_t id, sender_id_t sender);"
@@ -60,7 +65,15 @@ def build(source, build_dir, output, patch_only=False):
                 '#include "duckdb/parser/statement/select_statement.hpp"\n'
                 '#include "duckdb/planner/operator/logical_get.hpp"\n'
                 '#include <cudf/unary.hpp>\n#include <cudf/table/table.hpp>\n'
-                '#include "seekdb_sirius/arrow_types.h"\n')
+                '#include "seekdb_sirius/arrow_types.h"\n'
+                '#include "sirius_registration.hpp"\n')
+    marker = "    sirius::exec::register_stream_source_function(*db->instance);"
+    assert original.count(marker) == 1
+    original = original.replace(marker, "    duckdb::SiriusRegistration::RegisterGPUFunctions(*db->instance);")
+    marker = "std::unique_ptr<Context> make_context()"
+    assert original.count(marker) == 1
+    original = original.replace(marker,
+        (Path(__file__).parent / "arrow_input/context_snapshot.cpp.inc").read_text() + "\n" + marker)
     state_marker = '  Context::Impl& ctx;'
     assert original.count(state_marker) == 1
     original = original.replace(state_marker, state_marker +

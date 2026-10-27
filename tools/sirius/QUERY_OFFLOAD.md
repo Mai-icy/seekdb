@@ -71,14 +71,51 @@ tolerance (relative 1e-9, absolute 1e-6); dedicated integration tests also check
 ordering, empty input, NULLs, multi-table types, repeated reads and recovery.
 Timings include input preparation and are not pin-excluded GPU kernel timings.
 
+## Immutable snapshot host pin
+
+For larger, static datasets, `QueryBackend.pin_snapshot(name, path)` and
+`query_snapshot(sql)` use Sirius's existing Parquet scan and host-pin machinery.
+This path does not preload consumptive Arrow streams or materialize every input
+as a CTE. Sirius drives bounded scan tasks and handles repeated table reads.
+The same strict fragment executor runs the whole SQL plan without CPU fallback.
+
+Prepare Parquet from seekdb data first. On the currently pinned seekdb build,
+server-side `SELECT ... INTO OUTFILE ... FORMAT=(TYPE='CSV', COMPRESSION='ZSTD',
+...) SINGLE=FALSE` supports parallel compressed export; direct Parquet export is
+not implemented. Convert staged CSV with explicit SQL types, validate row counts
+and query results, then remove the CSV staging. Keep all table exports in one
+repeatable-read transaction and record source database, schema, row counts,
+snapshot time, file sizes and mtimes in a manifest. Reserve disk space for both
+conversion staging and GPU spill; stop the export/conversion before exhausting it.
+
+```python
+backend = QueryBackend("/absolute/path/libseekdb_sirius_bridge.so")
+# Every file must be a validated, immutable export from the intended seekdb snapshot.
+backend.pin_snapshot("lineitem", "/absolute/path/snapshot/lineitem.parquet")
+# Start query-only timing after pin_snapshot returns.
+result = backend.query_snapshot("SELECT sum(l_quantity) FROM lineitem")
+```
+
+Pins live until the engine process exits. A name cannot be overwritten. Keep the
+files immutable and present throughout that lifetime. Compression requires a
+matching `compression.input_plan_dir` in the Sirius configuration; requesting
+compression alone does not guarantee every table/column is compressed. Use the
+Sirius log to verify compression and pinned-entry assignment.
+
+Report seekdb export, conversion and pin times separately from query timings.
+Query timings include SQL planning, GPU execution and Arrow result collection.
+This measures computation over a seekdb-derived analytical snapshot, not live
+seekdb scan/transfer latency or a native seekdb GPU physical operator. Committed
+changes after snapshot creation are absent until a new snapshot is prepared.
+
 ## Boundaries and next work
 
-- This is not yet an SF500 path: the fragment API requires every input to close
+- The live Arrow path is not yet an SF500 path: it requires every input to close
   before execution. Total decoded Arrow input is limited to 512 MiB, with a
   128 MiB batch limit. This is an input budget, not a bound on join intermediates
   or result size. Keep datasets/results small and configure the GPU memory pool.
-- All columns are currently fetched and converted through Python. This proves
-  execution coverage, not a speedup. There is no persistent pinned-input cache.
+- The live Arrow path fetches and converts all columns through Python. Its input
+  lifetime is one query; the immutable snapshot path above has reusable host pins.
 - SQL uses DuckDB expression, collation, date and decimal rules. TPC-H agreement
   does not establish general MySQL compatibility. Unsigned and complex input
   types are rejected. Use trusted SELECTs; this local API is not an SQL sandbox.

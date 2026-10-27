@@ -41,6 +41,39 @@ class QueryBackend:
                                 ct.c_size_t, Consumer, ct.c_void_p, ct.c_void_p, ct.c_size_t]
         self.execute.restype = ct.c_int
 
+    def pin_snapshot(self, name, path):
+        fn = self.library.seekdb_sirius_pin_snapshot_v1
+        fn.argtypes = [ct.c_char_p, ct.c_char_p, ct.c_void_p, ct.c_size_t]
+        fn.restype = ct.c_int
+        error = ct.create_string_buffer(4096)
+        if fn(name.encode(), str(path).encode(), error, len(error)):
+            raise RuntimeError(error.value.decode(errors="replace"))
+
+    def query_snapshot(self, sql):
+        fn = self.library.seekdb_sirius_query_snapshot_v1
+        fn.argtypes = [ct.c_char_p, ct.c_size_t, Consumer, ct.c_void_p, ct.c_void_p, ct.c_size_t]
+        fn.restype = ct.c_int
+        result, errors = [], []
+
+        @Consumer
+        def consume(pointer, _):
+            try:
+                with pa.RecordBatchReader._import_from_c(ct.addressof(pointer.contents)) as reader:
+                    result.append(reader.read_all())
+                return 0
+            except BaseException as error:
+                errors.append(error)
+                return 1
+
+        error = ct.create_string_buffer(4096)
+        encoded = sql.encode()
+        status = fn(encoded, len(encoded), consume, None, error, len(error))
+        if errors:
+            raise errors[0]
+        if status:
+            raise RuntimeError(error.value.decode(errors="replace"))
+        return result[0]
+
     def query(self, sql, inputs):
         """inputs: {name: (RecordBatchReader, estimated_rows)}; consumes readers."""
         if not 1 <= len(inputs) <= 64:

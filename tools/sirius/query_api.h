@@ -16,3 +16,11 @@ using SeekdbSiriusResultV1 = int (*)(ArrowArrayStream *, void *);
 extern "C" int seekdb_sirius_execute_query_v1(
     const char *sql, size_t sql_size, SeekdbSiriusTableV1 *tables, size_t count,
     SeekdbSiriusResultV1 consume, void *user, char *error, size_t error_capacity) noexcept;
+
+// Pins an immutable local Parquet snapshot in Sirius's host tier. Snapshot
+// creation/provenance and immutability are the caller's responsibility. The
+// same serialized engine thread owns pins and query execution. No CPU fallback.
+extern "C" int seekdb_sirius_pin_snapshot_v1(const char *name, const char *path,
+    char *error, size_t error_capacity) noexcept;
+extern "C" int seekdb_sirius_query_snapshot_v1(const char *sql, size_t sql_size,
+    SeekdbSiriusResultV1 consume, void *user, char *error, size_t error_capacity) noexcept;
