@@ -24,6 +24,8 @@ in [PATH_COMPARISON.md](PATH_COMPARISON.md). Headline query timings exclude
 pin/setup; preparation costs are recorded separately in its appendix.
 An optional double-buffer native receive path and its measured live-query
 improvement are documented in [PREFETCH.md](PREFETCH.md).
+Multi-GPU Arrow placement, bounded larger fragments, and the SF500 memory-budget
+comparison are documented in [MULTIGPU.md](MULTIGPU.md).
 
 The first working integration uses **explicit Parquet snapshots**:
 

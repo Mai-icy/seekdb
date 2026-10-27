@@ -27,7 +27,8 @@ class ResidentInput:
                 if end > len(self.storage):
                     raise MemoryError('Resident benchmark input capacity exceeded')
                 destination = self.storage[start:end]
-                ct.memmove(ct.addressof(ct.c_char.from_buffer(destination)), buffer.address, buffer.size)
+                if buffer.size:
+                    ct.memmove(ct.addressof(ct.c_char.from_buffer(destination)), buffer.address, buffer.size)
                 buffers.append(pa.py_buffer(destination))
                 self.used = end
             arrays.append(pa.Array.from_buffers(array.type, len(array), buffers, null_count=array.null_count))
@@ -62,6 +63,7 @@ class RecordingBackend:
         self.cache = cache
         self.input_buffer = None
         self.native_chunk_bytes = 128 * 1024**2
+        self.native_fragment_bytes = getattr(backend, 'native_fragment_bytes', 512 * 1024**2)
         self.capture = None
         self.tokens = {}
         self.events = []

@@ -1,0 +1,124 @@
+{"status": "passed", "checks": ["sum_count_null", "empty_global", "zero_length_batch", "scan", "empty_scan", "empty_group", "decimal_sum", "filter_all_rows", "all_null_sum", "multiple_batches_and_offsets", "invalid_plan_schema_recovery", "malformed_batch_disconnect_recovery", "live_empty", "live_insert", "uncommitted_invisible", "committed_update", "delete_visible", "statement_snapshot_across_batches"]}
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=168 prefetch=True
+native aggregate: rows=4 groups=3 chunks=1 frame_mib=64 max_batch_bytes=70 prefetch=True
+native aggregate: rows=0 groups=0 chunks=1 frame_mib=64 max_batch_bytes=0 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=45 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=4 groups=2 chunks=1 frame_mib=64 max_batch_bytes=70 prefetch=True
+{"status": "passed", "checks": ["nullable_group_sum_count", "two_keys_multiple_sums_reordered", "scan_filter", "empty_input", "having_order_limit", "group_only", "count_only", "unsupported_count_column_cpu", "unsupported_distinct_cpu", "unsupported_integer_sum_cpu", "scalar_aggregate_cpu", "correlated_rescan", "uncommitted_invisible", "committed_update_visible", "own_transaction_and_rollback", "delete_visible"]}
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+{"status": "passed", "cancellation_seconds": 0.0019378913566470146, "error": ["OperationalError(1317, 'Query execution was interrupted')"], "cpu_connection_recovered": true, "full_gpu_query_after_cancel_verified": true}
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+{"diagnostic_begin": "sum_count", "mode": "live"}
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=979 input_us=171690 copy_us=7791 run_us=5589 result_us=95 total_us=186155
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1606 input_us=135768 copy_us=7739 run_us=5693 result_us=68 total_us=150893
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1270 input_us=130711 copy_us=7805 run_us=4571 result_us=71 total_us=144441
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1316 input_us=133378 copy_us=7727 run_us=5640 result_us=69 total_us=148144
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1300 input_us=140833 copy_us=7799 run_us=5836 result_us=80 total_us=155867
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1310 input_us=123597 copy_us=7714 run_us=5566 result_us=80 total_us=138282
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=434600 bytes=7062250
+sirius stream profile: rows=7891140 batches=3 build_us=1349 input_us=83963 copy_us=5583 run_us=5287 result_us=70 total_us=96265
+native aggregate: rows=75000000 groups=25 chunks=7 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+{"diagnostic_end": "sum_count", "mode": "live"}
+{"diagnostic_begin": "sum_count", "mode": "resident"}
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1314 input_us=37 copy_us=7316 run_us=4884 result_us=68 total_us=13624
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1078 input_us=33 copy_us=7313 run_us=4880 result_us=70 total_us=13379
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1095 input_us=36 copy_us=7311 run_us=4433 result_us=47 total_us=12936
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1032 input_us=36 copy_us=7310 run_us=5008 result_us=59 total_us=13449
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1014 input_us=34 copy_us=7315 run_us=5514 result_us=59 total_us=13941
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius stream profile: rows=11184810 batches=3 build_us=1017 input_us=34 copy_us=7327 run_us=4324 result_us=59 total_us=12766
+sirius arrow placement: device=0 rows=3728270 bytes=60584388
+sirius arrow placement: device=1 rows=3728270 bytes=60584388
+sirius arrow placement: device=0 rows=434600 bytes=7062250
+sirius stream profile: rows=7891140 batches=3 build_us=1074 input_us=38 copy_us=5239 run_us=4705 result_us=47 total_us=11107
+{"diagnostic_end": "sum_count", "mode": "resident"}
+{"case": "sum_count", "medians": {"cpu8": 0.3855398101732135, "live": 1.1960191358812153, "resident": 0.09079815028235316}}
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+{"diagnostic_begin": "count", "mode": "live"}
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius arrow placement: device=1 rows=7456540 bytes=60584388
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius stream profile: rows=22369620 batches=3 build_us=1582 input_us=282880 copy_us=7880 run_us=5124 result_us=67 total_us=297554
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius arrow placement: device=1 rows=7456540 bytes=60584388
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius stream profile: rows=22369620 batches=3 build_us=1176 input_us=194273 copy_us=7753 run_us=5407 result_us=57 total_us=208680
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius arrow placement: device=1 rows=7456540 bytes=60584388
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius stream profile: rows=22369620 batches=3 build_us=1289 input_us=238150 copy_us=7783 run_us=5097 result_us=66 total_us=252401
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius arrow placement: device=1 rows=434600 bytes=3531125
+sirius stream profile: rows=7891140 batches=2 build_us=1167 input_us=86737 copy_us=2836 run_us=4908 result_us=62 total_us=95717
+native aggregate: rows=75000000 groups=25 chunks=4 frame_mib=64 max_batch_bytes=60584392 prefetch=True
+{"diagnostic_end": "count", "mode": "live"}
+{"diagnostic_begin": "count", "mode": "resident"}
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius arrow placement: device=1 rows=7456540 bytes=60584388
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius stream profile: rows=22369620 batches=3 build_us=1359 input_us=34 copy_us=7295 run_us=4411 result_us=45 total_us=13150
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius arrow placement: device=1 rows=7456540 bytes=60584388
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius stream profile: rows=22369620 batches=3 build_us=989 input_us=33 copy_us=7300 run_us=3934 result_us=57 total_us=12319
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius arrow placement: device=1 rows=7456540 bytes=60584388
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius stream profile: rows=22369620 batches=3 build_us=941 input_us=30 copy_us=7288 run_us=4032 result_us=54 total_us=12348
+sirius arrow placement: device=0 rows=7456540 bytes=60584388
+sirius arrow placement: device=1 rows=434600 bytes=3531125
+sirius stream profile: rows=7891140 batches=2 build_us=910 input_us=29 copy_us=2653 run_us=3808 result_us=92 total_us=7495
+{"diagnostic_end": "count", "mode": "resident"}
+{"case": "count", "medians": {"cpu8": 0.3408145238645375, "live": 0.7868715347722173, "resident": 0.04963307408615947}}

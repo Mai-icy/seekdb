@@ -51,7 +51,14 @@ def build(source, build_dir, output, patch_only=False):
   }
 """)
     original = (source / "src/sirius_ffi.cpp").read_text()
-    includes = '#include <arrow/c/abi.h>\n#include <cudf/interop.hpp>\n#include "data/data_batch_utils.hpp"\n'
+    includes = ('#include <arrow/c/abi.h>\n#include <cudf/interop.hpp>\n'
+                '#include <rmm/cuda_device.hpp>\n#include <cstdio>\n#include <cstdlib>\n'
+                '#include "data/data_batch_utils.hpp"\n')
+    state_marker = '  Context::Impl& ctx;'
+    assert original.count(state_marker) == 1
+    original = original.replace(state_marker, state_marker +
+        '\n  // Per-fragment input placement; calls are serialized by the embedder.\n'
+        '  std::size_t arrow_batch_index{0};\n')
     marker = "std::size_t Fragment::relay_from("
     assert original.count(marker) == 1
     body = (Path(__file__).parent / "arrow_input/fragment_arrow.cpp.inc").read_text()

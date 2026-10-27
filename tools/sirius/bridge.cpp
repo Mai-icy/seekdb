@@ -58,6 +58,17 @@ public:
       const int64_t started_us = clock_us();
       int64_t input_us = 0, copy_us = 0, rows = 0, batches = 0;
       struct StreamGuard { ArrowArrayStream &s; ~StreamGuard() { if (s.release) s.release(&s); } } guard{input};
+      // Larger fragments amortize planning/merge work when VRAM permits. Keep
+      // the existing bound unless the operator explicitly opts into 2 GiB.
+      const char *limit_env = std::getenv("SEEKDB_SIRIUS_FRAGMENT_LIMIT_MIB");
+      size_t fragment_limit = 512 * 1024 * 1024;
+      if (limit_env) {
+        if (std::string(limit_env) == "2048") {
+          fragment_limit = size_t{2048} * 1024 * 1024;
+        } else if (std::string(limit_env) != "512") {
+          throw std::invalid_argument("SEEKDB_SIRIUS_FRAGMENT_LIMIT_MIB must be 512 or 2048");
+        }
+      }
       if (!input.release || !input.get_schema || !input.get_next) {
         throw std::invalid_argument("Invalid input Arrow stream");
       }
@@ -99,8 +110,8 @@ public:
         }
         const size_t bytes = (static_cast<size_t>(batch.length) * 8 + (batch.length + 7) / 8)
                              * schema.n_children;
-        if (bytes > 128 * 1024 * 1024 || input_bytes > 512 * 1024 * 1024 - bytes) {
-          throw std::invalid_argument("Live input exceeds 128 MiB per batch or 512 MiB per fragment");
+        if (bytes > 128 * 1024 * 1024 || input_bytes > fragment_limit - bytes) {
+          throw std::invalid_argument("Live input exceeds 128 MiB per batch or configured fragment limit");
         }
         input_bytes += bytes;
         const int64_t copy_start = clock_us();

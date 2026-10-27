@@ -1,0 +1,38 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /data/wuhao.xwh/seekdb-sirius-multigpu-20261027/bridge
+[  8%] Building CXX object CMakeFiles/sirius_client.dir/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/src/sql/engine/sirius/sirius_client.cpp.o
+[ 16%] Building CXX object CMakeFiles/sirius_aggregate_client.dir/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/src/sql/engine/sirius/sirius_aggregate_client.cpp.o
+[ 25%] Building CXX object CMakeFiles/seekdb_sirius_proxy.dir/proxy.cpp.o
+[ 33%] Building CXX object CMakeFiles/sirius_arrow_json.dir/arrow_json.cpp.o
+[ 41%] Linking CXX static library libsirius_aggregate_client.a
+[ 41%] Built target sirius_aggregate_client
+[ 50%] Linking CXX shared library libseekdb_sirius_proxy.so
+[ 58%] Linking CXX static library libsirius_client.a
+[ 58%] Built target sirius_client
+[ 66%] Building CXX object CMakeFiles/sirius_execute_plan.dir/execute_plan.cpp.o
+[ 66%] Built target seekdb_sirius_proxy
+[ 75%] Linking CXX static library libsirius_arrow_json.a
+[ 75%] Built target sirius_arrow_json
+[ 83%] Building CXX object CMakeFiles/seekdb_sirius_bridge.dir/bridge.cpp.o
+[ 91%] Linking CXX executable sirius_execute_plan
+[ 91%] Built target sirius_execute_plan
+[100%] Linking CXX shared library libseekdb_sirius_bridge.so
+[100%] Built target seekdb_sirius_bridge

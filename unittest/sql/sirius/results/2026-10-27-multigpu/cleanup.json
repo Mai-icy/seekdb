@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "cli_sidecar_pid": 2004618,
+  "cli_exit": 0,
+  "socket_removed": true,
+  "source_unchanged": true,
+  "source_bytes": 140138786816,
+  "source_mtime_ns": 1791462173336194573,
+  "borrowed_sirius_clean": true,
+  "borrowed_library_sha256": "cf5c490ac32f3cf7169bea8011688eedaefb634ee53741a3f475b7d729bd78ae",
+  "gpu_processes_after": "gpu_uuid, pid, used_gpu_memory [MiB]\nGPU-bd542851-d117-1699-7a26-862e3c9fbfb1, 1357411, 14708 MiB\nGPU-ce6b26d2-06c1-38c9-71f3-ea634840bee7, 1384828, 17278 MiB\n",
+  "disk_after": "Filesystem             Size  Used Avail Use% Mounted on\n/dev/mapper/vgob-data  3.1T  2.6T  546G  83% /data\n"
+}

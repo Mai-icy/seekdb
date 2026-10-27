@@ -1,0 +1,715 @@
+{
+  "source": "Actual dual-GPU CLI sidecar telemetry; large HASH_GROUP_BY input tasks",
+  "task_count_by_device": {
+    "1": 10,
+    "0": 11
+  },
+  "input_bytes_by_device": {
+    "1": 605844160,
+    "0": 612906432
+  },
+  "executor_initialization_events": [
+    {
+      "id": "01a17b8b-7ab5-7095-a8ae-2a8eed7b2467",
+      "timestamp": 1793074100917291972,
+      "data": {
+        "seq": 0,
+        "state": {
+          "ExecutorThreadInitializing": {
+            "instance_name": "gpu_pipeline-gpu1-exec-0",
+            "parent_group_id": "01a17b8b-7a95-7769-b6c0-2e1f716643fa",
+            "resource_type_name": "executor_thread"
+          }
+        }
+      }
+    },
+    {
+      "id": "01a17b8b-7ab5-7095-a8ae-2a8fbe837b59",
+      "timestamp": 1793074100917307171,
+      "data": {
+        "seq": 0,
+        "state": {
+          "ExecutorThreadInitializing": {
+            "instance_name": "gpu_pipeline-gpu1-exec-1",
+            "parent_group_id": "01a17b8b-7a95-7769-b6c0-2e1f716643fa",
+            "resource_type_name": "executor_thread"
+          }
+        }
+      }
+    },
+    {
+      "id": "01a17b8b-7ab5-7095-a8ae-2a90dddd4628",
+      "timestamp": 1793074100917889753,
+      "data": {
+        "seq": 0,
+        "state": {
+          "ExecutorThreadInitializing": {
+            "instance_name": "gpu_pipeline-gpu1-exec-3",
+            "parent_group_id": "01a17b8b-7a95-7769-b6c0-2e1f716643fa",
+            "resource_type_name": "executor_thread"
+          }
+        }
+      }
+    },
+    {
+      "id": "01a17b8b-7ab5-7095-a8ae-2a9155de7e40",
+      "timestamp": 1793074100917894740,
+      "data": {
+        "seq": 0,
+        "state": {
+          "ExecutorThreadInitializing": {
+            "instance_name": "gpu_pipeline-gpu1-exec-2",
+            "parent_group_id": "01a17b8b-7a95-7769-b6c0-2e1f716643fa",
+            "resource_type_name": "executor_thread"
+          }
+        }
+      }
+    },
+    {
+      "id": "01a17b8b-7ab6-7389-9173-ddf445bef351",
+      "timestamp": 1793074100918247627,
+      "data": {
+        "seq": 0,
+        "state": {
+          "ExecutorThreadInitializing": {
+            "instance_name": "gpu_pipeline-gpu0-exec-1",
+            "parent_group_id": "01a17b8b-7a95-7769-b6c0-2e1c37843295",
+            "resource_type_name": "executor_thread"
+          }
+        }
+      }
+    },
+    {
+      "id": "01a17b8b-7ab6-7389-9173-ddf5bc4149f9",
+      "timestamp": 1793074100918269518,
+      "data": {
+        "seq": 0,
+        "state": {
+          "ExecutorThreadInitializing": {
+            "instance_name": "gpu_pipeline-gpu0-exec-0",
+            "parent_group_id": "01a17b8b-7a95-7769-b6c0-2e1c37843295",
+            "resource_type_name": "executor_thread"
+          }
+        }
+      }
+    },
+    {
+      "id": "01a17b8b-7ab6-7389-9173-ddf642549980",
+      "timestamp": 1793074100918293094,
+      "data": {
+        "seq": 0,
+        "state": {
+          "ExecutorThreadInitializing": {
+            "instance_name": "gpu_pipeline-gpu0-exec-2",
+            "parent_group_id": "01a17b8b-7a95-7769-b6c0-2e1c37843295",
+            "resource_type_name": "executor_thread"
+          }
+        }
+      }
+    },
+    {
+      "id": "01a17b8b-7ab6-7389-9173-ddf75a39dde0",
+      "timestamp": 1793074100918408540,
+      "data": {
+        "seq": 0,
+        "state": {
+          "ExecutorThreadInitializing": {
+            "instance_name": "gpu_pipeline-gpu0-exec-3",
+            "parent_group_id": "01a17b8b-7a95-7769-b6c0-2e1c37843295",
+            "resource_type_name": "executor_thread"
+          }
+        }
+      }
+    }
+  ],
+  "computing_events": [
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccb2aa4d5e94",
+        "timestamp": 1793074102940671994,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a8fbe837b59",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 121168832
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccbc589f74bb",
+        "timestamp": 1793074102940696681,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf5bc4149f9",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 121168832
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccb8c947f15f",
+        "timestamp": 1793074102940697558,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf75a39dde0",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 121168832
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccb67dc0c5b6",
+        "timestamp": 1793074102940707707,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a8eed7b2467",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 121168832
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccbaf4740e01",
+        "timestamp": 1793074102940712257,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a9155de7e40",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 121168832
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccbe9c2a7b30",
+        "timestamp": 1793074102940719999,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a90dddd4628",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 121168832
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccb4288d40fe",
+        "timestamp": 1793074102940745370,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf642549980",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 121168832
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccb0eded74b9",
+        "timestamp": 1793074102940749282,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf445bef351",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 121168832
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccc0a488ea7f",
+        "timestamp": 1793074102943655150,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf75a39dde0",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 74680576
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccc4506190b5",
+        "timestamp": 1793074102943875931,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf642549980",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 74680576
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccc8e2c27480",
+        "timestamp": 1793074102944262629,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf5bc4149f9",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 74680576
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-cccc0bd326e4",
+        "timestamp": 1793074102944320047,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf445bef351",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 74680576
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccd0ca76409f",
+        "timestamp": 1793074102945889190,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf642549980",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 74680576
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccd46088d7be",
+        "timestamp": 1793074102946213839,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf5bc4149f9",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 74680576
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 0,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccd844aa4d60",
+        "timestamp": 1793074102946728743,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 7062272,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab6-7389-9173-ddf75a39dde0",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e217c343159",
+                "capacity": {
+                  "capacity_bytes": 8705448
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccc29f1e0714",
+        "timestamp": 1793074102953541970,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a9155de7e40",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 74703014
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccc66a82bbf9",
+        "timestamp": 1793074102953550264,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a90dddd4628",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 74701329
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccca7dfc689b",
+        "timestamp": 1793074102953562228,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a8fbe837b59",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 74701329
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccce449460e9",
+        "timestamp": 1793074102954219721,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a8eed7b2467",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 74699879
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccd256e4de18",
+        "timestamp": 1793074102955506715,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a90dddd4628",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 74698619
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gpu": 1,
+      "event": {
+        "id": "01a17b8b-829c-71d9-b89e-ccd6f18caefd",
+        "timestamp": 1793074102955707148,
+        "data": {
+          "seq": 7,
+          "state": {
+            "Computing": {
+              "instance_name": "HASH_GROUP_BY(1)",
+              "current_operator_id": 1,
+              "input_bytes": 60584416,
+              "peak_allocated_bytes": 0,
+              "executor_thread": {
+                "resource_id": "01a17b8b-7ab5-7095-a8ae-2a9155de7e40",
+                "capacity": null
+              },
+              "reservation": {
+                "resource_id": "01a17b8b-7a95-7769-b6c0-2e225a116f2d",
+                "capacity": {
+                  "capacity_bytes": 74697513
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

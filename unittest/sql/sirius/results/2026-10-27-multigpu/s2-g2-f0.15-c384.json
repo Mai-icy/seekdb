@@ -1,0 +1,1059 @@
+{
+  "provenance": {
+    "started_utc": "2026-10-27T03:52:33.744382+00:00",
+    "pid": 1855411,
+    "host": "ob-ai-115",
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "cuda_visible_devices": "0,1",
+    "duckdb_version": "1.5.6",
+    "binaries": {
+      "library": {
+        "path": "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build-sirius-arrow/libseekdb_sirius_bridge.so",
+        "sha256": "6271cf2a1ec83e80f6287de45df8df7691cb7102607878701dbacefa3e6ea714"
+      }
+    },
+    "config_path": "/data/wuhao.xwh/seekdb-sirius-multigpu-20261027/g2-0.15.yaml",
+    "config": "sirius:\n  topology:\n    num_gpus: 2\n  memory:\n    gpu:\n      usage_limit_fraction: 0.15\n      reservation_limit_fraction: 1.0\n    host:\n      capacity_bytes: 8000000000\n      initial_number_pools: 4\n      pool_size: 128\n      block_size: 1048576\n    disk:\n      capacity_bytes: 20000000000\n      downgrade_root_dirs: \"/data/wuhao.xwh/seekdb-sirius-multigpu-20261027/spill\"\n  executor:\n    pipeline:\n      num_threads: 4\n    task_creator:\n      num_threads: 2\n    downgrade:\n      num_threads: 1\n      monitor_period: 10ms\n  operator_params:\n    scan_task_batch_size: 67108864\n    max_sort_partition_bytes: 268435456\n    hash_partition_bytes: 134217728\n    concat_batch_bytes: 134217728\n    max_build_hash_table_bytes: 134217728\n",
+    "gpu_processes_at_start": "gpu_uuid, pid, process_name, used_gpu_memory [MiB]\nGPU-bd542851-d117-1699-7a26-862e3c9fbfb1, 1357411, VLLM::EngineCore, 14708 MiB\nGPU-ce6b26d2-06c1-38c9-71f3-ea634840bee7, 1384828, VLLM::EngineCore, 17278 MiB\n"
+  },
+  "cases": {
+    "sum_count": {
+      "first_seconds": {
+        "cpu8": 0.3729052469134331,
+        "live": 0.9974675923585892,
+        "resident": 0.0726264719851315
+      },
+      "seconds": {
+        "cpu8": [
+          0.3604234796948731,
+          0.3704208880662918,
+          0.362686341162771,
+          0.3834026218391955,
+          0.3755963142029941,
+          0.37025786424055696,
+          0.3742290837690234,
+          0.3664758959785104,
+          0.37249309197068214,
+          0.3741035177372396
+        ],
+        "live": [
+          0.9719284689053893,
+          1.0112811899743974,
+          0.9750096462666988,
+          1.0205987887457013,
+          1.1752547123469412,
+          0.9585768766701221,
+          0.9838601560331881,
+          0.9747996176593006,
+          1.2504290896467865,
+          0.9565936140716076
+        ],
+        "resident": [
+          0.07313731638714671,
+          0.07140047289431095,
+          0.07568860100582242,
+          0.07258419087156653,
+          0.07589245680719614,
+          0.07535777008160949,
+          0.07218571892008185,
+          0.07211711909621954,
+          0.07728027319535613,
+          0.07666167989373207
+        ]
+      },
+      "order": [
+        [
+          "cpu8",
+          "live",
+          "resident"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "cpu8",
+          "resident",
+          "live"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "cpu8",
+          "live",
+          "resident"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "cpu8",
+          "live",
+          "resident"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ]
+      ],
+      "medians": {
+        "cpu8": 0.371456990018487,
+        "live": 0.9794349011499435,
+        "resident": 0.0742475432343781
+      },
+      "capture_seconds": 1.0099269119091332,
+      "pinned_host_bytes": 1218751232,
+      "gpu_events": [
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "capture",
+              "rows": 26097890
+            },
+            {
+              "mode": "capture",
+              "rows": 26097890
+            },
+            {
+              "mode": "capture",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 26097890
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 26097890
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        }
+      ]
+    },
+    "count": {
+      "first_seconds": {
+        "cpu8": 0.3268338209018111,
+        "live": 0.7378879128955305,
+        "resident": 0.03928064741194248
+      },
+      "seconds": {
+        "cpu8": [
+          0.3404138367623091,
+          0.3468335843645036,
+          0.34552669199183583,
+          0.3341631698422134,
+          0.332505872938782,
+          0.3435039590112865,
+          0.3374634347856045,
+          0.3344931248575449,
+          0.3445120300166309,
+          0.3579057352617383
+        ],
+        "live": [
+          0.8437489699572325,
+          0.6988188507966697,
+          0.9434162098914385,
+          0.7529806769452989,
+          0.7472952008247375,
+          0.7203414901159704,
+          0.9527642270550132,
+          0.899202517233789,
+          0.7494510468095541,
+          0.7314852401614189
+        ],
+        "resident": [
+          0.038716313894838095,
+          0.03986873431131244,
+          0.0383371040225029,
+          0.041743733920156956,
+          0.040931846015155315,
+          0.0415690946392715,
+          0.03948403708636761,
+          0.03742043720558286,
+          0.04118326725438237,
+          0.03829726483672857
+        ]
+      },
+      "order": [
+        [
+          "cpu8",
+          "resident",
+          "live"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ],
+        [
+          "live",
+          "resident",
+          "cpu8"
+        ],
+        [
+          "cpu8",
+          "resident",
+          "live"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "resident",
+          "cpu8",
+          "live"
+        ],
+        [
+          "live",
+          "resident",
+          "cpu8"
+        ],
+        [
+          "live",
+          "resident",
+          "cpu8"
+        ],
+        [
+          "resident",
+          "cpu8",
+          "live"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ]
+      ],
+      "medians": {
+        "cpu8": 0.3419588978867978,
+        "live": 0.7512158618774265,
+        "resident": 0.03967638569884002
+      },
+      "capture_seconds": 0.869037561584264,
+      "pinned_host_bytes": 1828126848,
+      "gpu_events": [
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "capture",
+              "rows": 52195780
+            },
+            {
+              "mode": "capture",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 52195780
+            },
+            {
+              "mode": "live",
+              "rows": 22804220
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 52195780
+            },
+            {
+              "mode": "resident",
+              "rows": 22804220
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "rows": 75000000,
+  "fragment_target_mib": 384,
+  "frame_mib": 64,
+  "repeats": 10,
+  "seed": 20261029,
+  "timing": "TCP SQL execute/fetch; pin, capture, startup and warmup excluded",
+  "resident_scope": "Immutable benchmark snapshot in pinned HOST memory; H2D and aggregation repeated on every call",
+  "pin_allocation_seconds": 0.7633867883123457,
+  "startup_warmup_seconds": 0.5995714338496327,
+  "fragment_limit_bytes": 536870912,
+  "status": "passed"
+}

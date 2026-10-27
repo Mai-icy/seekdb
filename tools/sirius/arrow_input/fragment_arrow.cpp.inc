@@ -35,11 +35,15 @@ void Fragment::push_arrow(std::uint64_t stream_id, std::uintptr_t schema_addr,
       throw std::invalid_argument("push_arrow: input columns must match declared BIGINT/DOUBLE schema");
     }
   }
-  auto *space = impl_->ctx.context->get_memory_manager().get_memory_space(cucascade::memory::Tier::GPU, 0);
-  if (!space) { throw std::runtime_error("push_arrow: configured GPU 0 is unavailable"); }
-  if (cudaSetDevice(space->get_device_id()) != cudaSuccess) {
-    throw std::runtime_error("push_arrow: cannot select GPU");
-  }
+  auto &manager = impl_->ctx.context->get_memory_manager();
+  const auto spaces = manager.get_memory_spaces_for_tier(cucascade::memory::Tier::GPU);
+  if (spaces.empty()) { throw std::runtime_error("push_arrow: no configured GPU"); }
+  const auto *target = spaces[impl_->arrow_batch_index % spaces.size()];
+  auto *space = manager.get_memory_space(cucascade::memory::Tier::GPU, target->get_device_id());
+  if (!space) { throw std::runtime_error("push_arrow: configured GPU is unavailable"); }
+  // Respect CUDA_VISIBLE_DEVICES and the actual configured device IDs. The
+  // batch carries its memory-space locality into Sirius's multi-GPU scheduler.
+  rmm::cuda_set_device_raii selected{rmm::cuda_device_id{space->get_device_id()}};
   auto stream = space->acquire_stream();
   ArrowDeviceArray host{};
   host.array = *array;
@@ -48,4 +52,11 @@ void Fragment::push_arrow(std::uint64_t stream_id, std::uintptr_t schema_addr,
   auto table = cudf::from_arrow_host(schema, &host, stream);
   stream.sync();
   impl_->fragment->push_input_batch(stream_id, sirius::make_data_batch(std::move(table), *space, stream, {}));
+  ++impl_->arrow_batch_index;
+  const char *profile = std::getenv("SEEKDB_SIRIUS_PROFILE");
+  if (profile && std::string(profile) == "1") {
+    std::fprintf(stderr, "sirius arrow placement: device=%d rows=%lld bytes=%llu\n",
+        space->get_device_id(), static_cast<long long>(array->length),
+        static_cast<unsigned long long>(decoded_bytes));
+  }
 }

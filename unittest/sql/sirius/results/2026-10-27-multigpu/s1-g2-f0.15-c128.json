@@ -1,0 +1,1658 @@
+{
+  "provenance": {
+    "started_utc": "2026-10-27T03:50:01.597958+00:00",
+    "pid": 1827238,
+    "host": "ob-ai-115",
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "cuda_visible_devices": "0,1",
+    "duckdb_version": "1.5.6",
+    "binaries": {
+      "library": {
+        "path": "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/build-sirius-arrow/libseekdb_sirius_bridge.so",
+        "sha256": "6271cf2a1ec83e80f6287de45df8df7691cb7102607878701dbacefa3e6ea714"
+      }
+    },
+    "config_path": "/data/wuhao.xwh/seekdb-sirius-multigpu-20261027/g2-0.15.yaml",
+    "config": "sirius:\n  topology:\n    num_gpus: 2\n  memory:\n    gpu:\n      usage_limit_fraction: 0.15\n      reservation_limit_fraction: 1.0\n    host:\n      capacity_bytes: 8000000000\n      initial_number_pools: 4\n      pool_size: 128\n      block_size: 1048576\n    disk:\n      capacity_bytes: 20000000000\n      downgrade_root_dirs: \"/data/wuhao.xwh/seekdb-sirius-multigpu-20261027/spill\"\n  executor:\n    pipeline:\n      num_threads: 4\n    task_creator:\n      num_threads: 2\n    downgrade:\n      num_threads: 1\n      monitor_period: 10ms\n  operator_params:\n    scan_task_batch_size: 67108864\n    max_sort_partition_bytes: 268435456\n    hash_partition_bytes: 134217728\n    concat_batch_bytes: 134217728\n    max_build_hash_table_bytes: 134217728\n",
+    "gpu_processes_at_start": "gpu_uuid, pid, process_name, used_gpu_memory [MiB]\nGPU-bd542851-d117-1699-7a26-862e3c9fbfb1, 1357411, VLLM::EngineCore, 14708 MiB\nGPU-ce6b26d2-06c1-38c9-71f3-ea634840bee7, 1384828, VLLM::EngineCore, 17278 MiB\n"
+  },
+  "cases": {
+    "sum_count": {
+      "first_seconds": {
+        "cpu8": 0.3892601919360459,
+        "live": 1.0122921918518841,
+        "resident": 0.0982858007773757
+      },
+      "seconds": {
+        "cpu8": [
+          0.3706747959367931,
+          0.3785014390014112,
+          0.3702463679946959,
+          0.3852669079788029,
+          0.38522660080343485,
+          0.38811220694333315,
+          0.39694689493626356,
+          0.3840871420688927,
+          0.38854967011138797,
+          0.38613015972077847
+        ],
+        "live": [
+          0.9775888230651617,
+          1.2705705408006907,
+          1.2120914570987225,
+          1.0158049906603992,
+          1.1755973338149488,
+          1.094371453858912,
+          0.9749662419781089,
+          1.2306866557337344,
+          1.0810706024058163,
+          0.9943537046201527
+        ],
+        "resident": [
+          0.09675140213221312,
+          0.09758976195007563,
+          0.0856743692420423,
+          0.0933510959148407,
+          0.08996571972966194,
+          0.0904651558957994,
+          0.10060149384662509,
+          0.09815528197214007,
+          0.10179119789972901,
+          0.08974074432626367
+        ]
+      },
+      "order": [
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ],
+        [
+          "resident",
+          "cpu8",
+          "live"
+        ],
+        [
+          "resident",
+          "cpu8",
+          "live"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ]
+      ],
+      "medians": {
+        "cpu8": 0.3852467543911189,
+        "live": 1.0877210281323642,
+        "resident": 0.09505124902352691
+      },
+      "capture_seconds": 1.0781392930075526,
+      "pinned_host_bytes": 1218751232,
+      "gpu_events": [
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 11184810
+            },
+            {
+              "mode": "capture",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 11184810
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 11184810
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        }
+      ]
+    },
+    "count": {
+      "first_seconds": {
+        "cpu8": 0.3454877701587975,
+        "live": 0.8928011110983789,
+        "resident": 0.04762888327240944
+      },
+      "seconds": {
+        "cpu8": [
+          0.34391937917098403,
+          0.3414911152794957,
+          0.3433131263591349,
+          0.34052289137616754,
+          0.3649409278295934,
+          0.3538648309186101,
+          0.3558257967233658,
+          0.35696784500032663,
+          0.34681538585573435,
+          0.3373480220325291
+        ],
+        "live": [
+          0.7559029562398791,
+          0.7675101589411497,
+          0.9314063391648233,
+          0.8315868629142642,
+          0.7690439950674772,
+          0.7191047668457031,
+          0.8116632928140461,
+          0.8461335240863264,
+          0.6863511437550187,
+          0.7323494791053236
+        ],
+        "resident": [
+          0.05016979714855552,
+          0.04947695089504123,
+          0.04741485230624676,
+          0.04956085002049804,
+          0.04892592877149582,
+          0.051780207082629204,
+          0.05133743677288294,
+          0.050350789912045,
+          0.04872862622141838,
+          0.05194245371967554
+        ]
+      },
+      "order": [
+        [
+          "cpu8",
+          "resident",
+          "live"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "live",
+          "resident",
+          "cpu8"
+        ],
+        [
+          "live",
+          "resident",
+          "cpu8"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "live",
+          "resident",
+          "cpu8"
+        ],
+        [
+          "resident",
+          "live",
+          "cpu8"
+        ],
+        [
+          "live",
+          "cpu8",
+          "resident"
+        ]
+      ],
+      "medians": {
+        "cpu8": 0.3453673825133592,
+        "live": 0.7682770770043135,
+        "resident": 0.04986532358452678
+      },
+      "capture_seconds": 0.9784715231508017,
+      "pinned_host_bytes": 1828126848,
+      "gpu_events": [
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "capture",
+              "rows": 22369620
+            },
+            {
+              "mode": "capture",
+              "rows": 22369620
+            },
+            {
+              "mode": "capture",
+              "rows": 22369620
+            },
+            {
+              "mode": "capture",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "live",
+          "chunks": [
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 22369620
+            },
+            {
+              "mode": "live",
+              "rows": 7891140
+            }
+          ]
+        },
+        {
+          "mode": "resident",
+          "chunks": [
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 22369620
+            },
+            {
+              "mode": "resident",
+              "rows": 7891140
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "rows": 75000000,
+  "fragment_target_mib": 128,
+  "frame_mib": 64,
+  "repeats": 10,
+  "seed": 20261028,
+  "timing": "TCP SQL execute/fetch; pin, capture, startup and warmup excluded",
+  "resident_scope": "Immutable benchmark snapshot in pinned HOST memory; H2D and aggregation repeated on every call",
+  "pin_allocation_seconds": 0.7758198990486562,
+  "startup_warmup_seconds": 0.6136451181955636,
+  "status": "passed"
+}

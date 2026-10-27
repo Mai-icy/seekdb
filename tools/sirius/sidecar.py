@@ -25,6 +25,13 @@ class Api(ct.Structure):
     _fields_ = [("version", ct.c_uint32), ("size", ct.c_uint32), ("execute", EXECUTE)]
 
 
+def native_fragment_limit_bytes():
+    value = os.environ.get('SEEKDB_SIRIUS_FRAGMENT_LIMIT_MIB', '512')
+    if value not in ('512', '2048'):
+        raise ValueError('SEEKDB_SIRIUS_FRAGMENT_LIMIT_MIB must be 512 or 2048')
+    return int(value) * 1024**2
+
+
 class PinnedInput:
     """One process-lifetime CUDA host allocation, reused only after GPU copy ACK."""
     def __init__(self, mib=16):
@@ -35,7 +42,9 @@ class PinnedInput:
         self.runtime.cudaFreeHost.restype = ct.c_int
         self.pointer = ct.c_void_p()
         self.size = mib * 1024 * 1024
-        status = self.runtime.cudaHostAlloc(ct.byref(self.pointer), self.size, 0)
+        # cudaHostAllocPortable: retain pinned-transfer benefits on every
+        # configured device/context when Arrow batches use multiple GPUs.
+        status = self.runtime.cudaHostAlloc(ct.byref(self.pointer), self.size, 1)
         if status:
             raise RuntimeError(f"cudaHostAlloc failed with status {status}")
         self.array = (ct.c_ubyte * self.size).from_address(self.pointer.value)
@@ -53,6 +62,7 @@ class PinnedInput:
 
 class Backend:
     def __init__(self, library):
+        self.native_fragment_bytes = native_fragment_limit_bytes()
         if not Path(library).is_absolute():
             raise ValueError("Backend library path must be absolute")
         self.library = ct.CDLL(library)
@@ -131,6 +141,7 @@ def _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, 
     max_batch_bytes = 0
     ended = False
     chunk_limit = backend.native_chunk_bytes
+    fragment_limit = getattr(backend, 'native_fragment_bytes', 512 * 1024**2)
     columns = groups + sums + count
     def batches():
         nonlocal total_rows, ended, max_batch_bytes
@@ -144,7 +155,7 @@ def _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, 
             mask = (rows + 7) // 8
             size = mask + rows * 8
             total += size * len(schema)
-            if total > 512 * 1024 * 1024:
+            if total > fragment_limit:
                 raise ValueError("Native aggregate input size/budget exceeded")
             max_batch_bytes = max(max_batch_bytes, len(payload))
             # The owned frame buffer backs Arrow directly; no Python row decode.
@@ -275,6 +286,8 @@ def serve(path, library, timeout, host_pin_mib=0, warmup=False, native_chunk_mib
             else:
                 raise ValueError("Sidecar already running")
     backend = Backend(library)
+    if native_chunk_mib < 0 or native_chunk_mib * 1024**2 > native_fragment_limit_bytes() - 128 * 1024**2:
+        raise ValueError('Native chunk target must leave 128 MiB headroom within the fragment budget')
     backend.native_chunk_bytes = native_chunk_mib * 1024 * 1024
     pinned = None
     prefetch_pin = None
@@ -351,8 +364,8 @@ if __name__ == "__main__":
     p.add_argument("--host-pin-mib", type=int, choices=(0, 16, 64, 128), default=0,
                    help="Reuse bounded CUDA-pinned memory for native input; fall back if unavailable")
     p.add_argument("--warmup", action="store_true", help="Initialize GPU operators before accepting queries")
-    p.add_argument("--native-chunk-mib", type=int, choices=(0, 64, 128, 256), default=0,
-                   help="Bound each native GPU fragment and merge SUM/COUNT/groups; 0 keeps the 512 MiB query limit")
+    p.add_argument("--native-chunk-mib", type=int, choices=(0, 64, 128, 256, 384, 1024, 1536), default=0,
+                   help="GPU fragment target; 1024/1536 require SEEKDB_SIRIUS_FRAGMENT_LIMIT_MIB=2048; 0 uses the configured query bound")
     p.add_argument("--native-prefetch", action="store_true",
                    help="Receive ahead into two bounded pinned buffers; ACK after validated reception")
     args = p.parse_args()

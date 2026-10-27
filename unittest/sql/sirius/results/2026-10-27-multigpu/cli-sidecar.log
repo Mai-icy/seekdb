@@ -1,0 +1,52 @@
+ready: /data/wuhao.xwh/seekdb-sirius-20261023/run/sirius.sock host_pin_mib=64 warmup=True native_chunk_mib=1536 native_prefetch=True startup_seconds=0.776517
+request failed: Was not possible to convert binary into Substrait plan
+request failed: Live input requires int64/float64 columns
+request failed: IOError: Sidecar peer disconnected. Detail: Python exception: Traceback (most recent call last):
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/sidecar.py", line 249, in batches
+    kind, payload = receive(sock)
+                    ~~~~~~~^^^^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/wire.py", line 23, in receive
+    header = receive_exact(sock, 5)
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/wire.py", line 17, in receive_exact
+    raise ConnectionError("Sidecar peer disconnected")
+ConnectionError: Sidecar peer disconnected
+
+request failed: Invalid: Expected to read 1718378861 metadata bytes, but only read 15. Detail: Python exception: Traceback (most recent call last):
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/sidecar.py", line 254, in batches
+    batch = pa.ipc.read_record_batch(pa.BufferReader(payload), schema)
+  File "pyarrow/ipc.pxi", line 1490, in pyarrow.lib.read_record_batch
+  File "pyarrow/ipc.pxi", line 1415, in pyarrow.lib.read_message
+    GetResultValue(ReadMessage(c_stream, c_default_memory_pool())))
+  File "pyarrow/error.pxi", line 155, in pyarrow.lib.pyarrow_internal_check_status
+  File "pyarrow/error.pxi", line 92, in pyarrow.lib.check_status
+    raise convert_status(status)
+pyarrow.lib.ArrowInvalid: Expected to read 1718378861 metadata bytes, but only read 15
+
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=168 prefetch=True
+native aggregate: rows=4 groups=3 chunks=1 frame_mib=64 max_batch_bytes=70 prefetch=True
+native aggregate: rows=0 groups=0 chunks=1 frame_mib=64 max_batch_bytes=0 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=45 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=5 groups=3 chunks=1 frame_mib=64 max_batch_bytes=86 prefetch=True
+native aggregate: rows=4 groups=2 chunks=1 frame_mib=64 max_batch_bytes=70 prefetch=True
+request failed: IOError: Sidecar peer disconnected. Detail: Python exception: Traceback (most recent call last):
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/sidecar.py", line 150, in batches
+    kind, payload, slot = frames.get()
+                          ~~~~~~~~~~^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/native_input.py", line 79, in get
+    raise item
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/native_input.py", line 62, in _produce
+    kind, payload = self._read(self.buffers[index])
+                    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/native_input.py", line 40, in _read
+    kind, payload = receive(self.sock, limit=self.frame_limit, storage=storage)
+                    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/wuhao.xwh/seekdb-sirius-20261022/seekdb/tools/sirius/wire.py", line 23, in receive
+    header = receive_exact(sock, 5)
+  File "/data/wuhao.xwh/s
+native aggregate: rows=75000000 groups=25 chunks=1 frame_mib=64 max_batch_bytes=60584392 prefetch=True

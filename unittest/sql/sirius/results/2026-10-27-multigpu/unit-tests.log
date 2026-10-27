@@ -1,0 +1,60 @@
+test_count_only (test_native_chunks.NativeChunks.test_count_only) ... native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=13 prefetch=False
+ok
+test_disabled_chunking_keeps_one_fragment (test_native_chunks.NativeChunks.test_disabled_chunking_keeps_one_fragment) ... native aggregate: rows=2 groups=1 chunks=1 frame_mib=16 max_batch_bytes=22 prefetch=False
+ok
+test_empty_stream (test_native_chunks.NativeChunks.test_empty_stream) ... native aggregate: rows=0 groups=0 chunks=1 frame_mib=16 max_batch_bytes=0 prefetch=False
+ok
+test_group_only_deduplicates (test_native_chunks.NativeChunks.test_group_only_deduplicates) ... native aggregate: rows=3 groups=2 chunks=3 frame_mib=16 max_batch_bytes=21 prefetch=False
+ok
+test_invalid_protocol_frame_bound (test_native_chunks.NativeChunks.test_invalid_protocol_frame_bound) ... ok
+test_merged_result_bound (test_native_chunks.NativeChunks.test_merged_result_bound) ... ok
+test_nullable_sums_groups_and_counts_across_exact_boundaries (test_native_chunks.NativeChunks.test_nullable_sums_groups_and_counts_across_exact_boundaries) ... native aggregate: rows=5 groups=3 chunks=4 frame_mib=16 max_batch_bytes=38 prefetch=False
+ok
+test_small_pin_rejects_large_frame_before_ack (test_native_chunks.NativeChunks.test_small_pin_rejects_large_frame_before_ack) ... ok
+test_sum_overflow_returns_error (test_native_chunks.NativeChunks.test_sum_overflow_returns_error) ... ok
+test_sum_without_count (test_native_chunks.NativeChunks.test_sum_without_count) ... native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=22 prefetch=False
+ok
+test_version_two_64_mib_negotiation (test_native_chunks.NativeChunks.test_version_two_64_mib_negotiation) ... native aggregate: rows=1 groups=1 chunks=2 frame_mib=64 max_batch_bytes=22 prefetch=False
+ok
+test_backend_failure_does_not_recycle_borrowed_slot (test_native_chunks.PrefetchedNativeChunks.test_backend_failure_does_not_recycle_borrowed_slot) ... ok
+test_count_only (test_native_chunks.PrefetchedNativeChunks.test_count_only) ... native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=13 prefetch=True
+ok
+test_disabled_chunking_keeps_one_fragment (test_native_chunks.PrefetchedNativeChunks.test_disabled_chunking_keeps_one_fragment) ... native aggregate: rows=2 groups=1 chunks=1 frame_mib=16 max_batch_bytes=22 prefetch=True
+ok
+test_empty_stream (test_native_chunks.PrefetchedNativeChunks.test_empty_stream) ... native aggregate: rows=0 groups=0 chunks=1 frame_mib=16 max_batch_bytes=0 prefetch=True
+ok
+test_group_only_deduplicates (test_native_chunks.PrefetchedNativeChunks.test_group_only_deduplicates) ... native aggregate: rows=3 groups=2 chunks=3 frame_mib=16 max_batch_bytes=21 prefetch=True
+ok
+test_invalid_protocol_frame_bound (test_native_chunks.PrefetchedNativeChunks.test_invalid_protocol_frame_bound) ... ok
+test_merged_result_bound (test_native_chunks.PrefetchedNativeChunks.test_merged_result_bound) ... ok
+test_nullable_sums_groups_and_counts_across_exact_boundaries (test_native_chunks.PrefetchedNativeChunks.test_nullable_sums_groups_and_counts_across_exact_boundaries) ... native aggregate: rows=5 groups=3 chunks=4 frame_mib=16 max_batch_bytes=38 prefetch=True
+ok
+test_small_pin_rejects_large_frame_before_ack (test_native_chunks.PrefetchedNativeChunks.test_small_pin_rejects_large_frame_before_ack) ... ok
+test_sum_overflow_returns_error (test_native_chunks.PrefetchedNativeChunks.test_sum_overflow_returns_error) ... ok
+test_sum_without_count (test_native_chunks.PrefetchedNativeChunks.test_sum_without_count) ... native aggregate: rows=2 groups=1 chunks=3 frame_mib=16 max_batch_bytes=22 prefetch=True
+ok
+test_version_two_64_mib_negotiation (test_native_chunks.PrefetchedNativeChunks.test_version_two_64_mib_negotiation) ... native aggregate: rows=1 groups=1 chunks=2 frame_mib=64 max_batch_bytes=22 prefetch=True
+ok
+test_both_pins_released_if_bind_fails (test_native_input.AllocationTests.test_both_pins_released_if_bind_fails) ... ok
+test_failed_thread_start_can_be_closed (test_native_input.AllocationTests.test_failed_thread_start_can_be_closed) ... ok
+test_first_pin_released_if_second_allocation_fails (test_native_input.AllocationTests.test_first_pin_released_if_second_allocation_fails) ... ok
+test_close_interrupts_receive_and_preserves_error_reply (test_native_input.NativeInputTests.test_close_interrupts_receive_and_preserves_error_reply) ... ok
+test_close_interrupts_wait_for_free_buffer (test_native_input.NativeInputTests.test_close_interrupts_wait_for_free_buffer) ... ok
+test_early_ack_and_no_reuse_until_release (test_native_input.NativeInputTests.test_early_ack_and_no_reuse_until_release) ... ok
+test_malformed_input_is_not_acknowledged (test_native_input.NativeInputTests.test_malformed_input_is_not_acknowledged) ... ok
+test_partial_frame_disconnect_propagates (test_native_input.NativeInputTests.test_partial_frame_disconnect_propagates) ... ok
+test_budget_rejects_before_import_or_slot_release (test_fragment_budget.FragmentBudgetTests.test_budget_rejects_before_import_or_slot_release) ... ok
+test_explicit_bounded_budget (test_fragment_budget.FragmentBudgetTests.test_explicit_bounded_budget) ... ok
+test_capacity_is_enforced (test_resident_input.ResidentTests.test_capacity_is_enforced) ... ok
+test_gpu_snapshot_replay (test_resident_input.ResidentTests.test_gpu_snapshot_replay) ... ok
+test_replay_keeps_partial_null_sum_and_count (test_resident_input.ResidentTests.test_replay_keeps_partial_null_sum_and_count) ... ok
+test_snapshot_owns_values_and_null_masks (test_resident_input.ResidentTests.test_snapshot_owns_values_and_null_masks) ... ok
+test_socket_restored_after_exception (test_resident_input.ResidentTests.test_socket_restored_after_exception) ... ok
+test_default_limit_and_opt_in_larger_fragment (test_multigpu.MultiDeviceInputTests.test_default_limit_and_opt_in_larger_fragment) ... ok
+test_invalid_bridge_budget_releases_input_and_recovers (test_multigpu.MultiDeviceInputTests.test_invalid_bridge_budget_releases_input_and_recovers) ... ok
+test_reused_host_slot_cross_device_groups_nulls_and_empty_batches (test_multigpu.MultiDeviceInputTests.test_reused_host_slot_cross_device_groups_nulls_and_empty_batches) ... ok
+
+----------------------------------------------------------------------
+Ran 41 tests in 1.998s
+
+OK
