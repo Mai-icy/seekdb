@@ -80,9 +80,12 @@ as a CTE. Sirius drives bounded scan tasks and handles repeated table reads.
 The same strict fragment executor runs the whole SQL plan without CPU fallback.
 
 Prepare Parquet from seekdb data first. On the currently pinned seekdb build,
-server-side `SELECT ... INTO OUTFILE ... FORMAT=(TYPE='CSV', COMPRESSION='ZSTD',
+server-side `SELECT ... INTO OUTFILE ... FORMAT=(TYPE='CSV', COMPRESSION='GZIP',
 ...) SINGLE=FALSE` supports parallel compressed export; direct Parquet export is
-not implemented. Convert staged CSV with explicit SQL types, validate row counts
+not implemented. The pinned seekdb ZSTD streaming exporter does not advance
+its consumed-input offset across compression calls and can duplicate data at
+output-buffer boundaries; use GZIP until that exporter is corrected. Keep
+strict CSV parsing enabled. Convert staged CSV with explicit SQL types, validate row counts
 and query results, then remove the CSV staging. Keep all table exports in one
 repeatable-read transaction and record source database, schema, row counts,
 snapshot time, file sizes and mtimes in a manifest. Reserve disk space for both
