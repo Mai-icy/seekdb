@@ -36,6 +36,7 @@ namespace oceanbase
 {
 namespace sql
 {
+struct SiriusWindowMinState;
 class ObRDWFPieceMsgCtx;
 class ObRDWFPartialInfo;
 const int64_t CHECK_STATUS_INTERVAL = 10000;
@@ -835,6 +836,12 @@ public:
   { return MY_SPEC.input_rows_mem_bound_ratio_; }
   inline int64_t get_global_mem_limit_version() const { return global_mem_limit_version_; }
 
+private:
+  int init_sirius_min();
+  int sirius_min_get_next_batch(int64_t max_row_cnt);
+  void destroy_sirius_min();
+  SiriusWindowMinState *sirius_min_ = nullptr;
+  bool sirius_min_checked_ = false;
 protected:
   int init();
   // Window function inner_get_next_row()/inner_get_next_batch() are implemented in three steps:

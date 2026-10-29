@@ -27,8 +27,8 @@ def receive(sock, limit=MAX_FRAME, storage=None):
     return bytes(header[:1]), receive_exact(sock, size, storage)
 
 
-def send(sock, kind, data=b""):
-    if len(kind) != 1 or len(data) > MAX_FRAME:
+def send(sock, kind, data=b"", *, limit=MAX_FRAME):
+    if not 0 < limit <= 256 * 1024**2 or len(kind) != 1 or len(data) > limit:
         raise ValueError("Invalid sidecar frame")
     sock.sendall(kind + struct.pack("!I", len(data)))
     sock.sendall(data)

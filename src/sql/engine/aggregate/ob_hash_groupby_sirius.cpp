@@ -3,6 +3,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 #include "sql/engine/aggregate/ob_hash_groupby_op.h"
 #include "sql/engine/sirius/sirius_aggregate_client.h"
+#include "sql/engine/sirius/sirius_native_scope.h"
 #include "sql/engine/ob_physical_plan.h"
 #include "sql/session/ob_sql_session_info.h"
 #include <cstdlib>
@@ -35,6 +36,7 @@ struct SiriusAggregateState {
 };
 
 void ObHashGroupByOp::reset_sirius() {
+  reset_sirius_exact();
   sirius_checked_ = sirius_active_ = false;
   if (sirius_) {
     sirius_->client.close();
@@ -45,6 +47,7 @@ void ObHashGroupByOp::reset_sirius() {
   }
 }
 void ObHashGroupByOp::destroy_sirius() {
+  destroy_sirius_exact();
   if (sirius_) {
     ctx_.get_allocator().free(sirius_->input);
     ctx_.get_allocator().free(sirius_->result);
@@ -55,6 +58,7 @@ void ObHashGroupByOp::destroy_sirius() {
 }
 int ObHashGroupByOp::init_sirius() {
   int ret = OB_SUCCESS;
+  if (OB_FAIL(init_sirius_exact()) || sirius_exact_active_) return ret;
   const auto &spec = static_cast<const ObHashGroupBySpec &>(spec_);
   const char *enabled = std::getenv("SEEKDB_SIRIUS_NATIVE");
   const auto *session = ctx_.get_my_session();
@@ -62,7 +66,7 @@ int ObHashGroupByOp::init_sirius() {
   // Restrict to a complete, serial, read-only aggregation directly over a scan.
   // In particular, never recursively open two streams for nested aggregates.
   if (!enabled || std::strcmp(enabled, "1") || !setting || !setting->is_int()
-      || setting->get_int() != 1 || !spec.is_vectorized() || !spec.get_phy_plan()->is_select_plan()
+      || setting->get_int() != 1 || sirius_native_depth || !spec.is_vectorized() || !spec.get_phy_plan()->is_select_plan()
       || spec.get_phy_plan()->get_px_dop() > 1 || !child_
       || child_->get_spec().type_ != PHY_TABLE_SCAN
       || spec.aggr_stage_ != ObThreeStageAggrStage::NONE_STAGE
@@ -126,12 +130,14 @@ int ObHashGroupByOp::init_sirius() {
 }
 
 int ObHashGroupByOp::sirius_get_next_batch(int64_t max_row_cnt) {
+  if (sirius_exact_active_) return sirius_exact_get_next_batch(max_row_cnt);
   int ret = OB_SUCCESS;
   auto &s = *sirius_;
   const auto &spec = static_cast<const ObHashGroupBySpec &>(spec_);
   const int columns = s.groups + s.sums;
   const int result_columns = columns + (s.count ? 1 : 0);
   if (!s.loaded) {
+    SiriusNativeScope scope;
     const char *profile_env = std::getenv("SEEKDB_SIRIUS_PROFILE");
     const bool profile = profile_env && std::strcmp(profile_env, "1") == 0;
     auto clock_us = [profile]() -> int64_t {

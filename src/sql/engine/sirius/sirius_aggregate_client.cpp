@@ -90,18 +90,26 @@ bool SiriusAggregateClient::open(uint8_t groups, uint8_t sums, bool count,
   return open_impl(groups, sums, count, false, cancel, context);
 }
 bool SiriusAggregateClient::open_integer_sums(uint8_t sums, bool (*cancel)(void *), void *context) {
-  return open_impl(0, sums, false, true, cancel, context);
+  return open_impl(0, sums, false, 3, cancel, context);
 }
-bool SiriusAggregateClient::open_impl(uint8_t groups, uint8_t sums, bool count, bool exact,
+bool SiriusAggregateClient::open_grouped_integer_sums(uint8_t groups, uint8_t sums, bool (*cancel)(void *), void *context) {
+  return open_impl(groups, sums, false, 4, cancel, context);
+}
+bool SiriusAggregateClient::open_grouped_integer_min(uint8_t groups, uint8_t values, bool (*cancel)(void *), void *context) {
+  return open_impl(groups, values, false, 7, cancel, context);
+}
+bool SiriusAggregateClient::open_impl(uint8_t groups, uint8_t sums, bool count, uint8_t exact_version,
                                       bool (*cancel)(void *), void *context) {
   close();
   cancel_ = cancel;
   context_ = context;
   error_[0] = 0;
   const unsigned columns = static_cast<unsigned>(groups) + sums;
+  const bool exact = exact_version != 0;
   const uint16_t endian = 1;
   if (*reinterpret_cast<const uint8_t *>(&endian) != 1 || columns > 64
-      || (exact ? (groups != 0 || sums == 0 || count) : (groups < 1 || groups > 8))) {
+      || (exact ? (sums == 0 || count || (exact_version == 3 ? groups != 0 : groups < 1 || groups > 8))
+                : (groups < 1 || groups > 8))) {
     return fail("Unsupported native Sirius schema or byte order");
   }
   columns_ = columns;
@@ -130,7 +138,7 @@ bool SiriusAggregateClient::open_impl(uint8_t groups, uint8_t sums, bool count, 
   // Version 2 advertises the larger frame bound before consuming scan input.
   // Old sidecars reject it at open; default version 1 remains byte-compatible.
   const bool large = frame_limit_ > 16 * 1024 * 1024;
-  uint8_t descriptor[5] = {static_cast<uint8_t>(exact ? 3 : large ? 2 : 1), groups, sums,
+  uint8_t descriptor[5] = {static_cast<uint8_t>(exact ? exact_version : large ? 2 : 1), groups, sums,
                          static_cast<uint8_t>(count), static_cast<uint8_t>(frame_limit_ / (1024 * 1024))};
   const size_t descriptor_size = exact || large ? 5 : 4;
   size_t ignored = 0;
@@ -161,6 +169,8 @@ bool SiriusAggregateClient::finish(char *result, size_t capacity, size_t &size) 
 namespace oceanbase { namespace sql {
 bool SiriusAggregateClient::open(uint8_t, uint8_t, bool, bool (*)(void *), void *) { return false; }
 bool SiriusAggregateClient::open_integer_sums(uint8_t, bool (*)(void *), void *) { return false; }
+bool SiriusAggregateClient::open_grouped_integer_sums(uint8_t, uint8_t, bool (*)(void *), void *) { return false; }
+bool SiriusAggregateClient::open_grouped_integer_min(uint8_t, uint8_t, bool (*)(void *), void *) { return false; }
 bool SiriusAggregateClient::batch(const char *, uint32_t, uint32_t) { return false; }
 bool SiriusAggregateClient::finish(char *, size_t, size_t &) { return false; }
 void SiriusAggregateClient::close() {}

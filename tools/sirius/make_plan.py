@@ -22,7 +22,9 @@ def make_plan(parquet, groups=(), sums=(), count=False, minimum=None):
 
 
 def make_plan_for_schema(schema, groups=(), sums=(), count=False, minimum=None, parquet=None,
-                         *, wide_integer_sums=False):
+                         *, wide_integer_sums=False, reduction='sum'):
+    if reduction not in ('sum', 'min'):
+        raise ValueError('Unsupported native reduction')
     names = schema.names
     if len(set(names)) != len(names):
         raise ValueError("Duplicate input column names are unsupported")
@@ -73,9 +75,9 @@ def make_plan_for_schema(schema, groups=(), sums=(), count=False, minimum=None, 
                     or pa.types.is_floating(schema.field(name).type)):
                 raise ValueError("SUM helper supports integer and floating point columns")
             measure = agg.measures.add().measure
-            measure.function_reference = function("sum")
+            measure.function_reference = function(reduction)
             argument = field(names.index(name))
-            if wide_integer_sums and pa.types.is_integer(schema.field(name).type):
+            if reduction == 'sum' and wide_integer_sums and pa.types.is_integer(schema.field(name).type):
                 # Declaring a decimal output alone does not widen Sirius's
                 # BIGINT accumulator: it can wrap before the result cast.
                 promoted = alg.Expression()
@@ -89,6 +91,8 @@ def make_plan_for_schema(schema, groups=(), sums=(), count=False, minimum=None, 
             measure.invocation = alg.AggregateFunction.AGGREGATION_INVOCATION_ALL
             if pa.types.is_floating(schema.field(name).type):
                 measure.output_type.fp64.nullability = 1
+            elif reduction == 'min':
+                measure.output_type.i64.nullability = 1
             else:
                 measure.output_type.decimal.precision = 38
                 measure.output_type.decimal.scale = 0
@@ -99,7 +103,7 @@ def make_plan_for_schema(schema, groups=(), sums=(), count=False, minimum=None, 
             measure.phase = alg.AGGREGATION_PHASE_INITIAL_TO_RESULT
             measure.invocation = alg.AggregateFunction.AGGREGATION_INVOCATION_ALL
             measure.output_type.i64.nullability = 2
-        output_names = list(groups) + ["sum_" + name for name in sums] + (["count"] if count else [])
+        output_names = list(groups) + [reduction + "_" + name for name in sums] + (["count"] if count else [])
         rel = aggregate
     root = plan.relations.add().root
     root.input.CopyFrom(rel)

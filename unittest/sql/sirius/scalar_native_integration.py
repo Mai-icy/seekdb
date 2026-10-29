@@ -56,6 +56,7 @@ def main():
             cases = {
                 'decimal_sum': f'SUM(v) FROM {table}',
                 'q6_multiplication': f'SUM(v*d) FROM {table} WHERE d BETWEEN 0.05 AND 0.07',
+                'mixed_sum_count': f'SUM(v),COUNT(*),COUNT(v) FROM {table}',
                 'multiple_scales': f'SUM(v), SUM(v*d), SUM(wide), SUM(small) FROM {table}',
                 'filtered_multiple_widths': f'SUM(v), SUM(small), SUM(wide) FROM {table} WHERE id>=2',
                 'decimal128_cancellation': f'SUM(wide) FROM {table}',
@@ -77,7 +78,6 @@ def main():
                     f'FROM {table} y WHERE y.id<=x.id) FROM {table} x ORDER BY x.id')
             for label, body in {
                 'distinct_fallback': f'SUM(DISTINCT v) FROM {table}',
-                'mixed_count_fallback': f'SUM(v),COUNT(*) FROM {table}',
                 'integer_fallback': f'SUM(id) FROM {table}',
             }.items():
                 compare(cursor, label, f'SELECT {HINT} {body}', False)

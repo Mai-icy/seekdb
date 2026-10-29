@@ -102,6 +102,36 @@ TEST(SiriusNativeTransport, TypedBatchAndResult) {
   ASSERT_TRUE(client.finish(result, sizeof(result), size));
   EXPECT_EQ(22, size);
 }
+
+TEST(SiriusNativeTransport, ExactGroupedDescriptorAndEmptyResult) {
+  Server server([](int fd) {
+    EXPECT_EQ(std::string("\4\1\2\0\20", 5), read_frame(fd, 'N'));
+    reply(fd, 'A');
+    EXPECT_TRUE(read_frame(fd, 'E').empty());
+    reply(fd, 'R', std::string(4, 0));
+  });
+  SiriusAggregateClient client;
+  EXPECT_FALSE(client.open_grouped_integer_sums(0, 1, nullptr, nullptr));
+  EXPECT_FALSE(client.open_grouped_integer_sums(1, 64, nullptr, nullptr));
+  ASSERT_TRUE(client.open_grouped_integer_sums(1, 2, nullptr, nullptr));
+  char output[4]; size_t size = 0;
+  ASSERT_TRUE(client.finish(output, sizeof(output), size));
+  EXPECT_EQ(4, size);
+}
+TEST(SiriusNativeTransport, ExactMinimumDescriptor) {
+  Server server([](int fd) {
+    EXPECT_EQ(std::string("\7\1\1\0\20", 5), read_frame(fd, 'N'));
+    reply(fd, 'A');
+    EXPECT_TRUE(read_frame(fd, 'E').empty());
+    reply(fd, 'R', std::string(4, 0));
+  });
+  SiriusAggregateClient client;
+  EXPECT_FALSE(client.open_grouped_integer_min(0, 1, nullptr, nullptr));
+  ASSERT_TRUE(client.open_grouped_integer_min(1, 1, nullptr, nullptr));
+  char output[4]; size_t size = 0;
+  ASSERT_TRUE(client.finish(output, sizeof(output), size));
+  EXPECT_EQ(4, size);
+}
 TEST(SiriusNativeTransport, ExactScalarDescriptorAndWideResult) {
   Server server([](int fd) {
     EXPECT_EQ(std::string("\3\0\1\0\20", 5), read_frame(fd, 'N'));

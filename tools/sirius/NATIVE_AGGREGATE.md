@@ -12,7 +12,7 @@ manual Substrait plan is needed for supported aggregates.
 
 ```text
 seekdb SELECT and transaction snapshot
-  → table scan / filter batches
+  → table scan / filter / serial join batches
   → native hash aggregate adapter: coalesce fixed-width columns
   → private Unix socket → reusable pinned host buffer (optional)
   → Arrow views → Sirius GPU aggregation
@@ -71,8 +71,8 @@ fails while the sidecar is absent, so its GPU timing cannot silently be CPU timi
 
 ## Exact scalar decimal SUM
 
-`ObScalarAggregateOp` also supports 1–16 decimal SUM expressions directly over
-a seekdb table scan. This includes the arithmetic used by TPC-H Q6:
+`ObScalarAggregateOp` supports 1–16 decimal SUM and COUNT expressions over
+serial seekdb input trees. This includes the arithmetic used by TPC-H Q6:
 
 ```sql
 SET @sirius_gpu = 1;
@@ -93,8 +93,9 @@ not full GPU execution of Q6 or of all 22 TPC-H queries.
 
 Eligible input expressions use DecimalInt with precision 1–38. Output precision
 must be at least the input precision and at most 76, with the same scale.
-DISTINCT, mixed COUNT/SUM, parallel aggregation, and other child operators use
-the CPU path before consuming input. The serial SELECT and environment/session
+COUNT(*) and COUNT(expr) use exact sums of non-NULL indicators. AVG uses
+seekdb's SUM/COUNT lowering and final division. DISTINCT, parallel aggregation,
+and child operators outside the serial whitelist use CPU before consuming input. The serial SELECT and environment/session
 gates above apply to this path too.
 
 Protocol v3 carries one, two or four integer limbs per unscaled decimal value,
@@ -105,7 +106,7 @@ SUM; specifying only a decimal result type permits a BIGINT overflow in Sirius.
 The sidecar merges partial sums using exact integers and returns signed 128-bit
 cells. seekdb reconstructs the decimal in a 256-bit accumulator, checks the
 declared precision, and restores the scale. No floating-point conversion occurs.
-Empty and all-NULL inputs produce a single NULL result row.
+Empty and all-NULL inputs produce NULL SUM and zero COUNT in a single row.
 
 Use bounded fragments, for example `--native-chunk-mib 128`, for large tables.
 The existing 16/64/128 MiB frame and optional pinned receive buffers are reused.
@@ -137,7 +138,72 @@ execution for all 22 queries and does not require a running sidecar. The default
 modes remain `cpu8 native1`; reports record actual GPU events separately from
 successful CPU fallback. Neither mode name alone proves GPU coverage.
 
-## Hash aggregation eligibility and shared semantics
+## Exact grouped aggregates and window MIN
+
+The native TPC-H branch adds an exact grouped adapter before the legacy DOUBLE
+adapter. It accepts 1–8 signed integer, DATE/MySQL DATE or `utf8mb4_bin` CHAR/VARCHAR
+keys, with up to 16 SUM/COUNT and implicit FIRST_ROW outputs. String keys use
+per-query dictionaries (trailing spaces follow the binary collation's equality);
+there is no cross-query cache. Computed keys are evaluated by seekdb.
+
+Decimal SUM inputs can have up to 76 digits. Protocol v4 carries up to eight
+32-bit limbs per unscaled value; a 512-bit CPU accumulator reconstructs the exact
+GPU result and checks the declared decimal precision. Signed integer SUM and
+COUNT indicators are also supported. seekdb retains representative fields for
+its implicit FIRST_ROW outputs; GPU computes the grouped arithmetic. AVG and
+HAVING retain seekdb's normal expression semantics.
+
+Eligible scalar/grouped inputs may include serial joins, sorts, limits,
+materialization, distinct, windows and nested aggregates. PX/exchange,
+subplan-filter and storage aggregation pushdown are excluded. While an outer
+GPU operator consumes input, nested GPU candidates run on CPU, preventing
+recursive requests to the single-stream sidecar. Enabling GPU does not mean
+that every operator in a query runs on GPU.
+
+`ObWindowFunctionOp` additionally supports one whole-partition MIN with one
+BIGINT partition key and a DecimalInt argument of precision 1–18, preserving
+scale. This handles the optimizer's window transformation of TPC-H Q2.
+Protocol v7 reduces exact unscaled signed integers with GPU MIN; seekdb replays
+its child rows in their original order and attaches the per-partition result.
+NULL partition keys, all-NULL partitions and ties preserve SQL semantics.
+Bounded frames, multiple window functions and parallel window plans remain CPU.
+
+These adapters intentionally have prototype bounds:
+
+- Grouped result: 256 MiB of binary cells, at most 64 transported columns;
+  estimated group counts above that bound select CPU before reading input.
+- String dictionary: 4,096 values per key, 8 MiB combined, 1,024 bytes per value.
+- Implicit FIRST_ROW storage: 512 MiB estimated budget, 4,096 bytes per field.
+- Window MIN: 262,144 retained rows, 64 projected fields, 256 MiB estimated
+  retained-row budget, 4,096 bytes per field. Estimated larger inputs select CPU.
+
+Actual bounds exceeded after consuming input return a SQL error; there is no
+snapshot-changing retry. Python grouped merges and C++ containers have overhead
+beyond wire payload sizes. These bounds must be revisited before scaling tests.
+The legacy v1/v2 and scalar v3 result limits remain 1 MiB. Grouped JSON replies
+and binary frames explicitly opt in to the larger bound; default framing is
+unchanged. Partial SUM/MIN results from GPU fragments are combined on CPU.
+
+Run the SQL regression tests with a private sidecar log:
+
+```sh
+SEEKDB_PORT=2898 python unittest/sql/sirius/grouped_exact_integration.py \
+  --trace /absolute/path/native-sidecar.log
+SEEKDB_PORT=2898 python unittest/sql/sirius/window_min_integration.py \
+  --trace /absolute/path/native-sidecar.log
+SIRIUS_TEST_LIBRARY=/absolute/path/libseekdb_sirius_bridge.so \
+  python unittest/sql/sirius/test_native_grouped.py
+```
+
+For an existing verified TPC-H import, add `--modes native1`,
+`--native-operator-hints` and `--require-gpu` to `tpch_benchmark.py`. The hints request
+serial hash aggregation, disable storage aggregation pushdown and use 4,096-row
+batches. Each query must match the independent reference and produce a native
+GPU completion event; successful CPU fallback fails this coverage check.
+Do not run unrelated queries against the same sidecar during log attribution.
+This validates native operator coverage, not whole-query GPU execution or speedup.
+
+## Legacy DOUBLE hash eligibility and shared semantics
 
 - Linux; vectorized, serial SELECT plan (`PARALLEL(1)`), hash aggregation directly
   over a table scan. Parallel plans and other operator shapes use existing CPU
@@ -168,7 +234,7 @@ By default the adapter merges seekdb's small batches into up to **262,144 rows**
 use fewer rows to keep a frame under 16 MiB. Input uses column validity bitmaps
 and little-endian 64-bit values; skipped scan rows are excluded. Each batch is
 acknowledged only after its GPU copy completes. The input buffer belongs to the
-query allocator and is reused on rescan; the native result buffer is 1 MiB.
+query allocator and is reused on rescan; the legacy native result buffer is 1 MiB.
 
 For larger pinned transfers, set `SEEKDB_SIRIUS_FRAME_MIB=64` or `128` before
 starting seekdb and use a matching or larger `--host-pin-mib` on the sidecar.
@@ -189,7 +255,7 @@ the 512 MiB guard; the complete query can exceed that size. NULL sums and keys
 are preserved, grouping-only outputs are deduplicated, and non-finite partial or
 merged sums fail the query. Floating-point summation order can change further.
 
-JSON per fragment and final binary output remain limited to 1 MiB; the merge
+For legacy v1/v2 aggregation, JSON per fragment and final binary output remain limited to 1 MiB; the merge
 checks that limit before adding groups. Python merge objects have additional
 bounded overhead beyond their binary representation. GPU intermediates can
 exceed input size. Scan/transfer and fragment execution remain sequential, with

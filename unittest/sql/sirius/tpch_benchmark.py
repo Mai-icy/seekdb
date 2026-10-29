@@ -57,12 +57,18 @@ def main(args):
                'source_mtime_ns': source_info.st_mtime_ns, 'scale_factor': args.scale_factor,
                'host': host, 'port': port,
                'database': args.database, 'modes': args.modes, 'queries': [],
+               'native_operator_hints': args.native_operator_hints,
+               'require_gpu': args.require_gpu,
                'comparison': 'row multiset; exact non-floating numerics, float rel=1e-9 abs=1e-6; ordering not compared',
                'timing': 'SQL execute/fetch; excludes sorting and oracle generation'}
     if args.resume and summary_path.exists():
         prior = json.loads(summary_path.read_text())
         for key in ('source', 'source_bytes', 'source_mtime_ns', 'scale_factor', 'host', 'port', 'database', 'modes'):
             if summary[key] != prior[key]: raise ValueError(f'Resume identity mismatch: {key}')
+        if prior.get('native_operator_hints', False) != args.native_operator_hints:
+            raise ValueError('Resume native operator hints mismatch')
+        if prior.get('require_gpu', False) != args.require_gpu:
+            raise ValueError('Resume GPU execution requirement mismatch')
         summary = prior
     def save():
         temporary = summary_path.with_suffix('.tmp')
@@ -111,6 +117,10 @@ def main(args):
                 for mode in summary['modes']:
                     cursor.execute('SET @sirius_gpu=%s', (int(mode == 'native1'),))
                     query = re.sub(r'\bSELECT\b', 'SELECT /*+ PARALLEL(%d) */' % (1 if mode == 'native1' else 8), sql, flags=re.I)
+                    if mode == 'native1' and args.native_operator_hints:
+                        query = re.sub(r'\bSELECT\b', "SELECT /*+ PARALLEL(1) USE_HASH_AGGREGATION "
+                                       "OPT_PARAM('pushdown_storage_level',2) OPT_PARAM('rowsets_max_rows',4096) */",
+                                       sql, flags=re.I)
                     cursor.execute('EXPLAIN ' + query)
                     plan = [str(row) for row in cursor.fetchall()]
                     log = Path(args.sidecar_log)
@@ -129,6 +139,8 @@ def main(args):
                     item['modes'][mode] = {'seconds': seconds, 'rows': len(actual), 'validated': True,
                                            'native_gpu_aggregates': events, 'used_gpu': bool(events), 'explain': plan}
                     save()
+                    if mode == 'native1' and args.require_gpu and not events:
+                        raise AssertionError('Result matches, but no native GPU operator ran (CPU fallback)')
                     print(json.dumps({'query': number, 'mode': mode, 'seconds': seconds,
                                       'rows': len(actual), 'gpu_aggregates': len(events), 'status': 'passed'}), flush=True)
                 item['passed'] = True
@@ -155,6 +167,9 @@ if __name__ == '__main__':
     p.add_argument('--query-timeout', type=int, default=1800)
     p.add_argument('--modes', nargs='+', choices=('cpu8', 'native1'), default=['cpu8', 'native1'],
                    help='Use cpu8 alone to establish full-query correctness before enabling native GPU operators')
+    p.add_argument('--native-operator-hints', action='store_true',
+                   help='Exercise native aggregate shapes: serial hash aggregation without storage aggregation pushdown')
+    p.add_argument('--require-gpu', action='store_true', help='Fail native1 cases that silently use only CPU operators')
     p.add_argument('--queries', nargs='+', type=int, default=list(range(1, 23)))
     p.add_argument('--resume', action='store_true')
     args = p.parse_args()

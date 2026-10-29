@@ -1528,6 +1528,8 @@ SQL_STANDALONE_SOURCES = [
     "src/sql/engine/sirius/sirius_aggregate_client.cpp",
     "src/sql/engine/aggregate/ob_hash_groupby_sirius.cpp",
     "src/sql/engine/aggregate/ob_scalar_aggregate_sirius.cpp",
+    "src/sql/engine/aggregate/ob_hash_groupby_sirius_exact.cpp",
+    "src/sql/engine/window_function/ob_window_function_sirius.cpp",
     "src/sql/engine/aggregate/ob_aggregate_processor.cpp",
     "src/sql/engine/expr/ob_expr_add.cpp",
     "src/sql/engine/expr/ob_expr_array_sort.cpp",

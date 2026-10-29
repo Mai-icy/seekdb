@@ -1352,6 +1352,7 @@ int ObWindowFunctionOp::init_mem_context()
 
 int ObWindowFunctionOp::inner_open()
 {
+  destroy_sirius_min();
   int ret = OB_SUCCESS;
   if (OB_FAIL(ObOperator::inner_open())) {
   } else if (OB_ISNULL(ctx_.get_my_session())) {
@@ -1368,6 +1369,7 @@ int ObWindowFunctionOp::inner_open()
 
 int ObWindowFunctionOp::inner_rescan()
 {
+  destroy_sirius_min();
   int ret = OB_SUCCESS;
   if (OB_FAIL(ObOperator::inner_rescan())) {
   } else if (OB_ISNULL(ctx_.get_my_session())) {
@@ -1421,6 +1423,7 @@ int ObWindowFunctionOp::inner_rescan()
 
 int ObWindowFunctionOp::inner_close()
 {
+  destroy_sirius_min();
   sql_mem_processor_.unregister_profile();
   curr_row_collect_values_.reset();
   input_rows_.foreach_store([](RowsStore *&s) { s->ra_rs_.reset(); return OB_SUCCESS; });
@@ -1457,6 +1460,7 @@ int ObWindowFunctionOp::inner_close()
 
 void ObWindowFunctionOp::destroy()
 {
+  destroy_sirius_min();
   sql_mem_processor_.unregister_profile_if_necessary();
   hp_infras_mgr_.destroy();
   input_rows_.~Stores();
@@ -3526,6 +3530,11 @@ int ObWindowFunctionOp::output_batch_rows(const int64_t output_row_cnt)
 int ObWindowFunctionOp::inner_get_next_batch(const int64_t max_row_cnt)
 {
   int ret = OB_SUCCESS;
+  if (!sirius_min_checked_) {
+    sirius_min_checked_ = true;
+    if (OB_FAIL(init_sirius_min())) return ret;
+  }
+  if (sirius_min_) return sirius_min_get_next_batch(max_row_cnt);
   do {
     switch (stat_) {
       case ProcessStatus::PARTIAL: {

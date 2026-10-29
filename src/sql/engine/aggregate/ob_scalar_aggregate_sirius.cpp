@@ -3,6 +3,7 @@
 #define USING_LOG_PREFIX SQL_ENG
 #include "sql/engine/aggregate/ob_scalar_aggregate_op.h"
 #include "sql/engine/sirius/sirius_aggregate_client.h"
+#include "sql/engine/sirius/sirius_native_scope.h"
 #include "sql/engine/ob_physical_plan.h"
 #include "sql/engine/table/ob_table_scan_op.h"
 #include "sql/session/ob_sql_session_info.h"
@@ -20,6 +21,7 @@ struct SiriusScalarState {
   ObExpr *inputs[16] = {}, *outputs[16] = {};
   int sums = 0, columns = 0;
   int limbs[16] = {}, offsets[16] = {};
+  bool counts[16] = {};
   char *input = nullptr;
   size_t capacity = 0, mask_bytes = 0, column_bytes = 0;
   uint32_t limit = 0, buffered = 0;
@@ -62,19 +64,19 @@ int ObScalarAggregateOp::init_sirius()
   const ObObj *setting = session ? session->get_user_variable_value(ObString("sirius_gpu")) : nullptr;
   if (!enabled || std::strcmp(enabled, "1") || !setting || !setting->is_int() || setting->get_int() != 1
       || !spec.is_vectorized() || !spec.get_phy_plan()->is_select_plan()
-      || spec.get_phy_plan()->get_px_dop() > 1 || !child_ || child_->get_spec().type_ != PHY_TABLE_SCAN
+      || sirius_native_depth || spec.get_phy_plan()->get_px_dop() > 1 || !child_
+      || !sirius_serial_input(child_->get_spec())
       || spec.aggr_stage_ != ObThreeStageAggrStage::NONE_STAGE
       || spec.aggr_infos_.empty() || spec.aggr_infos_.count() > 16) return OB_SUCCESS;
-  const auto &scan = static_cast<const ObTableScanSpec &>(child_->get_spec());
-  const auto &pushdown = scan.tsc_ctdef_.scan_ctdef_.pd_expr_spec_.pd_storage_flag_;
-  if (pushdown.is_aggregate_pushdown() || pushdown.is_group_by_pushdown()) return OB_SUCCESS;
   // Eligibility is decided before opening transport or consuming the child.
   // seekdb evaluates the original SUM argument (including Q6 multiplication),
   // retains its scale and owns the scan's filters and transaction snapshot.
   for (int64_t i = 0; i < spec.aggr_infos_.count(); ++i) {
     const auto &info = spec.aggr_infos_.at(i);
-    if (!info.expr_ || info.get_expr_type() != T_FUN_SUM || info.param_exprs_.count() != 1
-        || info.has_distinct_ || info.has_order_by_ || info.is_implicit_first_aggr_) return OB_SUCCESS;
+    if (!info.expr_ || info.has_distinct_ || info.has_order_by_ || info.is_implicit_first_aggr_) return OB_SUCCESS;
+    if (info.get_expr_type() == T_FUN_COUNT && info.param_exprs_.count() <= 1
+        && info.expr_->datum_meta_.type_ == ObIntType) continue;
+    if (info.get_expr_type() != T_FUN_SUM || info.param_exprs_.count() != 1) return OB_SUCCESS;
     const auto &input = info.param_exprs_.at(0)->datum_meta_;
     const auto &output = info.expr_->datum_meta_;
     if (input.type_ != ObDecimalIntType || input.precision_ < 1 || input.precision_ > 38
@@ -90,10 +92,12 @@ int ObScalarAggregateOp::init_sirius()
   s.sums = spec.aggr_infos_.count();
   s.columns = 0;
   for (int i = 0; i < s.sums; ++i) {
-    s.inputs[i] = spec.aggr_infos_.at(i).param_exprs_.at(0);
-    s.outputs[i] = spec.aggr_infos_.at(i).expr_;
-    const int precision = s.inputs[i]->datum_meta_.precision_;
-    s.limbs[i] = precision <= 9 ? 1 : precision <= 18 ? 2 : 4;
+    const auto &info = spec.aggr_infos_.at(i);
+    s.counts[i] = info.get_expr_type() == T_FUN_COUNT;
+    s.inputs[i] = info.param_exprs_.empty() ? nullptr : info.param_exprs_.at(0);
+    s.outputs[i] = info.expr_;
+    const int precision = s.inputs[i] ? s.inputs[i]->datum_meta_.precision_ : 0;
+    s.limbs[i] = s.counts[i] ? 1 : precision <= 9 ? 1 : precision <= 18 ? 2 : 4;
     s.offsets[i] = s.columns;
     s.columns += s.limbs[i];
   }
@@ -118,6 +122,7 @@ int ObScalarAggregateOp::sirius_get_next_batch()
   int ret = OB_SUCCESS;
   auto &s = *sirius_;
   if (s.emitted) { brs_.size_ = 0; brs_.end_ = true; return ret; }
+  SiriusNativeScope scope;
   const auto started = std::chrono::steady_clock::now();
   const char *profile_setting = std::getenv("SEEKDB_SIRIUS_PROFILE");
   const bool profile = profile_setting && std::strcmp(profile_setting, "1") == 0;
@@ -146,7 +151,7 @@ int ObScalarAggregateOp::sirius_get_next_batch()
       guard.set_batch_size(batch->size_);
       const int64_t evaluate_start = clock_us();
       for (int c = 0; OB_SUCC(ret) && c < s.sums; ++c) {
-        if (OB_FAIL(s.inputs[c]->eval_batch(eval_ctx_, *batch->skip_, batch->size_))) {}
+        if (s.inputs[c] && OB_FAIL(s.inputs[c]->eval_batch(eval_ctx_, *batch->skip_, batch->size_))) {}
       }
       evaluate_us += clock_us() - evaluate_start;
       const int64_t pack_start = clock_us();
@@ -157,7 +162,7 @@ int ObScalarAggregateOp::sirius_get_next_batch()
         uint32_t position = s.buffered;
         for (int c = 0; OB_SUCC(ret) && c < s.sums; ++c) {
           position = s.buffered;
-          const auto datums = s.inputs[c]->locate_expr_datumvector(eval_ctx_);
+          const auto datums = s.inputs[c] ? s.inputs[c]->locate_expr_datumvector(eval_ctx_) : ObDatumVector();
           char *masks[4] = {}, *values[4] = {};
           for (int limb = 0; limb < s.limbs[c]; ++limb) {
             masks[limb] = s.input + (s.offsets[c] + limb) * s.column_bytes;
@@ -165,7 +170,12 @@ int ObScalarAggregateOp::sirius_get_next_batch()
           }
           for (int64_t row = start; OB_SUCC(ret) && row < stop; ++row) {
             if (!all_active && batch->skip_->at(row)) continue;
-            const auto *datum = datums.at(row);
+            const auto *datum = s.inputs[c] ? datums.at(row) : nullptr;
+            if (s.counts[c]) {
+              const int64_t present = !datum || !datum->is_null();
+              std::memcpy(values[0] + position++ * 8, &present, 8);
+              continue;
+            }
             unsigned char value[16] = {};
             if (!datum->is_null()) {
               const auto len = datum->get_int_bytes();
@@ -232,7 +242,10 @@ int ObScalarAggregateOp::sirius_get_next_batch()
       total = total * (int64_t{1} << 32) + int256_t(part);
     }
     if (OB_SUCC(ret)) {
-      if (!valid) datum->set_null();
+      if (s.counts[c]) {
+        if (total < 0 || total > int256_t(INT64_MAX)) ret = OB_OPERATE_OVERFLOW;
+        else datum->set_int(valid ? static_cast<int64_t>(total) : 0);
+      } else if (!valid) datum->set_null();
       else {
         int256_t bound = 1;
         for (int i = 0; i < expr->datum_meta_.precision_; ++i) bound = bound * 10;

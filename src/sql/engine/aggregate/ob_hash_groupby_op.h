@@ -222,6 +222,7 @@ OB_INLINE void ObGroupRowHashTable::prefetch(const ObBatchRows &brs, uint64_t *h
 }
 // Input data has already been sorted by the groupby column
 struct SiriusAggregateState;
+struct SiriusGroupedExactState;
 class ObHashGroupByOp : public ObGroupByOp
 {
 public:
@@ -352,6 +353,12 @@ public:
 
 private:
   int init_sirius();
+  int init_sirius_exact();
+  int sirius_exact_get_next_batch(int64_t max_row_cnt);
+  void reset_sirius_exact();
+  void destroy_sirius_exact();
+  SiriusGroupedExactState *sirius_exact_ = nullptr;
+  bool sirius_exact_active_ = false;
   int sirius_get_next_batch(int64_t max_row_cnt);
   void reset_sirius();
   void destroy_sirius();

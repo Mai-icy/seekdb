@@ -101,10 +101,15 @@ class Backend:
             if result["rows"] != [[0, 0, 1]]:
                 raise RuntimeError("Sirius startup warmup result mismatch")
 
-    def execute(self, plan, reader=None):
+    def execute_grouped_exact(self, plan, reader):
+        return self.execute(plan, reader, output_capacity=256 * 1024**2)
+
+    def execute(self, plan, reader=None, *, output_capacity=1024**2):
         if self.closed:
             raise RuntimeError('Backend has been closed')
-        output, error, length = ct.create_string_buffer(1024 * 1024), ct.create_string_buffer(1024), ct.c_size_t()
+        if not 0 < output_capacity <= 256 * 1024**2:
+            raise ValueError('Invalid backend result capacity')
+        output, error, length = ct.create_string_buffer(output_capacity), ct.create_string_buffer(1024), ct.c_size_t()
         # ArrowArrayStream consists of four callback pointers and private_data.
         c_stream = (ct.c_void_p * 5)()
         if reader is not None:
@@ -118,7 +123,7 @@ class Backend:
             raise RuntimeError(error.value.decode("utf-8", errors="replace"))
         if not 0 < length.value <= len(output):
             raise RuntimeError("Invalid backend result size")
-        return output.raw[:length.value]
+        return ct.string_at(output, length.value)
 
 
 def native_aggregate(sock, backend, descriptor):
@@ -127,42 +132,47 @@ def native_aggregate(sock, backend, descriptor):
     version, groups, sums, count = descriptor[:4]
     if version == 1 and len(descriptor) == 4:
         frame_limit, row_limit = 16 * 1024**2, 262144
-    elif version in (2, 3) and len(descriptor) == 5 and descriptor[4] in ((16, 64, 128) if version == 3 else (64, 128)):
+    elif version in (2, 3, 4, 7) and len(descriptor) == 5 and descriptor[4] in ((16, 64, 128) if version >= 3 else (64, 128)):
         frame_limit = descriptor[4] * 1024**2
         row_limit = 262144 if descriptor[4] == 16 else 8 * 1024**2
     else:
         raise ValueError("Unsupported native aggregate protocol version/frame bound")
     if backend.input_buffer is not None and len(backend.input_buffer) < frame_limit:
         raise ValueError("Pinned receive buffer is smaller than the requested native frame bound")
-    exact = version == 3
-    valid_shape = (groups == 0 and 1 <= sums <= 64 and count == 0) if exact else (
-        1 <= groups <= 8 and groups + sums <= 64 and count in (0, 1))
+    exact = version in (3, 4, 7)
+    reduction = 'min' if version == 7 else 'sum'
+    if exact:
+        valid_shape = (1 <= sums and groups + sums <= 64 and count == 0
+                       and (groups == 0 if version == 3 else 1 <= groups <= 8))
+    else:
+        valid_shape = 1 <= groups <= 8 and groups + sums <= 64 and count in (0, 1)
     if not valid_shape:
         raise ValueError("Unsupported native aggregate shape")
     names = [f"g{i}" for i in range(groups)] + [f"s{i}" for i in range(sums)]
     schema = pa.schema([(name, pa.int64() if exact or i < groups else pa.float64())
                         for i, name in enumerate(names)])
     plan = make_plan_for_schema(schema, names[:groups], names[groups:], bool(count),
-                                wide_integer_sums=exact)
+                                wide_integer_sums=exact, reduction=reduction)
     frames = NativeInput(sock, frame_limit, row_limit, len(schema), backend.input_buffer,
                          getattr(backend, 'native_prefetch_buffers', ()))
     try:
         send(sock, b"A")
         frames.start()
-        _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, sums, count, exact)
+        _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, sums, count, exact, reduction)
     finally:
         # Stop ACK writes and receive before the handler emits an error or the
         # process releases pinned storage. GPU execution has already returned.
         frames.close()
 
 
-def _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, sums, count, exact=False):
+def _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, sums, count, exact=False, reduction='sum'):
     total_rows = 0
     max_batch_bytes = 0
     ended = False
     chunk_limit = backend.native_chunk_bytes
     fragment_limit = getattr(backend, 'native_fragment_bytes', 512 * 1024**2)
     columns = groups + sums + count
+    result_limit = 256 * 1024**2 if exact and groups else 1024**2
     def batches():
         nonlocal total_rows, ended, max_batch_bytes
         total = 0
@@ -198,7 +208,8 @@ def _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, 
         iterator = batches()
         try:
             with pa.RecordBatchReader.from_batches(schema, iterator) as reader:
-                result = json.loads(backend.execute(plan, reader))
+                execute = getattr(backend, 'execute_grouped_exact', backend.execute) if exact and groups else backend.execute
+                result = json.loads(execute(plan, reader))
         finally:
             iterator.close()
         chunks += 1
@@ -215,14 +226,15 @@ def _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, 
                         raise ValueError("Non-finite native partial SUM")
             key = tuple(row[:groups])
             if key not in merged:
-                if 4 + (len(merged) + 1) * columns * (17 if exact else 9) > 1024 * 1024:
-                    raise ValueError("Native aggregate merged result exceeds 1 MiB")
+                if 4 + (len(merged) + 1) * columns * (17 if exact else 9) > result_limit:
+                    raise ValueError("Native aggregate merged result exceeds protocol bound")
                 merged[key] = list(row)
             else:
                 prior = merged[key]
                 for i in range(groups, groups + sums):
                     if row[i] is not None:
-                        prior[i] = row[i] if prior[i] is None else prior[i] + row[i]
+                        prior[i] = row[i] if prior[i] is None else (
+                            min(prior[i], row[i]) if reduction == 'min' else prior[i] + row[i])
                         if not exact and not math.isfinite(prior[i]):
                             raise ValueError("Non-finite native merged SUM")
                 if count:
@@ -242,12 +254,12 @@ def _native_aggregate(sock, backend, frames, schema, plan, frame_limit, groups, 
             else:
                 output += struct.pack("<Bd" if groups <= i < groups+sums else "<Bq",
                                       value is not None, value if value is not None else 0)
-    if len(output) > 1024 * 1024:
-        raise ValueError("Native aggregate result exceeds 1 MiB")
+    if len(output) > result_limit:
+        raise ValueError("Native aggregate result exceeds protocol bound")
     print(f"native aggregate: rows={total_rows} groups={len(result_rows)} chunks={chunks} "
           f"frame_mib={frame_limit // 1024**2} max_batch_bytes={max_batch_bytes} "
-          f"prefetch={bool(frames.buffers)} exact={exact}", flush=True)
-    send(sock, b"R", output)
+          f"prefetch={bool(frames.buffers)} exact={exact} reduction={reduction}", flush=True)
+    send(sock, b"R", output, limit=result_limit)
 
 
 def exact_integer(value):
