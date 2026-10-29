@@ -56,7 +56,7 @@ def main(args):
     summary = {'source': str(source), 'source_bytes': source_info.st_size,
                'source_mtime_ns': source_info.st_mtime_ns, 'scale_factor': args.scale_factor,
                'host': host, 'port': port,
-               'database': args.database, 'modes': ['cpu8', 'native1'], 'queries': [],
+               'database': args.database, 'modes': args.modes, 'queries': [],
                'comparison': 'row multiset; exact non-floating numerics, float rel=1e-9 abs=1e-6; ordering not compared',
                'timing': 'SQL execute/fetch; excludes sorting and oracle generation'}
     if args.resume and summary_path.exists():
@@ -153,6 +153,8 @@ if __name__ == '__main__':
     p.add_argument('--scale-factor', type=float, required=True)
     p.add_argument('--oracle-memory', default='128GB')
     p.add_argument('--query-timeout', type=int, default=1800)
+    p.add_argument('--modes', nargs='+', choices=('cpu8', 'native1'), default=['cpu8', 'native1'],
+                   help='Use cpu8 alone to establish full-query correctness before enabling native GPU operators')
     p.add_argument('--queries', nargs='+', type=int, default=list(range(1, 23)))
     p.add_argument('--resume', action='store_true')
     args = p.parse_args()

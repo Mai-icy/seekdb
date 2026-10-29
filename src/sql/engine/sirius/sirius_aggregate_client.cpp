@@ -87,13 +87,21 @@ bool SiriusAggregateClient::response(char expected, char *data, size_t capacity,
 }
 bool SiriusAggregateClient::open(uint8_t groups, uint8_t sums, bool count,
                                  bool (*cancel)(void *), void *context) {
+  return open_impl(groups, sums, count, false, cancel, context);
+}
+bool SiriusAggregateClient::open_integer_sums(uint8_t sums, bool (*cancel)(void *), void *context) {
+  return open_impl(0, sums, false, true, cancel, context);
+}
+bool SiriusAggregateClient::open_impl(uint8_t groups, uint8_t sums, bool count, bool exact,
+                                      bool (*cancel)(void *), void *context) {
   close();
   cancel_ = cancel;
   context_ = context;
   error_[0] = 0;
   const unsigned columns = static_cast<unsigned>(groups) + sums;
   const uint16_t endian = 1;
-  if (*reinterpret_cast<const uint8_t *>(&endian) != 1 || groups < 1 || groups > 8 || columns > 64) {
+  if (*reinterpret_cast<const uint8_t *>(&endian) != 1 || columns > 64
+      || (exact ? (groups != 0 || sums == 0 || count) : (groups < 1 || groups > 8))) {
     return fail("Unsupported native Sirius schema or byte order");
   }
   columns_ = columns;
@@ -105,7 +113,9 @@ bool SiriusAggregateClient::open(uint8_t groups, uint8_t sums, bool count,
     return fail("Set SEEKDB_SIRIUS_SOCKET to a valid absolute Unix socket path");
   }
   std::strcpy(address.sun_path, path);
-  deadline_ms_ = now_ms() + 60000;
+  // Respect cancellation throughout large native scans, without a 60s dataset
+  // size ceiling. The SQL execution context still owns the statement deadline.
+  deadline_ms_ = now_ms() + (exact ? 3600000 : 60000);
   fd_ = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
   if (fd_ < 0) return fail("Cannot create Sirius aggregate socket");
   // AF_UNIX connects synchronously; EAGAIN (full backlog) fails without consuming input.
@@ -120,9 +130,9 @@ bool SiriusAggregateClient::open(uint8_t groups, uint8_t sums, bool count,
   // Version 2 advertises the larger frame bound before consuming scan input.
   // Old sidecars reject it at open; default version 1 remains byte-compatible.
   const bool large = frame_limit_ > 16 * 1024 * 1024;
-  uint8_t descriptor[5] = {static_cast<uint8_t>(large ? 2 : 1), groups, sums,
+  uint8_t descriptor[5] = {static_cast<uint8_t>(exact ? 3 : large ? 2 : 1), groups, sums,
                          static_cast<uint8_t>(count), static_cast<uint8_t>(frame_limit_ / (1024 * 1024))};
-  const size_t descriptor_size = large ? 5 : 4;
+  const size_t descriptor_size = exact || large ? 5 : 4;
   size_t ignored = 0;
   return frame('N', descriptor_size) && transfer(descriptor, descriptor_size, true) && response('A', nullptr, 0, ignored);
 }
@@ -150,6 +160,7 @@ bool SiriusAggregateClient::finish(char *result, size_t capacity, size_t &size) 
 #else
 namespace oceanbase { namespace sql {
 bool SiriusAggregateClient::open(uint8_t, uint8_t, bool, bool (*)(void *), void *) { return false; }
+bool SiriusAggregateClient::open_integer_sums(uint8_t, bool (*)(void *), void *) { return false; }
 bool SiriusAggregateClient::batch(const char *, uint32_t, uint32_t) { return false; }
 bool SiriusAggregateClient::finish(char *, size_t, size_t &) { return false; }
 void SiriusAggregateClient::close() {}

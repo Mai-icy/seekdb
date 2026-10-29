@@ -21,7 +21,8 @@ def make_plan(parquet, groups=(), sums=(), count=False, minimum=None):
     return make_plan_for_schema(schema, groups, sums, count, minimum, parquet)
 
 
-def make_plan_for_schema(schema, groups=(), sums=(), count=False, minimum=None, parquet=None):
+def make_plan_for_schema(schema, groups=(), sums=(), count=False, minimum=None, parquet=None,
+                         *, wide_integer_sums=False):
     names = schema.names
     if len(set(names)) != len(names):
         raise ValueError("Duplicate input column names are unsupported")
@@ -73,7 +74,17 @@ def make_plan_for_schema(schema, groups=(), sums=(), count=False, minimum=None, 
                 raise ValueError("SUM helper supports integer and floating point columns")
             measure = agg.measures.add().measure
             measure.function_reference = function("sum")
-            measure.arguments.add().value.CopyFrom(field(names.index(name)))
+            argument = field(names.index(name))
+            if wide_integer_sums and pa.types.is_integer(schema.field(name).type):
+                # Declaring a decimal output alone does not widen Sirius's
+                # BIGINT accumulator: it can wrap before the result cast.
+                promoted = alg.Expression()
+                promoted.cast.input.CopyFrom(argument)
+                promoted.cast.type.decimal.precision = 38
+                promoted.cast.type.decimal.scale = 0
+                promoted.cast.type.decimal.nullability = 1
+                argument = promoted
+            measure.arguments.add().value.CopyFrom(argument)
             measure.phase = alg.AGGREGATION_PHASE_INITIAL_TO_RESULT
             measure.invocation = alg.AggregateFunction.AGGREGATION_INVOCATION_ALL
             if pa.types.is_floating(schema.field(name).type):

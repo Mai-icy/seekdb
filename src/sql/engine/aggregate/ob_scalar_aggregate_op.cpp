@@ -31,6 +31,7 @@ OB_SERIALIZE_MEMBER((ObScalarAggregateSpec, ObGroupBySpec), enable_hash_base_dis
 int ObScalarAggregateOp::inner_open()
 {
   int ret = OB_SUCCESS;
+  reset_sirius();
   
   if (OB_FAIL(ObGroupByOp::inner_open())) {
   } else if (OB_FAIL(ObChunkStoreUtil::alloc_dir_id(dir_id_))) {
@@ -55,6 +56,7 @@ int ObScalarAggregateOp::inner_open()
 int ObScalarAggregateOp::inner_close()
 {
   int ret = OB_SUCCESS;
+  reset_sirius();
   if (OB_FAIL(ObGroupByOp::inner_close())) {
   } else {
     started_ = false;
@@ -65,6 +67,7 @@ int ObScalarAggregateOp::inner_close()
 
 void ObScalarAggregateOp::destroy()
 {
+  destroy_sirius();
   started_ = false;
   sql_mem_processor_.unregister_profile_if_necessary();
   hp_infras_mgr_.destroy();
@@ -74,6 +77,7 @@ void ObScalarAggregateOp::destroy()
 int ObScalarAggregateOp::inner_switch_iterator()
 {
   int ret = OB_SUCCESS;
+  reset_sirius();
   if (OB_FAIL(ObGroupByOp::inner_switch_iterator())) {
   } else if (OB_FAIL(aggr_processor_.init_one_group())) {
   } else {
@@ -85,6 +89,7 @@ int ObScalarAggregateOp::inner_switch_iterator()
 int ObScalarAggregateOp::inner_rescan()
 {
   int ret = OB_SUCCESS;
+  reset_sirius();
   if (OB_FAIL(ObGroupByOp::inner_rescan())) {
   } else if (OB_FAIL(aggr_processor_.init_one_group())) {
   } else {
@@ -141,6 +146,11 @@ int ObScalarAggregateOp::inner_get_next_row()
 int ObScalarAggregateOp::inner_get_next_batch(const int64_t max_row_cnt)
 {
   int ret = OB_SUCCESS;
+  if (!sirius_checked_) {
+    sirius_checked_ = true;
+    if (OB_FAIL(init_sirius())) { return ret; }
+  }
+  if (sirius_active_) { return sirius_get_next_batch(); }
   int64_t batch_cnt = min(max_row_cnt, MY_SPEC.max_batch_size_);
   ObAggregateProcessor::GroupRow *group_row = nullptr;
   const ObBatchRows * child_brs = nullptr;

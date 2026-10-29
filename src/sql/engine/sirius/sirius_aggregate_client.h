@@ -17,11 +17,15 @@ public:
   static size_t batch_row_limit();
   ~SiriusAggregateClient() { close(); }
   bool open(uint8_t groups, uint8_t sums, bool count, bool (*cancel)(void *), void *context);
+  // V3: scalar SUM over signed int64 columns, exact signed-128 result cells.
+  bool open_integer_sums(uint8_t sums, bool (*cancel)(void *), void *context);
   bool batch(const char *columns, uint32_t rows, uint32_t capacity_rows = BATCH_ROWS);
   bool finish(char *result, size_t capacity, size_t &size);
   void close();
   const char *error() const { return error_; }
 private:
+  bool open_impl(uint8_t groups, uint8_t sums, bool count, bool exact,
+                 bool (*cancel)(void *), void *context);
   bool transfer(void *data, size_t size, bool write);
   bool frame(char kind, uint32_t size);
   bool response(char expected, char *data, size_t capacity, size_t &size);

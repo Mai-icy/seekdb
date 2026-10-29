@@ -1,4 +1,4 @@
-# Native seekdb hash aggregation with Sirius
+# Native seekdb aggregation with Sirius
 
 Follow-up: [NATIVE_PERFORMANCE.md](NATIVE_PERFORMANCE.md) records input profiling,
 packing optimization and later measurements with scan-batch hints. The original
@@ -63,17 +63,85 @@ SET @sirius_gpu = 0; -- CPU comparison, same server and data
 ```
 
 Both the server environment gate and integer session variable must be enabled.
-Selection occurs when the physical hash aggregate executes, including when a
+Selection occurs when the physical aggregate executes, including when a
 cached plan is reused. EXPLAIN still shows HASH GROUP BY; this prototype does not
 add an optimizer cost model or a distinct GPU plan node. The sidecar logs native
 request input/result row counts. The startup test also proves a qualifying query
 fails while the sidecar is absent, so its GPU timing cannot silently be CPU timing.
 
-## Eligibility and semantics
+## Exact scalar decimal SUM
+
+`ObScalarAggregateOp` also supports 1–16 decimal SUM expressions directly over
+a seekdb table scan. This includes the arithmetic used by TPC-H Q6:
+
+```sql
+SET @sirius_gpu = 1;
+SELECT /*+ PARALLEL(1) OPT_PARAM('pushdown_storage_level',2) */
+       SUM(l_extendedprice * l_discount)
+FROM lineitem
+WHERE l_shipdate >= DATE '1994-01-01'
+  AND l_shipdate < DATE '1995-01-01'
+  AND l_discount BETWEEN 0.05 AND 0.07
+  AND l_quantity < 24;
+```
+
+seekdb owns the scan, transaction visibility, filters, and argument expression
+evaluation. Sirius performs the SUM. Storage aggregation pushdown is excluded:
+the hint above disables it so the adapter receives individual visible rows.
+EXPLAIN still shows SCALAR GROUP BY. This is an initial operator integration,
+not full GPU execution of Q6 or of all 22 TPC-H queries.
+
+Eligible input expressions use DecimalInt with precision 1–38. Output precision
+must be at least the input precision and at most 76, with the same scale.
+DISTINCT, mixed COUNT/SUM, parallel aggregation, and other child operators use
+the CPU path before consuming input. The serial SELECT and environment/session
+gates above apply to this path too.
+
+Protocol v3 carries one, two or four integer limbs per unscaled decimal value,
+according to its declared precision (up to 9, 18 or 38 digits respectively), with
+the same NULL bitmap on each limb. Low limbs are unsigned 32-bit values;
+the highest limb is signed. Each limb is promoted to DECIMAL(38,0) **before** GPU
+SUM; specifying only a decimal result type permits a BIGINT overflow in Sirius.
+The sidecar merges partial sums using exact integers and returns signed 128-bit
+cells. seekdb reconstructs the decimal in a 256-bit accumulator, checks the
+declared precision, and restores the scale. No floating-point conversion occurs.
+Empty and all-NULL inputs produce a single NULL result row.
+
+Use bounded fragments, for example `--native-chunk-mib 128`, for large tables.
+The existing 16/64/128 MiB frame and optional pinned receive buffers are reused.
+The scalar protocol has a one-hour transport ceiling; seekdb statement
+cancellation remains active. `SEEKDB_SIRIUS_PROFILE=1` additionally records
+scan, expression evaluation, packing, transfer wait, and final-result wait times.
+Sidecar startup/warmup and host-pin allocation are outside per-query timing;
+scanning and transferring fresh seekdb rows are part of every query.
+
+Validation on an isolated GPU host:
+
+```sh
+SIRIUS_TEST_LIBRARY=/absolute/path/libseekdb_sirius_bridge.so \
+  python unittest/sql/sirius/test_native_exact_gpu.py
+SEEKDB_PORT=2898 python unittest/sql/sirius/scalar_native_integration.py \
+  --trace /absolute/path/native-sidecar.log
+```
+
+The SQL test requires per-query sidecar evidence, checks exact CPU/GPU results,
+correlated rescans, own writes, another transaction's uncommitted writes,
+rollback, committed changes, and repeatable-read visibility. The bridge exposes
+an idempotent shutdown entry point so the sidecar destroys its GPU runtime before
+interpreter teardown. The earlier v1/v2 grouped protocol remains unchanged.
+
+For full-query correctness first, run the existing TPC-H runner with
+`--modes cpu8`, alongside its source, verified import, database, scale-factor,
+output-directory and sidecar-log arguments. This explicitly disables native GPU
+execution for all 22 queries and does not require a running sidecar. The default
+modes remain `cpu8 native1`; reports record actual GPU events separately from
+successful CPU fallback. Neither mode name alone proves GPU coverage.
+
+## Hash aggregation eligibility and shared semantics
 
 - Linux; vectorized, serial SELECT plan (`PARALLEL(1)`), hash aggregation directly
   over a table scan. Parallel plans and other operator shapes use existing CPU
-  execution. No GPU choice is made for scalar aggregation, DML, joins or nested
+  execution. This hash path does not handle DML, joins or nested
   aggregate input trees.
 - One to eight BIGINT grouping columns, DOUBLE column SUM, COUNT(*), or grouping
   without measures. At most 64 input columns. NULL keys and values are supported.
@@ -129,7 +197,7 @@ socket backpressure. This is not yet a fully overlapped scan/compute engine or
 an arbitrary-size streaming result interface. See [SF500.md](SF500.md) for the
 full 75-million-row customer projection experiment.
 
-The native transport has a 60-second total deadline and polls for query
+The grouped native transport has a 60-second total deadline and polls for query
 cancellation at intervals of at most 100 ms while waiting on I/O. Disconnects and
 broken pipes return errors rather than sending SIGPIPE to seekdb. An already
 executing GPU kernel is not interrupted by closing the socket.

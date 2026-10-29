@@ -11,7 +11,7 @@ It includes build instructions, transaction checks, failure recovery and honest
 end-to-end measurements. The original snapshot path below remains available.
 
 **Native SQL aggregate:** [NATIVE_AGGREGATE.md](NATIVE_AGGREGATE.md) describes the
-opt-in hash aggregate implementation consuming seekdb scan batches directly,
+opt-in hash and exact decimal scalar aggregates consuming seekdb scan batches directly,
 bounded pinned host input, startup warmup and CPU/GPU performance measurements.
 Follow-up profiling, packing optimization and shuffled scan-batch experiments
 are in [NATIVE_PERFORMANCE.md](NATIVE_PERFORMANCE.md).

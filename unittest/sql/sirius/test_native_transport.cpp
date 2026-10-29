@@ -102,6 +102,28 @@ TEST(SiriusNativeTransport, TypedBatchAndResult) {
   ASSERT_TRUE(client.finish(result, sizeof(result), size));
   EXPECT_EQ(22, size);
 }
+TEST(SiriusNativeTransport, ExactScalarDescriptorAndWideResult) {
+  Server server([](int fd) {
+    EXPECT_EQ(std::string("\3\0\1\0\20", 5), read_frame(fd, 'N'));
+    reply(fd, 'A');
+    auto batch = read_frame(fd, 'B');
+    EXPECT_EQ(13, batch.size());
+    reply(fd, 'A');
+    EXPECT_TRUE(read_frame(fd, 'E').empty());
+    std::string result(21, 0);
+    result[0] = result[4] = 1;
+    result[13] = 1; // 2^64 cannot be carried by the legacy 8-byte value.
+    reply(fd, 'R', result);
+  });
+  SiriusAggregateClient client;
+  ASSERT_TRUE(client.open_integer_sums(1, nullptr, nullptr));
+  char input[9] = {1};
+  ASSERT_TRUE(client.batch(input, 1, 1));
+  char result[32]; size_t size = 0;
+  ASSERT_TRUE(client.finish(result, sizeof(result), size));
+  EXPECT_EQ(21, size);
+  EXPECT_EQ(1, result[13]);
+}
 TEST(SiriusNativeTransport, RejectsUntrustedResultLength) {
   Server server([](int fd) {
     read_frame(fd, 'N'); reply(fd, 'A'); read_frame(fd, 'E');

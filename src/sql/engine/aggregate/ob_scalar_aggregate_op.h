@@ -25,6 +25,7 @@ namespace oceanbase
 {
 namespace sql
 {
+struct SiriusScalarState;
 class ObScalarAggregateSpec : public ObGroupBySpec
 {
   OB_UNIS_VERSION_V(1);
@@ -49,7 +50,7 @@ public:
     : ObGroupByOp(exec_ctx, spec, input), started_(false), dir_id_(-1),
       profile_(ObSqlWorkAreaType::HASH_WORK_AREA),
       sql_mem_processor_(profile_, op_monitor_info_),
-      hp_infras_mgr_()
+      hp_infras_mgr_(), sirius_(nullptr), sirius_checked_(false), sirius_active_(false)
   {
   }
 
@@ -63,6 +64,10 @@ public:
   // reset default value of %cur_rownum_ && %rownum_limit_
 private:
   int init_hp_infras_group_mgr();
+  int init_sirius();
+  int sirius_get_next_batch();
+  void reset_sirius();
+  void destroy_sirius();
 private:
   // disallow copy
   DISALLOW_COPY_AND_ASSIGN(ObScalarAggregateOp);
@@ -73,6 +78,9 @@ private:
   ObSqlWorkAreaProfile profile_;
   ObSqlMemMgrProcessor sql_mem_processor_;
   HashPartInfrasMgr hp_infras_mgr_;
+  SiriusScalarState *sirius_;
+  bool sirius_checked_;
+  bool sirius_active_;
 };
 
 } // end namespace sql
