@@ -27,6 +27,7 @@
 #include "sql/monitor/show_trace/ob_show_trace.h"
 #include "sql/engine/table/ob_table_scan_op.h"
 #include "share/ob_ddl_checksum.h"
+#include "sql/engine/sirius/sirius_query_result.h"
 
 using namespace oceanbase::sql;
 using namespace oceanbase::common;
@@ -94,6 +95,10 @@ void ObResultSet::reset_implicit_cursor_idx()
 
 ObResultSet::~ObResultSet()
 {
+  if (sirius_result_) {
+    sirius_result_->~SiriusQueryResult();
+    sirius_result_ = nullptr;
+  }
   // The execution context owns the explicit plan-cache dependency. Preserve it
   // before destroying the inline context because the cache-object guard still
   // needs it to release the guarded plan.
@@ -471,7 +476,13 @@ OB_INLINE int ObResultSet::do_open_plan(ObExecContext &ctx)
     // Admit PX here after open-phase work, just before execute_plan,
     // so it is never held idle across pre-execution. Guard makes it idempotent across the open_plan
     // transaction_set_violation retry; no-ops for non-PX / dop==1 / EXPLAIN.
+    const auto literal_type = literal_stmt_type_ == stmt::T_NONE ? stmt_type_ : literal_stmt_type_;
+    if (!is_inner_result_set_ && literal_type == stmt::T_SELECT && !sirius_result_) {
+      ret = SiriusQueryResult::create_if_requested(*this, sirius_result_);
+    }
     if OB_FAIL(ret) {
+    } else if (sirius_result_) {
+      exec_result_ = sirius_result_;
     } else if (!ctx.get_admission_acquired()
                && OB_FAIL(ObPxAdmission::enter_query_admission(my_session_, ctx,
                                                                get_stmt_type(), *physical_plan_))) {
@@ -707,7 +718,7 @@ OB_INLINE int ObResultSet::do_close_plan(int errcode, ObExecContext &ctx)
     ObPhysicalPlanCtx *plan_ctx = NULL;
     if (OB_ISNULL(plan_ctx = get_exec_context().get_physical_plan_ctx())) {
       close_ret = OB_ERR_UNEXPECTED;
-    } else if (OB_SUCCESS != (close_ret = executor_.close(ctx))) {
+    } else if (!sirius_result_ && OB_SUCCESS != (close_ret = executor_.close(ctx))) {
     }
 
     ObPxAdmission::exit_query_admission(my_session_, get_exec_context(), get_stmt_type(), *get_physical_plan());
@@ -734,7 +745,7 @@ OB_INLINE int ObResultSet::do_close_plan(int errcode, ObExecContext &ctx)
     } else if (OB_SUCCESS != sret) {
       ret = sret;
     }
-    if (OB_SUCC(ret)) {
+    if (OB_SUCC(ret) && !sirius_result_) {
       if (OB_FAIL(deal_feedback_info(physical_plan_, rollback, ctx))) {
       }
     }

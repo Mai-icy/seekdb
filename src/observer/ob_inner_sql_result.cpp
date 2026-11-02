@@ -224,6 +224,40 @@ int ObInnerSQLResult::next()
   return ret;
 }
 
+int ObInnerSQLResult::consume_rows(int64_t limit,
+    int (*consume)(const common::ObNewRow &, void *), void *context, bool &eof)
+{
+  int ret = OB_SUCCESS;
+  eof = false;
+  if (!opened_) return OB_NOT_INIT;
+  if (limit <= 0 || !consume) return OB_INVALID_ARGUMENT;
+  if (iter_end_) { eof = true; return OB_SUCCESS; }
+  ObInnerSqlWaitGuard guard(is_inner_session(), &session_);
+  ObInterruptCheckerGuard interrupt_guard(interrupt_checker_);
+  SQL_INFO_GUARD(session_.get_current_query_string(), session_.get_cur_sql_id());
+  ObInnerSQLSessionGuard sess_guard(&session_);
+  WITH_CONTEXT(mem_context_) {
+    for (int64_t i = 0; OB_SUCC(ret) && i < limit; ++i) {
+      if (store_first_row_) {
+        store_first_row_ = false;
+      } else {
+        row_ = nullptr;
+        ret = result_set_->get_next_row(row_);
+      }
+      if (ret == OB_ITER_END) { iter_end_ = true; eof = true; ret = OB_SUCCESS; break; }
+      if (OB_FAIL(ret)) {
+        result_set_->refresh_location_cache_by_errno(true, ret);
+      } else if (!row_) {
+        ret = OB_ERR_UNEXPECTED;
+      } else {
+        ret = consume(*row_, context);
+        if (ret == OB_ITER_END) { ret = OB_SUCCESS; break; }
+      }
+    }
+  }
+  return ret;
+}
+
 int ObInnerSQLResult::build_column_map() const
 {
   int ret = OB_SUCCESS;

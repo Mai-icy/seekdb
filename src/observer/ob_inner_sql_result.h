@@ -52,6 +52,8 @@ public:
   virtual int open();
   virtual int close();
   virtual int next();
+  int consume_rows(int64_t limit, int (*consume)(const common::ObNewRow &, void *),
+                   void *context, bool &eof);
   int force_close();
 
   virtual int print_info() const;

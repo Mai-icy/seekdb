@@ -1483,6 +1483,13 @@ int ObInnerSQLConnectionAccess::create_connection_with_external_session(
       session, connection);
 }
 
+int ObInnerSQLConnectionAccess::consume_rows(common::sqlclient::ObMySQLResult *result,
+    int64_t limit, int (*consume)(const common::ObNewRow &, void *), void *context, bool &eof)
+{
+  auto *inner = dynamic_cast<observer::ObInnerSQLResult *>(result);
+  return inner ? inner->consume_rows(limit, consume, context, eof) : OB_NOT_SUPPORTED;
+}
+
 int ObInnerSQLConnectionAccess::create_spi_connection_with_external_session(
     sql::ObSQLSessionInfo *session,
     common::sqlclient::ObISQLConnectionGuard &connection)

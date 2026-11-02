@@ -9911,13 +9911,40 @@ static struct VarsInit{
     ObSysVars[718].alias_ = "OB_SV_SPARSE_DROP_RATIO_SEARCH" ;
     }();
 
+    [&] (){
+      ObSysVars[719].id_ = SYS_VAR_EXECUTION_BACKEND ;
+      cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_EXECUTION_BACKEND)) ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_EXECUTION_BACKEND] = 719 ;
+      ObSysVars[719].name_ = "execution_backend" ;
+      ObSysVars[719].default_value_ = "0" ;
+      ObSysVars[719].base_value_ = "0" ;
+      ObSysVars[719].data_type_ = ObIntType ;
+      ObSysVars[719].info_ = "Select CPU or explicit Sirius whole-query GPU execution for this session. GPU errors are not retried on CPU." ;
+      ObSysVars[719].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::NEED_SERIALIZE ;
+      ObSysVars[719].enum_names_ = "['cpu', 'gpu']" ;
+    ObSysVars[719].alias_ = "OB_SV_EXECUTION_BACKEND" ;
+    }();
+
+    [&] (){
+      ObSysVars[720].id_ = SYS_VAR_SIRIUS_SNAPSHOT ;
+      cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_SIRIUS_SNAPSHOT)) ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_SIRIUS_SNAPSHOT] = 720 ;
+      ObSysVars[720].name_ = "sirius_snapshot" ;
+      ObSysVars[720].default_value_ = "" ;
+      ObSysVars[720].base_value_ = "" ;
+      ObSysVars[720].data_type_ = ObVarcharType ;
+      ObSysVars[720].info_ = "Empty means current-transaction input. A nonempty immutable snapshot name explicitly selects reusable Sirius host pins; requires GPU execution." ;
+      ObSysVars[720].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::NEED_SERIALIZE ;
+    ObSysVars[720].alias_ = "OB_SV_SIRIUS_SNAPSHOT" ;
+    }();
+
     if (cur_max_var_id >= ObSysVarMeta::OB_MAX_SYS_VAR_ID) {
       HasInvalidSysVar = true;
     }
   }
 }vars_init;
 
-static int64_t var_amount = 719;
+static int64_t var_amount = 721;
 
 int64_t ObSysVariables::get_all_sys_var_count(){ return ObSysVarMeta::ALL_SYS_VARS_COUNT;}
 ObSysVarClassType ObSysVariables::get_sys_var_id(int64_t i){ return ObSysVars[i].id_;}

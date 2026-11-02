@@ -1,5 +1,10 @@
 # Experimental Sirius GPU integration
 
+**Upstream host adapter:** [ADAPTER.md](ADAPTER.md) documents this branch's
+whole-query Substrait adapter, native seekdb statement snapshots, bounded Arrow
+inputs and immutable host pin reuse. Use that guide for `execution_backend='gpu'`;
+the older experiments below use different interfaces and binaries.
+
 This prototype adds `SIRIUS_EXECUTE_SUBSTRAIT(binary_plan)` to seekdb. The function
 loads an optional bridge, executes a binary Substrait plan with Sirius's public
 C++ FFI, and returns its Arrow results as JSON. Normal seekdb builds require no

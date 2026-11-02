@@ -24,9 +24,11 @@ namespace oceanbase
 {
 namespace common
 {
+class ObNewRow;
 namespace sqlclient
 {
 class ObISQLConnection;
+class ObMySQLResult;
 }
 }
 namespace sql
@@ -51,6 +53,11 @@ namespace query
 class ObInnerSQLConnectionAccess
 {
 public:
+  // Consume bounded rows under one inner-result/session context. The callback
+  // may return OB_ITER_END to stop this batch without closing the cursor.
+  static int consume_rows(common::sqlclient::ObMySQLResult *result, int64_t limit,
+      int (*consume)(const common::ObNewRow &, void *), void *context, bool &eof);
+
   static int create_connection_with_external_session(
       sql::ObSQLSessionInfo *session,
       common::sqlclient::ObISQLConnectionGuard &connection);

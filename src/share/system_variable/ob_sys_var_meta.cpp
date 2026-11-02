@@ -113,6 +113,7 @@ const char *ObSysVarMeta::SYS_VAR_NAMES_SORTED_BY_NAME[] = {
   "eq_range_index_dive_limit",
   "error_count",
   "error_on_overlap_time",
+  "execution_backend",
   "expire_logs_days",
   "explicit_defaults_for_timestamp",
   "external_user",
@@ -650,6 +651,7 @@ const char *ObSysVarMeta::SYS_VAR_NAMES_SORTED_BY_NAME[] = {
   "show_compatibility_56",
   "show_create_table_verbosity",
   "show_old_temporals",
+  "sirius_snapshot",
   "skip_external_locking",
   "skip_name_resolve",
   "skip_networking",
@@ -835,6 +837,7 @@ const ObSysVarClassType ObSysVarMeta::SYS_VAR_IDS_SORTED_BY_NAME[] = {
   SYS_VAR_EQ_RANGE_INDEX_DIVE_LIMIT,
   SYS_VAR_ERROR_COUNT,
   SYS_VAR_ERROR_ON_OVERLAP_TIME,
+  SYS_VAR_EXECUTION_BACKEND,
   SYS_VAR_EXPIRE_LOGS_DAYS,
   SYS_VAR_EXPLICIT_DEFAULTS_FOR_TIMESTAMP,
   SYS_VAR_EXTERNAL_USER,
@@ -1372,6 +1375,7 @@ const ObSysVarClassType ObSysVarMeta::SYS_VAR_IDS_SORTED_BY_NAME[] = {
   SYS_VAR_SHOW_COMPATIBILITY_56,
   SYS_VAR_SHOW_CREATE_TABLE_VERBOSITY,
   SYS_VAR_SHOW_OLD_TEMPORALS,
+  SYS_VAR_SIRIUS_SNAPSHOT,
   SYS_VAR_SKIP_EXTERNAL_LOCKING,
   SYS_VAR_SKIP_NAME_RESOLVE,
   SYS_VAR_SKIP_NETWORKING,
@@ -2189,7 +2193,9 @@ const char *ObSysVarMeta::SYS_VAR_NAMES_SORTED_BY_ID[] = {
   "ob_ivf_nprobes",
   "ob_hnsw_extra_info_max_size",
   "_push_join_predicate",
-  "ob_sparse_drop_ratio_search"
+  "ob_sparse_drop_ratio_search",
+  "execution_backend",
+  "sirius_snapshot"
 };
 
 bool ObSysVarMeta::sys_var_name_case_cmp(const char *name1, const ObString &name2)

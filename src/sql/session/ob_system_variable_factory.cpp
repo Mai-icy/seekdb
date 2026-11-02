@@ -461,6 +461,11 @@ const char *ObSysVarEnableOptimizerRowgoal::ENABLE_OPTIMIZER_ROWGOAL_NAMES[] = {
   "ON",
   0
 };
+const char *ObSysVarExecutionBackend::EXECUTION_BACKEND_NAMES[] = {
+  "cpu",
+  "gpu",
+  0
+};
 
 ObSysVarFactory::ObSysVarFactory()
   : allocator_(ObMemAttr(ObModIds::OB_COMMON_SYS_VAR_FAC)),
@@ -1273,6 +1278,8 @@ int ObSysVarFactory::create_all_sys_vars_()
         + sizeof(ObSysVarObHnswExtraInfoMaxSize)
         + sizeof(ObSysVarPushJoinPredicate)
         + sizeof(ObSysVarObSparseDropRatioSearch)
+        + sizeof(ObSysVarExecutionBackend)
+        + sizeof(ObSysVarSiriusSnapshot)
         ;
     void *ptr = NULL;
     if (OB_ISNULL(ptr = allocator_.alloc(total_mem_size))) {
@@ -7752,6 +7759,24 @@ int ObSysVarFactory::create_all_sys_vars_()
         ptr = (void *)((char *)ptr + sizeof(ObSysVarObSparseDropRatioSearch));
       }
     }
+    if (OB_SUCC(ret)) {
+      if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarExecutionBackend())) {
+        ret = OB_ALLOCATE_MEMORY_FAILED;
+        LOG_ERROR("fail to new ObSysVarExecutionBackend", K(ret));
+      } else {
+        store_buf_[share::ObSysVarsToIdxMap::get_store_idx(static_cast<int64_t>(share::SYS_VAR_EXECUTION_BACKEND))] = sys_var_ptr;
+        ptr = (void *)((char *)ptr + sizeof(ObSysVarExecutionBackend));
+      }
+    }
+    if (OB_SUCC(ret)) {
+      if (OB_ISNULL(sys_var_ptr = new (ptr)ObSysVarSiriusSnapshot())) {
+        ret = OB_ALLOCATE_MEMORY_FAILED;
+        LOG_ERROR("fail to new ObSysVarSiriusSnapshot", K(ret));
+      } else {
+        store_buf_[share::ObSysVarsToIdxMap::get_store_idx(static_cast<int64_t>(share::SYS_VAR_SIRIUS_SNAPSHOT))] = sys_var_ptr;
+        ptr = (void *)((char *)ptr + sizeof(ObSysVarSiriusSnapshot));
+      }
+    }
 
   }
   return ret;
@@ -10651,6 +10676,14 @@ int ObSysVarFactory::create_sys_var(ObIAllocator &allocator_, share::ObSysVarCla
     }
     case share::SYS_VAR_OB_SPARSE_DROP_RATIO_SEARCH: {
       ret = create_one_sys_var<ObSysVarObSparseDropRatioSearch>(allocator_, sys_var_ptr, "ObSysVarObSparseDropRatioSearch");
+      break;
+    }
+    case share::SYS_VAR_EXECUTION_BACKEND: {
+      ret = create_one_sys_var<ObSysVarExecutionBackend>(allocator_, sys_var_ptr, "ObSysVarExecutionBackend");
+      break;
+    }
+    case share::SYS_VAR_SIRIUS_SNAPSHOT: {
+      ret = create_one_sys_var<ObSysVarSiriusSnapshot>(allocator_, sys_var_ptr, "ObSysVarSiriusSnapshot");
       break;
     }
 

@@ -412,6 +412,7 @@ private:
   query::ObIPlanCacheAccessService &plan_cache_access_service_;
   int64_t begin_timestamp_;
   ObIExecuteResult *exec_result_;
+  class SiriusQueryResult *sirius_result_ = nullptr;
   ObICmd *cmd_;
   char inner_exec_ctx_buf_[sizeof(ObExecContext)];
   ObExecContext *inner_exec_ctx_;

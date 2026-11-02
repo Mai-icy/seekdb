@@ -5208,6 +5208,22 @@ public:
   inline virtual share::ObSysVarClassType get_type() const { return share::SYS_VAR_OB_SPARSE_DROP_RATIO_SEARCH; }
   inline virtual const common::ObObj &get_global_default_value() const { return share::ObSysVariables::get_default_value(718); }
 };
+class ObSysVarExecutionBackend : public ObEnumSysVar
+{
+public:
+  const static char * EXECUTION_BACKEND_NAMES[];
+public:
+  ObSysVarExecutionBackend() : ObEnumSysVar(EXECUTION_BACKEND_NAMES, NULL, NULL, NULL, NULL, NULL) {}
+  inline virtual share::ObSysVarClassType get_type() const { return share::SYS_VAR_EXECUTION_BACKEND; }
+  inline virtual const common::ObObj &get_global_default_value() const { return share::ObSysVariables::get_default_value(719); }
+};
+class ObSysVarSiriusSnapshot : public ObVarcharSysVar
+{
+public:
+  ObSysVarSiriusSnapshot() : ObVarcharSysVar(NULL, NULL, NULL, NULL, NULL) {}
+  inline virtual share::ObSysVarClassType get_type() const { return share::SYS_VAR_SIRIUS_SNAPSHOT; }
+  inline virtual const common::ObObj &get_global_default_value() const { return share::ObSysVariables::get_default_value(720); }
+};
 
 
 class ObSysVarFactory
