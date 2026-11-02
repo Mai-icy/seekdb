@@ -1,0 +1,33 @@
+tools/sirius/adapter_service.py
+  s_4a71ccb2e8688c::t_fd2c67fea2b946 78-80,146-148,157-171,224-229,329-334
+  s_4a71ccb2e8688c::t_72836a594dde44 89-90,139,156,172
+  s_4a71ccb2e8688c::t_0011bbf1180653 21,76-77,140-145,149-153,230,252-255,307,343
+unittest/sql/sirius/adapter_pin_integration.py
+  s_4a71ccb2e8688c::t_fd2c67fea2b946 61-64
+  s_4a71ccb2e8688c::t_72836a594dde44 14-16,48-60
+src/observer/schema/ob_schema_service_sql_impl.cpp
+  s_4a71ccb2e8688c::t_bb40f314cfe2c9 1301-1302,1307-1321
+tools/sirius/adapter_pin.py
+  s_4a71ccb2e8688c::t_fd2c67fea2b946 114-116
+  s_4a71ccb2e8688c::t_0011bbf1180653 47-48,121-124
+  s_4a71ccb2e8688c::t_c7a4baec27816f 49-50,104-113,117
+  s_4a71ccb2e8688c::t_e231809bde5bf9 118-119
+tools/sirius/ADAPTER.md
+  s_4a71ccb2e8688c::t_72836a594dde44 146-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "678e89831e10d9052fcffe842c91674d1ebc24cb",
+  "prompts": {},
+  "sessions": {
+    "s_4a71ccb2e8688c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161b6-4a3a-7390-88ab-45e6d8a0a4ae",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    }
+  }
+}
