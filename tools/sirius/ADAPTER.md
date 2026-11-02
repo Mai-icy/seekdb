@@ -143,6 +143,16 @@ logs `pin_build_s`, `planning_s`, `execute_s`, `pin_reused`, input bytes and pin
 bytes separately. Exclude capture time only when reporting the explicitly
 identified post-pin measurement.
 
+For larger inputs, `--pin-codec zstd` stores losslessly compressed native frames
+in the same pinned allocator (Zstd level 1). The default `none` preserves raw
+Arrow-backed pins. The budget charges compressed allocations rounded to pages;
+each query decompresses one bounded frame at a time before Arrow ingestion.
+Compression and capture count toward `pin_build_s`; decompression, staging and
+GPU upload count toward `execute_s`. Logs identify `pin_codec`; compressed host
+pin timings must not be described as permanent GPU residency or zero-copy.
+Scan progress is logged every 30 seconds without writing table data to disk.
+
+
 ## Bounds and present limits
 
 - One query executes at a time in a service instance. The engine has a dedicated

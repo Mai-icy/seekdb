@@ -11,7 +11,9 @@ import uuid
 import pymysql
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools/sirius"))
-from adapter_pin import PinnedAllocator
+from adapter_pin import CompressedBatch, PinnedAllocator
+from test_adapter_protocol import batch
+import pyarrow as pa
 from adapter_sql_integration import run, compare
 
 
@@ -41,6 +43,23 @@ def main():
     assert allocator.used == 0
     print(
         json.dumps(dict(test="pinned_backing_lifetime_and_budget", status="passed")),
+        flush=True,
+    )
+    raw = batch(-42)
+    compressed = pa.Codec("zstd", compression_level=1).compress(raw)
+    owner = allocator.copy(compressed)
+    assert allocator.cuda.cudaHostGetFlags(ct.byref(flags), owner.address) == 0
+    assert flags.value & 1
+    stored = CompressedBatch(owner, len(raw), pa.schema([("a", pa.int64())]))
+    decoded = stored.decode()
+    assert decoded.to_pydict() == {"a": [-42]}
+    del stored, owner, compressed
+    gc.collect()
+    assert allocator.used == 0
+    # Decompressed Arrow data owns its backing independently of the pin.
+    assert decoded.to_pydict() == {"a": [-42]}
+    print(
+        json.dumps(dict(test="compressed_pin_decode_and_lifetime", status="passed")),
         flush=True,
     )
     pin = "pin_" + uuid.uuid4().hex

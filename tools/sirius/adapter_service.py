@@ -18,7 +18,7 @@ import uuid
 
 import pyarrow as pa
 from adapter_backend import Backend, Scan, compile_plan
-from adapter_pin import PinCache, Snapshot
+from adapter_pin import CompressedBatch, PinCache, Snapshot
 from adapter_protocol import Decoder, arrow_type, decode_binary_batch, encode_text
 from wire import receive, send
 
@@ -73,7 +73,11 @@ class ScanPump:
     Failure shuts down the channel so neither peer waits on an abandoned reply.
     """
 
-    def __init__(self, sock, pin_allocator=None):
+    def __init__(self, sock, pin_allocator=None, pin_codec="none"):
+        self.pin_codec = pin_codec
+        self.compressor = (
+            pa.Codec("zstd", compression_level=1) if pin_codec == "zstd" else None
+        )
         self.sock = sock
         self.pin_allocator = pin_allocator
         self.lock = threading.Lock()
@@ -82,7 +86,8 @@ class ScanPump:
         self.cancelled = set()
         self.stopping = False
         self.error = None
-        self.bytes = self.batches = 0
+        self.bytes = self.batches = self.rows = 0
+        self.last_progress = time.monotonic()
         self.worker = threading.Thread(target=self.run)
         self.worker.start()
 
@@ -131,11 +136,40 @@ class ScanPump:
                 elif kind == b"B":
                     self.bytes += len(payload)
                     self.batches += 1
-                    if self.pin_allocator:
-                        payload = self.pin_allocator.copy(payload)
-                    result = decode_binary_batch(payload, scan.schema)
+                    self.rows += struct.unpack_from("!I", payload)[0]
+                    if self.pin_allocator and self.compressor:
+                        # Validate before storing; decompression belongs to query
+                        # execution, while capture/compression is preparation.
+                        decode_binary_batch(payload, scan.schema)
+                        compressed = self.compressor.compress(payload)
+                        result = CompressedBatch(
+                            self.pin_allocator.copy(compressed),
+                            len(payload),
+                            scan.schema,
+                        )
+                    else:
+                        if self.pin_allocator:
+                            payload = self.pin_allocator.copy(payload)
+                        result = decode_binary_batch(payload, scan.schema)
                 else:
                     raise ValueError("Invalid seekdb scan reply")
+                if time.monotonic() - self.last_progress >= 30:
+                    print(
+                        json.dumps(
+                            {
+                                "event": "scan_progress",
+                                "table_index": scan.table_index,
+                                "input_bytes": self.bytes,
+                                "input_batches": self.batches,
+                                "input_rows": self.rows,
+                                "pin_bytes": (
+                                    self.pin_allocator.used if self.pin_allocator else 0
+                                ),
+                            }
+                        ),
+                        flush=True,
+                    )
+                    self.last_progress = time.monotonic()
                 with self.lock:
                     if not future.done():
                         future.set_result(result)
@@ -187,7 +221,13 @@ def handle(sock, backend, compiler, pins):
     if cached:
         cached.validate(tables, table_ids)
     send(sock, b"A", struct.pack("!I", 0 if cached else 1))
-    pump = None if cached else ScanPump(sock, pins.allocator if pin else None)
+    pump = (
+        None
+        if cached
+        else ScanPump(
+            sock, pins.allocator if pin else None, pins.codec if pin else "none"
+        )
+    )
     pin_s = 0.0
     names = list(tables)
     pending = None
@@ -209,7 +249,10 @@ def handle(sock, backend, compiler, pins):
                 plan,
                 scans,
                 cached.identity,
-                lambda scan: iter(cached.batches[names[scan.table_index]]),
+                lambda scan: (
+                    batch.decode() if isinstance(batch, CompressedBatch) else batch
+                    for batch in cached.batches[names[scan.table_index]]
+                ),
                 lambda _: None,
             )
         else:
@@ -261,6 +304,7 @@ def handle(sock, backend, compiler, pins):
                 "execute_s": execute_s,
                 "pin_reused": bool(pin and not pending),
                 "pin_bytes": pins.allocator.used if pins.allocator else 0,
+                "pin_codec": pins.codec if pin else "none",
                 "rows": len(result),
                 "planning_s": planning,
                 "elapsed_s": time.perf_counter() - started,
@@ -282,6 +326,12 @@ def main():
         default=0,
         help="Separate hard budget for immutable cudaHostAlloc snapshots; 0 disables pin",
     )
+    parser.add_argument(
+        "--pin-codec",
+        choices=("none", "zstd"),
+        default="none",
+        help="Optional lossless host pin compression; decode time is part of execution",
+    )
     args = parser.parse_args()
     if not args.socket.is_absolute() or args.timeout <= 0 or args.pin_bytes < 0:
         parser.error("Require an absolute socket path and positive timeout")
@@ -290,7 +340,7 @@ def main():
     if info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) & 0o077:
         raise ValueError("Socket directory must be owned by this user with mode 0700")
     backend = Backend(args.library)
-    pins = PinCache(args.pin_bytes)
+    pins = PinCache(args.pin_bytes, codec=args.pin_codec)
     listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     bound = False
 

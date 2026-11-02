@@ -44,10 +44,10 @@ class PinnedAllocator:
             owner.release()
             raise MemoryError(f"cudaHostAlloc failed with status {status}")
         try:
-            # Native wire frames are bytearray; from_buffer avoids a second
-            # pageable intermediate allocation while copying to pinned memory.
-            source = (ct.c_char * len(payload)).from_buffer(payload)
-            ct.memmove(owner.pointer, source, len(payload))
+            # Arrow accepts mutable wire frames and readonly codec output
+            # without another pageable intermediate allocation.
+            source = pa.py_buffer(payload)
+            ct.memmove(owner.pointer, source.address, len(payload))
             return pa.foreign_buffer(owner.pointer.value, len(payload), base=owner)
         except BaseException:
             owner.release()
@@ -101,8 +101,27 @@ class Snapshot:
                 )
 
 
+@dataclass
+class CompressedBatch:
+    data: pa.Buffer
+    raw_size: int
+    schema: pa.Schema
+    codec: str = "zstd"
+
+    def decode(self):
+        from adapter_protocol import decode_binary_batch
+
+        raw = pa.decompress(
+            self.data, decompressed_size=self.raw_size, codec=self.codec
+        )
+        return decode_binary_batch(raw, self.schema)
+
+
 class PinCache:
-    def __init__(self, capacity, max_pins=16):
+    def __init__(self, capacity, max_pins=16, codec="none"):
+        if codec not in ("none", "zstd"):
+            raise ValueError("Unsupported pin codec")
+        self.codec = codec
         self.capacity, self.max_pins = capacity, max_pins
         self.snapshots = {}
         self.allocator = None
