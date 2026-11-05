@@ -1,0 +1,34 @@
+tools/sirius/TPCH500.md
+  s_5f12a1d5d16996::t_1a0441f314851b 167-190
+src/storage/BUILD.bazel
+  s_5f12a1d5d16996::t_1a0441f314851b 600-605
+  s_5f12a1d5d16996::t_52bd51db076db4 598-599
+src/storage/tablet/ob_tablet_macro_info_iterator.cpp
+  s_5f12a1d5d16996::t_1a0441f314851b 261-269
+unittest/sql/sirius/results/2026-10-26-tpch/macro-iterator-after-fix-tests.txt
+  s_5f12a1d5d16996::t_1a0441f314851b 1-19
+unittest/sql/sirius/results/2026-10-26-tpch/macro-iterator-before-fix-tests.txt
+  s_5f12a1d5d16996::t_1a0441f314851b 1-53
+unittest/storage/tablet/test_tablet_macro_info_iterator.cpp
+  s_5f12a1d5d16996::t_1a0441f314851b 1-161
+unittest/storage/tablet/BUILD.bazel
+  s_5f12a1d5d16996::t_1a0441f314851b 1-25
+unittest/sql/sirius/results/2026-10-26-tpch/mini-merge-warning-20261026.json
+  s_5f12a1d5d16996::t_1a0441f314851b 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "97c568311e7901b0a60eaf572b6fea4dba9cca0c",
+  "prompts": {},
+  "sessions": {
+    "s_5f12a1d5d16996": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19b6c-61ae-7041-936e-1583c2699c92",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    }
+  }
+}
