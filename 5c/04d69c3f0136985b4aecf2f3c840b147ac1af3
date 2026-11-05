@@ -90,6 +90,9 @@ src/sql/engine/sirius/sirius_query_transport.cpp
   s_4a71ccb2e8688c::t_db39f34e349812 1-87
 src/share/system_variable/ob_system_variable_init.cpp
   s_4a71ccb2e8688c::t_db39f34e349812 9898,9905,9910-9912,9919,9923-9924
+  s_5f12a1d5d16996::t_ce2768f85c58dc 9899-9904,9906-9909,9913-9918,9920-9922,9931
+src/share/system_variable/ob_sys_var_meta.h
+  s_5f12a1d5d16996::t_ce2768f85c58dc 32,57
 ---
 {
   "schema_version": "authorship/3.0.0",
@@ -102,6 +105,14 @@ src/share/system_variable/ob_system_variable_init.cpp
         "tool": "codex",
         "id": "01a161b6-4a3a-7390-88ab-45e6d8a0a4ae",
         "model": "gpt-6-astra"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    },
+    "s_5f12a1d5d16996": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19b6c-61ae-7041-936e-1583c2699c92",
+        "model": "gpt-5.6-sol"
       },
       "human_author": "Maiicy <Maiicy@foxmail.com>"
     }
