@@ -1,0 +1,35 @@
+src/sql/engine/sirius/sirius_bridge_api.h
+  s_5f12a1d5d16996::t_5854f3754b5d57 1-37
+src/sql/engine/sirius/sirius_client.cpp
+  s_5f12a1d5d16996::t_5854f3754b5d57 1-74
+src/sql/engine/sirius/sirius_client.h
+  s_5f12a1d5d16996::t_5854f3754b5d57 1-29
+tools/sirius/requirements.txt
+  s_5f12a1d5d16996::t_5854f3754b5d57 1-3
+src/sql/engine/expr/ob_expr_sirius.cpp
+  s_5f12a1d5d16996::t_5854f3754b5d57 1-86
+src/sql/engine/expr/ob_expr_operator_factory.cpp
+  s_5f12a1d5d16996::t_5854f3754b5d57 132,595
+src/sql/engine/expr/ob_expr_sirius.h
+  s_5f12a1d5d16996::t_5854f3754b5d57 1-18
+src/query/api/query/parser/ob_item_type.h
+  s_5f12a1d5d16996::t_5854f3754b5d57 872
+.gitignore
+  s_5f12a1d5d16996::t_5854f3754b5d57 232
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e8dacdc466c1bc4a5221f014a306cddcc2d79c42",
+  "prompts": {},
+  "sessions": {
+    "s_5f12a1d5d16996": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19b6c-61ae-7041-936e-1583c2699c92",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    }
+  }
+}
