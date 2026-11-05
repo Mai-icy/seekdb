@@ -1,0 +1,46 @@
+unittest/sql/sirius/test_sirius_bridge.cpp
+  s_94aca69f18e275::t_41d33cfd71ad9b 5,13-42
+tools/sirius/adapter_backend.py
+  s_94aca69f18e275::t_b0651b04ed02e1 10,34-79,129,147-148,155,224
+  s_94aca69f18e275::t_35769cc5d4dba4 140
+src/sql/engine/sirius/sirius_query_result.cpp
+  s_94aca69f18e275::t_4eebfedb106bfe 46-47,60-65,308-311,320,322,337,340,343-349,354-357,362-366,368-482,484-485,487,489-490,493-501,503-508,514-525
+unittest/sql/sirius/test_adapter_protocol.py
+  s_94aca69f18e275::t_0cf9236448f128 9,15-16,81-155
+  s_94aca69f18e275::t_0ca030cdc64124 14,30-67
+  s_94aca69f18e275::t_41d33cfd71ad9b 8,13,68-80
+  s_94aca69f18e275::t_3c69297856db05 199
+src/sql/engine/sirius/sirius_query_transport.h
+  s_94aca69f18e275::t_fde7c7afad74c3 38-48
+tools/sirius/ADAPTER.md
+  s_94aca69f18e275::t_e82f5fcfaa4c18 1,8-17,25-27,32,39-40,143-145,165-167,172,178-183
+  s_94aca69f18e275::t_4e181e512f258b 205-220
+tools/sirius/adapter_service.py
+  s_94aca69f18e275::t_7d8265304bb89d 22,28-136,138-149,244,258-264,340-341,367,383-386
+  s_94aca69f18e275::t_0cf9236448f128 137,360-366
+  s_94aca69f18e275::t_4c973211edb0a9 152-153
+src/sql/engine/sirius/sirius_query_result.h
+  s_94aca69f18e275::t_eb15f743512dbe 5-7,21,26-33,35-47
+unittest/sql/sirius/adapter_gpu_integration.py
+  s_94aca69f18e275::t_49467ecbea8bb8 84-85,118-119
+unittest/sql/sirius/adapter_pin_integration.py
+  s_94aca69f18e275::t_e82f5fcfaa4c18 68-80
+tools/sirius/adapter_protocol.py
+  s_94aca69f18e275::t_55bdb40eb5016b 6,54-107,129-130,135-140,142-173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d94173cad3986155c15599bf3f6d750b2fafeed9",
+  "prompts": {},
+  "sessions": {
+    "s_94aca69f18e275": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19b6c-d356-70e3-b140-9d10f41f58ec",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    }
+  }
+}
