@@ -1,0 +1,57 @@
+tools/sirius/connector/context.cpp
+  s_5f12a1d5d16996::t_b1856fa8777369 17-271,282-377,379-429
+  s_5f12a1d5d16996::t_c0c4b8d5353b59 278,378
+  s_5f12a1d5d16996::t_4af598c584ad9e 1-16,272-277,279-281
+tools/sirius/connector/inject.cmake
+  s_5f12a1d5d16996::t_b1856fa8777369 1-45
+tools/sirius/connector/source_factory.hpp
+  s_5f12a1d5d16996::t_b1856fa8777369 16-21
+  s_5f12a1d5d16996::t_aac3d8f8c81aa3 1-15,22
+docs/sirius-upstream-requirements.md
+  s_5f12a1d5d16996::t_b2d561571e6ff3 5-9,13-39,45
+  s_5f12a1d5d16996::t_6732b828dc880a 10-12,40-44
+tools/sirius/ADAPTER.md
+  s_5f12a1d5d16996::t_b2d561571e6ff3 5-11,28-30,1038-1042
+tools/sirius/connector/README.md
+  s_5f12a1d5d16996::t_c0c4b8d5353b59 1-79
+  s_5f12a1d5d16996::t_6732b828dc880a 80-85
+tools/sirius/connector/source_factory.cpp
+  s_5f12a1d5d16996::t_b1856fa8777369 18-121
+  s_5f12a1d5d16996::t_5618a8c37bab17 1-17
+unittest/sql/sirius/test_sirius_arrow_embedder.cpp
+  s_5f12a1d5d16996::t_4e4111c947e530 14
+  s_5f12a1d5d16996::t_b9f764daed2477 80,85,92,109,111,140,160,163,173
+tools/sirius/connector/external_arrow_binding.hpp
+  s_5f12a1d5d16996::t_b1856fa8777369 35
+  s_5f12a1d5d16996::t_c0c4b8d5353b59 20-32,34
+  s_5f12a1d5d16996::t_9b566cf44b0bf8 1-19,33
+tools/sirius/CMakeLists.txt
+  s_5f12a1d5d16996::t_b1856fa8777369 42,48-52,64
+tools/sirius/connector/external_pin_ingestible.hpp
+  s_5f12a1d5d16996::t_c0c4b8d5353b59 16,54-55
+  s_5f12a1d5d16996::t_b1856fa8777369 15,39-53,56-194
+  s_5f12a1d5d16996::t_51ffed053393de 1-14,17-38
+tools/sirius/connector/context.hpp
+  s_5f12a1d5d16996::t_b1856fa8777369 29-99
+  s_5f12a1d5d16996::t_16245eb4aeb6ea 1-28
+tools/sirius/arrow_adapter.cpp
+  s_5f12a1d5d16996::t_c4aa5242d76aa3 5,81,86,94,99,102,110,114,130,135,165,176,191,276,281
+tools/sirius/connector/substrait-host-compat.patch
+  s_5f12a1d5d16996::t_585434085d3f29 1-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3e743ef72ed75d196f340af01ed7eb20f8ae925e",
+  "prompts": {},
+  "sessions": {
+    "s_5f12a1d5d16996": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19b6c-61ae-7041-936e-1583c2699c92",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    }
+  }
+}
