@@ -1,0 +1,45 @@
+tools/sirius/adapter_backend.py
+  s_5f12a1d5d16996::t_78fbf64ed4eef7 10,925
+docs/sirius-upstream-requirements.md
+  s_5f12a1d5d16996::t_84a0622bb70c0c 28,30-51
+  s_5f12a1d5d16996::t_0d94a2653f7ddc 5,11,21-23
+unittest/sql/sirius/ffi_arrow_fixtures.py
+  s_5f12a1d5d16996::t_9b67fbf9665226 39-40
+  s_5f12a1d5d16996::t_78fbf64ed4eef7 7-14,56
+  s_5f12a1d5d16996::t_591af2086f7199 1-6,15-38,41-55,57-65
+tools/sirius/CMakeLists.txt
+  s_5f12a1d5d16996::t_9b67fbf9665226 67
+  s_5f12a1d5d16996::t_3fe5cfc7b1a565 59-66,68-71
+unittest/sql/sirius/test_sirius_arrow_embedder.cpp
+  s_5f12a1d5d16996::t_9b67fbf9665226 18
+  s_5f12a1d5d16996::t_3bdaa2a07f8f10 27
+  s_5f12a1d5d16996::t_e325f056bbbef6 1-17,19-26,28-180
+tools/sirius/ADAPTER.md
+  s_5f12a1d5d16996::t_84a0622bb70c0c 971-978
+  s_5f12a1d5d16996::t_3bdaa2a07f8f10 958-968
+  s_5f12a1d5d16996::t_87739d86c72ebe 154,938-957,969-970,979-982
+unittest/sql/sirius/test_substrait_compat.py
+  s_5f12a1d5d16996::t_004b275dfafbcc 1-73
+tools/sirius/adapter_native_pin.py
+  s_5f12a1d5d16996::t_78fbf64ed4eef7 9,97
+tools/sirius/adapter_substrait_compat.py
+  s_5f12a1d5d16996::t_78fbf64ed4eef7 1-74
+tools/sirius/patches/optional-input-pin-performance.patch
+  s_5f12a1d5d16996::t_213ff4f99bee16 1-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "778a50137be3df94d91720f575e92d1a69d0bd44",
+  "prompts": {},
+  "sessions": {
+    "s_5f12a1d5d16996": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19b6c-61ae-7041-936e-1583c2699c92",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    }
+  }
+}
