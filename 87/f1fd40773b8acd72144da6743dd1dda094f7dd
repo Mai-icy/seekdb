@@ -1,0 +1,37 @@
+tools/sirius/build_native_storage_decoder.py
+  s_5f12a1d5d16996::t_a1bf884bf3af80 6-7,72,74-77,89,94
+tools/sirius/CMakeLists.txt
+  s_5f12a1d5d16996::t_a1bf884bf3af80 14-16
+unittest/sql/sirius/CMakeLists.txt
+  s_5f12a1d5d16996::t_a1bf884bf3af80 14-17
+docs/sirius-native-storage.md
+  s_5f12a1d5d16996::t_2519278c165154 154,195
+docs/sirius-upstream-requirements.md
+  s_5f12a1d5d16996::t_47b1e58848e4cd 3-32
+tools/sirius/ADAPTER.md
+  s_5f12a1d5d16996::t_6a99d9965e95db 797-798,826,831-833
+tools/sirius/native_block_metadata.cpp
+  s_5f12a1d5d16996::t_09271e6827922e 1-262
+tools/sirius/native_block_metadata.hpp
+  s_5f12a1d5d16996::t_aaad9396c775ff 1-79
+tools/sirius/native_storage_validation.cpp
+  s_5f12a1d5d16996::t_9d80c60deab48c 13,17,24
+unittest/sql/sirius/test_native_block_metadata.cpp
+  s_5f12a1d5d16996::t_b37b05bf532db2 1-234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "87f1fd40773b8acd72144da6743dd1dda094f7dd",
+  "prompts": {},
+  "sessions": {
+    "s_5f12a1d5d16996": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19b6c-61ae-7041-936e-1583c2699c92",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    }
+  }
+}
