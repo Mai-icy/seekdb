@@ -1,0 +1,79 @@
+src/storage/blocksstable/native_block_source.cpp
+  s_5f12a1d5d16996::t_1abad75be74022 25-26,29-31,88-101,151-155,260-278,282,294-312
+unittest/storage/tablet/BUILD.bazel
+  s_5f12a1d5d16996::t_223fd37ca19138 12
+tools/sirius/adapter_service.py
+  s_5f12a1d5d16996::t_5984ef3d17748f 1841-1842,1886
+  s_5f12a1d5d16996::t_297dc35adde6e5 1574,1920
+  s_5f12a1d5d16996::t_62e3c8b8c77224 1027-1028,1889-1891
+  s_5f12a1d5d16996::t_5b4894f8a2c0f1 1117-1118,1575-1581,1795-1796,1846-1847,1880
+  s_5f12a1d5d16996::t_e93dd7f6c527d9 683-686,780-786,788,792,1026,1029,1120-1121
+src/share/ob_local_device.h
+  s_5f12a1d5d16996::t_1b6cf7d97982ee 127-133
+unittest/sql/sirius/test_file_view.py
+  s_5f12a1d5d16996::t_b14a034b57ebb2 44
+  s_5f12a1d5d16996::t_44fce0e07430ca 1-43,45-155
+unittest/storage/tablet/test_native_block_source.cpp
+  s_5f12a1d5d16996::t_223fd37ca19138 22,28-31,175-251
+  s_5f12a1d5d16996::t_e1890bd6fd1a6b 26-27
+src/sql/engine/sirius/sirius_query_result.cpp
+  s_5f12a1d5d16996::t_2202643f8007e5 414-421,425-426,468-469
+  s_5f12a1d5d16996::t_f1f4f1feefbe3a 214,231-232,290-296,298-304,307-325
+  s_5f12a1d5d16996::t_56ace5c74f2e31 8,326,348-413,422-424,427-467,470-591,622,640,648,678,682,725-749,751-758,760-773,776-783,785-786
+unittest/sql/sirius/CMakeLists.txt
+  s_5f12a1d5d16996::t_f7be4bb3ee1219 22-23
+  s_5f12a1d5d16996::t_a2cf336b3e6f27 18-21
+tools/sirius/adapter_native_storage.py
+  s_5f12a1d5d16996::t_6939cfd17bc290 11,110,112-116,154,156-157,165-181,183-184,198,201-213,486
+  s_5f12a1d5d16996::t_b4b9b01c17fc44 441-449,464,487-489
+src/sql/engine/sirius/arrow_scan_reader.h
+  s_5f12a1d5d16996::t_cbeef2592e4465 50-51,238-241
+  s_5f12a1d5d16996::t_feca5f4d6849aa 1-49,52-95,97,99,109-111,113,120-182,184-185,188,191-207,209,212,214,222,226-227,230-237,242-255
+  s_5f12a1d5d16996::t_de1737793c858f 96,98,100-108,112,114-119,183,186-187,189-190,208,210-211,213,215-221,223-225,228-229
+src/storage/blocksstable/native_block_source.h
+  s_5f12a1d5d16996::t_1b6cf7d97982ee 40,56-57,80-81
+unittest/sql/sirius/adapter_file_view_cancel_integration.py
+  s_5f12a1d5d16996::t_1c021cee14b677 1-79
+src/data_plane/api/data_plane/access/native_block_reader.h
+  s_5f12a1d5d16996::t_1b6cf7d97982ee 46-53,63-67
+tools/sirius/arrow_c.h
+  s_5f12a1d5d16996::t_941d274422c7de 4
+unittest/sql/sirius/arrow_reader_fixture.cpp
+  s_5f12a1d5d16996::t_f7be4bb3ee1219 1-40
+unittest/sql/sirius/arrow_reader_sql_integration.py
+  s_5f12a1d5d16996::t_b46d04cf790aa5 1-101
+unittest/sql/sirius/arrow_reader_interop.py
+  s_5f12a1d5d16996::t_f7be4bb3ee1219 1-54
+tools/sirius/ADAPTER.md
+  s_5f12a1d5d16996::t_e016fc314b8726 110-117
+  s_5f12a1d5d16996::t_b01b76af134022 27,39-108
+  s_5f12a1d5d16996::t_ec3184fe8a5367 109,118,1019
+src/sql/engine/sirius/sirius_query_transport.h
+  s_5f12a1d5d16996::t_1abad75be74022 59-61
+unittest/sql/sirius/test_arrow_scan_reader.cpp
+  s_5f12a1d5d16996::t_a2cf336b3e6f27 1-147
+src/sql/engine/sirius/sirius_query_transport.cpp
+  s_5f12a1d5d16996::t_1abad75be74022 83-114
+src/sql/engine/sirius/arrow_c_data.h
+  s_5f12a1d5d16996::t_941d274422c7de 1-54
+tools/sirius/adapter_file_view.py
+  s_5f12a1d5d16996::t_6939cfd17bc290 1-52
+src/share/ob_local_device.cpp
+  s_5f12a1d5d16996::t_1b6cf7d97982ee 45-48,679-730
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6e56ef26c4162a24d700b3e481dfa9077cd1143f",
+  "prompts": {},
+  "sessions": {
+    "s_5f12a1d5d16996": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19b6c-61ae-7041-936e-1583c2699c92",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    }
+  }
+}
