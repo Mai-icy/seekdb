@@ -73,6 +73,10 @@ public:
 
   virtual void destroy();
   virtual void reset();
+  const common::ObString &get_sirius_plan() const { return sirius_plan_; }
+  int set_sirius_plan(const common::ObString &value)
+  { return common::ob_write_string(allocator_, value, sirius_plan_); }
+
   void set_is_last_exec_succ(bool val) { stat_.is_last_exec_succ_ = val; }
   bool is_last_exec_succ() const { return stat_.is_last_exec_succ_; }
   const ObString &get_constructed_sql() const { return stat_.constructed_sql_; }
@@ -375,6 +379,8 @@ public:
 public:
   static const int64_t MAX_PRINTABLE_SIZE = 2 * 1024 * 1024;
 private:
+  // Local coordinator plan template; execution parameters are bound per request.
+  common::ObString sirius_plan_;
   static const int64_t COMMON_OP_NUM = 16;
   static const int64_t COMMON_SUB_QUERY_NUM = 6;
   static const int64_t COMMON_BASE_TABLE_NUM = 64;

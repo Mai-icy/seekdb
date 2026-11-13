@@ -10975,5 +10975,35 @@
     "info_cn": "",
     "background_cn": "",
     "ref_url": ""
+  },
+  "execution_backend": {
+    "id": 10754,
+    "name": "execution_backend",
+    "default_value": "0",
+    "base_value": "0",
+    "data_type": "enum",
+    "info": "Select CPU or Sirius GPU execution for table SELECTs; failures are returned to the client.",
+    "flags": "SESSION | NEED_SERIALIZE | INFLUENCE_PLAN",
+    "enum_names": [
+      "cpu",
+      "gpu"
+    ],
+    "publish_version": "1.0.0.0",
+    "info_cn": "选择当前会话的 CPU 或 Sirius GPU 查询执行路径",
+    "background_cn": "",
+    "ref_url": ""
+  },
+  "gpu_snapshot": {
+    "id": 10755,
+    "name": "gpu_snapshot",
+    "default_value": "",
+    "base_value": "",
+    "data_type": "varchar",
+    "info": "Immutable GPU Parquet snapshot name. Empty uses the current statement snapshot; a new name prepares all ordinary tables in the current database.",
+    "flags": "SESSION | NEED_SERIALIZE | INFLUENCE_PLAN",
+    "publish_version": "1.0.0.0",
+    "info_cn": "GPU Parquet 快照版本名，空值使用当前语句快照",
+    "background_cn": "",
+    "ref_url": ""
   }
 }

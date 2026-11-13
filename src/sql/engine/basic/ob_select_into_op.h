@@ -28,6 +28,8 @@ namespace oceanbase
 {
 namespace sql
 {
+class ParquetExportState;
+
 class ObSelectIntoOpInput : public ObOpInput
 {
   OB_UNIS_VERSION_V(1);
@@ -64,6 +66,7 @@ public:
       closed_cht_(),
       is_optional_(false),
       select_exprs_(alloc),
+      column_names_(alloc),
       is_single_(true),
       max_file_size_(DEFAULT_MAX_FILE_SIZE),
       escaped_cht_(),
@@ -83,6 +86,7 @@ public:
   common::ObObj closed_cht_;
   bool is_optional_;
   common::ObFixedArray<ObExpr*, common::ObIAllocator> select_exprs_;
+  common::ObFixedArray<common::ObString, common::ObIAllocator> column_names_;
   bool is_single_;
   int64_t max_file_size_;
   common::ObObj escaped_cht_;
@@ -126,7 +130,9 @@ public:
       external_properties_(),
       format_type_(ObExternalFileFormat::FormatType::CSV_FORMAT),
       block_id_(0),
-      need_commit_(true)
+      need_commit_(true),
+      parquet_state_(nullptr),
+      parquet_done_(false)
   {
   }
 
@@ -197,6 +203,9 @@ public:
 private:
   int init_env_common();
   int init_csv_env();
+  int init_parquet_env();
+  int export_parquet(bool batch, int64_t max_row_cnt);
+  int append_parquet_row();
   void set_csv_format_options();
 
   int get_row_str(const int64_t buf_len, bool is_first_row, char *buf, int64_t &pos);
@@ -292,6 +301,8 @@ private:
   ObExternalFileFormat::FormatType format_type_;
   uint32_t block_id_;
   bool need_commit_;
+  ParquetExportState *parquet_state_;
+  bool parquet_done_;
   static const int64_t SHARED_BUFFER_SIZE = 2LL * 1024 * 1024;
 
 };

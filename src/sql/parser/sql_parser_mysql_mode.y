@@ -12321,6 +12321,8 @@ TRADITIONAL
 { malloc_terminal_node($$, result->malloc_pool_, T_TRADITIONAL); }
 | JSON
 { malloc_terminal_node($$, result->malloc_pool_, T_FORMAT_JSON); }
+| NAME_OB
+{ $$ = $1; }
 ;
 
 /*****************************************************************************

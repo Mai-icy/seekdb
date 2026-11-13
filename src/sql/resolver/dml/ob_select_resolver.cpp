@@ -3008,6 +3008,11 @@ int ObSelectResolver::resolve_into_outfile_with_format(const ParseNode *node, Ob
     } else if (!has_format_type) {
       ret = OB_NOT_SUPPORTED;
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "format without type");
+    } else if (ObExternalFileFormat::PARQUET_FORMAT == external_format.format_type_) {
+      if (format_node->num_child_ != 1) {
+        ret = OB_NOT_SUPPORTED;
+        LOG_USER_ERROR(OB_NOT_SUPPORTED, "Parquet export format options other than TYPE");
+      }
     } else if (ObExternalFileFormat::CSV_FORMAT != external_format.format_type_) {
       ret = OB_NOT_SUPPORTED;
       LOG_USER_ERROR(OB_NOT_SUPPORTED, "this format type");
@@ -3028,6 +3033,14 @@ int ObSelectResolver::resolve_into_outfile_with_format(const ParseNode *node, Ob
     }
     if (OB_SUCC(ret)
         && OB_FAIL(external_format.to_string_with_alloc(into_item.external_properties_, *allocator_, true))) {
+    }
+  }
+  if (OB_SUCC(ret) && ObExternalFileFormat::PARQUET_FORMAT == external_format.format_type_) {
+    if (NULL != node->children_[2]) {
+      ret = OB_NOT_SUPPORTED;
+      LOG_USER_ERROR(OB_NOT_SUPPORTED, "Parquet export file options (single local file only)");
+    } else {
+      into_item.is_single_ = true;
     }
   }
   // file: single, max_file_size, buffer_size

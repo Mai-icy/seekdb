@@ -13,6 +13,7 @@ native-network = ["sql-nio/native-network"]
 native-http = ["dep:http-client"]
 
 [dependencies]
+parquet-export = { path = "../parquet-export" }
 mvt = { path = "../mvt" }
 sql-nio = { path = "../sql-nio", default-features = false }
 logger = { path = "../logger" }

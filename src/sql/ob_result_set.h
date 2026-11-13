@@ -52,6 +52,7 @@ namespace sql
 class ObSQLSessionInfo;
 class ObPhysicalPlan;
 class ObLogPlan;
+class GpuQueryResult;
 struct ObPsStoreItemValue;
 class ObIEndTransCallback;
 typedef common::ObFastArray<int64_t, OB_DEFAULT_SE_ARRAY_COUNT> IntFastArray;
@@ -248,6 +249,7 @@ public:
   int end_trans(const bool is_rollback);
   void set_is_from_plan_cache(bool is_from_plan_cache) { is_from_plan_cache_ = is_from_plan_cache; }
   void set_is_inner_result_set(const bool v) { is_inner_result_set_ = v; }
+  bool is_inner_result_set() const { return is_inner_result_set_; }
   bool get_is_from_plan_cache() const { return  is_from_plan_cache_; }
   const ObICmd *get_cmd() const { return cmd_; }
   ObICmd *get_cmd() { return cmd_; }
@@ -410,6 +412,7 @@ private:
   query::ObIPlanCacheAccessService &plan_cache_access_service_;
   int64_t begin_timestamp_;
   ObIExecuteResult *exec_result_;
+  GpuQueryResult *gpu_result_ = nullptr;
   ObICmd *cmd_;
   char inner_exec_ctx_buf_[sizeof(ObExecContext)];
   ObExecContext *inner_exec_ctx_;

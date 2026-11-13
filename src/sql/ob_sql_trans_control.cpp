@@ -653,7 +653,10 @@ int ObSqlTransControl::stmt_setup_snapshot_(ObSQLSessionInfo *session,
   ObConsistencyLevel cl = plan_ctx->get_consistency_level();
   ObTxReadSnapshot &snapshot = das_ctx.get_snapshot();
   bool can_plain_insert = false;
-  if (cl == ObConsistencyLevel::WEAK || cl == ObConsistencyLevel::FROZEN) {
+  if (const auto *outer_snapshot = session->get_gpu_input_snapshot()) {
+    // All input exports belong to one outer SELECT, including at READ COMMITTED.
+    ret = snapshot.assign(*outer_snapshot);
+  } else if (cl == ObConsistencyLevel::WEAK || cl == ObConsistencyLevel::FROZEN) {
     SCN snapshot_version = SCN::min_scn();
     if (OB_FAIL(txs->get_weak_read_snapshot_version(session->get_ob_max_read_stale_time(),
                                                     snapshot_version))) {

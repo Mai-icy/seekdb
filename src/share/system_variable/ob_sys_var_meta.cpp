@@ -113,6 +113,7 @@ const char *ObSysVarMeta::SYS_VAR_NAMES_SORTED_BY_NAME[] = {
   "eq_range_index_dive_limit",
   "error_count",
   "error_on_overlap_time",
+  "execution_backend",
   "expire_logs_days",
   "explicit_defaults_for_timestamp",
   "external_user",
@@ -121,6 +122,7 @@ const char *ObSysVarMeta::SYS_VAR_NAMES_SORTED_BY_NAME[] = {
   "foreign_key_checks",
   "ft_stopword_file",
   "general_log",
+  "gpu_snapshot",
   "group_concat_max_len",
   "group_replication_allow_local_disjoint_gtids_join",
   "group_replication_allow_local_lower_version_join",
@@ -834,6 +836,7 @@ const ObSysVarClassType ObSysVarMeta::SYS_VAR_IDS_SORTED_BY_NAME[] = {
   SYS_VAR_EQ_RANGE_INDEX_DIVE_LIMIT,
   SYS_VAR_ERROR_COUNT,
   SYS_VAR_ERROR_ON_OVERLAP_TIME,
+  SYS_VAR_EXECUTION_BACKEND,
   SYS_VAR_EXPIRE_LOGS_DAYS,
   SYS_VAR_EXPLICIT_DEFAULTS_FOR_TIMESTAMP,
   SYS_VAR_EXTERNAL_USER,
@@ -842,6 +845,7 @@ const ObSysVarClassType ObSysVarMeta::SYS_VAR_IDS_SORTED_BY_NAME[] = {
   SYS_VAR_FOREIGN_KEY_CHECKS,
   SYS_VAR_FT_STOPWORD_FILE,
   SYS_VAR_GENERAL_LOG,
+  SYS_VAR_GPU_SNAPSHOT,
   SYS_VAR_GROUP_CONCAT_MAX_LEN,
   SYS_VAR_GROUP_REPLICATION_ALLOW_LOCAL_DISJOINT_GTIDS_JOIN,
   SYS_VAR_GROUP_REPLICATION_ALLOW_LOCAL_LOWER_VERSION_JOIN,
@@ -2186,7 +2190,9 @@ const char *ObSysVarMeta::SYS_VAR_NAMES_SORTED_BY_ID[] = {
   "enable_optimizer_rowgoal",
   "ob_ivf_nprobes",
   "_push_join_predicate",
-  "ob_sparse_drop_ratio_search"
+  "ob_sparse_drop_ratio_search",
+  "execution_backend",
+  "gpu_snapshot"
 };
 
 bool ObSysVarMeta::sys_var_name_case_cmp(const char *name1, const ObString &name2)
@@ -2245,6 +2251,9 @@ int ObSysVarMeta::calc_sys_var_store_idx(ObSysVarClassType sys_var_id, int64_t &
     real_idx = ObSysVarsToIdxMap::get_store_idx(var_id);
     if (real_idx < 0) {
       ret = OB_SYS_VARS_MAYBE_DIFF_VERSION;
+      LOG_WARN("invalid sys var id, maybe sys vars version is different", K(ret), K(var_id), K(real_idx),
+          LITERAL_K(ObSysVarMeta::OB_SPECIFIC_SYS_VAR_ID_OFFSET),
+          LITERAL_K(ObSysVarMeta::OB_SYS_VARS_COUNT));
     }
   }
 
@@ -2261,6 +2270,7 @@ int ObSysVarMeta::calc_sys_var_store_idx_by_name(const common::ObString &sys_var
   int ret = OB_SUCCESS;
   ObSysVarClassType sys_var_id = find_sys_var_id_by_name(sys_var_name);
   if (OB_FAIL(calc_sys_var_store_idx(sys_var_id, store_idx))) {
+    LOG_WARN("fail to calc sys var store idx", K(ret), K(sys_var_name), K(lbt()));
   }
   return ret;
 }
@@ -2275,6 +2285,7 @@ int ObSysVarMeta::get_sys_var_name_by_id(ObSysVarClassType sys_var_id, ObString 
   int ret = OB_SUCCESS;
   int64_t store_idx = -1;
   if (OB_FAIL(calc_sys_var_store_idx(sys_var_id, store_idx))) {
+    LOG_WARN("fail to calc sys var store idx", K(ret), K(sys_var_id));
   } else {
     sys_var_name = ObString::make_string(ObSysVarMeta::SYS_VAR_NAMES_SORTED_BY_ID[store_idx]);
   }
@@ -2287,6 +2298,7 @@ const ObString ObSysVarMeta::get_sys_var_name_by_id(ObSysVarClassType sys_var_id
   int ret = OB_SUCCESS;
   if (OB_FAIL(get_sys_var_name_by_id(sys_var_id, sys_var_name))) {
     sys_var_name = ObString::make_string("invalid_sys_var_name");
+    LOG_WARN("invalid sys var id", K(ret), K(sys_var_id));
   }
   return sys_var_name;
 }

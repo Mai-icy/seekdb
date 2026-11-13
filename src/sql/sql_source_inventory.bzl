@@ -1582,6 +1582,9 @@ SQL_SIMD_UNITY_GROUPS = [
 ]
 
 SQL_STANDALONE_SOURCES = [
+    "src/sql/engine/sirius/sirius_plan_export.cpp",
+    "src/sql/engine/sirius/sirius_query_transport.cpp",
+    "src/sql/engine/sirius/sirius_query_result.cpp",
     "src/sql/engine/aggregate/ob_aggregate_processor.cpp",
     "src/sql/engine/expr/ob_expr_add.cpp",
     "src/sql/engine/expr/ob_expr_array_sort.cpp",

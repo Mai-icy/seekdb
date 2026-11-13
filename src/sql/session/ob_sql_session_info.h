@@ -43,6 +43,7 @@
 
 namespace oceanbase
 {
+namespace transaction { class ObTxReadSnapshot; }
 namespace common
 {
 class ObISrsProvider;
@@ -870,6 +871,8 @@ public:
   bool has_tx_level_temp_table() const
   { return data_plane::tx_desc_has_temporary_tables(tx_desc_); }
   int close_all_ps_stmt(ObPsCache &ps_cache);
+  const transaction::ObTxReadSnapshot *get_gpu_input_snapshot() const { return gpu_input_snapshot_; }
+  void set_gpu_input_snapshot(const transaction::ObTxReadSnapshot *snapshot) { gpu_input_snapshot_ = snapshot; }
 private:
   void release_all_ps_session_info();
   void set_cur_exec_ctx(ObExecContext *cur_exec_ctx) { cur_exec_ctx_ = cur_exec_ctx; }
@@ -877,6 +880,8 @@ private:
   static const int64_t MAX_STORED_PLANS_COUNT = 10240;
   static const int64_t MAX_IPADDR_LENGTH = 64;
 private:
+  // Borrowed only while the SQL worker exports this session's nested GPU inputs.
+  const transaction::ObTxReadSnapshot *gpu_input_snapshot_ = nullptr;
   bool is_inited_;
   // store the warning message from the most recent statement in the current session
   common::ObWarningBuffer warnings_buf_;

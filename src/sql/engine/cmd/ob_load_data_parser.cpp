@@ -33,6 +33,7 @@ const char INVALID_TERM_CHAR = '\xff';
 
 const char * ObExternalFileFormat::FORMAT_TYPE_STR[] = {
   "CSV",
+  "PARQUET",
 };
 static_assert(array_elements(ObExternalFileFormat::FORMAT_TYPE_STR) == ObExternalFileFormat::MAX_FORMAT, "Not enough initializer for ObExternalFileFormat");
 
@@ -596,6 +597,8 @@ int ObExternalFileFormat::load_from_string(const ObString &str, ObIAllocator &al
       }
       format_type_node = format_type_node->get_next();
       switch (format_type_) {
+        case PARQUET_FORMAT:
+          break;
         case CSV_FORMAT:
           OZ (csv_format_.load_from_json_data(format_type_node, allocator));
           OZ (origin_file_format_str_.load_from_json_data(format_type_node, allocator));

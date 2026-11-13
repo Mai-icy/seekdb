@@ -123,6 +123,7 @@ ObPhysicalPlan::~ObPhysicalPlan()
 void ObPhysicalPlan::reset()
 {
   ObPlanCacheObject::reset();
+  sirius_plan_.reset();
   phy_hint_.reset();
   root_op_spec_ = NULL;
   param_count_ = 0;
@@ -159,6 +160,7 @@ void ObPhysicalPlan::reset()
   is_update_uniq_index_ = false;
   has_index_access_plan_ = false;
   ObPlanCacheObject::reset();
+  sirius_plan_.reset();
   is_late_materialized_ = false;
   is_plain_insert_ = false;
   base_constraints_.reset();

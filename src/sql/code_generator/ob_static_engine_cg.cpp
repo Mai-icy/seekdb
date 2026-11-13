@@ -5460,6 +5460,7 @@ int ObStaticEngineCG::generate_spec(ObLogSelectInto &op, ObSelectIntoSpec &spec,
   } else if (OB_FAIL(spec.external_properties_.store_str(op.get_external_properties()))) {
   } else if (OB_FAIL(spec.user_vars_.init(op.get_user_vars().count()))) {
   } else if (OB_FAIL(spec.select_exprs_.init(op.get_select_exprs().count()))) {
+  } else if (OB_FAIL(spec.column_names_.init(op.get_select_exprs().count()))) {
   } else {
     ObString var;
     for (int64_t i = 0; OB_SUCC(ret) && i < op.get_user_vars().count(); ++i) {
@@ -5475,6 +5476,19 @@ int ObStaticEngineCG::generate_spec(ObLogSelectInto &op, ObSelectIntoSpec &spec,
         ret = OB_ERR_UNEXPECTED;
       } else if (OB_FAIL(generate_rt_expr(*select_expr, rt_expr))) {
       } else if (OB_FAIL(spec.select_exprs_.push_back(rt_expr))) {
+      }
+      if (OB_SUCC(ret)) {
+        ObString name;
+        const ObSelectStmt *stmt = static_cast<const ObSelectStmt *>(op.get_stmt());
+        if (OB_ISNULL(stmt) || i >= stmt->get_select_item_size()) {
+          ret = OB_ERR_UNEXPECTED;
+        } else {
+          const SelectItem &item = stmt->get_select_item(i);
+          const ObString &label = item.alias_name_.empty() ? item.expr_name_ : item.alias_name_;
+          if (OB_FAIL(ob_write_string(alloc, label, name))) {
+          } else if (OB_FAIL(spec.column_names_.push_back(name))) {
+          }
+        }
       }
     }
     if (OB_SUCC(ret)) {

@@ -74,6 +74,8 @@ const ObSysVarClassType ESSENTIAL_SYS_VARS[] = {
   SYS_VAR_CARDINALITY_ESTIMATION_MODEL,        // cardinality_estimation_model
   SYS_VAR_DEFAULT_COLLATION_FOR_UTF8MB4,        // default_collation_for_utf8mb4
   SYS_VAR__PUSH_JOIN_PREDICATE,        // _push_join_predicate
+  SYS_VAR_EXECUTION_BACKEND,        // execution_backend
+  SYS_VAR_GPU_SNAPSHOT,        // gpu_snapshot
 };
 
 const int64_t ESSENTIAL_SYS_VARS_COUNT = sizeof(ESSENTIAL_SYS_VARS) / sizeof(ESSENTIAL_SYS_VARS[0]);
@@ -9895,13 +9897,40 @@ static struct VarsInit{
     ObSysVars[717].alias_ = "OB_SV_SPARSE_DROP_RATIO_SEARCH" ;
     }();
 
+    [&] (){
+      ObSysVars[718].id_ = SYS_VAR_EXECUTION_BACKEND ;
+      cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_EXECUTION_BACKEND)) ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_EXECUTION_BACKEND] = 718 ;
+      ObSysVars[718].name_ = "execution_backend" ;
+      ObSysVars[718].default_value_ = "0" ;
+      ObSysVars[718].base_value_ = "0" ;
+      ObSysVars[718].data_type_ = ObIntType ;
+      ObSysVars[718].info_ = "Select CPU or Sirius GPU execution for table SELECTs; failures are returned to the client." ;
+      ObSysVars[718].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::NEED_SERIALIZE | ObSysVarFlag::INFLUENCE_PLAN ;
+      ObSysVars[718].enum_names_ = "['cpu', 'gpu']" ;
+    ObSysVars[718].alias_ = "OB_SV_EXECUTION_BACKEND" ;
+    }();
+
+    [&] (){
+      ObSysVars[719].id_ = SYS_VAR_GPU_SNAPSHOT ;
+      cur_max_var_id = MAX(cur_max_var_id, static_cast<int64_t>(SYS_VAR_GPU_SNAPSHOT)) ;
+      ObSysVarsIdToArrayIdx[SYS_VAR_GPU_SNAPSHOT] = 719 ;
+      ObSysVars[719].name_ = "gpu_snapshot" ;
+      ObSysVars[719].default_value_ = "" ;
+      ObSysVars[719].base_value_ = "" ;
+      ObSysVars[719].data_type_ = ObVarcharType ;
+      ObSysVars[719].info_ = "Immutable GPU Parquet snapshot name. Empty uses the current statement snapshot; a new name prepares all ordinary tables in the current database." ;
+      ObSysVars[719].flags_ = ObSysVarFlag::SESSION_SCOPE | ObSysVarFlag::NEED_SERIALIZE | ObSysVarFlag::INFLUENCE_PLAN ;
+    ObSysVars[719].alias_ = "OB_SV_GPU_SNAPSHOT" ;
+    }();
+
     if (cur_max_var_id >= ObSysVarMeta::OB_MAX_SYS_VAR_ID) {
       HasInvalidSysVar = true;
     }
   }
 }vars_init;
 
-static int64_t var_amount = 718;
+static int64_t var_amount = 720;
 
 int64_t ObSysVariables::get_all_sys_var_count(){ return ObSysVarMeta::ALL_SYS_VARS_COUNT;}
 ObSysVarClassType ObSysVariables::get_sys_var_id(int64_t i){ return ObSysVars[i].id_;}

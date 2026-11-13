@@ -67,6 +67,17 @@ int ObExplainResolver::resolve(const ParseNode &parse_tree)
         ParseNode *format = parse_tree.children_[EXPLAIN_FORMAT];
         if (NULL != format) {
           switch (format->type_) {
+          case T_IDENT:
+          {
+            const ObString name(format->str_len_, format->str_value_);
+            if (0 != name.case_compare("SIRIUS_JSON") || !child_stmt->is_select_stmt()) {
+              ret = OB_NOT_SUPPORTED;
+              LOG_USER_ERROR(OB_NOT_SUPPORTED, "EXPLAIN format (SIRIUS_JSON requires SELECT)");
+            } else {
+              explain_stmt->set_explain_format(EXPLAIN_SIRIUS_JSON);
+              opt.with_tree_line_ = false;
+            }
+          } break;
           case T_OUTLINE:
           {
             explain_stmt->set_explain_format(EXPLAIN_OUTLINE);

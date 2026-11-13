@@ -955,6 +955,7 @@ struct ObExternalFileFormat
   enum FormatType {
     INVALID_FORMAT = -1,
     CSV_FORMAT = 0,
+    PARQUET_FORMAT,
     MAX_FORMAT
   };
 

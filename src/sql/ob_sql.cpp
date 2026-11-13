@@ -17,6 +17,8 @@
 #define USING_LOG_PREFIX SQL
 #include "rust/config.h"
 #include "sql/ob_sql.h"
+#include "sql/engine/sirius/sirius_plan_export.h"
+#include <stdexcept>
 #include "lib/json/ob_json_print_utils.h"
 #include "lib/stat/ob_diagnostic_info_guard.h"
 #include "query/runtime/ob_query_runtime_environment.h"
@@ -2306,6 +2308,34 @@ int ObSql::generate_physical_plan(ParseResult &parse_result,
   return ret;
 }
 
+namespace {
+int capture_gpu_plan(ObResultSet &result, ObDMLStmt &stmt, ObLogPlan &logical_plan,
+                     ObPhysicalPlan &physical_plan)
+{
+  int64_t backend = 0;
+  int ret = result.get_session().get_sys_variable(SYS_VAR_EXECUTION_BACKEND, backend);
+  const auto literal_type = result.get_literal_stmt_type();
+  if (ret != OB_SUCCESS || !backend || result.is_inner_result_set()
+      || !stmt.is_select_stmt() || physical_plan.get_dependency_table_size() == 0
+      || (literal_type != stmt::T_NONE && literal_type != stmt::T_SELECT)) return ret;
+  if (!physical_plan.is_plain_select() || physical_plan.is_contains_assignment()
+      || static_cast<ObSelectStmt &>(stmt).get_select_into() != nullptr) {
+    LOG_USER_ERROR(OB_NOT_SUPPORTED, "GPU execution requires a read-only SELECT without INTO or variable assignment");
+    return OB_NOT_SUPPORTED;
+  }
+  try {
+    const auto document = export_sirius_plan(logical_plan);
+    physical_plan.set_is_packed(false);
+    return physical_plan.set_sirius_plan(ObString(document.size(), document.data()));
+  } catch (const std::bad_alloc &) {
+    return OB_ALLOCATE_MEMORY_FAILED;
+  } catch (const std::exception &error) {
+    LOG_USER_ERROR(OB_NOT_SUPPORTED, error.what());
+    return OB_NOT_SUPPORTED;
+  }
+}
+}
+
 int ObSql::generate_plan(ParseResult &parse_result,
                         ObPlanCacheCtx *pc_ctx,
                         ObSqlCtx &sql_ctx,
@@ -2426,6 +2456,7 @@ int ObSql::generate_plan(ParseResult &parse_result,
     } else if (OB_FAIL(code_generate(sql_ctx, result, stmt,
                                      stmt_need_privs,
                                      logical_plan, phy_plan))) {
+    } else if (OB_FAIL(capture_gpu_plan(result, *stmt, *logical_plan, *phy_plan))) {
     } else if (OB_FAIL(prepare_outline_for_phy_plan(logical_plan,
                                                     phy_plan))) {
     } else if (logical_plan->get_optimizer_context().is_online_ddl()) {

@@ -18,6 +18,10 @@
 #include "sql/optimizer/ob_explain_log_plan.h"
 #include "sql/optimizer/ob_log_values.h"
 #include "sql/code_generator/ob_code_generator.h"
+#include "sql/engine/sirius/sirius_plan_export.h"
+#include "sql/engine/ob_exec_context.h"
+#include "sql/engine/ob_physical_plan_ctx.h"
+#include <stdexcept>
 
 using namespace oceanbase;
 using namespace sql;
@@ -69,14 +73,46 @@ int ObExplainLogPlan::generate_normal_raw_plan()
       ObSEArray<common::ObString, 64> plan_strs;
       const ObString& into_table = explain_stmt->get_into_table();
       const ObString& statement_id = explain_stmt->get_statement_id();
-      if (OB_FAIL(sql_plan.store_sql_plan_for_explain(get_optimizer_context().get_exec_ctx(),
+      if (EXPLAIN_SIRIUS_JSON == explain_stmt->get_explain_type()) {
+        ObExecContext *exec_ctx = get_optimizer_context().get_exec_ctx();
+        if (OB_ISNULL(exec_ctx) || OB_ISNULL(exec_ctx->get_physical_plan_ctx())) {
+          ret = OB_ERR_UNEXPECTED;
+        } else {
+          try {
+            std::string document = export_sirius_plan(*child_plan);
+            document.pop_back();
+            document += ",\"parameters\":[";
+            const auto &parameters = exec_ctx->get_physical_plan_ctx()->get_param_store();
+            for (int64_t i = 0; i < parameters.count(); ++i) {
+              if (i > 0) document += ',';
+              document += sirius_plan_literal(parameters.at(i));
+            }
+            document += "]}";
+            if (document.size() > 16 * 1024 * 1024) {
+              ret = OB_SIZE_OVERFLOW;
+            } else {
+              ObString stored;
+              if (OB_FAIL(ob_write_string(get_allocator(),
+                      ObString(static_cast<int32_t>(document.size()), document.data()), stored))) {
+              } else if (OB_FAIL(plan_strs.push_back(stored))) {
+              }
+            }
+          } catch (const std::bad_alloc &) {
+            ret = OB_ALLOCATE_MEMORY_FAILED;
+          } catch (const std::exception &error) {
+            ret = OB_NOT_SUPPORTED;
+            LOG_USER_ERROR(OB_NOT_SUPPORTED, error.what());
+          }
+        }
+      } else if (OB_FAIL(sql_plan.store_sql_plan_for_explain(get_optimizer_context().get_exec_ctx(),
                                                       child_plan,
                                                       explain_stmt->get_explain_type(),
                                                       0 == into_table.length() ? "PLAN_TABLE" : into_table,
                                                       0 == statement_id.length() ? "" : statement_id,
                                                       explain_stmt->get_display_opt(),
                                                       plan_strs))) {
-      } else {
+      }
+      if (OB_SUCC(ret)) {
         //For explain stmt, we can do pack at the stage of expr alloc,
         //But we need to use the FALSE flag to tell the driver 
         //to use normal encoding instead of memcopy

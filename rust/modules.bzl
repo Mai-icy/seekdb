@@ -3,6 +3,7 @@
 load("//rust/sql-nio:features.bzl", "FEATURES")
 
 MODULES = {
+    "parquet-export": {"bridge": "src/bridge.rs"},
     "mvt": {"bridge": "src/bridge.rs"},
     "standby-rpc": {
         "bridge": "src/bridge.rs",
