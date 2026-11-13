@@ -1,0 +1,19 @@
+src/storage/tablet/ob_tablet_macro_info_iterator.cpp
+  s_5e310febfdb0a5::t_2cc20d4a206e67 261-269
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2d0caef960e4bc3bb6f36b59ea8013f5f38660ec",
+  "prompts": {},
+  "sessions": {
+    "s_5e310febfdb0a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c487-297c-77e3-a6ad-2f2f9ec7fe0a",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Maiicy <Maiicy@foxmail.com>"
+    }
+  }
+}
